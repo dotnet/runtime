@@ -53,6 +53,11 @@
 #error "The version of the mono llvm repository is too old."
 #endif
 
+// These are obsolete and got removed in llvm 14
+#define LLVMBuildGEP UseLLVMBuildGEP2Instead
+#define LLVMBuildLoad UseLLVMBuildLoad2Instead
+#define LLVMBuildCall UseLLVMBuildCall2Instead
+
 /*
  * A typed pointer value.
  */
@@ -165,7 +170,8 @@ typedef struct {
 	BBInfo *bblocks;
 	int sindex, default_index, ex_index;
 	LLVMBuilderRef builder;
-	LLVMValueRef *values, *addresses;
+	LLVMValueRef *values;
+	Address **addresses;
 	MonoType **vreg_cli_types;
 	LLVMCallInfo *linfo;
 	MonoMethodSignature *sig;
@@ -179,6 +185,7 @@ typedef struct {
 	LLVMTypeRef *vreg_types;
 	gboolean *is_vphi;
 	LLVMTypeRef method_type;
+	LLVMTypeRef *param_etypes;
 	LLVMBasicBlockRef init_bb, inited_bb;
 	gboolean *is_dead;
 	gboolean *unreachable;
@@ -205,7 +212,7 @@ typedef struct {
 	GHashTable *jit_callees;
 	LLVMValueRef long_bb_break_var;
 	int *gc_var_indexes;
-	LLVMValueRef gc_pin_area;
+	Address *gc_pin_area;
 	LLVMValueRef il_state;
 	LLVMValueRef il_state_ret;
 } EmitContext;
@@ -1426,7 +1433,8 @@ static LLVMValueRef
 emit_load (LLVMBuilderRef builder, LLVMTypeRef type, LLVMValueRef PointerVal,
 		   const char *Name, gboolean is_volatile)
 {
-	LLVMValueRef v = type ? LLVMBuildLoad2 (builder, type, PointerVal, Name) : LLVMBuildLoad (builder, PointerVal, Name);
+	g_assert (type);
+	LLVMValueRef v = LLVMBuildLoad2 (builder, type, PointerVal, Name);
 	if (is_volatile)
 		LLVMSetVolatile (v, TRUE);
 	return v;
@@ -1456,7 +1464,7 @@ emit_volatile_load (EmitContext *ctx, int vreg)
 	// On arm64, we pass the rgctx in a callee saved
 	// register on arm64 (x15), and llvm might keep the value in that register
 	// even through the register is marked as 'reserved' inside llvm.
-	v = emit_load (ctx->builder, NULL, ctx->addresses [vreg], "", TRUE);
+	v = emit_load (ctx->builder, ctx->addresses [vreg]->type, ctx->addresses [vreg]->value, "", TRUE);
 	t = ctx->vreg_cli_types [vreg];
 	if (t && !m_type_is_byref (t)) {
 		/*
@@ -1488,9 +1496,9 @@ emit_volatile_store (EmitContext *ctx, int vreg)
 		g_assert (ctx->addresses [vreg]);
 #ifdef TARGET_WASM
 		/* Need volatile stores otherwise the compiler might move them */
-		emit_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg], TRUE);
+		emit_store (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]->value, TRUE);
 #else
-		LLVMBuildStore (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]);
+		LLVMBuildStore (ctx->builder, convert (ctx, ctx->values [vreg], type_to_llvm_type (ctx, var->inst_vtype)), ctx->addresses [vreg]->value);
 #endif
 	}
 }
@@ -1533,7 +1541,7 @@ sig_to_llvm_sig_no_cinfo (EmitContext *ctx, MonoMethodSignature *sig)
  * calling convention information in CINFO. Fill out the parameter mapping information in CINFO.
  */
 static LLVMTypeRef
-sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *cinfo)
+sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *cinfo, LLVMTypeRef **element_types)
 {
 	LLVMTypeRef ret_type;
 	LLVMTypeRef *param_types = NULL;
@@ -1619,6 +1627,8 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	}
 
 	param_types = g_new0 (LLVMTypeRef, (sig->param_count * 8) + 3);
+	if (element_types)
+		*element_types = g_new0 (LLVMTypeRef, (sig->param_count * 8) + 3);
 	pindex = 0;
 	if (cinfo->ret.storage == LLVMArgVtypeByRef) {
 		/*
@@ -1632,6 +1642,8 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			g_free (param_types);
 			return NULL;
 		}
+		if (element_types)
+			(*element_types) [pindex] = param_types [pindex];
 		param_types [pindex] = LLVMPointerType (param_types [pindex], 0);
 		pindex ++;
 	}
@@ -1700,6 +1712,8 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			param_types [pindex] = type_to_llvm_arg_type (ctx, ainfo->type);
 			if (!ctx_ok (ctx))
 				break;
+			if (element_types)
+				(*element_types) [pindex] = param_types [pindex];
 			param_types [pindex] = LLVMPointerType (param_types [pindex], 0);
 			pindex ++;
 			break;
@@ -1715,6 +1729,8 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			param_types [pindex] = type_to_llvm_arg_type (ctx, ainfo->type);
 			if (!ctx_ok (ctx))
 				break;
+			if (element_types)
+				(*element_types) [pindex] = param_types [pindex];
 			param_types [pindex] = LLVMPointerType (param_types [pindex], 0);
 			pindex ++;
 			break;
@@ -1735,9 +1751,13 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 			break;
 		case LLVMArgGsharedvtFixed:
 		case LLVMArgGsharedvtFixedVtype:
+			if (element_types)
+				(*element_types) [pindex] = type_to_llvm_arg_type (ctx, ainfo->type);
 			param_types [pindex ++] = LLVMPointerType (type_to_llvm_arg_type (ctx, ainfo->type), 0);
 			break;
 		case LLVMArgGsharedvtVariable:
+			if (element_types)
+				(*element_types) [pindex] = IntPtrType ();
 			param_types [pindex ++] = LLVMPointerType (IntPtrType (), 0);
 			break;
 		default:
@@ -1772,7 +1792,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 static LLVMTypeRef
 sig_to_llvm_sig (EmitContext *ctx, MonoMethodSignature *sig)
 {
-	return sig_to_llvm_sig_full (ctx, sig, NULL);
+	return sig_to_llvm_sig_full (ctx, sig, NULL, NULL);
 }
 
 /*
@@ -1989,7 +2009,7 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 			module->gc_safe_point_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
 			LLVMSetLinkage (module->gc_safe_point_flag_var, LLVMExternalLinkage);
 		}
-		return module->gc_safe_point_flag_var;
+		return LLVMBuildBitCast (builder, module->gc_safe_point_flag_var, llvm_type, "");
 	}
 	if (module->static_link && type == MONO_PATCH_INFO_INTERRUPTION_REQUEST_FLAG) {
 		if (!module->interrupt_flag_var) {
@@ -1997,7 +2017,7 @@ get_aotconst_module (MonoLLVMModule *module, LLVMBuilderRef builder, MonoJumpInf
 			module->interrupt_flag_var = LLVMAddGlobal (module->lmodule, llvm_type, symbol);
 			LLVMSetLinkage (module->interrupt_flag_var, LLVMExternalLinkage);
 		}
-		return module->interrupt_flag_var;
+		return LLVMBuildBitCast (builder, module->interrupt_flag_var, llvm_type, "");
 	}
 
 	Address *addr = (Address*)g_hash_table_lookup (module->aotconst_vars, GINT_TO_POINTER (got_offset));
@@ -2291,10 +2311,11 @@ get_jit_callee (EmitContext *ctx, const char *name, LLVMTypeRef llvm_sig, MonoJu
 		target = resolve_patch (ctx->cfg, type, data);
 	}
 
-	LLVMValueRef tramp_var = LLVMAddGlobal (ctx->lmodule, LLVMPointerType (llvm_sig, 0), name);
-	LLVMSetInitializer (tramp_var, LLVMConstIntToPtr (const_int64 ((guint64)(size_t)target), LLVMPointerType (llvm_sig, 0)));
+	LLVMTypeRef etype = LLVMPointerType (llvm_sig, 0);
+	LLVMValueRef tramp_var = LLVMAddGlobal (ctx->lmodule, etype, name);
+	LLVMSetInitializer (tramp_var, LLVMConstIntToPtr (const_int64 ((guint64)(size_t)target), etype));
 	LLVMSetLinkage (tramp_var, LLVMExternalLinkage);
-	LLVMValueRef callee = LLVMBuildLoad (ctx->builder, tramp_var, "");
+	LLVMValueRef callee = LLVMBuildLoad2 (ctx->builder, etype, tramp_var, "");
 	return callee;
 }
 
@@ -2648,11 +2669,11 @@ emit_args_to_vtype (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 			part_type = LLVMIntType (part_size * 8);
 			if (MONO_CLASS_IS_SIMD (ctx->cfg, klass)) {
 				index [0] = const_int32 (j * TARGET_SIZEOF_VOID_P);
-				addr = LLVMBuildGEP (builder, address, index, 1, "");
+				addr = LLVMBuildGEP2 (builder, i1_t, address, index, 1, "");
 			} else {
 				daddr = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (IntPtrType (), 0), "");
 				index [0] = const_int32 (j);
-				addr = LLVMBuildGEP (builder, daddr, index, 1, "");
+				addr = LLVMBuildGEP2 (builder, IntPtrType (), daddr, index, 1, "");
 			}
 			LLVMBuildStore (builder, convert (ctx, args [j], part_type), LLVMBuildBitCast (ctx->builder, addr, LLVMPointerType (part_type, 0), ""));
 			break;
@@ -2667,7 +2688,7 @@ emit_args_to_vtype (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 
 			index [0] = const_int32 (j);
 			daddr = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (arg_type, 0), "");
-			addr = LLVMBuildGEP (builder, daddr, index, 1, "");
+			addr = LLVMBuildGEP2 (builder, arg_type, daddr, index, 1, "");
 			LLVMBuildStore (builder, args [j], addr);
 			break;
 		}
@@ -2715,13 +2736,14 @@ emit_vtype_to_args (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 		case LLVMArgInIReg:
 			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (t))) {
 				index [0] = const_int32 (j * TARGET_SIZEOF_VOID_P);
-				addr = LLVMBuildGEP (builder, address, index, 1, "");
+				addr = LLVMBuildGEP2 (builder, i1_t, address, index, 1, "");
 			} else {
 				daddr = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (IntPtrType (), 0), "");
 				index [0] = const_int32 (j);
-				addr = LLVMBuildGEP (builder, daddr, index, 1, "");
+				addr = LLVMBuildGEP2 (builder, IntPtrType (), daddr, index, 1, "");
 			}
-			args [pindex ++] = convert (ctx, LLVMBuildLoad (builder, LLVMBuildBitCast (ctx->builder, addr, LLVMPointerType (LLVMIntType (partsize * 8), 0), ""), ""), IntPtrType ());
+			LLVMTypeRef etype = LLVMIntType (partsize * 8);
+			args [pindex ++] = convert (ctx, LLVMBuildLoad2 (builder, etype, LLVMBuildBitCast (ctx->builder, addr, LLVMPointerType (etype, 0), ""), ""), IntPtrType ());
 			break;
 		case LLVMArgInFPReg:
 			if (ainfo->esize == 8)
@@ -2730,8 +2752,8 @@ emit_vtype_to_args (EmitContext *ctx, LLVMBuilderRef builder, MonoType *t, LLVMV
 				arg_type = LLVMFloatType ();
 			daddr = LLVMBuildBitCast (ctx->builder, address, LLVMPointerType (arg_type, 0), "");
 			index [0] = const_int32 (j);
-			addr = LLVMBuildGEP (builder, daddr, index, 1, "");
-			args [pindex ++] = LLVMBuildLoad (builder, addr, "");
+			addr = LLVMBuildGEP2 (builder, arg_type, daddr, index, 1, "");
+			args [pindex ++] = LLVMBuildLoad2 (builder, arg_type, addr, "");
 			break;
 		case LLVMArgNone:
 			break;
@@ -2763,7 +2785,6 @@ build_alloca_llvm_type (EmitContext *ctx, LLVMTypeRef t, int align)
 	return build_alloca_llvm_type_name (ctx, t, align, "");
 }
 
-
 static LLVMValueRef
 build_named_alloca (EmitContext *ctx, MonoType *t, char const *name)
 {
@@ -2788,6 +2809,13 @@ static LLVMValueRef
 build_alloca (EmitContext *ctx, MonoType *t)
 {
 	return build_named_alloca (ctx, t, "");
+}
+
+static Address*
+build_alloca_address (EmitContext *ctx, MonoType *t)
+{
+	LLVMValueRef v = build_named_alloca (ctx, t, "");
+	return create_address (ctx->module, v, type_to_llvm_type (ctx, t));
 }
 
 static LLVMValueRef
@@ -2883,8 +2911,9 @@ emit_get_method (MonoLLVMModule *module)
 
 	int table_len = module->max_method_idx + 1;
 
+	LLVMTypeRef table_type = NULL;
+
 	if (emit_table) {
-		LLVMTypeRef table_type;
 		LLVMValueRef *table_elems;
 		char *table_name;
 
@@ -2953,8 +2982,8 @@ emit_get_method (MonoLLVMModule *module)
 		LLVMValueRef indexes [2];
 		indexes [0] = const_int32 (0);
 		indexes [1] = LLVMGetParam (func, 0);
-		LLVMValueRef addr = LLVMBuildGEP (builder, base, indexes, 2, "");
-		LLVMValueRef res = LLVMBuildLoad (builder, addr, "");
+		LLVMValueRef addr = LLVMBuildGEP2 (builder, table_type, base, indexes, 2, "");
+		LLVMValueRef res = LLVMBuildLoad2 (builder, rtype, addr, "");
 		LLVMBuildRet (builder, res);
 
 		LLVMBasicBlockRef default_bb = LLVMAppendBasicBlock (func, "DEFAULT");
@@ -3481,7 +3510,7 @@ emit_gc_safepoint_poll (MonoLLVMModule *module, LLVMModuleRef lmodule, MonoCompi
 		LLVMValueRef poll_val_int = LLVMConstInt (IntPtrType (), (guint64) &mono_polling_required, FALSE);
 		poll_val_ptr = LLVMBuildIntToPtr (builder, poll_val_int, ptr_type, "");
 	}
-	LLVMValueRef poll_val_ptr_load = LLVMBuildLoad (builder, poll_val_ptr, ""); // probably needs to be volatile
+	LLVMValueRef poll_val_ptr_load = LLVMBuildLoad2 (builder, IntPtrType (), poll_val_ptr, ""); // probably needs to be volatile
 	LLVMValueRef poll_val = LLVMBuildPtrToInt (builder, poll_val_ptr_load, IntPtrType (), "");
 	LLVMValueRef poll_val_zero = LLVMConstNull (LLVMTypeOf (poll_val));
 	LLVMValueRef cmp = LLVMBuildICmp (builder, LLVMIntEQ, poll_val, poll_val_zero, "");
@@ -3750,7 +3779,7 @@ emit_gc_pin (EmitContext *ctx, LLVMBuilderRef builder, int vreg)
 	LLVMValueRef index0 = const_int32 (0);
 	LLVMValueRef index1 = const_int32 (ctx->gc_var_indexes [vreg] - 1);
 	LLVMValueRef indexes [] = { index0, index1 };
-	LLVMValueRef addr = LLVMBuildGEP (builder, ctx->gc_pin_area, indexes, 2, "");
+	LLVMValueRef addr = LLVMBuildGEP2 (builder, ctx->gc_pin_area->type, ctx->gc_pin_area->value, indexes, 2, "");
 	emit_store (builder, convert (ctx, ctx->values [vreg], IntPtrType ()), addr, TRUE);
 }
 #endif
@@ -3793,7 +3822,9 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	}
 
 	// FIXME: Count only live vregs
-	ctx->gc_pin_area = build_alloca_llvm_type_name (ctx, LLVMArrayType (IntPtrType (), ngc_vars), 0, "gc_pin");
+	LLVMTypeRef pin_area_type = LLVMArrayType (IntPtrType (), ngc_vars);
+	LLVMValueRef gc_pin_area = build_alloca_llvm_type_name (ctx, pin_area_type, 0, "gc_pin");
+	ctx->gc_pin_area = create_address (ctx->module, gc_pin_area, pin_area_type);
 #endif
 
 	/*
@@ -3811,13 +3842,16 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 				return;
 			/* Could be already created by an OP_VPHI */
 			if (!ctx->addresses [var->dreg]) {
+				LLVMTypeRef etype;
 				if (var->flags & MONO_INST_LMF) {
 					// FIXME: Allocate a smaller struct in the deopt case
 					int size = cfg->deopt ? MONO_ABI_SIZEOF (MonoLMFExt) : MONO_ABI_SIZEOF (MonoLMF);
-					ctx->addresses [var->dreg] = build_alloca_llvm_type_name (ctx, LLVMArrayType (LLVMInt8Type (), size), sizeof (target_mgreg_t), "lmf");
+					etype = LLVMArrayType (LLVMInt8Type (), size);
+					ctx->addresses [var->dreg] = create_address (ctx->module, build_alloca_llvm_type_name (ctx, etype, sizeof (target_mgreg_t), "lmf"), etype);
 				} else {
 					char *name = g_strdup_printf ("vreg_loc_%d", var->dreg);
-					ctx->addresses [var->dreg] = build_named_alloca (ctx, var->inst_vtype, name);
+					etype = type_to_llvm_type (ctx, var->inst_vtype);
+					ctx->addresses [var->dreg] = create_address (ctx->module, build_named_alloca (ctx, var->inst_vtype, name), etype);
 					g_free (name);
 				}
 			}
@@ -3853,19 +3887,21 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 				for (int j = 0; j < ainfo->nslots; ++j)
 					args [j] = LLVMGetParam (ctx->lmethod, pindex + j);
 			}
-			ctx->addresses [reg] = build_alloca (ctx, ainfo->type);
+			ctx->addresses [reg] = build_alloca_address (ctx, ainfo->type);
 
-			emit_args_to_vtype (ctx, builder, ainfo->type, ctx->addresses [reg], ainfo, args);
+			emit_args_to_vtype (ctx, builder, ainfo->type, ctx->addresses [reg]->value, ainfo, args);
 			break;
 		}
 		case LLVMArgVtypeByVal: {
-			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
+			g_assert (ctx->param_etypes [pindex]);
+			ctx->addresses [reg] = create_address (ctx->module, LLVMGetParam (ctx->lmethod, pindex), ctx->param_etypes [pindex]);
 			break;
 		}
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeByRef: {
 			/* The argument is passed by ref */
-			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
+			g_assert (ctx->param_etypes [pindex]);
+			ctx->addresses [reg] = create_address (ctx->module, LLVMGetParam (ctx->lmethod, pindex), ctx->param_etypes [pindex]);
 			break;
 		}
 		case LLVMArgAsIArgs: {
@@ -3874,17 +3910,17 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			MonoType *t = mini_get_underlying_type (ainfo->type);
 
 			/* The argument is received as an array of ints, store it into the real argument */
-			ctx->addresses [reg] = build_alloca (ctx, t);
+			ctx->addresses [reg] = build_alloca_address (ctx, t);
 
 			size = mono_class_value_size (mono_class_from_mono_type_internal (t), NULL);
 			if (size == 0) {
 			} else if (size < TARGET_SIZEOF_VOID_P) {
 				/* The upper bits of the registers might not be valid */
 				LLVMValueRef val = LLVMBuildExtractValue (builder, arg, 0, "");
-				LLVMValueRef dest = convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMIntType (size * 8), 0));
+				LLVMValueRef dest = convert (ctx, ctx->addresses [reg]->value, LLVMPointerType (LLVMIntType (size * 8), 0));
 				LLVMBuildStore (ctx->builder, LLVMBuildTrunc (builder, val, LLVMIntType (size * 8), ""), dest);
 			} else {
-				LLVMBuildStore (ctx->builder, arg, convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMTypeOf (arg), 0)));
+				LLVMBuildStore (ctx->builder, arg, convert (ctx, ctx->addresses [reg]->value, LLVMPointerType (LLVMTypeOf (arg), 0)));
 			}
 			break;
 		}
@@ -3896,9 +3932,9 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			MonoType *t = mini_get_underlying_type (ainfo->type);
 
 			/* The argument is received as a scalar */
-			ctx->addresses [reg] = build_alloca (ctx, t);
+			ctx->addresses [reg] = build_alloca_address (ctx, t);
 
-			LLVMValueRef dest = convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMIntType (ainfo->esize * 8), 0));
+			LLVMValueRef dest = convert (ctx, ctx->addresses [reg]->value, LLVMPointerType (LLVMIntType (ainfo->esize * 8), 0));
 			LLVMBuildStore (ctx->builder, arg, dest);
 			break;
 		}
@@ -3925,15 +3961,17 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 			/* Non-gsharedvt vtype argument passed by ref, the rest of the IR treats it as a vtype */
 			g_assert (ctx->addresses [reg]);
-			LLVMSetValueName (ctx->addresses [reg], name);
+			LLVMSetValueName (ctx->addresses [reg]->value, name);
 			LLVMTypeRef el_t = type_to_llvm_type (ctx, ainfo->type);
-			LLVMBuildStore (builder, LLVMBuildLoad2 (builder, el_t, convert (ctx, arg, LLVMPointerType (el_t, 0)), ""), ctx->addresses [reg]);
+			LLVMBuildStore (builder, LLVMBuildLoad2 (builder, el_t, convert (ctx, arg, LLVMPointerType (el_t, 0)), ""), ctx->addresses [reg]->value);
 			break;
 		}
 		case LLVMArgGsharedvtVariable:
 			/* The IR treats these as variables with addresses */
-			if (!ctx->addresses [reg])
-				ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
+			if (!ctx->addresses [reg]) {
+				g_assert (ctx->param_etypes [pindex]);
+				ctx->addresses [reg] = create_address (ctx->module, LLVMGetParam (ctx->lmethod, pindex), ctx->param_etypes [pindex]);
+			}
 			break;
 		default: {
 			LLVMTypeRef t;
@@ -3957,7 +3995,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		{
 			if (MONO_CLASS_IS_SIMD (ctx->cfg, mono_class_from_mono_type_internal (ainfo->type)))
 				/* Treat these as normal values */
-				ctx->values [reg] = LLVMBuildLoad (builder, ctx->addresses [reg], "simd_vtype");
+				ctx->values [reg] = LLVMBuildLoad2 (builder, ctx->addresses [reg]->type, ctx->addresses [reg]->value, "simd_vtype");
 			break;
 		}
 		default:
@@ -4009,7 +4047,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			 * We handle the rgctx arg similarly to the this pointer.
 			 */
 			g_assert (ctx->addresses [cfg->rgctx_var->dreg]);
-			rgctx_alloc = ctx->addresses [cfg->rgctx_var->dreg];
+			rgctx_alloc = ctx->addresses [cfg->rgctx_var->dreg]->value;
 			/* This volatile store will keep the alloca alive */
 			store = emit_store (builder, convert (ctx, ctx->rgctx_arg, IntPtrType ()), rgctx_alloc, TRUE);
 			(void)store; /* unused */
@@ -4059,12 +4097,12 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 		ctx->il_state = build_alloca_llvm_type_name (ctx, il_state_type, 0, "il_state");
 		g_assert (cfg->il_state_var);
-		ctx->addresses [cfg->il_state_var->dreg] = ctx->il_state;
+		ctx->addresses [cfg->il_state_var->dreg] = create_address (ctx->module, ctx->il_state, il_state_type);
 
 		/* Set il_state->il_offset = -1 */
 		index [0] = const_int32 (0);
 		index [1] = const_int32 (1);
-		addr = LLVMBuildGEP (builder, ctx->il_state, index, 2, "");
+		addr = LLVMBuildGEP2 (builder, il_state_type, ctx->il_state, index, 2, "");
 		LLVMBuildStore (ctx->builder, LLVMConstInt (types [1], -1, FALSE), addr);
 
 		/*
@@ -4079,16 +4117,16 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 			index [0] = const_int32 (0);
 			index [1] = const_int32 (findex);
-			addr = LLVMBuildGEP (builder, ctx->il_state, index, 2, "");
+			addr = LLVMBuildGEP2 (builder, il_state_type, ctx->il_state, index, 2, "");
 			LLVMBuildStore (ctx->builder, ctx->il_state_ret, convert (ctx, addr, LLVMPointerType (LLVMTypeOf (ctx->il_state_ret), 0)));
 			findex ++;
 		}
 		for (int i = 0; i < sig->hasthis + sig->param_count; ++i) {
-			LLVMValueRef var_addr = ctx->addresses [cfg->args [i]->dreg];
+			LLVMValueRef var_addr = ctx->addresses [cfg->args [i]->dreg] ? ctx->addresses [cfg->args [i]->dreg]->value : NULL;
 
 			index [0] = const_int32 (0);
 			index [1] = const_int32 (findex);
-			addr = LLVMBuildGEP (builder, ctx->il_state, index, 2, "");
+			addr = LLVMBuildGEP2 (builder, il_state_type, ctx->il_state, index, 2, "");
 			if (var_addr)
 				LLVMBuildStore (ctx->builder, var_addr, convert (ctx, addr, LLVMPointerType (LLVMTypeOf (var_addr), 0)));
 			else
@@ -4096,11 +4134,11 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 			findex ++;
 		}
 		for (int i = 0; i < header->num_locals; ++i) {
-			LLVMValueRef var_addr = ctx->addresses [cfg->locals [i]->dreg];
+			LLVMValueRef var_addr = ctx->addresses [cfg->locals [i]->dreg] ? ctx->addresses [cfg->locals [i]->dreg]->value : NULL;
 
 			index [0] = const_int32 (0);
 			index [1] = const_int32 (findex);
-			addr = LLVMBuildGEP (builder, ctx->il_state, index, 2, "");
+			addr = LLVMBuildGEP2 (builder, il_state_type, ctx->il_state, index, 2, "");
 			if (var_addr)
 				LLVMBuildStore (ctx->builder, LLVMBuildBitCast (builder, var_addr, types [findex], ""), addr);
 			else
@@ -4231,7 +4269,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 {
 	MonoCompile *cfg = ctx->cfg;
 	LLVMValueRef *values = ctx->values;
-	LLVMValueRef *addresses = ctx->addresses;
+	Address **addresses = ctx->addresses;
 	MonoCallInst *call = (MonoCallInst*)ins;
 	MonoMethodSignature *sig = call->signature;
 	LLVMValueRef callee = NULL, lcall;
@@ -4265,7 +4303,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 	vretaddr = (cinfo->ret.storage == LLVMArgVtypeRetAddr || cinfo->ret.storage == LLVMArgVtypeByRef || cinfo->ret.storage == LLVMArgGsharedvtFixed || cinfo->ret.storage == LLVMArgGsharedvtVariable || cinfo->ret.storage == LLVMArgGsharedvtFixedVtype);
 
-	llvm_sig = sig_to_llvm_sig_full (ctx, sig, cinfo);
+	llvm_sig = sig_to_llvm_sig_full (ctx, sig, cinfo, NULL);
 	if (!ctx_ok (ctx))
 		return;
 
@@ -4390,7 +4428,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		g_assert (ins->inst_offset % size == 0);
 		index = const_int32 (ins->inst_offset / size);
 
-		callee = convert (ctx, LLVMBuildLoad (builder, LLVMBuildGEP (builder, convert (ctx, values [ins->inst_basereg], LLVMPointerType (LLVMPointerType (IntPtrType (), 0), 0)), &index, 1, ""), ""), LLVMPointerType (llvm_sig, 0));
+		LLVMTypeRef etype = LLVMPointerType (llvm_sig, 0);
+		callee = LLVMBuildLoad2 (builder, etype, LLVMBuildGEP2 (builder, etype, convert (ctx, values [ins->inst_basereg], LLVMPointerType (etype, 0)), &index, 1, ""), "");
 	} else if (calli) {
 		callee = convert (ctx, values [ins->sreg1], LLVMPointerType (llvm_sig, 0));
 	} else {
@@ -4445,19 +4484,19 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			args [cinfo->vret_arg_pindex] = convert (ctx, emit_gsharedvt_ldaddr (ctx, var->dreg), IntPtrType ());
 		} else {
 			g_assert (addresses [call->inst.dreg]);
-			args [cinfo->vret_arg_pindex] = convert (ctx, addresses [call->inst.dreg], IntPtrType ());
+			args [cinfo->vret_arg_pindex] = convert (ctx, addresses [call->inst.dreg]->value, IntPtrType ());
 		}
 		break;
 	}
 	default:
 		if (vretaddr) {
 			if (!addresses [call->inst.dreg])
-				addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
+				addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
 			g_assert (cinfo->vret_arg_pindex < nargs);
 			if (cinfo->ret.storage == LLVMArgVtypeByRef)
-				args [cinfo->vret_arg_pindex] = addresses [call->inst.dreg];
+				args [cinfo->vret_arg_pindex] = addresses [call->inst.dreg]->value;
 			else
-				args [cinfo->vret_arg_pindex] = LLVMBuildPtrToInt (builder, addresses [call->inst.dreg], IntPtrType (), "");
+				args [cinfo->vret_arg_pindex] = LLVMBuildPtrToInt (builder, addresses [call->inst.dreg]->value, IntPtrType (), "");
 		}
 		break;
 	}
@@ -4491,7 +4530,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			pindex += ainfo->ndummy_fpargs;
 
 			g_assert (addresses [reg]);
-			emit_vtype_to_args (ctx, builder, ainfo->type, addresses [reg], ainfo, args + pindex, &vtype_nargs);
+			emit_vtype_to_args (ctx, builder, ainfo->type, addresses [reg]->value, ainfo, args + pindex, &vtype_nargs);
 			pindex += vtype_nargs;
 
 			// FIXME: alignment
@@ -4500,36 +4539,41 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		}
 		case LLVMArgVtypeByVal:
 			g_assert (addresses [reg]);
-			args [pindex] = addresses [reg];
+			args [pindex] = addresses [reg]->value;
 			break;
 		case LLVMArgVtypeAddr :
 		case LLVMArgVtypeByRef: {
 			g_assert (addresses [reg]);
-			args [pindex] = convert (ctx, addresses [reg], LLVMPointerType (type_to_llvm_arg_type (ctx, ainfo->type), 0));
+			args [pindex] = convert (ctx, addresses [reg]->value, LLVMPointerType (type_to_llvm_arg_type (ctx, ainfo->type), 0));
 			break;
 		}
 		case LLVMArgAsIArgs:
 			g_assert (addresses [reg]);
-			if (ainfo->esize == 8)
-				args [pindex] = LLVMBuildLoad (ctx->builder, convert (ctx, addresses [reg], LLVMPointerType (LLVMArrayType (LLVMInt64Type (), ainfo->nslots), 0)), "");
-			else
-				args [pindex] = LLVMBuildLoad (ctx->builder, convert (ctx, addresses [reg], LLVMPointerType (LLVMArrayType (IntPtrType (), ainfo->nslots), 0)), "");
+			if (ainfo->esize == 8) {
+				LLVMTypeRef etype = LLVMArrayType (LLVMInt64Type (), ainfo->nslots);
+				args [pindex] = LLVMBuildLoad2 (ctx->builder, etype, convert (ctx, addresses [reg]->value, LLVMPointerType (etype, 0)), "");
+			} else {
+				LLVMTypeRef etype = LLVMArrayType (IntPtrType (), ainfo->nslots);
+				args [pindex] = LLVMBuildLoad2 (ctx->builder, etype, convert (ctx, addresses [reg]->value, LLVMPointerType (etype, 0)), "");
+			}
 			break;
 		case LLVMArgVtypeAsScalar:
 			g_assert_not_reached ();
 			break;
-		case LLVMArgWasmVtypeAsScalar:
+		case LLVMArgWasmVtypeAsScalar: {
 			g_assert (addresses [reg]);
-			args [pindex] = LLVMBuildLoad (ctx->builder, convert (ctx, addresses [reg], LLVMPointerType (LLVMIntType (ainfo->esize * 8), 0)), "");
+			LLVMTypeRef etype = LLVMIntType (ainfo->esize * 8);
+			args [pindex] = LLVMBuildLoad2 (ctx->builder, etype, convert (ctx, addresses [reg]->value, LLVMPointerType (etype, 0)), "");
 			break;
+		}
 		case LLVMArgGsharedvtFixed:
 		case LLVMArgGsharedvtFixedVtype:
 			g_assert (addresses [reg]);
-			args [pindex] = convert (ctx, addresses [reg], LLVMPointerType (type_to_llvm_arg_type (ctx, ainfo->type), 0));
+			args [pindex] = convert (ctx, addresses [reg]->value, LLVMPointerType (type_to_llvm_arg_type (ctx, ainfo->type), 0));
 			break;
 		case LLVMArgGsharedvtVariable:
 			g_assert (addresses [reg]);
-			args [pindex] = convert (ctx, addresses [reg], LLVMPointerType (IntPtrType (), 0));
+			args [pindex] = convert (ctx, addresses [reg]->value, LLVMPointerType (IntPtrType (), 0));
 			break;
 		default:
 			g_assert (args [pindex]);
@@ -4619,12 +4663,13 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	 * values, and must have a corresponding LLVM value definition in
 	 * `values`.
 	 */
+	LLVMTypeRef rtype = type_to_llvm_type (ctx, sig->ret);
 	switch (cinfo->ret.storage) {
 	case LLVMArgAsIArgs:
 	case LLVMArgFpStruct:
 		if (!addresses [call->inst.dreg])
-			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
-		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
+			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
+		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
 		break;
 	case LLVMArgVtypeByVal:
 		/*
@@ -4639,14 +4684,14 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			break;
 
 		if (!addresses [ins->dreg])
-			addresses [ins->dreg] = build_alloca (ctx, sig->ret);
+			addresses [ins->dreg] = build_alloca_address (ctx, sig->ret);
 
 		LLVMValueRef regs [2] = { 0 };
 		regs [0] = LLVMBuildExtractValue (builder, lcall, 0, "");
 		if (cinfo->ret.pair_storage [1] != LLVMArgNone)
 			regs [1] = LLVMBuildExtractValue (builder, lcall, 1, "");
 
-		emit_args_to_vtype (ctx, builder, sig->ret, addresses [ins->dreg], &cinfo->ret, regs);
+		emit_args_to_vtype (ctx, builder, sig->ret, addresses [ins->dreg]->value, &cinfo->ret, regs);
 
 		load_name = "process_call_vtype_in_reg";
 		should_promote_to_value = is_simd;
@@ -4654,8 +4699,8 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 	}
 	case LLVMArgVtypeAsScalar:
 		if (!addresses [call->inst.dreg])
-			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
-		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
+			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
+		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
 
 		load_name = "process_call_vtype_as_scalar";
 		should_promote_to_value = is_simd;
@@ -4669,24 +4714,24 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 		break;
 	case LLVMArgGsharedvtFixed:
 	case LLVMArgGsharedvtFixedVtype:
-		values [ins->dreg] = LLVMBuildLoad (builder, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (type_to_llvm_type (ctx, sig->ret), 0), FALSE), "");
+		values [ins->dreg] = LLVMBuildLoad2 (builder, rtype, convert_full (ctx, addresses [call->inst.dreg]->value, LLVMPointerType (rtype, 0), FALSE), "");
 		break;
 	case LLVMArgWasmVtypeAsScalar:
 		if (!addresses [call->inst.dreg])
-			addresses [call->inst.dreg] = build_alloca (ctx, sig->ret);
-		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg], LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
+			addresses [call->inst.dreg] = build_alloca_address (ctx, sig->ret);
+		LLVMBuildStore (builder, lcall, convert_full (ctx, addresses [call->inst.dreg]->value, LLVMPointerType (LLVMTypeOf (lcall), 0), FALSE));
 		break;
 	default:
 		if (sig->ret->type != MONO_TYPE_VOID)
 			/* If the method returns an unsigned value, need to zext it */
-			values [ins->dreg] = convert_full (ctx, lcall, llvm_type_to_stack_type (cfg, type_to_llvm_type (ctx, sig->ret)), type_is_unsigned (ctx, sig->ret));
+			values [ins->dreg] = convert_full (ctx, lcall, llvm_type_to_stack_type (cfg, rtype), type_is_unsigned (ctx, sig->ret));
 		break;
 	}
 	if (should_promote_to_value) {
 		g_assert (addresses [call->inst.dreg]);
-		LLVMTypeRef addr_type = LLVMPointerType (type_to_llvm_type (ctx, sig->ret), 0);
-		LLVMValueRef addr = convert_full (ctx, addresses [call->inst.dreg], addr_type, FALSE);
-		values [ins->dreg] = LLVMBuildLoad (builder, addr, load_name);
+		LLVMTypeRef addr_type = LLVMPointerType (rtype, 0);
+		LLVMValueRef addr = convert_full (ctx, addresses [call->inst.dreg]->value, addr_type, FALSE);
+		values [ins->dreg] = LLVMBuildLoad2 (builder, rtype, addr, load_name);
 	}
 
 	*builder_ref = ctx->builder;
@@ -4872,7 +4917,7 @@ emit_llvmonly_landing_pad (EmitContext *ctx, int group_index, int group_size)
 
 	g_assert (ctx->cfg->lmf_var);
 	g_assert (ctx->addresses [ctx->cfg->lmf_var->dreg]);
-	args [0] = LLVMBuildPtrToInt (ctx->builder, ctx->addresses [ctx->cfg->lmf_var->dreg], IntPtrType (), "");
+	args [0] = LLVMBuildPtrToInt (ctx->builder, ctx->addresses [ctx->cfg->lmf_var->dreg]->value, IntPtrType (), "");
 	args [1] = LLVMBuildPtrToInt (ctx->builder, ctx->il_state, IntPtrType (), "");
 	emit_call (ctx, NULL, &ctx->builder, sig, callee, args, 2);
 
@@ -4900,10 +4945,9 @@ emit_llvmonly_landing_pad (EmitContext *ctx, int group_index, int group_size)
 
 		addr = convert (ctx, ctx->il_state_ret, LLVMPointerType (ret_type, 0));
 		indexes [0] = const_int32 (0);
-		indexes [1] = const_int32 (0);
-		gep = LLVMBuildGEP (builder, addr, indexes, 1, "");
+		gep = LLVMBuildGEP2 (builder, ret_type, addr, indexes, 1, "");
 
-		LLVMBuildRet (builder, LLVMBuildLoad (builder, gep, ""));
+		LLVMBuildRet (builder, LLVMBuildLoad2 (builder, ret_type, gep, ""));
 		break;
 	}
 	case LLVMArgVtypeRetAddr: {
@@ -4918,9 +4962,8 @@ emit_llvmonly_landing_pad (EmitContext *ctx, int group_index, int group_size)
 		/* The ret value is in il_state_ret, copy it to the memory pointed to by the vret arg */
 		ret_type = type_to_llvm_type (ctx, ctx->sig->ret);
 		indexes [0] = const_int32 (0);
-		indexes [1] = const_int32 (0);
-		gep = LLVMBuildGEP (builder, addr, indexes, 1, "");
-		retval = convert (ctx, LLVMBuildLoad (builder, gep, ""), ret_type);
+		gep = LLVMBuildGEP2 (builder, ret_type, addr, indexes, 1, "");
+		retval = LLVMBuildLoad2 (builder, ret_type, gep, "");
 
 		LLVMBuildStore (builder, retval, convert (ctx, ret_addr, LLVMPointerType (ret_type, 0)));
 		LLVMBuildRetVoid (builder);
@@ -5357,7 +5400,7 @@ emit_handler_start (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef builder
 		g_assert (!values [exvar->dreg]);
 
 		g_assert (ctx->ex_var);
-		values [exvar->dreg] = LLVMBuildLoad (builder, ctx->ex_var, "");
+		values [exvar->dreg] = LLVMBuildLoad2 (builder, ObjRefType (), ctx->ex_var, "");
 		emit_volatile_store (ctx, exvar->dreg);
 	}
 
@@ -5420,7 +5463,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 	MonoMethodSignature *sig = ctx->sig;
 	LLVMValueRef method = ctx->lmethod;
 	LLVMValueRef *values = ctx->values;
-	LLVMValueRef *addresses = ctx->addresses;
+	Address **addresses = ctx->addresses;
 	LLVMCallInfo *linfo = ctx->linfo;
 	BBInfo *bblocks = ctx->bblocks;
 	MonoInst *ins;
@@ -5753,16 +5796,17 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 							retval = LLVMBuildInsertValue (builder, retval, element, i, "setret_simd_vtype_in_reg");
 						}
 					} else {
-						LLVMValueRef addr = LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), "");
+						LLVMValueRef addr = LLVMBuildBitCast (builder, addresses [ins->sreg1]->value, LLVMPointerType (ret_type, 0), "");
 						for (int i = 0; i < 2; ++i) {
 							if (linfo->ret.pair_storage [i] == LLVMArgInIReg) {
 								LLVMValueRef indexes [2], part_addr;
 
 								indexes [0] = const_int32 (0);
 								indexes [1] = const_int32 (i);
-								part_addr = LLVMBuildGEP (builder, addr, indexes, 2, "");
+								part_addr = LLVMBuildGEP2 (builder, ret_type, addr, indexes, 2, "");
 
-								retval = LLVMBuildInsertValue (builder, retval, LLVMBuildLoad (builder, part_addr, ""), i, "");
+								LLVMTypeRef etype = LLVMStructGetTypeAtIndex (ret_type, i);
+								retval = LLVMBuildInsertValue (builder, retval, LLVMBuildLoad2 (builder, etype, part_addr, ""), i, "");
 							} else {
 								g_assert (linfo->ret.pair_storage [i] == LLVMArgNone);
 							}
@@ -5774,12 +5818,12 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 						retval = LLVMBuildBitCast (builder, values [ins->sreg1], ret_type, "setret_simd_vtype_as_scalar");
 					} else {
 						g_assert (addresses [ins->sreg1]);
-						retval = LLVMBuildLoad (builder, LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), ""), "");
+						retval = LLVMBuildLoad2 (builder, ret_type, LLVMBuildBitCast (builder, addresses [ins->sreg1]->value, LLVMPointerType (ret_type, 0), ""), "");
 					}
 					break;
 				case LLVMArgWasmVtypeAsScalar:
 					g_assert (addresses [ins->sreg1]);
-					retval = LLVMBuildLoad (builder, LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (ret_type, 0), ""), "");
+					retval = LLVMBuildLoad2 (builder, ret_type, LLVMBuildBitCast (builder, addresses [ins->sreg1]->value, LLVMPointerType (ret_type, 0), ""), "");
 					break;
 				}
 				LLVMBuildRet (builder, retval);
@@ -5821,7 +5865,7 @@ process_bb (EmitContext *ctx, MonoBasicBlock *bb)
 				LLVMValueRef retval;
 
 				g_assert (addresses [ins->sreg1]);
-				retval = LLVMBuildLoad (builder, convert (ctx, addresses [ins->sreg1], LLVMPointerType (ret_type, 0)), "");
+				retval = LLVMBuildLoad2 (builder, ret_type, convert (ctx, addresses [ins->sreg1]->value, LLVMPointerType (ret_type, 0)), "");
 				LLVMBuildRet (builder, retval);
 				break;
 			}
@@ -6544,17 +6588,17 @@ MONO_RESTORE_WARNING
 				if (ins->inst_offset == 0) {
 					LLVMValueRef gep_base, gep_offset;
 					if (mono_llvm_can_be_gep (base, &gep_base, &gep_offset)) {
-						addr = LLVMBuildGEP (builder, convert (ctx, gep_base, LLVMPointerType (LLVMInt8Type (), 0)), &gep_offset, 1, "");
+						addr = LLVMBuildGEP2 (builder, i1_t, convert (ctx, gep_base, LLVMPointerType (LLVMInt8Type (), 0)), &gep_offset, 1, "");
 					} else {
 						addr = base;
 					}
 				} else if (ins->inst_offset % size != 0) {
 					/* Unaligned load */
 					index = const_int32 (ins->inst_offset);
-					addr = LLVMBuildGEP (builder, convert (ctx, base, LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
+					addr = LLVMBuildGEP2 (builder, i1_t, convert (ctx, base, LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
 				} else {
 					index = const_int32 (ins->inst_offset / size);
-					addr = LLVMBuildGEP (builder, convert (ctx, base, LLVMPointerType (t, 0)), &index, 1, "");
+					addr = LLVMBuildGEP2 (builder, t, convert (ctx, base, LLVMPointerType (t, 0)), &index, 1, "");
 				}
 			}
 
@@ -6606,14 +6650,14 @@ MONO_RESTORE_WARNING
 			base = values [ins->inst_destbasereg];
 			LLVMValueRef gep_base, gep_offset;
 			if (ins->inst_offset == 0 && mono_llvm_can_be_gep (base, &gep_base, &gep_offset)) {
-				addr = LLVMBuildGEP (builder, convert (ctx, gep_base, LLVMPointerType (LLVMInt8Type (), 0)), &gep_offset, 1, "");
+				addr = LLVMBuildGEP2 (builder, i1_t, convert (ctx, gep_base, LLVMPointerType (LLVMInt8Type (), 0)), &gep_offset, 1, "");
 			} else if (ins->inst_offset % size != 0) {
 				/* Unaligned store */
 				index = const_int32 (ins->inst_offset);
-				addr = LLVMBuildGEP (builder, convert (ctx, base, LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
+				addr = LLVMBuildGEP2 (builder, i1_t, convert (ctx, base, LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
 			} else {
 				index = const_int32 (ins->inst_offset / size);
-				addr = LLVMBuildGEP (builder, convert (ctx, base, LLVMPointerType (t, 0)), &index, 1, "");
+				addr = LLVMBuildGEP2 (builder, t, convert (ctx, base, LLVMPointerType (t, 0)), &index, 1, "");
 			}
 			if (is_volatile && LLVMGetInstructionOpcode (base) == LLVMAlloca && !(ins->flags & MONO_INST_VOLATILE))
 				/* Storing to an alloca cannot fail */
@@ -6645,14 +6689,14 @@ MONO_RESTORE_WARNING
 			base = values [ins->inst_destbasereg];
 			LLVMValueRef gep_base, gep_offset;
 			if (ins->inst_offset == 0 && mono_llvm_can_be_gep (base, &gep_base, &gep_offset)) {
-				addr = LLVMBuildGEP (builder, convert (ctx, gep_base, LLVMPointerType (LLVMInt8Type (), 0)), &gep_offset, 1, "");
+				addr = LLVMBuildGEP2 (builder, i1_t, convert (ctx, gep_base, LLVMPointerType (LLVMInt8Type (), 0)), &gep_offset, 1, "");
 			} else if (ins->inst_offset % size != 0) {
 				/* Unaligned store */
 				index = const_int32 (ins->inst_offset);
-				addr = LLVMBuildGEP (builder, convert (ctx, base, LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
+				addr = LLVMBuildGEP2 (builder, i1_t, convert (ctx, base, LLVMPointerType (LLVMInt8Type (), 0)), &index, 1, "");
 			} else {
 				index = const_int32 (ins->inst_offset / size);
-				addr = LLVMBuildGEP (builder, convert (ctx, base, LLVMPointerType (t, 0)), &index, 1, "");
+				addr = LLVMBuildGEP2 (builder, t, convert (ctx, base, LLVMPointerType (t, 0)), &index, 1, "");
 			}
 			LLVMValueRef srcval = convert (ctx, LLVMConstInt (IntPtrType (), ins->inst_imm, FALSE), t);
 			LLVMValueRef ptrdst = convert (ctx, addr, LLVMPointerType (t, 0));
@@ -6664,7 +6708,7 @@ MONO_RESTORE_WARNING
 		}
 
 		case OP_CHECK_THIS:
-			LLVMBuildLoad (builder, convert (ctx, lhs, LLVMPointerType (IntPtrType (), 0)), "");
+			LLVMBuildLoad2 (builder, IntPtrType (), convert (ctx, lhs, LLVMPointerType (IntPtrType (), 0)), "");
 			break;
 		case OP_OUTARG_VTRETADDR:
 			break;
@@ -6747,7 +6791,7 @@ MONO_RESTORE_WARNING
 			} else if (var->opcode == OP_GSHAREDVT_LOCAL) {
 				values [ins->dreg] = emit_gsharedvt_ldaddr (ctx, var->dreg);
 			} else {
-				values [ins->dreg] = addresses [var->dreg];
+				values [ins->dreg] = addresses [var->dreg]->value;
 			}
 			break;
 		}
@@ -7120,7 +7164,7 @@ MONO_RESTORE_WARNING
 
 			if (ins->inst_offset != 0) {
 				index = const_int32 (ins->inst_offset / size);
-				addr = LLVMBuildGEP (builder, convert (ctx, lhs, LLVMPointerType (t, 0)), &index, 1, "");
+				addr = LLVMBuildGEP2 (builder, t, convert (ctx, lhs, LLVMPointerType (t, 0)), &index, 1, "");
 			} else {
 				addr = lhs;
 			}
@@ -7162,7 +7206,7 @@ MONO_RESTORE_WARNING
 
 			base = values [ins->inst_destbasereg];
 			index = const_int32 (ins->inst_offset / size);
-			addr = LLVMBuildGEP (builder, convert (ctx, base, LLVMPointerType (t, 0)), &index, 1, "");
+			addr = LLVMBuildGEP2 (builder, t, convert (ctx, base, LLVMPointerType (t, 0)), &index, 1, "");
 			value = convert (ctx, values [ins->sreg1], t);
 
 			ARM64_ATOMIC_FENCE_FIX;
@@ -7187,14 +7231,14 @@ MONO_RESTORE_WARNING
 			// 256 == GS segment register
 			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
 #endif
-			values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), ins->inst_offset, TRUE), ptrtype, ""), "");
+			values [ins->dreg] = LLVMBuildLoad2 (builder, IntPtrType (), LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), ins->inst_offset, TRUE), ptrtype, ""), "");
 #elif defined(TARGET_AMD64) && defined(TARGET_OSX)
 			/* See mono_amd64_emit_tls_get () */
 			int offset = mono_amd64_get_tls_gs_offset () + (ins->inst_offset * 8);
 
 			// 256 == GS segment register
 			LLVMTypeRef ptrtype = LLVMPointerType (IntPtrType (), 256);
-			values [ins->dreg] = LLVMBuildLoad (builder, LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), offset, TRUE), ptrtype, ""), "");
+			values [ins->dreg] = LLVMBuildLoad2 (builder, IntPtrType (), LLVMBuildIntToPtr (builder, LLVMConstInt (IntPtrType (), offset, TRUE), ptrtype, ""), "");
 #else
 			set_failure (ctx, "opcode tls-get");
 			break;
@@ -7305,9 +7349,11 @@ MONO_RESTORE_WARNING
 				break;
 			}
 
-			if (!addresses [ins->dreg])
-				addresses [ins->dreg] = build_named_alloca (ctx, m_class_get_byval_arg (klass), "vzero");
-			LLVMValueRef ptr = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
+			if (!addresses [ins->dreg]) {
+				LLVMTypeRef etype = type_to_llvm_type (ctx, m_class_get_byval_arg (klass));
+				addresses [ins->dreg] = create_address (ctx->module, build_named_alloca (ctx, m_class_get_byval_arg (klass), "vzero"), etype);
+			}
+			LLVMValueRef ptr = LLVMBuildBitCast (builder, addresses [ins->dreg]->value, LLVMPointerType (LLVMInt8Type (), 0), "");
 			emit_memset (ctx, ptr, const_int32 (mono_class_value_size (klass, NULL)), 0);
 			break;
 		}
@@ -7349,23 +7395,23 @@ MONO_RESTORE_WARNING
 					LLVMBuildStore (builder, values [ins->sreg1], dst);
 					done = TRUE;
 				} else {
-					src = LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (LLVMInt8Type (), 0), "");
+					src = LLVMBuildBitCast (builder, addresses [ins->sreg1]->value, LLVMPointerType (LLVMInt8Type (), 0), "");
 					dst = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_destbasereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), LLVMPointerType (LLVMInt8Type (), 0));
 				}
 				break;
 			case OP_LOADV_MEMBASE:
 				if (!addresses [ins->dreg])
-					addresses [ins->dreg] = build_alloca (ctx, m_class_get_byval_arg (klass));
+					addresses [ins->dreg] = build_alloca_address (ctx, m_class_get_byval_arg (klass));
 				src = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_basereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), LLVMPointerType (LLVMInt8Type (), 0));
-				dst = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
+				dst = LLVMBuildBitCast (builder, addresses [ins->dreg]->value, LLVMPointerType (LLVMInt8Type (), 0), "");
 				break;
 			case OP_VMOVE:
 				if (!addresses [ins->sreg1])
-					addresses [ins->sreg1] = build_alloca (ctx, m_class_get_byval_arg (klass));
+					addresses [ins->sreg1] = build_alloca_address (ctx, m_class_get_byval_arg (klass));
 				if (!addresses [ins->dreg])
-					addresses [ins->dreg] = build_alloca (ctx, m_class_get_byval_arg (klass));
-				src = LLVMBuildBitCast (builder, addresses [ins->sreg1], LLVMPointerType (LLVMInt8Type (), 0), "");
-				dst = LLVMBuildBitCast (builder, addresses [ins->dreg], LLVMPointerType (LLVMInt8Type (), 0), "");
+					addresses [ins->dreg] = build_alloca_address (ctx, m_class_get_byval_arg (klass));
+				src = LLVMBuildBitCast (builder, addresses [ins->sreg1]->value, LLVMPointerType (LLVMInt8Type (), 0), "");
+				dst = LLVMBuildBitCast (builder, addresses [ins->dreg]->value, LLVMPointerType (LLVMInt8Type (), 0), "");
 				break;
 			default:
 				g_assert_not_reached ();
@@ -7396,33 +7442,35 @@ MONO_RESTORE_WARNING
 					MonoInst *var = get_vreg_to_inst (cfg, ins->sreg1);
 
 					if (var && var->opcode == OP_GSHAREDVT_LOCAL) {
-						addresses [ins->dreg] = convert (ctx, emit_gsharedvt_ldaddr (ctx, var->dreg), LLVMPointerType (IntPtrType (), 0));
+						addresses [ins->dreg] = create_address (ctx->module, convert (ctx, emit_gsharedvt_ldaddr (ctx, var->dreg), LLVMPointerType (IntPtrType (), 0)), IntPtrType ());
 					} else {
 						g_assert (addresses [ins->sreg1]);
 						addresses [ins->dreg] = addresses [ins->sreg1];
 					}
 			} else if (ainfo->storage == LLVMArgGsharedvtFixed) {
 				if (!addresses [ins->sreg1]) {
-					addresses [ins->sreg1] = build_alloca (ctx, t);
+					addresses [ins->sreg1] = build_alloca_address (ctx, t);
 					g_assert (values [ins->sreg1]);
 				}
-				LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], LLVMGetElementType (LLVMTypeOf (addresses [ins->sreg1]))), addresses [ins->sreg1]);
+				LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], LLVMGetElementType (LLVMTypeOf (addresses [ins->sreg1]->value))), addresses [ins->sreg1]->value);
 				addresses [ins->dreg] = addresses [ins->sreg1];
 			} else {
+				LLVMTypeRef etype = type_to_llvm_type (ctx, t);
+
 				if (!addresses [ins->sreg1]) {
-					addresses [ins->sreg1] = build_named_alloca (ctx, t, "llvm_outarg_vt");
+					addresses [ins->sreg1] = create_address (ctx->module, build_named_alloca (ctx, t, "llvm_outarg_vt"), etype);
 					g_assert (values [ins->sreg1]);
-					LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], type_to_llvm_type (ctx, t)), addresses [ins->sreg1]);
+					LLVMBuildStore (builder, convert (ctx, values [ins->sreg1], etype), addresses [ins->sreg1]->value);
 					addresses [ins->dreg] = addresses [ins->sreg1];
-				} else if (ainfo->storage == LLVMArgVtypeAddr || values [ins->sreg1] == addresses [ins->sreg1]) {
+				} else if (ainfo->storage == LLVMArgVtypeAddr || values [ins->sreg1] == addresses [ins->sreg1]->value) {
 					/* LLVMArgVtypeByRef/LLVMArgVtypeAddr, have to make a copy */
-					addresses [ins->dreg] = build_alloca (ctx, t);
-					LLVMValueRef v = LLVMBuildLoad (builder, addresses [ins->sreg1], "llvm_outarg_vt_copy");
-					LLVMBuildStore (builder, convert (ctx, v, type_to_llvm_type (ctx, t)), addresses [ins->dreg]);
+					addresses [ins->dreg] = build_alloca_address (ctx, t);
+					LLVMValueRef v = LLVMBuildLoad2 (builder, etype, addresses [ins->sreg1]->value, "llvm_outarg_vt_copy");
+					LLVMBuildStore (builder, convert (ctx, v, etype), addresses [ins->dreg]->value);
 				} else {
 					if (values [ins->sreg1]) {
 						LLVMTypeRef src_t = LLVMTypeOf (values [ins->sreg1]);
-						LLVMValueRef dst = convert (ctx, addresses [ins->sreg1], LLVMPointerType (src_t, 0));
+						LLVMValueRef dst = convert (ctx, addresses [ins->sreg1]->value, LLVMPointerType (src_t, 0));
 						LLVMBuildStore (builder, values [ins->sreg1], dst);
 					}
 					addresses [ins->dreg] = addresses [ins->sreg1];
@@ -7447,6 +7495,8 @@ MONO_RESTORE_WARNING
 				mark_as_used (ctx->module, info_var);
 			}
 
+			LLVMTypeRef var_type = LLVMPointerType (LLVMInt8Type (), 0);
+
 			var = (LLVMValueRef)g_hash_table_lookup (ctx->module->objc_selector_to_var, name);
 			if (!var) {
 				LLVMValueRef indexes [16];
@@ -7457,7 +7507,7 @@ MONO_RESTORE_WARNING
 				LLVMSetSection (name_var, "__TEXT,__objc_methname,cstring_literals");
 				mark_as_used (ctx->module, name_var);
 
-				LLVMValueRef ref_var = LLVMAddGlobal (ctx->lmodule, LLVMPointerType (LLVMInt8Type (), 0), "@OBJC_SELECTOR_REFERENCES_");
+				LLVMValueRef ref_var = LLVMAddGlobal (ctx->lmodule, var_type, "@OBJC_SELECTOR_REFERENCES_");
 
 				indexes [0] = const_int32 (0);
 				indexes [1] = const_int32 (0);
@@ -7472,7 +7522,7 @@ MONO_RESTORE_WARNING
 				var = ref_var;
 			}
 
-			values [ins->dreg] = LLVMBuildLoad (builder, var, "");
+			values [ins->dreg] = LLVMBuildLoad2 (builder, var_type, var, "");
 			break;
 		}
 
@@ -10629,17 +10679,20 @@ MONO_RESTORE_WARNING
 			case OP_ARM64_LDP: oname = "arm64_ldp"; break;
 			case OP_ARM64_LDP_SCALAR: oname = "arm64_ldp_scalar"; scalar = TRUE; break;
 			}
-			if (!addresses [ins->dreg])
-				addresses [ins->dreg] = build_named_alloca (ctx, m_class_get_byval_arg (ins->klass), oname);
+			if (!addresses [ins->dreg]) {
+				LLVMTypeRef etype = type_to_llvm_type (ctx, m_class_get_byval_arg (ins->klass));
+				addresses [ins->dreg] = create_address (ctx->module, build_named_alloca (ctx, m_class_get_byval_arg (ins->klass), oname), etype);
+			}
 			LLVMTypeRef ret_t = simd_valuetuple_to_llvm_type (ctx, ins->klass);
 			LLVMTypeRef vec_t = LLVMGetElementType (ret_t);
 			LLVMValueRef ix = const_int32 (1);
-			LLVMTypeRef src_t = LLVMPointerType (scalar ? LLVMGetElementType (vec_t) : vec_t, 0);
+			LLVMTypeRef e_t = scalar ? LLVMGetElementType (vec_t) : vec_t;
+			LLVMTypeRef src_t = LLVMPointerType (e_t, 0);
 			LLVMValueRef src0 = convert (ctx, lhs, src_t);
-			LLVMValueRef src1 = LLVMBuildGEP (builder, src0, &ix, 1, oname);
+			LLVMValueRef src1 = LLVMBuildGEP2 (builder, e_t, src0, &ix, 1, oname);
 			LLVMValueRef vals [] = { src0, src1 };
 			for (int i = 0; i < 2; ++i) {
-				vals [i] = LLVMBuildLoad (builder, vals [i], oname);
+				vals [i] = LLVMBuildLoad2 (builder, e_t, vals [i], oname);
 				if (nontemporal)
 					set_nontemporal_flag (vals [i]);
 			}
@@ -10654,7 +10707,7 @@ MONO_RESTORE_WARNING
 			for (int i = 0; i < 2; ++i)
 				val = LLVMBuildInsertValue (builder, val, vals [i], i, oname);
 			LLVMTypeRef retptr_t = LLVMPointerType (ret_t, 0);
-			LLVMValueRef dst = convert (ctx, addresses [ins->dreg], retptr_t);
+			LLVMValueRef dst = convert (ctx, addresses [ins->dreg]->value, retptr_t);
 			LLVMBuildStore (builder, val, dst);
 			values [ins->dreg] = vec_sz == 64 ? val : NULL;
 			break;
@@ -11098,7 +11151,7 @@ MONO_RESTORE_WARNING
 				resume_bb = gen_bb (ctx, "ENDFINALLY_RESUME_BB");
 
 				/* Load the finally variable */
-				val = LLVMBuildLoad (builder, lhs, "");
+				val = LLVMBuildLoad2 (builder, i4_t, lhs, "");
 
 				/* Reset the variable */
 				LLVMBuildStore (builder, const_int32 (0), lhs);
@@ -11157,7 +11210,7 @@ MONO_RESTORE_WARNING
 		if (spec [MONO_INST_DEST] != ' ' && !MONO_IS_STORE_MEMBASE (ins) && ctx->vreg_types [ins->dreg]) {
 			if (ctx->is_vphi [ins->dreg])
 				/* vtypes */
-				values [ins->dreg] = addresses [ins->dreg];
+				values [ins->dreg] = addresses [ins->dreg]->value;
 			else
 				values [ins->dreg] = convert (ctx, values [ins->dreg], ctx->vreg_types [ins->dreg]);
 		}
@@ -11322,6 +11375,7 @@ free_ctx (EmitContext *ctx)
 	g_free (ctx->is_dead);
 	g_free (ctx->unreachable);
 	g_free (ctx->gc_var_indexes);
+	g_free (ctx->param_etypes);
 	g_ptr_array_free (ctx->phi_values, TRUE);
 	g_free (ctx->bblocks);
 	g_hash_table_destroy (ctx->region_to_handler);
@@ -11393,7 +11447,7 @@ mono_llvm_emit_method (MonoCompile *cfg)
 	 * This maps vregs for volatile variables to the LLVM instruction defining their
 	 * address.
 	 */
-	ctx->addresses = g_new0 (LLVMValueRef, cfg->next_vreg);
+	ctx->addresses = g_new0 (Address*, cfg->next_vreg);
 	ctx->vreg_types = g_new0 (LLVMTypeRef, cfg->next_vreg);
 	ctx->is_vphi = g_new0 (gboolean, cfg->next_vreg);
 	ctx->vreg_cli_types = g_new0 (MonoType*, cfg->next_vreg);
@@ -11608,7 +11662,7 @@ emit_method_inner (EmitContext *ctx)
 	else if (needs_extra_arg (ctx, cfg->method))
 		linfo->dummy_arg = TRUE;
 
-	ctx->method_type = method_type = sig_to_llvm_sig_full (ctx, sig, linfo);
+	ctx->method_type = method_type = sig_to_llvm_sig_full (ctx, sig, linfo, &ctx->param_etypes);
 	if (!ctx_ok (ctx))
 		return;
 
@@ -11861,10 +11915,12 @@ emit_method_inner (EmitContext *ctx)
 				if (cfg->interp_entry_only)
 					break;
 
+				LLVMTypeRef etype = NULL;
 				if (ins->opcode == OP_VPHI) {
 					/* Treat valuetype PHI nodes as operating on the address itself */
 					g_assert (ins->klass);
-					phi_type = LLVMPointerType (type_to_llvm_type (ctx, m_class_get_byval_arg (ins->klass)), 0);
+					etype = type_to_llvm_type (ctx, m_class_get_byval_arg (ins->klass));
+					phi_type = LLVMPointerType (etype, 0);
 				}
 
 				/*
@@ -11876,7 +11932,7 @@ emit_method_inner (EmitContext *ctx)
 				values [ins->dreg] = LLVMBuildPhi (builder, phi_type, dname);
 
 				if (ins->opcode == OP_VPHI)
-					ctx->addresses [ins->dreg] = values [ins->dreg];
+					ctx->addresses [ins->dreg] = create_address (ctx->module, values [ins->dreg], etype);
 
 				g_ptr_array_add (ctx->phi_values, values [ins->dreg]);
 
@@ -12023,8 +12079,8 @@ emit_method_inner (EmitContext *ctx)
 				continue;
 
 			if (phi->opcode == OP_VPHI) {
-				g_assert (LLVMTypeOf (ctx->addresses [sreg1]) == LLVMTypeOf (values [phi->dreg]));
-				LLVMAddIncoming (values [phi->dreg], &ctx->addresses [sreg1], &in_bb, 1);
+				g_assert (LLVMTypeOf (ctx->addresses [sreg1]->value) == LLVMTypeOf (values [phi->dreg]));
+				LLVMAddIncoming (values [phi->dreg], &(ctx->addresses [sreg1]->value), &in_bb, 1);
 			} else {
 				if (!values [sreg1]) {
 					/* Can happen with values in EH clauses */
