@@ -388,14 +388,23 @@ template <typename I>
 inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
 {
     static_assert(std::is_integral<I>::value, "Integral type required.");
+    assert(str != NULL && fmt != NULL);
 
     // Represents the most amount of space needed to format
-    // an integral type (i.e., %d or %x).
+    // an integral type (i.e., %d or %llx).
     char tmp[ARRAY_SIZE("-9223372036854775808")];
     int cnt = sprintf_s(tmp, ARRAY_SIZE(tmp), fmt, v);
+    assert(0 <= cnt);
+
     WCHAR* end = str + strCount;
-    for (int i = 0; i < cnt && str < end; ++i, ++str)
-        *str = (WCHAR)tmp[i];
+    for (int i = 0; i < cnt; ++i)
+    {
+        if (str == end)
+            return NULL;
+
+        *str++ = (WCHAR)tmp[i];
+    }
+
     *str = W('\0');
     return str;
 }
