@@ -83,17 +83,9 @@
           # Testing commands
           $(Python) test.py devicestartup --device-type ios --package-path MauiTesting.app --package-name net.dot.mauitesting --scenario-name "%(Identity)"
           ((result=$?))
-          echo Result: $result
           
           # Post commands
           $(Python) post.py
-
-          if [ "$result" != "0" ]; then
-            echo Creating files to report Infra Problems
-            echo "TESTING:Failed to ios perf, this message is not great but its all we got for this string..." > $HELIX_WORKITEM_ROOT/.retry
-            echo "TESTING:Failed to ios perf, this message is not great but its all we got for this string..." > $HELIX_WORKITEM_ROOT/.reboot
-          fi
-
           exit $result
         ]]>
 	  </CustomCommands>
@@ -117,17 +109,9 @@
           # Testing commands
           $(Python) test.py devicestartup --device-type ios --package-path Microsoft.NetConf2021.Maui.app --package-name net.dot.netconf2021.maui --scenario-name "%(Identity)"
           ((result=$?))
-          echo Result: $result
           
           # Post commands
           $(Python) post.py
-
-          if [ "$result" != "0" ]; then
-            echo Creating files to report Infra Problems
-            echo "TESTING:Failed to ios perf, this message is not great but its all we got for this string..." > $HELIX_WORKITEM_ROOT/.retry
-            echo "TESTING:Failed to ios perf, this message is not great but its all we got for this string..." > $HELIX_WORKITEM_ROOT/.reboot
-          fi
-
           exit $result
         ]]>
 	  </CustomCommands>
