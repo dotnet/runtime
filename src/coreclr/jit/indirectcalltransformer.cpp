@@ -601,43 +601,7 @@ private:
                     CORINFO_CONST_LOOKUP lookup;
                     compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &lookup);
 
-                    GenTree* compareTarTree = nullptr;
-                    switch (lookup.accessType)
-                    {
-                    case IAT_VALUE:
-                    {
-                        compareTarTree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                        break;
-                    }
-                    case IAT_PVALUE:
-                    {
-                        compareTarTree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                        compareTarTree = compiler->gtNewIndir(TYP_I_IMPL, compareTarTree);
-                        compareTarTree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                        compareTarTree->gtFlags &= ~GTF_EXCEPT;
-                        break;
-                    }
-                    case IAT_PPVALUE:
-                    {
-                        noway_assert(!"Unexpected IAT_PPVALUE");
-                        break;
-                    }
-                    case IAT_RELPVALUE:
-                    {
-                        GenTree* addr = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                        compareTarTree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                        compareTarTree = compiler->gtNewIndir(TYP_I_IMPL, compareTarTree);
-                        compareTarTree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                        compareTarTree->gtFlags &= ~GTF_EXCEPT;
-                        compareTarTree = compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, compareTarTree, addr);
-                        break;
-                    }
-                    default:
-                    {
-                        noway_assert(!"Bad accessType");
-                        break;
-                    }
-                    }
+                    GenTree* compareTarTree = CreateLookup(lookup);;
                     compare = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree, compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL));
                 }
                 else
@@ -657,43 +621,7 @@ private:
                     CORINFO_CONST_LOOKUP lookup;
                     compiler->info.compCompHnd->getFunctionFixedEntryPoint(methHnd, false, &lookup);
 
-                    GenTree* compareTarTree = nullptr;
-                    switch (lookup.accessType)
-                    {
-                    case IAT_VALUE:
-                    {
-                        compareTarTree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                        break;
-                    }
-                    case IAT_PVALUE:
-                    {
-                        compareTarTree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                        compareTarTree = compiler->gtNewIndir(TYP_I_IMPL, compareTarTree);
-                        compareTarTree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                        compareTarTree->gtFlags &= ~GTF_EXCEPT;
-                        break;
-                    }
-                    case IAT_PPVALUE:
-                    {
-                        noway_assert(!"Unexpected IAT_PPVALUE");
-                        break;
-                    }
-                    case IAT_RELPVALUE:
-                    {
-                        GenTree* addr = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                        compareTarTree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                        compareTarTree = compiler->gtNewIndir(TYP_I_IMPL, compareTarTree);
-                        compareTarTree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                        compareTarTree->gtFlags &= ~GTF_EXCEPT;
-                        compareTarTree = compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, compareTarTree, addr);
-                        break;
-                    }
-                    default:
-                    {
-                        noway_assert(!"Bad accessType");
-                        break;
-                    }
-                    }
+                    GenTree* compareTarTree = CreateLookup(lookup);
                     compare = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree, tarTree /*compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL)*/);
                 }
             }
@@ -1181,6 +1109,45 @@ private:
     private:
         unsigned   returnTemp;
         Statement* lastStmt;
+
+        GenTree* CreateLookup(const CORINFO_CONST_LOOKUP& lookup)
+        {
+            switch (lookup.accessType)
+            {
+            case IAT_VALUE:
+            {
+                return compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+            }
+            case IAT_PVALUE:
+            {
+                GenTree* tree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+                tree = compiler->gtNewIndir(TYP_I_IMPL, tree);
+                tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
+                tree->gtFlags &= ~GTF_EXCEPT;
+                return tree;
+            }
+            case IAT_PPVALUE:
+            {
+                noway_assert(!"Unexpected IAT_PPVALUE");
+                return nullptr;
+            }
+            case IAT_RELPVALUE:
+            {
+                GenTree* addr = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+                GenTree* tree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+                tree = compiler->gtNewIndir(TYP_I_IMPL, tree);
+                tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
+                tree->gtFlags &= ~GTF_EXCEPT;
+                tree = compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, tree, addr);
+                return tree;
+            }
+            default:
+            {
+                noway_assert(!"Bad accessType");
+                return nullptr;
+            }
+            }
+        }
     };
 
     // Runtime lookup with dynamic dictionary expansion transformer,

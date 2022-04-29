@@ -21530,7 +21530,7 @@ void Compiler::impConsiderCallProbe(GenTreeCall* call, IL_OFFSET ilOffset)
     // we'd just keep track of the calls themselves, so we don't
     // have to search for them later.
     //
-    if ((compClassifyGDVProbeType(call) != GDVProbeType::None))
+    if (compClassifyGDVProbeType(call) != GDVProbeType::None)
     {
         JITDUMP("\n ... marking [%06u] in " FMT_BB " for method/class profile instrumentation\n", dspTreeID(call),
                 compCurBB->bbNum);
@@ -21768,8 +21768,6 @@ void Compiler::pickGDV(
     *methodGuess = NO_METHOD_HANDLE;
     *likelihood = 0;
 
-    const unsigned likelihoodThreshold = isInterface ? 25 : 30;
-
 #ifdef DEBUG
     // Optional stress mode to pick a random known class, rather than
     // the most likely known class.
@@ -21791,12 +21789,16 @@ void Compiler::pickGDV(
 
     const int         maxLikelyClasses = 32;
     LikelyClassMethodRecord likelyClasses[maxLikelyClasses];
-    unsigned numberOfClasses = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+    unsigned numberOfClasses = 0;
+    if (call->IsVirtualStub() || call->IsVirtualVtable())
+    {
+        numberOfClasses = getLikelyClasses(likelyClasses, maxLikelyClasses, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
+    }
 
     const int maxLikelyMethods = 32;
     LikelyClassMethodRecord likelyMethods[maxLikelyMethods];
     unsigned numberOfMethods = 0;
-    if (!isInterface)
+    if (call->IsVirtualVtable() || call->IsDelegateInvoke())
     {
         numberOfMethods = getLikelyMethods(likelyMethods, maxLikelyMethods, fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset);
     }
@@ -21857,7 +21859,7 @@ void Compiler::pickGDV(
     }
 
     // Prefer class guess as it is cheaper
-    if ((numberOfClasses > 0) && (isInterface || call->IsVirtualVtable()))
+    if (numberOfClasses > 0)
     {
         unsigned likelihoodThreshold = isInterface ? 25 : 30;
         if (likelyClasses[0].likelihood >= likelihoodThreshold)
@@ -21870,7 +21872,7 @@ void Compiler::pickGDV(
         JITDUMP("Not guessing for class; likelihood is below %s call threshold %u\n", isInterface ? "interface" : "virtual", likelihoodThreshold);
     }
 
-    if ((numberOfMethods > 0) && (call->IsDelegateInvoke() || call->IsVirtualVtable()))
+    if (numberOfMethods > 0)
     {
         unsigned likelihoodThreshold = 75;
         if (likelyMethods[0].likelihood >= likelihoodThreshold)
@@ -21892,12 +21894,9 @@ void Compiler::pickGDV(
 //
 //    call - potential guarded devirtualization candidate
 //    ilOffset - IL ofset of the call instruction
-//    isInterface - true if this is an interface call
 //    baseMethod - target method of the call
 //    baseClass - class that introduced the target method
 //    pContextHandle - context handle for the call
-//    objClass - class of 'this' in the call
-//    objClassName - name of the obj Class
 //
 // Notes:
 //    Consults with VM to see if there's a likely class at runtime,
@@ -21911,10 +21910,6 @@ void Compiler::considerGuardedDevirtualization(
     CORINFO_CLASS_HANDLE    baseClass,
     CORINFO_CONTEXT_HANDLE* pContextHandle)
 {
-#if defined(DEBUG)
-    const char* callKind = isInterface ? "interface" : "virtual";
-#endif
-
     JITDUMP("Considering guarded devirtualization at IL offset %u (0x%x)\n", ilOffset, ilOffset);
 
     // We currently only get likely class guesses when there is PGO data
@@ -21939,8 +21934,6 @@ void Compiler::considerGuardedDevirtualization(
     uint32_t likelyClassAttribs = 0; 
     if (likelyClass != NO_CLASS_HANDLE)
     {
-        // TODO: Should we do this inside pickGDV and use the remaining
-        // profile, or discard it if we find something like this?
         likelyClassAttribs = info.compCompHnd->getClassAttribs(likelyClass);
 
         if ((likelyClassAttribs & CORINFO_FLG_ABSTRACT) != 0)
@@ -21972,7 +21965,7 @@ void Compiler::considerGuardedDevirtualization(
         likelyMethod = dvInfo.devirtualizedMethod;
     }
 
-    JITDUMP("%s call would invoke method %s\n", callKind, eeGetMethodName(likelyMethod, nullptr));
+    JITDUMP("%s call would invoke method %s\n", isInterface ? "interface" : call->IsDelegateInvoke() ? "delegate" : "virtual", eeGetMethodName(likelyMethod, nullptr));
 
     // Add this as a potential candidate.
     //
