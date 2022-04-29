@@ -3,7 +3,6 @@
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using System.Diagnostics;
 
 namespace System.Runtime.InteropServices.JavaScript
 {
@@ -66,7 +65,6 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
             // this is JS owned Normal handle. We always have a Target
-            Debug.Assert(handle.Target != null, "TaskCompletionSource should not be null.");
             TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
             tcs.SetResult(result);
         }
@@ -75,7 +73,6 @@ namespace System.Runtime.InteropServices.JavaScript
         {
             GCHandle handle = (GCHandle)(IntPtr)tcsGCHandle;
             // this is JS owned Normal handle. We always have a Target
-            Debug.Assert(handle.Target != null, "TaskCompletionSource should not be null.");
             TaskCompletionSource<object> tcs = (TaskCompletionSource<object>)handle.Target!;
             tcs.SetException(new JSException(reason));
         }
