@@ -807,15 +807,18 @@ private:
                 // Vtable target could have been expanded early.
                 call->gtControlExpr = nullptr;
 
-                bool isExact;
-                bool objIsNonNull;
-                compiler->gtGetClassHandle(newThisObj, &isExact, &objIsNonNull);
-
-                // Virtual calls include an implicit null check, which we may
-                // now need to make explicit.
-                if (!objIsNonNull)
+                if (origCall->IsVirtual())
                 {
-                    call->gtFlags |= GTF_CALL_NULLCHECK;
+                    // Virtual calls include an implicit null check, which we may
+                    // now need to make explicit.
+                    bool isExact;
+                    bool objIsNonNull;
+                    compiler->gtGetClassHandle(newThisObj, &isExact, &objIsNonNull);
+
+                    if (!objIsNonNull)
+                    {
+                        call->gtFlags |= GTF_CALL_NULLCHECK;
+                    }
                 }
 
                 // Clear the inline candidate info (may be non-null since
