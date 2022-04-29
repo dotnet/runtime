@@ -73,7 +73,7 @@ namespace Microsoft.Extensions.DependencyInjection
                 _ = matcher.Match(parameters);
                 matchers[i] = matcher;
             }
-            Array.Sort(matchers, (a, b) => b.ApplyExectLength - a.ApplyExectLength);
+            Array.Sort(matchers, (a, b) => b.Priority - a.Priority);
             object? instance = null;
             for (int i = 0; i < matchers.Length; i++)
             {
@@ -347,11 +347,13 @@ namespace Microsoft.Extensions.DependencyInjection
             }
 
             public int ApplyExectLength { get; private set; } = -1;
+            public int Priority => ApplyExectLength == -1 ? -1 : ApplyExectLength + _parameters.Length;
 
             public int Match(object[] givenParameters)
             {
                 if (givenParameters.Length > _parameters.Length)
                 {
+                    ApplyExectLength = -1;
                     return ApplyExectLength;
                 }
                 int applyIndexStart = 0;

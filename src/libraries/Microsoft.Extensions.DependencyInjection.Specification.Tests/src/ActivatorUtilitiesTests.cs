@@ -214,9 +214,9 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
         }
 
         [Theory]
-        [InlineData("", "string")]
+        [InlineData("", "IFakeService, string")]
         [InlineData(5, "IFakeService, int")]
-        public void TypeActivatorCreateInstanceUsesFirstMathchedConstructor(object value, string ctor)
+        public void TypeActivatorCreateInstanceUsesLongestAvailableConstructor(object value, string ctor)
         {
             // Arrange
             var serviceCollection = new TestServiceCollection();
