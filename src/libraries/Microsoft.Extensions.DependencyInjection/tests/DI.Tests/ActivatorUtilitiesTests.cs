@@ -57,7 +57,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Theory]
-        [MemberData(nameof(ActivatorUtilitiesData))]
+        [InlineData(typeof(FakeValidationResult))]
+        [InlineData(typeof(FakeValidationResultOps))]
         public void ShouldFixIssue_42339(Type instanceType)
         {
             var data = new Dictionary<string, object>();
