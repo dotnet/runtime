@@ -21,8 +21,8 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 			case OperationKind.ArrayElementReference:
 				break;
 			case OperationKind.None:
-				// NoneOperation is an unimplemented operation. If captured, we
-				// just ignore it when it is referenced later.
+			case OperationKind.InstanceReference:
+				// These will just be ignored when referenced later.
 				break;
 			default:
 				throw new NotImplementedException (operation.Kind.ToString ());
