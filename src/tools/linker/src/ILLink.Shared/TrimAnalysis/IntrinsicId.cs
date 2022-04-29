@@ -46,7 +46,6 @@ namespace ILLink.Shared.TrimAnalysis
 		Activator_CreateInstance_Type,
 		Activator_CreateInstance_AssemblyName_TypeName,
 		Activator_CreateInstanceFrom,
-		Activator_CreateInstanceOfT,
 		AppDomain_CreateInstance,
 		AppDomain_CreateInstanceAndUnwrap,
 		AppDomain_CreateInstanceFrom,

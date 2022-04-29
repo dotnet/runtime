@@ -24,9 +24,9 @@ namespace ILLink.Shared.TrimAnalysis
 			_diagnosticContext = diagnosticContext;
 		}
 
-		private partial bool TryResolveTypeNameAndMark (string typeName, out TypeProxy type)
+		public partial bool TryResolveTypeNameAndMark (string typeName, bool needsAssemblyName, out TypeProxy type)
 		{
-			if (_reflectionMarker.TryResolveTypeNameAndMark (typeName, _diagnosticContext.Origin, out TypeDefinition? foundType)) {
+			if (_reflectionMarker.TryResolveTypeNameAndMark (typeName, _diagnosticContext.Origin, needsAssemblyName, out TypeDefinition? foundType)) {
 				type = new (foundType);
 				return true;
 			} else {

@@ -14,7 +14,6 @@ using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Linker.Steps;
-using BindingFlags = System.Reflection.BindingFlags;
 using MultiValue = ILLink.Shared.DataFlow.ValueSet<ILLink.Shared.DataFlow.SingleValue>;
 
 namespace Mono.Linker.Dataflow
@@ -242,10 +241,8 @@ namespace Mono.Linker.Dataflow
 			if (calledMethodDefinition == null)
 				return false;
 
-			DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = 0;
-
 			bool requiresDataFlowAnalysis = _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (calledMethodDefinition);
-			returnValueDynamicallyAccessedMemberTypes = requiresDataFlowAnalysis ?
+			DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = requiresDataFlowAnalysis ?
 				_context.Annotations.FlowAnnotations.GetReturnParameterAnnotation (calledMethodDefinition) : 0;
 
 			_origin = _origin.WithInstructionOffset (operation.Offset);
@@ -286,7 +283,17 @@ namespace Mono.Linker.Dataflow
 			case IntrinsicId.MethodBase_get_MethodHandle:
 			case IntrinsicId.Type_MakeGenericType:
 			case IntrinsicId.MethodInfo_MakeGenericMethod:
-			case IntrinsicId.Expression_Call: {
+			case IntrinsicId.Expression_Call:
+			case IntrinsicId.Expression_New:
+			case IntrinsicId.Type_GetType:
+			case IntrinsicId.Activator_CreateInstance_Type:
+			case IntrinsicId.Activator_CreateInstance_AssemblyName_TypeName:
+			case IntrinsicId.Activator_CreateInstanceFrom:
+			case var appDomainCreateInstance when appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstance
+					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceAndUnwrap
+					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFrom
+					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
+			case IntrinsicId.Assembly_CreateInstance: {
 					var instanceValue = MultiValueLattice.Top;
 					IReadOnlyList<MultiValue> parameterValues = methodParams;
 					if (calledMethodDefinition.HasImplicitThis ()) {
@@ -328,23 +335,6 @@ namespace Mono.Linker.Dataflow
 
 			case IntrinsicId.Array_Empty: {
 					AddReturnValue (ArrayValue.Create (0, ((GenericInstanceMethod) calledMethod).GenericArguments[0]));
-				}
-				break;
-
-			//
-			// System.Linq.Expressions.Expression
-			//
-			// static New (Type)
-			//
-			case IntrinsicId.Expression_New: {
-					var targetValue = _annotations.GetMethodParameterValue (calledMethodDefinition, 0, DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
-					foreach (var value in methodParams[0]) {
-						if (value is SystemTypeValue systemTypeValue) {
-							_reflectionMarker.MarkConstructorsOnType (_origin, systemTypeValue.RepresentedType.Type, null, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
-						} else {
-							RequireDynamicallyAccessedMembers (diagnosticContext, value, targetValue);
-						}
-					}
 				}
 				break;
 
@@ -406,205 +396,13 @@ namespace Mono.Linker.Dataflow
 				}
 				break;
 
-			//
-			// System.Type
-			//
-			// GetType (string)
-			// GetType (string, Boolean)
-			// GetType (string, Boolean, Boolean)
-			// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>)
-			// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean)
-			// GetType (string, Func<AssemblyName, Assembly>, Func<Assembly, String, Boolean, Type>, Boolean, Boolean)
-			//
-			case IntrinsicId.Type_GetType: {
-					var parameters = calledMethod.Parameters;
-					if ((parameters.Count == 3 && parameters[2].ParameterType.MetadataType == MetadataType.Boolean && methodParams[2].AsConstInt () != 0) ||
-						(parameters.Count == 5 && methodParams[4].AsConstInt () != 0)) {
-						diagnosticContext.AddDiagnostic (DiagnosticId.CaseInsensitiveTypeGetTypeCallIsNotSupported, calledMethod.GetDisplayName ());
-						break;
-					}
-					foreach (var typeNameValue in methodParams[0]) {
-						if (typeNameValue is KnownStringValue knownStringValue) {
-							if (!_context.TypeNameResolver.TryResolveTypeName (knownStringValue.Contents, callingMethodDefinition, out TypeReference? foundTypeRef, out AssemblyDefinition? typeAssembly, false)
-								|| ResolveToTypeDefinition (foundTypeRef) is not TypeDefinition foundType) {
-								// Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
-							} else {
-								_markStep.MarkTypeVisibleToReflection (foundTypeRef, foundType, new DependencyInfo (DependencyKind.AccessedViaReflection, callingMethodDefinition), _origin);
-								AddReturnValue (new SystemTypeValue (foundType));
-								_context.MarkingHelpers.MarkMatchingExportedType (foundType, typeAssembly, new DependencyInfo (DependencyKind.AccessedViaReflection, foundType), _origin);
-							}
-						} else if (typeNameValue == NullValue.Instance) {
-							// Nothing to do
-						} else if (typeNameValue is ValueWithDynamicallyAccessedMembers valueWithDynamicallyAccessedMembers && valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes != 0) {
-							// Propagate the annotation from the type name to the return value. Annotation on a string value will be fullfilled whenever a value is assigned to the string with annotation.
-							// So while we don't know which type it is, we can guarantee that it will fulfill the annotation.
-							AddReturnValue (_annotations.GetMethodReturnValue (calledMethodDefinition, valueWithDynamicallyAccessedMembers.DynamicallyAccessedMemberTypes));
-						} else {
-							diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedTypeNameInTypeGetType, calledMethod.GetDisplayName ());
-						}
-					}
-
-				}
-				break;
-
-			//
-			// System.Activator
-			//
-			// static CreateInstance (System.Type type)
-			// static CreateInstance (System.Type type, bool nonPublic)
-			// static CreateInstance (System.Type type, params object?[]? args)
-			// static CreateInstance (System.Type type, object?[]? args, object?[]? activationAttributes)
-			// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture)
-			// static CreateInstance (System.Type type, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes) { throw null; }
-			//
-			case IntrinsicId.Activator_CreateInstance_Type: {
-					var parameters = calledMethod.Parameters;
-
-					int? ctorParameterCount = null;
-					BindingFlags bindingFlags = BindingFlags.Instance;
-					if (parameters.Count > 1) {
-						if (parameters[1].ParameterType.MetadataType == MetadataType.Boolean) {
-							// The overload that takes a "nonPublic" bool
-							bool nonPublic = methodParams[1].AsConstInt () != 0;
-
-							if (nonPublic)
-								bindingFlags |= BindingFlags.NonPublic | BindingFlags.Public;
-							else
-								bindingFlags |= BindingFlags.Public;
-							ctorParameterCount = 0;
-						} else {
-							// Overload that has the parameters as the second or fourth argument
-							int argsParam = parameters.Count == 2 || parameters.Count == 3 ? 1 : 3;
-
-							if (methodParams.Count > argsParam) {
-								if (methodParams[argsParam].AsSingleValue () is ArrayValue arrayValue &&
-									arrayValue.Size.AsConstInt () != null)
-									ctorParameterCount = arrayValue.Size.AsConstInt ();
-								else if (methodParams[argsParam].AsSingleValue () is NullValue)
-									ctorParameterCount = 0;
-							}
-
-							if (parameters.Count > 3) {
-								if (methodParams[1].AsConstInt () is int constInt)
-									bindingFlags |= (BindingFlags) constInt;
-								else
-									bindingFlags |= BindingFlags.NonPublic | BindingFlags.Public;
-							} else {
-								bindingFlags |= BindingFlags.Public;
-							}
-						}
-					} else {
-						// The overload with a single System.Type argument
-						ctorParameterCount = 0;
-						bindingFlags |= BindingFlags.Public;
-					}
-
-					// Go over all types we've seen
-					foreach (var value in methodParams[0]) {
-						if (value is SystemTypeValue systemTypeValue) {
-							// Special case known type values as we can do better by applying exact binding flags and parameter count.
-							_reflectionMarker.MarkConstructorsOnType (_origin, systemTypeValue.RepresentedType.Type,
-								ctorParameterCount == null ? null : m => m.Parameters.Count == ctorParameterCount, bindingFlags);
-						} else {
-							// Otherwise fall back to the bitfield requirements
-							var requiredMemberTypes = GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (bindingFlags);
-
-							// Special case the public parameterless constructor if we know that there are 0 args passed in
-							if (ctorParameterCount == 0 && requiredMemberTypes.HasFlag (DynamicallyAccessedMemberTypes.PublicConstructors)) {
-								requiredMemberTypes &= ~DynamicallyAccessedMemberTypes.PublicConstructors;
-								requiredMemberTypes |= DynamicallyAccessedMemberTypes.PublicParameterlessConstructor;
-							}
-
-							var targetValue = _annotations.GetMethodParameterValue (calledMethodDefinition, 0, requiredMemberTypes);
-
-							RequireDynamicallyAccessedMembers (diagnosticContext, value, targetValue);
-						}
-					}
-				}
-				break;
-
-			//
-			// System.Activator
-			//
-			// static CreateInstance (string assemblyName, string typeName)
-			// static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
-			// static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
-			//
-			case IntrinsicId.Activator_CreateInstance_AssemblyName_TypeName:
-				ProcessCreateInstanceByName (diagnosticContext, calledMethodDefinition, methodParams);
-				break;
-
-			//
-			// System.Activator
-			//
-			// static CreateInstanceFrom (string assemblyFile, string typeName)
-			// static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-			// static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
-			//
-			case IntrinsicId.Activator_CreateInstanceFrom:
-				ProcessCreateInstanceByName (diagnosticContext, calledMethodDefinition, methodParams);
-				break;
-
-			//
-			// System.Activator
-			//
-			// static T CreateInstance<T> ()
-			//
-			// Note: If the when condition returns false it would be an overload which we don't recognize, so just fall through to the default case
-			case IntrinsicId.Activator_CreateInstanceOfT when
-				calledMethod is GenericInstanceMethod genericCalledMethod && genericCalledMethod.GenericArguments.Count == 1: {
-
-					if (genericCalledMethod.GenericArguments[0] is GenericParameter genericParameter &&
-						genericParameter.HasDefaultConstructorConstraint) {
-						// This is safe, the linker would have marked the default .ctor already
-						break;
-					}
-
-					var targetValue = new GenericParameterValue (calledMethodDefinition.GenericParameters[0], DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
-					RequireDynamicallyAccessedMembers (
-						diagnosticContext,
-						GetTypeValueNodeFromGenericArgument (genericCalledMethod.GenericArguments[0]),
-						targetValue);
-				}
-				break;
-
-			//
-			// System.AppDomain
-			//
-			// CreateInstance (string assemblyName, string typeName)
-			// CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-			// CreateInstance (string assemblyName, string typeName, object? []? activationAttributes)
-			//
-			// CreateInstanceAndUnwrap (string assemblyName, string typeName)
-			// CreateInstanceAndUnwrap (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-			// CreateInstanceAndUnwrap (string assemblyName, string typeName, object? []? activationAttributes)
-			//
-			// CreateInstanceFrom (string assemblyFile, string typeName)
-			// CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-			// CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
-			//
-			// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName)
-			// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-			// CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, object? []? activationAttributes)
-			//
-			case var appDomainCreateInstance when appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstance
-					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceAndUnwrap
-					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFrom
-					|| appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
-				ProcessCreateInstanceByName (diagnosticContext, calledMethodDefinition, methodParams);
-				break;
-
-			//
-			// System.Reflection.Assembly
-			//
-			// CreateInstance (string typeName)
-			// CreateInstance (string typeName, bool ignoreCase)
-			// CreateInstance (string typeName, bool ignoreCase, BindingFlags bindingAttr, Binder? binder, object []? args, CultureInfo? culture, object []? activationAttributes)
-			//
-			case IntrinsicId.Assembly_CreateInstance:
-				// For now always fail since we don't track assemblies (dotnet/linker/issues/1947)
-				diagnosticContext.AddDiagnostic (DiagnosticId.ParametersOfAssemblyCreateInstanceCannotBeAnalyzed, calledMethodDefinition.GetDisplayName ());
-				break;
+			// Note about Activator.CreateInstance<T>
+			// There are 2 interesting cases:
+			//  - The generic argument for T is either specific type or annotated - in that case generic instantiation will handle this
+			//    since from .NET 6+ the T is annotated with PublicParameterlessConstructor annotation, so the linker would apply this as for any other method.
+			//  - The generic argument for T is unannotated type - the generic instantiantion handling has a special case for handling PublicParameterlessConstructor requirement
+			//    in such that if the generic argument type has the "new" constraint it will not warn (as it is effectively the same thing semantically).
+			//    For all other cases, the linker would have already produced a warning.
 
 			default:
 				throw new NotImplementedException ("Unhandled instrinsic");
@@ -699,69 +497,10 @@ namespace Mono.Linker.Dataflow
 			return false;
 		}
 
-		void ProcessCreateInstanceByName (in DiagnosticContext diagnosticContext, MethodDefinition calledMethod, ValueNodeList methodParams)
-		{
-			BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-			bool parameterlessConstructor = true;
-			if (calledMethod.Parameters.Count == 8 && calledMethod.Parameters[2].ParameterType.MetadataType == MetadataType.Boolean) {
-				parameterlessConstructor = false;
-				bindingFlags = BindingFlags.Instance;
-				if (methodParams[3].AsConstInt () is int bindingFlagsInt)
-					bindingFlags |= (BindingFlags) bindingFlagsInt;
-				else
-					bindingFlags |= BindingFlags.Public | BindingFlags.NonPublic;
-			}
-
-			int methodParamsOffset = calledMethod.HasImplicitThis () ? 1 : 0;
-
-			foreach (var assemblyNameValue in methodParams[methodParamsOffset]) {
-				if (assemblyNameValue is KnownStringValue assemblyNameStringValue) {
-					if (assemblyNameStringValue.Contents is string assemblyName && assemblyName.Length == 0) {
-						// Throws exception for zero-length assembly name.
-						continue;
-					}
-					foreach (var typeNameValue in methodParams[methodParamsOffset + 1]) {
-						if (typeNameValue is NullValue) {
-							// Throws exception for null type name.
-							continue;
-						}
-						if (typeNameValue is KnownStringValue typeNameStringValue) {
-							var resolvedAssembly = _context.TryResolve (assemblyNameStringValue.Contents);
-							if (resolvedAssembly == null) {
-								diagnosticContext.AddDiagnostic (DiagnosticId.UnresolvedAssemblyInCreateInstance,
-									assemblyNameStringValue.Contents,
-									calledMethod.GetDisplayName ());
-								continue;
-							}
-
-							if (!_context.TypeNameResolver.TryResolveTypeName (resolvedAssembly, typeNameStringValue.Contents, out TypeReference? typeRef)
-								|| _context.TryResolve (typeRef) is not TypeDefinition resolvedType
-								|| typeRef is ArrayType) {
-								// It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
-								// Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies
-								// but linker can't know that. In case a user tries to create an array using System.Activator we should simply ignore it, the user
-								// might expect an exception to be thrown.
-								continue;
-							}
-
-							_reflectionMarker.MarkConstructorsOnType (diagnosticContext.Origin, resolvedType, parameterlessConstructor ? m => m.Parameters.Count == 0 : null, bindingFlags);
-						} else {
-							diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.Parameters[1].Name, calledMethod.GetDisplayName ());
-						}
-					}
-				} else {
-					diagnosticContext.AddDiagnostic (DiagnosticId.UnrecognizedParameterInMethodCreateInstance, calledMethod.Parameters[0].Name, calledMethod.GetDisplayName ());
-				}
-			}
-		}
-
 		void RequireDynamicallyAccessedMembers (in DiagnosticContext diagnosticContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue)
 		{
 			var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction (_context, _reflectionMarker, diagnosticContext);
 			requireDynamicallyAccessedMembersAction.Invoke (value, targetValue);
 		}
-
-		static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (BindingFlags? bindingFlags) =>
-			HandleCallAction.GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors (bindingFlags);
 	}
 }

@@ -67,6 +67,16 @@ namespace ILLink.Shared.TrimAnalysis
 			return false;
 		}
 
+		private partial bool TryResolveTypeNameForCreateInstance (in MethodProxy calledMethod, string assemblyName, string typeName, out TypeProxy resolvedType)
+		{
+			// Intentionally never resolve anything. Analyzer can really only see types from the current compilation unit. For other assemblies
+			// it typically only sees reference assemblies and thus just public API. It's not worth (at least for now) to try to resolve
+			// the assembly name and type name as it should be rare this is actually ever used and even rarer to have problems (Warnings).
+			// In any case the trimmer will process this correctly as it has a global view.
+			resolvedType = default;
+			return false;
+		}
+
 		// TODO: Does the analyzer need to do something here?
 		private partial void MarkStaticConstructor (TypeProxy type) { }
 
@@ -82,8 +92,8 @@ namespace ILLink.Shared.TrimAnalysis
 		private partial void MarkPublicParameterlessConstructorOnType (TypeProxy type)
 			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForPublicParameterlessConstructor (_diagnosticContext, type.Type);
 
-		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags)
-			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForConstructorsOnType (_diagnosticContext, type.Type, bindingFlags);
+		private partial void MarkConstructorsOnType (TypeProxy type, BindingFlags? bindingFlags, int? parameterCount)
+			=> _reflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForConstructorsOnType (_diagnosticContext, type.Type, bindingFlags, parameterCount);
 
 		private partial void MarkMethod (MethodProxy method)
 			=> ReflectionAccessAnalyzer.GetReflectionAccessDiagnosticsForMethod (_diagnosticContext, method.Method);

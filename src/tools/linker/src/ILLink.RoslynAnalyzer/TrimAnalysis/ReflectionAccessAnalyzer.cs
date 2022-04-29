@@ -59,9 +59,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				GetReflectionAccessDiagnosticsForProperty (diagnosticContext, prop);
 		}
 
-		internal void GetReflectionAccessDiagnosticsForConstructorsOnType (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, BindingFlags? bindingFlags)
+		internal void GetReflectionAccessDiagnosticsForConstructorsOnType (in DiagnosticContext diagnosticContext, ITypeSymbol typeSymbol, BindingFlags? bindingFlags, int? parameterCount)
 		{
-			foreach (var c in typeSymbol.GetConstructorsOnType (filter: null, bindingFlags: bindingFlags))
+			foreach (var c in typeSymbol.GetConstructorsOnType (filter: parameterCount.HasValue ? c => c.Parameters.Length == parameterCount.Value : null, bindingFlags: bindingFlags))
 				GetReflectionAccessDiagnosticsForMethod (diagnosticContext, c);
 		}
 

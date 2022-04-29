@@ -16,6 +16,7 @@ namespace ILLink.Shared.TypeSystemProxy
 		// Currently this only needs to work on non-nested, non-generic types.
 		// The format of the fullTypeName parameter is 'namespace.typename', so for example 'System.Reflection.Assembly'
 		internal partial bool HasParameterOfType (int parameterIndex, string fullTypeName);
+		internal partial string GetParameterDisplayName (int parameterIndex);
 		internal partial bool HasGenericParameters ();
 		internal partial bool HasGenericParametersCount (int genericParameterCount);
 		internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters ();

@@ -21,7 +21,7 @@ namespace ILLink.Shared.TrimAnalysis
 			_reflectionAccessAnalyzer = reflectionAccessAnalyzer;
 		}
 
-		private partial bool TryResolveTypeNameAndMark (string typeName, out TypeProxy type)
+		public partial bool TryResolveTypeNameAndMark (string typeName, bool needsAssemblyName, out TypeProxy type)
 		{
 			// TODO: Implement type name resolution to type symbol
 
