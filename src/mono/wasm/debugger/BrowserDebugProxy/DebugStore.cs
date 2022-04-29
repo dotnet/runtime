@@ -1249,60 +1249,23 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
+        public IEnumerable<SourceFile> Load(SessionId id, LoadedFiles[] loaded_files, CancellationToken token)
         {
-            var asm_files = new List<string>();
-            var pdb_files = new List<string>();
-            foreach (string file_name in loaded_files)
+            var asm_files = new List<LoadedFiles>();
+            var pdb_files = new List<LoadedFiles>();
+            foreach (var loadedFile in loaded_files)
             {
-                if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
-                    pdb_files.Add(file_name);
+                if (loadedFile.name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                    pdb_files.Add(loadedFile);
                 else
-                    asm_files.Add(file_name);
+                    asm_files.Add(loadedFile);
             }
 
-            List<DebugItem> steps = new List<DebugItem>();
-            foreach (string url in asm_files)
+            foreach (var file in asm_files)
             {
-                try
-                {
-                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
-                    string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
-
-                    steps.Add(
-                        new DebugItem
-                        {
-                            Url = url,
-                            Data = Task.WhenAll(client.GetByteArrayAsync(url, token), pdb != null ? client.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
-                        });
-                }
-                catch (Exception e)
-                {
-                    logger.LogDebug($"Failed to read {url} ({e.Message})");
-                }
-            }
-
-            foreach (DebugItem step in steps)
-            {
-                AssemblyInfo assembly = null;
-                try
-                {
-                    byte[][] bytes = await step.Data.ConfigureAwait(false);
-                    assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], token);
-                }
-                catch (Exception e)
-                {
-                    logger.LogError($"Failed to load {step.Url} ({e.Message})");
-                }
-                if (assembly == null)
-                    continue;
-
-                if (GetAssemblyByName(assembly.Name) != null)
-                {
-                    logger.LogDebug($"Skipping loading {assembly.Name} into the debug store, as it already exists");
-                    continue;
-                }
-
+                var candidate_pdb = Path.ChangeExtension(file.name, "pdb");
+                var pdb = pdb_files.FirstOrDefault(n => n.name == candidate_pdb);
+                AssemblyInfo assembly = new AssemblyInfo(monoProxy, id, file.name, Convert.FromBase64String(file.bytes), pdb != null ? Convert.FromBase64String(pdb.bytes) : null, token);
                 assemblies.Add(assembly);
                 foreach (SourceFile source in assembly.Sources)
                     yield return source;

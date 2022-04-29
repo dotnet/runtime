@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
-import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -228,7 +228,11 @@ function _handle_fetched_asset(asset: AssetEntry, url?: string) {
 
     if (asset.behavior === "assembly") {
         const hasPpdb = cwraps.mono_wasm_add_assembly(virtualName, offset!, bytes.length);
-
+        if (hasPpdb)
+        {
+            const assembly_b64 = toBase64StringImpl(bytes);
+            ctx.loaded_files_new.push({name: virtualName, bytes: assembly_b64, length: bytes.length});
+        }
         if (!hasPpdb) {
             const index = ctx.loaded_files.findIndex(element => element.file == virtualName);
             ctx.loaded_files.splice(index, 1);
@@ -440,6 +444,7 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
             loaded_assets: Object.create(null),
             // dlls and pdbs, used by blazor and the debugger
             loaded_files: [],
+            loaded_files_new: []
         };
 
         // fetch_file_cb is legacy do we really want to support it ?
@@ -570,7 +575,7 @@ function finalize_assets(config: MonoConfig | MonoConfigError | undefined): void
             }
         }
 
-        ctx.loaded_files.forEach(value => MONO.loaded_files.push(value.url));
+        //ctx.loaded_files.forEach(value => MONO.loaded_files.push(value.url));
         if (ctx.tracing) {
             console.log("MONO_WASM: loaded_assets: " + JSON.stringify(ctx.loaded_assets));
             console.log("MONO_WASM: loaded_files: " + JSON.stringify(ctx.loaded_files));
@@ -702,6 +707,13 @@ export function mono_wasm_set_main_args(name: string, allRuntimeArguments: strin
     cwraps.mono_wasm_set_main_args(main_argc, main_argv);
 }
 
+// Used by the debugger to enumerate loaded dlls and pdbs
+export function mono_wasm_get_loaded_files(): { name: string, bytes: string, length: number }[]{
+    assert(ctx, "Expected ctx");
+    cwraps.mono_wasm_set_is_debugger_attached(true);
+    return ctx.loaded_files_new;
+}
+
 type MonoInitFetchResult = {
     asset: AllAssetEntryTypes,
     attemptUrl?: string,
@@ -715,4 +727,5 @@ export type DownloadAssetsContext = {
     resolved_promises: (MonoInitFetchResult | undefined)[] | null;
     loaded_files: { url?: string, file: string }[],
     loaded_assets: { [id: string]: [VoidPtr, number] },
+    loaded_files_new: { name: string, bytes: string, length: number }[],
 }

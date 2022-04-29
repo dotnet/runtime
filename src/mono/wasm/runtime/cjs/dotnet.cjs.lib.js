@@ -30,6 +30,7 @@ const linked_functions = [
 
     // mini-wasm-debugger.c
     "mono_wasm_asm_loaded",
+    "mono_wasm_all_files_sent_to_debugger",
     "mono_wasm_fire_debugger_agent_message",
     "mono_wasm_debugger_log",
     "mono_wasm_add_dbg_command_received",

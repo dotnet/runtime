@@ -13,6 +13,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
+using System.Diagnostics;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -106,7 +107,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                         ExecutionContext context = GetContext(sessionId);
                                         string loaded = a[2]?["value"]?.ToString();
                                         if (loaded != null)
-                                            context.LoadedFiles = JToken.Parse(loaded).ToObject<string[]>();
+                                            context.LoadedFiles = JToken.Parse(loaded).ToObject<LoadedFiles[]>();
                                     }
                                     catch (InvalidCastException ice)
                                     {
@@ -1236,10 +1237,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var store = await LoadStore(sessionId, token);
                 var assembly_name = eventArgs?["assembly_name"]?.Value<string>();
-
+                Console.WriteLine($"to no OnAssemblyLoadedJSEvent - {assembly_name}");
                 if (store.GetAssemblyByName(assembly_name) != null)
                 {
                     Log("debug", $"Got AssemblyLoaded event for {assembly_name}, but skipping it as it has already been loaded.");
+                    Console.WriteLine($"to no OnAssemblyLoadedJSEvent to pulando - {assembly_name}");
                     return true;
                 }
 
@@ -1391,17 +1393,18 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (Interlocked.CompareExchange(ref context.store, new DebugStore(this, logger), null) != null)
                 return await context.Source.Task;
-
+            Stopwatch stopWatch = new Stopwatch();
+            stopWatch.Start();
             try
             {
-                string[] loaded_files = await GetLoadedFiles(sessionId, context, token);
+                LoadedFiles[] loaded_files = await GetLoadedFiles(sessionId, context, token);
                 if (loaded_files == null)
                 {
                     SendLog(sessionId, $"Failed to get the list of loaded files. Managed code debugging won't work due to this.", token);
                 }
                 else
                 {
-                    await foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token).WithCancellation(token))
+                    foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token))
                     {
                         await OnSourceFileAdded(sessionId, source, context, token);
                     }
@@ -1414,8 +1417,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (!context.Source.Task.IsCompleted)
                 context.Source.SetResult(context.store);
+
+            stopWatch.Stop();
+            Console.WriteLine("tempo gasto - " + stopWatch.ElapsedMilliseconds.ToString());
             return context.store;
-            async Task<string[]> GetLoadedFiles(SessionId sessionId, ExecutionContext context, CancellationToken token)
+            async Task<LoadedFiles[]> GetLoadedFiles(SessionId sessionId, ExecutionContext context, CancellationToken token)
             {
                 if (context.LoadedFiles != null)
                     return context.LoadedFiles;
@@ -1427,10 +1433,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return null;
                 }
 
-                string[] files = loaded.Value?["result"]?["value"]?.ToObject<string[]>();
+                LoadedFiles[] files = loaded.Value?["result"]?["value"]?.ToObject<LoadedFiles[]>();
                 if (files == null)
                     SendLog(sessionId, $"Error extracting the list of loaded_files from the result of mono_wasm_get_loaded_files: {loaded}", token);
-
                 return files;
             }
         }

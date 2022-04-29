@@ -308,6 +308,19 @@ namespace Microsoft.WebAssembly.Diagnostics
         All
     }
 
+    internal class LoadedFiles
+    {
+        public string name;
+        public string bytes;
+        public int length;
+        public LoadedFiles(string name, string bytes, int length)
+        {
+            this.name = name;
+            this.bytes = bytes;
+            this.length = length;
+        }
+    }
+
     internal class ExecutionContext
     {
         public ExecutionContext(MonoSDBHelper sdbAgent, int id, object auxData)
@@ -333,7 +346,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public List<Frame> CallStack { get; set; }
 
-        public string[] LoadedFiles { get; set; }
+        public LoadedFiles[] LoadedFiles { get; set; }
         internal DebugStore store;
         internal MonoSDBHelper SdbAgent { get; init; }
         public TaskCompletionSource<DebugStore> Source { get; } = new TaskCompletionSource<DebugStore>();
