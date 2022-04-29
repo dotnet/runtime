@@ -35,49 +35,7 @@ namespace System.IO.Tests
         [InlineData(3)]
         public void File_Move_Multiple_From_Watched_To_Unwatched(int filesCount)
         {
-            string watchedTestDirectory = CreateTestDirectory(TestDirectory, "dir_watched");
-            string unwatchedTestDirectory = CreateTestDirectory(TestDirectory, "dir_unwatched");
-
-            var files = Enumerable.Range(0, filesCount)
-                .Select(i => new
-                {
-                    FileInWatchedDir = Path.Combine(watchedTestDirectory, $"file{i}"),
-                    FileInUnwatchedDir = Path.Combine(unwatchedTestDirectory, $"file{i}")
-                }).ToArray();
-
-            Array.ForEach(files, (file) => File.Create(file.FileInWatchedDir).Dispose());
-
-            Action action = () => Array.ForEach(files, file => File.Move(file.FileInWatchedDir, file.FileInUnwatchedDir));
-            Action cleanup = () =>
-            {
-                Array.ForEach(files, file =>
-                {
-                    File.Delete(file.FileInWatchedDir);
-                    File.Delete(file.FileInUnwatchedDir);
-                });
-
-                Array.ForEach(files, (file) => File.Create(file.FileInWatchedDir).Dispose());
-            };
-
-            using var watcher = new FileSystemWatcher(watchedTestDirectory, "*");
-
-            int expectedEventCount = filesCount;
-            if (PlatformDetection.IsOSXLike) // On macOS, for each file we receive three events as described in comment below.
-            {
-                expectedEventCount = expectedEventCount * 3;
-            }
-
-            WatcherChangeTypes eventTypesToIgnore = 0;
-            if (PlatformDetection.IsOSXLike)
-            {
-                // Remove events as there is racecondition on macOS.
-                // When creating file and then observe parent folder, watcher receives Create and Changed event although it is not registered yet.
-                eventTypesToIgnore = WatcherChangeTypes.Created | WatcherChangeTypes.Changed;
-            }
-
-            IEnumerable<FiredEvent> expectedEvents = files.Select(file => new FiredEvent(WatcherChangeTypes.Deleted, file.FileInWatchedDir));
-
-            ExpectEvents(watcher, action, cleanup, expectedEvents, expectedEventCount, eventTypesToIgnore);
+            FileMove_Multiple_FromWatchedToUnwatched(filesCount);
         }
 
         [Theory]
@@ -86,34 +44,7 @@ namespace System.IO.Tests
         [InlineData(3)]
         public void File_Move_Multiple_From_Unwatched_To_Watched(int filesCount)
         {
-            string watchedTestDirectory = CreateTestDirectory(TestDirectory, "dir_watched");
-            string unwatchedTestDirectory = CreateTestDirectory(TestDirectory, "dir_unwatched");
-
-            var files = Enumerable.Range(0, filesCount)
-                .Select(i => new
-                {
-                    FileInWatchedDir = Path.Combine(watchedTestDirectory, $"file{i}"),
-                    FileInUnwatchedDir = Path.Combine(unwatchedTestDirectory, $"file{i}")
-                }).ToArray();
-
-            Array.ForEach(files, (file) => File.Create(file.FileInUnwatchedDir).Dispose());
-
-            Action action = () => Array.ForEach(files, file => File.Move(file.FileInUnwatchedDir, file.FileInWatchedDir));
-            Action cleanup = () =>
-            {
-                Array.ForEach(files, file =>
-                {
-                    File.Delete(file.FileInWatchedDir);
-                    File.Delete(file.FileInUnwatchedDir);
-                });
-
-                Array.ForEach(files, (file) => File.Create(file.FileInUnwatchedDir).Dispose());
-            };
-
-            using var watcher = new FileSystemWatcher(watchedTestDirectory, "*");
-            IEnumerable<FiredEvent> expectedEvents = files.Select(file => new FiredEvent(WatcherChangeTypes.Created, file.FileInWatchedDir));
-
-            ExpectEvents(watcher, action, cleanup, expectedEvents, filesCount, eventTypesToIgnore: 0);
+            FileMove_Multiple_FromUnwatchedToWatched(filesCount);
         }
 
         [Fact]
@@ -250,6 +181,85 @@ namespace System.IO.Tests
 
                 ExpectEvent(watcher, eventType, action, cleanup, sourcePath);
             }
+        }
+
+        private void FileMove_Multiple_FromWatchedToUnwatched(int filesCount)
+        {
+            string watchedTestDirectory = CreateTestDirectory(TestDirectory, "dir_watched");
+            string unwatchedTestDirectory = CreateTestDirectory(TestDirectory, "dir_unwatched");
+
+            var files = Enumerable.Range(0, filesCount)
+                .Select(i => new
+                {
+                    FileInWatchedDir = Path.Combine(watchedTestDirectory, $"file{i}"),
+                    FileInUnwatchedDir = Path.Combine(unwatchedTestDirectory, $"file{i}")
+                }).ToArray();
+
+            Array.ForEach(files, (file) => File.Create(file.FileInWatchedDir).Dispose());
+
+            Action action = () => Array.ForEach(files, file => File.Move(file.FileInWatchedDir, file.FileInUnwatchedDir));
+            Action cleanup = () =>
+            {
+                Array.ForEach(files, file =>
+                {
+                    File.Delete(file.FileInWatchedDir);
+                    File.Delete(file.FileInUnwatchedDir);
+                });
+
+                Array.ForEach(files, (file) => File.Create(file.FileInWatchedDir).Dispose());
+            };
+
+            using var watcher = new FileSystemWatcher(watchedTestDirectory, "*");
+
+            int expectedEventCount = filesCount;
+            if (PlatformDetection.IsOSXLike) // On macOS, for each file we receive three events as described in comment below.
+            {
+                expectedEventCount = expectedEventCount * 3;
+            }
+
+            WatcherChangeTypes eventTypesToIgnore = 0;
+            if (PlatformDetection.IsOSXLike)
+            {
+                // Remove events as there is racecondition on macOS.
+                // When creating file and then observe parent folder, watcher receives Create and Changed event although it is not registered yet.
+                eventTypesToIgnore = WatcherChangeTypes.Created | WatcherChangeTypes.Changed;
+            }
+
+            IEnumerable<FiredEvent> expectedEvents = files.Select(file => new FiredEvent(WatcherChangeTypes.Deleted, file.FileInWatchedDir));
+
+            ExpectEvents(watcher, action, cleanup, expectedEvents, expectedEventCount, eventTypesToIgnore);
+        }
+
+        private void FileMove_Multiple_FromUnwatchedToWatched(int filesCount)
+        {
+            string watchedTestDirectory = CreateTestDirectory(TestDirectory, "dir_watched");
+            string unwatchedTestDirectory = CreateTestDirectory(TestDirectory, "dir_unwatched");
+
+            var files = Enumerable.Range(0, filesCount)
+                .Select(i => new
+                {
+                    FileInWatchedDir = Path.Combine(watchedTestDirectory, $"file{i}"),
+                    FileInUnwatchedDir = Path.Combine(unwatchedTestDirectory, $"file{i}")
+                }).ToArray();
+
+            Array.ForEach(files, (file) => File.Create(file.FileInUnwatchedDir).Dispose());
+
+            Action action = () => Array.ForEach(files, file => File.Move(file.FileInUnwatchedDir, file.FileInWatchedDir));
+            Action cleanup = () =>
+            {
+                Array.ForEach(files, file =>
+                {
+                    File.Delete(file.FileInWatchedDir);
+                    File.Delete(file.FileInUnwatchedDir);
+                });
+
+                Array.ForEach(files, (file) => File.Create(file.FileInUnwatchedDir).Dispose());
+            };
+
+            using var watcher = new FileSystemWatcher(watchedTestDirectory, "*");
+            IEnumerable<FiredEvent> expectedEvents = files.Select(file => new FiredEvent(WatcherChangeTypes.Created, file.FileInWatchedDir));
+
+            ExpectEvents(watcher, action, cleanup, expectedEvents, filesCount, eventTypesToIgnore: 0);
         }
 
         private void FileMove_FromUnwatchedToWatched(WatcherChangeTypes eventType)
