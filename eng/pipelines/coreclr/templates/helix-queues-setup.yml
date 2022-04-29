@@ -7,7 +7,6 @@ parameters:
   container: ''
   pool: ''
   platform: ''
-  runtimeFlavorDisplayName: ''
   shouldContinueOnError: false
   dependOnEvaluatePaths: false
   jobParameters: {}
@@ -23,8 +22,7 @@ jobs:
     pool: ${{ parameters.pool }}
     platform: ${{ parameters.platform }}
     shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
-    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths}}
-    runtimeFlavorDisplayName: ${{ parameters.runtimeFlavorDisplayName }}
+    dependOnEvaluatePaths: ${{ parameters.dependOnEvaluatePaths }}
     helixQueues:
 
     # iOS/tvOS simulator x64/x86

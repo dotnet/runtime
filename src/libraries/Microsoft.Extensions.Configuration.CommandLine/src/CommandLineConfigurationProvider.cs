@@ -18,8 +18,10 @@ namespace Microsoft.Extensions.Configuration.CommandLine
         /// </summary>
         /// <param name="args">The command line args.</param>
         /// <param name="switchMappings">The switch mappings.</param>
-        public CommandLineConfigurationProvider(IEnumerable<string> args!!, IDictionary<string, string>? switchMappings = null)
+        public CommandLineConfigurationProvider(IEnumerable<string> args, IDictionary<string, string>? switchMappings = null)
         {
+            ThrowHelper.ThrowIfNull(args);
+
             Args = args;
 
             if (switchMappings != null)
@@ -91,7 +93,6 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                             key = currentArg.Substring(keyStartIndex);
                         }
 
-                        string previousKey = enumerator.Current;
                         if (!enumerator.MoveNext())
                         {
                             // ignore missing values

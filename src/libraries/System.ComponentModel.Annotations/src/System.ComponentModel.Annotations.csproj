@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
     <!--
       Since many resource strings in this library are shown to an end-user,
       always generate default resource string values which will be used when UseSystemResourceKeys is true in trimmed apps.
@@ -67,7 +66,6 @@
     <Reference Include="System.ComponentModel.TypeConverter" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
   </ItemGroup>

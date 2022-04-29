@@ -63,8 +63,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
             }
         }
 
-        internal ObjectReader(Stream stream!!, ISurrogateSelector? selector, StreamingContext context, InternalFE formatterEnums, SerializationBinder? binder)
+        internal ObjectReader(Stream stream, ISurrogateSelector? selector, StreamingContext context, InternalFE formatterEnums, SerializationBinder? binder)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             _stream = stream;
             _surrogates = selector;
             _context = context;
@@ -73,8 +75,10 @@ namespace System.Runtime.Serialization.Formatters.Binary
         }
 
         [RequiresUnreferencedCode("Types might be removed")]
-        internal object Deserialize(BinaryParser serParser!!)
+        internal object Deserialize(BinaryParser serParser)
         {
+            ArgumentNullException.ThrowIfNull(serParser);
+
             _fullDeserialization = false;
             TopObject = null;
             _topId = 0;

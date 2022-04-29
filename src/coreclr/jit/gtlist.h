@@ -37,9 +37,6 @@ GTNODE(LABEL            , GenTree            ,0,GTK_LEAF)             // Jump-ta
 GTNODE(JMP              , GenTreeVal         ,0,GTK_LEAF|GTK_NOVALUE) // Jump to another function
 GTNODE(FTN_ADDR         , GenTreeFptrVal     ,0,GTK_LEAF)             // Address of a function
 GTNODE(RET_EXPR         , GenTreeRetExpr     ,0,GTK_LEAF|DBK_NOTLIR)  // Place holder for the return expression from an inline candidate
-GTNODE(CLS_VAR          , GenTreeClsVar      ,0,GTK_LEAF)             // Static data member
-
-GTNODE(ARGPLACE         , GenTreeArgPlace    ,0,GTK_LEAF|GTK_NOVALUE|DBK_NOTLIR)  // Placeholder for a "late arg" in the original arg list.
 
 //-----------------------------------------------------------------------------
 //  Constant nodes:
@@ -104,7 +101,7 @@ GTNODE(RUNTIMELOOKUP    , GenTreeRuntimeLookup, 0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) 
 GTNODE(ARR_ADDR         , GenTreeArrAddr     ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR)   // Wraps an array address expression
 
 GTNODE(BSWAP            , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (32-bit or 64-bit)
-GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap (16-bit)
+GTNODE(BSWAP16          , GenTreeOp          ,0,GTK_UNOP)               // Byte swap lower 16-bits and zero upper 16 bits
 
 //-----------------------------------------------------------------------------
 //  Binary operators (2 operands):
@@ -221,10 +218,13 @@ GTNODE(MUL_LONG         , GenTreeOp          ,1,GTK_BINOP|DBK_NOTHIR)
 GTNODE(AND_NOT          , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR)
 
 #ifdef TARGET_ARM64
-GTNODE(MADD             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generates the Multiply-Add instruction (madd/msub) In the future, we might consider
+GTNODE(MADD             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generates the Multiply-Add instruction. In the future, we might consider
                                                                       // enabling it for both armarch and xarch for floating-point MADD "unsafe" math.
+GTNODE(MSUB             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Generates the Multiply-Subtract instruction. In the future, we might consider
+                                                                      // enabling it for both armarch and xarch for floating-point MSUB "unsafe" math.
 GTNODE(ADDEX,             GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Add with sign/zero extension.
 GTNODE(BFIZ             , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Bitfield Insert in Zero.
+GTNODE(CSNEG_MI         , GenTreeOp          ,0,GTK_BINOP|DBK_NOTHIR) // Conditional select, negate, minus result
 #endif
 
 //-----------------------------------------------------------------------------

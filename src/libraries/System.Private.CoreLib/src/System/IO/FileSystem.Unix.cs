@@ -390,40 +390,54 @@ namespace System.IO
             }
         }
 
-        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool sameDirectoryDifferentCase)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
         {
+            // isCaseSensitiveRename is only set for case-insensitive systems (like macOS).
+            Debug.Assert(!isCaseSensitiveRename || !PathInternal.IsCaseSensitive);
+
             ReadOnlySpan<char> srcNoDirectorySeparator = Path.TrimEndingDirectorySeparator(sourceFullPath.AsSpan());
             ReadOnlySpan<char> destNoDirectorySeparator = Path.TrimEndingDirectorySeparator(destFullPath.AsSpan());
 
+            // When the path ends with a directory separator, it must not be a file.
+            // On Unix 'rename' fails with ENOTDIR, on wasm we need to manually check.
             if (OperatingSystem.IsBrowser() && Path.EndsInDirectorySeparator(sourceFullPath) && FileExists(sourceFullPath))
             {
-                // On Windows we end up with ERROR_INVALID_NAME, which is
-                // "The filename, directory name, or volume label syntax is incorrect."
-                // On Unix, rename fails with ENOTDIR, but on WASM it does not.
-                // So if the path ends with directory separator, but it's a file, we just throw.
                 throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
             }
 
-            if (!sameDirectoryDifferentCase) // This check is to allow renaming of directories
+            // The destination must not exist (unless it is a case-sensitive rename).
+            // On Unix 'rename' will overwrite the destination file if it already exists, we need to manually check.
+            if (!isCaseSensitiveRename && Interop.Sys.LStat(destNoDirectorySeparator, out Interop.Sys.FileStatus destFileStatus) >= 0)
             {
-                if (Interop.Sys.Stat(destNoDirectorySeparator, out _) >= 0)
+                // Maintain order of exceptions as on Windows.
+
+                // Throw if the source doesn't exist.
+                if (Interop.Sys.LStat(srcNoDirectorySeparator, out Interop.Sys.FileStatus sourceFileStatus) < 0)
                 {
-                    // destination exists, but before we throw we need to check whether source exists or not
-
-                    // Windows will throw if the source file/directory doesn't exist, we preemptively check
-                    // to make sure our cross platform behavior matches .NET Framework behavior.
-                    if (Interop.Sys.Stat(srcNoDirectorySeparator, out Interop.Sys.FileStatus sourceFileStatus) < 0)
+                    throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                }
+                // Source and destination must not be the same file unless it is a case-sensitive rename.
+                else if (sourceFileStatus.Dev == destFileStatus.Dev &&
+                         sourceFileStatus.Ino == destFileStatus.Ino)
+                {
+                    // isCaseSensitiveRename is only true when the system is case-insensitive (like macOS).
+                    // On a case-sensitive system (like Linux), there can stil be case-insensitive filesystems mounted.
+                    // When both paths refer to the same file and they differ only in casing, we fall through to Rename.
+                    if (!PathInternal.IsCaseSensitive && // handled by isCaseSensitiveRename.
+                        !srcNoDirectorySeparator.Equals(destNoDirectorySeparator, StringComparison.OrdinalIgnoreCase) ||     // different paths.
+                        Path.GetFileName(srcNoDirectorySeparator).SequenceEqual(Path.GetFileName(destNoDirectorySeparator))) // same names.
                     {
-                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                        throw new IOException(SR.IO_SourceDestMustBeDifferent);
                     }
-                    else if ((sourceFileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR
-                        && Path.EndsInDirectorySeparator(sourceFullPath))
-                    {
-                        throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
-                    }
-
-                    // Some Unix distros will overwrite the destination file if it already exists.
-                    // Throwing IOException to match Windows behavior.
+                }
+                // When the path ends with a directory separator, it must be a directory.
+                else if ((sourceFileStatus.Mode & Interop.Sys.FileTypes.S_IFMT) != Interop.Sys.FileTypes.S_IFDIR
+                    && Path.EndsInDirectorySeparator(sourceFullPath))
+                {
+                    throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
+                }
+                else
+                {
                     throw new IOException(SR.Format(SR.IO_AlreadyExists_Name, destFullPath));
                 }
             }
@@ -436,10 +450,7 @@ namespace System.IO
                     case Interop.Error.EACCES: // match Win32 exception
                         throw new IOException(SR.Format(SR.UnauthorizedAccess_IODenied_Path, sourceFullPath), errorInfo.RawErrno);
                     case Interop.Error.ENOENT:
-                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path,
-                            Interop.Sys.Stat(srcNoDirectorySeparator, out _) >= 0
-                                ? destFullPath // the source directory exists, so destination does not. Example: Move("/tmp/existing/", "/tmp/nonExisting1/nonExisting2/")
-                                : sourceFullPath));
+                        throw new DirectoryNotFoundException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                     case Interop.Error.ENOTDIR: // sourceFullPath exists and it's not a directory
                         throw new IOException(SR.Format(SR.IO_PathNotFound_Path, sourceFullPath));
                     default:

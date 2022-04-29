@@ -33,14 +33,20 @@ namespace System.DirectoryServices.Protocols
         {
         }
 
-        internal DirectoryAttribute(string name!!, object value!!) : this()
+        internal DirectoryAttribute(string name, object value) : this()
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             Name = name;
             Add(value);
         }
 
-        public DirectoryAttribute(string name!!, params object[] values!!) : this()
+        public DirectoryAttribute(string name, params object[] values) : this()
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(values);
+
             Name = name;
 
             for (int i = 0; i < values.Length; i++)
@@ -154,8 +160,10 @@ namespace System.DirectoryServices.Protocols
 
         public int Add(Uri value) => Add((object)value);
 
-        internal int Add(object value!!)
+        internal int Add(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!(value is string) && !(value is byte[]) && !(value is Uri))
             {
                 throw new ArgumentException(SR.ValidValueType, nameof(value));
@@ -164,8 +172,10 @@ namespace System.DirectoryServices.Protocols
             return List.Add(value);
         }
 
-        public void AddRange(object[] values!!)
+        public void AddRange(object[] values)
         {
+            ArgumentNullException.ThrowIfNull(values);
+
             if (!(values is string[]) && !(values is byte[][]) && !(values is Uri[]))
             {
                 throw new ArgumentException(SR.ValidValuesType, nameof(values));
@@ -194,15 +204,19 @@ namespace System.DirectoryServices.Protocols
 
         public void Insert(int index, Uri value) => Insert(index, (object)value);
 
-        private void Insert(int index, object value!!)
+        private void Insert(int index, object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             List.Insert(index, value);
         }
 
         public void Remove(object value) => List.Remove(value);
 
-        protected override void OnValidate(object value!!)
+        protected override void OnValidate(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!(value is string) && !(value is byte[]) && !(value is Uri))
             {
                 throw new ArgumentException(SR.ValidValueType, nameof(value));
@@ -260,8 +274,10 @@ namespace System.DirectoryServices.Protocols
             Dictionary.Add(name.ToLowerInvariant(), value);
         }
 
-        public bool Contains(string attributeName!!)
+        public bool Contains(string attributeName)
         {
+            ArgumentNullException.ThrowIfNull(attributeName);
+
             object objectName = attributeName.ToLowerInvariant();
             return Dictionary.Contains(objectName);
         }
@@ -291,8 +307,10 @@ namespace System.DirectoryServices.Protocols
             return List.Add(attribute);
         }
 
-        public void AddRange(DirectoryAttribute[] attributes!!)
+        public void AddRange(DirectoryAttribute[] attributes)
         {
+            ArgumentNullException.ThrowIfNull(attributes);
+
             foreach (DirectoryAttribute attribute in attributes)
             {
                 if (attribute == null)
@@ -304,8 +322,10 @@ namespace System.DirectoryServices.Protocols
             InnerList.AddRange(attributes);
         }
 
-        public void AddRange(DirectoryAttributeCollection attributeCollection!!)
+        public void AddRange(DirectoryAttributeCollection attributeCollection)
         {
+            ArgumentNullException.ThrowIfNull(attributeCollection);
+
             int currentCount = attributeCollection.Count;
             for (int i = 0; i < currentCount; i = ((i) + (1)))
             {
@@ -366,8 +386,10 @@ namespace System.DirectoryServices.Protocols
             return List.Add(attribute);
         }
 
-        public void AddRange(DirectoryAttributeModification[] attributes!!)
+        public void AddRange(DirectoryAttributeModification[] attributes)
         {
+            ArgumentNullException.ThrowIfNull(attributes);
+
             foreach (DirectoryAttributeModification attribute in attributes)
             {
                 if (attribute == null)
@@ -379,8 +401,10 @@ namespace System.DirectoryServices.Protocols
             InnerList.AddRange(attributes);
         }
 
-        public void AddRange(DirectoryAttributeModificationCollection attributeCollection!!)
+        public void AddRange(DirectoryAttributeModificationCollection attributeCollection)
         {
+            ArgumentNullException.ThrowIfNull(attributeCollection);
+
             int currentCount = attributeCollection.Count;
             for (int i = 0; i < currentCount; i = ((i) + (1)))
             {

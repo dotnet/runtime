@@ -7,6 +7,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -21,7 +22,7 @@ using Microsoft.Extensions.Primitives;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    internal class Startup
+    internal sealed class Startup
     {
         // This method gets called by the runtime. Use this method to add services to the container.
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
@@ -124,7 +125,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             context.Response.ContentLength = response.Content.Headers.ContentLength;
                         byte[] bytes = await response.Content.ReadAsByteArrayAsync();
                         await context.Response.Body.WriteAsync(bytes);
-
                     }
                 }
 
@@ -161,6 +161,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         runtimeId = parsedId;
                     }
+
+                    CancellationTokenSource cts = new();
                     try
                     {
                         using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
@@ -177,11 +179,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                         System.Net.WebSockets.WebSocket ideSocket = await context.WebSockets.AcceptWebSocketAsync();
 
-                        await proxy.Run(endpoint, ideSocket);
+                        await proxy.Run(endpoint, ideSocket, cts);
                     }
                     catch (Exception e)
                     {
                         Console.WriteLine("got exception {0}", e);
+                        cts.Cancel();
                     }
                 }
             });

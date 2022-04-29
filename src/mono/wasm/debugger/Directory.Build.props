@@ -1,0 +1,6 @@
+<Project>
+    <PropertyGroup>
+        <RuntimeConfiguration Condition="'$(RuntimeConfiguration)' == ''">Release</RuntimeConfiguration>
+    </PropertyGroup>
+  <Import Project="..\..\Directory.Build.props" />
+</Project>

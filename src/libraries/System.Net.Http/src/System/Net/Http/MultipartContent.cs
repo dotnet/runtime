@@ -108,8 +108,10 @@ namespace System.Net.Http
             return Guid.NewGuid().ToString();
         }
 
-        public virtual void Add(HttpContent content!!)
+        public virtual void Add(HttpContent content)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             _nestedContent.Add(content);
         }
 

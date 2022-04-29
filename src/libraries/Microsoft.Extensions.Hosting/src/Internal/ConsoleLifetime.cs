@@ -28,10 +28,15 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public ConsoleLifetime(IOptions<ConsoleLifetimeOptions> options, IHostEnvironment environment, IHostApplicationLifetime applicationLifetime, IOptions<HostOptions> hostOptions, ILoggerFactory loggerFactory)
         {
-            Options = options?.Value ?? throw new ArgumentNullException(nameof(options));
-            Environment = environment ?? throw new ArgumentNullException(nameof(environment));
-            ApplicationLifetime = applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime));
-            HostOptions = hostOptions?.Value ?? throw new ArgumentNullException(nameof(hostOptions));
+            ThrowHelper.ThrowIfNull(options?.Value, nameof(options));
+            ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(environment);
+            ThrowHelper.ThrowIfNull(hostOptions?.Value, nameof(hostOptions));
+
+            Options = options.Value;
+            Environment = environment;
+            ApplicationLifetime = applicationLifetime;
+            HostOptions = hostOptions.Value;
             Logger = loggerFactory.CreateLogger("Microsoft.Hosting.Lifetime");
         }
 
@@ -51,12 +56,12 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 _applicationStartedRegistration = ApplicationLifetime.ApplicationStarted.Register(state =>
                 {
-                    ((ConsoleLifetime)state).OnApplicationStarted();
+                    ((ConsoleLifetime)state!).OnApplicationStarted();
                 },
                 this);
                 _applicationStoppingRegistration = ApplicationLifetime.ApplicationStopping.Register(state =>
                 {
-                    ((ConsoleLifetime)state).OnApplicationStopping();
+                    ((ConsoleLifetime)state!).OnApplicationStopping();
                 },
                 this);
             }

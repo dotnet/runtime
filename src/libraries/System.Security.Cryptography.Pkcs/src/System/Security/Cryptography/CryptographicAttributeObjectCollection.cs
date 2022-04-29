@@ -23,13 +23,23 @@ namespace System.Security.Cryptography
             _list.Add(attribute);
         }
 
-        public int Add(AsnEncodedData asnEncodedData!!)
+        public int Add(AsnEncodedData asnEncodedData)
         {
+            if (asnEncodedData is null)
+            {
+                throw new ArgumentNullException(nameof(asnEncodedData));
+            }
+
             return Add(new CryptographicAttributeObject(asnEncodedData.Oid!, new AsnEncodedDataCollection(asnEncodedData)));
         }
 
-        public int Add(CryptographicAttributeObject attribute!!)
+        public int Add(CryptographicAttributeObject attribute)
         {
+            if (attribute is null)
+            {
+                throw new ArgumentNullException(nameof(attribute));
+            }
+
             //
             // Merge with existing attribute, if already existed, else add as new.
             //
@@ -71,8 +81,13 @@ namespace System.Security.Cryptography
             _list.Add(attribute);
         }
 
-        public void Remove(CryptographicAttributeObject attribute!!)
+        public void Remove(CryptographicAttributeObject attribute)
         {
+            if (attribute is null)
+            {
+                throw new ArgumentNullException(nameof(attribute));
+            }
+
             _list.Remove(attribute);
         }
 
@@ -118,12 +133,17 @@ namespace System.Security.Cryptography
             return new CryptographicAttributeObjectEnumerator(this);
         }
 
-        void ICollection.CopyTo(Array array!!, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (index > array.Length - Count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -134,10 +154,15 @@ namespace System.Security.Cryptography
             }
         }
 
-        public void CopyTo(CryptographicAttributeObject[] array!!, int index)
+        public void CopyTo(CryptographicAttributeObject[] array, int index)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (index > array.Length - Count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 

@@ -46,6 +46,7 @@ namespace ApplyUpdateReferencedAssembly
 
     public class MethodBody5 {
         public static void StaticMethod1 () {
+            Console.WriteLine("breakpoint in a line that will not be changed");
             Console.WriteLine("beforeoriginal");
             Console.WriteLine("original");
         }

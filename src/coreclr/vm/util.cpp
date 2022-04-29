@@ -12,7 +12,6 @@
 #include "corhost.h"
 #include "eventtrace.h"
 #include "posterror.h"
-#include "eemessagebox.h"
 
 #include <shlobj.h>
 

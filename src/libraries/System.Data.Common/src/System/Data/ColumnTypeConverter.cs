@@ -68,8 +68,10 @@ namespace System.Data
         /// </summary>
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "InstanceDescriptor calls GetType(string) on AssemblyQualifiedName of instance of type we already have in here.")]
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (destinationType == typeof(string))
             {
                 return value != null ? value.ToString() : string.Empty;

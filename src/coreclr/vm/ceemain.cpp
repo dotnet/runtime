@@ -158,7 +158,6 @@
 #include "syncclean.hpp"
 #include "typeparse.h"
 #include "debuginfostore.h"
-#include "eemessagebox.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "disassembler.h"
@@ -179,9 +178,6 @@
 #include "win32threadpool.h"
 
 #include <shlwapi.h>
-
-#include "bbsweep.h"
-
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -428,44 +424,6 @@ void InitializeStartupFlags()
     g_IGCHoardVM = (flags & STARTUP_HOARD_GC_VM) == 0 ? 0 : 1;
 }
 
-
-// BBSweepStartFunction is the first function to execute in the BBT sweeper thread.
-// It calls WatchForSweepEvent where we wait until a sweep occurs.
-DWORD __stdcall BBSweepStartFunction(LPVOID lpArgs)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    class CLRBBSweepCallback : public ICLRBBSweepCallback
-    {
-        virtual HRESULT WriteProfileData()
-        {
-            BEGIN_ENTRYPOINT_NOTHROW
-            WRAPPER_NO_CONTRACT;
-            Module::WriteAllModuleProfileData(false);
-            END_ENTRYPOINT_NOTHROW;
-            return S_OK;
-        }
-    } clrCallback;
-
-    EX_TRY
-    {
-        g_BBSweep.WatchForSweepEvents(&clrCallback);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTerminalExceptions)
-
-    return 0;
-}
-
-
 //-----------------------------------------------------------------------------
 
 void InitGSCookie()
@@ -666,6 +624,7 @@ void EEStartupHelper()
         Thread::StaticInitialize();
         ThreadpoolMgr::StaticInitialize();
 
+        JITInlineTrackingMap::StaticInitialize();
         MethodDescBackpatchInfoTracker::StaticInitialize();
         CodeVersionManager::StaticInitialize();
         TieredCompilationManager::StaticInitialize();
@@ -794,25 +753,6 @@ void EEStartupHelper()
         // Monitors, Crsts, and SimpleRWLocks all use the same spin heuristics
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
-
-
-        // Cross-process named objects are not supported in PAL
-        // (see CorUnix::InternalCreateEvent - src/pal/src/synchobj/event.cpp)
-#if !defined(TARGET_UNIX)
-        // Initialize the sweeper thread.
-        if (g_pConfig->GetZapBBInstr() != NULL)
-        {
-            DWORD threadID;
-            HANDLE hBBSweepThread = ::CreateThread(NULL,
-                                                   0,
-                                                   (LPTHREAD_START_ROUTINE) BBSweepStartFunction,
-                                                   NULL,
-                                                   0,
-                                                   &threadID);
-            _ASSERTE(hBBSweepThread);
-            g_BBSweep.SetBBSweepThreadHandle(hBBSweepThread);
-        }
-#endif // TARGET_UNIX
 
 #ifdef FEATURE_INTERPRETER
         Interpreter::Initialize();
@@ -1222,9 +1162,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     STRESS_LOG1(LF_STARTUP, LL_INFO10, "EEShutDown entered unloading = %d", fIsDllUnloading);
 
 #ifdef _DEBUG
-    if (_DbgBreakCount)
-        _ASSERTE(!"An assert was hit before EE Shutting down");
-
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnEEShutdown))
         _ASSERTE(!"Shutting down EE!");
 #endif
@@ -1253,9 +1190,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
 
         // Indicate the EE is the shut down phase.
         g_fEEShutDown |= ShutDown_Start;
-
-        // Terminate the BBSweep thread
-        g_BBSweep.ShutdownBBSweepThread();
 
         if (!g_fProcessDetach && !g_fFastExitProcess)
         {
@@ -1431,12 +1365,7 @@ part2:
                 g_fEEShutDown |= ShutDown_Phase2;
 
                 // Shutdown finalizer before we suspend all background threads. Otherwise we
-                // never get to finalize anything. Obviously.
-
-#ifdef _DEBUG
-                if (_DbgBreakCount)
-                    _ASSERTE(!"An assert was hit After Finalizer run");
-#endif
+                // never get to finalize anything.
 
                 // No longer process exceptions
                 g_fNoExceptions = true;
@@ -1487,11 +1416,6 @@ part2:
 #if USE_DISASSEMBLER
                 Disassembler::StaticClose();
 #endif // USE_DISASSEMBLER
-
-#ifdef _DEBUG
-                if (_DbgBreakCount)
-                    _ASSERTE(!"EE Shutting down after an assert");
-#endif
 
                 WriteJitHelperCountToSTRESSLOG();
 

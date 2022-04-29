@@ -18,9 +18,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {2BC63DAA-17AC-498E-A6E0-2E0A01266D5E}
-.namespace JitTest
+.namespace JitTest_s_ldc_mulovf_signed_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
     .method private hidebysig static bool 
@@ -74,7 +74,7 @@
       IL_003e:  ret
     } // end of method 'Test::check'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -90,7 +90,7 @@
       IL_000b:  conv.i8
       IL_000c:  ldc.i8     0x3fffffff00000001
       IL_0015:  ldc.i4.0
-      IL_0016:  call       bool JitTest.Test::check(int64,
+      IL_0016:  call       bool JitTest_s_ldc_mulovf_signed_il.Test::check(int64,
                                                     int64,
                                                     int64,
                                                     bool)
@@ -103,7 +103,7 @@
       IL_0030:  conv.i8
       IL_0031:  ldc.i8     0x7fffffff00000000
       IL_003a:  ldc.i4.0
-      IL_003b:  call       bool JitTest.Test::check(int64,
+      IL_003b:  call       bool JitTest_s_ldc_mulovf_signed_il.Test::check(int64,
                                                     int64,
                                                     int64,
                                                     bool)
@@ -116,7 +116,7 @@
       IL_0059:  ldc.i4.0
       IL_005a:  conv.i8
       IL_005b:  ldc.i4.1
-      IL_005c:  call       bool JitTest.Test::check(int64,
+      IL_005c:  call       bool JitTest_s_ldc_mulovf_signed_il.Test::check(int64,
                                                     int64,
                                                     int64,
                                                     bool)
@@ -129,7 +129,7 @@
       IL_006f:  conv.i8
       IL_0070:  ldc.i8     0x7ffffffffffffffe
       IL_0079:  ldc.i4.0
-      IL_007a:  call       bool JitTest.Test::check(int64,
+      IL_007a:  call       bool JitTest_s_ldc_mulovf_signed_il.Test::check(int64,
                                                     int64,
                                                     int64,
                                                     bool)
@@ -144,7 +144,7 @@
       IL_0088:  ldc.i4.2
       IL_0089:  conv.i8
       IL_008a:  ldc.i4.0
-      IL_008b:  call       bool JitTest.Test::check(int64,
+      IL_008b:  call       bool JitTest_s_ldc_mulovf_signed_il.Test::check(int64,
                                                     int64,
                                                     int64,
                                                     bool)
@@ -157,7 +157,7 @@
       IL_009a:  ldc.i8     0x1000000000
       IL_00a3:  ldc.i8     0x100000000000000
       IL_00ac:  ldc.i4.0
-      IL_00ad:  call       bool JitTest.Test::check(int64,
+      IL_00ad:  call       bool JitTest_s_ldc_mulovf_signed_il.Test::check(int64,
                                                     int64,
                                                     int64,
                                                     bool)
@@ -170,7 +170,7 @@
       IL_00b8:  ldc.i8     0x8000000000000001
       IL_00c1:  ldc.i8     0x7fffffffffffffff
       IL_00ca:  ldc.i4.0
-      IL_00cb:  call       bool JitTest.Test::check(int64,
+      IL_00cb:  call       bool JitTest_s_ldc_mulovf_signed_il.Test::check(int64,
                                                     int64,
                                                     int64,
                                                     bool)
@@ -206,6 +206,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'JitTest'
+} // end of namespace 'JitTest_s_ldc_mulovf_signed_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

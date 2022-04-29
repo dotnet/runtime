@@ -68,8 +68,13 @@ namespace System.Reflection.Metadata
         /// The caller is responsible for keeping the memory alive and unmodified throughout the lifetime of the <see cref="MetadataReaderProvider"/>.
         /// The content of the blob is not read during the construction of the <see cref="MetadataReaderProvider"/>
         /// </remarks>
-        public static unsafe MetadataReaderProvider FromMetadataImage(byte* start!!, int size)
+        public static unsafe MetadataReaderProvider FromMetadataImage(byte* start, int size)
         {
+            if (start is null)
+            {
+                Throw.ArgumentNull(nameof(start));
+            }
+
             if (size < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(size));
@@ -100,7 +105,7 @@ namespace System.Reflection.Metadata
         {
             if (image.IsDefault)
             {
-                throw new ArgumentNullException(nameof(image));
+                Throw.ArgumentNull(nameof(image));
             }
 
             return new MetadataReaderProvider(new ByteArrayMemoryProvider(image));
@@ -155,8 +160,13 @@ namespace System.Reflection.Metadata
         /// <exception cref="ArgumentException"><paramref name="stream"/> doesn't support read and seek operations.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         /// <exception cref="IOException">Error reading from the stream (only when <see cref="MetadataStreamOptions.PrefetchMetadata"/> is specified).</exception>
-        public static MetadataReaderProvider FromMetadataStream(Stream stream!!, MetadataStreamOptions options = MetadataStreamOptions.Default, int size = 0)
+        public static MetadataReaderProvider FromMetadataStream(Stream stream, MetadataStreamOptions options = MetadataStreamOptions.Default, int size = 0)
         {
+            if (stream is null)
+            {
+                Throw.ArgumentNull(nameof(stream));
+            }
+
             if (!stream.CanRead || !stream.CanSeek)
             {
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(stream));

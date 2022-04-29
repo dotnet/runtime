@@ -57,6 +57,11 @@
       <Version>$(ObjWriterVersion)</Version>
     </PackageReference>
 
+    <!-- Workaround until the SDK does this, see https://github.com/dotnet/sdk/issues/24799 -->
+    <PackageReference Include="NETStandard.Library">
+      <Version>$(NetStandardLibraryVersion)</Version>
+    </PackageReference>
+
     <Content Include="$(NuGetPackageRoot)runtime.$(ObjWriterRid).microsoft.netcore.runtime.objwriter\$(ObjWriterVersion)\runtimes\$(ObjWriterRid)\native\$(LibPrefix)objwriter$(LibSuffix)">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <Visible>false</Visible>

@@ -18,12 +18,14 @@ namespace System.IO
             : base(changeType, directory, name)
         {
             _oldName = oldName;
-            _oldFullPath = Path.Join(Path.GetFullPath(directory), oldName);
 
-            if (string.IsNullOrWhiteSpace(oldName))
+            if (directory.Length == 0) // empty directory means current working dir
             {
-                _oldFullPath = PathInternal.EnsureTrailingSeparator(_oldFullPath);
+                directory = ".";
             }
+
+            string fullDirectoryPath = Path.GetFullPath(directory);
+            _oldFullPath = string.IsNullOrEmpty(oldName) ? PathInternal.EnsureTrailingSeparator(fullDirectoryPath) : Path.Join(fullDirectoryPath, oldName);
         }
 
         /// <devdoc>

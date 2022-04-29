@@ -268,10 +268,7 @@ namespace
                     if (selected_ver != fx_ver_t())
                     {
                         // Compare the previous hive_dir selection with the current hive_dir to see which one is the better match
-                        std::vector<fx_ver_t> version_list;
-                        version_list.push_back(resolved_ver);
-                        version_list.push_back(selected_ver);
-                        resolved_ver = resolve_framework_reference_from_version_list(version_list, fx_ref);
+                        resolved_ver = resolve_framework_reference_from_version_list({ resolved_ver, selected_ver }, fx_ref);
                     }
 
                     if (resolved_ver != selected_ver)

@@ -12,14 +12,19 @@ namespace System.Net.Sockets
 
         // Creates a new instance of the MulticastOption class with the specified IP address
         // group and local address.
-        public MulticastOption(IPAddress group!!, IPAddress mcint!!)
+        public MulticastOption(IPAddress group, IPAddress mcint)
         {
+            ArgumentNullException.ThrowIfNull(group);
+            ArgumentNullException.ThrowIfNull(mcint);
+
             _group = group;
             LocalAddress = mcint;
         }
 
-        public MulticastOption(IPAddress group!!, int interfaceIndex)
+        public MulticastOption(IPAddress group, int interfaceIndex)
         {
+            ArgumentNullException.ThrowIfNull(group);
+
             if (interfaceIndex < 0 || interfaceIndex > 0x00FFFFFF)
             {
                 throw new ArgumentOutOfRangeException(nameof(interfaceIndex));
@@ -30,8 +35,10 @@ namespace System.Net.Sockets
         }
 
         // Creates a new version of the MulticastOption class for the specified group.
-        public MulticastOption(IPAddress group!!)
+        public MulticastOption(IPAddress group)
         {
+            ArgumentNullException.ThrowIfNull(group);
+
             _group = group;
 
             LocalAddress = IPAddress.Any;
@@ -83,8 +90,10 @@ namespace System.Net.Sockets
 
         // Creates a new instance of the MulticaseOption class with the specified IP
         // address group and local address.
-        public IPv6MulticastOption(IPAddress group!!, long ifindex)
+        public IPv6MulticastOption(IPAddress group, long ifindex)
         {
+            ArgumentNullException.ThrowIfNull(group);
+
             if (ifindex < 0 || ifindex > 0x00000000FFFFFFFF)
             {
                 throw new ArgumentOutOfRangeException(nameof(ifindex));
@@ -96,8 +105,10 @@ namespace System.Net.Sockets
 
         // Creates a new version of the MulticastOption class for the specified
         // group.
-        public IPv6MulticastOption(IPAddress group!!)
+        public IPv6MulticastOption(IPAddress group)
         {
+            ArgumentNullException.ThrowIfNull(group);
+
             _group = group;
             InterfaceIndex = 0;
         }

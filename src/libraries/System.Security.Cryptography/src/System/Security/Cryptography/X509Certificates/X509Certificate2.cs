@@ -429,8 +429,10 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [UnsupportedOSPlatform("browser")]
-        public static X509ContentType GetCertContentType(string fileName!!)
+        public static X509ContentType GetCertContentType(string fileName)
         {
+            ArgumentNullException.ThrowIfNull(fileName);
+
             // .NET Framework compat: The .NET Framework expands the filename to a full path for the purpose of performing a CAS permission check. While CAS is not present here,
             // we still need to call GetFullPath() so we get the same exception behavior if the fileName is bad.
             _ = Path.GetFullPath(fileName);
@@ -765,8 +767,10 @@ namespace System.Security.Cryptography.X509Certificates
         ///   The specified private key doesn't match the public key for this certificate.
         /// </para>
         /// </exception>
-        public X509Certificate2 CopyWithPrivateKey(ECDiffieHellman privateKey!!)
+        public X509Certificate2 CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
+            ArgumentNullException.ThrowIfNull(privateKey);
+
             if (HasPrivateKey)
                 throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
 
@@ -843,8 +847,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("browser")]
-        public static X509Certificate2 CreateFromPemFile(string certPemFilePath!!, string? keyPemFilePath = default)
+        public static X509Certificate2 CreateFromPemFile(string certPemFilePath, string? keyPemFilePath = default)
         {
+            ArgumentNullException.ThrowIfNull(certPemFilePath);
+
             ReadOnlySpan<char> certContents = File.ReadAllText(certPemFilePath);
             ReadOnlySpan<char> keyContents = keyPemFilePath is null ? certContents : File.ReadAllText(keyPemFilePath);
 
@@ -907,8 +913,10 @@ namespace System.Security.Cryptography.X509Certificates
         /// </para>
         /// </remarks>
         [UnsupportedOSPlatform("browser")]
-        public static X509Certificate2 CreateFromEncryptedPemFile(string certPemFilePath!!, ReadOnlySpan<char> password, string? keyPemFilePath = default)
+        public static X509Certificate2 CreateFromEncryptedPemFile(string certPemFilePath, ReadOnlySpan<char> password, string? keyPemFilePath = default)
         {
+            ArgumentNullException.ThrowIfNull(certPemFilePath);
+
             ReadOnlySpan<char> certContents = File.ReadAllText(certPemFilePath);
             ReadOnlySpan<char> keyContents = keyPemFilePath is null ? certContents : File.ReadAllText(keyPemFilePath);
 

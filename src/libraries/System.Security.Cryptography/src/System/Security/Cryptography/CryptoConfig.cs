@@ -333,8 +333,10 @@ namespace System.Security.Cryptography
         }
 
         [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
-        public static object? CreateFromName(string name!!, params object?[]? args)
+        public static object? CreateFromName(string name, params object?[]? args)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
 #if BROWSER
             switch (name)
             {

@@ -353,7 +353,7 @@ namespace System
         {
             byte* buffer = number.GetDigitsPointer();
             number.DigitsCount = DecimalPrecision;
-            number.IsNegative = d.IsNegative;
+            number.IsNegative = decimal.IsNegative(d);
 
             byte* p = buffer + DecimalPrecision;
             while ((d.Mid | d.High) != 0)
@@ -1854,11 +1854,6 @@ namespace System
                 case 'R':
                 case 'r':
                 {
-                    if (number.Kind != NumberBufferKind.FloatingPoint)
-                    {
-                        goto default;
-                    }
-
                     format = (char)(format - ('R' - 'G'));
                     Debug.Assert((format == 'G') || (format == 'g'));
                     goto case 'G';

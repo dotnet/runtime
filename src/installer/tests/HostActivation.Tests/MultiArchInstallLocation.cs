@@ -132,17 +132,17 @@ namespace HostActivation.Tests
             using (TestOnlyProductBehavior.Enable(appExe))
             {
                 Command.Create(appExe)
-                .EnableTracingAndCaptureOutputs()
-                .DotNetRoot(projDir)
-                .MultilevelLookup(false)
-                .EnvironmentVariable(
-                    Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
-                    sharedTestState.InstallLocation)
-                .Execute()
-                .Should().Fail()
-                .And.HaveUsedDotNetRootInstallLocation(projDir, fixture.CurrentRid)
-                // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
-                .And.HaveStdErrContaining($"A fatal error occurred. The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform ("hostfxr")} could not be found.");
+                    .EnableTracingAndCaptureOutputs()
+                    .DotNetRoot(projDir)
+                    .MultilevelLookup(false)
+                    .EnvironmentVariable(
+                        Constants.TestOnlyEnvironmentVariables.GloballyRegisteredPath,
+                        sharedTestState.InstallLocation)
+                    .Execute()
+                    .Should().Fail()
+                    .And.HaveUsedDotNetRootInstallLocation(projDir, fixture.CurrentRid)
+                    // If DOTNET_ROOT points to a folder that exists we assume that there's a dotnet installation in it
+                    .And.HaveStdErrContaining($"The required library {RuntimeInformationExtensions.GetSharedLibraryFileNameForCurrentPlatform("hostfxr")} could not be found.");
             }
         }
 

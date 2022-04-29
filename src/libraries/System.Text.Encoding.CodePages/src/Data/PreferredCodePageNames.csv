@@ -1,6 +1,6 @@
 ﻿#
 # This file contains data for mapping from mapping from code page numbers to their preferred IANA encoding names
-# and English names (we do not currently localize ProjectN libraries)
+# and English names
 #
 # This can be used as input to the EncodingData tool when generating EncodingTable.Data.cs
 #

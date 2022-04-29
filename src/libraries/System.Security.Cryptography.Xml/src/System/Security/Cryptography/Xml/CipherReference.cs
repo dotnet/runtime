@@ -65,8 +65,13 @@ namespace System.Security.Cryptography.Xml
             return referenceElement;
         }
 
-        public override void LoadXml(XmlElement value!!)
+        public override void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             ReferenceType = value.LocalName;
             string uri = Utils.GetAttribute(value, "URI", EncryptedXml.XmlEncNamespaceUrl);
             Uri = uri ?? throw new CryptographicException(SR.Cryptography_Xml_UriRequired);

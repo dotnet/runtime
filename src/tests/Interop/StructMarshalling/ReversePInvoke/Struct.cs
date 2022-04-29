@@ -143,7 +143,7 @@ public struct S8
 {
     public string name;
     public bool gender;
-    [MarshalAs(UnmanagedType.Error)] //In ProjectN, MarshalAsError isnt supported in V1
+    [MarshalAs(UnmanagedType.Error)]
     public int i32;
     [MarshalAs(UnmanagedType.Error)]
     public uint ui32;

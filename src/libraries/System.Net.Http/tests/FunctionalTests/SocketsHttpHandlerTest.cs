@@ -1054,7 +1054,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(TimeSpan.FromSeconds(15), handler.ConnectTimeout);
+                Assert.Equal(Timeout.InfiniteTimeSpan, handler.ConnectTimeout);
             }
         }
 
@@ -2877,7 +2877,6 @@ namespace System.Net.Http.Functional.Tests
                     {
                         HttpRequestMessage request = CreateRequest(HttpMethod.Get, uri, UseVersion);
                         HttpResponseMessage response = await client.SendAsync(request);
-                        Console.WriteLine(response);
                         Assert.Equal(1, response.Version.Major);
                     }
                 },
