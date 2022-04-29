@@ -53,6 +53,8 @@ namespace System.Runtime.InteropServices.Tests
             yield return new object[] { new Blittable(), GCHandleType.Pinned };
             yield return new object[] { new Blittable(), GCHandleType.Pinned };
             yield return new object[] { new Blittable[0], GCHandleType.Pinned };
+            yield return new object[] { new Unmanaged(), GCHandleType.Pinned };
+            yield return new object[] { new Unmanaged[0], GCHandleType.Pinned };
         }
 
         [Theory]
@@ -187,6 +189,11 @@ namespace System.Runtime.InteropServices.Tests
         public struct Blittable
         {
             public int Object { get; set; }
+        }
+
+        public struct Unmanaged
+        {
+            public char Object { get; set; }
         }
 
         public struct NonBlittable
