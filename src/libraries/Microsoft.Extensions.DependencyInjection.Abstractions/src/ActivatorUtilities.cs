@@ -60,7 +60,8 @@ namespace Microsoft.Extensions.DependencyInjection
             if (pereferredConstructor is not null)
             {
                 var matcher = new ConstructorMatcher(pereferredConstructor);
-                if (matcher.Match(parameters) == -1)
+                matcher.Match(parameters);
+                if (matcher.MatchedLength == -1)
                 {
                     ThrowMarkedCtorDoesNotTakeAllProvidedArguments();
                 }
@@ -71,7 +72,7 @@ namespace Microsoft.Extensions.DependencyInjection
             {
                 ConstructorInfo constructor = constructors[i];
                 var matcher = new ConstructorMatcher(constructor);
-                _ = matcher.Match(parameters);
+                matcher.Match(parameters);
                 matchers[i] = matcher;
             }
             Array.Sort(matchers, (a, b) => b.Priority - a.Priority);
@@ -350,12 +351,12 @@ namespace Microsoft.Extensions.DependencyInjection
             public int MatchedLength { get; private set; } = -1;
             public int Priority => MatchedLength == -1 ? -1 : MatchedLength + _parameters.Length;
 
-            public int Match(object[] givenParameters)
+            public void Match(object[] givenParameters)
             {
                 if (givenParameters.Length > _parameters.Length)
                 {
                     MatchedLength = -1;
-                    return MatchedLength;
+                    return;
                 }
                 int applyIndexStart = 0;
                 MatchedLength = 0;
@@ -385,10 +386,9 @@ namespace Microsoft.Extensions.DependencyInjection
                     if (givenMatched == false)
                     {
                         MatchedLength = -1;
-                        return MatchedLength;
+                        return;
                     }
                 }
-                return MatchedLength;
             }
 
             public object? CreateInstance(IServiceProvider provider, bool throwIfFailed = false)
