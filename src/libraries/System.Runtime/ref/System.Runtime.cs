@@ -8729,6 +8729,8 @@ namespace System.IO
         public static System.Threading.Tasks.Task<string> ReadAllTextAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> ReadLines(string path) { throw null; }
         public static System.Collections.Generic.IEnumerable<string> ReadLines(string path, System.Text.Encoding encoding) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<string> ReadLinesAsync(string path, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public static System.Collections.Generic.IAsyncEnumerable<string> ReadLinesAsync(string path, System.Text.Encoding encoding, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName) { }
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors) { }
         public static System.IO.FileSystemInfo? ResolveLinkTarget(string linkPath, bool returnFinalTarget) { throw null; }
