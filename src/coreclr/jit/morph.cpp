@@ -5531,8 +5531,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             GenTree* lclVar = gtNewLclvNode(lclNum, objRefType);
             nullchk         = gtNewNullCheck(lclVar, compCurBB);
 
-            nullchk->gtFlags |= GTF_DONT_CSE; // Don't try to create a CSE for these TYP_BYTE indirections
-
             if (asg)
             {
                 // Create the "comma" node.
