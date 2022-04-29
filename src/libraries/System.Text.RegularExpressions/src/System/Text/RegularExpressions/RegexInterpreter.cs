@@ -140,10 +140,6 @@ namespace System.Text.RegularExpressions
             int newpos = runtrack![runtrackpos];
             runtrackpos++;
 
-#if DEBUG
-            Debug.WriteLineIf(Regex.EnableDebugTracing, $"       Backtracking{(newpos < 0 ? " (back2)" : "")} to code position {Math.Abs(newpos)}");
-#endif
-
             int back = (int)RegexOpcode.Backtracking;
             if (newpos < 0)
             {
@@ -386,12 +382,7 @@ namespace System.Text.RegularExpressions
                     Advance(advance);
                     advance = -1;
                 }
-#if DEBUG
-                if (Regex.EnableDebugTracing)
-                {
-                    DebugTraceCurrentState();
-                }
-#endif
+
                 switch (_operator)
                 {
                     case RegexOpcode.Stop:
@@ -1157,15 +1148,5 @@ namespace System.Text.RegularExpressions
                 Backtrack();
             }
         }
-
-#if DEBUG
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal override void DebugTraceCurrentState()
-        {
-            base.DebugTraceCurrentState();
-            Debug.WriteLine($"       {_code.DescribeInstruction(_codepos)} {((_operator & RegexOpcode.Backtracking) != 0 ? " Back" : "")} {((_operator & RegexOpcode.BacktrackingSecond) != 0 ? " Back2" : "")}");
-            Debug.WriteLine("");
-        }
-#endif
     }
 }
