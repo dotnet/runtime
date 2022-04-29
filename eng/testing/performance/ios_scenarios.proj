@@ -123,7 +123,7 @@
           $(Python) pre.py --name MauiBlazorTesting.app
 
           # Testing commands
-          $(Python) test.py devicestartup --device-type ios --package-path MauiBlazorTesting.app --package-name net.dot.mauiblazortesting --scenario-name "%(Identity)"
+          $(Python) test.py devicestartup --device-type ios --package-path MauiBlazorTesting.app --package-name net.dot.mauiblazortesting --scenario-name "%(Identity) --use-fully-drawn-time --fully-drawn-magic-string __MAUI_Blazor_WebView_OnAfterRender__"
 
           # Post commands
           $(Python) post.py
