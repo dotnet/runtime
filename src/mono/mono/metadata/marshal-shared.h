@@ -14,8 +14,8 @@
 #include "metadata/reflection-internals.h"
 #include "mono/metadata/handle.h"
 
-#ifndef _MONO_METADATA_MARHSAL_SHARED_H_
-#define _MONO_METADATA_MARHSAL_SHARED_H_
+#ifndef _MONO_METADATA_MARSHAL_SHARED_H_
+#define _MONO_METADATA_MARSHAL_SHARED_H_
 
 MonoMethod** mono_marshal_shared_get_sh_dangerous_add_ref (void);
 MonoMethod** mono_marshal_shared_get_sh_dangerous_release (void);
@@ -77,4 +77,4 @@ mono_marshal_shared_emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb
 void
 mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec);
 
-#endif /* _MONO_METADATA_MARHSAL_SHARED_H_ */
+#endif /* _MONO_METADATA_MARSHAL_SHARED_H_ */
