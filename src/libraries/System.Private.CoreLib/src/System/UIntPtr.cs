@@ -280,72 +280,22 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
-        static (nuint Quotient, nuint Remainder) IBinaryInteger<nuint>.DivRem(nuint left, nuint right) => Math.DivRem(left, right);
+        public static (nuint Quotient, nuint Remainder) DivRem(nuint left, nuint right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
-        static nuint IBinaryInteger<nuint>.LeadingZeroCount(nuint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nuint)BitOperations.LeadingZeroCount((ulong)value);
-            }
-            else
-            {
-                return (nuint)BitOperations.LeadingZeroCount((uint)value);
-            }
-        }
+        public static nuint LeadingZeroCount(nuint value) => (nuint)BitOperations.LeadingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
-        static nuint IBinaryInteger<nuint>.PopCount(nuint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nuint)BitOperations.PopCount((ulong)value);
-            }
-            else
-            {
-                return (nuint)BitOperations.PopCount((uint)value);
-            }
-        }
+        public static nuint PopCount(nuint value) => (nuint)BitOperations.PopCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
-        static nuint IBinaryInteger<nuint>.RotateLeft(nuint value, int rotateAmount)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nuint)BitOperations.RotateLeft((ulong)value, rotateAmount);
-            }
-            else
-            {
-                return (nuint)BitOperations.RotateLeft((uint)value, rotateAmount);
-            }
-        }
+        public static nuint RotateLeft(nuint value, int rotateAmount) => BitOperations.RotateLeft(value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
-        static nuint IBinaryInteger<nuint>.RotateRight(nuint value, int rotateAmount)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nuint)BitOperations.RotateRight((ulong)value, rotateAmount);
-            }
-            else
-            {
-                return (nuint)BitOperations.RotateRight((uint)value, rotateAmount);
-            }
-        }
+        public static nuint RotateRight(nuint value, int rotateAmount) => BitOperations.RotateRight(value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
-        static nuint IBinaryInteger<nuint>.TrailingZeroCount(nuint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nuint)BitOperations.TrailingZeroCount((ulong)value);
-            }
-            else
-            {
-                return (nuint)BitOperations.TrailingZeroCount((uint)value);
-            }
-        }
+        public static nuint TrailingZeroCount(nuint value) => (nuint)BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         unsafe long IBinaryInteger<nuint>.GetShortestBitLength() => (sizeof(nuint) * 8) - BitOperations.LeadingZeroCount((nuint)_value);
@@ -376,30 +326,10 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
-        static bool IBinaryNumber<nuint>.IsPow2(nuint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.IsPow2((ulong)value);
-            }
-            else
-            {
-                return BitOperations.IsPow2((uint)value);
-            }
-        }
+        public static bool IsPow2(nuint value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
-        static nuint IBinaryNumber<nuint>.Log2(nuint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nuint)BitOperations.Log2((ulong)value);
-            }
-            else
-            {
-                return (nuint)BitOperations.Log2((uint)value);
-            }
-        }
+        public static nuint Log2(nuint value) => (nuint)BitOperations.Log2(value);
 
         //
         // IBitwiseOperators
@@ -505,14 +435,15 @@ namespace System
         static nuint INumber<nuint>.Abs(nuint value) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        static nuint INumber<nuint>.Clamp(nuint value, nuint min, nuint max) => Math.Clamp(value, min, max);
+        public static nuint Clamp(nuint value, nuint min, nuint max) => Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         static nuint INumber<nuint>.CopySign(nuint value, nuint sign) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nuint INumber<nuint>.CreateChecked<TOther>(TOther value)
+        public static nuint CreateChecked<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -579,7 +510,8 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nuint INumber<nuint>.CreateSaturating<TOther>(TOther value)
+        public static nuint CreateSaturating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -660,7 +592,8 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nuint INumber<nuint>.CreateTruncating<TOther>(TOther value)
+        public static nuint CreateTruncating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -729,23 +662,24 @@ namespace System
         static bool INumber<nuint>.IsNegative(nuint value) => false;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        static nuint INumber<nuint>.Max(nuint x, nuint y) => Math.Max(x, y);
+        public static nuint Max(nuint x, nuint y) => Math.Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        static nuint INumber<nuint>.MaxMagnitude(nuint x, nuint y) => Math.Max(x, y);
+        public static nuint MaxMagnitude(nuint x, nuint y) => Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        static nuint INumber<nuint>.Min(nuint x, nuint y) => Math.Min(x, y);
+        public static nuint Min(nuint x, nuint y) => Math.Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        static nuint INumber<nuint>.MinMagnitude(nuint x, nuint y) => Math.Min(x, y);
+        public static nuint MinMagnitude(nuint x, nuint y) => Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static int INumber<nuint>.Sign(nuint value) => (value == 0) ? 0 : 1;
+        public static int Sign(nuint value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<nuint>.TryCreate<TOther>(TOther value, out nuint result)
+        public static bool TryCreate<TOther>(TOther value, out nuint result)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
