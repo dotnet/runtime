@@ -80,7 +80,7 @@ mono_string_builder_from_platform_unicode (void)
 }
 
 void
-emit_marshal_custom_get_instance (MonoMethodBuilder *mb, MonoClass *klass, MonoMarshalSpec *spec)
+mono_marshal_shared_emit_marshal_custom_get_instance (MonoMethodBuilder *mb, MonoClass *klass, MonoMarshalSpec *spec)
 {
 	MONO_STATIC_POINTER_INIT (MonoMethod, get_instance)
 
@@ -115,7 +115,7 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass)
 }
 
 void
-emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
+mono_marshal_shared_emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv)
 {
 	if (conv == MONO_MARSHAL_CONV_BSTR_STR || conv == MONO_MARSHAL_CONV_ANSIBSTR_STR || conv == MONO_MARSHAL_CONV_TBSTR_STR)
 		mono_mb_emit_icall (mb, mono_free_bstr);

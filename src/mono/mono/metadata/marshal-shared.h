@@ -21,7 +21,7 @@ MonoMethod** mono_marshal_shared_get_sh_dangerous_add_ref (void);
 MonoMethod** mono_marshal_shared_get_sh_dangerous_release (void);
 
 void
-emit_marshal_custom_get_instance (MonoMethodBuilder *mb, MonoClass *klass, MonoMarshalSpec *spec);
+mono_marshal_shared_emit_marshal_custom_get_instance(MonoMethodBuilder *mb, MonoClass *klass, MonoMarshalSpec *spec);
 
 void
 mono_marshal_shared_init_safe_handle (void);
@@ -31,7 +31,7 @@ mono_mb_emit_auto_layout_exception (MonoMethodBuilder *mb, MonoClass *klass);
 
 /* TODO: This was inlined before */
 void
-emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv);
+mono_marshal_shared_emit_string_free_icall (MonoMethodBuilder *mb, MonoMarshalConv conv);
 
 gboolean mono_marshal_shared_is_in (const MonoType *t);
 

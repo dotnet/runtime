@@ -3459,7 +3459,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		emit_marshal_custom_get_instance (mb, mklass, spec);
+		mono_marshal_shared_emit_marshal_custom_get_instance (mb, mklass, spec);
 
 		mono_mb_emit_ldarg (mb, argnum);
 		if (m_type_is_byref (t))
@@ -3489,7 +3489,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (m_type_is_byref (t) && !(t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			mono_mb_emit_ldarg (mb, argnum);
 
-			emit_marshal_custom_get_instance (mb, mklass, spec);
+			mono_marshal_shared_emit_marshal_custom_get_instance (mb, mklass, spec);
 			mono_mb_emit_byte (mb, CEE_DUP);
 
 			mono_mb_emit_ldarg (mb, argnum);
@@ -3502,13 +3502,13 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		} else if (m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT)) {
 			mono_mb_emit_ldarg (mb, argnum);
 
-			emit_marshal_custom_get_instance (mb, mklass, spec);
+			mono_marshal_shared_emit_marshal_custom_get_instance (mb, mklass, spec);
 
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
 			mono_mb_emit_byte (mb, CEE_STIND_REF);
 		} else if (t->attrs & PARAM_ATTRIBUTE_OUT) {
-			emit_marshal_custom_get_instance (mb, mklass, spec);
+			mono_marshal_shared_emit_marshal_custom_get_instance (mb, mklass, spec);
 
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
@@ -3519,7 +3519,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		// Only call cleanup_native if MARSHAL_ACTION_CONV_IN called marshal_managed_to_native.
 		if (!(m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT)) &&
 			!(!m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT) && !(t->attrs & PARAM_ATTRIBUTE_IN))) {
-			emit_marshal_custom_get_instance (mb, mklass, spec);
+			mono_marshal_shared_emit_marshal_custom_get_instance (mb, mklass, spec);
 
 			mono_mb_emit_ldloc (mb, conv_arg);
 
@@ -3543,7 +3543,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_ldloc (mb, 3);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		emit_marshal_custom_get_instance (mb, mklass, spec);
+		mono_marshal_shared_emit_marshal_custom_get_instance (mb, mklass, spec);
 
 		mono_mb_emit_ldloc (mb, 3);
 		mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_native_to_managed);
@@ -3583,7 +3583,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 			mono_mb_emit_byte (mb, CEE_LDIND_I);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		emit_marshal_custom_get_instance (mb, mklass, spec);
+		mono_marshal_shared_emit_marshal_custom_get_instance (mb, mklass, spec);
 
 		mono_mb_emit_ldarg (mb, argnum);
 		if (m_type_is_byref (t))
@@ -3609,7 +3609,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		mono_mb_emit_ldloc (mb, 3);
 		pos2 = mono_mb_emit_branch (mb, CEE_BRFALSE);
 
-		emit_marshal_custom_get_instance (mb, mklass, spec);
+		mono_marshal_shared_emit_marshal_custom_get_instance (mb, mklass, spec);
 		mono_mb_emit_byte (mb, CEE_DUP);
 
 		mono_mb_emit_ldloc (mb, 3);
@@ -3631,7 +3631,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		if (m_type_is_byref (t)) {
 			mono_mb_emit_ldarg (mb, argnum);
 
-			emit_marshal_custom_get_instance (mb, mklass, spec);
+			mono_marshal_shared_emit_marshal_custom_get_instance (mb, mklass, spec);
 
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_op (mb, CEE_CALLVIRT, marshal_managed_to_native);
@@ -3640,7 +3640,7 @@ emit_marshal_custom_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		// Only call cleanup_managed if MARSHAL_ACTION_MANAGED_CONV_IN called marshal_native_to_managed.
 		if (!(m_type_is_byref (t) && (t->attrs & PARAM_ATTRIBUTE_OUT))) {
-			emit_marshal_custom_get_instance (mb, mklass, spec);
+			mono_marshal_shared_emit_marshal_custom_get_instance (mb, mklass, spec);
 			mono_mb_emit_ldloc (mb, conv_arg);
 			mono_mb_emit_op (mb, CEE_CALLVIRT, cleanup_managed);
 		}
@@ -4064,7 +4064,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		if (need_free) {
 			mono_mb_emit_ldloc (mb, conv_arg);
-			emit_string_free_icall (mb, conv);
+			mono_marshal_shared_emit_string_free_icall (mb, conv);
 		}
 		break;
 
@@ -4091,7 +4091,7 @@ emit_marshal_string_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 
 		/* free the string */
 		mono_mb_emit_ldloc (mb, 0);
-		emit_string_free_icall (mb, conv);
+		mono_marshal_shared_emit_string_free_icall (mb, conv);
 		break;
 
 	case MARSHAL_ACTION_MANAGED_CONV_IN:
