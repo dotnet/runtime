@@ -9709,6 +9709,12 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
 
     assert((castToType != TYP_STRUCT) || (TypeOfVN(srcVN) != TYP_STRUCT));
 
+    // TODO-CQ: implement constant folding for BitCast.
+    if (srcVNFunc.m_func == VNF_ZeroObj)
+    {
+        return VNZeroForType(castToType);
+    }
+
     return VNForFunc(castToType, VNF_BitCast, srcVN, VNForIntCon(castToType));
 }
 
