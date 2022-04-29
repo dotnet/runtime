@@ -288,72 +288,22 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
-        static (nint Quotient, nint Remainder) IBinaryInteger<nint>.DivRem(nint left, nint right) => Math.DivRem(left, right);
+        public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) => Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
-        static nint IBinaryInteger<nint>.LeadingZeroCount(nint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.LeadingZeroCount((ulong)value);
-            }
-            else
-            {
-                return BitOperations.LeadingZeroCount((uint)value);
-            }
-        }
+        public static nint LeadingZeroCount(nint value) => BitOperations.LeadingZeroCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
-        static nint IBinaryInteger<nint>.PopCount(nint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.PopCount((ulong)value);
-            }
-            else
-            {
-                return BitOperations.PopCount((uint)value);
-            }
-        }
+        public static nint PopCount(nint value) => BitOperations.PopCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
-        static nint IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nint)BitOperations.RotateLeft((ulong)value, rotateAmount);
-            }
-            else
-            {
-                return (nint)BitOperations.RotateLeft((uint)value, rotateAmount);
-            }
-        }
+        public static nint RotateLeft(nint value, int rotateAmount) => (nint)BitOperations.RotateLeft((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
-        static nint IBinaryInteger<nint>.RotateRight(nint value, int rotateAmount)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nint)BitOperations.RotateRight((ulong)value, rotateAmount);
-            }
-            else
-            {
-                return (nint)BitOperations.RotateRight((uint)value, rotateAmount);
-            }
-        }
+        public static nint RotateRight(nint value, int rotateAmount) => (nint)BitOperations.RotateRight((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
-        static nint IBinaryInteger<nint>.TrailingZeroCount(nint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.TrailingZeroCount((ulong)value);
-            }
-            else
-            {
-                return BitOperations.TrailingZeroCount((uint)value);
-            }
-        }
+        public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         unsafe long IBinaryInteger<nint>.GetShortestBitLength()
@@ -396,24 +346,16 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
-        static bool IBinaryNumber<nint>.IsPow2(nint value) => BitOperations.IsPow2(value);
+        public static bool IsPow2(nint value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
-        static nint IBinaryNumber<nint>.Log2(nint value)
+        public static nint Log2(nint value)
         {
             if (value < 0)
             {
                 ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
-
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.Log2((ulong)value);
-            }
-            else
-            {
-                return BitOperations.Log2((uint)value);
-            }
+            return BitOperations.Log2((nuint)value);
         }
 
         //
@@ -517,13 +459,13 @@ namespace System
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        static nint INumber<nint>.Abs(nint value) => Math.Abs(value);
+        public static nint Abs(nint value) => Math.Abs(value);
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        static nint INumber<nint>.Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
+        public static nint Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        static nint INumber<nint>.CopySign(nint value, nint sign)
+        public static nint CopySign(nint value, nint sign)
         {
             nint absValue = value;
 
@@ -547,7 +489,8 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateChecked<TOther>(TOther value)
+        public static nint CreateChecked<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -614,7 +557,8 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateSaturating<TOther>(TOther value)
+        public static nint CreateSaturating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -692,7 +636,8 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateTruncating<TOther>(TOther value)
+        public static nint CreateTruncating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -758,13 +703,13 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
-        static bool INumber<nint>.IsNegative(nint value) => value < 0;
+        public static bool IsNegative(nint value) => value < 0;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        static nint INumber<nint>.Max(nint x, nint y) => Math.Max(x, y);
+        public static nint Max(nint x, nint y) => Math.Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        static nint INumber<nint>.MaxMagnitude(nint x, nint y)
+        public static nint MaxMagnitude(nint x, nint y)
         {
             nint absX = x;
 
@@ -794,10 +739,10 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        static nint INumber<nint>.Min(nint x, nint y) => Math.Min(x, y);
+        public static nint Min(nint x, nint y) => Math.Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        static nint INumber<nint>.MinMagnitude(nint x, nint y)
+        public static nint MinMagnitude(nint x, nint y)
         {
             nint absX = x;
 
@@ -827,11 +772,12 @@ namespace System
         }
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static int INumber<nint>.Sign(nint value) => Math.Sign(value);
+        public static int Sign(nint value) => Math.Sign(value);
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<nint>.TryCreate<TOther>(TOther value, out nint result)
+        public static bool TryCreate<TOther>(TOther value, out nint result)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
