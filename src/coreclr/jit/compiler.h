@@ -1814,6 +1814,7 @@ class Compiler
     friend class MorphInitBlockHelper;
     friend class MorphCopyBlockHelper;
     friend class CallArgs;
+    friend class IndirectCallTransformer;
 
 #ifdef FEATURE_HW_INTRINSICS
     friend struct HWIntrinsicInfo;
@@ -5671,6 +5672,7 @@ private:
                                                      Statement*       paramAssignmentInsertionPoint);
     GenTree* fgMorphCall(GenTreeCall* call);
     GenTree* fgExpandVirtualVtableCallTarget(GenTreeCall* call);
+
     void fgMorphCallInline(GenTreeCall* call, InlineResult* result);
     void fgMorphCallInlineHelper(GenTreeCall* call, InlineResult* result, InlineContext** createdContext);
 #if DEBUG
@@ -6794,13 +6796,13 @@ public:
         optMethodFlags &= ~OMF_HAS_GUARDEDDEVIRT;
     }
 
+    void pickGDV(GenTreeCall* call, IL_OFFSET ilOffset, bool isInterface, CORINFO_CLASS_HANDLE* classGuess, CORINFO_METHOD_HANDLE* methodGuess, unsigned* likelihood);
     void considerGuardedDevirtualization(GenTreeCall*            call,
                                          IL_OFFSET               ilOffset,
                                          bool                    isInterface,
                                          CORINFO_METHOD_HANDLE   baseMethod,
                                          CORINFO_CLASS_HANDLE    baseClass,
-                                         CORINFO_CONTEXT_HANDLE* pContextHandle DEBUGARG(CORINFO_CLASS_HANDLE objClass)
-                                             DEBUGARG(const char* objClassName));
+                                         CORINFO_CONTEXT_HANDLE* pContextHandle);
 
     void addGuardedDevirtualizationCandidate(GenTreeCall*          call,
                                              CORINFO_METHOD_HANDLE methodHandle,

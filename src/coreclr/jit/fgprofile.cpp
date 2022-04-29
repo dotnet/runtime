@@ -1447,8 +1447,9 @@ public:
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)
     {
         GenTree* const node = *use;
-        if (node->IsCall() && (node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr))
+        if (node->IsCall() && (m_compiler->compClassifyGDVProbeType(node->AsCall()) != Compiler::GDVProbeType::None))
         {
+            assert(node->AsCall()->gtHandleHistogramProfileCandidateInfo != nullptr);
             m_functor(m_compiler, node->AsCall());
         }
 
