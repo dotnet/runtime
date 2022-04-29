@@ -2318,8 +2318,12 @@ public:
 
     GenTreeCall* gtNewIndCallNode(GenTree* addr, var_types type, const DebugInfo& di = DebugInfo());
 
-    GenTreeCall* gtNewHelperCallNode(
-        unsigned helper, var_types type, GenTree* arg1 = nullptr, GenTree* arg2 = nullptr, GenTree* arg3 = nullptr, GenTree* arg4 = nullptr);
+    GenTreeCall* gtNewHelperCallNode(unsigned  helper,
+                                     var_types type,
+                                     GenTree*  arg1 = nullptr,
+                                     GenTree*  arg2 = nullptr,
+                                     GenTree*  arg3 = nullptr,
+                                     GenTree*  arg4 = nullptr);
 
     GenTreeCall* gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_LOOKUP* pRuntimeLookup,
                                                   GenTree*                ctxTree,
@@ -6796,7 +6800,12 @@ public:
         optMethodFlags &= ~OMF_HAS_GUARDEDDEVIRT;
     }
 
-    void pickGDV(GenTreeCall* call, IL_OFFSET ilOffset, bool isInterface, CORINFO_CLASS_HANDLE* classGuess, CORINFO_METHOD_HANDLE* methodGuess, unsigned* likelihood);
+    void pickGDV(GenTreeCall*           call,
+                 IL_OFFSET              ilOffset,
+                 bool                   isInterface,
+                 CORINFO_CLASS_HANDLE*  classGuess,
+                 CORINFO_METHOD_HANDLE* methodGuess,
+                 unsigned*              likelihood);
     void considerGuardedDevirtualization(GenTreeCall*            call,
                                          IL_OFFSET               ilOffset,
                                          bool                    isInterface,

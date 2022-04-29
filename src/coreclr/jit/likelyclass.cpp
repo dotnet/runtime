@@ -47,7 +47,7 @@ struct LikelyClassMethodHistogram
     unsigned m_unknownHandles;
     // Histogram entries, in no particular order.
     LikelyClassMethodHistogramEntry m_histogram[HISTOGRAM_MAX_SIZE_COUNT];
-    UINT32                    countHistogramElements = 0;
+    UINT32                          countHistogramElements = 0;
 
     LikelyClassMethodHistogramEntry HistogramEntryAt(unsigned index)
     {
@@ -64,7 +64,7 @@ struct LikelyClassMethodHistogram
 //
 LikelyClassMethodHistogram::LikelyClassMethodHistogram(INT_PTR* histogramEntries, unsigned entryCount)
 {
-    m_unknownHandles                 = 0;
+    m_unknownHandles               = 0;
     m_totalCount                   = 0;
     uint32_t unknownTypeHandleMask = 0;
 
@@ -98,24 +98,26 @@ LikelyClassMethodHistogram::LikelyClassMethodHistogram(INT_PTR* histogramEntries
                 continue;
             }
             LikelyClassMethodHistogramEntry newEntry;
-            newEntry.m_handle                         = currentEntry;
+            newEntry.m_handle                     = currentEntry;
             newEntry.m_count                      = 1;
             m_histogram[countHistogramElements++] = newEntry;
         }
     }
 }
 
-static unsigned getLikelyClassesOrMethods(
-    LikelyClassMethodRecord* pLikelyEntries,
-    UINT32                                 maxLikelyClasses,
-    ICorJitInfo::PgoInstrumentationSchema* schema,
-    UINT32                                 countSchemaItems,
-    BYTE* pInstrumentationData,
-    int32_t                                ilOffset,
-    bool types)
+static unsigned getLikelyClassesOrMethods(LikelyClassMethodRecord*               pLikelyEntries,
+                                          UINT32                                 maxLikelyClasses,
+                                          ICorJitInfo::PgoInstrumentationSchema* schema,
+                                          UINT32                                 countSchemaItems,
+                                          BYTE*                                  pInstrumentationData,
+                                          int32_t                                ilOffset,
+                                          bool                                   types)
 {
-    ICorJitInfo::PgoInstrumentationKind histogramKind = types ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes : ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods;
-    ICorJitInfo::PgoInstrumentationKind compressedKind = types ? ICorJitInfo::PgoInstrumentationKind::GetLikelyClass : ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod;
+    ICorJitInfo::PgoInstrumentationKind histogramKind =
+        types ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes
+              : ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods;
+    ICorJitInfo::PgoInstrumentationKind compressedKind = types ? ICorJitInfo::PgoInstrumentationKind::GetLikelyClass
+                                                               : ICorJitInfo::PgoInstrumentationKind::GetLikelyMethod;
 
     memset(pLikelyEntries, 0, maxLikelyClasses * sizeof(*pLikelyEntries));
 
@@ -129,8 +131,7 @@ static unsigned getLikelyClassesOrMethods(
         if (schema[i].ILOffset != ilOffset)
             continue;
 
-        if ((schema[i].InstrumentationKind == compressedKind) &&
-            (schema[i].Count == 1))
+        if ((schema[i].InstrumentationKind == compressedKind) && (schema[i].Count == 1))
         {
             intptr_t result = *(intptr_t*)(pInstrumentationData + schema[i].Offset);
             if (ICorJitInfo::IsUnknownHandle(result))
@@ -139,7 +140,7 @@ static unsigned getLikelyClassesOrMethods(
             }
             assert(result != 0); // we don't expect zero in GetLikelyClass
             pLikelyEntries[0].likelihood = (UINT32)(schema[i].Other & 0xFF);
-            pLikelyEntries[0].handle = result;
+            pLikelyEntries[0].handle     = result;
             return 1;
         }
 
@@ -147,7 +148,8 @@ static unsigned getLikelyClassesOrMethods(
             (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount) ||
             (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount);
 
-        if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) && (schema[i + 1].InstrumentationKind == histogramKind))
+        if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
+            (schema[i + 1].InstrumentationKind == histogramKind))
         {
             // Form a histogram
             //
@@ -171,7 +173,7 @@ static unsigned getLikelyClassesOrMethods(
                         return 0;
                     }
                     pLikelyEntries[0].likelihood = 100;
-                    pLikelyEntries[0].handle  = hist0.m_handle;
+                    pLikelyEntries[0].handle     = hist0.m_handle;
                     return 1;
                 }
 
@@ -183,12 +185,12 @@ static unsigned getLikelyClassesOrMethods(
                     if ((hist0.m_count >= hist1.m_count) && !ICorJitInfo::IsUnknownHandle(hist0.m_handle))
                     {
                         pLikelyEntries[0].likelihood = (100 * hist0.m_count) / h.m_totalCount;
-                        pLikelyEntries[0].handle  = hist0.m_handle;
+                        pLikelyEntries[0].handle     = hist0.m_handle;
 
                         if ((maxLikelyClasses > 1) && !ICorJitInfo::IsUnknownHandle(hist1.m_handle))
                         {
                             pLikelyEntries[1].likelihood = (100 * hist1.m_count) / h.m_totalCount;
-                            pLikelyEntries[1].handle  = hist1.m_handle;
+                            pLikelyEntries[1].handle     = hist1.m_handle;
                             return 2;
                         }
                         return 1;
@@ -197,12 +199,12 @@ static unsigned getLikelyClassesOrMethods(
                     if (!ICorJitInfo::IsUnknownHandle(hist1.m_handle))
                     {
                         pLikelyEntries[0].likelihood = (100 * hist1.m_count) / h.m_totalCount;
-                        pLikelyEntries[0].handle  = hist1.m_handle;
+                        pLikelyEntries[0].handle     = hist1.m_handle;
 
                         if ((maxLikelyClasses > 1) && !ICorJitInfo::IsUnknownHandle(hist0.m_handle))
                         {
                             pLikelyEntries[1].likelihood = (100 * hist0.m_count) / h.m_totalCount;
-                            pLikelyEntries[1].handle  = hist0.m_handle;
+                            pLikelyEntries[1].handle     = hist0.m_handle;
                             return 2;
                         }
                         return 1;
@@ -227,7 +229,8 @@ static unsigned getLikelyClassesOrMethods(
 
                     // sort by m_count (descending)
                     jitstd::sort(sortedEntries, sortedEntries + knownHandles,
-                                 [](const LikelyClassMethodHistogramEntry& h1, const LikelyClassMethodHistogramEntry& h2) -> bool {
+                                 [](const LikelyClassMethodHistogramEntry& h1,
+                                    const LikelyClassMethodHistogramEntry& h2) -> bool {
                                      return h1.m_count > h2.m_count;
                                  });
 
@@ -236,8 +239,8 @@ static unsigned getLikelyClassesOrMethods(
                     for (size_t hIdx = 0; hIdx < numberOfClasses; hIdx++)
                     {
                         LikelyClassMethodHistogramEntry const hc = sortedEntries[hIdx];
-                        pLikelyEntries[hIdx].handle     = hc.m_handle;
-                        pLikelyEntries[hIdx].likelihood    = hc.m_count * 100 / h.m_totalCount;
+                        pLikelyEntries[hIdx].handle              = hc.m_handle;
+                        pLikelyEntries[hIdx].likelihood          = hc.m_count * 100 / h.m_totalCount;
                     }
                     return numberOfClasses;
                 }
@@ -248,7 +251,6 @@ static unsigned getLikelyClassesOrMethods(
     // Failed to find histogram data for this method
     //
     return 0;
-
 }
 
 //------------------------------------------------------------------------
@@ -280,24 +282,26 @@ static unsigned getLikelyClassesOrMethods(
 //   This code can runs without a jit instance present, so JITDUMP and related
 //   cannot be used.
 //
-extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*                     pLikelyClasses,
+extern "C" DLLEXPORT UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*               pLikelyClasses,
                                                     UINT32                                 maxLikelyClasses,
                                                     ICorJitInfo::PgoInstrumentationSchema* schema,
                                                     UINT32                                 countSchemaItems,
                                                     BYTE*                                  pInstrumentationData,
                                                     int32_t                                ilOffset)
 {
-    return getLikelyClassesOrMethods(pLikelyClasses, maxLikelyClasses, schema, countSchemaItems, pInstrumentationData, ilOffset, true);
+    return getLikelyClassesOrMethods(pLikelyClasses, maxLikelyClasses, schema, countSchemaItems, pInstrumentationData,
+                                     ilOffset, true);
 }
 
-extern "C" DLLEXPORT UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*                     pLikelyMethods,
+extern "C" DLLEXPORT UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*               pLikelyMethods,
                                                     UINT32                                 maxLikelyMethods,
                                                     ICorJitInfo::PgoInstrumentationSchema* schema,
                                                     UINT32                                 countSchemaItems,
                                                     BYTE*                                  pInstrumentationData,
                                                     int32_t                                ilOffset)
 {
-    return getLikelyClassesOrMethods(pLikelyMethods, maxLikelyMethods, schema, countSchemaItems, pInstrumentationData, ilOffset, false);
+    return getLikelyClassesOrMethods(pLikelyMethods, maxLikelyMethods, schema, countSchemaItems, pInstrumentationData,
+                                     ilOffset, false);
 }
 
 //------------------------------------------------------------------------
@@ -364,7 +368,7 @@ CORINFO_CLASS_HANDLE Compiler::getRandomClass(ICorJitInfo::PgoInstrumentationSch
 
             // Choose an entry at random.
             //
-            unsigned                  randomEntryIndex = random->Next(0, h.countHistogramElements);
+            unsigned                        randomEntryIndex = random->Next(0, h.countHistogramElements);
             LikelyClassMethodHistogramEntry randomEntry      = h.HistogramEntryAt(randomEntryIndex);
 
             if (ICorJitInfo::IsUnknownHandle(randomEntry.m_handle))

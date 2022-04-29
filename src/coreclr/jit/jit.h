@@ -327,8 +327,8 @@ XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 
 typedef class ICorJitInfo* COMP_HANDLE;
 
-const CORINFO_CLASS_HANDLE NO_CLASS_HANDLE = nullptr;
-const CORINFO_FIELD_HANDLE NO_FIELD_HANDLE = nullptr;
+const CORINFO_CLASS_HANDLE  NO_CLASS_HANDLE  = nullptr;
+const CORINFO_FIELD_HANDLE  NO_FIELD_HANDLE  = nullptr;
 const CORINFO_METHOD_HANDLE NO_METHOD_HANDLE = nullptr;
 
 /*****************************************************************************/
@@ -841,18 +841,18 @@ T dspOffset(T o)
 
 struct LikelyClassMethodRecord
 {
-    intptr_t  handle;
-    UINT32                likelihood;
+    intptr_t handle;
+    UINT32   likelihood;
 };
 
-extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*                     pLikelyClasses,
+extern "C" UINT32 WINAPI getLikelyClasses(LikelyClassMethodRecord*               pLikelyClasses,
                                           UINT32                                 maxLikelyClasses,
                                           ICorJitInfo::PgoInstrumentationSchema* schema,
                                           UINT32                                 countSchemaItems,
                                           BYTE*                                  pInstrumentationData,
                                           int32_t                                ilOffset);
 
-extern "C" UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*                     pLikelyMethods,
+extern "C" UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*               pLikelyMethods,
                                           UINT32                                 maxLikelyMethods,
                                           ICorJitInfo::PgoInstrumentationSchema* schema,
                                           UINT32                                 countSchemaItems,

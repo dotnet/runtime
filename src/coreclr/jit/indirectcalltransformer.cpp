@@ -548,8 +548,8 @@ private:
             else
             {
                 const unsigned thisTempNum = compiler->lvaGrabTemp(true DEBUGARG("guarded devirt this temp"));
-                GenTree*   asgTree = compiler->gtNewTempAssign(thisTempNum, thisTree);
-                Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
+                GenTree*       asgTree     = compiler->gtNewTempAssign(thisTempNum, thisTree);
+                Statement*     asgStmt     = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
                 compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
 
                 thisTree = compiler->gtNewLclvNode(thisTempNum, TYP_REF);
@@ -567,7 +567,7 @@ private:
             //
             lastStmt = checkBlock->lastStmt();
 
-            GuardedDevirtualizationCandidateInfo* guardedInfo       = origCall->gtGuardedDevirtualizationCandidateInfo;
+            GuardedDevirtualizationCandidateInfo* guardedInfo = origCall->gtGuardedDevirtualizationCandidateInfo;
 
             GenTree* compare;
             if (guardedInfo->guardedClassHandle != NO_CLASS_HANDLE)
@@ -575,9 +575,9 @@ private:
 
                 // Find target method table
                 //
-                GenTree* methodTable = compiler->gtNewMethodTableLookup(thisTree);
-                CORINFO_CLASS_HANDLE                  clsHnd = guardedInfo->guardedClassHandle;
-                GenTree* targetMethodTable = compiler->gtNewIconEmbClsHndNode(clsHnd);
+                GenTree*             methodTable       = compiler->gtNewMethodTableLookup(thisTree);
+                CORINFO_CLASS_HANDLE clsHnd            = guardedInfo->guardedClassHandle;
+                GenTree*             targetMethodTable = compiler->gtNewIconEmbClsHndNode(clsHnd);
 
                 // Compare and jump to else (which does the indirect call) if NOT equal
                 //
@@ -588,46 +588,53 @@ private:
                 assert(origCall->IsVirtualVtable() || origCall->IsDelegateInvoke());
                 if (origCall->IsVirtualVtable())
                 {
-                    const unsigned addrTempNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
+                    const unsigned addrTempNum =
+                        compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
                     compiler->lvaGetDesc(addrTempNum)->lvSingleDef = 1;
 
-                    GenTree* tarTree = compiler->fgExpandVirtualVtableCallTarget(origCall);
-                    GenTree* asgTree = compiler->gtNewTempAssign(addrTempNum, tarTree);
+                    GenTree*   tarTree = compiler->fgExpandVirtualVtableCallTarget(origCall);
+                    GenTree*   asgTree = compiler->gtNewTempAssign(addrTempNum, tarTree);
                     Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
                     compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
 
-                    origCall->gtControlExpr = compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL);
+                    origCall->gtControlExpr       = compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL);
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
-                    CORINFO_CONST_LOOKUP lookup;
+                    CORINFO_CONST_LOOKUP  lookup;
                     compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &lookup);
 
-                    GenTree* compareTarTree = CreateLookup(lookup);;
-                    compare = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree, compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL));
+                    GenTree* compareTarTree = CreateLookup(lookup);
+                    ;
+                    compare = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree,
+                                                      compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL));
                 }
                 else
                 {
-                    //const unsigned addrTempNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
-                    //compiler->lvaGetDesc(addrTempNum)->lvSingleDef = 1;
+                    // const unsigned addrTempNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target
+                    // temp"));
+                    // compiler->lvaGetDesc(addrTempNum)->lvSingleDef = 1;
 
-                    GenTree* offset = compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget, TYP_I_IMPL);
+                    GenTree* offset =
+                        compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateFirstTarget,
+                                                TYP_I_IMPL);
                     GenTree* tarTree = compiler->gtNewOperNode(GT_ADD, TYP_BYREF, thisTree, offset);
-                    tarTree = compiler->gtNewIndir(TYP_I_IMPL, tarTree);
-                    //GenTree* asgTree = compiler->gtNewTempAssign(addrTempNum, tarTree);
-                    //Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-                    //compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+                    tarTree          = compiler->gtNewIndir(TYP_I_IMPL, tarTree);
+                    // GenTree* asgTree = compiler->gtNewTempAssign(addrTempNum, tarTree);
+                    // Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
+                    // compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
 
-                    //origCall->gtControlExpr = compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL);
+                    // origCall->gtControlExpr = compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL);
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
-                    CORINFO_CONST_LOOKUP lookup;
+                    CORINFO_CONST_LOOKUP  lookup;
                     compiler->info.compCompHnd->getFunctionFixedEntryPoint(methHnd, false, &lookup);
 
                     GenTree* compareTarTree = CreateLookup(lookup);
-                    compare = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree, tarTree /*compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL)*/);
+                    compare                 = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree,
+                                                      tarTree /*compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL)*/);
                 }
             }
 
-            GenTree*   jmpTree            = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, compare);
-            Statement* jmpStmt            = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
+            GenTree*   jmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, compare);
+            Statement* jmpStmt = compiler->fgNewStmtFromTree(jmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, jmpStmt);
         }
 
@@ -740,10 +747,11 @@ private:
 
             const unsigned thisTemp  = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt this exact temp"));
             GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtArgs.GetThisArg()->GetNode());
-            GenTree* newThisObj;
+            GenTree*       newThisObj;
             if (origCall->IsDelegateInvoke())
             {
-                GenTree* offset = compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateInstance, TYP_I_IMPL);
+                GenTree* offset =
+                    compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateInstance, TYP_I_IMPL);
                 newThisObj = compiler->gtNewOperNode(GT_ADD, TYP_BYREF, clonedObj, offset);
                 newThisObj = compiler->gtNewIndir(TYP_REF, newThisObj);
             }
@@ -751,7 +759,7 @@ private:
             {
                 newThisObj = clonedObj;
             }
-            GenTree*       assign    = compiler->gtNewTempAssign(thisTemp, newThisObj);
+            GenTree* assign = compiler->gtNewTempAssign(thisTemp, newThisObj);
 
             if (clsHnd != NO_CLASS_HANDLE)
             {
@@ -759,7 +767,8 @@ private:
             }
             else
             {
-                compiler->lvaSetClass(thisTemp, compiler->info.compCompHnd->getMethodClass(inlineInfo->guardedMethodHandle));
+                compiler->lvaSetClass(thisTemp,
+                                      compiler->info.compCompHnd->getMethodClass(inlineInfo->guardedMethodHandle));
             }
 
             compiler->fgNewStmtAtEnd(thenBlock, assign);
@@ -772,24 +781,24 @@ private:
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), thenBlock->bbNum);
 
             CORINFO_METHOD_HANDLE  methodHnd = call->gtCallMethHnd;
-            CORINFO_CONTEXT_HANDLE context = inlineInfo->exactContextHnd;
+            CORINFO_CONTEXT_HANDLE context   = inlineInfo->exactContextHnd;
             if (clsHnd != NO_CLASS_HANDLE)
             {
                 // Then invoke impDevirtualizeCall to actually transform the call for us,
                 // given the original (base) method and the exact guarded class. It should succeed.
                 //
-                unsigned               methodFlags = compiler->info.compCompHnd->getMethodAttribs(methodHnd);
-                const bool             isLateDevirtualization = true;
+                unsigned   methodFlags            = compiler->info.compCompHnd->getMethodAttribs(methodHnd);
+                const bool isLateDevirtualization = true;
                 const bool explicitTailCall = (call->AsCall()->gtCallMoreFlags & GTF_CALL_M_EXPLICIT_TAILCALL) != 0;
                 compiler->impDevirtualizeCall(call, nullptr, &methodHnd, &methodFlags, &context, nullptr,
-                    isLateDevirtualization, explicitTailCall);
+                                              isLateDevirtualization, explicitTailCall);
             }
             else
             {
                 // Make the updates.
                 call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
                 call->gtCallMethHnd = methodHnd = inlineInfo->guardedMethodHandle;
-                call->gtCallType = CT_USER_FUNC;
+                call->gtCallType                = CT_USER_FUNC;
                 call->gtCallMoreFlags |= GTF_CALL_M_DEVIRTUALIZED;
                 call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
                 // TODO: R2R entry point
@@ -1118,38 +1127,38 @@ private:
         {
             switch (lookup.accessType)
             {
-            case IAT_VALUE:
-            {
-                return compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-            }
-            case IAT_PVALUE:
-            {
-                GenTree* tree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                tree = compiler->gtNewIndir(TYP_I_IMPL, tree);
-                tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                tree->gtFlags &= ~GTF_EXCEPT;
-                return tree;
-            }
-            case IAT_PPVALUE:
-            {
-                noway_assert(!"Unexpected IAT_PPVALUE");
-                return nullptr;
-            }
-            case IAT_RELPVALUE:
-            {
-                GenTree* addr = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                GenTree* tree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
-                tree = compiler->gtNewIndir(TYP_I_IMPL, tree);
-                tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
-                tree->gtFlags &= ~GTF_EXCEPT;
-                tree = compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, tree, addr);
-                return tree;
-            }
-            default:
-            {
-                noway_assert(!"Bad accessType");
-                return nullptr;
-            }
+                case IAT_VALUE:
+                {
+                    return compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+                }
+                case IAT_PVALUE:
+                {
+                    GenTree* tree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+                    tree          = compiler->gtNewIndir(TYP_I_IMPL, tree);
+                    tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
+                    tree->gtFlags &= ~GTF_EXCEPT;
+                    return tree;
+                }
+                case IAT_PPVALUE:
+                {
+                    noway_assert(!"Unexpected IAT_PPVALUE");
+                    return nullptr;
+                }
+                case IAT_RELPVALUE:
+                {
+                    GenTree* addr = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+                    GenTree* tree = compiler->gtNewIconHandleNode((size_t)lookup.addr, GTF_ICON_FTN_ADDR);
+                    tree          = compiler->gtNewIndir(TYP_I_IMPL, tree);
+                    tree->gtFlags |= GTF_IND_NONFAULTING | GTF_IND_INVARIANT;
+                    tree->gtFlags &= ~GTF_EXCEPT;
+                    tree = compiler->gtNewOperNode(GT_ADD, TYP_I_IMPL, tree, addr);
+                    return tree;
+                }
+                default:
+                {
+                    noway_assert(!"Bad accessType");
+                    return nullptr;
+                }
             }
         }
     };

@@ -1606,29 +1606,25 @@ public:
             GenTree* const methodProfileNode = compiler->gtNewIconNode((ssize_t)methodHistogram, TYP_I_IMPL);
             GenTree* const classProfileNode  = compiler->gtNewIconNode((ssize_t)typeHistogram, TYP_I_IMPL);
             helperCallNode =
-                compiler->gtNewHelperCallNode(
-                    is32 ? CORINFO_HELP_METHODPROFILE32 : CORINFO_HELP_METHODPROFILE64,
-                    TYP_VOID,
-                    tmpNode, baseMethodNode, methodProfileNode, classProfileNode);
+                compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_METHODPROFILE32 : CORINFO_HELP_METHODPROFILE64,
+                                              TYP_VOID, tmpNode, baseMethodNode, methodProfileNode, classProfileNode);
         }
         else
         {
             GenTree* const tmpNode          = compiler->gtNewLclvNode(tmpNum, TYP_REF);
             GenTree* const classProfileNode = compiler->gtNewIconNode((ssize_t)typeHistogram, TYP_I_IMPL);
             helperCallNode =
-                compiler->gtNewHelperCallNode(
-                    is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64,
-                    TYP_VOID,
-                    tmpNode, classProfileNode);
+                compiler->gtNewHelperCallNode(is32 ? CORINFO_HELP_CLASSPROFILE32 : CORINFO_HELP_CLASSPROFILE64,
+                                              TYP_VOID, tmpNode, classProfileNode);
         }
 
         // Generate the IR...
         //
-        GenTree* const tmpNode2       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const callCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
-        GenTree* const tmpNode3       = compiler->gtNewLclvNode(tmpNum, TYP_REF);
-        GenTree* const asgNode        = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
-        GenTree* const asgCommaNode   = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
+        GenTree* const tmpNode2      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const callCommaNode = compiler->gtNewOperNode(GT_COMMA, TYP_REF, helperCallNode, tmpNode2);
+        GenTree* const tmpNode3      = compiler->gtNewLclvNode(tmpNum, TYP_REF);
+        GenTree* const asgNode       = compiler->gtNewOperNode(GT_ASG, TYP_REF, tmpNode3, objUse->GetNode());
+        GenTree* const asgCommaNode  = compiler->gtNewOperNode(GT_COMMA, TYP_REF, asgNode, callCommaNode);
 
         // Update the call
         //
