@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace MS
+namespace MS_jumps_cs
 {
-    internal struct VT
+    public struct VT
     {
         private String _path;
         private int _target;
@@ -81,7 +82,8 @@ namespace MS
             return true;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             if (new VT().RunTests())
             {

@@ -105,7 +105,7 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
 }
 
 export function mono_wasm_get_dbg_command_info(): CommandResponseResult {
-    const { res_ok, res } = commands_received.remove(0);
+    const { res_ok, res } = commands_received.get(0);
 
     if (!res_ok)
         throw new Error("Failed on mono_wasm_get_dbg_command_info");

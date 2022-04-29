@@ -56,13 +56,17 @@ namespace System.Globalization
         public string GetAscii(string unicode) =>
             GetAscii(unicode, 0);
 
-        public string GetAscii(string unicode!!, int index)
+        public string GetAscii(string unicode, int index)
         {
+            ArgumentNullException.ThrowIfNull(unicode);
+
             return GetAscii(unicode, index, unicode.Length - index);
         }
 
-        public string GetAscii(string unicode!!, int index, int count)
+        public string GetAscii(string unicode, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(unicode);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > unicode.Length)
@@ -99,13 +103,17 @@ namespace System.Globalization
         public string GetUnicode(string ascii) =>
             GetUnicode(ascii, 0);
 
-        public string GetUnicode(string ascii!!, int index)
+        public string GetUnicode(string ascii, int index)
         {
+            ArgumentNullException.ThrowIfNull(ascii);
+
             return GetUnicode(ascii, index, ascii.Length - index);
         }
 
-        public string GetUnicode(string ascii!!, int index, int count)
+        public string GetUnicode(string ascii, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(ascii);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > ascii.Length)

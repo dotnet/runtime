@@ -133,8 +133,7 @@ namespace System
 
         public static void SuppressFinalize(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             _SuppressFinalize(obj);
         }
 
@@ -143,8 +142,7 @@ namespace System
 
         public static void ReRegisterForFinalize(object obj)
         {
-            if (obj == null)
-                throw new ArgumentNullException(nameof(obj));
+            ArgumentNullException.ThrowIfNull(obj);
             _ReRegisterForFinalize(obj);
         }
 

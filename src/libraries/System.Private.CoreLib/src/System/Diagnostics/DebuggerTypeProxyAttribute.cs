@@ -11,8 +11,10 @@ namespace System.Diagnostics
         private Type? _target;
 
         public DebuggerTypeProxyAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type!!)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             ProxyTypeName = type.AssemblyQualifiedName!;
         }
 

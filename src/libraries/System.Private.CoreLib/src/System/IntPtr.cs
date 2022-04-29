@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -75,8 +76,10 @@ namespace System
             _value = (void*)l;
         }
 
-        unsafe void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             info.AddValue("value", ToInt64());
         }
 
@@ -176,14 +179,14 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static IntPtr MaxValue
         {
             [NonVersionable]
             get => (IntPtr)nint_t.MaxValue;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         public static IntPtr MinValue
         {
             [NonVersionable]
@@ -349,6 +352,42 @@ namespace System
             else
             {
                 return BitOperations.TrailingZeroCount((uint)value);
+            }
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
+        unsafe long IBinaryInteger<nint>.GetShortestBitLength()
+        {
+            nint value = (nint)_value;
+
+            if (value >= 0)
+            {
+                return (sizeof(nint) * 8) - BitOperations.LeadingZeroCount((nuint)value);
+            }
+            else
+            {
+                return (sizeof(nint) * 8) + 1 - BitOperations.LeadingZeroCount((nuint)(~value));
+            }
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
+        unsafe int IBinaryInteger<nint>.GetByteCount() => sizeof(nint);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
+        unsafe bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(nint))
+            {
+                nint value = BitConverter.IsLittleEndian ? (nint)_value : (nint)BinaryPrimitives.ReverseEndianness((nint)_value);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(nint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
             }
         }
 
@@ -943,13 +982,13 @@ namespace System
         //
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount) => value << (int)shiftAmount;
+        static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount) => value << shiftAmount;
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount) => value >> (int)shiftAmount;
+        static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount) => value >> shiftAmount;
 
-        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        // static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount) => (nint)((nuint)value >> (int)shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISignedNumber

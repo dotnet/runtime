@@ -996,10 +996,11 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 // Return Value:
 //    New CT_HELPER node
 
-inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, GenTreeCall::Use* args)
+inline GenTreeCall* Compiler::gtNewHelperCallNode(
+    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
 {
     GenTreeFlags flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? GTF_EMPTY : GTF_EXCEPT;
-    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type, args);
+    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
     result->gtFlags |= flags;
 
 #if DEBUG
@@ -1007,6 +1008,24 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types typ
 
     result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif
+
+    if (arg3 != nullptr)
+    {
+        result->gtArgs.PushFront(this, arg3);
+        result->gtFlags |= arg3->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    if (arg2 != nullptr)
+    {
+        result->gtArgs.PushFront(this, arg2);
+        result->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    if (arg1 != nullptr)
+    {
+        result->gtArgs.PushFront(this, arg1);
+        result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
+    }
 
     return result;
 }
@@ -1027,10 +1046,9 @@ inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_L
                                                                GenTree*                ctxTree,
                                                                void*                   compileTimeHandle)
 {
-    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-    GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
-
-    return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
+    GenTree* argNode  = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+    GenTreeCall* call = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
+    return call;
 }
 
 //------------------------------------------------------------------------
@@ -1238,15 +1256,6 @@ inline void GenTree::gtBashToNOP()
     gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
 }
 
-// return new arg placeholder node.  Does not do anything but has a type associated
-// with it so we can keep track of register arguments in lists associated w/ call nodes
-
-inline GenTree* Compiler::gtNewArgPlaceHolderNode(var_types type, CORINFO_CLASS_HANDLE clsHnd)
-{
-    GenTree* node = new (this, GT_ARGPLACE) GenTreeArgPlace(type, clsHnd);
-    return node;
-}
-
 /*****************************************************************************/
 
 inline GenTree* Compiler::gtUnusedValNode(GenTree* expr)
@@ -1343,6 +1352,10 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         case GT_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
             AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+            break;
+
+        case GT_CALL:
+            new (&AsCall()->gtArgs, jitstd::placement_t()) CallArgs();
             break;
 
         default:
@@ -3498,6 +3511,27 @@ inline genTreeOps Compiler::LoopDsc::lpTestOper() const
 
 //-----------------------------------------------------------------------------
 
+inline bool Compiler::LoopDsc::lpIsIncreasingLoop() const
+{
+    // Increasing loop is the one that has "+=" increment operation and "< or <=" limit check.
+    bool isLessThanLimitCheck = GenTree::StaticOperIs(lpTestOper(), GT_LT, GT_LE);
+    return (isLessThanLimitCheck &&
+            (((lpIterOper() == GT_ADD) && (lpIterConst() > 0)) || ((lpIterOper() == GT_SUB) && (lpIterConst() < 0))));
+}
+
+//-----------------------------------------------------------------------------
+
+inline bool Compiler::LoopDsc::lpIsDecreasingLoop() const
+{
+    // Decreasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
+    // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
+    bool isGreaterThanLimitCheck = GenTree::StaticOperIs(lpTestOper(), GT_GT, GT_GE);
+    return (isGreaterThanLimitCheck &&
+            (((lpIterOper() == GT_ADD) && (lpIterConst() < 0)) || ((lpIterOper() == GT_SUB) && (lpIterConst() > 0))));
+}
+
+//-----------------------------------------------------------------------------
+
 inline GenTree* Compiler::LoopDsc::lpIterator() const
 {
     VERIFY_lpTestTree();
@@ -3611,7 +3645,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
 
     bool result1 =
         // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true
-        // ShareStaticHelperts)
+        // ShareStaticHelpers)
         helper == CORINFO_HELP_STRCNS || helper == CORINFO_HELP_BOX ||
 
         // helpers being added to IsSharedStaticHelper
@@ -4184,9 +4218,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_CLS_VAR:
         case GT_CLS_VAR_ADDR:
-        case GT_ARGPLACE:
         case GT_PHYSREG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
@@ -4347,22 +4379,18 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CALL:
         {
             GenTreeCall* const call = this->AsCall();
-            if ((call->gtCallThisArg != nullptr) && (visitor(call->gtCallThisArg->GetNode()) == VisitResult::Abort))
-            {
-                return;
-            }
 
-            for (GenTreeCall::Use& use : call->Args())
+            for (CallArg& arg : call->gtArgs.EarlyArgs())
             {
-                if (visitor(use.GetNode()) == VisitResult::Abort)
+                if (visitor(arg.GetEarlyNode()) == VisitResult::Abort)
                 {
                     return;
                 }
             }
 
-            for (GenTreeCall::Use& use : call->LateArgs())
+            for (CallArg& arg : call->gtArgs.LateArgs())
             {
-                if (visitor(use.GetNode()) == VisitResult::Abort)
+                if (visitor(arg.GetLateNode()) == VisitResult::Abort)
                 {
                     return;
                 }

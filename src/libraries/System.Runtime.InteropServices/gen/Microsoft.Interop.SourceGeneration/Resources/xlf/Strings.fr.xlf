@@ -103,8 +103,8 @@
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
-        <source>Marshalling string or char without explicit marshalling information is not supported. Specify either 'LibraryImportAttribute.CharSet' or 'MarshalAsAttribute'.</source>
-        <target state="translated">Le marshaling d’une chaîne ou d’un caractère sans information de marshaling explicite n’est pas pris en charge. Spécifiez « LibraryImportAttribute.CharSet » ou « MarshalAsAttribute ».</target>
+        <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
+        <target state="needs-review-translation">Le marshaling d’une chaîne ou d’un caractère sans information de marshaling explicite n’est pas pris en charge. Spécifiez « LibraryImportAttribute.CharSet » ou « MarshalAsAttribute ».</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">

@@ -1,11 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
-    <!-- Use targeting pack references instead of granular ones in the project file. -->
-    <DisableImplicitAssemblyReferences>false</DisableImplicitAssemblyReferences>
     <IsPackable>true</IsPackable>
     <PackageDescription>File system globbing to find files matching a specified pattern.</PackageDescription>
   </PropertyGroup>
@@ -13,6 +10,8 @@
   <ItemGroup>
     <Compile Include="$(CoreLibSharedDir)\System\Numerics\Hashing\HashHelpers.cs"
              Link="System\Numerics\Hashing\HashHelpers.cs" />
+    <Compile Include="$(CommonPath)System\ThrowHelper.cs"
+             Link="Common\System\ThrowHelper.cs" />
   </ItemGroup>
 
 </Project>

@@ -198,8 +198,10 @@ namespace System.Runtime.CompilerServices
         /// <exception cref="System.ArgumentNullException">The <paramref name="continuation"/> argument is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.NullReferenceException">The awaiter was not properly initialized.</exception>
         /// <remarks>This method is intended for compiler use rather than use directly in code.</remarks>
-        internal static void OnCompletedInternal(Task task, Action continuation!!, bool continueOnCapturedContext, bool flowExecutionContext)
+        internal static void OnCompletedInternal(Task task, Action continuation, bool continueOnCapturedContext, bool flowExecutionContext)
         {
+            ArgumentNullException.ThrowIfNull(continuation);
+
             // If TaskWait* ETW events are enabled, trace a beginning event for this await
             // and set up an ending event to be traced when the asynchronous await completes.
             if (TplEventSource.Log.IsEnabled() || Task.s_asyncDebuggingEnabled)

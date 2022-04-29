@@ -97,8 +97,13 @@ namespace System.Text.Json
             return type;
         }
 
-        private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType!!)
+        private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType)
         {
+            if (inputType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(inputType));
+            }
+
             if (value is not null)
             {
                 Type runtimeType = value.GetType();

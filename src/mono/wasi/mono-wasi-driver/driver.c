@@ -478,7 +478,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_trace_init ();
 	mono_trace_set_log_handler (wasm_trace_logger, NULL);
 
-	root_domain = mono_jit_init_version ("mono", "v4.0.30319");
+	root_domain = mono_jit_init_version ("mono", NULL);
 	mono_thread_set_main (mono_thread_current ());
 }
 

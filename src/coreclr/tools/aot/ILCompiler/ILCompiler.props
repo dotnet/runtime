@@ -125,16 +125,18 @@
     <TargetSpec>$(TargetOSComponent)_$(TargetArchitectureForLocalJitBuild)_$(TargetArchitectureForSharedLibraries)</TargetSpec>
 
     <JitInterfaceLibraryName>$(LibPrefix)jitinterface_$(TargetArchitectureForSharedLibraries)$(LibSuffix)</JitInterfaceLibraryName>
+    <!-- This will be provided when using the liveBuild, and unset otherwise. -->
+    <CoreCLRArtifactsPath Condition="'$(CoreCLRArtifactsPath)' == ''">$(RuntimeBinDir)$(CrossHostArch)</CoreCLRArtifactsPath>
   </PropertyGroup>
 
   <ItemGroup>
-    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(JitInterfaceLibraryName)"
+    <Content Include="$(CoreCLRArtifactsPath)/$(JitInterfaceLibraryName)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"
       />
 
-    <Content Include="$(RuntimeBinDir)$(CrossHostArch)/$(LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(LibSuffix)"
+    <Content Include="$(CoreCLRArtifactsPath)/$(LibPrefix)clrjit_*_$(TargetArchitectureForSharedLibraries)$(LibSuffix)"
       CopyToOutputDirectory="PreserveNewest"
       CopyToPublishDirectory="PreserveNewest"
       Link="%(FileName)%(Extension)"

@@ -662,8 +662,7 @@ namespace System.Reflection
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(Type[] methodInstantiation)
         {
-            if (methodInstantiation == null)
-                throw new ArgumentNullException(nameof(methodInstantiation));
+            ArgumentNullException.ThrowIfNull(methodInstantiation);
 
             if (!IsGenericMethodDefinition)
                 throw new InvalidOperationException("not a generic method definition");

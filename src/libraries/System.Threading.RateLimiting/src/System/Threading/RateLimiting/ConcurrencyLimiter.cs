@@ -36,9 +36,9 @@ namespace System.Threading.RateLimiting
         /// Initializes the <see cref="ConcurrencyLimiter"/>.
         /// </summary>
         /// <param name="options">Options to specify the behavior of the <see cref="ConcurrencyLimiter"/>.</param>
-        public ConcurrencyLimiter(ConcurrencyLimiterOptions options!!)
+        public ConcurrencyLimiter(ConcurrencyLimiterOptions options)
         {
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
             _permitCount = _options.PermitLimit;
         }
 
@@ -112,7 +112,11 @@ namespace System.Threading.RateLimiting
                             RequestRegistration oldestRequest = _queue.DequeueHead();
                             _queueCount -= oldestRequest.Count;
                             Debug.Assert(_queueCount >= 0);
-                            oldestRequest.Tcs.TrySetResult(FailedLease);
+                            if (!oldestRequest.Tcs.TrySetResult(FailedLease))
+                            {
+                                // Updating queue count is handled by the cancellation code
+                                _queueCount += oldestRequest.Count;
+                            }
                         }
                         while (_options.QueueLimit - _queueCount < permitCount);
                     }
@@ -249,7 +253,7 @@ namespace System.Threading.RateLimiting
                         ? _queue.DequeueHead()
                         : _queue.DequeueTail();
                     next.CancellationTokenRegistration.Dispose();
-                    next.Tcs.SetResult(FailedLease);
+                    next.Tcs.TrySetResult(FailedLease);
                 }
             }
         }

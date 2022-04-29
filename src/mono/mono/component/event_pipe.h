@@ -201,6 +201,12 @@ typedef bool
 	uint16_t count,
 	uint16_t clr_instance_id);
 
+typedef bool
+(*event_pipe_component_write_event_threadpool_io_pack_func)(
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id);
+
 /*
  * MonoComponentEventPipe function table.
  */
@@ -235,6 +241,7 @@ typedef struct _MonoComponentEventPipe {
 	event_pipe_component_write_event_threadpool_io_enqueue_func write_event_threadpool_io_enqueue;
 	event_pipe_component_write_event_threadpool_io_dequeue_func write_event_threadpool_io_dequeue;
 	event_pipe_component_write_event_threadpool_working_thread_count_func write_event_threadpool_working_thread_count;
+	event_pipe_component_write_event_threadpool_io_pack_func write_event_threadpool_io_pack;
 } MonoComponentEventPipe;
 
 MONO_COMPONENT_EXPORT_ENTRYPOINT

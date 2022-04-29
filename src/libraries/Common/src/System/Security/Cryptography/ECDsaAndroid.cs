@@ -79,8 +79,10 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] SignHash(byte[] hash!!)
+            public override byte[] SignHash(byte[] hash)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+
                 ThrowIfDisposed();
                 SafeEcKeyHandle key = _key.Value;
                 int signatureLength = Interop.AndroidCrypto.EcDsaSize(key);
@@ -184,8 +186,11 @@ namespace System.Security.Cryptography
                 return destination.Slice(0, actualLength);
             }
 
-            public override bool VerifyHash(byte[] hash!!, byte[] signature!!)
+            public override bool VerifyHash(byte[] hash, byte[] signature)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentNullException.ThrowIfNull(signature);
+
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 

@@ -4494,9 +4494,8 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
                 if (lvaGetDesc(i)->TypeGet() == TYP_REF)
                 {
                     // confirm that the argument is a GC pointer (for debugging (GC stress))
-                    GenTree*          op   = gtNewLclvNode(i, TYP_REF);
-                    GenTreeCall::Use* args = gtNewCallArgs(op);
-                    op                     = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, args);
+                    GenTree* op = gtNewLclvNode(i, TYP_REF);
+                    op          = gtNewHelperCallNode(CORINFO_HELP_CHECK_OBJ, TYP_VOID, op);
 
                     fgEnsureFirstBBisScratch();
                     fgNewStmtAtEnd(fgFirstBB, op);
@@ -4973,8 +4972,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
+#ifdef DEBUG
+    // Run this before we potentially tear down dominators.
+    fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
+#endif
+
     // Remove dead blocks
     DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, &Compiler::fgRemoveDeadBlocks);
+
+    // Dominator and reachability sets are no longer valid.
+    fgDomsComputed = false;
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -4984,8 +4991,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
 
 #ifdef DEBUG
-    fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
-
     // Stash the current estimate of the function's size if necessary.
     if (verbose)
     {
@@ -5026,12 +5031,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif // TARGET_ARM
 
     // Assign registers to variables, etc.
-
-    ///////////////////////////////////////////////////////////////////////////////
-    // Dominator and reachability sets are no longer valid. They haven't been
-    // maintained up to here, and shouldn't be used (unless recomputed).
-    ///////////////////////////////////////////////////////////////////////////////
-    fgDomsComputed = false;
 
     // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
     // for determining whether locals are register candidates and (for xarch) whether
@@ -5299,14 +5298,10 @@ void Compiler::generatePatchpointInfo()
         assert(varDsc->lvFramePointerBased);
 
         // Record FramePtr relative offset (no localloc yet)
-        patchpointInfo->SetOffset(lclNum, varDsc->GetStackOffset() + offsetAdjust);
-
         // Note if IL stream contained an address-of that potentially leads to exposure.
-        // This bit of IL may be skipped by OSR partial importation.
-        if (varDsc->lvHasLdAddrOp)
-        {
-            patchpointInfo->SetIsExposed(lclNum);
-        }
+        // That bit of IL might be skipped by OSR partial importation.
+        const bool isExposed = varDsc->lvHasLdAddrOp;
+        patchpointInfo->SetOffsetAndExposure(lclNum, varDsc->GetStackOffset() + offsetAdjust, isExposed);
 
         JITDUMP("--OSR-- V%02u is at virtual offset %d%s%s\n", lclNum, patchpointInfo->Offset(lclNum),
                 patchpointInfo->IsExposed(lclNum) ? " (exposed)" : "", (varNum != lclNum) ? " (shadowed)" : "");
@@ -7504,16 +7499,12 @@ Compiler::NodeToIntMap* Compiler::FindReachableNodesInNodeTestData()
                 {
                     GenTreeCall* call = tree->AsCall();
                     unsigned     i    = 0;
-                    for (GenTreeCall::Use& use : call->Args())
+                    for (CallArg& arg : call->gtArgs.Args())
                     {
-                        if ((use.GetNode()->gtFlags & GTF_LATE_ARG) != 0)
+                        GenTree* argNode = arg.GetNode();
+                        if (GetNodeTestData()->Lookup(argNode, &tlAndN))
                         {
-                            // Find the corresponding late arg.
-                            GenTree* lateArg = call->fgArgInfo->GetArgNode(i);
-                            if (GetNodeTestData()->Lookup(lateArg, &tlAndN))
-                            {
-                                reachable->Set(lateArg, 0);
-                            }
+                            reachable->Set(argNode, 0);
                         }
                         i++;
                     }
@@ -9224,6 +9215,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[FLD_VOLATILE]");
                 }
+                if (tree->gtFlags & GTF_FLD_TGT_HEAP)
+                {
+                    chars += printf("[FLD_TGT_HEAP]");
+                }
                 break;
 
             case GT_INDEX:
@@ -9247,13 +9242,13 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->gtFlags & GTF_IND_TGTANYWHERE)
-                {
-                    chars += printf("[IND_TGTANYWHERE]");
-                }
                 if (tree->gtFlags & GTF_IND_TGT_NOT_HEAP)
                 {
                     chars += printf("[IND_TGT_NOT_HEAP]");
+                }
+                if (tree->gtFlags & GTF_IND_TGT_HEAP)
+                {
+                    chars += printf("[IND_TGT_HEAP]");
                 }
                 if (tree->gtFlags & GTF_IND_TLS_REF)
                 {
@@ -9274,14 +9269,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_IND_NONNULL)
                 {
                     chars += printf("[IND_NONNULL]");
-                }
-                break;
-
-            case GT_CLS_VAR:
-
-                if (tree->gtFlags & GTF_CLS_VAR_ASG_LHS)
-                {
-                    chars += printf("[CLS_VAR_ASG_LHS]");
                 }
                 break;
 
@@ -9529,10 +9516,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                     {
                         chars += printf("[CALL_M_TAILCALL]");
                     }
-                    if (call->gtCallMoreFlags & GTF_CALL_M_VARARGS)
-                    {
-                        chars += printf("[CALL_M_VARARGS]");
-                    }
                     if (call->gtCallMoreFlags & GTF_CALL_M_RETBUFFARG)
                     {
                         chars += printf("[CALL_M_RETBUFFARG]");
@@ -9697,10 +9680,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         if (tree->gtFlags & GTF_UNSIGNED)
         {
             chars += printf("[SMALL_UNSIGNED]");
-        }
-        if (tree->gtFlags & GTF_LATE_ARG)
-        {
-            chars += printf("[SMALL_LATE_ARG]");
         }
         if (tree->gtFlags & GTF_SPILL)
         {

@@ -252,8 +252,10 @@ namespace System.Net
             _clientCertificateError = clientCertificateError;
         }
 
-        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult!!)
+        public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             X509Certificate2? clientCertificate = null;
             ListenerClientCertAsyncResult? clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
             if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)

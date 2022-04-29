@@ -4,7 +4,9 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -13,6 +15,8 @@ namespace Sample
 {
     public partial class Test
     {
+        static bool JsonResults = false;
+
         List<BenchTask> tasks = new()
         {
             new AppStartTask(),
@@ -142,21 +146,11 @@ namespace Sample
 
         string ResultsSummary()
         {
-            Dictionary<string, double> minTimes = new Dictionary<string, double>();
-            StringBuilder sb = new();
+            var minTimes = ProcessResults();
+            if (JsonResults)
+                PrintJsonResults(minTimes);
 
-            foreach (var result in results)
-            {
-                double t;
-                var key = $"{result.taskName}, {result.measurementName}";
-                t = result.span.TotalMilliseconds / result.steps;
-                if (minTimes.ContainsKey(key))
-                    t = Math.Min(minTimes[key], t);
-
-                minTimes[key] = t;
-            }
-
-            sb.Append($"{formatter.NewLine}Summary{formatter.NewLine}");
+            StringBuilder sb = new($"{formatter.NewLine}Summary{formatter.NewLine}");
             foreach (var key in minTimes.Keys)
             {
                 sb.Append($"{key}: {minTimes[key]}ms{formatter.NewLine}");
@@ -179,6 +173,41 @@ namespace Sample
             resultsReturned = true;
 
             return sb.ToString();
+        }
+
+        private Dictionary<string, double> ProcessResults()
+        {
+            Dictionary<string, double> minTimes = new Dictionary<string, double>();
+
+            foreach (var result in results)
+            {
+                double t;
+                var key = $"{result.taskName}, {result.measurementName}";
+                t = result.span.TotalMilliseconds / result.steps;
+                if (minTimes.ContainsKey(key))
+                    t = Math.Min(minTimes[key], t);
+
+                minTimes[key] = t;
+            }
+
+            return minTimes;
+        }
+
+        class JsonResultsData
+        {
+            public List<BenchTask.Result> results;
+            public Dictionary<string, double> minTimes;
+        }
+
+        private void PrintJsonResults(Dictionary<string, double> minTimes)
+        {
+            DateTime now = DateTime.Now;
+            var options = new JsonSerializerOptions { IncludeFields = true, WriteIndented = true };
+            var jsonObject = new JsonResultsData { results = results, minTimes = minTimes };
+            var str = JsonSerializer.Serialize(jsonObject, options);
+            Console.WriteLine("=== json results start ===");
+            Console.WriteLine(str);
+            Console.WriteLine("=== json results end ===");
         }
     }
 

@@ -202,8 +202,10 @@ namespace CoreXml.Test.XLinq
         private bool _redoing;
         private int _lastGroup;
 
-        public UndoManager(XObject root!!)
+        public UndoManager(XObject root)
         {
+            ArgumentNullException.ThrowIfNull(root);
+
             _root = root;
             _root.Changing += new EventHandler<XObjectChangeEventArgs>(Changing);
             _root.Changed += new EventHandler<XObjectChangeEventArgs>(Changed);

@@ -9,7 +9,7 @@ using Xunit;
 
 namespace DebuggerTests
 {
-    public class AssignmentTests : DebuggerTestBase
+    public class AssignmentTests : DebuggerTests
     {
         public static TheoryData<string, JObject, JObject> GetTestData => new TheoryData<string, JObject, JObject>
         {
@@ -40,7 +40,7 @@ namespace DebuggerTests
             { "MONO_TYPE_R8",          TNumber(0),                                              TNumber("3.1415") },
         };
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData("GetTestData")]
         async Task InspectVariableBeforeAndAfterAssignment(string clazz, JObject checkDefault, JObject checkValue)
         {

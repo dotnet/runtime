@@ -174,42 +174,32 @@ namespace System.Net.Http
             // Allocate an active request
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;
-            ValueTask waitTask = default;
 
             try
             {
                 try
                 {
-                    while (true)
+                    QuicConnection? conn = _connection;
+                    if (conn != null)
                     {
-                        lock (SyncObj)
+                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
                         {
-                            if (_connection == null)
-                            {
-                                break;
-                            }
-
-                            if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
-                            {
-                                quicStream = _connection.OpenBidirectionalStream();
-                                requestStream = new Http3RequestStream(request, this, quicStream);
-                                _activeRequests.Add(quicStream, requestStream);
-                                break;
-                            }
-
-                            waitTask = _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
-                        }
-
-                        if (HttpTelemetry.Log.IsEnabled() && !waitTask.IsCompleted && queueStartingTimestamp == 0)
-                        {
-                            // We avoid logging RequestLeftQueue if a stream was available immediately (synchronously)
                             queueStartingTimestamp = Stopwatch.GetTimestamp();
                         }
 
-                        // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
-                        await waitTask.ConfigureAwait(false);
+                        quicStream = await conn.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
+
+                        requestStream = new Http3RequestStream(request, this, quicStream);
+                        lock (SyncObj)
+                        {
+                            _activeRequests.Add(quicStream, requestStream);
+                        }
                     }
                 }
+                // Swallow any exceptions caused by the connection being closed locally or even disposed due to a race.
+                // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
+                catch (ObjectDisposedException) { }
+                catch (QuicException e) when (!(e is QuicConnectionAbortedException)) { }
                 finally
                 {
                     if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp != 0)
@@ -377,7 +367,7 @@ namespace System.Net.Http
         {
             try
             {
-                _clientControl = _connection!.OpenUnidirectionalStream();
+                _clientControl = await _connection!.OpenUnidirectionalStreamAsync().ConfigureAwait(false);
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)

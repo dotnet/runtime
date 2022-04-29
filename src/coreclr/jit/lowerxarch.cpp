@@ -1546,9 +1546,9 @@ void Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
             (comp->compCodeOpt() != Compiler::SMALL_CODE) ? cnsSize : emitter::dataSection::MIN_DATA_ALIGN;
         var_types dataType = Compiler::getSIMDTypeForSize(simdSize);
 
-        UNATIVE_OFFSET       cnum = comp->GetEmitter()->emitDataConst(&vecCns, cnsSize, cnsAlign, dataType);
-        CORINFO_FIELD_HANDLE hnd  = comp->eeFindJitDataOffs(cnum);
-        GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
+        UNATIVE_OFFSET       cnum       = comp->GetEmitter()->emitDataConst(&vecCns, cnsSize, cnsAlign, dataType);
+        CORINFO_FIELD_HANDLE hnd        = comp->eeFindJitDataOffs(cnum);
+        GenTree*             clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(TYP_I_IMPL, hnd);
         BlockRange().InsertBefore(node, clsVarAddr);
 
         node->ChangeOper(GT_IND);
@@ -4476,19 +4476,19 @@ void Lowering::ContainCheckCallOperands(GenTreeCall* call)
         }
     }
 
-    for (GenTreeCall::Use& use : call->Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
-        if (use.GetNode()->OperIs(GT_PUTARG_STK))
+        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_STK))
         {
-            LowerPutArgStk(use.GetNode()->AsPutArgStk());
+            LowerPutArgStk(arg.GetEarlyNode()->AsPutArgStk());
         }
     }
 
-    for (GenTreeCall::Use& use : call->LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        if (use.GetNode()->OperIs(GT_PUTARG_STK))
+        if (arg.GetLateNode()->OperIs(GT_PUTARG_STK))
         {
-            LowerPutArgStk(use.GetNode()->AsPutArgStk());
+            LowerPutArgStk(arg.GetLateNode()->AsPutArgStk());
         }
     }
 }

@@ -260,8 +260,10 @@ namespace System
         /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar!!, DateTimeKind kind)
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, DateTimeKind kind)
         {
+            ArgumentNullException.ThrowIfNull(calendar);
+
             if ((uint)millisecond >= MillisPerSecond) ThrowMillisecondOutOfRange();
             if ((uint)kind > (uint)DateTimeKind.Local) ThrowInvalidKind();
 
@@ -315,8 +317,10 @@ namespace System
         // Constructs a DateTime from a given year, month, day, hour,
         // minute, and second for the specified calendar.
         //
-        public DateTime(int year, int month, int day, int hour, int minute, int second, Calendar calendar!!)
+        public DateTime(int year, int month, int day, int hour, int minute, int second, Calendar calendar)
         {
+            ArgumentNullException.ThrowIfNull(calendar);
+
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
                 _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, 0).UTicks;
@@ -486,8 +490,10 @@ namespace System
         /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar!!)
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar)
         {
+            ArgumentNullException.ThrowIfNull(calendar);
+
             if (second != 60 || !s_systemSupportsLeapSeconds)
             {
                 _dateData = calendar.ToDateTime(year, month, day, hour, minute, second, millisecond).UTicks;
@@ -511,7 +517,7 @@ namespace System
         /// <param name="minute">The minutes (0 through 59).</param>
         /// <param name="second">The seconds (0 through 59).</param>
         /// <param name="millisecond">The milliseconds (0 through 999).</param>
-        /// <param name="microsecond">The milliseconds (0 through 900).</param>
+        /// <param name="microsecond">The microseconds (0 through 999).</param>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="year"/> is less than 1 or greater than 9999.
         ///
@@ -541,7 +547,7 @@ namespace System
         ///
         /// -or-
         ///
-        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// <paramref name="microsecond"/> is less than 0 or greater than 999.
         /// </exception>
         /// <remarks>
         /// This constructor interprets <paramref name="year"/>, <paramref name="month"/> and <paramref name="day"/> as a year, month and day
@@ -569,7 +575,7 @@ namespace System
         /// <param name="minute">The minutes (0 through 59).</param>
         /// <param name="second">The seconds (0 through 59).</param>
         /// <param name="millisecond">The milliseconds (0 through 999).</param>
-        /// <param name="microsecond">The milliseconds (0 through 900).</param>
+        /// <param name="microsecond">The microseconds (0 through 999).</param>
         /// <param name="kind">
         /// One of the enumeration values that indicates whether <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>,
         /// <paramref name="hour"/>, <paramref name="minute"/>, <paramref name="second"/>, and <paramref name="millisecond"/>
@@ -603,7 +609,7 @@ namespace System
         ///
         /// -or-
         ///
-        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// <paramref name="microsecond"/> is less than 0 or greater than 999.
         /// </exception>
         /// <exception cref="ArgumentException">
         /// <paramref name="kind"/> is not one of the <see cref="DateTimeKind"/> values.
@@ -638,7 +644,7 @@ namespace System
         /// <param name="minute">The minutes (0 through 59).</param>
         /// <param name="second">The seconds (0 through 59).</param>
         /// <param name="millisecond">The milliseconds (0 through 999).</param>
-        /// <param name="microsecond">The milliseconds (0 through 900).</param>
+        /// <param name="microsecond">The microseconds (0 through 999).</param>
         /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
         /// <exception cref="ArgumentNullException">
         /// <paramref name="calendar"/> is <see langword="null"/>
@@ -672,7 +678,7 @@ namespace System
         ///
         /// -or-
         ///
-        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// <paramref name="microsecond"/> is less than 0 or greater than 999.
         /// </exception>
         /// <remarks>
         /// The allowable values for <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/> parameters
@@ -682,7 +688,7 @@ namespace System
         /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar!!)
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar)
             : this(year, month, day, hour, minute, second, millisecond, microsecond, calendar, DateTimeKind.Unspecified)
         {
         }
@@ -698,7 +704,7 @@ namespace System
         /// <param name="minute">The minutes (0 through 59).</param>
         /// <param name="second">The seconds (0 through 59).</param>
         /// <param name="millisecond">The milliseconds (0 through 999).</param>
-        /// <param name="microsecond">The milliseconds (0 through 900).</param>
+        /// <param name="microsecond">The microseconds (0 through 999).</param>
         /// <param name="calendar">The calendar that is used to interpret <paramref name="year"/>, <paramref name="month"/>, and <paramref name="day"/>.</param>
         /// <param name="kind">
         /// One of the enumeration values that indicates whether <paramref name="year"/>, <paramref name="month"/>, <paramref name="day"/>,
@@ -736,7 +742,7 @@ namespace System
         ///
         /// -or-
         ///
-        /// <paramref name="microsecond"/> is less than 0 or greater than 900.
+        /// <paramref name="microsecond"/> is less than 0 or greater than 999.
         /// </exception>
         /// <exception cref="ArgumentException">
         /// <paramref name="kind"/> is not one of the <see cref="DateTimeKind"/> values.
@@ -749,7 +755,7 @@ namespace System
         /// For applications in which portability of date and time data or a limited degree of time zone awareness is important,
         /// you can use the corresponding <see cref="DateTimeOffset"/> constructor.
         /// </remarks>
-        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar!!, DateTimeKind kind)
+        public DateTime(int year, int month, int day, int hour, int minute, int second, int millisecond, int microsecond, Calendar calendar, DateTimeKind kind)
             : this(year, month, day, hour, minute, second, millisecond, calendar, kind)
         {
             if ((uint)microsecond >= MicrosecondsPerMillisecond)
@@ -897,7 +903,7 @@ namespace System
         /// whose value is the result of this operation.
         ///
         /// The fractional part of value is the fractional part of a microsecond.
-        /// For example, 4.5 is equivalent to 4 microseconds and 50 ticks, where one microseconds = 10 ticks.
+        /// For example, 4.5 is equivalent to 4 microseconds and 50 ticks, where one microsecond = 10 ticks.
         ///
         /// The value parameter is rounded to the nearest integer.
         /// </remarks>
@@ -1531,7 +1537,7 @@ namespace System
         public int Microsecond => (int)((UTicks / TicksPerMicrosecond) % 1000);
 
         /// <summary>
-        /// The nanoseconds component, expressed as a value between 0 and 900.
+        /// The nanoseconds component, expressed as a value between 0 and 900 (in increments of 100 nanoseconds).
         /// </summary>
         public int Nanosecond => (int)(UTicks % TicksPerMicrosecond) * 100;
 

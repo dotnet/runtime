@@ -15,6 +15,9 @@
     <ChromiumDirName>chrome-linux</ChromiumDirName>
     <ChromeDriverDirName>chromedriver_linux64</ChromeDriverDirName>
     <ChromiumBinaryName>chrome</ChromiumBinaryName>
+    <FirefoxRevision>97.0.1</FirefoxRevision>
+    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
+    <FirefoxBinaryName>firefox</FirefoxBinaryName>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">

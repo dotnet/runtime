@@ -107,8 +107,13 @@ namespace System.Text.Json
         ///   </para>
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType!!, JsonSerializerOptions? options = null)
+        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerOptions? options = null)
         {
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
             return Read<object?>(ref reader, jsonTypeInfo);
         }
@@ -156,8 +161,13 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, and <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonTypeInfo<TValue> jsonTypeInfo!!)
+        public static TValue? Deserialize<TValue>(ref Utf8JsonReader reader, JsonTypeInfo<TValue> jsonTypeInfo)
         {
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
             return Read<TValue>(ref reader, jsonTypeInfo);
         }
 
@@ -210,8 +220,17 @@ namespace System.Text.Json
         ///     Hence, <see cref="JsonReaderOptions.AllowTrailingCommas"/>, <see cref="JsonReaderOptions.MaxDepth"/>, and <see cref="JsonReaderOptions.CommentHandling"/> are used while reading.
         ///   </para>
         /// </remarks>
-        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType!!, JsonSerializerContext context!!)
+        public static object? Deserialize(ref Utf8JsonReader reader, Type returnType, JsonSerializerContext context)
         {
+            if (returnType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
+            }
+            if (context is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
+            }
+
             return Read<object>(ref reader, GetTypeInfo(context, returnType));
         }
 

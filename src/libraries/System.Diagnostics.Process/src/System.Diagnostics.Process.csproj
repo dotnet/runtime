@@ -3,7 +3,6 @@
     <DefineConstants>$(DefineConstants);FEATURE_REGISTRY</DefineConstants>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-FreeBSD;$(NetCoreAppCurrent)-Linux;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-MacCatalyst;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
@@ -360,13 +359,10 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Diagnostics.FileVersionInfo" />
-    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.IO.FileSystem.DriveInfo" />
     <Reference Include="System.Memory" />
     <Reference Include="System.IO.Pipes" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />

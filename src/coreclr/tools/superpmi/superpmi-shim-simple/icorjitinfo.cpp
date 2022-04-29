@@ -261,12 +261,13 @@ bool interceptor_ICJI::isValidStringRef(
     return original_ICorJitInfo->isValidStringRef(module, metaTOK);
 }
 
-const char16_t* interceptor_ICJI::getStringLiteral(
+int interceptor_ICJI::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length)
+          char16_t* buffer,
+          int bufferSize)
 {
-    return original_ICorJitInfo->getStringLiteral(module, metaTOK, length);
+    return original_ICorJitInfo->getStringLiteral(module, metaTOK, buffer, bufferSize);
 }
 
 CorInfoType interceptor_ICJI::asCorInfoType(

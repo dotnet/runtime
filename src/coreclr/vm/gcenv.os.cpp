@@ -1171,12 +1171,25 @@ bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_strin
         return false;
     }
 
+    // If the user passes in 0 as the CPU group and they don't have > 64 cores, 
+    // honor the affinitized range passed in by bypassing the check.                                                                       
+    bool bypass_cpu_range_check = !CanEnableGCCPUGroups() && group_number == 0;
+
     WORD group_begin;
     WORD group_size;
     if (!CPUGroupInfo::GetCPUGroupRange((WORD)group_number, &group_begin, &group_size))
     {
-        // group number out of range
-        return false;
+        if (!bypass_cpu_range_check)
+        {
+            // group number out of range
+            return false;
+        }
+        else
+        {
+            // the offset in this case where we bypass this check should be from 0 till the # of Processors.
+            group_begin = 0;
+            group_size = GetTotalProcessorCount();
+        }
     }
 
     index_offset = group_begin;
