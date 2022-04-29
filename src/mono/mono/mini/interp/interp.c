@@ -7300,22 +7300,41 @@ interp_parse_options (const char *options)
 	for (ptr = args; ptr && *ptr; ptr ++) {
 		char *arg = *ptr;
 
-		if (strncmp (arg, "jit=", 4) == 0)
+		if (strncmp (arg, "jit=", 4) == 0) {
 			mono_interp_jit_classes = g_slist_prepend (mono_interp_jit_classes, arg + 4);
-		else if (strncmp (arg, "interp-only=", strlen ("interp-only=")) == 0)
+		} else if (strncmp (arg, "interp-only=", strlen ("interp-only=")) == 0) {
 			mono_interp_only_classes = g_slist_prepend (mono_interp_only_classes, arg + strlen ("interp-only="));
-		else if (strncmp (arg, "-inline", 7) == 0)
-			mono_interp_opt &= ~INTERP_OPT_INLINE;
-		else if (strncmp (arg, "-cprop", 6) == 0)
-			mono_interp_opt &= ~INTERP_OPT_CPROP;
-		else if (strncmp (arg, "-super", 6) == 0)
-			mono_interp_opt &= ~INTERP_OPT_SUPER_INSTRUCTIONS;
-		else if (strncmp (arg, "-bblocks", 8) == 0)
-			mono_interp_opt &= ~INTERP_OPT_BBLOCKS;
-		else if (strncmp (arg, "-tiering", 8) == 0)
-			mono_interp_opt &= ~INTERP_OPT_TIERING;
-		else if (strncmp (arg, "-all", 4) == 0)
-			mono_interp_opt = INTERP_OPT_NONE;
+		} else {
+			gboolean invert;
+			int opt = 0;
+
+			if (*arg == '-') {
+				arg++;
+				invert = TRUE;
+			} else {
+				invert = FALSE;
+			}
+
+			if (strncmp (arg, "inline", 6) == 0)
+				opt = INTERP_OPT_INLINE;
+			else if (strncmp (arg, "cprop", 5) == 0)
+				opt = INTERP_OPT_CPROP;
+			else if (strncmp (arg, "super", 5) == 0)
+				opt = INTERP_OPT_SUPER_INSTRUCTIONS;
+			else if (strncmp (arg, "bblocks", 7) == 0)
+				opt = INTERP_OPT_BBLOCKS;
+			else if (strncmp (arg, "tiering", 7) == 0)
+				opt = INTERP_OPT_TIERING;
+			else if (strncmp (arg, "all", 3) == 0)
+				opt = ~INTERP_OPT_NONE;
+
+			if (opt) {
+				if (invert)
+					mono_interp_opt &= ~opt;
+				else
+					mono_interp_opt |= opt;
+			}
+		}
 	}
 }
 
