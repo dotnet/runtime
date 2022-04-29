@@ -458,10 +458,10 @@ HRESULT StressLog::Dump(ULONG64 outProcLog, const char* fileName, struct IDebugD
     totalSecs = ((double) (lastTimeStamp - inProcLog.startTimeStamp)) / inProcLog.tickFrequency;
     toInt64(endTime) = toInt64(inProcLog.startTime) + ((__int64) (totalSecs * 1.0E7));
 
-    WCHAR timeBuff[64];
+    char timeBuff[64];
     vDoOut(bDoGcHist, file, "    Clock frequency  = %5.3f GHz\n", inProcLog.tickFrequency / 1.0E9);
-    vDoOut(bDoGcHist, file, "    Start time         %s\n", getTime(&inProcLog.startTime, timeBuff, 64));
-    vDoOut(bDoGcHist, file, "    Last message time  %s\n", getTime(&endTime, timeBuff, 64));
+    vDoOut(bDoGcHist, file, "    Start time         %s\n", getTime(&inProcLog.startTime, timeBuff, ARRAY_SIZE(timeBuff)));
+    vDoOut(bDoGcHist, file, "    Last message time  %s\n", getTime(&endTime, timeBuff, ARRAY_SIZE(timeBuff)));
     vDoOut(bDoGcHist, file, "    Total elapsed time %5.3f sec\n", totalSecs);
 
     if (!bDoGcHist)
