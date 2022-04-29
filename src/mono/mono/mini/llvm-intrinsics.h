@@ -99,6 +99,11 @@ INTRINS(PEXT_I32, x86_bmi_pext_32, X86)
 INTRINS(PEXT_I64, x86_bmi_pext_64, X86)
 INTRINS(PDEP_I32, x86_bmi_pdep_32, X86)
 INTRINS(PDEP_I64, x86_bmi_pdep_64, X86)
+
+#if LLVM_API_VERSION >= 1400
+INTRINS_OVR_TAG(ROUNDEVEN, roundeven, Generic, Scalar | V64 | V128 | R4 | R8)
+#endif
+
 #if defined(TARGET_AMD64) || defined(TARGET_X86)
 INTRINS(SSE_PMOVMSKB, x86_sse2_pmovmskb_128, X86)
 INTRINS(SSE_MOVMSK_PS, x86_sse_movmsk_ps, X86)
@@ -394,10 +399,14 @@ INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRSQRTE, aarch64_neon_frsqrte, Arm64, Scalar | 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRSQRTS, aarch64_neon_frsqrts, Arm64, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRECPS, aarch64_neon_frecps, Arm64, Scalar | V64 | V128 | R4 | R8)
 
+#if LLVM_API_VERSION < 1400
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_RBIT, aarch64_neon_rbit, Arm64, V64 | V128 | I1)
+#endif
 
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTA, round, Generic, Scalar | V64 | V128 | R4 | R8)
+#if LLVM_API_VERSION < 1400
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTN, aarch64_neon_frintn, Arm64, Scalar | V64 | V128 | R4 | R8)
+#endif
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTM, floor, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTP, ceil, Generic, Scalar | V64 | V128 | R4 | R8)
 INTRINS_OVR_TAG(AARCH64_ADV_SIMD_FRINTZ, trunc, Generic, Scalar | V64 | V128 | R4 | R8)

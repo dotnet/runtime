@@ -105,10 +105,10 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty, LLVMValueRef Arr
 }
 
 LLVMValueRef
-mono_llvm_build_atomic_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
+mono_llvm_build_atomic_load (LLVMBuilderRef builder, LLVMTypeRef Type, LLVMValueRef PointerVal,
 							 const char *Name, gboolean is_volatile, int alignment, BarrierKind barrier)
 {
-	LoadInst *ins = unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name);
+	LoadInst *ins = unwrap(builder)->CreateLoad(unwrap(Type), unwrap(PointerVal), is_volatile, Name);
 
 	ins->setAlignment (to_align (alignment));
 	switch (barrier) {
@@ -129,12 +129,12 @@ mono_llvm_build_atomic_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
 }
 
 LLVMValueRef 
-mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
+mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMTypeRef Type, LLVMValueRef PointerVal,
 							  const char *Name, gboolean is_volatile, int alignment)
 {
 	LoadInst *ins;
 
-	ins = unwrap(builder)->CreateLoad(unwrap(PointerVal), is_volatile, Name);
+	ins = unwrap(builder)->CreateLoad(unwrap(Type), unwrap(PointerVal), is_volatile, Name);
 	ins->setAlignment (to_align (alignment));
 
 	return wrap(ins);
@@ -320,12 +320,22 @@ mono_llvm_set_call_nonnull_arg (LLVMValueRef wrapped_calli, int argNo)
 	dyn_cast<CallBase>(calli)->addParamAttr (argNo, Attribute::NonNull);
 }
 
-void
-mono_llvm_set_call_nonnull_ret (LLVMValueRef wrapped_calli)
+static void
+add_ret_attr (LLVMValueRef wrapped_calli, Attribute::AttrKind Kind)
 {
 	Instruction *calli = unwrap<Instruction> (wrapped_calli);
 
-	dyn_cast<CallBase>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NonNull);
+#if LLVM_API_VERSION >= 1400
+	dyn_cast<CallBase>(calli)->addRetAttr (Kind);
+#else
+	dyn_cast<CallBase>(calli)->addAttribute (AttributeList::ReturnIndex, Kind);
+#endif
+}
+
+void
+mono_llvm_set_call_nonnull_ret (LLVMValueRef wrapped_calli)
+{
+	add_ret_attr (wrapped_calli, Attribute::NonNull);
 }
 
 void
@@ -423,9 +433,7 @@ mono_llvm_set_call_notailcall (LLVMValueRef func)
 void
 mono_llvm_set_call_noalias_ret (LLVMValueRef wrapped_calli)
 {
-	Instruction *calli = unwrap<Instruction> (wrapped_calli);
-
-	dyn_cast<CallBase>(calli)->addAttribute (AttributeList::ReturnIndex, Attribute::NoAlias);
+	add_ret_attr (wrapped_calli, Attribute::NoAlias);
 }
 
 void
@@ -433,7 +441,12 @@ mono_llvm_set_alignment_ret (LLVMValueRef call, int alignment)
 {
 	Instruction *ins = unwrap<Instruction> (call);
 	auto &ctx = ins->getContext ();
+
+#if LLVM_API_VERSION >= 1400
+	dyn_cast<CallBase>(ins)->addRetAttr (Attribute::getWithAlignment(ctx, to_align (alignment)));
+#else
 	dyn_cast<CallBase>(ins)->addAttribute (AttributeList::ReturnIndex, Attribute::getWithAlignment(ctx, to_align (alignment)));
+#endif
 }
 
 static Attribute::AttrKind
@@ -495,13 +508,21 @@ mono_llvm_add_param_byval_attr (LLVMValueRef param, LLVMTypeRef type)
 void
 mono_llvm_add_instr_attr (LLVMValueRef val, int index, AttrKind kind)
 {
+#if LLVM_API_VERSION >= 1400
+	unwrap<CallBase> (val)->addParamAttr (index - 1, convert_attr (kind));
+#else
 	unwrap<CallBase> (val)->addAttribute (index, convert_attr (kind));
+#endif
 }
 
 void
 mono_llvm_add_instr_byval_attr (LLVMValueRef val, int index, LLVMTypeRef type)
 {
+#if LLVM_API_VERSION >= 1400
+	unwrap<CallBase> (val)->addParamAttr (index - 1, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+#else
 	unwrap<CallBase> (val)->addAttribute (index, Attribute::getWithByValType (*unwrap (LLVMGetGlobalContext ()), unwrap (type)));
+#endif
 }
 
 void*
