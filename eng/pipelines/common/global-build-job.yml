@@ -6,7 +6,6 @@ parameters:
   hostedOs: ''
   osGroup: ''
   osSubgroup: ''
-  runScriptWindowsCmd: false
   container: ''
   crossBuild: false
   crossrootfsDir: ''
@@ -100,12 +99,6 @@ jobs:
         ${{ if ne(parameters.isOfficialBuild, true) }}:
           value: ''
 
-      - name: _overrideTestScriptWindowsCmdParamater
-        ${{ if eq(parameters.runScriptWindowsCmd, true) }}:
-          value: /p:RunScriptWindowsCmd=true
-        ${{ if ne(parameters.runScriptWindowsCmd, true) }}:
-          value: ''
-
       - name: _buildDarwinFrameworksParameter
         ${{ if in(parameters.osGroup, 'iOS', 'tvOS', 'MacCatalyst')}}:
           value: /p:BuildDarwinFrameworks=true
@@ -167,7 +160,7 @@ jobs:
 
     # Build
     - ${{ if eq(parameters.buildingOnSourceBuildImage, false) }}:
-      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParamater)
+      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter) $(_overrideTestScriptWindowsCmdParameter)
         displayName: Build product
         ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
           continueOnError: ${{ parameters.shouldContinueOnError }}

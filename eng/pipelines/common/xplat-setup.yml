@@ -46,6 +46,12 @@ jobs:
       - name: _runSmokeTestsOnlyArg
         value: '/p:RunSmokeTestsOnly=$(isRunSmokeTestsOnly)'
 
+      - name: _overrideTestScriptWindowsCmdParameter
+        ${{ if eq(parameters.jobParameters.runScriptWindowsCmd, true) }}:
+          value: '/p:RunScriptWindowsCmd=true'
+        ${{ if ne(parameters.jobParameters.runScriptWindowsCmd, true) }}:
+          value: ''
+
       - name: _hostedOs
         value: ${{ parameters.jobParameters.hostedOs }}
 

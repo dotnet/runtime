@@ -195,9 +195,6 @@ jobs:
       variables: ${{ parameters.variables }}
       osGroup: Linux
       osSubgroup: _bionic
-      # We build on Linux, but the test queue runs Windows, so
-      # we need to override the test script generation
-      runScriptWindowsCmd: true
       archType: arm64
       targetRid: linux-bionic-arm64
       platform: Linux_bionic_arm64
@@ -206,6 +203,9 @@ jobs:
         registry: mcr
       jobParameters:
         runtimeFlavor: mono
+        # We build on Linux, but the test queue runs Windows, so
+        # we need to override the test script generation
+        runScriptWindowsCmd: true
         stagedBuild: ${{ parameters.stagedBuild }}
         buildConfig: ${{ parameters.buildConfig }}
         ${{ if eq(parameters.passPlatforms, true) }}:
