@@ -55,7 +55,6 @@ mono_marshal_shared_emit_fixed_buf_conv (MonoMethodBuilder *mb, MonoType *type, 
 int
 mono_marshal_shared_offset_of_first_nonstatic_field (MonoClass *klass);
 
-
 MonoMethod*
 mono_marshal_shared_get_method_nofail (MonoClass *klass, const char *method_name, int num_params, int flags);
 
@@ -69,7 +68,6 @@ void
 mono_marshal_shared_emit_struct_conv_full (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object,
 						int offset_of_first_child_field, MonoMarshalNative string_encoding);
 
-
 void
 mono_marshal_shared_emit_struct_conv (MonoMethodBuilder *mb, MonoClass *klass, gboolean to_object);
 
@@ -78,6 +76,5 @@ mono_marshal_shared_emit_thread_interrupt_checkpoint_call (MonoMethodBuilder *mb
 
 void
 mono_marshal_shared_emit_object_to_ptr_conv (MonoMethodBuilder *mb, MonoType *type, MonoMarshalConv conv, MonoMarshalSpec *mspec);
-
 
 #endif /* _MONO_METADATA_MARHSAL_SHARED_H_ */
