@@ -633,7 +633,7 @@ namespace System.Numerics.Tests
         {
             Quaternion a = new Quaternion(1.0f, 2.0f, 3.0f, 4.0f);
 
-            int expected = unchecked(a.X.GetHashCode() + a.Y.GetHashCode() + a.Z.GetHashCode() + a.W.GetHashCode());
+            int expected = HashCode.Combine(a.X, a.Y, a.Z, a.W);
             int actual = a.GetHashCode();
             Assert.Equal(expected, actual);
         }

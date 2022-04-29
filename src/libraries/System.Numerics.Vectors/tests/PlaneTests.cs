@@ -107,7 +107,7 @@ namespace System.Numerics.Tests
         {
             Plane target = new Plane(1.0f, 2.0f, 3.0f, 4.0f);
 
-            int expected = target.Normal.GetHashCode() + target.D.GetHashCode();
+            int expected = HashCode.Combine(target.Normal, target.D);
             int actual = target.GetHashCode();
             Assert.Equal(expected, actual);
         }
