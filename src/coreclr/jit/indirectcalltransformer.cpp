@@ -773,7 +773,8 @@ private:
 
             compiler->fgNewStmtAtEnd(thenBlock, assign);
 
-            // Clone call. Note we must use the special candidate helper.
+            // Clone call for the devirtualized case. Note we must use the
+            // special candidate helper and we need to use the new 'this'.
             GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
             call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
             call->SetIsGuarded();
@@ -795,7 +796,8 @@ private:
             }
             else
             {
-                // Make the updates.
+                // Otherwise we know the exact method already, so just change
+                // the call as necessary here.
                 call->gtFlags &= ~GTF_CALL_VIRT_KIND_MASK;
                 call->gtCallMethHnd = methodHnd = inlineInfo->guardedMethodHandle;
                 call->gtCallType                = CT_USER_FUNC;
@@ -825,9 +827,9 @@ private:
             }
 
             // We know this call can devirtualize or we would not have set up GDV here.
-            // So impDevirtualizeCall should succeed in devirtualizing.
+            // So above code should succeed in devirtualizing.
             //
-            assert(!call->IsVirtual());
+            assert(!call->IsVirtual() && !call->IsDelegateInvoke());
 
             // If the devirtualizer was unable to transform the call to invoke the unboxed entry, the inline info
             // we set up may be invalid. We won't be able to inline anyways. So demote the call as an inline candidate.
