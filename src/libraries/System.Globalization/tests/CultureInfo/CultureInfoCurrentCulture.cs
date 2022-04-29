@@ -34,6 +34,14 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+        public void CurrentCulture_Default_Not_Invariant()
+        {
+            Assert.NotEqual(CultureInfo.CurrentCulture, CultureInfo.InvariantCulture);
+            Assert.NotEqual(CultureInfo.CurrentUICulture, CultureInfo.InvariantCulture);
+        }
+
+        [Fact]
         public void CurrentCulture_Set_Null_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentCulture = null);
