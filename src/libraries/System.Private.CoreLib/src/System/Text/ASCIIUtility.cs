@@ -13,6 +13,7 @@ namespace System.Text
     internal static partial class ASCIIUtility
     {
         private static string? envsetting = Environment.GetEnvironmentVariable("AVX_TEST");
+        private static string? envsetting2 = Environment.GetEnvironmentVariable("AVX_TEST2");
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AllBytesInUInt64AreAscii(ulong value)
@@ -1624,36 +1625,33 @@ namespace System.Text
             // pmovmskb, ptest, vpminuw which we know are optimized, and (b) we can avoid downclocking the
             // processor while this method is running.
 
-            if (Avx2.IsSupported && envsetting == "AVX2")
+            if (Avx2.IsSupported && envsetting == "AVX2" && elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
             {
                 Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if AVX2 is supported.");
 
-                if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
+                // Since there's overhead to setting up the vectorized code path, we only want to
+                // call into it after a quick probe to ensure the next immediate characters really are ASCII.
+                // If we see non-ASCII data, we'll jump immediately to the draining logic at the end of the method.
+
+                if (IntPtr.Size >= 8)
                 {
-                    // Since there's overhead to setting up the vectorized code path, we only want to
-                    // call into it after a quick probe to ensure the next immediate characters really are ASCII.
-                    // If we see non-ASCII data, we'll jump immediately to the draining logic at the end of the method.
-
-                    if (IntPtr.Size >= 8)
+                    utf16Data64Bits = Unsafe.ReadUnaligned<ulong>(pUtf16Buffer);
+                    if (!AllCharsInUInt64AreAscii(utf16Data64Bits))
                     {
-                        utf16Data64Bits = Unsafe.ReadUnaligned<ulong>(pUtf16Buffer);
-                        if (!AllCharsInUInt64AreAscii(utf16Data64Bits))
-                        {
-                            goto FoundNonAsciiDataIn64BitRead;
-                        }
+                        goto FoundNonAsciiDataIn64BitRead;
                     }
-                    else
-                    {
-                        utf16Data32BitsHigh = Unsafe.ReadUnaligned<uint>(pUtf16Buffer);
-                        utf16Data32BitsLow = Unsafe.ReadUnaligned<uint>(pUtf16Buffer + 4 / sizeof(char));
-                        if (!AllCharsInUInt32AreAscii(utf16Data32BitsHigh | utf16Data32BitsLow))
-                        {
-                            goto FoundNonAsciiDataIn64BitRead;
-                        }
-                    }
-
-                    currentOffset = NarrowUtf16ToAscii_Avx2(pUtf16Buffer, pAsciiBuffer, elementCount);
                 }
+                else
+                {
+                    utf16Data32BitsHigh = Unsafe.ReadUnaligned<uint>(pUtf16Buffer);
+                    utf16Data32BitsLow = Unsafe.ReadUnaligned<uint>(pUtf16Buffer + 4 / sizeof(char));
+                    if (!AllCharsInUInt32AreAscii(utf16Data32BitsHigh | utf16Data32BitsLow))
+                    {
+                        goto FoundNonAsciiDataIn64BitRead;
+                    }
+                }
+
+                currentOffset = NarrowUtf16ToAscii_Avx2(pUtf16Buffer, pAsciiBuffer, elementCount);
             }
             else if (Sse2.IsSupported && envsetting == "SSE")
             {
@@ -1885,8 +1883,8 @@ namespace System.Text
             // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
             // data, we jump out of the hot paths to targets at the end of the method.
 
-            Debug.Assert(Avx2.IsSupported);
-            Debug.Assert(BitConverter.IsLittleEndian);
+            Debug.Assert(Avx2.IsSupported, "Should've been checked by caller.");
+            Debug.Assert(BitConverter.IsLittleEndian, "AVX assumes little-endian.");
             Debug.Assert(elementCount >= 2 * SizeOfVector256);
 
             Vector256<short> asciiMaskForTestZ = Vector256.Create(unchecked((short)0xFF80)); // used for PTEST on supported hardware
@@ -2236,7 +2234,11 @@ namespace System.Text
             // pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
+            if (Avx2.IsSupported && envsetting2 == "AVX2" && elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
+            {
+                currentOffset = WidenAsciiToUtf16_Avx2(pAsciiBuffer, pUtf16Buffer, elementCount);
+            }
+            else if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) && envsetting2 == "SSE")
             {
                 if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
                 {
@@ -2380,6 +2382,112 @@ namespace System.Text
             }
             value = AdvSimd.Arm64.MaxPairwise(value, value);
             return (value.AsUInt64().ToScalar() & 0x8080808080808080) != 0;
+        }
+
+        private static unsafe nuint WidenAsciiToUtf16_Avx2(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
+        {
+            // JIT turns the below into constants
+            uint SizeOfVector256 = (uint)Unsafe.SizeOf<Vector256<byte>>();
+            nuint MaskOfAllBitsInVector256 = (nuint)(SizeOfVector256 - 1);
+
+            // This method is written such that control generally flows top-to-bottom, avoiding
+            // jumps as much as possible in the optimistic case of "all ASCII". If we see non-ASCII
+            // data, we jump out of the hot paths to targets at the end of the method.
+
+            Debug.Assert(Avx2.IsSupported, "Should've been checked by caller");
+            Debug.Assert(BitConverter.IsLittleEndian);
+            Debug.Assert(elementCount >= 2 * SizeOfVector256);
+
+            // We're going to get the best performance when we have aligned writes, so we'll take the
+            // hit of potentially unaligned reads in order to hit this sweet spot.
+
+            Vector256<byte> asciiVector;
+            Vector256<byte> utf16FirstHalfVector;
+            bool containsNonAsciiBytes;
+
+            // First, perform an unaligned read of the first part of the input buffer.
+            asciiVector = Avx.LoadVector256(pAsciiBuffer); // unaligned load
+            containsNonAsciiBytes = (uint)Avx2.MoveMask(asciiVector) != 0;
+
+            // If there's non-ASCII data in the first 16 elements of the vector, there's nothing we can do.
+
+            if (containsNonAsciiBytes)
+            {
+                return 0;
+            }
+
+            // Then perform an unaligned write of the first part of the input buffer.
+
+            Vector256<byte> zeroVector = Vector256<byte>.Zero;
+
+
+            // Permute vector for unpacking
+            asciiVector = Vector256.AsByte(Avx2.Permute4x64(Vector256.AsInt64(asciiVector), (byte) 0xD8));
+
+            utf16FirstHalfVector = Avx2.UnpackLow(asciiVector, zeroVector);
+
+            Avx.Store((byte*)pUtf16Buffer, utf16FirstHalfVector); // unaligned
+
+            // Calculate how many elements we wrote in order to get pOutputBuffer to its next alignment
+            // point, then use that as the base offset going forward. Remember the >> 1 to account for
+            // that we wrote chars, not bytes. This means we may re-read data in the next iteration of
+            // the loop, but this is ok.
+
+            nuint currentOffset = (SizeOfVector256 >> 1) - (((nuint)pUtf16Buffer >> 1) & (MaskOfAllBitsInVector256 >> 1));
+            Debug.Assert(0 < currentOffset && currentOffset <= SizeOfVector256 / sizeof(char));
+
+            nuint finalOffsetWhereCanRunLoop = elementCount - SizeOfVector256;
+
+            // Calculating the destination address outside the loop results in significant
+            // perf wins vs. relying on the JIT to fold memory addressing logic into the
+            // write instructions. See: https://github.com/dotnet/runtime/issues/33002
+
+            char* pCurrentWriteAddress = pUtf16Buffer + currentOffset;
+
+            do
+            {
+                // In a loop, perform an unaligned read, widen to two vectors, then aligned write the two vectors.
+
+                asciiVector = Avx.LoadVector256(pAsciiBuffer + currentOffset); // unaligned load
+                containsNonAsciiBytes = (uint)Avx2.MoveMask(asciiVector) != 0;
+
+                if (containsNonAsciiBytes)
+                {
+                    // non-ASCII byte somewhere
+                    goto NonAsciiDataSeenInInnerLoop;
+                }
+
+                asciiVector = Vector256.AsByte(Avx2.Permute4x64(Vector256.AsInt64(asciiVector), (byte) 0xD8));
+
+                Vector256<byte> low = Avx2.UnpackLow(asciiVector, zeroVector);
+                Avx.StoreAligned((byte*)pCurrentWriteAddress, low);
+
+                Vector256<byte> high = Avx2.UnpackHigh(asciiVector, zeroVector);
+                Avx.StoreAligned((byte*)pCurrentWriteAddress + SizeOfVector256, high);
+
+                currentOffset += SizeOfVector256;
+                pCurrentWriteAddress += SizeOfVector256;
+            } while (currentOffset <= finalOffsetWhereCanRunLoop);
+
+        Finish:
+
+            return currentOffset;
+
+        NonAsciiDataSeenInInnerLoop:
+
+            // Can we at least widen the first part of the vector?
+
+            if (!containsNonAsciiBytes)
+            {
+                asciiVector = Vector256.AsByte(Avx2.Permute4x64(Vector256.AsInt64(asciiVector), (byte) 0xD8));
+
+                utf16FirstHalfVector = Avx2.UnpackLow(asciiVector, zeroVector);
+                Avx.StoreAligned((byte*)(pUtf16Buffer + currentOffset), utf16FirstHalfVector);
+
+                currentOffset += SizeOfVector256 / 2;
+            }
+
+            goto Finish;
         }
 
         private static unsafe nuint WidenAsciiToUtf16_Intrinsified(byte* pAsciiBuffer, char* pUtf16Buffer, nuint elementCount)
