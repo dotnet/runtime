@@ -73,15 +73,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
 
             Assert.Equal(FakeValidationStatus.Invalid, instance.Status);
         }
-
-        public static TheoryData<Type> ActivatorUtilitiesData
-        {
-            get => new TheoryData<Type>
-            {
-                typeof(FakeValidationResult),
-                typeof(FakeValidationResultOps)
-            };
-        }
     }
 
     internal class A { }
