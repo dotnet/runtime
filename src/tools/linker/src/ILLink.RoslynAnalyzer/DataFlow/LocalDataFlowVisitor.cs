@@ -176,6 +176,10 @@ namespace ILLink.RoslynAnalyzer.DataFlow
 				// This can happen for a field assignment in an attribute instance.
 				// TODO: validate against the field attributes.
 				break;
+			case IInstanceReferenceOperation:
+				// Assignment to 'this' is not tracked currently.
+				// Not relevant for trimming dataflow.
+				break;
 			default:
 				// NoneOperation represents operations which are unimplemented by Roslyn
 				// (don't have specific I*Operation types), such as pointer dereferences.

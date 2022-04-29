@@ -24,6 +24,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			PropagateToThis ();
 			PropagateToThisWithGetters ();
 			PropagateToThisWithSetters ();
+			AssignToThis ();
 
 			TestAnnotationOnNonTypeMethod ();
 			TestUnknownThis ();
@@ -81,6 +82,13 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 		static MethodThisDataFlowTypeTest GetWithNonPublicMethods ()
 		{
 			return null;
+		}
+
+		static void AssignToThis ()
+		{
+			var s = new StructType ();
+			s.AssignToThis ();
+			s.AssignToThisCaptured ();
 		}
 
 		static void TestAnnotationOnNonTypeMethod ()
@@ -146,6 +154,24 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicMethods)]
 			public static void StaticMethod ()
 			{
+			}
+		}
+
+		struct StructType
+		{
+			int f;
+			public StructType (int f) => this.f = f;
+
+			public void AssignToThis ()
+			{
+				// Not relevant for dataflow, but this should not crash the analyzer.
+				this = new StructType ();
+			}
+
+			public void AssignToThisCaptured ()
+			{
+				// Not relevant for dataflow, but this should not crash the analyzer.
+				this = string.Empty.Length == 0 ? new StructType (1) : new StructType (2);
 			}
 		}
 	}
