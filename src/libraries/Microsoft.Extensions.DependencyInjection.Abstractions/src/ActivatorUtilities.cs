@@ -47,14 +47,15 @@ namespace Microsoft.Extensions.DependencyInjection
             ConstructorInfo? pereferredConstructor = null;
             foreach (ConstructorInfo constructor in constructors)
             {
-                if (constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute)))
+                if (!constructor.IsDefined(typeof(ActivatorUtilitiesConstructorAttribute), false))
                 {
-                    if (pereferredConstructor is not null)
-                    {
-                        ThrowMultipleCtorsMarkedWithAttributeException();
-                    }
-                    pereferredConstructor = constructor;
+                    continue;
                 }
+                if (pereferredConstructor is not null)
+                {
+                    ThrowMultipleCtorsMarkedWithAttributeException();
+                }
+                pereferredConstructor = constructor;
             }
             if (pereferredConstructor is not null)
             {
@@ -78,7 +79,7 @@ namespace Microsoft.Extensions.DependencyInjection
             for (int i = 0; i < matchers.Length; i++)
             {
                 ConstructorMatcher matcher = matchers[i];
-                if (matcher.ApplyExectLength == -1) break;
+                if (matcher.MatchedLength == -1) break;
                 bool lastChance = i == matchers.Length - 1;
                 instance = matcher.CreateInstance(provider, throwIfFailed: lastChance);
                 if (instance is not null) return instance;
@@ -346,18 +347,18 @@ namespace Microsoft.Extensions.DependencyInjection
                 _parameterValues = new object?[_parameters.Length];
             }
 
-            public int ApplyExectLength { get; private set; } = -1;
-            public int Priority => ApplyExectLength == -1 ? -1 : ApplyExectLength + _parameters.Length;
+            public int MatchedLength { get; private set; } = -1;
+            public int Priority => MatchedLength == -1 ? -1 : MatchedLength + _parameters.Length;
 
             public int Match(object[] givenParameters)
             {
                 if (givenParameters.Length > _parameters.Length)
                 {
-                    ApplyExectLength = -1;
-                    return ApplyExectLength;
+                    MatchedLength = -1;
+                    return MatchedLength;
                 }
                 int applyIndexStart = 0;
-                ApplyExectLength = 0;
+                MatchedLength = 0;
                 for (int givenIndex = 0; givenIndex != givenParameters.Length; givenIndex++)
                 {
                     Type? givenType = givenParameters[givenIndex]?.GetType();
@@ -375,7 +376,7 @@ namespace Microsoft.Extensions.DependencyInjection
                                 applyIndexStart++;
                                 if (applyIndex == givenIndex)
                                 {
-                                    ApplyExectLength = applyIndex;
+                                    MatchedLength = applyIndex;
                                 }
                             }
                         }
@@ -383,11 +384,11 @@ namespace Microsoft.Extensions.DependencyInjection
 
                     if (givenMatched == false)
                     {
-                        ApplyExectLength = -1;
-                        return ApplyExectLength;
+                        MatchedLength = -1;
+                        return MatchedLength;
                     }
                 }
-                return ApplyExectLength;
+                return MatchedLength;
             }
 
             public object? CreateInstance(IServiceProvider provider, bool throwIfFailed = false)
