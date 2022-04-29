@@ -89,10 +89,9 @@
           $(Python) post.py
 
           if [ "$result" != "0" ]; then
-            echo Reporting Infra Problem
-            export PYTHONPATH=$ORIGPYPATH
-            echo PYTHONPATH $PYTHONPATH
-            report_infrastructure_failure "TESTING:Failed to ios perf, this message is not great but its all we got for this string..."
+            echo Creating files to report Infra Problems
+            echo "TESTING:Failed to ios perf, this message is not great but its all we got for this string..." > $HELIX_WORKITEM_ROOT/.retry
+            echo "TESTING:Failed to ios perf, this message is not great but its all we got for this string..." > $HELIX_WORKITEM_ROOT/.reboot
           fi
 
           exit $result
@@ -124,10 +123,9 @@
           $(Python) post.py
 
           if [ "$result" != "0" ]; then
-            echo Reporting Infra Problem
-            export PYTHONPATH=$ORIGPYPATH
-            echo PYTHONPATH $PYTHONPATH
-            report_infrastructure_failure "TESTING:Failed to ios perf, this message is not great but its all we got for this string..."
+            echo Creating files to report Infra Problems
+            echo "TESTING:Failed to ios perf, this message is not great but its all we got for this string..." > $HELIX_WORKITEM_ROOT/.retry
+            echo "TESTING:Failed to ios perf, this message is not great but its all we got for this string..." > $HELIX_WORKITEM_ROOT/.reboot
           fi
 
           exit $result
