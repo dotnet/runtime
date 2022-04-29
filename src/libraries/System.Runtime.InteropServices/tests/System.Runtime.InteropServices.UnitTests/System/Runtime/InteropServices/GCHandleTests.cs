@@ -194,6 +194,7 @@ namespace System.Runtime.InteropServices.Tests
         public struct Unmanaged
         {
             public char Object { get; set; }
+            public bool Object2 { get; set; }
         }
 
         public struct NonBlittable
