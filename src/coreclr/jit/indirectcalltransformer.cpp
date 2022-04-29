@@ -733,7 +733,11 @@ private:
             InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
-            // copy new 'this' to temp with exact type.
+            // Copy the 'this' for the devirtualized call to a new temp. For
+            // class-based GDV this will allow us to set the exact type on that
+            // temp. For delegate GDV, this will be the actual 'this' object
+            // stored in the delegate.
+
             const unsigned thisTemp  = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt this exact temp"));
             GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtArgs.GetThisArg()->GetNode());
             GenTree* newThisObj;
