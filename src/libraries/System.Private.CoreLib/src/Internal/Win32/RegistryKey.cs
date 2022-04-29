@@ -435,8 +435,10 @@ namespace Internal.Win32
 
         // The actual api is SetValue(string name, object value) but we only need to set Strings
         // so this is a cut-down version that supports on that.
-        internal void SetValue(string name, string value!!)
+        internal void SetValue(string name, string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (name != null && name.Length > MaxValueLength)
                 throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));
 

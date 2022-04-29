@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class TextAction : CompiledAction
+    internal sealed class TextAction : CompiledAction
     {
         private bool _disableOutputEscaping;
         private string? _text;

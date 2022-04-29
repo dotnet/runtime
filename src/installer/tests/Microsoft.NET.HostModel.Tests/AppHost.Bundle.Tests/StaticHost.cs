@@ -18,7 +18,7 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
-        private void Can_Run_App_With_StatiHost()
+        private void Can_Run_App_With_StaticHost()
         {
             var fixture = sharedTestState.TestFixture.Copy();
 
@@ -35,7 +35,7 @@ namespace AppHost.Bundle.Tests
         }
 
         [Fact]
-        private void Can_Run_SingleFile_App_With_StatiHost()
+        private void Can_Run_SingleFile_App_With_StaticHost()
         {
             var fixture = sharedTestState.TestFixture.Copy();
 

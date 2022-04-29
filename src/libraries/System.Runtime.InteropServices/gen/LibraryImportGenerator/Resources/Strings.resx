@@ -154,7 +154,7 @@
     <value>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</value>
   </data>
   <data name="ConfigurationNotSupportedMessageValue" xml:space="preserve">
-    <value>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</value>
+    <value>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</value>
   </data>
   <data name="ConfigurationNotSupportedTitle" xml:space="preserve">
     <value>Specified configuration is not supported by source-generated P/Invokes.</value>
@@ -284,17 +284,6 @@
   <data name="SafeHandleByRefMustBeConcrete" xml:space="preserve">
     <value>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</value>
   </data>
-  <data name="TargetFrameworkNotSupportedDescription" xml:space="preserve">
-    <value>P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks.</value>
-    <comment>{0} is a version number</comment>
-  </data>
-  <data name="TargetFrameworkNotSupportedMessage" xml:space="preserve">
-    <value>'LibraryImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</value>
-    <comment>{0} is a version number</comment>
-  </data>
-  <data name="TargetFrameworkNotSupportedTitle" xml:space="preserve">
-    <value>Current target framework is not supported by source-generated P/Invokes</value>
-  </data>
   <data name="TypeNotSupportedDescription" xml:space="preserve">
     <value>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</value>
   </data>
@@ -321,7 +310,7 @@
     <value>The 'TwoStageMarshalling' feature requires a 'TNativeType ToNativeValue()' method for the 'In' direction.</value>
   </data>
   <data name="InTwoStageMarshallingRequiresToNativeValueMessage" xml:space="preserve">
-    <value>The marshaller type '{0}' supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</value>
+    <value>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</value>
   </data>
   <data name="OutTwoStageMarshallingRequiresFromNativeValueDescription" xml:space="preserve">
     <value>The 'TwoStageMarshalling' feature requires a 'void FromNativeValue(TNativeType value)' method for the 'Out' direction.</value>
@@ -436,5 +425,26 @@
   </data>
   <data name="TwoStageMarshallingNativeTypesMustMatchMessage" xml:space="preserve">
     <value>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</value>
+  </data>
+  <data name="CallerAllocConstructorMustHaveBufferSizeTitle" xml:space="preserve">
+    <value>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</value>
+  </data>
+  <data name="CustomMarshallerTypeMustHaveRequiredShapeTitle" xml:space="preserve">
+    <value>Marshaller type does not have the required shape</value>
+  </data>
+  <data name="InvalidCustomTypeMarshallerAttributeUsageTitle" xml:space="preserve">
+    <value>Invalid `CustomTypeMarshallerAttribute` usage</value>
+  </data>
+  <data name="InvalidNativeTypeTitle" xml:space="preserve">
+    <value>Specified native type is invalid</value>
+  </data>
+  <data name="InvalidSignaturesInMarshallerShapeTitle" xml:space="preserve">
+    <value>Marshaller type has incompatible method signatures</value>
+  </data>
+  <data name="MissingAllocatingMarshallingFallbackTitle" xml:space="preserve">
+    <value>Marshaller type does not support allocating constructor</value>
+  </data>
+  <data name="ProvidedMethodsNotSpecifiedInFeaturesTitle" xml:space="preserve">
+    <value>Marshaller type defines a well-known method without specifying support for the corresponding feature</value>
   </data>
 </root>

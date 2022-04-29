@@ -60,8 +60,10 @@ namespace System.Linq
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
-        IQueryable IQueryProvider.CreateQuery(Expression expression!!)
+        IQueryable IQueryProvider.CreateQuery(Expression expression)
         {
+            ArgumentNullException.ThrowIfNull(expression);
+
             Type? iqType = TypeHelper.FindGenericType(typeof(IQueryable<>), expression.Type);
             if (iqType == null)
                 throw Error.ArgumentNotValid(nameof(expression));
@@ -70,8 +72,10 @@ namespace System.Linq
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
-        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression!!)
+        IQueryable<TElement> IQueryProvider.CreateQuery<TElement>(Expression expression)
         {
+            ArgumentNullException.ThrowIfNull(expression);
+
             if (!typeof(IQueryable<TElement>).IsAssignableFrom(expression.Type))
             {
                 throw Error.ArgumentNotValid(nameof(expression));
@@ -81,15 +85,19 @@ namespace System.Linq
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
-        object? IQueryProvider.Execute(Expression expression!!)
+        object? IQueryProvider.Execute(Expression expression)
         {
+            ArgumentNullException.ThrowIfNull(expression);
+
             return EnumerableExecutor.Create(expression).ExecuteBoxed();
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "This class's ctor is annotated as RequiresUnreferencedCode.")]
-        TElement IQueryProvider.Execute<TElement>(Expression expression!!)
+        TElement IQueryProvider.Execute<TElement>(Expression expression)
         {
+            ArgumentNullException.ThrowIfNull(expression);
+
             if (!typeof(TElement).IsAssignableFrom(expression.Type))
                 throw Error.ArgumentNotValid(nameof(expression));
             return new EnumerableExecutor<TElement>(expression).Execute();

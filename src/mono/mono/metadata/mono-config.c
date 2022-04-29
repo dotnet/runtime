@@ -58,9 +58,6 @@
 #elif defined(__x86_64__) || defined(_M_X64) || defined(TARGET_AMD64)
 #define CONFIG_CPU "x86-64"
 #define CONFIG_WORDSIZE "64"
-#elif defined(sparc) || defined(__sparc__)
-#define CONFIG_CPU "sparc"
-#define CONFIG_WORDSIZE "32"
 #elif defined(__ppc64__) || defined(__powerpc64__) || defined(_ARCH_64) || defined(TARGET_POWERPC)
 #define CONFIG_WORDSIZE "64"
 #ifdef __mono_ppc_ilp32__
@@ -83,9 +80,6 @@
 #elif defined(__aarch64__) || defined(TARGET_ARM64)
 #define CONFIG_CPU "armv8"
 #define CONFIG_WORDSIZE "64"
-#elif defined(mips) || defined(__mips) || defined(_mips)
-#define CONFIG_CPU "mips"
-#define CONFIG_WORDSIZE "32"
 #elif defined (TARGET_RISCV32)
 #define CONFIG_CPU "riscv32"
 #define CONFIG_WORDSIZE "32"
@@ -134,78 +128,69 @@ mono_config_get_wordsize (void)
 	return CONFIG_WORDSIZE;
 }
 
-static char *mono_cfg_dir;
-static const char *bundled_machine_config;
+// The following functions are kept for source backwards compatibility only,
+// app.config/machine.config handling is not available in dotnet/runtime,
 
-/**
- * mono_set_config_dir:
- * Invoked during startup
- */
+void
+mono_register_config_for_assembly (const char* assembly_name, const char* config_xml)
+{
+}
+
+void
+mono_config_for_assembly (MonoImage *assembly)
+{
+}
+
 void
 mono_set_config_dir (const char *dir)
 {
-	/* If this environment variable is set, overrides the directory computed */
-	char *env_mono_cfg_dir = g_getenv ("MONO_CFG_DIR");
-	if (env_mono_cfg_dir == NULL && dir != NULL)
-		env_mono_cfg_dir = g_strdup (dir);
-
-	if (mono_cfg_dir)
-		g_free (mono_cfg_dir);
-	mono_cfg_dir = env_mono_cfg_dir;
 }
 
-/**
- * mono_get_config_dir:
- */
 const char*
 mono_get_config_dir (void)
 {
-	if (mono_cfg_dir == NULL)
-		mono_set_dirs (NULL, NULL);
-
-	return mono_cfg_dir;
+	return NULL;
 }
 
-/**
- * mono_register_machine_config:
- */
 void
 mono_register_machine_config (const char *config_xml)
 {
-	bundled_machine_config = config_xml;
 }
 
-/**
- * mono_get_machine_config:
- */
 const char *
 mono_get_machine_config (void)
 {
-	return bundled_machine_config;
+	return NULL;
+}
+
+void
+mono_config_cleanup (void)
+{
+}
+
+void
+mono_config_parse_memory (const char *buffer)
+{
+}
+
+void
+mono_config_parse (const char *filename)
+{
 }
 
 const char *
 mono_config_string_for_assembly_file (const char *filename)
 {
-       return NULL;
+	return NULL;
 }
 
-static mono_bool mono_server_mode = FALSE;
-
-/**
- * mono_config_set_server_mode:
- */
 void
 mono_config_set_server_mode (mono_bool server_mode)
 {
-	mono_server_mode = server_mode;
 }
 
-/**
- * mono_config_is_server_mode:
- */
 mono_bool
 mono_config_is_server_mode (void)
 {
-	return mono_server_mode;
+	return FALSE;
 }

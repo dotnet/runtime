@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
 using System.Runtime.CompilerServices;
@@ -41,8 +42,10 @@ namespace System
         public static string Concat(object? arg0, object? arg1, object? arg2) =>
             Concat(arg0?.ToString(), arg1?.ToString(), arg2?.ToString());
 
-        public static string Concat(params object?[] args!!)
+        public static string Concat(params object?[] args)
         {
+            ArgumentNullException.ThrowIfNull(args);
+
             if (args.Length <= 1)
             {
                 return args.Length == 0 ?
@@ -101,8 +104,10 @@ namespace System
             return result;
         }
 
-        public static string Concat<T>(IEnumerable<T> values!!)
+        public static string Concat<T>(IEnumerable<T> values)
         {
+            ArgumentNullException.ThrowIfNull(values);
+
             if (typeof(T) == typeof(char))
             {
                 // Special-case T==char, as we can handle that case much more efficiently,
@@ -182,8 +187,10 @@ namespace System
             }
         }
 
-        public static string Concat(IEnumerable<string?> values!!)
+        public static string Concat(IEnumerable<string?> values)
         {
+            ArgumentNullException.ThrowIfNull(values);
+
             using (IEnumerator<string?> en = values.GetEnumerator())
             {
                 if (!en.MoveNext())
@@ -360,8 +367,10 @@ namespace System
             return result;
         }
 
-        public static string Concat(params string?[] values!!)
+        public static string Concat(params string?[] values)
         {
+            ArgumentNullException.ThrowIfNull(values);
+
             if (values.Length <= 1)
             {
                 return values.Length == 0 ?
@@ -425,22 +434,22 @@ namespace System
             return copiedLength == totalLength ? result : Concat((string?[])values.Clone());
         }
 
-        public static string Format(string format, object? arg0)
+        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             return FormatHelper(null, format, new ParamsArray(arg0));
         }
 
-        public static string Format(string format, object? arg0, object? arg1)
+        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             return FormatHelper(null, format, new ParamsArray(arg0, arg1));
         }
 
-        public static string Format(string format, object? arg0, object? arg1, object? arg2)
+        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             return FormatHelper(null, format, new ParamsArray(arg0, arg1, arg2));
         }
 
-        public static string Format(string format, params object?[] args)
+        public static string Format([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
         {
             if (args is null)
             {
@@ -452,22 +461,22 @@ namespace System
             return FormatHelper(null, format, new ParamsArray(args));
         }
 
-        public static string Format(IFormatProvider? provider, string format, object? arg0)
+        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             return FormatHelper(provider, format, new ParamsArray(arg0));
         }
 
-        public static string Format(IFormatProvider? provider, string format, object? arg0, object? arg1)
+        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             return FormatHelper(provider, format, new ParamsArray(arg0, arg1));
         }
 
-        public static string Format(IFormatProvider? provider, string format, object? arg0, object? arg1, object? arg2)
+        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1, object? arg2)
         {
             return FormatHelper(provider, format, new ParamsArray(arg0, arg1, arg2));
         }
 
-        public static string Format(IFormatProvider? provider, string format, params object?[] args)
+        public static string Format(IFormatProvider? provider, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] args)
         {
             if (args is null)
             {
@@ -479,16 +488,20 @@ namespace System
             return FormatHelper(provider, format, new ParamsArray(args));
         }
 
-        private static string FormatHelper(IFormatProvider? provider, string format!!, ParamsArray args)
+        private static string FormatHelper(IFormatProvider? provider, string format, ParamsArray args)
         {
+            ArgumentNullException.ThrowIfNull(format);
+
             var sb = new ValueStringBuilder(stackalloc char[256]);
             sb.EnsureCapacity(format.Length + args.Length * 8);
             sb.AppendFormatHelper(provider, format, args);
             return sb.ToString();
         }
 
-        public string Insert(int startIndex, string value!!)
+        public string Insert(int startIndex, string value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if ((uint)startIndex > Length)
                 throw new ArgumentOutOfRangeException(nameof(startIndex));
 
@@ -518,7 +531,7 @@ namespace System
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             }
 
-            return JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), new ReadOnlySpan<string?>(value));
+            return JoinCore(new ReadOnlySpan<char>(in separator), new ReadOnlySpan<string?>(value));
         }
 
         public static string Join(string? separator, params string?[] value)
@@ -532,13 +545,15 @@ namespace System
         }
 
         public static string Join(char separator, string?[] value, int startIndex, int count) =>
-            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), value, startIndex, count);
+            JoinCore(new ReadOnlySpan<char>(in separator), value, startIndex, count);
 
         public static string Join(string? separator, string?[] value, int startIndex, int count) =>
             JoinCore(separator.AsSpan(), value, startIndex, count);
 
-        private static string JoinCore(ReadOnlySpan<char> separator, string?[] value!!, int startIndex, int count)
+        private static string JoinCore(ReadOnlySpan<char> separator, string?[] value, int startIndex, int count)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (startIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(startIndex), SR.ArgumentOutOfRange_StartIndex);
@@ -604,7 +619,7 @@ namespace System
         }
 
         public static string Join(char separator, params object?[] values) =>
-            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), values);
+            JoinCore(new ReadOnlySpan<char>(in separator), values);
 
         public static string Join(string? separator, params object?[] values) =>
             JoinCore(separator.AsSpan(), values);
@@ -646,7 +661,7 @@ namespace System
         }
 
         public static string Join<T>(char separator, IEnumerable<T> values) =>
-            JoinCore(MemoryMarshal.CreateReadOnlySpan(ref separator, 1), values);
+            JoinCore(new ReadOnlySpan<char>(in separator), values);
 
         public static string Join<T>(string? separator, IEnumerable<T> values) =>
             JoinCore(separator.AsSpan(), values);
@@ -1179,8 +1194,10 @@ namespace System
         /// This method is guaranteed O(n * r) complexity, where <em>n</em> is the length of the input string,
         /// and where <em>r</em> is the length of <paramref name="replacementText"/>.
         /// </remarks>
-        public string ReplaceLineEndings(string replacementText!!)
+        public string ReplaceLineEndings(string replacementText)
         {
+            ArgumentNullException.ThrowIfNull(replacementText);
+
             // Early-exit: do we need to do anything at all?
             // If not, return this string as-is.
 
@@ -1257,12 +1274,12 @@ namespace System
 
         public string[] Split(char separator, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(new ReadOnlySpan<char>(ref separator, 1), int.MaxValue, options);
+            return SplitInternal(new ReadOnlySpan<char>(in separator), int.MaxValue, options);
         }
 
         public string[] Split(char separator, int count, StringSplitOptions options = StringSplitOptions.None)
         {
-            return SplitInternal(new ReadOnlySpan<char>(ref separator, 1), count, options);
+            return SplitInternal(new ReadOnlySpan<char>(in separator), count, options);
         }
 
         // Creates an array of strings by splitting this string at each

@@ -9,7 +9,10 @@
     <NativeAotSupported Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetOS)' == 'osx'">false</NativeAotSupported>
     <!-- Trimming is not currently working, but set the appropriate feature flags for NativeAOT -->
     <PublishTrimmed Condition="'$(NativeAotSupported)' == 'true'">true</PublishTrimmed>
-    <RuntimeIdentifiers Condition="'$(RunningPublish)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(RunningPublish)' != 'true' and '$(DotNetBuildFromSource)' != 'true'">linux-x64;linux-musl-x64;linux-arm;linux-musl-arm;linux-arm64;linux-musl-arm64;freebsd-x64;osx-x64;osx-arm64;win-x64;win-x86;win-arm64;win-arm</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition="'$(DotNetBuildFromSource)' == 'true'">$(PackageRID)</RuntimeIdentifiers>
+    <SelfContained>false</SelfContained>
+    <SelfContained Condition="'$(RunningPublish)' == 'true'">true</SelfContained>
   </PropertyGroup>
 
   <Import Project="crossgen2.props" />
@@ -36,13 +39,24 @@
     <IlcFrameworkPath>$(MicrosoftNetCoreAppRuntimePackRidLibTfmDir)</IlcFrameworkPath>
     <IlcFrameworkNativePath>$(MicrosoftNetCoreAppRuntimePackNativeDir)</IlcFrameworkNativePath>
     <TrimmerSingleWarn>false</TrimmerSingleWarn>
-
-    <!-- Forced by ILLink targets; we should fix the SDK -->
-    <SelfContained Condition="'$(RunningPublish)' == 'true'">true</SelfContained>
   </PropertyGroup>
 
   <Import Project="$(R2ROverridePath)" Condition="'$(R2ROverridePath)' != ''" />
   <Import Project="$(CoreCLRBuildIntegrationDir)Microsoft.DotNet.ILCompiler.targets"
           Condition="'$(NativeAotSupported)' == 'true' and '$(RunningPublish)' == 'true'" />
+
+  <Target Name="RewriteRuntimePackDir"
+          Condition="'$(RunningPublish)' == 'true'"
+          DependsOnTargets="ResolveRuntimeFilesFromLocalBuild"
+          BeforeTargets="ResolveRuntimePackAssets">
+      <ItemGroup>
+        <!-- Remove AspNetCore runtime pack since we don't build it locally -->
+        <ResolvedRuntimePack Remove="Microsoft.AspNetCore.App.Runtime.$(RuntimeIdentifier)" />
+
+        <ResolvedRuntimePack Update="Microsoft.NETCore.App.Runtime.$(RuntimeIdentifier)">
+          <PackageDirectory>$(MicrosoftNetCoreAppRuntimePackDir)</PackageDirectory>
+        </ResolvedRuntimePack>
+      </ItemGroup>
+  </Target>
 
 </Project>

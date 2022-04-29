@@ -2,13 +2,15 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
 internal class BaseException : Exception { }
 internal class DerivedException : BaseException { }
 
-internal class Test_cast_throw
+public class Test_cast_throw
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         BaseException ex = new DerivedException();
         try

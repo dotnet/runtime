@@ -83,7 +83,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void Accept_UseAddMethodWithInvalidValue_InvalidValueRecognized()
+        public void Accept_UseAddMethodWithInvalidValue_InvalidValueRecognizedAndNotRemoved()
         {
             // Add a valid media-type with an invalid quality value
             headers.TryAddWithoutValidation("Accept", "text/plain; q=a"); // invalid quality
@@ -102,7 +102,7 @@ namespace System.Net.Http.Tests
             headers.TryAddWithoutValidation("Accept", "text/plain; charset=iso-8859-1; q=1.0,\r\n */xml; charset=utf-8; q=0.5,,,");
 
             Assert.Equal(0, headers.Accept.Count);
-            Assert.False(headers.Contains("Accept"));
+            Assert.True(headers.Contains("Accept"));
         }
 
         [Fact]
@@ -133,7 +133,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void AcceptCharset_UseAddMethodWithInvalidValue_InvalidValueRecognized()
+        public void AcceptCharset_UseTryAddWithoutValidationMethodWithInvalidValue_InvalidValueNotRemoved()
         {
             headers.TryAddWithoutValidation("Accept-Charset", "iso-8859-5 utf-8"); // no separator
             Assert.Equal(0, headers.AcceptCharset.Count);
@@ -148,8 +148,9 @@ namespace System.Net.Http.Tests
 
             headers.Clear();
             headers.TryAddWithoutValidation("Accept-Charset", "iso-8859-5, \r\n utf-8; q=0.300");
+            Assert.True(headers.Contains("Accept-Charset"));
             Assert.Equal(0, headers.AcceptCharset.Count);
-            Assert.False(headers.Contains("Accept-Charset"));
+            Assert.Equal(new[] { "iso-8859-5, \r\n utf-8; q=0.300" }, headers.NonValidated["Accept-Charset"]);
         }
 
         [Fact]
@@ -197,7 +198,7 @@ namespace System.Net.Http.Tests
             headers.AcceptEncoding.Clear();
             headers.TryAddWithoutValidation("Accept-Encoding", "");
             Assert.Equal(0, headers.AcceptEncoding.Count);
-            Assert.False(headers.Contains("Accept-Encoding"));
+            Assert.True(headers.Contains("Accept-Encoding"));
         }
 
         [Fact]
@@ -248,7 +249,7 @@ namespace System.Net.Http.Tests
             headers.AcceptLanguage.Clear();
             headers.TryAddWithoutValidation("Accept-Language", "");
             Assert.Equal(0, headers.AcceptLanguage.Count);
-            Assert.False(headers.Contains("Accept-Language"));
+            Assert.True(headers.Contains("Accept-Language"));
         }
 
         [Fact]
@@ -503,7 +504,8 @@ namespace System.Net.Http.Tests
 
             headers.Clear();
             headers.TryAddWithoutValidation("TE", "");
-            Assert.False(headers.Contains("TE"), "'TE' header should not be added if it just has empty values.");
+            Assert.True(headers.Contains("TE"));
+            Assert.Equal(0, headers.TE.Count);
         }
 
         [Fact]
@@ -1206,7 +1208,7 @@ namespace System.Net.Http.Tests
         }
 
         [Fact]
-        public void TransferEncoding_UseAddMethodWithInvalidValue_InvalidValueRecognized()
+        public void TransferEncoding_UseTryAddWithoutValidationMethodWithInvalidValue_InvalidValueNotRemoved()
         {
             headers.TryAddWithoutValidation("Transfer-Encoding", "custom\u4F1A");
             Assert.Null(headers.GetSingleParsedValue(KnownHeaders.TransferEncoding.Descriptor));
@@ -1221,7 +1223,7 @@ namespace System.Net.Http.Tests
 
             headers.Clear();
             headers.TryAddWithoutValidation("Transfer-Encoding", "");
-            Assert.False(headers.Contains("Transfer-Encoding"), "'Transfer-Encoding' header should not be added if it just has empty values.");
+            Assert.True(headers.Contains("Transfer-Encoding"));
         }
 
         [Fact]
@@ -1348,7 +1350,7 @@ namespace System.Net.Http.Tests
             headers.Via.Clear();
             headers.TryAddWithoutValidation("Via", "");
             Assert.Equal(0, headers.Via.Count);
-            Assert.False(headers.Contains("Via"));
+            Assert.True(headers.Contains("Via"));
         }
 
         [Fact]
@@ -1398,7 +1400,7 @@ namespace System.Net.Http.Tests
             headers.Warning.Clear();
             headers.TryAddWithoutValidation("Warning", "");
             Assert.Equal(0, headers.Warning.Count);
-            Assert.False(headers.Contains("Warning"));
+            Assert.True(headers.Contains("Warning"));
         }
 
         [Fact]

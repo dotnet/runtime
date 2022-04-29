@@ -350,7 +350,7 @@ namespace System.Security.Principal
         // Properties.
         //
         // this is defined 'override sealed' for back compat. Il generated is 'virtual final' and this needs to be the same.
-        public sealed override string? AuthenticationType
+        public sealed override unsafe string? AuthenticationType
         {
             get
             {
@@ -371,7 +371,7 @@ namespace System.Security.Principal
                         if (status < 0) // non-negative numbers indicate success
                             throw GetExceptionFromNtStatus(status);
 
-                        pLogonSessionData.Initialize((uint)Marshal.SizeOf<Interop.SECURITY_LOGON_SESSION_DATA>());
+                        pLogonSessionData.Initialize((uint)sizeof(Interop.SECURITY_LOGON_SESSION_DATA));
 
                         Interop.SECURITY_LOGON_SESSION_DATA logonSessionData = pLogonSessionData.Read<Interop.SECURITY_LOGON_SESSION_DATA>(0);
                         return Marshal.PtrToStringUni(logonSessionData.AuthenticationPackage.Buffer);
@@ -621,7 +621,7 @@ namespace System.Security.Principal
             }
         }
 
-        public IdentityReferenceCollection? Groups
+        public unsafe IdentityReferenceCollection? Groups
         {
             get
             {
@@ -636,7 +636,7 @@ namespace System.Security.Principal
                     {
                         Interop.TOKEN_GROUPS tokenGroups = pGroups!.Read<Interop.TOKEN_GROUPS>(0);
                         Interop.SID_AND_ATTRIBUTES[] groupDetails = new Interop.SID_AND_ATTRIBUTES[tokenGroups.GroupCount];
-                        pGroups.ReadArray((uint)Marshal.OffsetOf<Interop.TOKEN_GROUPS>("Groups").ToInt32(),
+                        pGroups.ReadArray((uint)sizeof(IntPtr) /* offsetof(Interop.TOKEN_GROUPS, Groups) */,
                                           groupDetails,
                                           0,
                                           groupDetails.Length);
@@ -678,14 +678,18 @@ namespace System.Security.Principal
         // Public methods.
         //
 
-        public static void RunImpersonated(SafeAccessTokenHandle safeAccessTokenHandle, Action action!!)
+        public static void RunImpersonated(SafeAccessTokenHandle safeAccessTokenHandle, Action action)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             RunImpersonatedInternal(safeAccessTokenHandle, action);
         }
 
 
-        public static T RunImpersonated<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<T> func!!)
+        public static T RunImpersonated<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<T> func)
         {
+            ArgumentNullException.ThrowIfNull(func);
+
             T result = default!;
             RunImpersonatedInternal(safeAccessTokenHandle, () => result = func());
             return result;
@@ -850,14 +854,14 @@ namespace System.Security.Principal
         ///   Get a property from the current token
         /// </summary>
 
-        private T GetTokenInformation<T>(TokenInformationClass tokenInformationClass) where T : struct
+        private unsafe T GetTokenInformation<T>(TokenInformationClass tokenInformationClass) where T : unmanaged
         {
             Debug.Assert(!_safeTokenHandle.IsInvalid && !_safeTokenHandle.IsClosed, "!m_safeTokenHandle.IsInvalid && !m_safeTokenHandle.IsClosed");
 
             using (SafeLocalAllocHandle information = GetTokenInformation(_safeTokenHandle, tokenInformationClass, nullOnInvalidParam: false)!)
             {
-                Debug.Assert(information!.ByteLength >= (ulong)Marshal.SizeOf<T>(),
-                                "information.ByteLength >= (ulong)Marshal.SizeOf(typeof(T))");
+                Debug.Assert(information!.ByteLength >= (ulong)sizeof(T),
+                                "information.ByteLength >= (ulong)sizeof(T)");
 
                 return information.Read<T>(0);
             }
@@ -914,8 +918,10 @@ namespace System.Security.Principal
             return safeLocalAllocHandle;
         }
 
-        private static string? GetAuthType(WindowsIdentity identity!!)
+        private static string? GetAuthType(WindowsIdentity identity)
         {
+            ArgumentNullException.ThrowIfNull(identity);
+
             return identity._authType;
         }
 
@@ -1032,7 +1038,7 @@ namespace System.Security.Principal
         /// <summary>
         /// Creates a collection of SID claims that represent the users groups.
         /// </summary>
-        private void AddGroupSidClaims(List<Claim> instanceClaims)
+        private unsafe void AddGroupSidClaims(List<Claim> instanceClaims)
         {
             // special case the anonymous identity.
             if (_safeTokenHandle.IsInvalid)
@@ -1044,7 +1050,7 @@ namespace System.Security.Principal
             {
                 // Retrieve the primary group sid
                 safeAllocHandlePrimaryGroup = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenPrimaryGroup);
-                Interop.TOKEN_PRIMARY_GROUP primaryGroup = (Interop.TOKEN_PRIMARY_GROUP)Marshal.PtrToStructure<Interop.TOKEN_PRIMARY_GROUP>(safeAllocHandlePrimaryGroup!.DangerousGetHandle());
+                Interop.TOKEN_PRIMARY_GROUP primaryGroup = *(Interop.TOKEN_PRIMARY_GROUP*)(safeAllocHandlePrimaryGroup!.DangerousGetHandle());
                 SecurityIdentifier primaryGroupSid = new SecurityIdentifier(primaryGroup.PrimaryGroup);
 
                 // only add one primary group sid
@@ -1052,12 +1058,13 @@ namespace System.Security.Principal
 
                 // Retrieve all group sids, primary group sid is one of them
                 safeAllocHandle = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenGroups);
-                int count = Marshal.ReadInt32(safeAllocHandle!.DangerousGetHandle());
-                IntPtr pSidAndAttributes = new IntPtr((long)safeAllocHandle.DangerousGetHandle() + (long)Marshal.OffsetOf<Interop.TOKEN_GROUPS>("Groups"));
+                int count = *(int*)safeAllocHandle!.DangerousGetHandle();
+                Interop.SID_AND_ATTRIBUTES* pSidAndAttributes = (Interop.SID_AND_ATTRIBUTES*)
+                    ((byte*)safeAllocHandle.DangerousGetHandle() + sizeof(IntPtr) /* offsetof(Interop.TOKEN_GROUPS, Groups) */);
                 Claim claim;
-                for (int i = 0; i < count; ++i)
+                for (int i = 0; i < count; i++)
                 {
-                    Interop.SID_AND_ATTRIBUTES group = (Interop.SID_AND_ATTRIBUTES)Marshal.PtrToStructure<Interop.SID_AND_ATTRIBUTES>(pSidAndAttributes);
+                    Interop.SID_AND_ATTRIBUTES group = pSidAndAttributes[i];
                     uint mask = Interop.SecurityGroups.SE_GROUP_ENABLED | Interop.SecurityGroups.SE_GROUP_LOGON_ID | Interop.SecurityGroups.SE_GROUP_USE_FOR_DENY_ONLY;
                     SecurityIdentifier groupSid = new SecurityIdentifier(group.Sid);
 
@@ -1089,7 +1096,6 @@ namespace System.Security.Principal
                         claim.Properties.Add(ClaimTypes.WindowsSubAuthority, groupSid.IdentifierAuthority.ToString());
                         instanceClaims.Add(claim);
                     }
-                    pSidAndAttributes = new IntPtr((long)pSidAndAttributes + Marshal.SizeOf<Interop.SID_AND_ATTRIBUTES>());
                 }
             }
             finally
@@ -1102,7 +1108,7 @@ namespace System.Security.Principal
         /// <summary>
         /// Creates a Windows SID Claim and adds to collection of claims.
         /// </summary>
-        private void AddPrimarySidClaim(List<Claim> instanceClaims)
+        private unsafe void AddPrimarySidClaim(List<Claim> instanceClaims)
         {
             // special case the anonymous identity.
             if (_safeTokenHandle.IsInvalid)
@@ -1112,7 +1118,7 @@ namespace System.Security.Principal
             try
             {
                 safeAllocHandle = GetTokenInformation(_safeTokenHandle, TokenInformationClass.TokenUser);
-                Interop.SID_AND_ATTRIBUTES user = (Interop.SID_AND_ATTRIBUTES)Marshal.PtrToStructure<Interop.SID_AND_ATTRIBUTES>(safeAllocHandle!.DangerousGetHandle());
+                Interop.SID_AND_ATTRIBUTES user = *(Interop.SID_AND_ATTRIBUTES*)(safeAllocHandle!.DangerousGetHandle());
                 uint mask = Interop.SecurityGroups.SE_GROUP_USE_FOR_DENY_ONLY;
 
                 SecurityIdentifier sid = new SecurityIdentifier(user.Sid);
@@ -1136,7 +1142,7 @@ namespace System.Security.Principal
             }
         }
 
-        private void AddDeviceGroupSidClaims(List<Claim> instanceClaims, TokenInformationClass tokenInformationClass)
+        private unsafe void AddDeviceGroupSidClaims(List<Claim> instanceClaims, TokenInformationClass tokenInformationClass)
         {
             // special case the anonymous identity.
             if (_safeTokenHandle.IsInvalid)
@@ -1155,11 +1161,12 @@ namespace System.Security.Principal
                     return;
                 }
 
-                int count = Marshal.ReadInt32(safeAllocHandle.DangerousGetHandle());
-                IntPtr pSidAndAttributes = new IntPtr((long)safeAllocHandle.DangerousGetHandle() + (long)Marshal.OffsetOf(typeof(Interop.TOKEN_GROUPS), "Groups"));
-                for (int i = 0; i < count; ++i)
+                int count = *(int*)safeAllocHandle.DangerousGetHandle();
+                Interop.SID_AND_ATTRIBUTES* pSidAndAttributes = (Interop.SID_AND_ATTRIBUTES*)
+                    ((byte*)safeAllocHandle.DangerousGetHandle() + sizeof(IntPtr) /* offsetof(Interop.TOKEN_GROUPS, Groups) */);
+                for (int i = 0; i < count; i++)
                 {
-                    Interop.SID_AND_ATTRIBUTES group = (Interop.SID_AND_ATTRIBUTES)Marshal.PtrToStructure(pSidAndAttributes, typeof(Interop.SID_AND_ATTRIBUTES))!;
+                    Interop.SID_AND_ATTRIBUTES group = pSidAndAttributes[i];
                     uint mask = Interop.SecurityGroups.SE_GROUP_ENABLED | Interop.SecurityGroups.SE_GROUP_LOGON_ID | Interop.SecurityGroups.SE_GROUP_USE_FOR_DENY_ONLY;
                     SecurityIdentifier groupSid = new SecurityIdentifier(group.Sid);
                     string claimType;
@@ -1179,8 +1186,6 @@ namespace System.Security.Principal
                         claim.Properties.Add(claimType, "");
                         instanceClaims.Add(claim);
                     }
-
-                    pSidAndAttributes = new IntPtr((long)pSidAndAttributes + Marshal.SizeOf<Interop.SID_AND_ATTRIBUTES>());
                 }
             }
             finally
@@ -1189,7 +1194,7 @@ namespace System.Security.Principal
             }
         }
 
-        private void AddTokenClaims(List<Claim> instanceClaims, TokenInformationClass tokenInformationClass, string propertyValue)
+        private unsafe void AddTokenClaims(List<Claim> instanceClaims, TokenInformationClass tokenInformationClass, string propertyValue)
         {
             // special case the anonymous identity.
             if (_safeTokenHandle.IsInvalid)
@@ -1201,17 +1206,15 @@ namespace System.Security.Principal
             {
                 safeAllocHandle = GetTokenInformation(_safeTokenHandle, tokenInformationClass);
 
-                Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION claimAttributes = (Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION)Marshal.PtrToStructure(safeAllocHandle!.DangerousGetHandle(), typeof(Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION))!;
+                Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION claimAttributes = *(Interop.CLAIM_SECURITY_ATTRIBUTES_INFORMATION*)(safeAllocHandle!.DangerousGetHandle());
                 // An attribute represents a collection of claims.  Inside each attribute a claim can be multivalued, we create a claim for each value.
                 // It is a ragged multi-dimentional array, where each cell can be of different lenghts.
 
-                // index into array of claims.
-                long offset = 0;
-
                 for (int attribute = 0; attribute < claimAttributes.AttributeCount; attribute++)
                 {
-                    IntPtr pAttribute = new IntPtr(claimAttributes.Attribute.pAttributeV1.ToInt64() + offset);
-                    Interop.CLAIM_SECURITY_ATTRIBUTE_V1 windowsClaim = (Interop.CLAIM_SECURITY_ATTRIBUTE_V1)Marshal.PtrToStructure(pAttribute, typeof(Interop.CLAIM_SECURITY_ATTRIBUTE_V1))!;
+                    Interop.CLAIM_SECURITY_ATTRIBUTE_V1 windowsClaim = ((Interop.CLAIM_SECURITY_ATTRIBUTE_V1*)claimAttributes.Attribute.pAttributeV1)[attribute];
+
+                    string name = Marshal.PtrToStringUni(windowsClaim.Name)!;
 
                     // the switch was written this way, which appears to have multiple for loops, because each item in the ValueCount is of the same ValueType.  This saves the type check each item.
                     switch (windowsClaim.ValueType)
@@ -1222,7 +1225,7 @@ namespace System.Security.Principal
 
                             for (int item = 0; item < windowsClaim.ValueCount; item++)
                             {
-                                Claim c = new Claim(windowsClaim.Name, Marshal.PtrToStringAuto(stringPointers[item])!, ClaimValueTypes.String, _issuerName, _issuerName, this);
+                                Claim c = new Claim(name, Marshal.PtrToStringUni(stringPointers[item])!, ClaimValueTypes.String, _issuerName, _issuerName, this);
                                 c.Properties.Add(propertyValue, string.Empty);
                                 instanceClaims.Add(c);
                             }
@@ -1234,7 +1237,7 @@ namespace System.Security.Principal
 
                             for (int item = 0; item < windowsClaim.ValueCount; item++)
                             {
-                                Claim c = new Claim(windowsClaim.Name, intValues[item].ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64, _issuerName, _issuerName, this);
+                                Claim c = new Claim(name, intValues[item].ToString(CultureInfo.InvariantCulture), ClaimValueTypes.Integer64, _issuerName, _issuerName, this);
                                 c.Properties.Add(propertyValue, string.Empty);
                                 instanceClaims.Add(c);
                             }
@@ -1247,7 +1250,7 @@ namespace System.Security.Principal
 
                             for (int item = 0; item < windowsClaim.ValueCount; item++)
                             {
-                                Claim c = new Claim(windowsClaim.Name, ((ulong)uintValues[item]).ToString(CultureInfo.InvariantCulture), ClaimValueTypes.UInteger64, _issuerName, _issuerName, this);
+                                Claim c = new Claim(name, ((ulong)uintValues[item]).ToString(CultureInfo.InvariantCulture), ClaimValueTypes.UInteger64, _issuerName, _issuerName, this);
                                 c.Properties.Add(propertyValue, string.Empty);
                                 instanceClaims.Add(c);
                             }
@@ -1260,7 +1263,7 @@ namespace System.Security.Principal
                             for (int item = 0; item < windowsClaim.ValueCount; item++)
                             {
                                 Claim c = new Claim(
-                                    windowsClaim.Name,
+                                    name,
                                     ((ulong)boolValues[item] != 0).ToString(),
                                     ClaimValueTypes.Boolean,
                                     _issuerName,
@@ -1272,8 +1275,6 @@ namespace System.Security.Principal
                             }
                             break;
                     }
-
-                    offset += Marshal.SizeOf(windowsClaim);
                 }
             }
             finally

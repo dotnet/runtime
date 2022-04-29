@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Formats.Cbor;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -19,6 +20,7 @@ namespace System.Security.Cryptography.Cose.Tests
 
         internal override byte[] Sign(byte[] content, AsymmetricAlgorithm key, HashAlgorithmName hashAlgorithm, bool isDetached = false)
             => Sign(content, key, hashAlgorithm, null, null, isDetached);
+
         internal abstract byte[] Sign(
             byte[] content,
             AsymmetricAlgorithm key,
@@ -26,10 +28,20 @@ namespace System.Security.Cryptography.Cose.Tests
             CoseHeaderMap? protectedHeaders = null,
             CoseHeaderMap? unprotectedHeaders = null,
             bool isDetached = false);
-        internal override bool Verify(CoseSign1Message msg, AsymmetricAlgorithm key)
-            => key is ECDsa ecdsa ? msg.Verify(ecdsa) : msg.Verify((RSA)key);
-        internal override bool Verify(CoseSign1Message msg, AsymmetricAlgorithm key, ReadOnlySpan<byte> content)
-            => key is ECDsa ecdsa ? msg.Verify(ecdsa, content) : msg.Verify((RSA)key);
+
+        internal override bool Verify(CoseSign1Message msg, AsymmetricAlgorithm key, byte[] content)
+        {
+            Assert.True(!OnlySupportsDetachedContent || msg.Content == null);
+
+            if (msg.Content != null)
+            {
+                return key is ECDsa ecdsa ? msg.Verify(ecdsa) : msg.Verify((RSA)key);
+            }
+            else
+            {
+                return key is ECDsa ecdsa ? msg.Verify(ecdsa, content) : msg.Verify((RSA)key, content);
+            }
+        }
 
         [Fact]
         public void SignVerifyWithCustomCoseHeaderMaps()
@@ -51,7 +63,7 @@ namespace System.Security.Cryptography.Cose.Tests
                 AssertSign1Message(encodedMsg, s_sampleContent, key, algorithm, expectedProtectedHeaders, expectedUnprotectedHeaders);
 
                 CoseSign1Message decodedMsg = CoseMessage.DecodeSign1(encodedMsg);
-                Assert.True(Verify(decodedMsg, key));
+                Assert.True(Verify(decodedMsg, key, s_sampleContent));
             }
         }
 
@@ -418,8 +430,8 @@ namespace System.Security.Cryptography.Cose.Tests
     public class CoseSign1MessageTests_TrySign : CoseSign1MessageTests_Sign_CustomHeaderMaps
     {
         internal override byte[] Sign(
-            byte[] content!!,
-            AsymmetricAlgorithm key!!,
+            byte[] content,
+            AsymmetricAlgorithm key,
             HashAlgorithmName hashAlgorithm,
             CoseHeaderMap? protectedHeaders = null,
             CoseHeaderMap? unprotectedHeaders = null,

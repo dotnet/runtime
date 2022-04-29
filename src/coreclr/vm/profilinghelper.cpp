@@ -108,7 +108,6 @@
 #include "proftoeeinterfaceimpl.inl"
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
-#include "eemessagebox.h"
 
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
@@ -669,7 +668,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
 
     if ((wszProfilerDLL != NULL) && (wcslen(wszProfilerDLL) >= MAX_LONGPATH))
     {
-        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but COR_PROFILER_PATH was not set properly.\n"));
+        LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiling flag set, but CORECLR_PROFILER_PATH was not set properly.\n"));
 
         LogProfError(IDS_E_PROF_BAD_PATH);
 
@@ -1617,9 +1616,9 @@ void ProfilingAPIUtility::TerminateProfiling(ProfilerInfo *pProfilerInfo)
         pProfilerInfo->ResetPerSessionStatus();
 
         pProfilerInfo->curProfStatus.Set(kProfStatusNone);
-        
+
         g_profControlBlock.DeRegisterProfilerInfo(pProfilerInfo);
-        
+
         g_profControlBlock.UpdateGlobalEventMask();
     }
 }

@@ -60,8 +60,11 @@ namespace System.IO.Compression
         /// The path is permitted to specify relative or absolute path information.
         /// Relative path information is interpreted as relative to the current working directory.</param>
         /// <param name="overwrite">True to indicate overwrite.</param>
-        public static void ExtractToFile(this ZipArchiveEntry source!!, string destinationFileName!!, bool overwrite)
+        public static void ExtractToFile(this ZipArchiveEntry source, string destinationFileName, bool overwrite)
         {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(destinationFileName);
+
             // Rely on FileStream's ctor for further checking destinationFileName parameter
             FileMode fMode = overwrite ? FileMode.Create : FileMode.CreateNew;
 
@@ -73,14 +76,7 @@ namespace System.IO.Compression
                 ExtractExternalAttributes(fs, source);
             }
 
-            try
-            {
-                File.SetLastWriteTime(destinationFileName, source.LastWriteTime.DateTime);
-            }
-            catch
-            {
-                // some OSes like Android (#35374) might not support setting the last write time, the extraction should not fail because of that
-            }
+            ArchivingUtils.AttemptSetLastWriteTime(destinationFileName, source.LastWriteTime);
         }
 
         static partial void ExtractExternalAttributes(FileStream fs, ZipArchiveEntry entry);
@@ -88,15 +84,18 @@ namespace System.IO.Compression
         internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName) =>
             ExtractRelativeToDirectory(source, destinationDirectoryName, overwrite: false);
 
-        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source!!, string destinationDirectoryName!!, bool overwrite)
+        internal static void ExtractRelativeToDirectory(this ZipArchiveEntry source, string destinationDirectoryName, bool overwrite)
         {
+            ArgumentNullException.ThrowIfNull(source);
+            ArgumentNullException.ThrowIfNull(destinationDirectoryName);
+
             // Note that this will give us a good DirectoryInfo even if destinationDirectoryName exists:
             DirectoryInfo di = Directory.CreateDirectory(destinationDirectoryName);
             string destinationDirectoryFullPath = di.FullName;
             if (!destinationDirectoryFullPath.EndsWith(Path.DirectorySeparatorChar))
                 destinationDirectoryFullPath += Path.DirectorySeparatorChar;
 
-            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, source.FullName));
+            string fileDestinationPath = Path.GetFullPath(Path.Combine(destinationDirectoryFullPath, ArchivingUtils.SanitizeEntryFilePath(source.FullName)));
 
             if (!fileDestinationPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
                 throw new IOException(SR.IO_ExtractingResultsInOutside);
