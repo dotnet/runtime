@@ -21555,7 +21555,9 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
 
             simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
-            GenTree* op1Dup   = fgMakeMultiUse(&op1);
+            CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(type, simdBaseJitType);
+
+            GenTree* op1Dup   = fgMakeMultiUse(&op1, clsHnd);
             GenTree* op1Lower = gtNewSimdHWIntrinsicNode(type, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
 
             IntrinsicNodeBuilder nodeBuilder1(getAllocator(CMK_ASTNode), 16);
@@ -21661,7 +21663,9 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
         }
         else
         {
-            GenTree* op1Dup = fgMakeMultiUse(&op1);
+            CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(type, simdBaseJitType);
+
+            GenTree* op1Dup = fgMakeMultiUse(&op1, clsHnd);
             retNode = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, cnsNode, NI_SSE_Shuffle, simdBaseJitType, simdSize,
                                                isSimdAsHWIntrinsic);
         }
