@@ -472,12 +472,22 @@ namespace Mono.Linker.Steps
 		void SweepOverrides (MethodDefinition method)
 		{
 			for (int i = 0; i < method.Overrides.Count;) {
-				if (Context.Resolve (method.Overrides[i]) is MethodDefinition ov && ShouldRemove (ov))
+				if (Context.Resolve (method.Overrides[i]) is MethodDefinition ov && ShouldRemove (ov) && !IgnoreScope (ov.DeclaringType.Scope))
 					method.Overrides.RemoveAt (i);
 				else
 					i++;
 			}
 		}
+
+		/// <summary>
+		/// Returns true if the assembly of the <paramref name="scope"></paramref> is not set to link (i.e. action=copy is set for that assembly)
+		/// </summary>
+		private bool IgnoreScope (IMetadataScope scope)
+		{
+			AssemblyDefinition? assembly = Context.Resolve (scope);
+			return assembly != null && Annotations.GetAction (assembly) != AssemblyAction.Link;
+		}
+
 		void SweepDebugInfo (Collection<MethodDefinition> methods)
 		{
 			List<ScopeDebugInformation>? sweptScopes = null;

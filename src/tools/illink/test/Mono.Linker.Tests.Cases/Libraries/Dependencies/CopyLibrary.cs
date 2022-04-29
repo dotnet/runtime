@@ -13,5 +13,6 @@ namespace Mono.Linker.Tests.Cases.Libraries.Dependencies
 	{
 		static abstract void CopyLibraryStaticInterfaceMethod ();
 		static abstract void CopyLibraryExplicitImplementationStaticInterfaceMethod ();
+		public static abstract void PublicStaticInterfaceMethod ();
 	}
 }
