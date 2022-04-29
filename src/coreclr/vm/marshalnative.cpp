@@ -455,6 +455,7 @@ void ValidatePinnedObject(OBJECTREF obj)
     }
     CONTRACTL_END;
 
+    // Identical logic exists in managed code for Marshal.IsPinnable()
     if (obj != NULL && obj->GetMethodTable()->ContainsPointers())
         COMPlusThrow(kArgumentException, IDS_EE_NOTISOMORPHIC);
 }
