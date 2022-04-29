@@ -926,11 +926,12 @@ void MorphCopyBlockHelper::MorphStructCases()
         m_dst                     = m_comp->fgMorphBlockOperand(m_dst, asgType, m_blockSize, isBlkReqd);
         m_dst->gtFlags |= GTF_DONT_CSE;
         m_asg->gtOp1 = m_dst;
-        m_asg->gtFlags |= (m_dst->gtFlags & GTF_ALL_EFFECT);
 
-        // Eliminate the "OBJ or BLK" node on the src.
-        m_src        = m_comp->fgMorphBlockOperand(m_src, asgType, m_blockSize, false /*!isBlkReqd*/);
+        m_src        = m_comp->fgMorphBlockOperand(m_src, asgType, m_blockSize, isBlkReqd);
         m_asg->gtOp2 = m_src;
+
+        m_asg->SetAllEffectsFlags(m_dst, m_src);
+        m_asg->gtFlags |= GTF_ASG;
 
         m_result                 = m_asg;
         m_transformationDecision = BlockTransformation::StructBlock;

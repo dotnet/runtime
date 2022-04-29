@@ -9872,10 +9872,8 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         }
         if (needsIndirection)
         {
-            if (indirTree != nullptr)
+            if ((indirTree != nullptr) && (indirTree->OperIsBlk() || !isBlkReqd))
             {
-                // If we have an indirection and a block is required, it should already be a block.
-                assert(indirTree->OperIsBlk() || !isBlkReqd);
                 effectiveVal->gtType = asgType;
             }
             else
@@ -9894,11 +9892,14 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
                         newTree = gtNewObjNode(clsHnd, addr);
                         gtSetObjGcInfo(newTree->AsObj());
                     }
+
+                    gtUpdateNodeSideEffects(newTree);
                 }
                 else
                 {
                     newTree = gtNewIndir(asgType, addr);
                 }
+
                 effectiveVal = newTree;
             }
         }
