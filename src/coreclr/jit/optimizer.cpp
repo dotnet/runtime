@@ -6523,18 +6523,12 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             }
             else if (node->OperIs(GT_NULLCHECK))
             {
-                GenTreeLclVar* lclVar;
-                if (node->AsUnOp()->gtGetOp1()->OperIs(GT_LCL_VAR))
-                {
-                    // If a null-check is for `this` object, it is safe to
-                    // hoist it out of the loop.
-                    //
-                    // TODO-CQ: Identify more scenarios where we can hoist
-                    // the null-checks
-                    lclVar = node->AsUnOp()->gtGetOp1()->AsLclVar();
-                    return lclVar->GetLclNum() == m_compiler->info.compThisArg;
-                }
-                return false;
+                // If a null-check is for `this` object, it is safe to
+                // hoist it out of the loop. Assrtionprop will get rid
+                // of left over nullchecks present inside the loop. Also,
+                // since NULLCHECK has no value, it will never be CSE,
+                // hence this check is not present in optIsCSEcandidate().
+                return true;
             }
 
             // Tree must be a suitable CSE candidate for us to be able to hoist it.
