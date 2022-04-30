@@ -79,7 +79,9 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadInt64(Object, Int32) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+#pragma warning disable CS0618 // Type or member is obsolete
         public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] object ptr, int ofs)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt64(nativeHome, offset));
         }

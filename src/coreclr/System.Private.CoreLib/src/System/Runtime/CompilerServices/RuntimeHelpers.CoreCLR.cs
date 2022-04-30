@@ -115,6 +115,7 @@ namespace System.Runtime.CompilerServices
         [MethodImpl(MethodImplOptions.InternalCall)]
         public static extern new bool Equals(object? o1, object? o2);
 
+        [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
         {
             // This offset is baked in by string indexer intrinsic, so there is no harm

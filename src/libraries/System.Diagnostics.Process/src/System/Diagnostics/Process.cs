@@ -327,7 +327,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.NonpagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.")]
+        [Obsolete("Process.NonpagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.NonpagedSystemMemorySize64 instead.")]
         public int NonpagedSystemMemorySize
         {
             get
@@ -347,7 +347,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedMemorySize64 instead.")]
+        [Obsolete("Process.PagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedMemorySize64 instead.")]
         public int PagedMemorySize
         {
             get
@@ -367,7 +367,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedSystemMemorySize64 instead.")]
+        [Obsolete("Process.PagedSystemMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PagedSystemMemorySize64 instead.")]
         public int PagedSystemMemorySize
         {
             get
@@ -387,7 +387,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PeakPagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakPagedMemorySize64 instead.")]
+        [Obsolete("Process.PeakPagedMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakPagedMemorySize64 instead.")]
         public int PeakPagedMemorySize
         {
             get
@@ -406,7 +406,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PeakWorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakWorkingSet64 instead.")]
+        [Obsolete("Process.PeakWorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakWorkingSet64 instead.")]
         public int PeakWorkingSet
         {
             get
@@ -425,7 +425,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PeakVirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.")]
+        [Obsolete("Process.PeakVirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PeakVirtualMemorySize64 instead.")]
         public int PeakVirtualMemorySize
         {
             get
@@ -500,7 +500,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
+        [Obsolete("Process.PrivateMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.PrivateMemorySize64 instead.")]
         public int PrivateMemorySize
         {
             get
@@ -627,7 +627,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.VirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.VirtualMemorySize64 instead.")]
+        [Obsolete("Process.VirtualMemorySize has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.VirtualMemorySize64 instead.")]
         public int VirtualMemorySize
         {
             get
@@ -750,7 +750,7 @@ namespace System.Diagnostics
             }
         }
 
-        [ObsoleteAttribute("Process.WorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.WorkingSet64 instead.")]
+        [Obsolete("Process.WorkingSet has been deprecated because the type of the property can't represent all valid results. Use System.Diagnostics.Process.WorkingSet64 instead.")]
         public int WorkingSet
         {
             get

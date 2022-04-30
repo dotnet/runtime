@@ -472,7 +472,7 @@ namespace System.Threading
         public static object? GetData(LocalDataStoreSlot slot) => LocalDataStore.GetData(slot);
         public static void SetData(LocalDataStoreSlot slot, object? data) => LocalDataStore.SetData(slot, data);
 
-        [Obsolete("The ApartmentState property has been deprecated. Use GetApartmentState, SetApartmentState or TrySetApartmentState.")]
+        [Obsolete("The ApartmentState property has been deprecated. Use GetApartmentState, SetApartmentState or TrySetApartmentState instead.")]
         public ApartmentState ApartmentState
         {
             get => GetApartmentState();
