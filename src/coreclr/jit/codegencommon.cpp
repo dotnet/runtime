@@ -1745,7 +1745,6 @@ void CodeGen::genGenerateMachineCode()
     {
         compiler->opts.disAsm = true;
     }
-    compiler->compCurBB = compiler->fgFirstBB;
 
     if (compiler->opts.disAsm)
     {
