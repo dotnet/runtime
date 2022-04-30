@@ -261,11 +261,11 @@ namespace System.Collections.Immutable.Tests
         [Fact]
         public void IndexOf_WithoutCountParam()
         {
-            var builder = ImmutableArray.Create(1.5, 2.5, 3.5).ToBuilder();
-            var integerPartComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Floor(x) == Math.Floor(y));
+            var builder = ImmutableArray.Create(2, 5, 8).ToBuilder();
+            var absComparer = new DelegateEqualityComparer<int>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
 
-            Assert.Equal(1, builder.IndexOf(2.4, 0, integerPartComparer));
-            Assert.Equal(-1, builder.IndexOf(2.4, 2, integerPartComparer));
+            Assert.Equal(1, builder.IndexOf(-5, 0, absComparer));
+            Assert.Equal(-1, builder.IndexOf(-5, 2, absComparer));
         }
 
         [Fact]
@@ -334,9 +334,9 @@ namespace System.Collections.Immutable.Tests
         public void Remove_EqualityComparer()
         {
             var builder = ImmutableArray.Create(1.5, 2.5, 3.5).ToBuilder();
-            var integerPartComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Floor(x) == Math.Floor(y));
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
 
-            builder.Remove(1.7, integerPartComparer);
+            builder.Remove(-1.5, absComparer);
             Assert.Equal(new[] { 2.5, 3.5 }, builder);
         }
 
@@ -389,11 +389,11 @@ namespace System.Collections.Immutable.Tests
         public void RemoveRange_EqualityComparer()
         {
             var builder = ImmutableArray.Create(1.5, 2.5, 3.5, 4.5, 5.6).ToBuilder();
-            var integerPartComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Floor(x) == Math.Floor(y));
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
 
-            builder.RemoveRange(new[] { 2.7, 4.6, 6.2 }, integerPartComparer);
+            builder.RemoveRange(new[] { -2.5, -4.5, 6.2 }, absComparer);
             Assert.Equal(new[] { 1.5, 3.5, 5.6 }, builder);
-            AssertExtensions.Throws<ArgumentNullException>("items", () => builder.RemoveRange(null, integerPartComparer));
+            AssertExtensions.Throws<ArgumentNullException>("items", () => builder.RemoveRange(null, absComparer));
         }
 
         [Fact]
@@ -938,9 +938,9 @@ namespace System.Collections.Immutable.Tests
 
             Assert.Equal(new[] { 1.6, 2.5, 3.5 }, builder);
 
-            var integerPartComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Floor(x) == Math.Floor(y));
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
 
-            builder.Replace(3.9, 4.2, integerPartComparer);
+            builder.Replace(-3.5, 4.2, absComparer);
 
             Assert.Equal(new[] { 1.6, 2.5, 4.2 }, builder);
         }

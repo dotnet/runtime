@@ -204,8 +204,8 @@ namespace System.Collections.Immutable.Tests
             mutable.Remove(2.4, null);
             Assert.Equal(new[] { 1.5, 3.6 }, mutable);
 
-            var integerPartComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Floor(x) == Math.Floor(y));
-            mutable.Remove(1.2, integerPartComparer);
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
+            mutable.Remove(-1.5, absComparer);
             Assert.Equal(new[] { 3.6 }, mutable);
         }
 
@@ -226,8 +226,8 @@ namespace System.Collections.Immutable.Tests
             mutable.RemoveRange(new double[] { 2.4, 3.6 });
             Assert.Equal(new[] { 1.5, 4.7 }, mutable);
             
-            var integerPartComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Floor(x) == Math.Floor(y));
-            mutable.RemoveRange(new double[] { 1.7 }, integerPartComparer);
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
+            mutable.RemoveRange(new double[] { -1.5 }, absComparer);
             Assert.Equal(new[] { 4.7 }, mutable);
 
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => mutable.RemoveRange(2, 3));
@@ -266,8 +266,8 @@ namespace System.Collections.Immutable.Tests
             mutable.Replace(3.6, 3.8);
             Assert.Equal(new[] { 1.5, 2.4, 3.8 }, mutable);
 
-            var integerPartComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Floor(x) == Math.Floor(y));
-            mutable.Replace(1.9, 1.2, integerPartComparer);
+            var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
+            mutable.Replace(-1.5, 1.2, absComparer);
             Assert.Equal(new[] { 1.2, 2.4, 3.8 }, mutable);
         }
 

@@ -4,8 +4,6 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
-using System.Collections.Generic;
-
 namespace System.Collections.Immutable
 {
     public partial interface IImmutableDictionary<TKey, TValue> : System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyCollection<System.Collections.Generic.KeyValuePair<TKey, TValue>>, System.Collections.Generic.IReadOnlyDictionary<TKey, TValue>, System.Collections.IEnumerable
@@ -257,10 +255,10 @@ namespace System.Collections.Immutable
             public int IndexOf(T item) { throw null; }
             public int IndexOf(T item, int startIndex) { throw null; }
             public int IndexOf(T item, int startIndex, int count) { throw null; }
-            public int IndexOf(T item, int startIndex, IEqualityComparer<T>? equalityComparer) { throw null; }
+            public int IndexOf(T item, int startIndex, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public int IndexOf(T item, int startIndex, int count, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public void Insert(int index, T item) { }
-            public void InsertRange(int index, IEnumerable<T> items) { throw null; }
+            public void InsertRange(int index, System.Collections.Generic.IEnumerable<T> items) { throw null; }
             public void InsertRange(int index, ImmutableArray<T> items) { throw null; }
             public ref readonly T ItemRef(int index) { throw null; }
             public int LastIndexOf(T item) { throw null; }
@@ -269,14 +267,14 @@ namespace System.Collections.Immutable
             public int LastIndexOf(T item, int startIndex, int count, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public System.Collections.Immutable.ImmutableArray<T> MoveToImmutable() { throw null; }
             public bool Remove(T element) { throw null; }
-            public void Remove(T element, IEqualityComparer<T>? equalityComparer) { throw null; }
+            public void Remove(T element, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public void RemoveAll(Predicate<T> match) { throw null; }
             public void RemoveAt(int index) { }
             public void RemoveRange(int index, int length) { throw null; }
-            public void RemoveRange(IEnumerable<T> items) { throw null; }
-            public void RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer) { throw null; }
+            public void RemoveRange(System.Collections.Generic.IEnumerable<T> items) { throw null; }
+            public void RemoveRange(System.Collections.Generic.IEnumerable<T> items, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public void Replace(T oldValue, T newValue) { throw null; }
-            public void Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer) { throw null; }
+            public void Replace(T oldValue, T newValue, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public void Reverse() { }
             public void Sort() { }
             public void Sort(System.Collections.Generic.IComparer<T>? comparer) { }
@@ -720,14 +718,14 @@ namespace System.Collections.Immutable
             public int LastIndexOf(T item, int startIndex, int count) { throw null; }
             public int LastIndexOf(T item, int startIndex, int count, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public bool Remove(T item) { throw null; }
-            public void Remove(T item, IEqualityComparer<T>? equalityComparer) { throw null; }
+            public void Remove(T item, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public int RemoveAll(System.Predicate<T> match) { throw null; }
             public void RemoveAt(int index) { }
             public void RemoveRange(int index, int count) { throw null; }
-            public void RemoveRange(IEnumerable<T> items) { throw null; }
-            public void RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer) { throw null; }
+            public void RemoveRange(System.Collections.Generic.IEnumerable<T> items) { throw null; }
+            public void RemoveRange(System.Collections.Generic.IEnumerable<T> items, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public void Replace(T oldValue, T newValue) { throw null; }
-            public void Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer) { throw null; }
+            public void Replace(T oldValue, T newValue, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public void Reverse() { }
             public void Reverse(int index, int count) { }
             public void Sort() { }
