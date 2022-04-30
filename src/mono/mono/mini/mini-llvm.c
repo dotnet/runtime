@@ -6605,7 +6605,7 @@ MONO_RESTORE_WARNING
 			addr = convert (ctx, addr, LLVMPointerType (t, 0));
 
 			if (is_unaligned)
-				values [ins->dreg] = mono_llvm_build_aligned_load (builder, addr, dname, is_volatile, 1);
+				values [ins->dreg] = mono_llvm_build_aligned_load (builder, t, addr, dname, is_volatile, 1);
 			else
 				values [ins->dreg] = emit_load (builder, t, addr, dname, is_volatile);
 
@@ -7172,7 +7172,7 @@ MONO_RESTORE_WARNING
 			addr = convert (ctx, addr, LLVMPointerType (t, 0));
 
 			ARM64_ATOMIC_FENCE_FIX;
-			values [ins->dreg] = mono_llvm_build_atomic_load (builder, addr, dname, is_volatile, size, barrier);
+			values [ins->dreg] = mono_llvm_build_atomic_load (builder, t, addr, dname, is_volatile, size, barrier);
 			ARM64_ATOMIC_FENCE_FIX;
 
 			if (sext)
@@ -7511,7 +7511,11 @@ MONO_RESTORE_WARNING
 
 				indexes [0] = const_int32 (0);
 				indexes [1] = const_int32 (0);
+#if LLVM_API_VERSION >= 1400
+				LLVMSetInitializer (ref_var, LLVMConstGEP2 (var_type, name_var, indexes, 2));
+#else
 				LLVMSetInitializer (ref_var, LLVMConstGEP (name_var, indexes, 2));
+#endif
 				LLVMSetLinkage (ref_var, LLVMPrivateLinkage);
 				LLVMSetExternallyInitialized (ref_var, TRUE);
 				LLVMSetSection (ref_var, "__DATA, __objc_selrefs, literal_pointers, no_dead_strip");
@@ -7626,7 +7630,7 @@ MONO_RESTORE_WARNING
 			LLVMValueRef src;
 
 			src = convert (ctx, LLVMBuildAdd (builder, convert (ctx, values [ins->inst_basereg], IntPtrType ()), LLVMConstInt (IntPtrType (), ins->inst_offset, FALSE), ""), LLVMPointerType (t, 0));
-			values [ins->dreg] = mono_llvm_build_aligned_load (builder, src, "", FALSE, 1);
+			values [ins->dreg] = mono_llvm_build_aligned_load (builder, t, src, "", FALSE, 1);
 			break;
 		}
 		case OP_STOREX_MEMBASE: {
@@ -8439,8 +8443,9 @@ MONO_RESTORE_WARNING
 
 		case OP_SSE_LOADU: {
 			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (inst_c1_type (ins)), 0));
-			LLVMValueRef dst_vec = LLVMBuildBitCast (builder, dst_ptr, LLVMPointerType (type_to_sse_type (ins->inst_c1), 0), "");
-			values [ins->dreg] = mono_llvm_build_aligned_load (builder, dst_vec, "", FALSE, ins->inst_c0); // inst_c0 is alignment
+			LLVMTypeRef etype = type_to_sse_type (ins->inst_c1);
+			LLVMValueRef dst_vec = LLVMBuildBitCast (builder, dst_ptr, LLVMPointerType (etype, 0), "");
+			values [ins->dreg] = mono_llvm_build_aligned_load (builder, etype, dst_vec, "", FALSE, ins->inst_c0); // inst_c0 is alignment
 			break;
 		}
 		case OP_SSE_MOVSS: {
@@ -8467,7 +8472,7 @@ MONO_RESTORE_WARNING
 			LLVMTypeRef srcty = LLVMGetElementType (rty);
 			LLVMValueRef zero = LLVMConstNull (rty);
 			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (srcty, 0));
-			LLVMValueRef val = mono_llvm_build_aligned_load (builder, addr, "", FALSE, 1);
+			LLVMValueRef val = mono_llvm_build_aligned_load (builder, srcty, addr, "", FALSE, 1);
 			values [ins->dreg] = LLVMBuildInsertElement (builder, zero, val, const_int32 (0), dname);
 			break;
 		}
@@ -9097,7 +9102,7 @@ MONO_RESTORE_WARNING
 		case OP_SSE3_MOVDDUP_MEM: {
 			LLVMValueRef undef = LLVMGetUndef (v128_r8_t);
 			LLVMValueRef addr = convert (ctx, lhs, LLVMPointerType (r8_t, 0));
-			LLVMValueRef elem = mono_llvm_build_aligned_load (builder, addr, "sse3_movddup_mem", FALSE, 1);
+			LLVMValueRef elem = mono_llvm_build_aligned_load (builder, r8_t, addr, "sse3_movddup_mem", FALSE, 1);
 			LLVMValueRef val = LLVMBuildInsertElement (builder, undef, elem, const_int32 (0), "sse3_movddup_mem");
 			values [ins->dreg] = LLVMBuildShuffleVector (builder, val, undef, LLVMConstNull (LLVMVectorType (i4_t, 2)), "sse3_movddup_mem");
 			break;
@@ -9322,7 +9327,7 @@ MONO_RESTORE_WARNING
 			LLVMValueRef value;
 			if (LLVMGetTypeKind (LLVMTypeOf (lhs)) != LLVMVectorTypeKind) {
 				LLVMValueRef bitcasted = LLVMBuildBitCast (ctx->builder, lhs, LLVMPointerType (vec_type, 0), "");
-				value = mono_llvm_build_aligned_load (builder, bitcasted, "", FALSE, 1);
+				value = mono_llvm_build_aligned_load (builder, vec_type, bitcasted, "", FALSE, 1);
 			} else {
 				value = LLVMBuildBitCast (ctx->builder, lhs, vec_type, "");
 			}
@@ -9353,8 +9358,9 @@ MONO_RESTORE_WARNING
 
 		case OP_SSE41_LOADANT: {
 			LLVMValueRef dst_ptr = convert (ctx, lhs, LLVMPointerType (primitive_type_to_llvm_type (inst_c1_type (ins)), 0));
-			LLVMValueRef dst_vec = LLVMBuildBitCast (builder, dst_ptr, LLVMPointerType (type_to_sse_type (ins->inst_c1), 0), "");
-			LLVMValueRef load = mono_llvm_build_aligned_load (builder, dst_vec, "", FALSE, 16);
+			LLVMTypeRef etype = type_to_sse_type (ins->inst_c1);
+			LLVMValueRef dst_vec = LLVMBuildBitCast (builder, dst_ptr, LLVMPointerType (etype, 0), "");
+			LLVMValueRef load = mono_llvm_build_aligned_load (builder, etype, dst_vec, "", FALSE, 16);
 			set_nontemporal_flag (load);
 			values [ins->dreg] = load;
 			break;
@@ -10641,7 +10647,7 @@ MONO_RESTORE_WARNING
 			LLVMTypeRef elem_t = LLVMGetElementType (ret_t);
 			LLVMValueRef address = convert (ctx, arg3, LLVMPointerType (elem_t, 0));
 			unsigned int alignment = mono_llvm_get_prim_size_bits (ret_t) / 8;
-			LLVMValueRef result = mono_llvm_build_aligned_load (builder, address, "arm64_ld1_insert", FALSE, alignment);
+			LLVMValueRef result = mono_llvm_build_aligned_load (builder, elem_t, address, "arm64_ld1_insert", FALSE, alignment);
 			result = LLVMBuildInsertElement (builder, lhs, result, rhs, "arm64_ld1_insert");
 			values [ins->dreg] = result;
 			break;
@@ -10652,13 +10658,15 @@ MONO_RESTORE_WARNING
 			LLVMTypeRef ret_t = simd_class_to_llvm_type (ctx, ins->klass);
 			unsigned int alignment = mono_llvm_get_prim_size_bits (ret_t) / 8;
 			LLVMValueRef address = lhs;
+			LLVMTypeRef etype = ret_t;
 			LLVMTypeRef address_t = LLVMPointerType (ret_t, 0);
 			if (replicate) {
 				LLVMTypeRef elem_t = LLVMGetElementType (ret_t);
+				etype = elem_t;
 				address_t = LLVMPointerType (elem_t, 0);
 			}
 			address = convert (ctx, address, address_t);
-			LLVMValueRef result = mono_llvm_build_aligned_load (builder, address, "arm64_ld1", FALSE, alignment);
+			LLVMValueRef result = mono_llvm_build_aligned_load (builder, etype, address, "arm64_ld1", FALSE, alignment);
 			if (replicate) {
 				unsigned int elems = LLVMGetVectorSize (ret_t);
 				result = broadcast_element (ctx, result, elems);
