@@ -4981,15 +4981,14 @@ ClrDataAccess::SetCodeNotifications(
                 {
                     for (ULONG32 check = 0; check < numTokens; check++)
                     {
-                        _ASSERTE(flags[check] <= USHRT_MAX);
-                        if (!IsValidMethodCodeNotification((USHORT)flags[check]))
+                        if (!IsValidMethodCodeNotification(flags[check]))
                         {
                             status = E_INVALIDARG;
                             goto Exit;
                         }
                     }
                 }
-                else if (!IsValidMethodCodeNotification((USHORT)singleFlags))
+                else if (!IsValidMethodCodeNotification(singleFlags))
                 {
                     status = E_INVALIDARG;
                     goto Exit;
