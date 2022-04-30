@@ -96,25 +96,10 @@ namespace System.Net.Security
         {
             return null;
         }
-    }
-
-    internal class SecureChannel
-    {
-        internal bool IsValidContext => default;
-        internal bool IsServer => default;
-        internal SslConnectionInfo ConnectionInfo => default;
-        internal ChannelBinding GetChannelBinding(ChannelBindingKind kind) => default;
-        internal X509Certificate LocalServerCertificate => default;
-        internal X509Certificate RemoteCertificate => default;
-        internal bool IsRemoteCertificateAvailable => default;
-        internal SslApplicationProtocol NegotiatedApplicationProtocol => default;
-        internal X509Certificate LocalClientCertificate => default;
-        internal X509RevocationMode CheckCertRevocationStatus => default;
-        internal ProtocolToken CreateShutdownToken() => default;
 
         internal static X509Certificate2? FindCertificateWithPrivateKey(object instance, bool isServer, X509Certificate certificate)
         {
-            return certificate as X509Certificate2;
+            return null;
         }
     }
 
