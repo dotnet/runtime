@@ -2517,6 +2517,11 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ReverseElement16, OP_ARM64_REVN, 16},
 	{SN_ReverseElement32, OP_ARM64_REVN, 32},
 	{SN_ReverseElement8, OP_ARM64_REVN, 8},
+#if LLVM_API_VERSION >= 1400
+	{SN_ReverseElementBits, OP_XOP_OVR_X_X, INTRINS_BITREVERSE},
+#else
+	{SN_ReverseElementBits, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_RBIT},
+#endif
 	{SN_RoundAwayFromZero, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTA},
 	{SN_RoundAwayFromZeroScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTA},
 #if LLVM_API_VERSION >= 1400
