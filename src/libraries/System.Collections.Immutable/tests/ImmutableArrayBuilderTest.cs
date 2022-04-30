@@ -358,7 +358,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        public void RemoveRange()
+        public void RemoveRange_ValueType()
         {
             var builder = new ImmutableArray<int>.Builder();
             builder.AddRange(1, 2, 3, 4, 5);
@@ -372,6 +372,17 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.RemoveRange(-1, 1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.RemoveRange(1, 10));
             AssertExtensions.Throws<ArgumentNullException>("items", () => builder.RemoveRange(null));
+        }
+
+        [Fact]
+        public void RemoveRange_ReferenceType()
+        {
+            var builder = new ImmutableArray<GenericParameterHelper>.Builder();
+            builder.AddRange(new GenericParameterHelper(1), new GenericParameterHelper(2), new GenericParameterHelper(3), new GenericParameterHelper(4));
+
+            builder.RemoveRange(1, 2);
+
+            Assert.Equal(new[] { new GenericParameterHelper(1), new GenericParameterHelper(4) }, builder);
         }
 
         [Fact]

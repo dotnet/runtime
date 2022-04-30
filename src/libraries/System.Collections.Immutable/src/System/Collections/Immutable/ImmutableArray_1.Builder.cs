@@ -462,7 +462,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Removes the specified element.
+            /// Removes the first occurrence of the specified element from the builder.
             /// </summary>
             /// <param name="element">The element.</param>
             /// <returns>A value indicating whether the specified element was found and removed from the collection.</returns>
@@ -554,6 +554,13 @@ namespace System.Collections.Immutable
 
                 if (index + length < this._count)
                 {
+
+#if NET6_0_OR_GREATER
+                    if (RuntimeHelpers.IsReferenceOrContainsReferences<T>())
+                    {
+                        Array.Clear(_elements, index, length); // Clear the elements so that the gc can reclaim the references.
+                    }
+#endif
                     Array.Copy(_elements, index + length, _elements, index, this.Count - index - length);
                 }
 
@@ -776,6 +783,16 @@ namespace System.Collections.Immutable
                 }
             }
 
+            /// <summary>
+            /// Searches the array for the specified item.
+            /// </summary>
+            /// <param name="item">The item to search for.</param>
+            /// <param name="startIndex">The index at which to begin the search.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
+            /// <returns>The 0-based index into the array where the item was found; or -1 if it could not be found.</returns>
             public int IndexOf(T item, int startIndex, IEqualityComparer<T>? equalityComparer)
             {
                 return this.IndexOf(item, startIndex, this.Count - startIndex, equalityComparer);
@@ -1023,6 +1040,7 @@ namespace System.Collections.Immutable
                 int lastIndexRemoved = -1;
                 foreach (var indexToRemove in indicesToRemove)
                 {
+                    Debug.Assert(lastIndexRemoved < indexToRemove);
                     int copyLength = lastIndexRemoved == -1 ? indexToRemove : (indexToRemove - lastIndexRemoved - 1);
                     Array.Copy(_elements, copied + removed, _elements, copied, copyLength);
                     removed++;

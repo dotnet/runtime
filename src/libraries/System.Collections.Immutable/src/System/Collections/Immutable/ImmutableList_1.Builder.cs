@@ -751,7 +751,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Removes the specified value from this list.
+            /// Removes the first occurrence matching the specified value from this list.
             /// </summary>
             /// <param name="item">The item to remove.</param>
             /// <param name="equalityComparer">
@@ -768,7 +768,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Removes the specified values from this list.
+            /// Removes the specified range of values from this list.
             /// </summary>
             /// <param name="index">The starting index to begin removal.</param>
             /// <param name="count">The number of elements to remove.</param>
@@ -785,7 +785,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Removes the specified values from this list.
+            /// Removes any first occurrences of the specified values from this list.
             /// </summary>
             /// <param name="items">The items to remove if matches are found in this list.</param>
             /// <param name="equalityComparer">
@@ -807,7 +807,7 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Removes the specified values from this list.
+            /// Removes any first occurrences of the specified values from this list.
             /// </summary>
             /// <param name="items">The items to remove if matches are found in this list.</param>
             public void RemoveRange(IEnumerable<T> items)

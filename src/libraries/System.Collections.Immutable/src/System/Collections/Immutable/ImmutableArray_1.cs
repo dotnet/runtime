@@ -420,9 +420,9 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Adds the specified items to the end of the array.
         /// </summary>
-        /// <param name="items">The items.</param>
+        /// <param name="items">The values to add.</param>
         /// <param name="length">The number of elements from the source array to add.</param>
-        /// <returns>The new immutable collection.</returns>
+        /// <returns>A new list with the elements added.</returns>
         public ImmutableArray<T> AddRange(T[] items, int length)
         {
             var self = this;
@@ -449,8 +449,8 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Adds the specified items to the end of the array.
         /// </summary>
-        /// <param name="items">The items.</param>
-        /// <returns>The new immutable collection.</returns>
+        /// <param name="items">The values to add.</param>
+        /// <returns>A new list with the elements added.</returns>
         public ImmutableArray<T> AddRange<TDerived>(TDerived[] items) where TDerived : T
         {
             var self = this;
@@ -472,9 +472,9 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Adds the specified items to the end of the array.
         /// </summary>
-        /// <param name="items">The items.</param>
+        /// <param name="items">The values to add.</param>
         /// <param name="length">The number of elements from the source array to add.</param>
-        /// <returns>The new immutable collection.</returns>
+        /// <returns>A new list with the elements added.</returns>
         public ImmutableArray<T> AddRange(ImmutableArray<T> items, int length)
         {
             var self = this;
@@ -493,8 +493,8 @@ namespace System.Collections.Immutable
         /// <summary>
         /// Adds the specified items to the end of the array.
         /// </summary>
-        /// <param name="items">The items.</param>
-        /// <returns>The new immutable collection.</returns>
+        /// <param name="items">The values to add.</param>
+        /// <returns>A new list with the elements added.</returns>
         public ImmutableArray<T> AddRange<TDerived>(ImmutableArray<TDerived> items) where TDerived : T
         {
             var self = this;

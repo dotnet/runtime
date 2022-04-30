@@ -412,9 +412,9 @@ namespace System.Collections.Immutable
             #endregion
 
             /// <summary>
-            /// Gets the position within this set that the specified value does or would appear.
+            /// Searches for the first index within this set that the specified value is contained.
             /// </summary>
-            /// <param name="item">The value whose position is being sought.</param>
+            /// <param name="item">The value to locate within the set.</param>
             /// <returns>
             /// The index of the specified <paramref name="item"/> in the sorted set,
             /// if <paramref name="item"/> is found.  If <paramref name="item"/> is not
