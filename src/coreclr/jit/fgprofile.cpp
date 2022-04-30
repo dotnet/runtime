@@ -1639,7 +1639,7 @@ public:
 private:
     void ReadHistogramAndAdvance(IL_OFFSET ilOffset, void** typeHistogram, void** methodHistogram, bool* histogramIs32)
     {
-        if (*m_currentSchemaIndex >= m_schema.size())
+        if (*m_currentSchemaIndex >= (int)m_schema.size())
         {
             return;
         }
@@ -1658,7 +1658,7 @@ private:
             return;
         }
 
-        assert(*m_currentSchemaIndex + 2 <= m_schema.size());
+        assert(*m_currentSchemaIndex + 2 <= (int)m_schema.size());
         ICorJitInfo::PgoInstrumentationSchema& tableEntry = m_schema[*m_currentSchemaIndex + 1];
         assert((tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes) ||
                (tableEntry.InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods));
