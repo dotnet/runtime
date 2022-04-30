@@ -126,13 +126,13 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
 
     if (arg2 != nullptr)
     {
-        call->gtArgs.PushFront(this, arg2);
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(arg2));
         call->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (arg1 != nullptr)
     {
-        call->gtArgs.PushFront(this, arg1);
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(arg1));
         call->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
     }
 
@@ -636,7 +636,7 @@ const char* getWellKnownArgName(WellKnownArg arg)
 void CallArg::Dump(Compiler* comp)
 {
     printf("CallArg[[%06u].%s", comp->dspTreeID(GetNode()), GenTree::OpName(GetNode()->OperGet()));
-    printf(" %s", varTypeName(AbiInfo.ArgType));
+    printf(" %s", varTypeName(AbiInfo.SignatureType));
     printf(" (%s)", AbiInfo.PassedByRef ? "By ref" : "By value");
     if (AbiInfo.GetRegNum() != REG_STK)
     {
@@ -1979,7 +1979,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             GenTreeAddrMode(TYP_BYREF, cloned, nullptr, 0, comp->eeGetEEInfo()->offsetOfWrapperDelegateIndirectCell);
 
         // Append newArg as the last arg
-        PushBack(comp, newArg, WellKnownArg::WrapperDelegateCell);
+        PushBack(comp, NewCallArg::Primitive(newArg).WellKnown(WellKnownArg::WrapperDelegateCell));
     }
 #endif // defined(TARGET_ARM)
 #ifndef TARGET_X86
@@ -1998,7 +1998,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         {
             GenTree* stubAddrArg = comp->fgGetStubAddrArg(call);
             // And push the stub address onto the list of arguments
-            InsertAfterThisOrFirst(comp, stubAddrArg, WellKnownArg::VirtualStubCell);
+            InsertAfterThisOrFirst(comp, NewCallArg::Primitive(stubAddrArg, stubAddrArg->TypeGet()).WellKnown(WellKnownArg::VirtualStubCell));
         }
         else
         {
@@ -2019,10 +2019,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         call->gtCallCookie = nullptr;
 
         // All architectures pass the cookie in a register.
-        InsertAfterThisOrFirst(comp, arg, WellKnownArg::PInvokeCookie);
+        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
         // put destination into R10/EAX
         arg = comp->gtClone(call->gtCallAddr, true);
-        InsertAfterThisOrFirst(comp, arg, WellKnownArg::PInvokeTarget);
+        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeTarget));
 
         // finally change this call to a helper call
         call->gtCallType    = CT_HELPER;
@@ -2061,7 +2061,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif // TARGET_ARM
 
         // Push the stub address onto the list of arguments.
-        InsertAfterThisOrFirst(comp, indirectCellAddress, WellKnownArg::R2RIndirectionCell);
+        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell));
     }
 #endif
 
@@ -2162,60 +2162,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 #endif // UNIX_AMD64_ABI
 
-#if defined(DEBUG)
-    // Check that we have valid information about call's argument types.
-    // For example:
-    // load byte; call(int) -> CALL(PUTARG_TYPE byte(IND byte));
-    // load int; call(byte) -> CALL(PUTARG_TYPE int (IND int));
-    // etc.
-    if (call->callSig != nullptr)
-    {
-        CORINFO_SIG_INFO* sig          = call->callSig;
-        const unsigned    sigArgsCount = sig->numArgs;
-
-        // It could include many arguments not included in `sig->numArgs`, for example, `this`, runtime lookup, cookie
-        // etc.
-        unsigned nodeArgsCount = call->gtArgs.CountArgs();
-        if (call->gtArgs.HasThisPointer())
-        {
-            // Handle the most common argument not in the `sig->numArgs`.
-            // so the following check works on more methods.
-            nodeArgsCount--;
-        }
-
-        assert(nodeArgsCount >= sigArgsCount);
-        if ((nodeArgsCount == sigArgsCount) &&
-            ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (nodeArgsCount == 1)))
-        {
-            CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
-            for (CallArg& arg : call->gtArgs.Args())
-            {
-                if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
-                {
-                    continue;
-                }
-
-                CORINFO_CLASS_HANDLE argClass;
-                const CorInfoType    corType = strip(comp->info.compCompHnd->getArgType(sig, sigArg, &argClass));
-                const var_types      sigType = JITtype2varType(corType);
-
-                const GenTree* nodeArg = arg.GetNode();
-                assert(nodeArg != nullptr);
-                const var_types nodeType = nodeArg->TypeGet();
-
-                assert((nodeType == sigType) || varTypeIsStruct(sigType) ||
-                       genTypeSize(nodeType) == genTypeSize(sigType));
-
-                sigArg = comp->info.compCompHnd->getArgNext(sigArg);
-            }
-        }
-    }
-#endif // DEBUG
-
     for (CallArg& arg : Args())
     {
         assert(arg.GetEarlyNode() != nullptr);
-        GenTree* argx = arg.GetEarlyNode()->gtSkipPutArgType();
+        GenTree* argx = arg.GetEarlyNode();
 
         // Change the node to TYP_I_IMPL so we don't report GC info
         // NOTE: We deferred this from the importer because of the inliner.
@@ -2250,7 +2200,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
             if (isHfaArg)
             {
-                isHfaArg = true;
                 hfaSlots = comp->GetHfaCount(argx);
 
                 // If we have a HFA struct it's possible we transition from a method that originally
@@ -2331,6 +2280,12 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // the stack.
         //
         isStructArg                   = varTypeIsStruct(argx);
+        // Note that we internally in the JIT can change some struct args to
+        // primitive args (e.g. OBJ<struct>(x) -> IND<TYP_LONG>(x)). Similarly,
+        // the ABI type can also change from struct to primitive (e.g. a 8-byte
+        // struct passed in a register). So isStructArg may be false even if
+        // the signature type was (or is) a struct, however only in cases where
+        // it does not matter.
         CORINFO_CLASS_HANDLE objClass = NO_CLASS_HANDLE;
         if (isStructArg)
         {
@@ -2366,7 +2321,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         if (!isStructArg)
         {
             size     = 1; // On AMD64, all primitives fit in a single (64-bit) 'slot'
-            byteSize = genTypeSize(argx);
+            byteSize = genTypeSize(arg.AbiInfo.SignatureType);
         }
         else
         {
@@ -2378,7 +2333,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         size = 1; // On AMD64 Windows, all args fit in a single (64-bit) 'slot'
         if (!isStructArg)
         {
-            byteSize = genTypeSize(argx);
+            byteSize = genTypeSize(arg.AbiInfo.SignatureType);
         }
 
 #endif // UNIX_AMD64_ABI
@@ -2413,7 +2368,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         else
         {
             size     = 1; // Otherwise, all primitive types fit in a single (64-bit) 'slot'
-            byteSize = genTypeSize(argx);
+            byteSize = genTypeSize(arg.AbiInfo.SignatureType);
         }
 #elif defined(TARGET_ARM) || defined(TARGET_X86)
         if (isStructArg)
@@ -2426,7 +2381,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // The typical case.
             // Long/double type argument(s) will be modified as needed in Lowering.
             size     = genTypeStSz(argx->gtType);
-            byteSize = genTypeSize(argx);
+            byteSize = genTypeSize(arg.AbiInfo.SignatureType);
         }
 #else
 #error Unsupported or unset target architecture
@@ -2507,12 +2462,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif
         }
 
-        const var_types argType = arg.GetEarlyNode()->TypeGet();
-        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_TYPE))
-        {
-            byteSize = genTypeSize(argType);
-        }
-
         // The 'size' value has now must have been set. (the original value of zero is an invalid value)
         assert(size != 0);
         assert(byteSize != 0);
@@ -2522,7 +2471,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // Arm64 Apple has a special ABI for passing small size arguments on stack,
             // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
             // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-            argAlignBytes = comp->eeGetArgSizeAlignment(argType, isFloatHfa);
+            argAlignBytes = comp->eeGetArgSizeAlignment(arg.AbiInfo.SignatureType, isFloatHfa);
         }
 
 #ifdef TARGET_LOONGARCH64
@@ -2786,7 +2735,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif // TARGET_ARM
 
         arg.AbiInfo          = {};
-        arg.AbiInfo.ArgType  = argx->TypeGet();
         arg.AbiInfo.IsStruct = isStructArg;
 
         if (isRegArg)
@@ -3006,11 +2954,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         if (arg.AbiInfo.IsStruct)
         {
             arg.AbiInfo.PassedByRef = passStructByRef;
-            arg.AbiInfo.ArgType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
+            arg.AbiInfo.SignatureType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
         }
         else
         {
-            arg.AbiInfo.ArgType = argx->TypeGet();
+            arg.AbiInfo.SignatureType = argx->TypeGet();
         }
 
         argIndex++;
@@ -3210,7 +3158,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 assert(originalSize == info.compCompHnd->getClassSize(objClass));
             }
             unsigned  roundupSize    = (unsigned)roundUp(originalSize, TARGET_POINTER_SIZE);
-            var_types structBaseType = arg.AbiInfo.ArgType;
+            var_types structBaseType = arg.AbiInfo.SignatureType;
 
             // First, handle the case where the argument is passed by reference.
             if (arg.AbiInfo.PassedByRef)
@@ -3492,7 +3440,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
         }
 #ifdef TARGET_ARM
-        else if ((arg.AbiInfo.ArgType == TYP_LONG) || (arg.AbiInfo.ArgType == TYP_DOUBLE))
+        else if ((arg.AbiInfo.SignatureType == TYP_LONG) || (arg.AbiInfo.SignatureType == TYP_DOUBLE))
         {
             assert((arg.AbiInfo.NumRegs == 2) || (arg.AbiInfo.GetStackSlotsNumber() == 2));
         }
@@ -6490,7 +6438,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                     // will transiently retype all simple address-of implicit parameter args as
                                     // TYP_I_IMPL.
                                     //
-                                    if ((arg2.AbiInfo.ArgType == TYP_BYREF) || (arg2.AbiInfo.ArgType == TYP_I_IMPL))
+                                    if ((arg2.AbiInfo.SignatureType == TYP_BYREF) || (arg2.AbiInfo.SignatureType == TYP_I_IMPL))
                                     {
                                         JITDUMP("...arg is a byref, must run an alias check\n");
                                         bool checkExposure = true;
@@ -7494,7 +7442,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
 
         // During rationalization tmp="this" and null check will be materialized
         // in the right execution order.
-        call->gtArgs.PushFront(this, thisPtr);
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr, thisArg->AbiInfo.SignatureType));
         call->gtArgs.Remove(thisArg);
     }
 
@@ -7546,7 +7494,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
             target = getVirtMethodPointerTree(thisPtrStubArg, call->tailCallInfo->GetToken(), &callInfo);
         }
 
-        call->gtArgs.PushBack(this, target);
+        call->gtArgs.PushBack(this, NewCallArg::Primitive(target));
     }
 
     // This is now a direct call to the store args stub and not a tailcall.
@@ -7701,7 +7649,10 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
     GenTree* retAddrSlot = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaRetAddrVar, TYP_I_IMPL));
 
-    callDispatcherNode->gtArgs.PushFront(this, retAddrSlot, callTarget, retValArg);
+    NewCallArg retAddrSlotArg = NewCallArg::Primitive(retAddrSlot);
+    NewCallArg callTargetArg = NewCallArg::Primitive(callTarget);
+    NewCallArg retValCallArg = NewCallArg::Primitive(retValArg);
+    callDispatcherNode->gtArgs.PushFront(this, retAddrSlotArg, callTargetArg, retValCallArg);
 
     GenTree* finalTree = callDispatcherNode;
 
@@ -8065,26 +8016,26 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
         // During rationalization tmp="this" and null check will
         // materialize as embedded stmts in right execution order.
         assert(thisPtr != nullptr);
-        call->gtArgs.PushFront(this, thisPtr);
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr, thisArg->AbiInfo.SignatureType));
         call->gtArgs.Remove(thisArg);
     }
 
     unsigned nOldStkArgsWords =
         (compArgSize - (codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES)) / REGSIZE_BYTES;
     GenTree* arg3Node = gtNewIconNode((ssize_t)nOldStkArgsWords, TYP_I_IMPL);
-    CallArg* arg3     = call->gtArgs.PushBack(this, arg3Node);
+    CallArg* arg3     = call->gtArgs.PushBack(this, NewCallArg::Primitive(arg3Node));
     // Inject a placeholder for the count of outgoing stack arguments that the Lowering phase will generate.
     // The constant will be replaced.
     GenTree* arg2Node = gtNewIconNode(9, TYP_I_IMPL);
-    CallArg* arg2     = call->gtArgs.InsertAfter(this, arg3, arg2Node);
+    CallArg* arg2     = call->gtArgs.InsertAfter(this, arg3, NewCallArg::Primitive(arg2Node));
     // Inject a placeholder for the flags.
     // The constant will be replaced.
     GenTree* arg1Node = gtNewIconNode(8, TYP_I_IMPL);
-    CallArg* arg1     = call->gtArgs.InsertAfter(this, arg2, arg1Node);
+    CallArg* arg1     = call->gtArgs.InsertAfter(this, arg2, NewCallArg::Primitive(arg1Node));
     // Inject a placeholder for the real call target that the Lowering phase will generate.
     // The constant will be replaced.
     GenTree* arg0Node = gtNewIconNode(7, TYP_I_IMPL);
-    CallArg* arg0     = call->gtArgs.InsertAfter(this, arg1, arg0Node);
+    CallArg* arg0     = call->gtArgs.InsertAfter(this, arg1, NewCallArg::Primitive(arg0Node));
 
     // It is now a varargs tail call.
     call->gtArgs.SetIsVarArgs();
@@ -11000,9 +10951,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
             break;
 #endif
-
-        case GT_PUTARG_TYPE:
-            return fgMorphTree(tree->AsUnOp()->gtGetOp1());
 
         case GT_NULLCHECK:
         {

@@ -1171,6 +1171,20 @@ unsigned CallArgABIInformation::GetStackByteSize() const
     return stackByteSize;
 }
 
+#ifdef DEBUG
+void NewCallArg::ValidateTypes()
+{
+    assert(Compiler::impCheckImplicitArgumentCoercion(SignatureType, Node->TypeGet()));
+
+    if (varTypeIsStruct(SignatureType))
+    {
+        Compiler* comp = JitTls::GetCompiler();
+        CORINFO_CLASS_HANDLE clsHnd = comp->gtGetStructHandleIfPresent(Node);
+        assert((clsHnd == nullptr) || (SignatureClsHnd == clsHnd) || (comp->info.compCompHnd->getClassSize(SignatureClsHnd) == comp->info.compCompHnd->getClassSize(clsHnd)));
+    }
+}
+#endif
+
 //---------------------------------------------------------------
 // IsArgAddedLate: Check if this is an argument that is added late, by
 //                 `DetermineArgABIInformation`.
@@ -1606,20 +1620,18 @@ bool CallArgs::IsNonStandard(Compiler* comp, GenTreeCall* call, CallArg* arg)
 //
 // Parameters:
 //   comp         - The compiler.
-//   node         - The IR node for the argument.
-//   wellKnownArg - The kind of argument, if special.
+//   arg          - The builder for the new arg.
 //
 // Returns:
 //   The created representative for the argument.
 //
-CallArg* CallArgs::PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
+CallArg* CallArgs::PushFront(Compiler* comp, const NewCallArg& arg)
 {
-    CallArg* arg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    arg->SetEarlyNode(node);
-    arg->SetNext(m_head);
-    m_head = arg;
-    AddedWellKnownArg(wellKnownArg);
-    return arg;
+    CallArg* callArg = new (comp, CMK_CallArgs) CallArg(arg);
+    callArg->SetNext(m_head);
+    m_head = callArg;
+    AddedWellKnownArg(arg.WellKnownArg);
+    return callArg;
 }
 
 //---------------------------------------------------------------
@@ -1627,13 +1639,12 @@ CallArg* CallArgs::PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKno
 //
 // Parameters:
 //   comp         - The compiler.
-//   node         - The IR node for the argument.
-//   wellKnownArg - The kind of argument, if special.
+//   arg          - The builder for the new arg.
 //
 // Returns:
 //   The created representative for the argument.
 //
-CallArg* CallArgs::PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
+CallArg* CallArgs::PushBack(Compiler* comp, const NewCallArg& arg)
 {
     CallArg** slot = &m_head;
     while (*slot != nullptr)
@@ -1641,9 +1652,8 @@ CallArg* CallArgs::PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnow
         slot = &(*slot)->NextRef();
     }
 
-    *slot = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    (*slot)->SetEarlyNode(node);
-    AddedWellKnownArg(wellKnownArg);
+    *slot = new (comp, CMK_CallArgs) CallArg(arg);
+    AddedWellKnownArg(arg.WellKnownArg);
     return *slot;
 }
 
@@ -1653,13 +1663,12 @@ CallArg* CallArgs::PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnow
 // Parameters:
 //   comp         - The compiler.
 //   after        - The existing argument to insert the new argument after.
-//   node         - The IR node for the argument.
-//   wellKnownArg - The kind of argument, if special.
+//   arg          - The builder for the new arg.
 //
 // Returns:
 //   The created representative for the argument.
 //
-CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg)
+CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, const NewCallArg& arg)
 {
 #ifdef DEBUG
     bool found = false;
@@ -1675,11 +1684,10 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* node, We
     assert(found && "Could not find arg to insert after in argument list");
 #endif
 
-    CallArg* newArg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    newArg->SetEarlyNode(node);
+    CallArg* newArg = new (comp, CMK_CallArgs) CallArg(arg);
     newArg->SetNext(after->GetNext());
     after->SetNext(newArg);
-    AddedWellKnownArg(wellKnownArg);
+    AddedWellKnownArg(arg.WellKnownArg);
     return newArg;
 }
 
@@ -1701,21 +1709,24 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* node, We
 //
 CallArg* CallArgs::InsertInstParam(Compiler* comp, GenTree* node)
 {
+    NewCallArg newArg =
+        NewCallArg::Primitive(node).WellKnown(WellKnownArg::InstParam);
+
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
     {
         CallArg* retBufferArg = GetRetBufferArg();
         if (retBufferArg != nullptr)
         {
-            return InsertAfter(comp, retBufferArg, node, WellKnownArg::InstParam);
+            return InsertAfter(comp, retBufferArg, newArg);
         }
         else
         {
-            return InsertAfterThisOrFirst(comp, node, WellKnownArg::InstParam);
+            return InsertAfterThisOrFirst(comp, newArg);
         }
     }
     else
     {
-        return PushBack(comp, node, WellKnownArg::InstParam);
+        return PushBack(comp, newArg);
     }
 }
 
@@ -1725,22 +1736,21 @@ CallArg* CallArgs::InsertInstParam(Compiler* comp, GenTree* node)
 //
 // Parameters:
 //   comp         - The compiler.
-//   node         - The IR node for the argument.
-//   wellKnownArg - The kind of argument, if special.
+//   arg          - The builder for the new arg.
 //
 // Returns:
 //   The created representative for the argument.
 //
-CallArg* CallArgs::InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg)
+CallArg* CallArgs::InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg)
 {
     CallArg* thisArg = GetThisArg();
     if (thisArg != nullptr)
     {
-        return InsertAfter(comp, thisArg, node, wellKnownArg);
+        return InsertAfter(comp, thisArg, arg);
     }
     else
     {
-        return PushFront(comp, node, wellKnownArg);
+        return PushFront(comp, arg);
     }
 }
 
@@ -5854,7 +5864,6 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-        case GT_PUTARG_TYPE:
         case GT_RETURNTRAP:
         case GT_NOP:
         case GT_RETURN:
@@ -6149,8 +6158,6 @@ GenTree* GenTree::gtRetExprVal(BasicBlockFlags* pbbFlags /* = nullptr */)
 {
     GenTree*        retExprVal = this;
     BasicBlockFlags bbFlags    = BBF_EMPTY;
-
-    assert(!retExprVal->OperIs(GT_PUTARG_TYPE));
 
     while (retExprVal->OperIs(GT_RET_EXPR))
     {
@@ -8577,9 +8584,10 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     CallArg** tail = &m_head;
     for (CallArg& arg : other->Args())
     {
-        CallArg* carg     = new (comp, CMK_CallArgs) CallArg(arg.GetWellKnownArg());
+        CallArg* carg     = new (comp, CMK_CallArgs) CallArg();
         carg->m_earlyNode = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
         carg->m_lateNode  = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
+        carg->m_wellKnownArg = arg.m_wellKnownArg;
         carg->m_needTmp   = arg.m_needTmp;
         carg->m_needPlace = arg.m_needPlace;
         carg->m_isTmp     = arg.m_isTmp;
@@ -9079,7 +9087,6 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-        case GT_PUTARG_TYPE:
         case GT_BSWAP:
         case GT_BSWAP16:
         case GT_KEEPALIVE:
@@ -15232,7 +15239,7 @@ GenTree* Compiler::gtNewRefCOMfield(GenTree*                objPtr,
 
     for (size_t i = 0; i < nArgs; i++)
     {
-        call->gtArgs.PushFront(this, args[i]);
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(args[i]));
         call->gtFlags |= args[i]->gtFlags & GTF_ALL_EFFECT;
     }
 

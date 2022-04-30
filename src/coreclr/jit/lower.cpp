@@ -2331,7 +2331,8 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             // morph, sequence and lower, to avoid redoing that for the actual target.
             GenTree*     targetPlaceholder = comp->gtNewZeroConNode(callTarget->TypeGet());
             GenTreeCall* validate          = comp->gtNewHelperCallNode(CORINFO_HELP_VALIDATE_INDIRECT_CALL, TYP_VOID);
-            validate->gtArgs.PushFront(comp, targetPlaceholder, WellKnownArg::ValidateIndirectCallTarget);
+            NewCallArg newArg = NewCallArg::Primitive(targetPlaceholder).WellKnown(WellKnownArg::ValidateIndirectCallTarget);
+            validate->gtArgs.PushFront(comp, newArg);
 
             comp->fgMorphTree(validate);
 
@@ -2378,12 +2379,13 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 #ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
             // Now insert the call target as an extra argument.
             //
-            CallArg* targetArg = call->gtArgs.PushBack(comp, nullptr, WellKnownArg::DispatchIndirectCallTarget);
+            CallArg* targetArg = call->gtArgs.PushBack(comp, NewCallArg::Primitive(callTarget, callTarget->TypeGet()).WellKnown(WellKnownArg::DispatchIndirectCallTarget));
+            targetArg->SetEarlyNode(nullptr);
             targetArg->SetLateNode(callTarget);
             call->gtArgs.PushLateBack(targetArg);
 
             // Set up ABI information for this arg.
-            targetArg->AbiInfo.ArgType = callTarget->TypeGet();
+            targetArg->AbiInfo.SignatureType = callTarget->TypeGet();
             targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
             targetArg->AbiInfo.NumRegs = 1;
             targetArg->AbiInfo.SetByteSize(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE, false, false);
@@ -4336,10 +4338,10 @@ void Lowering::InsertPInvokeMethodProlog()
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
     GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
 
-    call->gtArgs.PushBack(comp, frameAddr, WellKnownArg::PInvokeFrame);
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame));
 // for x86/arm32 don't pass the secretArg.
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    call->gtArgs.PushBack(comp, PhysReg(REG_SECRET_STUB_PARAM), WellKnownArg::SecretStubParam);
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM), TYP_I_IMPL).WellKnown(WellKnownArg::SecretStubParam));
 #endif
 
     // some sanity checks on the frame list root vardsc

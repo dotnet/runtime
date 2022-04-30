@@ -96,7 +96,6 @@ GTNODE(ALLOCOBJ         , GenTreeAllocObj    ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) //
 GTNODE(INIT_VAL         , GenTreeOp          ,0,GTK_UNOP) // Initialization value for an initBlk
 
 GTNODE(BOX              , GenTreeBox         ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR)   // Marks its first operands (a local) as being a box
-GTNODE(PUTARG_TYPE      , GenTreeOp          ,0,GTK_UNOP|DBK_NOTLIR)            // Saves argument type between importation and morph
 GTNODE(RUNTIMELOOKUP    , GenTreeRuntimeLookup, 0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR) // Runtime handle lookup
 GTNODE(ARR_ADDR         , GenTreeArrAddr     ,0,GTK_UNOP|GTK_EXOP|DBK_NOTLIR)   // Wraps an array address expression
 

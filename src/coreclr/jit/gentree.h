@@ -1746,8 +1746,6 @@ public:
     // Tunnel through any GT_RET_EXPRs
     GenTree* gtRetExprVal(BasicBlockFlags* pbbFlags = nullptr);
 
-    inline GenTree* gtSkipPutArgType();
-
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
 
@@ -4012,7 +4010,8 @@ const char* getWellKnownArgName(WellKnownArg arg);
 struct CallArgABIInformation
 {
     CallArgABIInformation()
-        : NumRegs(0)
+        : SignatureClsHnd(NO_CLASS_HANDLE)
+        , NumRegs(0)
         , ByteOffset(0)
         , ByteSize(0)
         , ByteAlignment(0)
@@ -4023,7 +4022,7 @@ struct CallArgABIInformation
 #ifdef TARGET_LOONGARCH64
         , StructFloatFieldType()
 #endif
-        , ArgType(TYP_UNDEF)
+        , SignatureType(TYP_UNDEF)
         , IsBackFilled(false)
         , IsStruct(false)
         , PassedByRef(false)
@@ -4040,12 +4039,8 @@ struct CallArgABIInformation
         }
     }
 
-private:
-    // The registers to use when passing this argument, set to REG_STK for
-    // arguments passed on the stack
-    regNumberSmall RegNums[MAX_ARG_REG_COUNT];
+    CORINFO_CLASS_HANDLE SignatureClsHnd;
 
-public:
     // Count of number of registers that this argument uses. Note that on ARM,
     // if we have a double hfa, this reflects the number of DOUBLE registers.
     unsigned NumRegs;
@@ -4066,11 +4061,17 @@ public:
     // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
     var_types StructFloatFieldType[2];
 #endif
-    // The type used to pass this argument. This is generally the original
+private:
+    // The registers to use when passing this argument, set to REG_STK for
+    // arguments passed on the stack
+    regNumberSmall RegNums[MAX_ARG_REG_COUNT];
+
+public:
+    // The signature type of this argument. This is generally the original
     // argument type, but when a struct is passed as a scalar type, this is
     // that type. Note that if a struct is passed by reference, this will still
     // be the struct type.
-    var_types ArgType : 5;
+    var_types SignatureType : 5;
     // True when the argument fills a register slot skipped due to alignment
     // requirements of previous arguments.
     bool IsBackFilled : 1;
@@ -4191,6 +4192,50 @@ public:
     }
 };
 
+struct NewCallArg
+{
+    // The node being passed.
+    GenTree* Node = nullptr;
+    // The signature type of the node.
+    var_types SignatureType = TYP_UNDEF;
+    // The class handle if SignatureType == TYP_STRUCT.
+    CORINFO_CLASS_HANDLE SignatureClsHnd = NO_CLASS_HANDLE;
+    // The type of well known arg
+    WellKnownArg WellKnownArg = WellKnownArg::None;
+
+    NewCallArg WellKnown(::WellKnownArg type) const
+    {
+        NewCallArg copy = *this;
+        copy.WellKnownArg = type;
+        return copy;
+    }
+
+    static NewCallArg Struct(GenTree* node, var_types type, CORINFO_CLASS_HANDLE clsHnd)
+    {
+        NewCallArg arg;
+        arg.Node = node;
+        arg.SignatureType = type;
+        arg.SignatureClsHnd = clsHnd;
+        arg.ValidateTypes();
+        return arg;
+    }
+
+    static NewCallArg Primitive(GenTree* node, var_types type = TYP_UNDEF)
+    {
+        NewCallArg arg;
+        arg.Node = node;
+        arg.SignatureType = type == TYP_UNDEF ? node->TypeGet() : type;
+        arg.ValidateTypes();
+        return arg;
+    }
+
+#ifdef DEBUG
+    void ValidateTypes();
+#else
+    void ValidateTypes() {}
+#endif
+};
+
 class CallArg
 {
     friend class CallArgs;
@@ -4213,21 +4258,30 @@ class CallArg
     // The LclVar number if we had to force evaluation of this arg
     unsigned m_tmpNum;
 
-public:
-    CallArgABIInformation AbiInfo;
-
-    CallArg(WellKnownArg specialArgKind)
+private:
+    CallArg()
         : m_earlyNode(nullptr)
         , m_lateNode(nullptr)
         , m_next(nullptr)
         , m_lateNext(nullptr)
-        , m_wellKnownArg(specialArgKind)
+        , m_wellKnownArg(WellKnownArg::None)
         , m_needTmp(false)
         , m_needPlace(false)
         , m_isTmp(false)
         , m_processed(false)
         , m_tmpNum(BAD_VAR_NUM)
     {
+    }
+
+public:
+    CallArgABIInformation AbiInfo;
+
+    CallArg(const NewCallArg& arg) : CallArg()
+    {
+        m_earlyNode = arg.Node;
+        m_wellKnownArg = arg.WellKnownArg;
+        AbiInfo.SignatureType = arg.SignatureType;
+        AbiInfo.SignatureClsHnd = arg.SignatureClsHnd;
     }
 
     CallArg(const CallArg&) = delete;
@@ -4329,22 +4383,22 @@ public:
     // Reverse the args from [index..index + count) in place.
     void Reverse(unsigned index, unsigned count);
 
-    CallArg* PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
-    CallArg* PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
-    CallArg* InsertAfter(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    CallArg* PushFront(Compiler* comp, const NewCallArg& arg);
+    CallArg* PushBack(Compiler* comp, const NewCallArg& arg);
+    CallArg* InsertAfter(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertInstParam(Compiler* comp, GenTree* node);
-    CallArg* InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void PushLateBack(CallArg* arg);
     void Remove(CallArg* arg);
 
     template <typename CopyNodeFunc>
     void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);
 
-    template <typename... T>
-    void PushFront(Compiler* comp, GenTree* node, T... rest)
+    template <typename... Args>
+    void PushFront(Compiler* comp, const NewCallArg& arg, Args&&... rest)
     {
-        PushFront(comp, rest...);
-        PushFront(comp, node);
+        PushFront(comp, std::forward<Args>(rest)...);
+        PushFront(comp, arg);
     }
 
     void ResetFinalArgsAndABIInfo();
@@ -8265,7 +8319,6 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
     GenTree* effectiveVal = this;
     for (;;)
     {
-        assert(!effectiveVal->OperIs(GT_PUTARG_TYPE));
         if (effectiveVal->gtOper == GT_COMMA)
         {
             effectiveVal = effectiveVal->AsOp()->gtGetOp2();
@@ -8312,27 +8365,6 @@ inline GenTree* GenTree::gtCommaAssignVal()
     }
 
     return result;
-}
-
-//-------------------------------------------------------------------------
-// gtSkipPutArgType - skip PUTARG_TYPE if it is presented.
-//
-// Returns:
-//    the original tree or its child if it was a PUTARG_TYPE.
-//
-// Notes:
-//   PUTARG_TYPE should be skipped when we are doing transformations
-//   that are not affected by ABI, for example: inlining, implicit byref morphing.
-//
-inline GenTree* GenTree::gtSkipPutArgType()
-{
-    if (OperIs(GT_PUTARG_TYPE))
-    {
-        GenTree* res = AsUnOp()->gtGetOp1();
-        assert(!res->OperIs(GT_PUTARG_TYPE));
-        return res;
-    }
-    return this;
 }
 
 inline GenTree* GenTree::gtSkipReloadOrCopy()

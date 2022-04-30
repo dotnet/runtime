@@ -603,7 +603,7 @@ struct LateDevirtualizationInfo
 
 struct InlArgInfo
 {
-    GenTree* argNode;                     // caller node for this argument
+    CallArg* arg;                         // the caller argument
     GenTree* argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
     unsigned argTmpNum;                   // the argument tmp number
     unsigned argIsUsed : 1;               // is this arg used at all?
