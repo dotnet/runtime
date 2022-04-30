@@ -837,7 +837,6 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
     // actual order so that we can walk the signature at the same time.
     for (unsigned stackIndex = sig->numArgs; stackIndex > 0; stackIndex--)
     {
-        assert(sigArg != nullptr);
         unsigned fromTopIndex = stackIndex - 1;
         const StackEntry& se = impStackTop(fromTopIndex);
 
