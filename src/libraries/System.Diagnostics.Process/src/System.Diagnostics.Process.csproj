@@ -41,6 +41,8 @@
              Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
+             Link="Common\System\Collections\Generic\ArrayBuilder.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EnumProcessModules.cs"

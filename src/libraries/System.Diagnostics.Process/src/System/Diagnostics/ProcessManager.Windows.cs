@@ -72,7 +72,7 @@ namespace System.Diagnostics
                 return processInfos;
             }
 
-            var results = new List<ProcessInfo>();
+            ArrayBuilder<ProcessInfo> results = default;
             foreach (ProcessInfo pi in processInfos)
             {
                 if (string.Equals(processNameFilter, pi.ProcessName, StringComparison.OrdinalIgnoreCase))

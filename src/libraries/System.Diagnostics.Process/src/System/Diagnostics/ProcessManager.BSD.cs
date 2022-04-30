@@ -19,9 +19,7 @@ namespace System.Diagnostics
 
             // Iterate through all process IDs to load information about each process
             int[] pids = GetProcessIds(machineName);
-            var processes = processNameFilter is null ?
-                new List<ProcessInfo>(pids.Length) :
-                new List<ProcessInfo>();
+            var processes = new ArrayBuilder<ProcessInfo>(processNameFilter is null ? pids.Length : 0);
             foreach (int pid in pids)
             {
                 ProcessInfo? pi = CreateProcessInfo(pid, processNameFilter);

@@ -23,7 +23,7 @@ namespace System.Diagnostics
 
             // Iterate through all process IDs to load information about each process
             IEnumerable<int> pids = EnumerateProcessIds();
-            var processes = new List<ProcessInfo>();
+            ArrayBuilder<ProcessInfo> processes = default;
             foreach (int pid in pids)
             {
                 ProcessInfo? pi = CreateProcessInfo(pid);

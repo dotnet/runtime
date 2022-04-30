@@ -53,18 +53,26 @@ namespace System.Diagnostics
                     WorkingSet = (long)temp.ptinfo.pti_resident_size,
                 };
             }
-            else
+            else if (string.IsNullOrEmpty(processNameFilter))
             {
                 procInfo = new ProcessInfo()
                 {
                     ProcessId = pid,
                 };
             }
+            else
+            {
+                // We couldn't get process information but we only want to return a process that
+                // matches the specified name, so consider this process not a match.
+                return null;
+            }
 
             // Get the sessionId for the given pid, getsid returns -1 on error
             int sessionId = Interop.Sys.GetSid(pid);
             if (sessionId != -1)
+            {
                 procInfo.SessionId = sessionId;
+            }
 
             // Create a threadinfo for each thread in the process
             List<KeyValuePair<ulong, Interop.libproc.proc_threadinfo?>> lstThreads = Interop.libproc.GetAllThreadsInProcess(pid);
@@ -101,15 +109,15 @@ namespace System.Diagnostics
             switch (state)
             {
                 case Interop.libproc.ThreadRunState.TH_STATE_RUNNING:
-                    return System.Diagnostics.ThreadState.Running;
+                    return ThreadState.Running;
                 case Interop.libproc.ThreadRunState.TH_STATE_STOPPED:
-                    return System.Diagnostics.ThreadState.Terminated;
+                    return ThreadState.Terminated;
                 case Interop.libproc.ThreadRunState.TH_STATE_HALTED:
-                    return System.Diagnostics.ThreadState.Wait;
+                    return ThreadState.Wait;
                 case Interop.libproc.ThreadRunState.TH_STATE_UNINTERRUPTIBLE:
-                    return System.Diagnostics.ThreadState.Running;
+                    return ThreadState.Running;
                 case Interop.libproc.ThreadRunState.TH_STATE_WAITING:
-                    return System.Diagnostics.ThreadState.Standby;
+                    return ThreadState.Standby;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(state));
             }
@@ -119,9 +127,9 @@ namespace System.Diagnostics
         {
             // Since ThreadWaitReason isn't a flag, we have to do a mapping and will lose some information.
             if ((flags & Interop.libproc.ThreadFlags.TH_FLAGS_SWAPPED) == Interop.libproc.ThreadFlags.TH_FLAGS_SWAPPED)
-                return System.Diagnostics.ThreadWaitReason.PageOut;
+                return ThreadWaitReason.PageOut;
             else
-                return System.Diagnostics.ThreadWaitReason.Unknown; // There isn't a good mapping for anything else
+                return ThreadWaitReason.Unknown; // There isn't a good mapping for anything else
         }
     }
 }

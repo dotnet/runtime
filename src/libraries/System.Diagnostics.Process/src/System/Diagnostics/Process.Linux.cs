@@ -27,15 +27,18 @@ namespace System.Diagnostics
 
             processName ??= "";
 
-            var processes = new List<Process>();
+            ArrayBuilder<Process> processes = default;
             foreach (int pid in ProcessManager.EnumerateProcessIds())
             {
-                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat) &&
-                    (processName == "" || string.Equals(processName, GetUntruncatedProcessName(ref parsedStat), StringComparison.OrdinalIgnoreCase)) &&
-                    Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
+                if (Interop.procfs.TryReadStatFile(pid, out Interop.procfs.ParsedStat parsedStat))
                 {
-                    ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, processName);
-                    processes.Add(new Process(machineName, isRemoteMachine: false, pid, processInfo));
+                    string actualProcessName = GetUntruncatedProcessName(ref parsedStat);
+                    if ((processName == "" || string.Equals(processName, actualProcessName, StringComparison.OrdinalIgnoreCase)) &&
+                        Interop.procfs.TryReadStatusFile(pid, out Interop.procfs.ParsedStatus parsedStatus))
+                    {
+                        ProcessInfo processInfo = ProcessManager.CreateProcessInfo(ref parsedStat, ref parsedStatus, actualProcessName);
+                        processes.Add(new Process(machineName, isRemoteMachine: false, pid, processInfo));
+                    }
                 }
             }
 

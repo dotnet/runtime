@@ -21,9 +21,7 @@ namespace System.Diagnostics
             ProcessManager.ThrowIfRemoteMachine(machineName);
 
             int[] procIds = ProcessManager.GetProcessIds();
-            var processes = string.IsNullOrEmpty(processName) ?
-                new List<Process>(procIds.Length) :
-                new List<Process>();
+            var processes = new ArrayBuilder<Process>(string.IsNullOrEmpty(processName) ? procIds.Length : 0);
 
             // Iterate through all process IDs to load information about each process
             foreach (int pid in procIds)
