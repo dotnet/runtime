@@ -49,7 +49,6 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
             var instance = ActivatorUtilities.CreateInstance<Creatable>(
                 provider, c, a);
 
-            Assert.NotNull(instance);
             Assert.Same(a, instance.A);
             Assert.Same(c, instance.C);
             Assert.NotNull(instance.S);
@@ -59,7 +58,7 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         [Theory]
         [InlineData(typeof(IClassWithAttribute.FirstConstructorWithAttribute))]
         [InlineData(typeof(IClassWithAttribute.LastConstructorWithAttribute))]
-        public void ConstructorWithAttributeShouldHaveTheHighestPriorityNoMatterOrderDefinition(Type instanceType)
+        public void ConstructorWithAttributeShouldHaveTheHighestPriorityNoMatterDefinitionOrder(Type instanceType)
         {   // https://github.com/dotnet/runtime/issues/42339
             var services = new ServiceCollection();
             var a = new A();
