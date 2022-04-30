@@ -8268,6 +8268,25 @@ private:
         return NO_CLASS_HANDLE;
     }
 
+#if defined(FEATURE_HW_INTRINSICS)
+    CORINFO_CLASS_HANDLE gtGetStructHandleForSimdOrHW(var_types simdType, CorInfoType simdBaseJitType, bool isSimdAsHWIntrinsic = false)
+    {
+        CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
+
+        if (isSimdAsHWIntrinsic)
+        {
+            clsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
+        }
+        else
+        {
+            clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
+        }
+
+        assert(clsHnd != NO_CLASS_HANDLE);
+        return clsHnd;
+    }
+#endif // FEATURE_HW_INTRINSICS
+
     // Returns true if this is a SIMD type that should be considered an opaque
     // vector type (i.e. do not analyze or promote its fields).
     // Note that all but the fixed vector types are opaque, even though they may

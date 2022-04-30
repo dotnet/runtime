@@ -21544,6 +21544,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             // If we aren't crossing lanes, then we can decompose the byte/sbyte
             // and short/ushort operations into 2x 128-bit operations
 
+            CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSimdOrHW(type, simdBaseJitType, isSimdAsHWIntrinsic);
+
             // We want to build what is essentially the following managed code:
             //     var op1Lower = op1.GetLower();
             //     op1Lower = Ssse3.Shuffle(op1Lower, Vector128.Create(...));
@@ -21555,10 +21557,9 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
 
             simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
 
-            CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(type, simdBaseJitType);
-
             GenTree* op1Dup   = fgMakeMultiUse(&op1, clsHnd);
-            GenTree* op1Lower = gtNewSimdHWIntrinsicNode(type, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize);
+            GenTree* op1Lower = gtNewSimdHWIntrinsicNode(type, op1, NI_Vector256_GetLower, simdBaseJitType, simdSize,
+                                                         isSimdAsHWIntrinsic);
 
             IntrinsicNodeBuilder nodeBuilder1(getAllocator(CMK_ASTNode), 16);
 
@@ -21567,13 +21568,14 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
                 nodeBuilder1.AddOperand(i, gtNewIconNode(vecCns[i]));
             }
 
-            op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder1), NI_Vector128_Create, simdBaseJitType, 16);
+            op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder1), NI_Vector128_Create, simdBaseJitType, 16,
+                                           isSimdAsHWIntrinsic);
 
             op1Lower = gtNewSimdHWIntrinsicNode(type, op1Lower, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16,
                                                 isSimdAsHWIntrinsic);
 
             GenTree* op1Upper = gtNewSimdHWIntrinsicNode(type, op1Dup, gtNewIconNode(1), NI_AVX_ExtractVector128,
-                                                         simdBaseJitType, simdSize);
+                                                         simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
 
             IntrinsicNodeBuilder nodeBuilder2(getAllocator(CMK_ASTNode), 16);
 
@@ -21582,13 +21584,14 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
                 nodeBuilder2.AddOperand(i, gtNewIconNode(vecCns[16 + i]));
             }
 
-            op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder2), NI_Vector128_Create, simdBaseJitType, 16);
+            op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder2), NI_Vector128_Create, simdBaseJitType, 16,
+                                           isSimdAsHWIntrinsic);
 
             op1Upper = gtNewSimdHWIntrinsicNode(type, op1Upper, op2, NI_SSSE3_Shuffle, simdBaseJitType, 16,
                                                 isSimdAsHWIntrinsic);
 
             return gtNewSimdHWIntrinsicNode(type, op1Lower, op1Upper, gtNewIconNode(1), NI_AVX_InsertVector128,
-                                            simdBaseJitType, simdSize);
+                                            simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
         }
 
         if (elementSize == 4)
@@ -21603,7 +21606,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
 
             CorInfoType indicesJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UINT : CORINFO_TYPE_INT;
 
-            op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), NI_Vector256_Create, indicesJitType, simdSize);
+            op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), NI_Vector256_Create, indicesJitType, simdSize,
+                                           isSimdAsHWIntrinsic);
 
             // swap the operands to match the encoding requirements
             retNode = gtNewSimdHWIntrinsicNode(type, op2, op1, NI_AVX2_PermuteVar8x32, simdBaseJitType, simdSize,
@@ -21631,8 +21635,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
                 nodeBuilder.AddOperand(i, gtNewIconNode(vecCns[i]));
             }
 
-            op2 =
-                gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), NI_Vector128_Create, simdBaseJitType, simdSize);
+            op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), NI_Vector128_Create, simdBaseJitType, simdSize,
+                                           isSimdAsHWIntrinsic);
 
             return gtNewSimdHWIntrinsicNode(type, op1, op2, NI_SSSE3_Shuffle, simdBaseJitType, simdSize,
                                             isSimdAsHWIntrinsic);
@@ -21663,7 +21667,7 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
         }
         else
         {
-            CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSIMD(type, simdBaseJitType);
+            CORINFO_CLASS_HANDLE clsHnd = gtGetStructHandleForSimdOrHW(type, simdBaseJitType, isSimdAsHWIntrinsic);
 
             GenTree* op1Dup = fgMakeMultiUse(&op1, clsHnd);
             retNode = gtNewSimdHWIntrinsicNode(type, op1, op1Dup, cnsNode, NI_SSE_Shuffle, simdBaseJitType, simdSize,
@@ -21684,7 +21688,8 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
             nodeBuilder.AddOperand(i, gtNewIconNode(mskCns[i]));
         }
 
-        op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), NI_Vector128_Create, simdBaseJitType, simdSize);
+        op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), NI_Vector128_Create, simdBaseJitType, simdSize,
+                                       isSimdAsHWIntrinsic);
 
         GenTree* zero = gtNewSimdZeroNode(type, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
         retNode       = gtNewSimdCndSelNode(type, op2, retNode, zero, simdBaseJitType, simdSize, isSimdAsHWIntrinsic);
