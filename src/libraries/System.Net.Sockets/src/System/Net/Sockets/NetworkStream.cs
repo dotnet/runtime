@@ -41,8 +41,10 @@ namespace System.Net.Sockets
         {
         }
 
-        public NetworkStream(Socket socket!!, FileAccess access, bool ownsSocket)
+        public NetworkStream(Socket socket, FileAccess access, bool ownsSocket)
         {
+            ArgumentNullException.ThrowIfNull(socket);
+
             if (!socket.Blocking)
             {
                 // Stream.Read*/Write* are incompatible with the semantics of non-blocking sockets, and
@@ -335,6 +337,18 @@ namespace System.Net.Sockets
             }
             _closeTimeout = timeout;
             Dispose();
+        }
+
+        public void Close(TimeSpan timeout) => Close(ToTimeoutMilliseconds(timeout));
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMilliseconds;
         }
 
         protected override void Dispose(bool disposing)

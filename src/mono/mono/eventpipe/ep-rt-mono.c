@@ -26,7 +26,8 @@
 #include <mono/mini/mini-runtime.h>
 #include <mono/sgen/sgen-conf.h>
 #include <mono/sgen/sgen-tagged-pointer.h>
-#include "mono/utils/mono-logger-internals.h"
+#include <mono/utils/mono-logger-internals.h>
+#include <minipal/getexepath.h>
 #include <runtime_version.h>
 #include <clretwallmain.h>
 
@@ -1123,6 +1124,19 @@ ep_rt_mono_rand_try_get_bytes (
 	uint8_t *buffer,
 	size_t buffer_size);
 
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write(const ep_char8_t *path);
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle);
+
+bool
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten);
+
 EventPipeThread *
 ep_rt_mono_thread_get_or_create (void);
 
@@ -1455,7 +1469,7 @@ eventpipe_fire_method_events (
 				il_offsets = (uint32_t*)events_data->buffer;
 				native_offsets = il_offsets + offset_entries;
 
-				for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
+				for (int32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
 					il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
 					native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
 				}
@@ -1623,7 +1637,7 @@ eventpipe_execute_rundown (
 		// Iterate all assemblies in domain.
 		GPtrArray *assemblies = mono_alc_get_all_loaded_assemblies ();
 		if (assemblies) {
-			for (int i = 0; i < assemblies->len; ++i) {
+			for (uint32_t i = 0; i < assemblies->len; ++i) {
 				MonoAssembly *assembly = (MonoAssembly *)g_ptr_array_index (assemblies, i);
 				if (assembly)
 					eventpipe_fire_assembly_events (root_domain, assembly, assembly_events_func);
@@ -2069,6 +2083,179 @@ ep_rt_mono_rand_try_get_bytes (
 	return mono_rand_try_get_bytes (&_ep_rt_mono_rand_provider, (guchar *)buffer, (gssize)buffer_size, error);
 }
 
+char *
+ep_rt_mono_get_managed_cmd_line ()
+{
+	return mono_runtime_get_managed_cmd_line ();
+}
+
+char *
+ep_rt_mono_get_os_cmd_line ()
+{
+	MONO_REQ_GC_NEUTRAL_MODE;
+
+	// we only return the native host here since getting the full commandline is complicated and
+	// it's not super important to have the correct value since it'll only be used during startup
+	// until we have the managed commandline
+	char *host_path = minipal_getexepath ();
+
+	// minipal_getexepath doesn't use Mono APIs to allocate strings so
+	// we can't use g_free (which the callers of this method expect to do)
+	// so create another copy and return that one
+	char *res = g_strdup (host_path);
+	free (host_path);
+	return res;
+}
+
+#ifdef HOST_WIN32
+
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write (const ep_char8_t *path)
+{
+	if (!path)
+		return INVALID_HANDLE_VALUE;
+
+	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
+
+	if (!path_utf16)
+		return INVALID_HANDLE_VALUE;
+
+	ep_rt_file_handle_t res;
+	MONO_ENTER_GC_SAFE;
+	res = (ep_rt_file_handle_t)CreateFileW (path_utf16, GENERIC_WRITE, FILE_SHARE_READ, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
+	MONO_EXIT_GC_SAFE;
+	ep_rt_utf16_string_free (path_utf16);
+
+	return res;
+}
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle)
+{
+	bool res;
+	MONO_ENTER_GC_SAFE;
+	res = CloseHandle (handle);
+	MONO_EXIT_GC_SAFE;
+	return res;
+}
+
+static
+void
+win32_io_interrupt_handler (void *ignored)
+{
+}
+
+bool
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	bool res;
+	MonoThreadInfo *info = mono_thread_info_current ();
+	gboolean alerted = FALSE;
+
+	if (info) {
+		mono_thread_info_install_interrupt (win32_io_interrupt_handler, NULL, &alerted);
+		if (alerted) {
+			return false;
+		}
+		mono_win32_enter_blocking_io_call (info, handle);
+	}
+
+	MONO_ENTER_GC_SAFE;
+	if (info && mono_thread_info_is_interrupt_state (info)) {
+		res = false;
+	} else {
+		res = WriteFile (handle, buffer, numbytes, (PDWORD)byteswritten, NULL) ? true : false;
+	}
+	MONO_EXIT_GC_SAFE;
+
+	if (info) {
+		mono_win32_leave_blocking_io_call (info, handle);
+		mono_thread_info_uninstall_interrupt (&alerted);
+	}
+
+	return res;
+}
+
+#else
+
+#include <fcntl.h>
+#include <unistd.h>
+
+ep_rt_file_handle_t
+ep_rt_mono_file_open_write (const ep_char8_t *path)
+{
+	int fd;
+	mode_t perms = 0666;
+
+	if (!path)
+		return INVALID_HANDLE_VALUE;
+
+	MONO_ENTER_GC_SAFE;
+	fd = creat (path, perms);
+	MONO_EXIT_GC_SAFE;
+
+	if (fd == -1)
+		return INVALID_HANDLE_VALUE;
+
+	return (ep_rt_file_handle_t)(ptrdiff_t)fd;
+}
+
+bool
+ep_rt_mono_file_close (ep_rt_file_handle_t handle)
+{
+	int fd = (int)(ptrdiff_t)handle;
+
+	MONO_ENTER_GC_SAFE;
+	close (fd);
+	MONO_EXIT_GC_SAFE;
+
+	return true;
+}
+
+bool
+ep_rt_mono_file_write (
+	ep_rt_file_handle_t handle,
+	const uint8_t *buffer,
+	uint32_t numbytes,
+	uint32_t *byteswritten)
+{
+	MONO_REQ_GC_UNSAFE_MODE;
+
+	int fd = (int)(ptrdiff_t)handle;
+	uint32_t ret;
+	MonoThreadInfo *info = mono_thread_info_current ();
+
+	if (byteswritten != NULL)
+		*byteswritten = 0;
+
+	do {
+		MONO_ENTER_GC_SAFE;
+		ret = write (fd, buffer, numbytes);
+		MONO_EXIT_GC_SAFE;
+	} while (ret == -1 && errno == EINTR &&
+		 !mono_thread_info_is_interrupt_state (info));
+
+	if (ret == -1) {
+		if (errno == EINTR)
+			ret = 0;
+		else
+			return false;
+	}
+
+	if (byteswritten != NULL)
+		*byteswritten = ret;
+
+	return true;
+}
+
+#endif // HOST_WIN32
+
 EventPipeThread *
 ep_rt_mono_thread_get_or_create (void)
 {
@@ -2224,7 +2411,7 @@ static const int64_t SECS_TO_NS = 1000000000;
 static const int64_t MSECS_TO_MIS = 1000;
 
 /* clock_gettime () is found by configure on Apple builds, but its only present from ios 10, macos 10.12, tvos 10 and watchos 3 */
-#if defined (HAVE_CLOCK_MONOTONIC) && (defined(TARGET_IOS) || defined(TARGET_OSX) || defined(TARGET_WATCHOS) || defined(TARGET_TVOS))
+#if defined (HAVE_CLOCK_MONOTONIC) && (defined(HOST_IOS) || defined(HOST_OSX) || defined(HOST_WATCHOS) || defined(HOST_TVOS))
 #undef HAVE_CLOCK_MONOTONIC
 #endif
 
@@ -2375,7 +2562,7 @@ ep_rt_mono_system_timestamp_get (void)
 
 #ifndef HOST_WIN32
 #if defined(__APPLE__)
-#if defined (TARGET_OSX)
+#if defined (HOST_OSX)
 G_BEGIN_DECLS
 gchar ***_NSGetEnviron(void);
 G_END_DECLS
@@ -2383,7 +2570,7 @@ G_END_DECLS
 #else
 static char *_ep_rt_mono_environ[1] = { NULL };
 #define environ _ep_rt_mono_environ
-#endif /* defined (TARGET_OSX) */
+#endif /* defined (HOST_OSX) */
 #else
 G_BEGIN_DECLS
 extern char **environ;
@@ -2578,15 +2765,15 @@ ep_rt_mono_sample_profiler_write_sampling_event_for_threads (
 	// Since we can't keep thread info around after runtime as been suspended, use an empty
 	// adapter instance and only set recorded tid as parameter inside adapter.
 	THREAD_INFO_TYPE adapter = { { 0 } };
-	for (uint32_t i = 0; i < sampled_thread_count; ++i) {
-		EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, i);
+	for (uint32_t thread_count = 0; thread_count < sampled_thread_count; ++thread_count) {
+		EventPipeSampleProfileStackWalkData *data = &g_array_index (_ep_rt_mono_sampled_thread_callstacks, EventPipeSampleProfileStackWalkData, thread_count);
 		if ((data->stack_walk_data.top_frame && data->payload_data == EP_SAMPLE_PROFILER_SAMPLE_TYPE_EXTERNAL) || (data->payload_data != EP_SAMPLE_PROFILER_SAMPLE_TYPE_ERROR && ep_stack_contents_get_length (&data->stack_contents) > 0)) {
 			// Check if we have an async frame, if so we will need to make sure all frames are registered in regular jit info table.
 			// TODO: An async frame can contain wrapper methods (no way to check during stackwalk), we could skip writing profile event
 			// for this specific stackwalk or we could cleanup stack_frames before writing profile event.
 			if (data->stack_walk_data.async_frame) {
-				for (int i = 0; i < data->stack_contents.next_available_frame; ++i)
-					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [i], TRUE, FALSE);
+				for (uint32_t frame_count = 0; frame_count < data->stack_contents.next_available_frame; ++frame_count)
+					mono_jit_info_table_find_internal ((gpointer)data->stack_contents.stack_frames [frame_count], TRUE, FALSE);
 			}
 			mono_thread_info_set_tid (&adapter, ep_rt_uint64_t_to_thread_id_t (data->thread_id));
 			ep_write_sample_profile_event (sampling_thread, sampling_event, &adapter, &data->stack_contents, (uint8_t *)&data->payload_data, sizeof (data->payload_data));
@@ -2749,8 +2936,8 @@ ep_rt_mono_write_event_method_il_to_native_map (
 
 		MonoDebugMethodJitInfo *debug_info = method ? mono_debug_find_method (method, root_domain) : NULL;
 		if (debug_info) {
+			offset_entries = debug_info->num_line_numbers;
 			if (offset_entries != 0) {
-				offset_entries = debug_info->num_line_numbers;
 				size_t needed_size = (offset_entries * sizeof (uint32_t) * 2);
 				if (needed_size > sizeof (fixed_buffer)) {
 					buffer = g_new (uint8_t, needed_size);
@@ -2760,7 +2947,7 @@ ep_rt_mono_write_event_method_il_to_native_map (
 				}
 				if (il_offsets) {
 					native_offsets = il_offsets + offset_entries;
-					for (int offset_count = 0; offset_count < offset_entries; ++offset_count) {
+					for (int32_t offset_count = 0; offset_count < offset_entries; ++offset_count) {
 						il_offsets [offset_count] = debug_info->line_numbers [offset_count].il_offset;
 						native_offsets [offset_count] = debug_info->line_numbers [offset_count].native_offset;
 					}
@@ -3216,9 +3403,11 @@ get_type_start_id (MonoType *type)
 
 	start_id = (((start_id * 215497) >> 16) ^ ((start_id * 1823231) + start_id));
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	// Mix in highest bits on 64-bit systems only
 	if (sizeof (type) > 4)
 		start_id = start_id ^ (((uint64_t)type >> 31) >> 1);
+MONO_RESTORE_WARNING
 
 	return start_id;
 }
@@ -3292,9 +3481,13 @@ ep_rt_mono_write_event_exception_thrown (MonoObject *obj)
 			flags |= EXCEPTION_THROWN_FLAGS_IS_CLS_COMPLIANT;
 			if (exception->inner_ex)
 				flags |= EXCEPTION_THROWN_FLAGS_HAS_INNER;
-			exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
+			if (exception->message)
+				exception_message = ep_rt_utf16_to_utf8_string (mono_string_chars_internal (exception->message), mono_string_length_internal (exception->message));
 			hresult = exception->hresult;
 		}
+
+		if (exception_message == NULL)
+			exception_message = g_strdup ("");
 
 		if (mono_get_eh_callbacks ()->mono_walk_stack_with_ctx)
 			mono_get_eh_callbacks ()->mono_walk_stack_with_ctx (get_exception_ip_func, NULL, MONO_UNWIND_SIGNAL_SAFE, (void *)&ip);
@@ -3606,6 +3799,20 @@ ep_rt_write_event_threadpool_working_thread_count (
 {
 	return FireEtwThreadPoolWorkingThreadCount (
 		count,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
+bool
+ep_rt_write_event_threadpool_io_pack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolIOPack (
+		(const void *)native_overlapped,
+		(const void *)overlapped,
 		clr_instance_id,
 		NULL,
 		NULL) == 0 ? true : false;
@@ -4332,16 +4539,16 @@ mono_profiler_fire_buffered_gc_event_root_register (
 	uint8_t root_source = (uint8_t)source;
 	uintptr_t root_key = (uintptr_t)key;
 	const char *root_name = (name ? name : "");
-	uint32_t root_name_len = strlen (root_name) + 1;
+	size_t root_name_len = strlen (root_name) + 1;
 
 	MonoProfilerBufferedGCEvent gc_event_data;
 	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_ROOT_REGISTER;
-	gc_event_data.payload_size =
-		sizeof (root_id) +
+	gc_event_data.payload_size = (uint32_t)
+		(sizeof (root_id) +
 		sizeof (root_size) +
 		sizeof (root_source) +
 		sizeof (root_key) +
-		root_name_len;
+		root_name_len);
 
 	uint8_t * buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -4545,8 +4752,8 @@ mono_profiler_fire_buffered_gc_event_moves (
 	MonoProfilerBufferedGCEvent gc_event_data;
 	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_MOVES;
 	gc_event_data.payload_size =
-		sizeof (count) +
-		(count * (sizeof (uintptr_t) + sizeof (uintptr_t)));
+		(uint32_t)(sizeof (count) +
+		(count * (sizeof (uintptr_t) + sizeof (uintptr_t))));
 
 	uint8_t * buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -4612,8 +4819,8 @@ mono_profiler_fire_buffered_gc_event_roots (
 	MonoProfilerBufferedGCEvent gc_event_data;
 	gc_event_data.type = MONO_PROFILER_BUFFERED_GC_EVENT_ROOTS;
 	gc_event_data.payload_size =
-		sizeof (count) +
-		(count * (sizeof (uintptr_t) + sizeof (uintptr_t)));
+		(uint32_t)(sizeof (count) +
+		(count * (sizeof (uintptr_t) + sizeof (uintptr_t))));
 
 	uint8_t * buffer = mono_profiler_buffered_gc_event_alloc (gc_event_data.payload_size);
 	if (buffer) {
@@ -4752,7 +4959,7 @@ mono_profiler_fire_buffered_gc_event_heap_dump_object_reference (
 
 		// Serialize directly as memory stream expected by FireEtwMonoProfilerGCHeapDumpObjectReference.
 		uintptr_t last_offset = 0;
-		for (int i = 0; i < object_ref_count; i++) {
+		for (uintptr_t i = 0; i < object_ref_count; i++) {
 			// GCEvent.Values[].ReferencesOffset
 			object_ref_offset = offsets [i] - last_offset;
 			memcpy (buffer, &object_ref_offset, sizeof (object_ref_offset));
@@ -6391,10 +6598,10 @@ mono_profiler_add_provider_param (const EventFilterDescriptor *key)
 		if (param_ptr) {
 			param = ep_event_filter_desc_alloc (param_ptr, key->size, key->type);
 			if (param) {
-				memcpy ((uint8_t*)param->ptr,(const uint8_t*)key->ptr, key->size);
+				memcpy ((uint8_t*)(uintptr_t)param->ptr,(const uint8_t*)(uintptr_t)key->ptr, key->size);
 				_ep_rt_mono_profiler_provider_params = g_slist_append (_ep_rt_mono_profiler_provider_params, param);
 			} else {
-				g_free ((void *)param_ptr);
+				g_free ((void *)(uintptr_t)param_ptr);
 			}
 		}
 	}
@@ -6414,8 +6621,8 @@ mono_profiler_remove_provider_param (const EventFilterDescriptor *key)
 		while (list) {
 			param = (EventFilterDescriptor *)(list->data);
 			if (param && param->ptr && param->type == key->type && param->size == key->size &&
-				memcmp ((const void *)param->ptr, (const void *)key->ptr, param->size) == 0) {
-					g_free ((void *)param->ptr);
+				memcmp ((const void *)(uintptr_t)param->ptr, (const void *)(uintptr_t)key->ptr, param->size) == 0) {
+					g_free ((void *)(uintptr_t)param->ptr);
 					ep_event_filter_desc_free (param);
 					_ep_rt_mono_profiler_provider_params = g_slist_delete_link (_ep_rt_mono_profiler_provider_params, list);
 					removed = true;
@@ -6436,7 +6643,7 @@ mono_profiler_free_provider_params (void)
 	for (GSList *list = _ep_rt_mono_profiler_provider_params; list; list = list->next) {
 		EventFilterDescriptor *param = (EventFilterDescriptor *)(list->data);
 		if (param) {
-			g_free ((void *)param->ptr);
+			g_free ((void *)(uintptr_t)param->ptr);
 			ep_event_filter_desc_free (param);
 		}
 	}
@@ -6454,7 +6661,7 @@ mono_profiler_provider_params_get_value (
 	if (!param || !param->ptr || !param->size || !key)
 		return false;
 
-	const ep_char8_t *current = (ep_char8_t *)param->ptr;
+	const ep_char8_t *current = (ep_char8_t *)(uintptr_t)param->ptr;
 	const ep_char8_t *end = current + param->size;
 	bool found_key = false;
 

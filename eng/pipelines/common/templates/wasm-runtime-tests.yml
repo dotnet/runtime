@@ -28,6 +28,7 @@ jobs:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       nameSuffix: AllSubsets_Mono_RuntimeTests
+      runtimeVariant: monointerpreter
       buildArgs: -s mono+libs -c $(_BuildConfig)
       timeoutInMinutes: 180
       condition: >-

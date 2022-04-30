@@ -1,0 +1,258 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!--
+    Microsoft ResX Schema
+
+    Version 2.0
+
+    The primary goals of this format is to allow a simple XML format
+    that is mostly human readable. The generation and parsing of the
+    various data types are done through the TypeConverter classes
+    associated with the data types.
+
+    Example:
+
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+
+    There are any number of "resheader" rows that contain simple
+    name/value pairs.
+
+    Each data row contains a name, and value. The row also contains a
+    type or mimetype. Type corresponds to a .NET class that support
+    text/value conversion through the TypeConverter architecture.
+    Classes that don't support this are serialized and stored with the
+    mimetype set.
+
+    The mimetype is used for serialized objects, and tells the
+    ResXResourceReader how to depersist the object. This is currently not
+    extensible. For a given mimetype the value must be set accordingly:
+
+    Note - application/x-microsoft.net.object.binary.base64 is the format
+    that the ResXResourceWriter will generate, however the reader can
+    read any of the formats listed below.
+
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
+  <data name="ArgumentInvalidPathChars" xml:space="preserve">
+    <value>The argument '{0}' contains invalid path characters.</value>
+  </data>
+  <data name="ErrorStatFile" xml:space="preserve">
+    <value>Could not determine the file type of '0'.</value>
+  </data>
+  <data name="IO_AlreadyExists_Name" xml:space="preserve">
+    <value>Cannot create '{0}' because a file or directory with the same name already exists.</value>
+  </data>
+  <data name="IO_DeviceFiles_NotSupported" xml:space="preserve">
+    <value>Creating block or character device files is not supported on the current platform.</value>
+  </data>
+  <data name="IO_FileExists_Name" xml:space="preserve">
+    <value>The file '{0}' already exists.</value>
+  </data>
+  <data name="IO_FileNotFound" xml:space="preserve">
+    <value>Unable to find the specified file.</value>
+  </data>
+  <data name="IO_FileNotFound_FileName" xml:space="preserve">
+    <value>Could not find file '{0}'.</value>
+  </data>
+  <data name="IO_FifoFiles_NotSupported" xml:space="preserve">
+    <value>Creating fifo files is not supported on the current platform.</value>
+  </data>
+  <data name="IO_NotSupported_UnreadableStream" xml:space="preserve">
+    <value>The stream does not support reading.</value>
+  </data>
+  <data name="IO_NotSupported_UnseekableStream" xml:space="preserve">
+    <value>The stream does not support seeking.</value>
+  </data>
+  <data name="IO_NotSupported_UnwritableStream" xml:space="preserve">
+    <value>The stream does not support writing.</value>
+  </data>
+  <data name="IO_PathNotFound_NoPathName" xml:space="preserve">
+    <value>Could not find a part of the path.</value>
+  </data>
+  <data name="IO_PathNotFound_Path" xml:space="preserve">
+    <value>Could not find a part of the path '{0}'.</value>
+  </data>
+  <data name="IO_PathTooLong" xml:space="preserve">
+    <value>The specified file name or path is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_PathTooLong_Path" xml:space="preserve">
+    <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="IO_SetLengthRequiresSeekingAndWriting" xml:space="preserve">
+    <value>SetLength requires a stream that supports seeking and writing.</value>
+  </data>
+  <data name="IO_SharingViolation_File" xml:space="preserve">
+    <value>The process cannot access the file '{0}' because it is being used by another process.</value>
+  </data>
+  <data name="IO_SharingViolation_NoFileName" xml:space="preserve">
+    <value>The process cannot access the file because it is being used by another process.</value>
+  </data>
+  <data name="IO_StreamDisposed" xml:space="preserve">
+    <value>Cannot access a disposed stream.</value>
+  </data>
+  <data name="IO_StreamNotEmpty" xml:space="preserve">
+    <value>The stream is not empty.</value>
+  </data>
+  <data name="PlatformNotSupported_SystemFormatsTar" xml:space="preserve">
+    <value>System.Formats.Tar is not supported on this platform.</value>
+  </data>
+  <data name="SetLengthRequiresSeekingAndWriting" xml:space="preserve">
+    <value>SetLength requires a stream that supports seeking and writing.</value>
+  </data>
+  <data name="TarDuplicateExtendedAttribute" xml:space="preserve">
+    <value>The entry '{0}' has a duplicate extended attribute.</value>
+  </data>
+  <data name="TarEntriesInDifferentFormats" xml:space="preserve">
+    <value>An entry in '{0}' format was found in an archive where other entries of format '{1}' have been found.</value>
+  </data>
+  <data name="TarEntryBlockOrCharacterExpected" xml:space="preserve">
+    <value>Cannot set the 'DeviceMajor' or 'DeviceMinor' fields on an entry that does not represent a block or character device.</value>
+  </data>
+  <data name="TarEntryDoesNotSupportDataStream" xml:space="preserve">
+    <value>The entry '{0}' has a '{1}' type, which does not support setting a data stream.</value>
+  </data>
+  <data name="TarEntryHardLinkOrSymLinkExpected" xml:space="preserve">
+    <value>Cannot set the LinkName field on an entry that does not represent a hard link or a symbolic link.</value>
+  </data>
+  <data name="TarEntryHardLinkOrSymlinkLinkNameEmpty" xml:space="preserve">
+    <value>The entry is a symbolic link or a hard link but the LinkName field is null or empty.</value>
+  </data>
+  <data name="TarEntryTypeNotSupported" xml:space="preserve">
+    <value>Entry type '{0}' not supported in format '{1}'.</value>
+  </data>
+  <data name="TarEntryTypeNotSupportedForExtracting" xml:space="preserve">
+    <value>Entry type '{0}' not supported for extraction.</value>
+  </data>
+  <data name="TarExtractingResultsFileOutside" xml:space="preserve">
+    <value>Extracting the Tar entry '{0}' would have resulted in a file outside the specified destination directory: '{1}'</value>
+  </data>
+  <data name="TarExtractingResultsLinkOutside" xml:space="preserve">
+    <value>Extracting the Tar entry '{0}' would have resulted in a link target outside the specified destination directory: '{1}'</value>
+  </data>
+  <data name="TarGnuFormatExpected" xml:space="preserve">
+    <value>Entry '{0}' was expected to be in the GNU format, but did not have the expected version data.</value>
+  </data>
+  <data name="TarHardLinkTargetNotExists" xml:space="preserve">
+    <value>Cannot create a hard link '{0}' because the specified target file '{1}' does not exist.</value>
+  </data>
+  <data name="TarHardLinkToDirectoryNotAllowed" xml:space="preserve">
+    <value>Cannot create the hard link '{0}' targeting the directory '{1}'.</value>
+  </data>
+  <data name="TarInvalidFormat" xml:space="preserve">
+    <value>The archive format is invalid: '{0}'</value>
+  </data>
+  <data name="TarPosixFormatExpected" xml:space="preserve">
+    <value>A POSIX format was expected (Ustar or PAX), but could not be reliably determined for entry '{0}'.</value>
+  </data>
+  <data name="TarSizeFieldNegative" xml:space="preserve">
+    <value>The size field is negative in the tar entry '{0}'.</value>
+  </data>
+  <data name="TarSizeFieldTooLargeForExtendedAttribute" xml:space="preserve">
+    <value>The value of the size field for the current entry of type '{0}' is beyond the expected length.</value>
+  </data>
+  <data name="TarSymbolicLinkTargetNotExists" xml:space="preserve">
+    <value>Cannot create the symbolic link '{0}' because the specified target '{1}' does not exist.</value>
+  </data>
+  <data name="TarTooManyGlobalExtendedAttributesEntries" xml:space="preserve">
+    <value>The archive has more than one global extended attributes entry.</value>
+  </data>
+  <data name="TarUnexpectedMetadataEntry" xml:space="preserve">
+    <value>A metadata entry of type '{0}' was unexpectedly found after a metadata entry of type '{1}'.</value>
+  </data>
+  <data name="TarUnsupportedFile" xml:space="preserve">
+    <value>The file '{0}' is a type of file not supported for tar archiving.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_NoPathName" xml:space="preserve">
+    <value>Access to the path is denied.</value>
+  </data>
+  <data name="UnauthorizedAccess_IODenied_Path" xml:space="preserve">
+    <value>Access to the path '{0}' is denied.</value>
+  </data>
+</root>

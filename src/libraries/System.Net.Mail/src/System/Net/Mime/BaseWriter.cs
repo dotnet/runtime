@@ -16,7 +16,6 @@ namespace System.Net.Mime
         // that are NOT encoded already, which means being less conservative is ok.
         private const int DefaultLineLength = 76;
         private static readonly AsyncCallback s_onWrite = OnWrite;
-        protected static readonly byte[] s_crlf = new byte[] { (byte)'\r', (byte)'\n' };
 
         protected readonly BufferBuilder _bufferBuilder;
         protected readonly Stream _stream;
@@ -26,8 +25,10 @@ namespace System.Net.Mime
         protected Stream _contentStream = null!; // set to null on dispose
         protected bool _isInContent;
 
-        protected BaseWriter(Stream stream!!, bool shouldEncodeLeadingDots)
+        protected BaseWriter(Stream stream, bool shouldEncodeLeadingDots)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             _stream = stream;
             _shouldEncodeLeadingDots = shouldEncodeLeadingDots;
             _onCloseHandler = new EventHandler(OnClose);
@@ -39,8 +40,11 @@ namespace System.Net.Mime
 
         internal abstract void WriteHeaders(NameValueCollection headers, bool allowUnicode);
 
-        internal void WriteHeader(string name!!, string value!!, bool allowUnicode)
+        internal void WriteHeader(string name, string value, bool allowUnicode)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (_isInContent)
             {
                 throw new InvalidOperationException(SR.MailWriterIsInContent);
@@ -50,7 +54,7 @@ namespace System.Net.Mime
             _bufferBuilder.Append(name);
             _bufferBuilder.Append(": ");
             WriteAndFold(value, name.Length + 2, allowUnicode);
-            _bufferBuilder.Append(s_crlf);
+            _bufferBuilder.Append("\r\n"u8);
         }
 
         private void WriteAndFold(string value, int charsAlreadyOnLine, bool allowUnicode)
@@ -72,7 +76,7 @@ namespace System.Net.Mime
                 else if (((index - startOfLine) > (_lineLength - charsAlreadyOnLine)) && lastSpace != startOfLine)
                 {
                     _bufferBuilder.Append(value, startOfLine, lastSpace - startOfLine, allowUnicode);
-                    _bufferBuilder.Append(s_crlf);
+                    _bufferBuilder.Append("\r\n"u8);
                     startOfLine = lastSpace;
                     charsAlreadyOnLine = 0;
                 }
@@ -106,7 +110,7 @@ namespace System.Net.Mime
 
             CheckBoundary();
 
-            _bufferBuilder.Append(s_crlf);
+            _bufferBuilder.Append("\r\n"u8);
             Flush(multiResult);
 
             ClosableStream cs = new ClosableStream(new EightBitStream(_stream, _shouldEncodeLeadingDots), _onCloseHandler);
@@ -130,7 +134,7 @@ namespace System.Net.Mime
             return multiResult;
         }
 
-        internal Stream EndGetContentStream(IAsyncResult result)
+        internal static Stream EndGetContentStream(IAsyncResult result)
         {
             object o = MultiAsyncResult.End(result)!;
             if (o is Exception e)

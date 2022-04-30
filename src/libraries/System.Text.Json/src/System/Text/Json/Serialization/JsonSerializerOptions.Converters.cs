@@ -5,10 +5,12 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
+using System.Runtime.ExceptionServices;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
+using System.Threading;
 
 namespace System.Text.Json
 {
@@ -29,15 +31,44 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         private static void RootReflectionSerializerDependencies()
         {
-            if (s_defaultSimpleConverters is null)
+            // s_typeInfoCreationFunc is the last field assigned.
+            // Use it as the sentinel to ensure that all dependencies are initialized.
+            if (Volatile.Read(ref s_typeInfoCreationFunc) is null)
             {
                 s_defaultSimpleConverters = GetDefaultSimpleConverters();
                 s_defaultFactoryConverters = GetDefaultFactoryConverters();
-                s_typeInfoCreationFunc = CreateJsonTypeInfo;
+                // Explicitly ensure that the previous fields are initialized along with this one.
+                Volatile.Write(ref s_typeInfoCreationFunc, CreateJsonTypeInfo);
             }
 
             [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options) => new JsonTypeInfo(type, options);
+            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
+            {
+                JsonTypeInfo.ValidateType(type, null, null, options);
+
+                MethodInfo methodInfo = typeof(JsonSerializerOptions).GetMethod(nameof(CreateReflectionJsonTypeInfo), BindingFlags.NonPublic | BindingFlags.Instance)!;
+#if NETCOREAPP
+                return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(options, BindingFlags.NonPublic | BindingFlags.DoNotWrapExceptions, null, null, null)!;
+#else
+                try
+                {
+                    return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(options, null)!;
+                }
+                catch (TargetInvocationException ex)
+                {
+                    // Some of the validation is done during construction (i.e. validity of JsonConverter, inner types etc.)
+                    // therefore we need to unwrap TargetInvocationException for better user experience
+                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
+                    throw null!;
+                }
+#endif
+            }
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        private JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>()
+        {
+            return new ReflectionJsonTypeInfo<T>(this);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
@@ -80,8 +111,8 @@ namespace System.Text.Json
             Add(JsonMetadataServices.Int16Converter);
             Add(JsonMetadataServices.Int32Converter);
             Add(JsonMetadataServices.Int64Converter);
-            Add(new JsonElementConverter());
-            Add(new JsonDocumentConverter());
+            Add(JsonMetadataServices.JsonElementConverter);
+            Add(JsonMetadataServices.JsonDocumentConverter);
             Add(JsonMetadataServices.ObjectConverter);
             Add(JsonMetadataServices.SByteConverter);
             Add(JsonMetadataServices.SingleConverter);
@@ -108,6 +139,14 @@ namespace System.Text.Json
         /// Once serialization or deserialization occurs, the list cannot be modified.
         /// </remarks>
         public IList<JsonConverter> Converters => _converters;
+
+        /// <summary>
+        /// The list of custom polymorphic type configurations.
+        /// </summary>
+        /// <remarks>
+        /// Once serialization or deserialization occurs, the list cannot be modified.
+        /// </remarks>
+        public IList<JsonPolymorphicTypeConfiguration> PolymorphicTypeConfigurations => _polymorphicTypeConfigurations;
 
         internal JsonConverter GetConverterFromMember(Type? parentClassType, Type propertyType, MemberInfo? memberInfo)
         {
@@ -173,8 +212,13 @@ namespace System.Text.Json
         /// for <paramref name="typeToConvert"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode("Getting a converter for a type may require reflection which depends on unreferenced code.")]
-        public JsonConverter GetConverter(Type typeToConvert!!)
+        public JsonConverter GetConverter(Type typeToConvert)
         {
+            if (typeToConvert is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(typeToConvert));
+            }
+
             RootReflectionSerializerDependencies();
             return GetConverterInternal(typeToConvert);
         }

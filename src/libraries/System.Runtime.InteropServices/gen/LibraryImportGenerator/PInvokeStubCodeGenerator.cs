@@ -95,8 +95,9 @@ namespace Microsoft.Interop
             {
                 BoundGenerator generator = CreateGenerator(argType);
 
-                // Check each marshaler if the current target framework is supported or not.
-                SupportsTargetFramework &= generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
+                // Check if marshalling info and generator support the current target framework.
+                SupportsTargetFramework &= argType.MarshallingAttributeInfo is not MissingSupportMarshallingInfo
+                    && generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
 
                 // Check if generator is either blittable or just a forwarder.
                 noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo: { IsByRef: false } }
@@ -145,7 +146,7 @@ namespace Microsoft.Interop
             //
             // [LibraryImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
             // [return: MarshalUsing(CountElementName = "numColumns")]
-            // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionLevel = 1)]
+            // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionDepth = 1)]
             // public static partial int[][] TransposeMatrix(
             //  int[][] matrix,
             //  [MarshalUsing(CountElementName="numColumns")] ref int[] numRows,
@@ -197,15 +198,6 @@ namespace Microsoft.Interop
             {
                 try
                 {
-                    // TODO: Remove once helper types (like ArrayMarshaller) are part of the runtime
-                    // This check is to help with enabling the source generator for runtime libraries without making each
-                    // library directly reference System.Memory and System.Runtime.CompilerServices.Unsafe unless it needs to
-                    if (p.MarshallingAttributeInfo is MissingSupportMarshallingInfo
-                        && (environment.TargetFramework == TargetFramework.Net && environment.TargetFrameworkVersion.Major >= 7))
-                    {
-                        throw new MarshallingNotSupportedException(p, this);
-                    }
-
                     return new BoundGenerator(p, generatorFactory.Create(p, this));
                 }
                 catch (MarshallingNotSupportedException e)
@@ -512,10 +504,8 @@ namespace Microsoft.Interop
                 ParameterList(
                     SeparatedList(
                         _paramMarshallers.Select(marshaler => marshaler.Generator.AsParameter(marshaler.TypeInfo)))),
-                _retMarshaller.Generator.AsNativeType(_retMarshaller.TypeInfo),
-                _retMarshaller.Generator is IAttributedReturnTypeMarshallingGenerator attributedReturn
-                ? attributedReturn.GenerateAttributesForReturnType(_retMarshaller.TypeInfo)
-                : null
+                _retMarshaller.Generator.AsReturnType(_retMarshaller.TypeInfo),
+                _retMarshaller.Generator.GenerateAttributesForReturnType(_retMarshaller.TypeInfo)
             );
         }
 

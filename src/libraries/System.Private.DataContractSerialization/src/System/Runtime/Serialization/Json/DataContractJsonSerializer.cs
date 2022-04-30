@@ -212,8 +212,10 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override object? ReadObject(Stream stream!!)
+        public override object? ReadObject(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             return ReadObject(JsonReaderWriterFactory.CreateJsonReader(stream, XmlDictionaryReaderQuotas.Max));
         }
 
@@ -256,8 +258,10 @@ namespace System.Runtime.Serialization.Json
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public override void WriteObject(Stream stream!!, object? graph)
+        public override void WriteObject(Stream stream, object? graph)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             XmlDictionaryWriter jsonWriter = JsonReaderWriterFactory.CreateJsonWriter(stream, Encoding.UTF8, false); //  ownsStream
             WriteObject(jsonWriter, graph);
             jsonWriter.Flush();
@@ -519,7 +523,7 @@ namespace System.Runtime.Serialization.Json
 
         [MemberNotNull(nameof(_rootType))]
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        private void Initialize(Type type!!,
+        private void Initialize(Type type,
             IEnumerable<Type>? knownTypes,
             int maxItemsInObjectGraph,
             bool ignoreExtensionDataObject,
@@ -528,6 +532,8 @@ namespace System.Runtime.Serialization.Json
             DateTimeFormat? dateTimeFormat,
             bool useSimpleDictionaryFormat)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             _rootType = type;
 
             if (knownTypes != null)

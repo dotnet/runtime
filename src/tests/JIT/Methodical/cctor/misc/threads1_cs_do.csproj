@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>
   <PropertyGroup>
@@ -10,6 +9,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="threads1.cs" />
-    <ProjectReference Include="testlib.csproj" />
+    <ProjectReference Include="testlib_misc.csproj" />
   </ItemGroup>
 </Project>

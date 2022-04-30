@@ -40,6 +40,7 @@ namespace ILCompiler
         private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
         private CompositeImageSettings _compositeImageSettings;
+        private ulong _imageBase;
 
         private string _jitPath;
         private string _outputFile;
@@ -198,6 +199,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseImageBase(ulong imageBase)
+        {
+            _imageBase = imageBase;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -240,11 +247,13 @@ namespace ILCompiler
                 corHeaderNode,
                 debugDirectoryNode,
                 win32Resources,
-                flags);
+                flags,
+                _imageBase
+                );
 
             factory.CompositeImageSettings = _compositeImageSettings;
 
-            IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer());
+            IComparer<DependencyNodeCore<NodeFactory>> comparer = new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance);
             DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, comparer);
 
             List<CorJitFlag> corJitFlags = new List<CorJitFlag> { CorJitFlag.CORJIT_FLAG_DEBUG_INFO };

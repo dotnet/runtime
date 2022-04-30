@@ -9,7 +9,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class RSACryptoServiceProvider : RSA, ICspAsymmetricAlgorithm
+    public sealed partial class RSACryptoServiceProvider : RSA, ICspAsymmetricAlgorithm, IRuntimeAlgorithm
     {
         private int _keySize;
         private readonly CspParameters _parameters;
@@ -261,8 +261,10 @@ namespace System.Security.Cryptography
         /// <param name="rgb">encrypted data</param>
         /// <param name="fOAEP">true to use OAEP padding (PKCS #1 v2), false to use PKCS #1 type 2 padding</param>
         /// <returns>decrypted data</returns>
-        public byte[] Decrypt(byte[] rgb!!, bool fOAEP)
+        public byte[] Decrypt(byte[] rgb, bool fOAEP)
         {
+            ArgumentNullException.ThrowIfNull(rgb);
+
             // Save the KeySize value to a local because it has non-trivial cost.
             int keySize = KeySize;
 
@@ -314,8 +316,10 @@ namespace System.Security.Cryptography
         /// <param name="rgb">raw data to encrypt</param>
         /// <param name="fOAEP">true to use OAEP padding (PKCS #1 v2), false to use PKCS #1 type 2 padding</param>
         /// <returns>Encrypted key</returns>
-        public byte[] Encrypt(byte[] rgb!!, bool fOAEP)
+        public byte[] Encrypt(byte[] rgb, bool fOAEP)
         {
+            ArgumentNullException.ThrowIfNull(rgb);
+
             if (fOAEP)
             {
                 int rsaSize = (KeySize + 7) / 8;
@@ -360,7 +364,7 @@ namespace System.Security.Cryptography
         /// This method helps Acquire the default CSP and avoids the need for static SafeProvHandle
         /// in CapiHelper class
         /// </summary>
-        private SafeProvHandle AcquireSafeProviderHandle()
+        private static SafeProvHandle AcquireSafeProviderHandle()
         {
             SafeProvHandle safeProvHandle;
             CapiHelper.AcquireCsp(new CspParameters(CapiHelper.DefaultRsaProviderType), out safeProvHandle);
@@ -474,8 +478,10 @@ namespace System.Security.Cryptography
         /// <param name="rgbHash">The input data for which to compute the hash</param>
         /// <param name="str">The hash algorithm to use to create the hash value. </param>
         /// <returns>The RSA signature for the specified data.</returns>
-        public byte[] SignHash(byte[] rgbHash!!, string? str)
+        public byte[] SignHash(byte[] rgbHash, string? str)
         {
+            ArgumentNullException.ThrowIfNull(rgbHash);
+
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
 
@@ -518,8 +524,11 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Verifies the signature of a hash value.
         /// </summary>
-        public bool VerifyHash(byte[] rgbHash!!, string str, byte[] rgbSignature!!)
+        public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature)
         {
+            ArgumentNullException.ThrowIfNull(rgbHash);
+            ArgumentNullException.ThrowIfNull(rgbSignature);
+
             int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
             return VerifyHash(rgbHash, calgHash, rgbSignature);
         }
@@ -541,8 +550,10 @@ namespace System.Security.Cryptography
         /// <summary>
         /// find whether an RSA key blob is public.
         /// </summary>
-        private static bool IsPublic(byte[] keyBlob!!)
+        private static bool IsPublic(byte[] keyBlob)
         {
+            ArgumentNullException.ThrowIfNull(keyBlob);
+
             // The CAPI RSA public key representation consists of the following sequence:
             //  - BLOBHEADER
             //  - RSAPUBKEY
@@ -559,45 +570,6 @@ namespace System.Security.Cryptography
             return true;
         }
 
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
-        {
-            // we're sealed and the base should have checked this already
-            Debug.Assert(data != null);
-            Debug.Assert(count >= 0 && count <= data.Length);
-            Debug.Assert(offset >= 0 && offset <= data.Length - count);
-            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
-
-            using (HashAlgorithm hash = GetHashAlgorithm(hashAlgorithm))
-            {
-                return hash.ComputeHash(data, offset, count);
-            }
-        }
-
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
-        {
-            // we're sealed and the base should have checked this already
-            Debug.Assert(data != null);
-            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
-
-            using (HashAlgorithm hash = GetHashAlgorithm(hashAlgorithm))
-            {
-                return hash.ComputeHash(data);
-            }
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
-        private static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithm) =>
-            hashAlgorithm.Name switch
-            {
-                "MD5" => MD5.Create(),
-                "SHA1" => SHA1.Create(),
-                "SHA256" => SHA256.Create(),
-                "SHA384" => SHA384.Create(),
-                "SHA512" => SHA512.Create(),
-                _ => throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name),
-            };
-
         private static int GetAlgorithmId(HashAlgorithmName hashAlgorithm) =>
             hashAlgorithm.Name switch
             {
@@ -609,8 +581,11 @@ namespace System.Security.Cryptography
                 _ => throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name),
             };
 
-        public override byte[] Encrypt(byte[] data!!, RSAEncryptionPadding padding!!)
+        public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
         {
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(padding);
+
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
                 return Encrypt(data, fOAEP: false);
@@ -625,8 +600,11 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override byte[] Decrypt(byte[] data!!, RSAEncryptionPadding padding!!)
+        public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
         {
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(padding);
+
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
                 return Decrypt(data, fOAEP: false);

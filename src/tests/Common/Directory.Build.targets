@@ -48,7 +48,6 @@
 
     <ItemGroup>
       <RunTimeArtifactsExcludeFiles Include="PDB/createdump.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/dbgshim.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/linuxonjit.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/mcs.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/mscordaccore.pdb" />
@@ -190,5 +189,8 @@
     </Copy>
 
   </Target>
+
+  <!-- At this point Common test dependencies don't have any native components -->
+  <Target Name="CopyAllNativeProjectReferenceBinaries" />
 
 </Project>

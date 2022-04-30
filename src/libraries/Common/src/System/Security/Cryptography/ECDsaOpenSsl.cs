@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class ECDsaOpenSsl : ECDsa
+    public sealed partial class ECDsaOpenSsl : ECDsa, IRuntimeAlgorithm
     {
         // secp521r1 maxes out at 139 bytes, so 256 should always be enough
         private const int SignatureStackBufSize = 256;
@@ -89,8 +89,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        public override byte[] SignHash(byte[] hash!!)
+        public override byte[] SignHash(byte[] hash)
         {
+            ArgumentNullException.ThrowIfNull(hash);
+
             ThrowIfDisposed();
             SafeEcKeyHandle key = _key.Value;
             int signatureLength = Interop.Crypto.EcDsaSize(key);
@@ -194,8 +196,11 @@ namespace System.Security.Cryptography
             return destination.Slice(0, actualLength);
         }
 
-        public override bool VerifyHash(byte[] hash!!, byte[] signature!!)
+        public override bool VerifyHash(byte[] hash, byte[] signature)
         {
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
+
             return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
         }
 
@@ -249,15 +254,6 @@ namespace System.Security.Cryptography
             int verifyResult = Interop.Crypto.EcDsaVerify(hash, toVerify, key);
             return verifyResult == 1;
         }
-
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
-
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            HashOneShotHelpers.HashData(hashAlgorithm, data);
-
-        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
 
         protected override void Dispose(bool disposing)
         {

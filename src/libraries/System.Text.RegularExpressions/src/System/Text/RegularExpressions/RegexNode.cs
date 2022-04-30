@@ -12,8 +12,6 @@ namespace System.Text.RegularExpressions
     /// <summary>Represents a regex subexpression.</summary>
     internal sealed class RegexNode
     {
-        /// <summary>empty bit from the node's options to store data on whether a node contains captures</summary>
-        internal const RegexOptions HasCapturesFlag = (RegexOptions)(1 << 31);
         /// <summary>Arbitrary number of repetitions of the same character when we'd prefer to represent that as a repeater of that character rather than a string.</summary>
         internal const int MultiVsRepeaterLimit = 64;
 
@@ -89,33 +87,26 @@ namespace System.Text.RegularExpressions
         /// <param name="ch">The character.</param>
         /// <param name="options">The node's options.</param>
         /// <param name="culture">The culture to use to perform any required transformations.</param>
+        /// <param name="caseBehavior">The behavior to be used for case comparisons. If the value hasn't been set yet, it will get initialized in the first lookup.</param>
         /// <returns>The created RegexNode.  This might be a RegexNode.One or a RegexNode.Set.</returns>
-        public static RegexNode CreateOneWithCaseConversion(char ch, RegexOptions options, CultureInfo? culture)
+        public static RegexNode CreateOneWithCaseConversion(char ch, RegexOptions options, CultureInfo? culture, ref RegexCaseBehavior caseBehavior)
         {
             // If the options specify case-insensitivity, we try to create a node that fully encapsulates that.
             if ((options & RegexOptions.IgnoreCase) != 0)
             {
                 Debug.Assert(culture is not null);
 
-                // If the character is part of a Unicode category that doesn't participate in case conversion,
-                // we can simply strip out the IgnoreCase option and make the node case-sensitive.
-                if (!RegexCharClass.ParticipatesInCaseConversion(ch))
+                if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(ch, culture, ref caseBehavior, out ReadOnlySpan<char> equivalences))
                 {
+                    // If we reach here, then we know that ch does not participate in case conversion, so we just
+                    // create a One node with it and strip out the IgnoreCase option.
                     return new RegexNode(RegexNodeKind.One, options & ~RegexOptions.IgnoreCase, ch);
                 }
 
-                // Create a set for the character, trying to include all case-insensitive equivalent characters.
-                // If it's successful in doing so, resultIsCaseInsensitive will be false and we can strip
-                // out RegexOptions.IgnoreCase as part of creating the set.
-                string stringSet = RegexCharClass.OneToStringClass(ch, culture, out bool resultIsCaseInsensitive);
-                if (!resultIsCaseInsensitive)
-                {
-                    return new RegexNode(RegexNodeKind.Set, options & ~RegexOptions.IgnoreCase, stringSet);
-                }
-
-                // Otherwise, until we can get rid of ToLower usage at match time entirely (https://github.com/dotnet/runtime/issues/61048),
-                // lowercase the character and proceed to create an IgnoreCase One node.
-                ch = culture.TextInfo.ToLower(ch);
+                // If it does participate in case conversion, then transform the Node into a set with
+                // all possible valid values and remove the IgnoreCase option to make the node case-sensitive.
+                string stringSet = RegexCharClass.CharsToStringClass(equivalences);
+                return new RegexNode(RegexNodeKind.Set, options & ~RegexOptions.IgnoreCase, stringSet);
             }
 
             // Create a One node for the character.
@@ -293,6 +284,17 @@ namespace System.Text.RegularExpressions
 
                     default:
                         Debug.Assert(node.Str is null, $"Expected null string for {node.Kind}, got \"{node.Str}\".");
+                        break;
+                }
+
+                // Validate only Backreference nodes have IgnoreCase Option
+                switch (node.Kind)
+                {
+                    case RegexNodeKind.Backreference:
+                        break;
+
+                    default:
+                        Debug.Assert((node.Options & RegexOptions.IgnoreCase) == 0, $"{node.Kind} node should not have RegexOptions.IgnoreCase");
                         break;
                 }
             }
@@ -501,10 +503,7 @@ namespace System.Text.RegularExpressions
         /// </summary>
         internal RegexNode Reduce()
         {
-            // TODO: https://github.com/dotnet/runtime/issues/61048
-            // As part of overhauling IgnoreCase handling, the parser shouldn't produce any nodes other than Backreference
-            // that ever have IgnoreCase set on them.  For now, though, remove IgnoreCase from any nodes for which it
-            // has no behavioral effect.
+            // Remove IgnoreCase option from everything except a Backreference
             switch (Kind)
             {
                 default:
@@ -512,10 +511,6 @@ namespace System.Text.RegularExpressions
                     Options &= ~RegexOptions.IgnoreCase;
                     break;
 
-                case RegexNodeKind.One or RegexNodeKind.Onelazy or RegexNodeKind.Oneloop or RegexNodeKind.Oneloopatomic:
-                case RegexNodeKind.Notone or RegexNodeKind.Notonelazy or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic:
-                case RegexNodeKind.Set or RegexNodeKind.Setlazy or RegexNodeKind.Setloop or RegexNodeKind.Setloopatomic:
-                case RegexNodeKind.Multi:
                 case RegexNodeKind.Backreference:
                     // Still meaningful
                     break;
@@ -889,6 +884,20 @@ namespace System.Text.RegularExpressions
                     RegexNodeKind.Notonelazy;
             }
 
+            // Normalize some well-known sets
+            switch (Str)
+            {
+                // Different ways of saying "match anything"
+                case RegexCharClass.WordNotWordClass:
+                case RegexCharClass.NotWordWordClass:
+                case RegexCharClass.DigitNotDigitClass:
+                case RegexCharClass.NotDigitDigitClass:
+                case RegexCharClass.SpaceNotSpaceClass:
+                case RegexCharClass.NotSpaceSpaceClass:
+                    Str = RegexCharClass.AnyClass;
+                    break;
+            }
+
             return this;
         }
 
@@ -1017,11 +1026,9 @@ namespace System.Text.RegularExpressions
                             }
 
                             prev.Kind = RegexNodeKind.Set;
-                            prev.Str = prevCharClass.ToStringClass(Options);
-                            if ((prev.Options & RegexOptions.IgnoreCase) != 0 &&
-                                RegexCharClass.MakeCaseSensitiveIfPossible(prev.Str, RegexParser.GetTargetCulture(prev.Options)) is string newSetString)
+                            prev.Str = prevCharClass.ToStringClass();
+                            if ((prev.Options & RegexOptions.IgnoreCase) != 0)
                             {
-                                prev.Str = newSetString;
                                 prev.Options &= ~RegexOptions.IgnoreCase;
                             }
                         }
@@ -1443,6 +1450,17 @@ namespace System.Text.RegularExpressions
                     return new RegexNode(RegexNodeKind.Empty, Options);
                 case 1:
                     return Child(0);
+            }
+
+            // If any node in the concatenation is a Nothing, the concatenation itself is a Nothing.
+            int childCount = ChildCount();
+            for (int i = 0; i < childCount; i++)
+            {
+                RegexNode child = Child(i);
+                if (child.Kind == RegexNodeKind.Nothing)
+                {
+                    return child;
+                }
             }
 
             // Coalesce adjacent loops.  This helps to minimize work done by the interpreter, minimize code gen,
@@ -1972,8 +1990,8 @@ namespace System.Text.RegularExpressions
                     break;
                 }
 
-                // If the two nodes don't agree on options in any way, don't try to optimize them.
-                // TODO: Remove this once https://github.com/dotnet/runtime/issues/61048 is implemented.
+                // If the current node's options don't match the subsequent node, then we cannot make it atomic.
+                // This applies to RightToLeft for lookbehinds, as well as patterns that enable/disable global flags in the middle of the pattern.
                 if (node.Options != subsequent.Options)
                 {
                     return false;
@@ -2219,9 +2237,9 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Empty:
                 case RegexNodeKind.Nothing:
                 case RegexNodeKind.UpdateBumpalong:
-                    // Nothing to match. In the future, we could potentially use Nothing to say that the min length
-                    // is infinite, but that would require a different structure, as that would only apply if the
-                    // Nothing match is required in all cases (rather than, say, as one branch of an alternation).
+                // Nothing to match. In the future, we could potentially use Nothing to say that the min length
+                // is infinite, but that would require a different structure, as that would only apply if the
+                // Nothing match is required in all cases (rather than, say, as one branch of an alternation).
                 case RegexNodeKind.Beginning:
                 case RegexNodeKind.Bol:
                 case RegexNodeKind.Boundary:
@@ -2234,7 +2252,7 @@ namespace System.Text.RegularExpressions
                 case RegexNodeKind.Start:
                 case RegexNodeKind.NegativeLookaround:
                 case RegexNodeKind.PositiveLookaround:
-                    // Zero-width
+                // Zero-width
                 case RegexNodeKind.Backreference:
                     // Requires matching data available only at run-time.  In the future, we could choose to find
                     // and follow the capture group this aligns with, while being careful not to end up in an
@@ -2404,16 +2422,9 @@ namespace System.Text.RegularExpressions
 
             // Iterate from the child index to the exclusive upper bound.
             int i = childIndex;
-            for ( ; i < exclusiveChildBound; i++)
+            for (; i < exclusiveChildBound; i++)
             {
                 RegexNode child = Child(i);
-                if ((child.Options & RegexOptions.IgnoreCase) != 0)
-                {
-                    // TODO https://github.com/dotnet/runtime/issues/61048: Remove this block once fixed.
-                    // We don't want any nodes that are still IgnoreCase, as they'd no longer be IgnoreCase if
-                    // they were applicable to this optimization.
-                    break;
-                }
 
                 if (child.Kind is RegexNodeKind.One)
                 {
@@ -2652,7 +2663,7 @@ namespace System.Text.RegularExpressions
             return 1;
         }
 
-        // Determines whether the node supports a compilation / code generation strategy based on walking the node tree.
+        // Determines whether the node supports a compilation strategy based on walking the node tree.
         // Also returns a human-readable string to explain the reason (it will be emitted by the source generator, hence
         // there's no need to localize).
         internal bool SupportsCompilation([NotNullWhen(false)] out string? reason)
@@ -2707,20 +2718,6 @@ namespace System.Text.RegularExpressions
 
         /// <summary>Gets whether the node is a Notone/Notoneloop/Notoneloopatomic/Notonelazy node.</summary>
         public bool IsNotoneFamily => Kind is RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy;
-
-        /// <summary>Gets whether this node is contained inside of a loop.</summary>
-        public bool IsInLoop()
-        {
-            for (RegexNode? parent = Parent; parent is not null; parent = parent.Parent)
-            {
-                if (parent.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
 
 #if DEBUG
         [ExcludeFromCodeCoverage]

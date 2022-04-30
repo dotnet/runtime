@@ -17,14 +17,18 @@ namespace System.IO
         /// </devdoc>
         public FileSystemEventArgs(WatcherChangeTypes changeType, string directory, string? name)
         {
+            ArgumentNullException.ThrowIfNull(directory);
+
             _changeType = changeType;
             _name = name;
-            _fullPath = Path.Join(Path.GetFullPath(directory), name);
 
-            if (string.IsNullOrWhiteSpace(name))
+            if (directory.Length == 0) // empty directory means current working dir
             {
-                _fullPath = PathInternal.EnsureTrailingSeparator(_fullPath);
+                directory = ".";
             }
+
+            string fullDirectoryPath = Path.GetFullPath(directory);
+            _fullPath = string.IsNullOrEmpty(name) ? PathInternal.EnsureTrailingSeparator(fullDirectoryPath) : Path.Join(fullDirectoryPath, name);
         }
 
         /// <devdoc>

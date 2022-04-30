@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
-    <Nullable>enable</Nullable>
     <IsPackable>true</IsPackable>
     <!-- Enable package baseline validation this when we release the 7.0.0 version. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
@@ -13,27 +12,33 @@ System.Threading.RateLimiting.ConcurrencyLimiter
 System.Threading.RateLimiting.TokenBucketRateLimiter
 System.Threading.RateLimiting.RateLimitLease</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\ConcurrencyLimiterOptions.cs" />
+    <Compile Include="System\Threading\RateLimiting\FixedWindowRateLimiter.cs" />
+    <Compile Include="System\Threading\RateLimiting\FixedWindowRateLimiterOptions.cs" />
     <Compile Include="System\Threading\RateLimiting\MetadataName.cs" />
     <Compile Include="System\Threading\RateLimiting\MetadataName.T.cs" />
+    <Compile Include="System\Threading\RateLimiting\NoopLimiter.cs" />
+    <Compile Include="System\Threading\RateLimiting\PartitionedRateLimiter.cs" />
+    <Compile Include="System\Threading\RateLimiting\PartitionedRateLimiter.T.cs" />
     <Compile Include="System\Threading\RateLimiting\QueueProcessingOrder.cs" />
     <Compile Include="System\Threading\RateLimiting\RateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\RateLimitLease.cs" />
+    <Compile Include="System\Threading\RateLimiting\RateLimitPartition.cs" />
+    <Compile Include="System\Threading\RateLimiting\RateLimitPartition.T.cs" />
+    <Compile Include="System\Threading\RateLimiting\ReplenishingRateLimiter.cs" />
+    <Compile Include="System\Threading\RateLimiting\SlidingWindowRateLimiter.cs" />
+    <Compile Include="System\Threading\RateLimiting\SlidingWindowRateLimiterOptions.cs" />
+    <Compile Include="System\Threading\RateLimiting\TimerAwaitable.cs" />
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiter.cs" />
     <Compile Include="System\Threading\RateLimiting\TokenBucketRateLimiterOptions.cs" />
-    <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs"
-             Link="Common\System\Collections\Generic\Deque.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs" Link="Common\System\Collections\Generic\Deque.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
-  </ItemGroup>
-  <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
 </Project>

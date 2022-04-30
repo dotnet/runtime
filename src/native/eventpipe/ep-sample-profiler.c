@@ -78,14 +78,6 @@ sample_profiler_store_profiling_enabled (bool enabled)
 
 static
 inline
-bool
-sample_profiler_load_can_start_sampling (void)
-{
-	return (ep_rt_volatile_load_uint32_t (&_can_start_sampling) != 0) ? true : false;
-}
-
-static
-inline
 void
 sample_profiler_store_can_start_sampling (bool start_sampling)
 {
@@ -344,7 +336,7 @@ ep_sample_profiler_get_sampling_rate (void)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_sample_profiler;
 const char quiet_linker_empty_file_warning_eventpipe_sample_profiler = 0;
 #endif

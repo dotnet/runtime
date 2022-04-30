@@ -44,6 +44,9 @@ class Generics
         TestGenericRecursionFromNpgsql.Run();
         TestRecursionInGenericVirtualMethods.Run();
         TestRecursionThroughGenericLookups.Run();
+        TestGvmLookupDependency.Run();
+        TestInvokeMemberCornerCaseInGenerics.Run();
+        TestRefAny.Run();
 #if !CODEGEN_CPP
         TestNullableCasting.Run();
         TestVariantCasting.Run();
@@ -908,7 +911,6 @@ class Generics
 
                 // BaseClass<int>.Method1 has the same slot as BaseClass<float>.Method3 on CoreRT, because vtable entries
                 // get populated on demand (the first type won't get a Method3 entry, and the latter won't get a Method1 entry)
-                // On ProjectN, both types will get vtable entries for both methods.
                 new BaseClass<int>().Method1(1);
                 m1 = typeof(BaseClass<int>).GetTypeInfo().GetDeclaredMethod("Method1");
                 Verify("BaseClass.Method1", m1.Invoke(new BaseClass<int>(), new object[] { (int)1 }));
@@ -3145,6 +3147,72 @@ class Generics
             // There is a generic recursion in the above hierarchy. This just tests that we can compile.
             new ArrayHandler<object>().Write(null);
             new RangeHandler<object>().Write(default);
+        }
+    }
+
+    static class TestGvmLookupDependency
+    {
+        struct SmallCat<T> { }
+
+        interface ITechnique
+        {
+            void CatSlaps<T>() { /* Cannot reference T or it stops testing the thing it should */ }
+        }
+
+        struct Technique : ITechnique { }
+
+        static void CatConcepts<T, U>() where T : ITechnique => default(T).CatSlaps<SmallCat<U>>();
+
+        public static void Run()
+        {
+            CatConcepts<Technique, int>();
+            CatConcepts<Technique, object>();
+        }
+    }
+
+    class TestInvokeMemberCornerCaseInGenerics
+    {
+        class Generic<T>
+        {
+            public void Method(params T[] ts) { }
+        }
+
+        class Atom { }
+
+        static Generic<Atom> s_instance = new Generic<Atom>();
+        static Type s_atomType = typeof(Atom);
+
+        public static void Run()
+        {
+            s_instance.Method(null);
+
+            // Regression test for https://github.com/dotnet/runtime/issues/65612
+            // This requires MethodTable for "Atom[]" - just make sure the compiler didn't crash and we can invoke
+            typeof(Generic<>).MakeGenericType(s_atomType).InvokeMember("Method", BindingFlags.Public | BindingFlags.InvokeMethod | BindingFlags.Instance, null, s_instance, new object[] { new Atom() });
+        }
+    }
+
+    static class TestRefAny
+    {
+        static T TestAll<T>(ref T value, Type expectedType)
+        {
+            TypedReference typedRef = __makeref(value);
+            if (__reftype(typedRef) != expectedType)
+                throw new Exception();
+
+            return __refvalue(typedRef, T);
+        }
+
+        public static void Run()
+        {
+            string classValue = "Hello";
+            int structValue = 123;
+
+            if (TestAll(ref classValue, typeof(string)) != classValue)
+                throw new Exception();
+
+            if (TestAll(ref structValue, typeof(int)) != structValue)
+                throw new Exception();
         }
     }
 }

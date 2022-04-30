@@ -28,8 +28,10 @@ namespace System.Collections.Generic
         {
         }
 
-        public LinkedList(IEnumerable<T> collection!!)
+        public LinkedList(IEnumerable<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             foreach (T item in collection)
             {
                 AddLast(item);
@@ -186,8 +188,10 @@ namespace System.Collections.Generic
             return Find(value) != null;
         }
 
-        public void CopyTo(T[] array!!, int index)
+        public void CopyTo(T[] array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -321,8 +325,10 @@ namespace System.Collections.Generic
             InternalRemoveNode(head.prev!);
         }
 
-        public virtual void GetObjectData(SerializationInfo info!!, StreamingContext context)
+        public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             // Customized serialization for LinkedList.
             // We need to do this because it will be too expensive to Serialize each node.
             // This will give us the flexiblility to change internal implementation freely in future.
@@ -413,16 +419,20 @@ namespace System.Collections.Generic
             version++;
         }
 
-        internal void ValidateNewNode(LinkedListNode<T> node!!)
+        internal static void ValidateNewNode(LinkedListNode<T> node)
         {
+            ArgumentNullException.ThrowIfNull(node);
+
             if (node.list != null)
             {
                 throw new InvalidOperationException(SR.LinkedListNodeIsAttached);
             }
         }
 
-        internal void ValidateNode(LinkedListNode<T> node!!)
+        internal void ValidateNode(LinkedListNode<T> node)
         {
+            ArgumentNullException.ThrowIfNull(node);
+
             if (node.list != this)
             {
                 throw new InvalidOperationException(SR.ExternalLinkedListNode);
@@ -436,8 +446,10 @@ namespace System.Collections.Generic
 
         object ICollection.SyncRoot => this;
 
-        void ICollection.CopyTo(Array array!!, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));

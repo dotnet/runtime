@@ -78,49 +78,65 @@ namespace System.Xml.Schema
         // XmlAtomicValue constructors and methods
         //-----------------------------------------------
 
-        internal XmlAtomicValue(XmlSchemaType xmlType!!, bool value)
+        internal XmlAtomicValue(XmlSchemaType xmlType, bool value)
         {
+            ArgumentNullException.ThrowIfNull(xmlType);
+
             _xmlType = xmlType;
             _clrType = TypeCode.Boolean;
             _unionVal.boolVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType!!, DateTime value)
+        internal XmlAtomicValue(XmlSchemaType xmlType, DateTime value)
         {
+            ArgumentNullException.ThrowIfNull(xmlType);
+
             _xmlType = xmlType;
             _clrType = TypeCode.DateTime;
             _unionVal.dtVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType!!, double value)
+        internal XmlAtomicValue(XmlSchemaType xmlType, double value)
         {
+            ArgumentNullException.ThrowIfNull(xmlType);
+
             _xmlType = xmlType;
             _clrType = TypeCode.Double;
             _unionVal.dblVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType!!, int value)
+        internal XmlAtomicValue(XmlSchemaType xmlType, int value)
         {
+            ArgumentNullException.ThrowIfNull(xmlType);
+
             _xmlType = xmlType;
             _clrType = TypeCode.Int32;
             _unionVal.i32Val = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType!!, long value)
+        internal XmlAtomicValue(XmlSchemaType xmlType, long value)
         {
+            ArgumentNullException.ThrowIfNull(xmlType);
+
             _xmlType = xmlType;
             _clrType = TypeCode.Int64;
             _unionVal.i64Val = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType!!, string value!!)
+        internal XmlAtomicValue(XmlSchemaType xmlType, string value)
         {
+            ArgumentNullException.ThrowIfNull(xmlType);
+            ArgumentNullException.ThrowIfNull(value);
+
             _xmlType = xmlType;
             _objVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType!!, string value!!, IXmlNamespaceResolver? nsResolver)
+        internal XmlAtomicValue(XmlSchemaType xmlType, string value, IXmlNamespaceResolver? nsResolver)
         {
+            ArgumentNullException.ThrowIfNull(xmlType);
+            ArgumentNullException.ThrowIfNull(value);
+
             _xmlType = xmlType;
             _objVal = value;
             if (nsResolver != null && (_xmlType.TypeCode == XmlTypeCode.QName || _xmlType.TypeCode == XmlTypeCode.Notation))
@@ -130,14 +146,20 @@ namespace System.Xml.Schema
             }
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType!!, object value!!)
+        internal XmlAtomicValue(XmlSchemaType xmlType, object value)
         {
+            ArgumentNullException.ThrowIfNull(xmlType);
+            ArgumentNullException.ThrowIfNull(value);
+
             _xmlType = xmlType;
             _objVal = value;
         }
 
-        internal XmlAtomicValue(XmlSchemaType xmlType!!, object value!!, IXmlNamespaceResolver? nsResolver)
+        internal XmlAtomicValue(XmlSchemaType xmlType, object value, IXmlNamespaceResolver? nsResolver)
         {
+            ArgumentNullException.ThrowIfNull(xmlType);
+            ArgumentNullException.ThrowIfNull(value);
+
             _xmlType = xmlType;
             _objVal = value;
 
@@ -379,7 +401,7 @@ namespace System.Xml.Schema
             return Value;
         }
 
-        private string? GetPrefixFromQName(string value)
+        private static string? GetPrefixFromQName(string value)
         {
             int colonOffset;
             int len = ValidateNames.ParseQName(value, 0, out colonOffset);

@@ -49,8 +49,10 @@ namespace System.Xml.XPath
         /// <summary>
         /// Create a new empty document.  All names should be atomized using "nameTable".
         /// </summary>
-        internal XPathDocument(XmlNameTable nameTable!!)
+        internal XPathDocument(XmlNameTable nameTable)
         {
+            ArgumentNullException.ThrowIfNull(nameTable);
+
             _nameTable = nameTable;
         }
 
@@ -64,8 +66,10 @@ namespace System.Xml.XPath
         /// <summary>
         /// Create a new document from "reader", with whitespace handling controlled according to "space".
         /// </summary>
-        public XPathDocument(XmlReader reader!!, XmlSpace space)
+        public XPathDocument(XmlReader reader, XmlSpace space)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             LoadFromReader(reader, space);
         }
 
@@ -106,14 +110,14 @@ namespace System.Xml.XPath
         /// <summary>
         /// Create a new document and load the content from the Uri.
         /// </summary>
-        public XPathDocument(string uri) : this(uri, XmlSpace.Default)
+        public XPathDocument([StringSyntax(StringSyntaxAttribute.Uri)] string uri) : this(uri, XmlSpace.Default)
         {
         }
 
         /// <summary>
         /// Create a new document and load the content from the Uri, with whitespace handling controlled according to "space".
         /// </summary>
-        public XPathDocument(string uri, XmlSpace space)
+        public XPathDocument([StringSyntax(StringSyntaxAttribute.Uri)] string uri, XmlSpace space)
         {
             XmlTextReaderImpl reader = SetupReader(new XmlTextReaderImpl(uri));
 
@@ -141,8 +145,10 @@ namespace System.Xml.XPath
         /// can be passed to indicate that names should be atomized by the builder and/or a fragment should be created.
         /// </summary>
         [MemberNotNull(nameof(_nameTable))]
-        internal void LoadFromReader(XmlReader reader!!, XmlSpace space)
+        internal void LoadFromReader(XmlReader reader, XmlSpace space)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             XPathDocumentBuilder builder;
             IXmlLineInfo? lineInfo;
             string? xmlnsUri;
@@ -441,7 +447,7 @@ namespace System.Xml.XPath
         /// <summary>
         /// Set properties on the reader so that it is backwards-compatible with V1.
         /// </summary>
-        private XmlTextReaderImpl SetupReader(XmlTextReaderImpl reader)
+        private static XmlTextReaderImpl SetupReader(XmlTextReaderImpl reader)
         {
             reader.EntityHandling = EntityHandling.ExpandEntities;
             reader.XmlValidatingReaderCompatibilityMode = true;

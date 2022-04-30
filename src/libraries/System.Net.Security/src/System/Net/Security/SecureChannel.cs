@@ -171,8 +171,8 @@ namespace System.Net.Security
         {
             if (!_remoteCertificateExposed)
             {
-                  _remoteCertificate?.Dispose();
-                  _remoteCertificate = null;
+                _remoteCertificate?.Dispose();
+                _remoteCertificate = null;
             }
 
             _securityContext?.Dispose();
@@ -607,9 +607,7 @@ namespace System.Net.Security
                         _sslAuthenticationOptions.CertificateContext = SslStreamCertificateContext.Create(selectedCert!);
                     }
 
-                    _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(_sslAuthenticationOptions.CertificateContext,
-                            _sslAuthenticationOptions.EnabledSslProtocols, _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
-
+                    _credentialsHandle = AcquireCredentialsHandle(_sslAuthenticationOptions);
                     thumbPrint = guessedThumbPrint; // Delay until here in case something above threw.
                 }
             }
@@ -713,12 +711,63 @@ namespace System.Net.Security
             }
             else
             {
-                _credentialsHandle = SslStreamPal.AcquireCredentialsHandle(_sslAuthenticationOptions.CertificateContext, _sslAuthenticationOptions.EnabledSslProtocols,
-                        _sslAuthenticationOptions.EncryptionPolicy, _sslAuthenticationOptions.IsServer);
+                _credentialsHandle = AcquireCredentialsHandle(_sslAuthenticationOptions);
                 thumbPrint = guessedThumbPrint;
             }
 
             return cachedCred;
+        }
+
+        private static SafeFreeCredentials AcquireCredentialsHandle(SslAuthenticationOptions sslAuthenticationOptions)
+        {
+            SafeFreeCredentials cred = SslStreamPal.AcquireCredentialsHandle(sslAuthenticationOptions.CertificateContext, sslAuthenticationOptions.EnabledSslProtocols,
+                sslAuthenticationOptions.EncryptionPolicy, sslAuthenticationOptions.IsServer);
+
+            if (sslAuthenticationOptions.CertificateContext != null)
+            {
+                //
+                // Since the SafeFreeCredentials can be cached and reused, it may happen on long running processes that some cert on
+                // the chain expires and all subsequent connections would send expired intermediate certificates. Find the earliest
+                // NotAfter timestamp on the chain and use it as expiration timestamp for the credentials.
+                // This provides an opportunity to recreate the credentials with an alternative (and still valid)
+                // certificate chain.
+                //
+                SslStreamCertificateContext certificateContext = sslAuthenticationOptions.CertificateContext;
+                cred._expiry = GetExpiryTimestamp(certificateContext);
+
+                if (cred._expiry < DateTime.UtcNow)
+                {
+                    //
+                    // The CertificateContext from auth options is recreated just before creating the SafeFreeCredentials. However, in case when
+                    // it was provided by the user code, it may still contain the (now expired) certificate chain. Such expiration timestamp would
+                    // effectively disable caching as it would lead to creating new credentials for each connection. We attempt to recover by creating
+                    // a temporary certificate context (which builds a new chain with hopefully more recent chain).
+                    //
+                    certificateContext = SslStreamCertificateContext.Create(
+                        certificateContext.Certificate,
+                        new X509Certificate2Collection(certificateContext.IntermediateCertificates),
+                        trust: certificateContext.Trust);
+
+                    cred._expiry = GetExpiryTimestamp(certificateContext);
+                }
+
+                static DateTime GetExpiryTimestamp(SslStreamCertificateContext certificateContext)
+                {
+                    DateTime expiry = certificateContext.Certificate.NotAfter;
+
+                    foreach (X509Certificate2 cert in certificateContext.IntermediateCertificates)
+                    {
+                        if (cert.NotAfter < expiry)
+                        {
+                            expiry = cert.NotAfter;
+                        }
+                    }
+
+                    return expiry.ToUniversalTime();
+                }
+            }
+
+            return cred;
         }
 
         //
@@ -944,12 +993,10 @@ namespace System.Net.Security
             // We don't catch exceptions in this method, so it's safe for "accepted" be initialized with true.
             bool success = false;
             X509Chain? chain = null;
-            X509Certificate2Collection? remoteCertificateStore = null;
 
             try
             {
-                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext, out remoteCertificateStore);
-
+                X509Certificate2? certificate = CertificateValidationPal.GetRemoteCertificate(_securityContext!, ref chain);
                 if (_remoteCertificate != null && certificate != null &&
                     certificate.RawDataMemory.Span.SequenceEqual(_remoteCertificate.RawDataMemory.Span))
                 {
@@ -967,17 +1014,16 @@ namespace System.Net.Security
                 }
                 else
                 {
-                    chain = new X509Chain();
+                    if (chain == null)
+                    {
+                        chain = new X509Chain();
+                    }
+
                     chain.ChainPolicy.RevocationMode = _sslAuthenticationOptions.CertificateRevocationCheckMode;
                     chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
 
                     // Authenticate the remote party: (e.g. when operating in server mode, authenticate the client).
                     chain.ChainPolicy.ApplicationPolicy.Add(_sslAuthenticationOptions.IsServer ? s_clientAuthOid : s_serverAuthOid);
-
-                    if (remoteCertificateStore != null)
-                    {
-                        chain.ChainPolicy.ExtraStore.AddRange(remoteCertificateStore);
-                    }
 
                     if (trust != null)
                     {
@@ -1053,15 +1099,6 @@ namespace System.Net.Security
                     }
 
                     chain.Dispose();
-                }
-
-                if (remoteCertificateStore != null)
-                {
-                    int certCount = remoteCertificateStore.Count;
-                    for (int i = 0; i < certCount; i++)
-                    {
-                        remoteCertificateStore[i].Dispose();
-                    }
                 }
             }
 

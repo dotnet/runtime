@@ -46,11 +46,15 @@ namespace System.IO
 
         internal void AppendExtraBuffer(ReadOnlySpan<byte> buffer)
         {
-            // Ensure a reasonable upper bound applies to the stackalloc
-            Debug.Assert(buffer.Length <= 1024);
-
-            // Then convert the bytes to chars
-            Span<char> chars = stackalloc char[_encoding.GetMaxCharCount(buffer.Length)];
+            // Most inputs to this will have a buffer length of one.
+            // The cases where it is larger than one only occur in ReadKey
+            // when the input is not redirected, so those cases should be
+            // rare, so just allocate.
+            const int MaxStackAllocation = 256;
+            int maxCharsCount = _encoding.GetMaxCharCount(buffer.Length);
+            Span<char> chars = (uint)maxCharsCount <= MaxStackAllocation ?
+                stackalloc char[MaxStackAllocation] :
+                new char[maxCharsCount];
             int charLen = _encoding.GetChars(buffer, chars);
             chars = chars.Slice(0, charLen);
 
@@ -74,7 +78,7 @@ namespace System.IO
             _endIndex += charLen;
         }
 
-        internal unsafe int ReadStdin(byte* buffer, int bufferSize)
+        internal static unsafe int ReadStdin(byte* buffer, int bufferSize)
         {
             int result = Interop.CheckIo(Interop.Sys.ReadStdin(buffer, bufferSize));
             Debug.Assert(result >= 0 && result <= bufferSize); // may be 0 if hits EOL
@@ -300,7 +304,7 @@ namespace System.IO
                 (c == ConsolePal.s_veolCharacter || c == ConsolePal.s_veol2Character || c == ConsolePal.s_veofCharacter);
         }
 
-        internal ConsoleKey GetKeyFromCharValue(char x, out bool isShift, out bool isCtrl)
+        internal static ConsoleKey GetKeyFromCharValue(char x, out bool isShift, out bool isCtrl)
         {
             isShift = false;
             isCtrl = false;
@@ -492,6 +496,6 @@ namespace System.IO
         }
 
         /// <summary>Gets whether there's input waiting on stdin.</summary>
-        internal bool StdinReady { get { return Interop.Sys.StdinReady(); } }
+        internal static bool StdinReady => Interop.Sys.StdinReady();
     }
 }

@@ -122,6 +122,17 @@ namespace System
         }
 
         [ConditionalFact(nameof(ManualTestsEnabled))]
+        public static void ReadKeyNoIntercept()
+        {
+            Console.WriteLine("Please type \"console\" (without the quotes). You should see it as you type:");
+            foreach (ConsoleKey k in new[] { ConsoleKey.C, ConsoleKey.O, ConsoleKey.N, ConsoleKey.S, ConsoleKey.O, ConsoleKey.L, ConsoleKey.E })
+            {
+                Assert.Equal(k, Console.ReadKey(intercept: false).Key);
+            }
+            AssertUserExpectedResults("\"console\" correctly echoed as you typed it");
+        }
+
+        [ConditionalFact(nameof(ManualTestsEnabled))]
         public static void EnterKeyIsEnterAfterKeyAvailableCheck()
         {
             Console.WriteLine("Please hold down the 'Enter' key for some time. You shouldn't see new lines appear:");
@@ -307,7 +318,7 @@ namespace System
         {
             Console.WriteLine(Console.OutputEncoding);
             Console.WriteLine("'\u03A0\u03A3'.");
-            AssertUserExpectedResults("Pi and Segma or question marks");
+            AssertUserExpectedResults("Pi and Sigma or question marks");
         }
 
         private static void AssertUserExpectedResults(string expected)

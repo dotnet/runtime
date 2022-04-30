@@ -341,7 +341,7 @@ namespace System.Net.Http.Functional.Tests
                     await LoopbackServer.CreateServerAsync(async (server, uri) =>
                     {
                         Assert.Equal(proxyServer.Uri, handler.Proxy.GetProxy(uri));
-                        
+
                         Task<HttpResponseMessage> clientTask = client.GetAsync(uri);
                         await server.AcceptConnectionSendResponseAndCloseAsync(content: Content);
                         using (var response = await clientTask)
@@ -578,7 +578,14 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    try { await client.GetAsync(uri); } catch { }
+                    try
+                    {
+                        await client.GetAsync(uri);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -611,7 +618,14 @@ namespace System.Net.Http.Functional.Tests
                 using (HttpClient client = CreateHttpClient(handler))
                 {
                     handler.Proxy = new WebProxy(proxyUri);
-                    try { await client.GetAsync(addressUri); } catch { }
+                    try
+                    {
+                        await client.GetAsync(addressUri);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {
@@ -639,7 +653,14 @@ namespace System.Net.Http.Functional.Tests
                 {
                     handler.Proxy = new WebProxy(proxyUri);
                     handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
-                    try { await client.GetAsync(addressUri); } catch { }
+                    try
+                    {
+                        await client.GetAsync(addressUri);
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 }
             }, server => server.AcceptConnectionAsync(async connection =>
             {

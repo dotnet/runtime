@@ -39,26 +39,26 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   <!-- GenTree -->
 
   <Type Name="GenTree">
-    <DisplayString>[{gtOper,en}, {gtType,en}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [[{gtOper,en}, {gtType,en}]</DisplayString>
   </Type>
   <Type Name="GenTreeIntCon">
-    <DisplayString>[IntCon={((GenTreeIntCon*)this)-&gt;gtIconVal, d}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [[IntCon={((GenTreeIntCon*)this)-&gt;gtIconVal, d}]</DisplayString>
   </Type>
   <Type Name="GenTreeDblCon">
-    <DisplayString>[DblCon={((GenTreeDblCon*)this)-&gt;gtDconVal, g}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [[DblCon={((GenTreeDblCon*)this)-&gt;gtDconVal, g}]</DisplayString>
   </Type>
   <Type Name="GenTreeStrCon">
     <DisplayString>CNS_STR</DisplayString>
   </Type>
   <Type Name="GenTreeLngCon">
-    <DisplayString>[LngCon={((GenTreeLngCon*)this)-&gt;gtLconVal, l}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [[LngCon={((GenTreeLngCon*)this)-&gt;gtLconVal, l}]</DisplayString>
   </Type>
   <Type Name="GenTreeOp">
-    <DisplayString Condition="this->gtOper==GT_ASG">[{this-&gt;gtOp1,na}={this-&gt;gtOp2,na}]</DisplayString>
-    <DisplayString Condition="this->gtOper==GT_CAST">[{((GenTreeCast*)this)-&gt;gtCastType,en} &lt;- {((GenTreeUnOp*)this)-&gt;gtOp1-&gt;gtType,en}]</DisplayString>
-    <DisplayString Condition="this->gtOper==GT_SIMD">[{((GenTreeSIMD*)this)-&gt;gtSIMDIntrinsicID,en}, {gtType,en}]</DisplayString>
-    <DisplayString Condition="this->gtOper==GT_HWINTRINSIC">[{((GenTreeHWIntrinsic*)this)-&gt;gtHWIntrinsicId,en}, {gtType,en}]</DisplayString>
-    <DisplayString>[{gtOper,en}, {gtType,en}]</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_ASG">{gtTreeID, d}: [[{this-&gt;gtOp1,na}={this-&gt;gtOp2,na}]</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_CAST">{gtTreeID, d}: [[{((GenTreeCast*)this)-&gt;gtCastType,en} &lt;- {((GenTreeUnOp*)this)-&gt;gtOp1-&gt;gtType,en}]</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_SIMD">{gtTreeID, d}: [[{((GenTreeSIMD*)this)-&gt;gtSIMDIntrinsicID,en}, {gtType,en}]</DisplayString>
+    <DisplayString Condition="this->gtOper==GT_HWINTRINSIC">{gtTreeID, d}: [[{((GenTreeHWIntrinsic*)this)-&gt;gtHWIntrinsicId,en}, {gtType,en}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [[{gtOper,en}, {gtType,en}]</DisplayString>
   </Type>
 
   <Type Name="Statement">
@@ -77,11 +77,11 @@ Documentation for VS debugger format specifiers: https://docs.microsoft.com/en-u
   </Type>
 
   <Type Name="GenTreeLclVar" Inheritable="false">
-    <DisplayString>[{gtOper,en}, {gtType,en} V{((GenTreeLclVar*)this)-&gt;_gtLclNum,u}]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [[{gtOper,en}, {gtType,en} V{((GenTreeLclVar*)this)-&gt;_gtLclNum,u}]</DisplayString>
   </Type>
 
   <Type Name="GenTreeLclFld" Inheritable="false">
-    <DisplayString>[{gtOper,en}, {gtType,en} V{((GenTreeLclFld*)this)-&gt;_gtLclNum,u}[+{((GenTreeLclFld*)this)-&gt;m_lclOffs,u}]]</DisplayString>
+    <DisplayString>{gtTreeID, d}: [[{gtOper,en}, {gtType,en} V{((GenTreeLclFld*)this)-&gt;_gtLclNum,u}[+{((GenTreeLclFld*)this)-&gt;m_lclOffs,u}]]</DisplayString>
   </Type>
 
   <!-- Register allocation -->

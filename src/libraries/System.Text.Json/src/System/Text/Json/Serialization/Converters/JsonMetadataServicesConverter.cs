@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -41,31 +41,21 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool ConstructorIsParameterized => Converter.ConstructorIsParameterized;
 
-        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator!!, ConverterStrategy converterStrategy)
+        internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
+
+        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy)
         {
+            if (converterCreator is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(converterCreator));
+            }
+
             _converterCreator = converterCreator;
             _converterStrategy = converterStrategy;
         }
 
         internal override bool OnTryRead(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options, ref ReadStack state, out T? value)
-        {
-            JsonTypeInfo jsonTypeInfo = state.Current.JsonTypeInfo;
-
-            if (_converterStrategy == ConverterStrategy.Object)
-            {
-                if (jsonTypeInfo.PropertyCache == null)
-                {
-                    jsonTypeInfo.InitializePropCache();
-                }
-
-                if (jsonTypeInfo.ParameterCache == null && jsonTypeInfo.IsObjectWithParameterizedCtor)
-                {
-                    jsonTypeInfo.InitializeParameterCache();
-                }
-            }
-
-            return Converter.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
-        }
+            => Converter.OnTryRead(ref reader, typeToConvert, options, ref state, out value);
 
         internal override bool OnTryWrite(Utf8JsonWriter writer, T value, JsonSerializerOptions options, ref WriteStack state)
         {
@@ -76,15 +66,11 @@ namespace System.Text.Json.Serialization.Converters
             if (!state.SupportContinuation &&
                 jsonTypeInfo is JsonTypeInfo<T> info &&
                 info.SerializeHandler != null &&
+                !state.CurrentContainsMetadata && // Do not use the fast path if state needs to write metadata.
                 info.Options.JsonSerializerContext?.CanUseSerializationLogic == true)
             {
                 info.SerializeHandler(writer, value);
                 return true;
-            }
-
-            if (_converterStrategy == ConverterStrategy.Object && jsonTypeInfo.PropertyCache == null)
-            {
-                jsonTypeInfo.InitializePropCache();
             }
 
             return Converter.OnTryWrite(writer, value, options, ref state);

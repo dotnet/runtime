@@ -64,7 +64,8 @@ namespace System.Text.Json
                 "Incorrect method called. WriteUsingGeneratedSerializer() should have been called instead.");
 
             WriteStack state = default;
-            state.Initialize(jsonTypeInfo, supportContinuation: false);
+            jsonTypeInfo.EnsureConfigured();
+            state.Initialize(jsonTypeInfo, supportContinuation: false, supportAsync: false);
 
             JsonConverter converter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;
             Debug.Assert(converter != null);
@@ -96,8 +97,13 @@ namespace System.Text.Json
             return type;
         }
 
-        private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType!!)
+        private static Type GetRuntimeTypeAndValidateInputType(object? value, Type inputType)
         {
+            if (inputType is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(inputType));
+            }
+
             if (value is not null)
             {
                 Type runtimeType = value.GetType();

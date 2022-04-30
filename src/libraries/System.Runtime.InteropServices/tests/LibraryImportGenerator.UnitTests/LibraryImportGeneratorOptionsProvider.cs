@@ -10,7 +10,7 @@ namespace LibraryImportGenerator.UnitTests
 {
     /// <summary>
     /// An implementation of <see cref="AnalyzerConfigOptionsProvider"/> that provides configuration in code
-    /// of the options supported by the DllImportGenerator source generator. Used for testing various configurations.
+    /// of the options supported by the LibraryImportGenerator source generator. Used for testing various configurations.
     /// </summary>
     internal class LibraryImportGeneratorOptionsProvider : AnalyzerConfigOptionsProvider
     {

@@ -13,7 +13,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class RSAImplementation
     {
-        public sealed partial class RSAAndroid : RSA
+        public sealed partial class RSAAndroid : RSA, IRuntimeAlgorithm
         {
             private const int BitsPerByte = 8;
 
@@ -73,8 +73,11 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] Decrypt(byte[] data!!, RSAEncryptionPadding padding!!)
+            public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
             {
+                ArgumentNullException.ThrowIfNull(data);
+                ArgumentNullException.ThrowIfNull(padding);
+
                 Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
@@ -104,9 +107,11 @@ namespace System.Security.Cryptography
             public override bool TryDecrypt(
                 ReadOnlySpan<byte> data,
                 Span<byte> destination,
-                RSAEncryptionPadding padding!!,
+                RSAEncryptionPadding padding,
                 out int bytesWritten)
             {
+                ArgumentNullException.ThrowIfNull(padding);
+
                 Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
@@ -233,8 +238,11 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] Encrypt(byte[] data!!, RSAEncryptionPadding padding!!)
+            public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
             {
+                ArgumentNullException.ThrowIfNull(data);
+                ArgumentNullException.ThrowIfNull(padding);
+
                 Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
@@ -257,8 +265,10 @@ namespace System.Security.Cryptography
                 return buf;
             }
 
-            public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding!!, out int bytesWritten)
+            public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
+                ArgumentNullException.ThrowIfNull(padding);
+
                 Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
@@ -647,15 +657,6 @@ namespace System.Security.Cryptography
                 return key;
             }
 
-            protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-                HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
-
-            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                HashOneShotHelpers.HashData(hashAlgorithm, data);
-
-            protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
-
             public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
             {
                 ArgumentNullException.ThrowIfNull(hash);
@@ -769,11 +770,14 @@ namespace System.Security.Cryptography
             }
 
             public override bool VerifyHash(
-                byte[] hash!!,
-                byte[] signature!!,
+                byte[] hash,
+                byte[] signature,
                 HashAlgorithmName hashAlgorithm,
                 RSASignaturePadding padding)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentNullException.ThrowIfNull(signature);
+
                 return VerifyHash(new ReadOnlySpan<byte>(hash), new ReadOnlySpan<byte>(signature), hashAlgorithm, padding);
             }
 

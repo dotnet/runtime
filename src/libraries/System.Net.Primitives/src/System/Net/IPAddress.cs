@@ -231,8 +231,10 @@ namespace System.Net
             return (address != null);
         }
 
-        public static IPAddress Parse(string ipString!!)
+        public static IPAddress Parse(string ipString)
         {
+            ArgumentNullException.ThrowIfNull(ipString);
+
             return IPAddressParser.Parse(ipString.AsSpan(), tryParse: false)!;
         }
 
@@ -409,8 +411,10 @@ namespace System.Net
             return HostToNetworkOrder(network);
         }
 
-        public static bool IsLoopback(IPAddress address!!)
+        public static bool IsLoopback(IPAddress address)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             if (address.IsIPv6)
             {
                 // Do Equals test for IPv6 addresses

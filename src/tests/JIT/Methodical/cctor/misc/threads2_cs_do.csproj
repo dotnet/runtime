@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <CLRTestPriority>1</CLRTestPriority>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
@@ -12,6 +11,6 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="threads2.cs" />
-    <ProjectReference Include="testlib.csproj" />
+    <ProjectReference Include="testlib_misc.csproj" />
   </ItemGroup>
 </Project>

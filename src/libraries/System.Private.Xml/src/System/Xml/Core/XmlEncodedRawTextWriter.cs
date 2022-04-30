@@ -1838,7 +1838,7 @@ namespace System.Xml
             return pDst + 3;
         }
 
-        protected void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
+        protected static void ValidateContentChars(string chars, string propertyName, bool allowOnlyWhitespace)
         {
             if (allowOnlyWhitespace)
             {
@@ -1897,19 +1897,19 @@ namespace System.Xml
     }
 
     // Same as base text writer class except that elements, attributes, comments, and pi's are indented.
-    internal partial class XmlEncodedRawTextWriterIndent : XmlEncodedRawTextWriter
+    internal sealed partial class XmlEncodedRawTextWriterIndent : XmlEncodedRawTextWriter
     {
         //
         // Fields
         //
-        protected int _indentLevel;
-        protected bool _newLineOnAttributes;
-        protected string _indentChars;
+        private int _indentLevel;
+        private bool _newLineOnAttributes;
+        private string _indentChars;
 
-        protected bool _mixedContent;
+        private bool _mixedContent;
         private BitStack _mixedContentStack;
 
-        protected ConformanceLevel _conformanceLevel = ConformanceLevel.Auto;
+        private ConformanceLevel _conformanceLevel = ConformanceLevel.Auto;
 
         //
         // Constructors
@@ -2132,15 +2132,15 @@ namespace System.Xml
             {
                 if (_newLineOnAttributes)
                 {
-                    base.ValidateContentChars(_indentChars, "IndentChars", true);
-                    base.ValidateContentChars(_newLineChars, "NewLineChars", true);
+                    ValidateContentChars(_indentChars, "IndentChars", true);
+                    ValidateContentChars(_newLineChars, "NewLineChars", true);
                 }
                 else
                 {
-                    base.ValidateContentChars(_indentChars, "IndentChars", false);
+                    ValidateContentChars(_indentChars, "IndentChars", false);
                     if (base._newLineHandling != NewLineHandling.Replace)
                     {
-                        base.ValidateContentChars(_newLineChars, "NewLineChars", false);
+                        ValidateContentChars(_newLineChars, "NewLineChars", false);
                     }
                 }
             }

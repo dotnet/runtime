@@ -3258,9 +3258,8 @@ HRESULT CordbILCode::GetLocalVarSig(SigParser *pLocalSigParser,
     // A function will not have a local var sig if it has no locals!
     if (m_localVarSigToken != mdSignatureNil)
     {
-        PCCOR_SIGNATURE localSignature;
-        ULONG size;
-        uint32_t localCount;
+        PCCOR_SIGNATURE localSignature = NULL;
+        ULONG size = 0;
 
         EX_TRY // // @dbgtodo  exceptions  - push this up
         {
@@ -3286,6 +3285,7 @@ HRESULT CordbILCode::GetLocalVarSig(SigParser *pLocalSigParser,
         _ASSERTE(data == IMAGE_CEE_CS_CALLCONV_LOCAL_SIG);
 
         // Snagg the count of locals in the sig.
+        uint32_t localCount;
         IfFailRet(sigParser.GetData(&localCount));
         LOG((LF_CORDB, LL_INFO100000, "CIC::GLVS localCount=0x%x\n", localCount));
         if (pLocalSigParser != NULL)
@@ -4506,6 +4506,8 @@ int CordbNativeCode::GetCallInstructionLength(BYTE *ip, ULONG32 count)
     else
         return 2;
 #elif defined(TARGET_ARM64)
+    return MAX_INSTRUCTION_LENGTH;
+#elif defined(TARGET_LOONGARCH64)
     return MAX_INSTRUCTION_LENGTH;
 #elif defined(TARGET_X86)
     if (count < 2)

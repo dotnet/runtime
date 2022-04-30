@@ -1107,7 +1107,7 @@ namespace System.Runtime.Serialization
             }
 
             [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-            private bool SetIfGetOnlyCollection(DataMember memberContract)
+            private static bool SetIfGetOnlyCollection(DataMember memberContract)
             {
                 //OK to call IsCollection here since the use of surrogated collection types is not supported in get-only scenarios
                 if (CollectionDataContract.IsCollection(memberContract.MemberType, false /*isConstructorRequired*/) && !memberContract.MemberType.IsValueType)
@@ -1622,21 +1622,6 @@ namespace System.Runtime.Serialization
             {
                 this.MemberNames[i] = dictionary.Add(memberNames[i]);
                 this.MemberNamespaces[i] = ns;
-            }
-        }
-
-        internal Type UnadaptedClassType
-        {
-            get
-            {
-                if (IsKeyValuePairAdapter)
-                {
-                    return Globals.TypeOfKeyValuePair.MakeGenericType(KeyValuePairGenericArguments);
-                }
-                else
-                {
-                    return UnderlyingType;
-                }
             }
         }
     }

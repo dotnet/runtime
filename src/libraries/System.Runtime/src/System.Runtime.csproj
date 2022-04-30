@@ -1,13 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <!-- Pull type forwards from the experimental ref assembly so we only need to maintain a single src project -->
-    <ContractProject>$(LibrariesProjectRoot)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj</ContractProject>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
-    <!-- The following 2 lines disable the automatic generation of the [RequiresPreviewFeatures] assembly level attribute and set LangVersion to Preview on the latest TFM-->
-    <EnablePreviewFeatures>True</EnablePreviewFeatures>
-    <GenerateRequiresPreviewFeaturesAttribute>False</GenerateRequiresPreviewFeaturesAttribute>
   </PropertyGroup>
   <ItemGroup>
     <!-- Compiler throws error if you try to use System.Void and instructs you to use void keyword instead. So we have manually added a typeforward for this type. -->
@@ -19,9 +13,5 @@
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Private.Uri\src\System.Private.Uri.csproj" />
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Set the ReferenceAssembly metadata to the inbox version of System.Runtime and not to System.Runtime.Experimental. -->
-    <ProjectReference Include="..\ref\System.Runtime.csproj" ReferenceOutputAssembly="false" OutputItemType="ResolvedMatchingContractOverride" />
   </ItemGroup>
 </Project>

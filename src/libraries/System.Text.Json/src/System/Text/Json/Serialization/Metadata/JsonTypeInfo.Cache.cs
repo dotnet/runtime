@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace System.Text.Json.Serialization.Metadata
 {
@@ -50,37 +51,6 @@ namespace System.Text.Json.Serialization.Metadata
 
         internal Func<JsonParameterInfoValues[]>? CtorParamInitFunc;
 
-        internal static JsonPropertyInfo AddProperty(
-            MemberInfo memberInfo,
-            Type memberType,
-            Type parentClassType,
-            bool isVirtual,
-            JsonNumberHandling? parentTypeNumberHandling,
-            JsonSerializerOptions options)
-        {
-            JsonIgnoreCondition? ignoreCondition = JsonPropertyInfo.GetAttribute<JsonIgnoreAttribute>(memberInfo)?.Condition;
-            if (ignoreCondition == JsonIgnoreCondition.Always)
-            {
-                return JsonPropertyInfo.CreateIgnoredPropertyPlaceholder(memberInfo, memberType, isVirtual, options);
-            }
-
-            JsonConverter converter = GetConverter(
-                memberType,
-                parentClassType,
-                memberInfo,
-                options);
-
-            return CreateProperty(
-                declaredPropertyType: memberType,
-                memberInfo,
-                parentClassType,
-                isVirtual,
-                converter,
-                options,
-                parentTypeNumberHandling,
-                ignoreCondition);
-        }
-
         internal static JsonPropertyInfo CreateProperty(
             Type declaredPropertyType,
             MemberInfo? memberInfo,
@@ -88,8 +58,8 @@ namespace System.Text.Json.Serialization.Metadata
             bool isVirtual,
             JsonConverter converter,
             JsonSerializerOptions options,
-            JsonNumberHandling? parentTypeNumberHandling = null,
-            JsonIgnoreCondition? ignoreCondition = null)
+            JsonIgnoreCondition? ignoreCondition = null,
+            JsonTypeInfo? jsonTypeInfo = null)
         {
             // Create the JsonPropertyInfo instance.
             JsonPropertyInfo jsonPropertyInfo = converter.CreateJsonPropertyInfo();
@@ -102,8 +72,8 @@ namespace System.Text.Json.Serialization.Metadata
                 isVirtual,
                 converter,
                 ignoreCondition,
-                parentTypeNumberHandling,
-                options);
+                options,
+                jsonTypeInfo);
 
             return jsonPropertyInfo;
         }
@@ -112,20 +82,20 @@ namespace System.Text.Json.Serialization.Metadata
         /// Create a <see cref="JsonPropertyInfo"/> for a given Type.
         /// See <seealso cref="PropertyInfoForTypeInfo"/>.
         /// </summary>
-        internal static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
+        private static JsonPropertyInfo CreatePropertyInfoForTypeInfo(
             Type declaredPropertyType,
             JsonConverter converter,
-            JsonNumberHandling? numberHandling,
-            JsonSerializerOptions options)
+            JsonSerializerOptions options,
+            JsonTypeInfo? jsonTypeInfo = null)
         {
             JsonPropertyInfo jsonPropertyInfo = CreateProperty(
                 declaredPropertyType: declaredPropertyType,
                 memberInfo: null, // Not a real property so this is null.
                 parentClassType: ObjectType, // a dummy value (not used)
                 isVirtual: false,
-                converter,
-                options,
-                parentTypeNumberHandling: numberHandling);
+                converter: converter,
+                options: options,
+                jsonTypeInfo: jsonTypeInfo);
 
             Debug.Assert(jsonPropertyInfo.IsForTypeInfo);
 
@@ -141,6 +111,7 @@ namespace System.Text.Json.Serialization.Metadata
         {
             PropertyRef propertyRef;
 
+            ValidateCanBeUsedForDeserialization();
             ulong key = GetKey(propertyName);
 
             // Keep a local copy of the cache in case it changes by another thread.
@@ -201,17 +172,29 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             // No cached item was found. Try the main dictionary which has all of the properties.
-            Debug.Assert(PropertyCache != null);
-
-            if (PropertyCache.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
+#if DEBUG
+            if (PropertyCache == null)
             {
-                Debug.Assert(info != null);
+                Debug.Fail($"Property cache is null. {GetPropertyDebugInfo(propertyName)}");
+            }
+#endif
+
+            if (PropertyCache!.TryGetValue(JsonHelpers.Utf8GetString(propertyName), out JsonPropertyInfo? info))
+            {
+                Debug.Assert(info != null, "PropertyCache contains null JsonPropertyInfo");
 
                 if (Options.PropertyNameCaseInsensitive)
                 {
                     if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
                     {
-                        Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()));
+#if DEBUG
+                        ulong recomputedKey = GetKey(info.NameAsUtf8Bytes.AsSpan());
+                        if (key != recomputedKey)
+                        {
+                            string propertyNameStr = JsonHelpers.Utf8GetString(propertyName);
+                            Debug.Fail($"key {key} [propertyName={propertyNameStr}] does not match re-computed value {recomputedKey} for the same sequence (case-insensitive). {info.GetDebugInfo()}");
+                        }
+#endif
 
                         // Use the existing byte[] reference instead of creating another one.
                         utf8PropertyName = info.NameAsUtf8Bytes!;
@@ -224,7 +207,14 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
-                    Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()));
+#if DEBUG
+                    ulong recomputedKey = GetKey(info.NameAsUtf8Bytes.AsSpan());
+                    if (key != recomputedKey)
+                    {
+                        string propertyNameStr = JsonHelpers.Utf8GetString(propertyName);
+                        Debug.Fail($"key {key} [propertyName={propertyNameStr}] does not match re-computed value {recomputedKey} for the same sequence (case-sensitive). {info.GetDebugInfo()}");
+                    }
+#endif
                     utf8PropertyName = info.NameAsUtf8Bytes;
                 }
             }
@@ -490,7 +480,8 @@ namespace System.Text.Json.Serialization.Metadata
                     (name.Length < 7 || name[6] == ((key & ((ulong)0xFF << BitsInByte * 6)) >> BitsInByte * 6)) &&
                     // Verify embedded length.
                     (name.Length >= 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == (ulong)name.Length) &&
-                    (name.Length < 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == 0xFF));
+                    (name.Length < 0xFF || (key & ((ulong)0xFF << BitsInByte * 7)) >> BitsInByte * 7 == 0xFF),
+                    "Embedded bytes not as expected");
             }
 #endif
 
@@ -567,81 +558,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             frame.CtorArgumentState.ParameterRefCache = null;
-        }
-
-        internal void InitializePropCache()
-        {
-            Debug.Assert(PropertyCache == null);
-            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
-
-            JsonSerializerContext? context = Options.JsonSerializerContext;
-            Debug.Assert(context != null);
-
-            JsonPropertyInfo[] array;
-            if (PropInitFunc == null || (array = PropInitFunc(context)) == null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeProperties(context, Type);
-                return;
-            }
-
-            Dictionary<string, JsonPropertyInfo>? ignoredMembers = null;
-            JsonPropertyDictionary<JsonPropertyInfo> propertyCache = new(Options.PropertyNameCaseInsensitive, array.Length);
-
-            for (int i = 0; i < array.Length; i++)
-            {
-                JsonPropertyInfo jsonPropertyInfo = array[i];
-                bool hasJsonInclude = jsonPropertyInfo.SrcGen_HasJsonInclude;
-
-                if (!jsonPropertyInfo.SrcGen_IsPublic)
-                {
-                    if (hasJsonInclude)
-                    {
-                        ThrowHelper.ThrowInvalidOperationException_JsonIncludeOnNonPublicInvalid(jsonPropertyInfo.ClrName!, jsonPropertyInfo.DeclaringType);
-                    }
-
-                    continue;
-                }
-
-                if (jsonPropertyInfo.MemberType == MemberTypes.Field && !hasJsonInclude && !Options.IncludeFields)
-                {
-                    continue;
-                }
-
-                if (jsonPropertyInfo.SrcGen_IsExtensionData)
-                {
-                    // Source generator compile-time type inspection has performed this validation for us.
-                    Debug.Assert(DataExtensionProperty == null);
-                    Debug.Assert(IsValidDataExtensionProperty(jsonPropertyInfo));
-
-                    DataExtensionProperty = jsonPropertyInfo;
-                    continue;
-                }
-
-                CacheMember(jsonPropertyInfo, propertyCache, ref ignoredMembers);
-            }
-
-            // Avoid threading issues by populating a local cache and assigning it to the global cache after completion.
-            PropertyCache = propertyCache;
-        }
-
-        internal void InitializeParameterCache()
-        {
-            Debug.Assert(ParameterCache == null);
-            Debug.Assert(PropertyCache != null);
-            Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);
-
-            JsonSerializerContext? context = Options.JsonSerializerContext;
-            Debug.Assert(context != null);
-
-            JsonParameterInfoValues[] array;
-            if (CtorParamInitFunc == null || (array = CtorParamInitFunc()) == null)
-            {
-                ThrowHelper.ThrowInvalidOperationException_NoMetadataForTypeCtorParams(context, Type);
-                return;
-            }
-
-            InitializeConstructorParameters(array, sourceGenMode: true);
-            Debug.Assert(ParameterCache != null);
         }
     }
 }

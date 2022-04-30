@@ -56,7 +56,7 @@ namespace System.Threading
         /// <param name="message">A string that describes the exception.</param>
         /// <param name="innerException">The exception that is the cause of the current exception.</param>
         public BarrierPostPhaseException(string? message, Exception? innerException)
-            : base(message == null ? SR.BarrierPostPhaseException : message, innerException)
+            : base(message is null ? SR.BarrierPostPhaseException : message, innerException)
         {
         }
 
@@ -228,7 +228,7 @@ namespace System.Threading
             _evenEvent = new ManualResetEventSlim(false);
 
             // Capture the context if the post phase action is not null
-            if (postPhaseAction != null)
+            if (postPhaseAction is not null)
             {
                 _ownerThreadContext = ExecutionContext.Capture();
             }
@@ -243,7 +243,7 @@ namespace System.Threading
         /// <param name="current">The current participant count</param>
         /// <param name="total">The total participants count</param>
         /// <param name="sense">The sense flag</param>
-        private void GetCurrentTotal(int currentTotal, out int current, out int total, out bool sense)
+        private static void GetCurrentTotal(int currentTotal, out int current, out int total, out bool sense)
         {
             total = (int)(currentTotal & TOTAL_MASK);
             current = (int)((currentTotal & CURRENT_MASK) >> 16);
@@ -316,7 +316,6 @@ namespace System.Threading
         [UnsupportedOSPlatform("browser")]
         public long AddParticipants(int participantCount)
         {
-            // check dispose
             ThrowIfDisposed();
 
             if (participantCount < 1)
@@ -421,10 +420,8 @@ namespace System.Threading
         /// disposed.</exception>
         public void RemoveParticipants(int participantCount)
         {
-            // check dispose
             ThrowIfDisposed();
 
-            // Validate input
             if (participantCount < 1)
             {
                 throw new ArgumentOutOfRangeException(nameof(participantCount), participantCount,
@@ -750,7 +747,7 @@ namespace System.Threading
                 }
             }
 
-            if (_exception != null)
+            if (_exception is not null)
                 throw new BarrierPostPhaseException(_exception);
 
             return true;
@@ -764,19 +761,15 @@ namespace System.Threading
         private void FinishPhase(bool observedSense)
         {
             // Execute the PHA in try/finally block to reset the variables back in case of it threw an exception
-            if (_postPhaseAction != null)
+            if (_postPhaseAction is not null)
             {
                 try
                 {
                     // Capture the caller thread ID to check if the Add/RemoveParticipant(s) is called from the PHA
                     _actionCallerID = Environment.CurrentManagedThreadId;
-                    if (_ownerThreadContext != null)
+                    if (_ownerThreadContext is not null)
                     {
-                        ContextCallback? handler = s_invokePostPhaseAction;
-                        if (handler == null)
-                        {
-                            s_invokePostPhaseAction = handler = InvokePostPhaseAction;
-                        }
+                        ContextCallback? handler = s_invokePostPhaseAction ??= InvokePostPhaseAction;
                         ExecutionContext.Run(_ownerThreadContext, handler, this);
                     }
                     else
@@ -794,7 +787,7 @@ namespace System.Threading
                 {
                     _actionCallerID = 0;
                     SetResetEvents(observedSense);
-                    if (_exception != null)
+                    if (_exception is not null)
                         throw new BarrierPostPhaseException(_exception);
                 }
             }

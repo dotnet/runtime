@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class ECDsaImplementation
     {
-        public sealed partial class ECDsaSecurityTransforms : ECDsa
+        public sealed partial class ECDsaSecurityTransforms : ECDsa, IRuntimeAlgorithm
         {
             private readonly EccSecurityTransforms _ecc = new EccSecurityTransforms(nameof(ECDsa));
 
@@ -57,8 +57,10 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] SignHash(byte[] hash!!)
+            public override byte[] SignHash(byte[] hash)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+
                 SecKeyPair keys = GetKeys();
 
                 if (keys.PrivateKey == null)
@@ -108,8 +110,11 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override bool VerifyHash(byte[] hash!!, byte[] signature!!)
+            public override bool VerifyHash(byte[] hash, byte[] signature)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentNullException.ThrowIfNull(signature);
+
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
 
@@ -134,15 +139,6 @@ namespace System.Security.Cryptography
                     Interop.AppleCrypto.PAL_HashAlgorithm.Unknown,
                     Interop.AppleCrypto.PAL_SignatureAlgorithm.EC);
             }
-
-            protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-                HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
-
-            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                HashOneShotHelpers.HashData(hashAlgorithm, data);
-
-            protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                HashOneShotHelpers.TryHashData(hashAlgorithm, source, destination, out bytesWritten);
 
             private void ThrowIfDisposed()
             {

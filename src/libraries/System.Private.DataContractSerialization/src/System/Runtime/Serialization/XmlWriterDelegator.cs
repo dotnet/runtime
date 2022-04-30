@@ -14,8 +14,10 @@ namespace System.Runtime.Serialization
         internal int depth;
         private int _prefixes;
 
-        public XmlWriterDelegator(XmlWriter writer!!)
+        public XmlWriterDelegator(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             this.writer = writer;
             this.dictionaryWriter = writer as XmlDictionaryWriter;
         }
@@ -266,7 +268,7 @@ namespace System.Runtime.Serialization
             WriteXmlnsAttribute(ns);
         }
 
-        private Exception CreateInvalidPrimitiveTypeException(Type type)
+        private static Exception CreateInvalidPrimitiveTypeException(Type type)
         {
             return new InvalidDataContractException(SR.Format(SR.InvalidPrimitiveType_Serialization, DataContract.GetClrTypeFullName(type)));
         }

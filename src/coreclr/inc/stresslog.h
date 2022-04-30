@@ -357,7 +357,13 @@ public:
 
 #ifdef MEMORY_MAPPED_STRESSLOG
 
-    MapViewHolder hMapView;
+    // 
+    // Intentionally avoid unmapping the file during destructor to avoid a race 
+    // condition between additional logging in other thread and the destructor.
+    // 
+    // The operating system will make sure the file get unmapped during process shutdown
+    // 
+    LPVOID hMapView; 
     static void* AllocMemoryMapped(size_t n);
 
     struct StressLogHeader

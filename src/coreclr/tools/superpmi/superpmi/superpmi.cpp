@@ -53,6 +53,10 @@ void SetSuperPmiTargetArchitecture(const char* targetArchitecture)
         {
             SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_ARM64);
         }
+        else if (0 == _stricmp(targetArchitecture, "loongarch64"))
+        {
+            SetSpmiTargetArchitecture(SPMI_TARGET_ARCHITECTURE_LOONGARCH64);
+        }
         else
         {
             LogError("Illegal target architecture '%s'", targetArchitecture);
@@ -149,7 +153,7 @@ int __cdecl main(int argc, char* argv[])
     SimpleTimer st3;
     SimpleTimer st4;
     st2.Start();
-    JitInstance::Result res, res2;
+    JitInstance::Result res, res2 = JitInstance::RESULT_ERROR;
     HRESULT             hr  = E_FAIL;
     MethodContext*      mc  = nullptr;
     JitInstance *       jit = nullptr, *jit2 = nullptr;
@@ -539,6 +543,9 @@ int __cdecl main(int argc, char* argv[])
 
                     totalBaseMetrics.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
                     totalDiffMetrics.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+
+                    totalBaseMetrics.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
+                    totalDiffMetrics.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
                 }
             }
         }

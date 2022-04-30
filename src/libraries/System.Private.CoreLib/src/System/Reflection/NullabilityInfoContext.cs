@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -63,8 +63,10 @@ namespace System.Reflection
         /// <param name="parameterInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the parameterInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        public NullabilityInfo Create(ParameterInfo parameterInfo!!)
+        public NullabilityInfo Create(ParameterInfo parameterInfo)
         {
+            ArgumentNullException.ThrowIfNull(parameterInfo);
+
             EnsureIsSupported();
 
             IList<CustomAttributeData> attributes = parameterInfo.GetCustomAttributesData();
@@ -123,7 +125,7 @@ namespace System.Reflection
             return (MethodInfo)GetMemberMetadataDefinition(method);
         }
 
-        private void CheckNullabilityAttributes(NullabilityInfo nullability, IList<CustomAttributeData> attributes)
+        private static void CheckNullabilityAttributes(NullabilityInfo nullability, IList<CustomAttributeData> attributes)
         {
             var codeAnalysisReadState = NullabilityState.Unknown;
             var codeAnalysisWriteState = NullabilityState.Unknown;
@@ -174,8 +176,10 @@ namespace System.Reflection
         /// <param name="propertyInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the propertyInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        public NullabilityInfo Create(PropertyInfo propertyInfo!!)
+        public NullabilityInfo Create(PropertyInfo propertyInfo)
         {
+            ArgumentNullException.ThrowIfNull(propertyInfo);
+
             EnsureIsSupported();
 
             MethodInfo? getter = propertyInfo.GetGetMethod(true);
@@ -225,8 +229,10 @@ namespace System.Reflection
         /// <param name="eventInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the eventInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        public NullabilityInfo Create(EventInfo eventInfo!!)
+        public NullabilityInfo Create(EventInfo eventInfo)
         {
+            ArgumentNullException.ThrowIfNull(eventInfo);
+
             EnsureIsSupported();
 
             return GetNullabilityInfo(eventInfo, eventInfo.EventHandlerType!, CreateParser(eventInfo.GetCustomAttributesData()));
@@ -240,8 +246,10 @@ namespace System.Reflection
         /// <param name="fieldInfo">The parameter which nullability info gets populated</param>
         /// <exception cref="ArgumentNullException">If the fieldInfo parameter is null</exception>
         /// <returns><see cref="NullabilityInfo" /></returns>
-        public NullabilityInfo Create(FieldInfo fieldInfo!!)
+        public NullabilityInfo Create(FieldInfo fieldInfo)
         {
+            ArgumentNullException.ThrowIfNull(fieldInfo);
+
             EnsureIsSupported();
 
             IList<CustomAttributeData> attributes = fieldInfo.GetCustomAttributesData();
@@ -292,7 +300,7 @@ namespace System.Reflection
             return false;
         }
 
-        private NotAnnotatedStatus PopulateAnnotationInfo(IList<CustomAttributeData> customAttributes)
+        private static NotAnnotatedStatus PopulateAnnotationInfo(IList<CustomAttributeData> customAttributes)
         {
             foreach (CustomAttributeData attribute in customAttributes)
             {
@@ -389,11 +397,11 @@ namespace System.Reflection
                     attribute.AttributeType.Namespace == CompilerServicesNameSpace &&
                     attribute.ConstructorArguments.Count == 1)
                 {
-                    return new(attribute.ConstructorArguments[0].Value);
+                    return new NullableAttributeStateParser(attribute.ConstructorArguments[0].Value);
                 }
             }
 
-            return new(null);
+            return new NullableAttributeStateParser(null);
         }
 
         private void TryLoadGenericMetaTypeNullability(MemberInfo memberInfo, NullabilityInfo nullability)

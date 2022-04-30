@@ -23,12 +23,10 @@
 //#define USE_COREDISTOOLS
 #endif // INTERNAL_BUILD
 
-#ifdef _MSC_VER
-// On Windows, we build against PAL macros that convert to Windows SEH. But we don't want all the
-// Contract stuff that normally gets pulled it. Defining JIT_BUILD prevents this, just as it does
-// when building the JIT using parts of utilcode.
+// JIT_BUILD disables certain PAL_TRY debugging and Contracts features. Set this just as the JIT sets it.
 #define JIT_BUILD
 
+#ifdef _MSC_VER
 // Defining this prevents:
 //   error C2338 : / RTCc rejects conformant code, so it isn't supported by the C++ Standard Library.
 //   Either remove this compiler option, or define _ALLOW_RTCc_IN_STL to acknowledge that you have received this

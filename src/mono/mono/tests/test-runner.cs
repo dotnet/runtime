@@ -32,7 +32,6 @@ public class TestRunner
 	const string TEST_TIME_FORMAT = "mm\\:ss\\.fff";
 	const string ENV_TIMEOUT = "TEST_DRIVER_TIMEOUT_SEC";
 	const string MONO_PATH = "MONO_PATH";
-	const string MONO_GAC_PREFIX = "MONO_GAC_PREFIX";
 
 	class ProcessData {
 		public string test;
@@ -58,10 +57,8 @@ public class TestRunner
 
 		string disabled_tests = null;
 		string runtime = "mono";
-		string config = null;
 		string mono_path = null;
 		string runtime_args = null;
-		string mono_gac_prefix = null;
 		string xunit_output_path = null;
 		var opt_sets = new List<string> ();
 
@@ -107,13 +104,6 @@ public class TestRunner
 					}
 					runtime_args = (runtime_args ?? "") + " " + args [i + 1];
 					i += 2;
-				} else if (args [i] == "--config") {
-					if (i + 1 >= args.Length) {
-						Console.WriteLine ("Missing argument to --config command line option.");
-						return 1;
-					}
-					config = args [i + 1];
-					i += 2;
 				} else if (args [i] == "--opt-sets") {
 					if (i + 1 >= args.Length) {
 						Console.WriteLine ("Missing argument to --opt-sets command line option.");
@@ -158,13 +148,6 @@ public class TestRunner
 					}
 					mono_path = args [i + 1].Substring(0, args [i + 1].Length);
 
-					i += 2;
-				} else if (args [i] == "--mono-gac-prefix") {
-					if (i + 1 >= args.Length) {
-						Console.WriteLine ("Missing argument to --mono-gac-prefix command line option.");
-						return 1;
-					}
-					mono_gac_prefix = args[i + 1];
 					i += 2;
 				} else if (args [i] == "--verbose") {
 					verbose = true;
@@ -300,12 +283,8 @@ public class TestRunner
 					info.RedirectStandardOutput = true;
 					info.RedirectStandardError = true;
 					info.EnvironmentVariables[ENV_TIMEOUT] = timeout.ToString();
-					if (config != null)
-						info.EnvironmentVariables["MONO_CONFIG"] = config;
 					if (mono_path != null)
 						info.EnvironmentVariables[MONO_PATH] = mono_path;
-					if (mono_gac_prefix != null)
-						info.EnvironmentVariables[MONO_GAC_PREFIX] = mono_gac_prefix;
 					Process p = new Process ();
 					p.StartInfo = info;
 

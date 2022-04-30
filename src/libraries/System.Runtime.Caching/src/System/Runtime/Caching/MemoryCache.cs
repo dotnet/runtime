@@ -251,7 +251,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        private void ValidatePolicy(CacheItemPolicy policy)
+        private static void ValidatePolicy(CacheItemPolicy policy)
         {
             if (policy.AbsoluteExpiration != ObjectCache.InfiniteAbsoluteExpiration
                 && policy.SlidingExpiration != ObjectCache.NoSlidingExpiration)
@@ -348,8 +348,13 @@ namespace System.Runtime.Caching
             Init(null);
         }
 
-        public MemoryCache(string name!!, NameValueCollection config = null)
+        public MemoryCache(string name, NameValueCollection config = null)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
@@ -364,8 +369,13 @@ namespace System.Runtime.Caching
 
         // ignoreConfigSection is used when redirecting ASP.NET cache into the MemoryCache.  This avoids infinite recursion
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the config system.
-        public MemoryCache(string name!!, NameValueCollection config, bool ignoreConfigSection)
+        public MemoryCache(string name, NameValueCollection config, bool ignoreConfigSection)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
@@ -391,8 +401,13 @@ namespace System.Runtime.Caching
             InitDisposableMembers(config);
         }
 
-        private object AddOrGetExistingInternal(string key!!, object value, CacheItemPolicy policy)
+        private object AddOrGetExistingInternal(string key, object value, CacheItemPolicy policy)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
             CacheItemPriority priority = CacheItemPriority.Default;
@@ -620,8 +635,13 @@ namespace System.Runtime.Caching
             return AddOrGetExistingInternal(key, value, policy);
         }
 
-        public override CacheItem AddOrGetExisting(CacheItem item!!, CacheItemPolicy policy)
+        public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy policy)
         {
+            if (item is null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
             return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value, policy));
         }
 
@@ -656,8 +676,13 @@ namespace System.Runtime.Caching
             Set(key, value, policy);
         }
 
-        public override void Set(CacheItem item!!, CacheItemPolicy policy)
+        public override void Set(CacheItem item, CacheItemPolicy policy)
         {
+            if (item is null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
             Set(item.Key, item.Value, policy);
         }
 
@@ -712,13 +737,18 @@ namespace System.Runtime.Caching
             store.Set(cacheKey, new MemoryCacheEntry(key, value, absExp, slidingExp, priority, changeMonitors, removedCallback, this));
         }
 
-        internal void Set(string key!!,
+        internal void Set(string key,
                           object value,
                           Collection<ChangeMonitor> changeMonitors,
                           DateTimeOffset absoluteExpiration,
                           TimeSpan slidingExpiration,
                           CacheEntryUpdateCallback onUpdateCallback)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             if (changeMonitors == null
                 && absoluteExpiration == ObjectCache.InfiniteAbsoluteExpiration
                 && slidingExpiration == ObjectCache.NoSlidingExpiration)
@@ -873,8 +903,13 @@ namespace System.Runtime.Caching
         // used when redirecting ASP.NET cache into the MemoryCache.  This avoids infinite recursion
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the
         // config system.
-        internal void UpdateConfig(NameValueCollection config!!)
+        internal void UpdateConfig(NameValueCollection config)
         {
+            if (config is null)
+            {
+                throw new ArgumentNullException(nameof(config));
+            }
+
             if (!IsDisposed)
             {
                 _stats.UpdateConfig(config);
