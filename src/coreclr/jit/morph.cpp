@@ -3465,11 +3465,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // (tmp.ptr=argx),(tmp.type=handle)
             GenTreeLclFld* destPtrSlot  = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__dataPtr);
             GenTreeLclFld* destTypeSlot = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__type);
-            destPtrSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyDataField(),
-                                                                         OFFSETOF__CORINFO_TypedReference__dataPtr));
+            destPtrSlot->SetFieldSeq(
+                GetFieldSeqStore()->CreateSingleton(GetRefanyDataField(), OFFSETOF__CORINFO_TypedReference__dataPtr));
             destPtrSlot->gtFlags |= GTF_VAR_DEF;
-            destTypeSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField(),
-                                                                          OFFSETOF__CORINFO_TypedReference__type));
+            destTypeSlot->SetFieldSeq(
+                GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField(), OFFSETOF__CORINFO_TypedReference__type));
             destTypeSlot->gtFlags |= GTF_VAR_DEF;
 
             GenTree* asgPtrSlot  = gtNewAssignNode(destPtrSlot, argx->AsOp()->gtOp1);

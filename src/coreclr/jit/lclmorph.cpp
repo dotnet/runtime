@@ -309,7 +309,7 @@ class LocalAddressVisitor final : public GenTreeVisitor<LocalAddressVisitor>
                 {
                     FieldSeqStore* fieldSeqStore = compiler->GetFieldSeqStore();
                     FieldSeqNode*  fieldSeqNode  = fieldSeqStore->CreateSingleton(field->gtFldHnd, field->gtFldOffset);
-                    m_fieldSeq = fieldSeqStore->Append(val.m_fieldSeq, fieldSeqNode);
+                    m_fieldSeq                   = fieldSeqStore->Append(val.m_fieldSeq, fieldSeqNode);
                 }
                 else
                 {

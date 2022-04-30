@@ -683,23 +683,14 @@ public:
                        ssize_t      offset,
                        unsigned     loadSize);
 
-    ValueNumPair VNPairForLoad(ValueNumPair locationValue,
-                               unsigned     locationSize,
-                               var_types    loadType,
-                               ssize_t      offset,
-                               unsigned     loadSize);
+    ValueNumPair VNPairForLoad(
+        ValueNumPair locationValue, unsigned locationSize, var_types loadType, ssize_t offset, unsigned loadSize);
 
-    ValueNum VNForStore(ValueNum locationValue,
-                        unsigned locationSize,
-                        ssize_t  offset,
-                        unsigned storeSize,
-                        ValueNum value);
+    ValueNum VNForStore(
+        ValueNum locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNum value);
 
-    ValueNumPair VNPairForStore(ValueNumPair locationValue,
-                                unsigned     locationSize,
-                                ssize_t      offset,
-                                unsigned     storeSize,
-                                ValueNumPair value);
+    ValueNumPair VNPairForStore(
+        ValueNumPair locationValue, unsigned locationSize, ssize_t offset, unsigned storeSize, ValueNumPair value);
 
     bool LoadStoreIsEntire(unsigned locationSize, ssize_t offset, unsigned indSize) const
     {

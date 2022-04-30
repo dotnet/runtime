@@ -16026,7 +16026,8 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
         else if (AsOp()->gtOp1->OperGet() == GT_IND)
         {
             GenTree* indArg = AsOp()->gtOp1->AsOp()->gtOp1;
-            return indArg->DefinesLocalAddr(comp, genTypeSize(AsOp()->gtOp1->TypeGet()), pLclVarTree, pIsEntire, pOffset);
+            return indArg->DefinesLocalAddr(comp, genTypeSize(AsOp()->gtOp1->TypeGet()), pLclVarTree, pIsEntire,
+                                            pOffset);
         }
         else if (AsOp()->gtOp1->OperIsBlk())
         {
@@ -16074,11 +16075,8 @@ bool GenTree::DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bo
     return false;
 }
 
-bool GenTree::DefinesLocalAddr(Compiler*             comp,
-                               unsigned              width,
-                               GenTreeLclVarCommon** pLclVarTree,
-                               bool*                 pIsEntire,
-                               ssize_t*              pOffset)
+bool GenTree::DefinesLocalAddr(
+    Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset)
 {
     if (OperIs(GT_ADDR, GT_LCL_VAR_ADDR, GT_LCL_FLD_ADDR))
     {
@@ -16811,9 +16809,9 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     else if (IsCnsIntOrI() && IsIconHandle(GTF_ICON_STATIC_HDL))
     {
         assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
-        baseAddr   = this;
-        fldSeq     = AsIntCon()->gtFieldSeq;
-        offset     = AsIntCon()->IconValue();
+        baseAddr = this;
+        fldSeq   = AsIntCon()->gtFieldSeq;
+        offset   = AsIntCon()->IconValue();
     }
     else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &fldSeq))
     {
@@ -18136,8 +18134,9 @@ FieldSeqStore::FieldSeqStore(CompAllocator alloc) : m_alloc(alloc), m_canonMap(n
 {
 }
 
-FieldSeqNode* FieldSeqStore::CreateSingleton(
-    CORINFO_FIELD_HANDLE fieldHnd, size_t offset, FieldSeqNode::FieldKind fieldKind)
+FieldSeqNode* FieldSeqStore::CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
+                                             size_t                  offset,
+                                             FieldSeqNode::FieldKind fieldKind)
 {
     FieldSeqNode  fsn(fieldHnd, nullptr, offset, fieldKind);
     FieldSeqNode* res = nullptr;
@@ -18195,8 +18194,7 @@ FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
 }
 
 FieldSeqNode::FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, size_t offset, FieldKind fieldKind)
-    : m_next(next)
-    , m_offset(offset)
+    : m_next(next), m_offset(offset)
 {
     uintptr_t handleValue = reinterpret_cast<uintptr_t>(fieldHnd);
 
