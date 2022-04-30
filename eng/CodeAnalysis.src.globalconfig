@@ -408,6 +408,9 @@ dotnet_diagnostic.CA1851.severity = suggestion
 # CA1852: Seal internal types
 dotnet_diagnostic.CA1852.severity = warning
 
+# CA1853: Unnecessary call to 'Dictionary.ContainsKey(key)'
+dotnet_diagnostic.CA1853.severity = warning
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
