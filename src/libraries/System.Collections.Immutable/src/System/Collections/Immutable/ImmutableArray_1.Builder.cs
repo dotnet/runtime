@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 
 namespace System.Collections.Immutable
 {
@@ -480,14 +481,14 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Removes the specified element.
             /// </summary>
-            /// <param name="item">The item to remove.</param>
+            /// <param name="element">The element to remove.</param>
             /// <param name="equalityComparer">
             /// The equality comparer to use in the search.
             /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
             /// </param>
-            public void Remove(T item, IEqualityComparer<T>? equalityComparer)
+            public void Remove(T element, IEqualityComparer<T>? equalityComparer)
             {
-                int index = this.IndexOf(item, 0, _count, equalityComparer);
+                int index = this.IndexOf(element, 0, _count, equalityComparer);
 
                 if (index >= 0)
                 {

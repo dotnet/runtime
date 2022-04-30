@@ -753,14 +753,14 @@ namespace System.Collections.Immutable
             /// <summary>
             /// Removes the specified value from this list.
             /// </summary>
-            /// <param name="element">The element to remove.</param>
+            /// <param name="item">The item to remove.</param>
             /// <param name="equalityComparer">
             /// The equality comparer to use in the search.
             /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
             /// </param>
-            public void Remove(T element, IEqualityComparer<T>? equalityComparer)
+            public void Remove(T item, IEqualityComparer<T>? equalityComparer)
             {
-                int index = this.IndexOf(element, 0, this.Count, equalityComparer);
+                int index = this.IndexOf(item, 0, this.Count, equalityComparer);
                 if (index >= 0)
                 {
                     this.RemoveAt(index);
