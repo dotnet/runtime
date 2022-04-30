@@ -408,14 +408,11 @@ BEGIN
     IDS_EE_CANNOTCASTSAME                   "[A]%1 cannot be cast to [B]%2. %3. %4."
     IDS_EE_CANNOTCAST_HELPER_PATH           "Type %s originates from '%s' in the context '%s' at location '%s'"
     IDS_EE_CANNOTCAST_HELPER_BYTE           "Type %s originates from '%s' in the context '%s' in a byte array"
-    IDS_EE_NOTISOMORPHIC                    "Object contains non-primitive or non-blittable data."
+    IDS_EE_NOTISOMORPHIC                    "Object contains references."
     IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER   "Type of the VARIANT specified for a parameter with a custom marshaler is not supported by the custom marshaler."
     IDS_EE_BAD_COMEXTENDS_CLASS             "Types extending from COM objects should override all methods of an interface implemented by the base COM class."
     IDS_EE_INTERFACE_NOT_DISPATCH_BASED     "The interface does not support late bound calls since it does not derive from IDispatch."
     IDS_EE_MARSHAL_UNMAPPABLE_CHAR          "Cannot marshal: Encountered unmappable character."
-
-    // Errors associated with parsing security custom attributes at compile time.
-    CORSECATTR_E_BAD_ACTION                 "Security custom attribute has invalid SecurityAction."
 
     IDS_EE_NOCUSTOMMARSHALER                "A call to GetInstance() for custom marshaler '%1' returned null, which is not allowed."
     IDS_EE_SIZECONTROLOUTOFRANGE            "Array size control parameter index is out of range."
