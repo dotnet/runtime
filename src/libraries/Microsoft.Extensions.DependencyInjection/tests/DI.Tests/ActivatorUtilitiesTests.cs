@@ -38,8 +38,8 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Fact]
-        public void ShouldFixIssue_46132()
-        {
+        public void ShouldTryToUseAllAvailableConstructorsBeforeThrowingActivationException()
+        {   // https://github.com/dotnet/runtime/issues/46132
             var services = new ServiceCollection();
             services.AddScoped<S>();
             using var provider = services.BuildServiceProvider();
@@ -57,21 +57,19 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         }
 
         [Theory]
-        [InlineData(typeof(FakeValidationResult))]
-        [InlineData(typeof(FakeValidationResultOps))]
-        public void ShouldFixIssue_42339(Type instanceType)
-        {
-            var data = new Dictionary<string, object>();
-            var serviceProvider = new FakeServiceProvider(t =>
-            {
-                if (t == typeof(FakeValidationStatus)) return FakeValidationStatus.Invalid;
-                throw new NotImplementedException();
-            });
+        [InlineData(typeof(IClassWithAttribute.FirstConstructorWithAttribute))]
+        [InlineData(typeof(IClassWithAttribute.LastConstructorWithAttribute))]
+        public void ConstructorWithAttributeShouldHaveTheHighestPriorityNoMatterOrderDefinition(Type instanceType)
+        {   // https://github.com/dotnet/runtime/issues/42339
+            var services = new ServiceCollection();
+            var a = new A();
+            services.AddSingleton(a);
+            using var provider = services.BuildServiceProvider();
 
-            var instance = (IFakeValidationResult)ActivatorUtilities
-                .CreateInstance(serviceProvider, instanceType, "description", data);
+            var instance = (IClassWithAttribute)ActivatorUtilities
+                .CreateInstance(provider, instanceType, new B(), new C());
 
-            Assert.Equal(FakeValidationStatus.Invalid, instance.Status);
+            Assert.Same(a, instance.A);
         }
     }
 
@@ -97,67 +95,46 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
         public Creatable(A a, C c, S s) : this (a, null, c, s) { }
     }
 
-    internal class FakeServiceProvider : IServiceProvider
+    internal interface IClassWithAttribute
     {
-        private readonly Func<Type, object?> _factory;
+        public A A { get; }
+        public B B { get; }
+        public C C { get; }
 
-        public FakeServiceProvider(Func<Type, object?> factory)
+        public class FirstConstructorWithAttribute : IClassWithAttribute
         {
-            _factory = factory;
+            public A A { get; }
+            public B B { get; }
+            public C C { get; }
+
+            [ActivatorUtilitiesConstructor]
+            public FirstConstructorWithAttribute(A a, B b, C c)
+            {
+                A = a;
+                B = b;
+                C = c;
+            }
+
+            public FirstConstructorWithAttribute(B b, C c) : this(null, b, c) {  }
         }
 
-        public object? GetService(Type serviceType) => _factory(serviceType);
-    }
-
-    internal interface IFakeValidationResult
-    {
-        FakeValidationStatus Status { get; }
-        string Description { get; }
-        IReadOnlyDictionary<string, object> Data { get; }
-    }
-
-    internal class FakeValidationResult : IFakeValidationResult
-    {
-        [ActivatorUtilitiesConstructor]
-        public FakeValidationResult(FakeValidationStatus status, string description,
-           IReadOnlyDictionary<string, object> data)
+        public class LastConstructorWithAttribute : IClassWithAttribute
         {
-            Status = status;
-            Description = description;
-            Data = data;
+            public A A { get; }
+            public B B { get; }
+            public C C { get; }
+
+            public LastConstructorWithAttribute(B b, C c) : this(null, b, c) {  }
+
+
+            [ActivatorUtilitiesConstructor]
+            public LastConstructorWithAttribute(A a, B b, C c)
+            {
+                A = a;
+                B = b;
+                C = c;
+            }
         }
-
-        public FakeValidationResult(string description, IReadOnlyDictionary<string, object> data)
-            : this(FakeValidationStatus.Valid, description, data) { }
-
-        public FakeValidationStatus Status { get; }
-        public string Description { get; }
-        public IReadOnlyDictionary<string, object> Data { get; }
-    }
-
-    internal class FakeValidationResultOps : IFakeValidationResult
-    {
-        public FakeValidationResultOps(string description, IReadOnlyDictionary<string, object> data)
-            : this(FakeValidationStatus.Valid, description, data) { }
-
-        [ActivatorUtilitiesConstructor]
-        public FakeValidationResultOps(FakeValidationStatus status, string description,
-           IReadOnlyDictionary<string, object> data)
-        {
-            Status = status;
-            Description = description;
-            Data = data;
-        }
-
-        public FakeValidationStatus Status { get; }
-        public string Description { get; }
-        public IReadOnlyDictionary<string, object> Data { get; }
-    }
-
-    internal enum FakeValidationStatus
-    {
-        Valid,
-        Invalid
     }
 
     internal class DefaultConstructorFirst
