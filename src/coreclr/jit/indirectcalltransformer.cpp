@@ -569,18 +569,16 @@ private:
 
             GuardedDevirtualizationCandidateInfo* guardedInfo = origCall->gtGuardedDevirtualizationCandidateInfo;
 
+            // Create comparison. On success we will jump to do the indirect call.
             GenTree* compare;
             if (guardedInfo->guardedClassHandle != NO_CLASS_HANDLE)
             {
-
                 // Find target method table
                 //
                 GenTree*             methodTable       = compiler->gtNewMethodTableLookup(thisTree);
                 CORINFO_CLASS_HANDLE clsHnd            = guardedInfo->guardedClassHandle;
                 GenTree*             targetMethodTable = compiler->gtNewIconEmbClsHndNode(clsHnd);
 
-                // Compare and jump to else (which does the indirect call) if NOT equal
-                //
                 compare = compiler->gtNewOperNode(GT_NE, TYP_INT, targetMethodTable, methodTable);
             }
             else
@@ -602,13 +600,13 @@ private:
                     CORINFO_CONST_LOOKUP  lookup;
                     compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &lookup);
 
-                    GenTree* compareTarTree = CreateLookup(lookup);
-                    ;
-                    compare = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree,
+                    GenTree* compareTarTree = CreateTreeForLookup(lookup);
+                    compare                 = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree,
                                                       compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL));
                 }
                 else
                 {
+                    // TODO: Change original call to CT_INDIRECT call here to reuse the call target.
                     // const unsigned addrTempNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target
                     // temp"));
                     // compiler->lvaGetDesc(addrTempNum)->lvSingleDef = 1;
@@ -627,7 +625,7 @@ private:
                     CORINFO_CONST_LOOKUP  lookup;
                     compiler->info.compCompHnd->getFunctionFixedEntryPoint(methHnd, false, &lookup);
 
-                    GenTree* compareTarTree = CreateLookup(lookup);
+                    GenTree* compareTarTree = CreateTreeForLookup(lookup);
                     compare                 = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree,
                                                       tarTree /*compiler->gtNewLclvNode(addrTempNum, TYP_I_IMPL)*/);
                 }
@@ -740,11 +738,12 @@ private:
             InlineCandidateInfo* inlineInfo = origCall->gtInlineCandidateInfo;
             CORINFO_CLASS_HANDLE clsHnd     = inlineInfo->guardedClassHandle;
 
+            //
             // Copy the 'this' for the devirtualized call to a new temp. For
             // class-based GDV this will allow us to set the exact type on that
             // temp. For delegate GDV, this will be the actual 'this' object
             // stored in the delegate.
-
+            //
             const unsigned thisTemp  = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt this exact temp"));
             GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtArgs.GetThisArg()->GetNode());
             GenTree*       newThisObj;
@@ -1128,7 +1127,7 @@ private:
         unsigned   returnTemp;
         Statement* lastStmt;
 
-        GenTree* CreateLookup(const CORINFO_CONST_LOOKUP& lookup)
+        GenTree* CreateTreeForLookup(const CORINFO_CONST_LOOKUP& lookup)
         {
             switch (lookup.accessType)
             {

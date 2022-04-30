@@ -9531,17 +9531,18 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         if (call->AsCall()->IsVirtual())
         {
             // only true object pointers can be virtual
-            assert(call->AsCall()->gtArgs.HasThisPointer() && call->AsCall()->gtArgs.GetThisArg()->GetNode()->TypeIs(TYP_REF));
+            assert(call->AsCall()->gtArgs.HasThisPointer() &&
+                   call->AsCall()->gtArgs.GetThisArg()->GetNode()->TypeIs(TYP_REF));
 
             // See if we can devirtualize.
 
-            const bool isExplicitTailCall = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
+            const bool isExplicitTailCall     = (tailCallFlags & PREFIX_TAILCALL_EXPLICIT) != 0;
             const bool isLateDevirtualization = false;
             impDevirtualizeCall(call->AsCall(), pResolvedToken, &callInfo->hMethod, &callInfo->methodFlags,
-                &callInfo->contextHandle, &exactContextHnd, isLateDevirtualization, isExplicitTailCall,
-                // Take care to pass raw IL offset here as the 'debug info' might be different for
-                // inlinees.
-                rawILOffset);
+                                &callInfo->contextHandle, &exactContextHnd, isLateDevirtualization, isExplicitTailCall,
+                                // Take care to pass raw IL offset here as the 'debug info' might be different for
+                                // inlinees.
+                                rawILOffset);
 
             // Devirtualization may change which method gets invoked. Update our local cache.
             //
@@ -9550,7 +9551,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
         else if (call->AsCall()->IsDelegateInvoke())
         {
             considerGuardedDevirtualization(call->AsCall(), rawILOffset, false, NO_METHOD_HANDLE, NO_CLASS_HANDLE,
-                nullptr);
+                                            nullptr);
         }
     }
 
