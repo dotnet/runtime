@@ -8342,34 +8342,15 @@ void Compiler::fgValueNumberBlockAssignment(GenTree* tree)
 //    Whether "src"'s exact type matches that of the destination location.
 //
 // Notes:
-//    Currently this method only handles local destinations, it should be expanded to support more
-//    locations (static/instance fields, array elements) once/if "fgValueNumberBlockAssignment"
-//    supports them.
+//    TODO-PhysicalVN: with the physical VN scheme, this method is no longer needed.
 //
 bool Compiler::fgValueNumberBlockAssignmentTypeCheck(LclVarDsc* dstVarDsc, FieldSeqNode* dstFldSeq, GenTree* src)
 {
     if (dstFldSeq == FieldSeqStore::NotAField())
     {
-        // We don't have proper field sequence information for the lhs - assume arbitrary aliasing.
         JITDUMP("    *** Missing field sequence info for Dst/LHS of COPYBLK\n");
         return false;
     }
-
-    // With unsafe code or nested structs, we can end up with IR that has
-    // mismatched struct types on the LHS and RHS. We need to maintain the
-    // invariant that a node's VN corresponds exactly to its type. Failure
-    // to do so is a correctness problem. For example:
-    //
-    //    S1 s1 = { ... }; // s1 = map
-    //    S1.F0 = 0;       // s1 = map[F0 := 0]
-    //    S2 s2 = s1;      // s2 = map[F0 := 0] (absent below checks)
-    //    s2.F1 = 1;       // s2 = map[F0 := 0][F1 := 1]
-    //    s1    = s2;      // s1 = map[F0 := 0][F1 := 1]
-    //
-    //    int r = s1.F0;   // map[F0 := 0][F1 := 1][F0] => map[F0 := 0][F0] => 0
-    //
-    // If F1 and F0 physically alias (exist at the same offset, say), the above
-    // represents an incorrect optimization.
 
     var_types            dstLocationType      = TYP_UNDEF;
     CORINFO_CLASS_HANDLE dstLocationStructHnd = NO_CLASS_HANDLE;
@@ -8399,18 +8380,12 @@ bool Compiler::fgValueNumberBlockAssignmentTypeCheck(LclVarDsc* dstVarDsc, Field
         return false;
     }
 
-    // They're equal, and they're primitives. Allow, for now. TYP_SIMD is tentatively
-    // allowed here as well as, currently, there are no two vector types with public
-    // fields both that could reasonably alias each other.
+    // They're equal, and they're primitives. Allow.
     if (dstLocationType != TYP_STRUCT)
     {
         return true;
     }
 
-    // Figure out what the source's type really is. Note that this will miss
-    // struct fields of struct locals currently ("src" for them is an IND(struct)).
-    // Note as well that we're relying on the invariant that "node type == node's
-    // VN type" here (it would be expensive to recover the handle from "src"'s VN).
     CORINFO_CLASS_HANDLE srcValueStructHnd = gtGetStructHandleIfPresent(src);
     if (srcValueStructHnd == NO_CLASS_HANDLE)
     {

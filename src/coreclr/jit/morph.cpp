@@ -9922,8 +9922,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
 //    false otherwise.
 //
 // Notes:
-//   This check is needed to avoid accessing LCL_VARs with incorrect
-//   CORINFO_FIELD_HANDLE that would confuse VN optimizations.
+//   TODO-PhysicalVN: with the physical VN scheme, this method is no longer needed.
 //
 bool Compiler::fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2)
 {
