@@ -5937,13 +5937,13 @@ protected:
     public:
         // Value numbers of expressions that have been hoisted in sibling loops in the loop nest
         // at the same level.
-        VNSet* m_hoistedInSiblingLoop;
         ArrayStack<VNSet*> m_hoistedVNInSiblingLoop;
 
         // Value numbers of expressions that have been hoisted in the current (or most recent) loop in the nest.
         // Previous decisions on loop-invariance of value numbers in the current loop.
         VNSet m_curLoopVnInvariantCache;
 
+        // Get the VN cache for current loop
         VNSet* GetHoistedInCurLoop(Compiler* comp)
         {
             if (m_pHoistedInCurLoop == nullptr)
@@ -5953,15 +5953,7 @@ protected:
             return m_pHoistedInCurLoop;
         }
 
-        /*VNSet* GetHoistedInSiblingLoop(Compiler* comp)
-        {
-            if (m_hoistedInSiblingLoop == nullptr)
-            {
-                m_hoistedInSiblingLoop = new (comp->getAllocatorLoopHoist()) VNSet(comp->getAllocatorLoopHoist());
-            }
-            return m_hoistedInSiblingLoop;
-        }*/
-
+        // Return the so far collected VNs in cache for current loop and reset it.
         VNSet* ExtractHoistedInCurLoop()
         {
             VNSet* res          = m_pHoistedInCurLoop;
@@ -5969,11 +5961,7 @@ protected:
             return res;
         }
 
-        void ResetHoistedInSiblingLoop()
-        {
-            m_hoistedInSiblingLoop = nullptr;
-        }
-
+        // Get the VN cache for recent sibling loop
         VNSet* GetVnSetHoistedForSiblingLoop()
         {
             if (m_hoistedVNInSiblingLoop.Empty())
@@ -5996,7 +5984,6 @@ protected:
 
         LoopHoistContext(Compiler* comp)
             : m_pHoistedInCurLoop(nullptr)
-            , m_hoistedInSiblingLoop(nullptr)
             , m_hoistedVNInSiblingLoop(comp->getAllocatorLoopHoist())
             , m_curLoopVnInvariantCache(comp->getAllocatorLoopHoist())
         {
@@ -6004,12 +5991,12 @@ protected:
     };
 
     // Do hoisting of all loops nested within loop "lnum" (an index into the optLoopTable), followed
-    // by the loop "lnum" itself. 
+    // by the loop "lnum" itself.
     // Tracks the expressions that have been hoisted by the sibling loops that are present at the same
-    // level by temporarily recording their value numbers in "m_hoistedInSiblingLoop". The expressions
+    // level by temporarily recording their value numbers in "m_hoistedVNInSiblingLoop". The expressions
     // that are already hoisted won't be hoisted again and CSE will remove them anyways.
     //
-    // Both "m_pHoistedInCurLoop" and "m_hoistedInSiblingLoop" helps a lot in eliminating duplicate
+    // Both "m_pHoistedInCurLoop" and "m_hoistedVNInSiblingLoop" helps a lot in eliminating duplicate
     // expressions getting hoisted and reducing the count of total expressions hoisted out of loop.
     // When calculating the profitability, we compare this with number of registers and hence, lower
     // the number of expressions getting hoisted, better chances that they will get enregistered and CSE
@@ -6019,19 +6006,15 @@ protected:
 
     // Do hoisting for a particular loop ("lnum" is an index into the optLoopTable.)
     // Assumes that expressions have been hoisted in sibling loops if their value numbers are in
-    // "m_hoistedInSiblingLoop".
+    // "m_hoistedVNInSiblingLoop".
     //
     // Returns the new preheaders created.
-    void optHoistThisLoop(unsigned                lnum,
-                                             LoopHoistContext*       hoistCtxt,
-                                             BasicBlockList* existingPreHeaders);
+    void optHoistThisLoop(unsigned lnum, LoopHoistContext* hoistCtxt, BasicBlockList* existingPreHeaders);
 
     // Hoist all expressions in "blocks" that are invariant in loop "loopNum" (an index into the optLoopTable)
-    // outside of that loop.  Exempt expressions whose value number is in "m_hoistedInSiblingLoop"; add VN's of hoisted
-    // expressions to "hoistInLoop".
-    void optHoistLoopBlocks(unsigned                 loopNum,
-                                               ArrayStack<BasicBlock*>* blocks,
-                                               LoopHoistContext*        hoistContext);
+    // outside of that loop.  Exempt expressions whose value number is in "m_hoistedVNInSiblingLoop";
+    // add VN's of hoisted expressions to "hoistInLoop".
+    void optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blocks, LoopHoistContext* hoistContext);
 
     // Return true if the tree looks profitable to hoist out of loop 'lnum'.
     bool optIsProfitableToHoistTree(GenTree* tree, unsigned lnum);
@@ -6413,6 +6396,7 @@ protected:
     // A loop contains itself.
     bool optLoopContains(unsigned l1, unsigned l2) const;
 
+    // Returns the lpEntry for given preheader block of a loop
     BasicBlock* optLoopEntry(BasicBlock* preHeader);
 
     // Updates the loop table by changing loop "loopInd", whose head is required
