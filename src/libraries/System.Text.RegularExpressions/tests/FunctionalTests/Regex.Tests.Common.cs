@@ -79,8 +79,8 @@ namespace System.Text.RegularExpressions.Tests
         {
             get
             {
-                yield return RegexEngine.Interpreter;
-                yield return RegexEngine.Compiled;
+                //yield return RegexEngine.Interpreter;
+                //yield return RegexEngine.Compiled;
                 if (PlatformDetection.IsNetCore)
                 {
                     yield return RegexEngine.NonBacktracking;
@@ -89,7 +89,7 @@ namespace System.Text.RegularExpressions.Tests
                         PlatformDetection.IsNotMobile &&
                         PlatformDetection.IsNotBrowser)
                     {
-                        yield return RegexEngine.SourceGenerated;
+                        //yield return RegexEngine.SourceGenerated;
 
                         // TODO-NONBACKTRACKING:
                         // yield return RegexEngine.NonBacktrackingSourceGenerated;

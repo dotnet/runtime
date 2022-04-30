@@ -51,6 +51,9 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>If true then the state is a dead-end, rejects all inputs.</summary>
         internal bool IsNothing => Node.IsNothing;
 
+        /// <summary>If true this is a nullable state where backtracking ends.</summary>
+        internal bool IsBacktrackEnd => Node.IsBacktrackEnd;
+
         /// <summary>If true then state starts with a ^ or $ or \Z</summary>
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 
@@ -154,11 +157,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public override int GetHashCode() => (PrevCharKind, Node).GetHashCode();
 
+#if DEBUG
         public override string ToString() =>
             PrevCharKind == 0 ? Node.ToString() :
              $"({CharKind.DescribePrev(PrevCharKind)},{Node})";
 
-#if DEBUG
         internal string DgmlView
         {
             get

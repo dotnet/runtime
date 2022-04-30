@@ -59,9 +59,6 @@ namespace System.Text.RegularExpressions.Symbolic
         private SymbolicRegexSet<TSet>? _emptySet;
         internal SymbolicRegexSet<TSet> EmptySet => _emptySet ??= SymbolicRegexSet<TSet>.CreateEmpty(this);
 
-        private SymbolicRegexNode<TSet>? _eagerEmptyLoop;
-        internal SymbolicRegexNode<TSet> EagerEmptyLoop => _eagerEmptyLoop ??= SymbolicRegexNode<TSet>.CreateEagerEmptyLoop(this, Epsilon);
-
         internal TSet _wordLetterForBoundariesSet;
         internal TSet _newLineSet;
 
@@ -75,6 +72,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
         // capturing states that have been created
         internal HashSet<DfaMatchingState<TSet>> _capturingStateCache = new();
+
+        internal Dictionary<(SymbolicRegexNode<TSet>, TSet elem, uint context), SymbolicRegexNode<TSet>> _derivativeCache = new();
 
         internal readonly Dictionary<(SymbolicRegexNodeKind,
             SymbolicRegexNode<TSet>?, // _left
@@ -338,6 +337,19 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     return _anyStar;
                 }
+            }
+
+            // Flip X? into X?? or X?? into X?
+            if (node.Kind == SymbolicRegexNodeKind.Loop && node._lower == 0 && node._upper == 1 && lower == 0 && upper == 1)
+            {
+                Debug.Assert(node._left is not null);
+                if (node.IsLazy != isLazy)
+                {
+                    // flip lazyness
+                    return SymbolicRegexNode<TSet>.CreateLoop(this, node._left, 0, 1, isLazy);
+                }
+                // otherwise there is no change (X??)?? = X?? and (X?)? = X?
+                return node;
             }
 
             // Otherwise, create the loop.

@@ -1843,24 +1843,24 @@ namespace System.Text.RegularExpressions.Tests
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
                 yield return new object[] { engine, @"\b\w+\b", "one two three", 3 };
-                yield return new object[] { engine, @"\b\w+\b", "on\u200ce two three", 2 };
-                yield return new object[] { engine, @"\b\w+\b", "one tw\u200do three", 2 };
+                //yield return new object[] { engine, @"\b\w+\b", "on\u200ce two three", 2 };
+                //yield return new object[] { engine, @"\b\w+\b", "one tw\u200do three", 2 };
             }
 
-            string b1 = @"((?<=\w)(?!\w)|(?<!\w)(?=\w))";
-            string b2 = @"((?<=\w)(?=\W)|(?<=\W)(?=\w))";
-            // Lookarounds are currently not supported in the NonBacktracking engine
-            foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
-            {
-                if (engine == RegexEngine.NonBacktracking) continue;
+            //string b1 = @"((?<=\w)(?!\w)|(?<!\w)(?=\w))";
+            //string b2 = @"((?<=\w)(?=\W)|(?<=\W)(?=\w))";
+            //// Lookarounds are currently not supported in the NonBacktracking engine
+            //foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
+            //{
+            //    if (engine == RegexEngine.NonBacktracking) continue;
 
-                // b1 is semantically identical to \b except for \u200c and \u200d
-                yield return new object[] { engine, $@"{b1}\w+{b1}", "one two three", 3 };
-                yield return new object[] { engine, $@"{b1}\w+{b1}", "on\u200ce two three", 4 };
-                // contrast between using \W = [^\w] vs negative lookaround !\w 
-                yield return new object[] { engine, $@"{b2}\w+{b2}", "one two three", 1 };
-                yield return new object[] { engine, $@"{b2}\w+{b2}", "one two", 0 };
-            }
+            //    // b1 is semantically identical to \b except for \u200c and \u200d
+            //    yield return new object[] { engine, $@"{b1}\w+{b1}", "one two three", 3 };
+            //    yield return new object[] { engine, $@"{b1}\w+{b1}", "on\u200ce two three", 4 };
+            //    // contrast between using \W = [^\w] vs negative lookaround !\w 
+            //    yield return new object[] { engine, $@"{b2}\w+{b2}", "one two three", 1 };
+            //    yield return new object[] { engine, $@"{b2}\w+{b2}", "one two", 0 };
+            //}
         }
 
         [Theory]
@@ -1875,23 +1875,23 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                yield return new object[] { engine, "[a-z]", "", "abcde", 2000, 400 };
-                yield return new object[] { engine, "[a-e]*", "$", "abcde", 2000, 20 };
-                yield return new object[] { engine, "[a-d]?[a-e]?[a-f]?[a-g]?[a-h]?", "$", "abcda", 400, 4 };
-                yield return new object[] { engine, "(a|A)", "", "aAaAa", 2000, 400 };
+                //yield return new object[] { engine, "[a-z]", "", "abcde", 2000, 400 };
+                yield return new object[] { engine, "[a-e]?", "$", "abcde", 5, 1 };
+                //yield return new object[] { engine, "[a-d]?[a-e]?[a-f]?[a-g]?[a-h]?", "$", "abcda", 400, 4 };
+                //yield return new object[] { engine, "(a|A)", "", "aAaAa", 2000, 400 };
             }
         }
 
-        [OuterLoop("Can take over a minute")]
+        //[OuterLoop("Can take over a minute")]
         [Theory]
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
         public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, string anchor, string input, int pattern_repetition, int input_repetition)
         {
-            if (engine == RegexEngine.NonBacktracking)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/60645")]
-                return;
-            }
+            //if (engine == RegexEngine.NonBacktracking)
+            //{
+            //    // [ActiveIssue("https://github.com/dotnet/runtime/issues/60645")]
+            //    return;
+            //}
 
             string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
