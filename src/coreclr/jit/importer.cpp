@@ -224,11 +224,12 @@ void Compiler::impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolv
     info.compCompHnd->resolveToken(pResolvedToken);
 }
 
-/*****************************************************************************
- *
- *  Pop one tree from the stack.
- */
-
+//------------------------------------------------------------------------
+// impPopStack: Pop one tree from the stack.
+//
+// Returns:
+//   The stack entry for the popped tree.
+//
 StackEntry Compiler::impPopStack()
 {
     if (verCurrentState.esStackDepth == 0)
@@ -239,6 +240,12 @@ StackEntry Compiler::impPopStack()
     return verCurrentState.esStack[--verCurrentState.esStackDepth];
 }
 
+//------------------------------------------------------------------------
+// impPopStack: Pop a variable number of trees from the stack.
+//
+// Arguments:
+//   n - The number of trees to pop.
+//
 void Compiler::impPopStack(unsigned n)
 {
     if (verCurrentState.esStackDepth < n)
@@ -813,11 +820,9 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
 //   their values.
 //
 // Parameters:
-//   count   - The number of arguments to pop
 //   sig     - Signature used to figure out classes the runtime must load, and
 //             also to record exact receiving argument types that may be needed for ABI
 //             purposes later.
-//             Can be nullptr for certain helpers.
 //   call    - The call to pop arguments into.
 //
 void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)

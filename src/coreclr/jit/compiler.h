@@ -3906,7 +3906,6 @@ private:
 
     bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType) const;
 
-private:
     void impPopReverseCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount);
 
     //---------------- Spilling the importer stack ----------------------------
