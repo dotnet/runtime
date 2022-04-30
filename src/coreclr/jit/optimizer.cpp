@@ -6008,6 +6008,7 @@ void Compiler::optPerformHoistExpr(GenTree* origExpr, BasicBlock* exprBb, unsign
     {
         printf("\nHoisting a copy of ");
         printTreeID(origExpr);
+        printf(" (" FMT_VN "," FMT_VN ") ", origExpr->gtVNPair.GetLiberal(), origExpr->gtVNPair.GetConservative());
         printf(" from " FMT_BB " into PreHeader " FMT_BB " for loop " FMT_LP " <" FMT_BB ".." FMT_BB ">:\n",
                exprBb->bbNum, optLoopTable[lnum].lpHead->bbNum, lnum, optLoopTable[lnum].lpTop->bbNum,
                optLoopTable[lnum].lpBottom->bbNum);
@@ -6284,27 +6285,45 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
 
     if (optLoopTable[lnum].lpChild != BasicBlock::NOT_IN_LOOP)
     {
-        // Add the ones hoisted in "lnum" to "hoistedInParents" for any nested loops.
-        // TODO-Cleanup: we should have a set abstraction for loops.
-        if (hoistedInCurLoop != nullptr)
-        {
-            for (VNSet::KeyIterator keys = hoistedInCurLoop->Begin(); !keys.Equal(hoistedInCurLoop->End()); ++keys)
-            {
-#ifdef DEBUG
-                bool b;
-                assert(!hoistCtxt->m_hoistedInParentLoops.Lookup(keys.Get(), &b));
-#endif
-                hoistCtxt->m_hoistedInParentLoops.Set(keys.Get(), true);
-            }
-        }
+//        // Add the ones hoisted in "lnum" to "hoistedInParents" for any nested loops.
+//        // TODO-Cleanup: we should have a set abstraction for loops.
+//        if (hoistedInCurLoop != nullptr)
+//        {
+//            for (VNSet::KeyIterator keys = hoistedInCurLoop->Begin(); !keys.Equal(hoistedInCurLoop->End()); ++keys)
+//            {
+//#ifdef DEBUG
+//                bool b;
+//                assert(!hoistCtxt->m_hoistedInParentLoops.Lookup(keys.Get(), &b));
+//#endif
+//                hoistCtxt->m_hoistedInParentLoops.Set(keys.Get(), true);
+//            }
+//        }
 
         BitVecTraits m_visitedTraits(fgBBNumMax * 2, this);
         BitVec       m_visited(BitVecOps::MakeEmpty(&m_visitedTraits));
+        hoistCtxt->PushVnSetForSiblingLoop(this);
 
         for (unsigned child = optLoopTable[lnum].lpChild; child != BasicBlock::NOT_IN_LOOP;
              child          = optLoopTable[child].lpSibling)
         {
-            /*BasicBlockList* preHeadersForThisLoop = */optHoistLoopNest(child, hoistCtxt);
+            optHoistLoopNest(child, hoistCtxt);
+            VNSet* hoistedInCurLoop = hoistCtxt->ExtractHoistedInCurLoop();
+
+            // Add the ones hoisted in "lnum" to "hoistedInSibling" for any sibling loops.
+            // TODO-Cleanup: we should have a set abstraction for loops.
+            if (hoistedInCurLoop != nullptr)
+            {
+                for (VNSet::KeyIterator keys = hoistedInCurLoop->Begin(); !keys.Equal(hoistedInCurLoop->End()); ++keys)
+                {
+#ifdef DEBUG
+                    bool b;
+                    assert(!hoistCtxt->GetVnSetHoistedForSiblingLoop()->Lookup(keys.Get(), &b));
+#endif
+                    hoistCtxt->GetVnSetHoistedForSiblingLoop()->Set(keys.Get(), true);
+                }
+            }
+
+            /*BasicBlockList* preHeadersForThisLoop = */
             //while (preHeadersForThisLoop != nullptr)
             //{
             //    BasicBlock* preHeaderBlock = preHeadersForThisLoop->block;
@@ -6367,19 +6386,22 @@ void Compiler::optHoistLoopNest(unsigned lnum, LoopHoistContext* hoistCtxt)
                 }
             }
         }
+        hoistCtxt->PopVnSetForSiblingLoop();
 
-        // Now remove them.
-        // TODO-Cleanup: we should have a set abstraction for loops.
-        if (hoistedInCurLoop != nullptr)
-        {
-            for (VNSet::KeyIterator keys = hoistedInCurLoop->Begin(); !keys.Equal(hoistedInCurLoop->End()); ++keys)
-            {
-                // Note that we asserted when we added these that they hadn't been members, so removing is appropriate.
-                hoistCtxt->m_hoistedInParentLoops.Remove(keys.Get());
-            }
-        }
+        //// Now remove them.
+        //// TODO-Cleanup: we should have a set abstraction for loops.
+        //if (hoistedInCurLoop != nullptr)
+        //{
+        //    for (VNSet::KeyIterator keys = hoistedInCurLoop->Begin(); !keys.Equal(hoistedInCurLoop->End()); ++keys)
+        //    {
+        //        // Note that we asserted when we added these that they hadn't been members, so removing is appropriate.
+        //        hoistCtxt->m_hoistedInParentLoops.Remove(keys.Get());
+        //    }
+        //}
     }
 
+    // Reset the VNs tracked for sibling loop
+    hoistCtxt->ResetHoistedInSiblingLoop();
     optHoistThisLoop(lnum, hoistCtxt, firstPreHeader);
 }
 
@@ -7417,7 +7439,7 @@ void Compiler::optHoistLoopBlocks(unsigned                 loopNum,
                     if (value.m_hoistable)
                     {
                         assert(value.Node() != tree);
-                        
+
                         if (IsHoistingOverExcepSibling(value.Node(), isCommaTree, hasExcep))
                         {
                             m_compiler->optHoistCandidate(value.Node(), m_currentBlock, m_loopNum, m_hoistContext);
@@ -7507,22 +7529,25 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
         return;
     }
 
-    if (hoistCtxt->m_hoistedInParentLoops.Lookup(tree->gtVNPair.GetLiberal()))
+    VNSet* vnSetHoistedForSibling = hoistCtxt->GetVnSetHoistedForSiblingLoop();
+    if ((vnSetHoistedForSibling != nullptr) && (vnSetHoistedForSibling->Lookup(tree->gtVNPair.GetLiberal())))
     {
-        JITDUMP("   ... already hoisted same VN in parent\n");
-        // already hoisted in a parent loop, so don't hoist this expression.
+        printf("Sibling loop -- " FMT_LP " : %s\n", lnum, this->info.compMethodName);
+        JITDUMP("      [%06u] ... already hoisted " FMT_VN " VN in sibling loop\n", dspTreeID(tree),
+                tree->gtVNPair.GetLiberal());
+
+        // already hoisted in a sibling loop, so don't hoist this expression.
         return;
     }
 
-    // TODO: Below code was applicable because we were first hoisting the outer loop and then the inner loop
-    // But if we start from inner and go outer, then we should continue hoisting things from this loop to the parent
-    // loop.
-    // if (hoistCtxt->GetHoistedInCurLoop(this)->Lookup(tree->gtVNPair.GetLiberal()))
-    //{
-    //    JITDUMP("   ... already hoisted same VN in current\n");
-    //    // already hoisted this expression in the current loop, so don't hoist this expression.
-    //    return;
-    //}
+    if (hoistCtxt->GetHoistedInCurLoop(this)->Lookup(tree->gtVNPair.GetLiberal()))
+    {
+        //printf("This loop -- " FMT_LP " : %s\n", lnum, this->info.compMethodName);
+        JITDUMP("      [%06u] ... already hoisted " FMT_VN " in " FMT_LP "\n ", dspTreeID(tree),
+                tree->gtVNPair.GetLiberal(), lnum);
+        // already hoisted this expression in the current loop, so don't hoist this expression.
+        return;
+    }
 
     // Create a loop pre-header in which to put the hoisted code.
     fgCreateLoopPreHeader(lnum);
@@ -7558,7 +7583,7 @@ void Compiler::optHoistCandidate(GenTree* tree, BasicBlock* treeBb, unsigned lnu
     }
 
     // Record the hoisted expression in hoistCtxt
-    // hoistCtxt->GetHoistedInCurLoop(this)->Set(tree->gtVNPair.GetLiberal(), true);
+    hoistCtxt->GetHoistedInCurLoop(this)->Set(tree->gtVNPair.GetLiberal(), true);
 }
 
 bool Compiler::optVNIsLoopInvariant(ValueNum vn, unsigned lnum, VNSet* loopVnInvariantCache)
