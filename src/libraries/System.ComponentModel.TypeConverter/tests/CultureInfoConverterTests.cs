@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.DotNet.RemoteExecutor;
 using System.Collections.Generic;
 using System.ComponentModel.Design.Serialization;
 using System.Globalization;
@@ -153,13 +154,21 @@ namespace System.ComponentModel.Tests
             Assert.Equal("Fixed", converter.ConvertTo(new CultureInfo("en-US"), typeof(string)));
         }
 
-        [Fact]
-        public void CultureInfoConverterForDefaultValue()
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void CultureInfoConverterForDefaultValue(bool useSystemResourceKeys)
         {
-            using (new ThreadCultureChange(null, CultureInfo.InvariantCulture))
+            RemoteInvokeOptions options = new RemoteInvokeOptions();
+            options.RuntimeConfigurationOptions.Add("System.Resources.UseSystemResourceKeys", useSystemResourceKeys);
+
+            RemoteExecutor.Invoke(() =>
             {
-                Assert.Equal("", ((CultureInfo)TypeDescriptor.GetConverter(typeof(System.Globalization.CultureInfo)).ConvertFrom(null, null, "(Default)")).Name);
-            }
+                using (new ThreadCultureChange(null, CultureInfo.InvariantCulture))
+                {
+                    Assert.Equal("", ((CultureInfo)TypeDescriptor.GetConverter(typeof(System.Globalization.CultureInfo)).ConvertFrom(null, null, "(Default)")).Name);
+                }
+            }, options).Dispose();
         }
 
         private class SubCultureInfoConverter : CultureInfoConverter
