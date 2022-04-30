@@ -3531,6 +3531,8 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         }
         else if (src->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_FLD))
         {
+#if !defined(TARGET_ARM64)
+
             if (src->TypeIs(TYP_STRUCT))
             {
                 src->ChangeType(lclRegType);
@@ -3554,6 +3556,13 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 }
             }
             convertToStoreObj = false;
+#else  // TARGET_ARM64
+            // This optimization on arm64 allows more SIMD16 vars to be enregistered but it could cause
+            // regressions when there are many calls and before/after each one we have to store/save the upper
+            // half of these registers. So enable this for arm64 only when LSRA is taught not to allocate registers when
+            // it would have to spilled too many times.
+            convertToStoreObj = true;
+#endif // TARGET_ARM64
         }
         else
         {
