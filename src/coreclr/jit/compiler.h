@@ -3543,8 +3543,9 @@ protected:
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
     void impPushOnStack(GenTree* tree, typeInfo ti);
-    void        impPushNullObjRefOnStack();
-    StackEntry  impPopStack();
+    void       impPushNullObjRefOnStack();
+    StackEntry impPopStack();
+    void impPopStack(unsigned n);
     StackEntry& impStackTop(unsigned n = 0);
     unsigned impStackHeight();
 
@@ -3901,11 +3902,12 @@ private:
                 ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3)));
     }
 
-    void impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, GenTreeCall* call);
+    void impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call);
 
     bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType) const;
 
-    void impPopReverseCallArgs(unsigned count, CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount = 0);
+private:
+    void impPopReverseCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount);
 
     //---------------- Spilling the importer stack ----------------------------
 
