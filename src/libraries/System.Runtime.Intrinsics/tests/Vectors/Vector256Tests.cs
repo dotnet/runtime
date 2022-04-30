@@ -2851,7 +2851,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = Vector128<byte>.Count; index < Vector256<byte>.Count; index++)
             {
-                Assert.Equal((byte)(Vector256<byte>.Count - (index - Vector128<byte>.Count)), result.GetElement(index + Vector128<byte>.Count));
+                Assert.Equal((byte)(Vector256<byte>.Count - (index - Vector128<byte>.Count)), result.GetElement(index));
             }
         }
 
@@ -2867,7 +2867,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = Vector128<double>.Count; index < Vector256<double>.Count; index++)
             {
-                Assert.Equal((double)(Vector256<double>.Count - (index - Vector128<double>.Count)), result.GetElement(index + Vector128<double>.Count));
+                Assert.Equal((double)(Vector256<double>.Count - (index - Vector128<double>.Count)), result.GetElement(index));
             }
         }
 
@@ -2883,7 +2883,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = Vector128<short>.Count; index < Vector256<short>.Count; index++)
             {
-                Assert.Equal((short)(Vector256<short>.Count - (index - Vector128<short>.Count)), result.GetElement(index + Vector128<short>.Count));
+                Assert.Equal((short)(Vector256<short>.Count - (index - Vector128<short>.Count)), result.GetElement(index));
             }
         }
 
@@ -2899,7 +2899,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = Vector128<int>.Count; index < Vector256<int>.Count; index++)
             {
-                Assert.Equal((int)(Vector256<int>.Count - (index - Vector128<int>.Count)), result.GetElement(index + Vector128<int>.Count));
+                Assert.Equal((int)(Vector256<int>.Count - (index - Vector128<int>.Count)), result.GetElement(index));
             }
         }
 
@@ -2915,7 +2915,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = Vector128<long>.Count; index < Vector256<long>.Count; index++)
             {
-                Assert.Equal((long)(Vector256<long>.Count - (index - Vector128<long>.Count)), result.GetElement(index + Vector128<long>.Count));
+                Assert.Equal((long)(Vector256<long>.Count - (index - Vector128<long>.Count)), result.GetElement(index));
             }
         }
 
@@ -2931,7 +2931,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = Vector128<sbyte>.Count; index < Vector256<sbyte>.Count; index++)
             {
-                Assert.Equal((sbyte)(Vector256<sbyte>.Count - (index - Vector128<sbyte>.Count)), result.GetElement(index + Vector128<sbyte>.Count));
+                Assert.Equal((sbyte)(Vector256<sbyte>.Count - (index - Vector128<sbyte>.Count)), result.GetElement(index));
             }
         }
 
@@ -2947,7 +2947,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = Vector128<float>.Count; index < Vector256<float>.Count; index++)
             {
-                Assert.Equal((float)(Vector256<float>.Count - (index - Vector128<float>.Count)), result.GetElement(index + Vector128<float>.Count));
+                Assert.Equal((float)(Vector256<float>.Count - (index - Vector128<float>.Count)), result.GetElement(index));
             }
         }
 
@@ -2963,7 +2963,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = Vector128<ushort>.Count; index < Vector256<ushort>.Count; index++)
             {
-                Assert.Equal((ushort)(Vector256<ushort>.Count - (index - Vector128<ushort>.Count)), result.GetElement(index + Vector128<ushort>.Count));
+                Assert.Equal((ushort)(Vector256<ushort>.Count - (index - Vector128<ushort>.Count)), result.GetElement(index));
             }
         }
 
@@ -2979,7 +2979,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = Vector128<uint>.Count; index < Vector256<uint>.Count; index++)
             {
-                Assert.Equal((uint)(Vector256<uint>.Count - (index - Vector128<uint>.Count)), result.GetElement(index + Vector128<uint>.Count));
+                Assert.Equal((uint)(Vector256<uint>.Count - (index - Vector128<uint>.Count)), result.GetElement(index));
             }
         }
 
@@ -2995,7 +2995,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
 
             for (int index = Vector128<ulong>.Count; index < Vector256<ulong>.Count; index++)
             {
-                Assert.Equal((ulong)(Vector256<ulong>.Count - (index - Vector128<ulong>.Count)), result.GetElement(index + Vector128<ulong>.Count));
+                Assert.Equal((ulong)(Vector256<ulong>.Count - (index - Vector128<ulong>.Count)), result.GetElement(index));
             }
         }
 
