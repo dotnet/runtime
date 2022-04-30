@@ -1,0 +1,478 @@
+converting method System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)
+created temp 0 (R16) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+creating vars
+created temp 1 (R17) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+created temp 2 (R18) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+created temp 3 (R19) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+	return :  arg R16 <-
+	arg [0]:  arg R17 <-
+	arg [1]:  arg R18 <-
+	arg [2]:  arg R19 <-
+creating locals
+	local [0]: created temp 4 (R20) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+locals done
+created temp 5 (R21) of type System.IntPtr
+vret_addr =  arg R21 <-
+method to IR HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)
+converting (in B3: stack: 0) IL_0000: nop       
+converting (in B3: stack: 0) IL_0001: ldarg.0   
+converting (in B3: stack: 1) IL_0002: ldarg.1   
+converting (in B3: stack: 2) IL_0003: call      0x2b000001
+cmethod = System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)
+created temp 6 (R24) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+converting (in B3: stack: 1) IL_0008: stloc.0   
+converting (in B3: stack: 0) IL_0009: br.s      IL_000b
+converting (in B4: stack: 0) IL_000b: ldloc.0   
+converting (in B4: stack: 1) IL_000c: ret       
+REGION BB0 IL_0000 ID_FFFFFFFF
+REGION BB2 IL_0000 ID_FFFFFFFF
+REGION BB3 IL_0009 ID_FFFFFFFF
+REGION BB4 IL_000c ID_FFFFFFFF
+REGION BB1 IL_0000 ID_FFFFFFFF
+AFTER METHOD-TO-IR 0: [IN: , OUT:  BB2(0) ]
+AFTER METHOD-TO-IR 2: [IN:  BB0(0), OUT:  BB3(0) ]
+ xzero R20 <-
+AFTER METHOD-TO-IR 3: [IN:  BB2(0), OUT:  BB4(0) ]
+ il_seq_point intr il: 0x0
+ nop
+ il_seq_point il: 0x1
+ xmove R22 <- R17
+ xmove R23 <- R18
+ outarg_vtretaddr R25 <- R24
+ outarg_vt R23
+ outarg_vt R22
+ move R26 <- R25
+ vcall R24 <- [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] clobbers: c
+ il_seq_point il: 0x8, nonempty-stack
+ xmove R20 <- R24
+ il_seq_point il: 0x9
+ br [B4]
+AFTER METHOD-TO-IR 4: [IN:  BB3(0), OUT:  BB1(0) ]
+ il_seq_point il: 0xb
+ xmove R27 <- R20
+ il_seq_point intr il: 0xc
+ move R28 <- R21
+ storex_membase [R28] <- R27
+ br [B1]
+AFTER METHOD-TO-IR 1: [IN:  BB4(0), OUT:  ]
+CCOPY/2: R23 -> R18
+CCOPY/2: R22 -> R17
+CCOPY: R28 -> R21
+CCOPY/2: R27 -> R20
+block merge triggered 2 -> 3
+br removal triggered 4 -> 1
+br removal triggered 2 -> 4
+block merge triggered 2 -> 4
+
+HANDLE-GLOBAL-VREGS BLOCK 0:
+
+HANDLE-GLOBAL-VREGS BLOCK 2:
+ xzero R20 <-
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ xmove R22 <- R17
+ xmove R23 <- R18
+ outarg_vtretaddr R25 <- R24
+ outarg_vt R18
+ outarg_vt R17
+ move R26 <- R25
+ vcall R24 <- [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] clobbers: c
+ il_seq_point il: 0x8, nonempty-stack
+ xmove R20 <- R24
+ il_seq_point il: 0x9
+ nop
+ il_seq_point il: 0xb
+ xmove R27 <- R20
+ il_seq_point intr il: 0xc
+ move R28 <- R21
+ storex_membase [R21] <- R20
+ nop
+
+HANDLE-GLOBAL-VREGS BLOCK 1:
+CONVERTED R20(4) TO VREG.
+CONVERTED R24(6) TO VREG.
+	Reverse copyprop in BB2 on  xmove R20 <- R24
+BB0 IN: 
+BB2 IN: 0 
+BB1 IN: 2 
+DTREE HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>) 0
+BB0(dfn=0) (IDOM=BB-1):  BB0
+BB2(dfn=1) (IDOM=BB0):  BB0 BB2
+BB1(dfn=2) (IDOM=BB2):  BB0 BB2 BB1
+INSERTING SAFEPOINTS
+BEFORE SAFEPOINTS 0: [IN: , OUT:  BB2(1) ]
+BEFORE SAFEPOINTS 2: [IN:  BB0(0), OUT:  BB1(2) ]
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ outarg_vtretaddr R25 <- R24
+ outarg_vt R18
+ outarg_vt R17
+ move R26 <- R25
+ vcall R20 <- [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] clobbers: c
+ il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+ il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+ storex_membase [R21] <- R20
+BEFORE SAFEPOINTS 1: [IN:  BB2(1), OUT:  ]
+ADDING SAFE POINT TO BB 0
+AFTER SAFEPOINTS 0: [IN: , OUT:  BB2(1) ]
+ i8const R29 <- [4529466904]
+ gc_safe_point R29 clobbers: c
+AFTER SAFEPOINTS 2: [IN:  BB0(0), OUT:  BB1(2) ]
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ outarg_vtretaddr R25 <- R24
+ outarg_vt R18
+ outarg_vt R17
+ move R26 <- R25
+ vcall R20 <- [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] clobbers: c
+ il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+ il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+ storex_membase [R21] <- R20
+AFTER SAFEPOINTS 1: [IN:  BB2(1), OUT:  ]
+BEFORE LOWER-VTYPE-OPTS  0: [IN: , OUT:  BB2(1) ]
+ i8const R29 <- [4529466904]
+ gc_safe_point R29 clobbers: c
+AFTER LOWER-VTYPE-OPTS  0: [IN: , OUT:  BB2(1) ]
+ i8const R29 <- [4529466904]
+ gc_safe_point R29 clobbers: c
+BEFORE LOWER-VTYPE-OPTS  2: [IN:  BB0(0), OUT:  BB1(2) ]
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ outarg_vtretaddr R25 <- R24
+ outarg_vt R18
+ outarg_vt R17
+ move R26 <- R25
+ vcall R20 <- [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] clobbers: c
+ il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+ il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+ storex_membase [R21] <- R20
+created temp 5 (R20) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+AFTER LOWER-VTYPE-OPTS  2: [IN:  BB0(0), OUT:  BB1(2) ]
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ ldaddr R25 <- R20
+ ldaddr R31 <- R18
+ load_membase R32 <- [R31 + 0x0]
+ move R33 <- R32
+ load_membase R34 <- [R31 + 0x8]
+ move R35 <- R34
+ ldaddr R36 <- R17
+ load_membase R37 <- [R36 + 0x0]
+ move R38 <- R37
+ load_membase R39 <- [R36 + 0x8]
+ move R40 <- R39
+ move R26 <- R25
+ vcall2 [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] [%rcx <- R33] [%r8 <- R35] [%rsi <- R38] [%rdx <- R40] clobbers: c
+ il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+ il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+ storex_membase [R21] <- R20
+BEFORE LOWER-VTYPE-OPTS  1: [IN:  BB2(1), OUT:  ]
+AFTER LOWER-VTYPE-OPTS  1: [IN:  BB2(1), OUT:  ]
+
+LIVENESS:
+BLOCK BB0 (BB2, ):
+	1  i8const R29 <- [4529466904]
+	1  gc_safe_point R29 clobbers: c
+GEN  BB0: {}
+KILL BB0: {}
+BLOCK BB2 (BB1, ):
+	1  il_seq_point intr il: 0x0
+	1  il_seq_point il: 0x1
+	1  ldaddr R25 <- R20
+	GEN: R20(5)
+	1  ldaddr R31 <- R18
+	GEN: R18(2)
+	1  load_membase R32 <- [R31 + 0x0]
+	1  move R33 <- R32
+	1  load_membase R34 <- [R31 + 0x8]
+	1  move R35 <- R34
+	1  ldaddr R36 <- R17
+	GEN: R17(1)
+	1  load_membase R37 <- [R36 + 0x0]
+	1  move R38 <- R37
+	1  load_membase R39 <- [R36 + 0x8]
+	1  move R40 <- R39
+	1  move R26 <- R25
+	1  vcall2 [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] [%rcx <- R33] [%r8 <- R35] [%rsi <- R38] [%rdx <- R40] clobbers: c
+	1  il_seq_point il: 0x8, nonempty-stack
+	1  il_seq_point il: 0x9
+	1  il_seq_point il: 0xb
+	1  il_seq_point intr il: 0xc
+	1  storex_membase [R21] <- R20
+	GEN: R20(5)
+GEN  BB2: {1, 2, 4, 5}
+KILL BB2: {}
+BLOCK BB1 ():
+GEN  BB1: {}
+KILL BB1: {}
+
+ITERATION:
+P: BB1(2): IN: BB2 OUT:
+P: BB2(1): IN: BB0 OUT:BB1 
+	LIVE IN  BB2: {1, 2, 4, 5}
+P: BB0(0): IN: OUT:BB2 
+	LIVE IN  BB0: {1, 2, 4, 5}
+IT: 3 2.
+LIVE IN  BB1: {}
+LIVE OUT BB1: {}
+LIVE IN  BB2: {1, 2, 4, 5}
+LIVE OUT BB2: {}
+LIVE IN  BB0: {1, 2, 4, 5}
+LIVE OUT BB0: {1, 2, 4, 5}
+V0: [0x0 - 0x0]
+V1: [0x0 - 0x40012]
+V2: [0x0 - 0x40008]
+V3: [0x0 - 0x0]
+V4: [0x0 - 0x40028]
+V5: [0x0 - 0x40028]
+COSTLY: R4 C1 C1 %r15
+NOT REGVAR: 4
+vret_addr = regoffset R21 <- R5 + 0xfffffffffffffff8
+
+SPILL BLOCK 0:
+ i8const R29 <- [4529466904]
+	 i   29
+	1  i8const R29 <- [4529466904]
+ gc_safe_point R29 clobbers: c
+	  i  -1 29
+	1  gc_safe_point R29 clobbers: c
+
+SPILL BLOCK 2:
+ il_seq_point intr il: 0x0
+	     -1
+	1  il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+	     -1
+	1  il_seq_point il: 0x1
+ ldaddr R25 <- R20
+	 ii  25 5
+	1  add_imm R25 <- %rbp [-32] clobbers: 1
+ ldaddr R31 <- R18
+	 ii  31 5
+	1  add_imm R31 <- %rbp [-64] clobbers: 1
+ load_membase R32 <- [R31 + 0x0]
+	 ii  32 31
+	1  load_membase R32 <- [R31 + 0x0]
+ move R33 <- R32
+	 ii  33 32
+	1  move R33 <- R32
+ load_membase R34 <- [R31 + 0x8]
+	 ii  34 31
+	1  load_membase R34 <- [R31 + 0x8]
+ move R35 <- R34
+	 ii  35 34
+	1  move R35 <- R34
+ ldaddr R36 <- R17
+	 ii  36 5
+	1  add_imm R36 <- %rbp [-48] clobbers: 1
+ load_membase R37 <- [R36 + 0x0]
+	 ii  37 36
+	1  load_membase R37 <- [R36 + 0x0]
+ move R38 <- R37
+	 ii  38 37
+	1  move R38 <- R37
+ load_membase R39 <- [R36 + 0x8]
+	 ii  39 36
+	1  load_membase R39 <- [R36 + 0x8]
+ move R40 <- R39
+	 ii  40 39
+	1  move R40 <- R39
+ move R26 <- R25
+	 ii  26 25
+	1  move R26 <- R25
+ vcall2 [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] [%rcx <- R33] [%r8 <- R35] [%rsi <- R38] [%rdx <- R40] clobbers: c
+	     -1
+	1  vcall2 [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] [%rcx <- R33] [%r8 <- R35] [%rsi <- R38] [%rdx <- R40] clobbers: c
+ il_seq_point il: 0x8, nonempty-stack
+	     -1
+	1  il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+	     -1
+	1  il_seq_point il: 0x9
+ il_seq_point il: 0xb
+	     -1
+	1  il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+	     -1
+	1  il_seq_point intr il: 0xc
+ storex_membase [R21] <- R20
+	  xi -1 20
+	0  loadx_membase R41 <- [%rbp + 0xffffffffffffffe0]
+	0  load_membase R42 <- [%rbp + 0xfffffffffffffff8]
+	1  storex_membase [R42] <- R41
+
+SPILL BLOCK 1:
+	Reverse copyprop in BB2 on  move R40 <- R39
+	Reverse copyprop in BB2 on  move R38 <- R37
+	Reverse copyprop in BB2 on  move R35 <- R34
+	Reverse copyprop in BB2 on  move R33 <- R32
+DUMP BLOCK 0:
+ i8const R29 <- [4529466904]
+ gc_safe_point R29 clobbers: c
+DUMP BLOCK 2:
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ add_imm R25 <- %rbp [-32] clobbers: 1
+ load_membase R33 <- [%rbp + 0xffffffffffffffc0]
+ load_membase R35 <- [%rbp + 0xffffffffffffffc8]
+ load_membase R38 <- [%rbp + 0xffffffffffffffd0]
+ load_membase R40 <- [%rbp + 0xffffffffffffffd8]
+ move R26 <- R25
+ vcall2 [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] [%rcx <- R33] [%r8 <- R35] [%rsi <- R38] [%rdx <- R40] clobbers: c
+ il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+ il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+ loadx_membase R41 <- [%rbp + 0xffffffffffffffe0]
+ load_membase R42 <- [%rbp + 0xfffffffffffffff8]
+ storex_membase [R42] <- R41
+DUMP BLOCK 1:
+
+LOCAL REGALLOC BLOCK 0:
+	1  i8const R29 <- [4529466904]
+	2  gc_safe_point R29 clobbers: c
+liveness: R29 [1 - 1]
+processing:	2  gc_safe_point R29 clobbers: c
+	assigned sreg1 %rax to R29
+	2  gc_safe_point %rax clobbers: c
+processing:	1  i8const R29 <- [4529466904]
+	assigned dreg %rax to dest R29
+	freeable %rax (R29) (born in 1)
+	1  i8const %rax <- [4529466904]
+
+LOCAL REGALLOC BLOCK 2:
+	1  il_seq_point intr il: 0x0
+	2  il_seq_point il: 0x1
+	3  add_imm R25 <- %rbp [-32] clobbers: 1
+	4  load_membase R33 <- [%rbp + 0xffffffffffffffc0]
+	5  load_membase R35 <- [%rbp + 0xffffffffffffffc8]
+	6  load_membase R38 <- [%rbp + 0xffffffffffffffd0]
+	7  load_membase R40 <- [%rbp + 0xffffffffffffffd8]
+	8  move R26 <- R25
+	9  vcall2 [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] [%rcx <- R33] [%r8 <- R35] [%rsi <- R38] [%rdx <- R40] clobbers: c
+	10 il_seq_point il: 0x8, nonempty-stack
+	11 il_seq_point il: 0x9
+	12 il_seq_point il: 0xb
+	13 il_seq_point intr il: 0xc
+	14 loadx_membase R41 <- [%rbp + 0xffffffffffffffe0]
+	15 load_membase R42 <- [%rbp + 0xfffffffffffffff8]
+	16 storex_membase [R42] <- R41
+liveness: R25 [3 - 3]
+liveness: R26 [8 - 8]
+liveness: R33 [4 - 4]
+liveness: R35 [5 - 5]
+liveness: R38 [6 - 6]
+liveness: R40 [7 - 7]
+liveness: R41 [14 - 14]
+liveness: R42 [15 - 15]
+processing:	16 storex_membase [R42] <- R41
+	assigned dreg %rax to dest R42
+	assigned sreg1 p:xmm0 to R41
+	16 storex_membase [%rax] <- p:xmm0
+processing:	15 load_membase R42 <- [%rbp + 0xfffffffffffffff8]
+	assigned dreg %rax to dest R42
+	freeable %rax (R42) (born in 15)
+	15 load_membase %rax <- [%rbp + 0xfffffffffffffff8]
+processing:	14 loadx_membase R41 <- [%rbp + 0xffffffffffffffe0]
+	assigned dreg p:xmm0 to dest R41
+	freeable p:xmm0 (R41) (born in 14)
+	14 loadx_membase p:xmm0 <- [%rbp + 0xffffffffffffffe0]
+processing:	13 il_seq_point intr il: 0xc
+	13 il_seq_point intr il: 0xc
+processing:	12 il_seq_point il: 0xb
+	12 il_seq_point il: 0xb
+processing:	11 il_seq_point il: 0x9
+	11 il_seq_point il: 0x9
+processing:	10 il_seq_point il: 0x8, nonempty-stack
+	10 il_seq_point il: 0x8, nonempty-stack
+processing:	9  vcall2 [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] [%rcx <- R33] [%r8 <- R35] [%rsi <- R38] [%rdx <- R40] clobbers: c
+	assigned arg reg %rdi to R26
+	assigned arg reg %rcx to R33
+	assigned arg reg %r8 to R35
+	assigned arg reg %rsi to R38
+	assigned arg reg %rdx to R40
+	9  vcall2 [System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Min<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rdi <- R26] [%rcx <- R33] [%r8 <- R35] [%rsi <- R38] [%rdx <- R40] clobbers: c
+processing:	8  move R26 <- R25
+	assigned dreg %rdi to dest R26
+	freeable %rdi (R26) (born in 8)
+	assigned sreg1 %rdi to R25
+	8  move %rdi <- %rdi
+processing:	7  load_membase R40 <- [%rbp + 0xffffffffffffffd8]
+	assigned dreg %rdx to dest R40
+	freeable %rdx (R40) (born in 7)
+	7  load_membase %rdx <- [%rbp + 0xffffffffffffffd8]
+processing:	6  load_membase R38 <- [%rbp + 0xffffffffffffffd0]
+	assigned dreg %rsi to dest R38
+	freeable %rsi (R38) (born in 6)
+	6  load_membase %rsi <- [%rbp + 0xffffffffffffffd0]
+processing:	5  load_membase R35 <- [%rbp + 0xffffffffffffffc8]
+	assigned dreg %r8 to dest R35
+	freeable %r8 (R35) (born in 5)
+	5  load_membase %r8 <- [%rbp + 0xffffffffffffffc8]
+processing:	4  load_membase R33 <- [%rbp + 0xffffffffffffffc0]
+	assigned dreg %rcx to dest R33
+	freeable %rcx (R33) (born in 4)
+	4  load_membase %rcx <- [%rbp + 0xffffffffffffffc0]
+processing:	3  add_imm R25 <- %rbp [-32] clobbers: 1
+	assigned dreg %rdi to dest R25
+	freeable %rdi (R25) (born in 3)
+	need to copy sreg1 %rbp to dreg %rdi
+	forced copy from %rbp to %rdi
+	3  add_imm %rdi <- %rdi [-32] clobbers: 1
+processing:	2  il_seq_point il: 0x1
+	2  il_seq_point il: 0x1
+processing:	1  il_seq_point intr il: 0x0
+	1  il_seq_point intr il: 0x0
+CFA: [0] def_cfa: %rsp+0x8
+CFA: [0] offset: unknown at cfa-0x8
+CFA: [1] def_cfa_offset: 0x10
+CFA: [1] offset: %rbp at cfa-0x10
+CFA: [4] def_cfa_reg: %rbp
+Basic block 0 starting at offset 0x1c
+Basic block 2 starting at offset 0x3b
+Basic block 1 starting at offset 0x6e
+CFA: [6f] def_cfa: %rsp+0x8
+Method System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>) emitted at 0x109be3970 to 0x109be39e0 (code length 112)
+
+*** ASM for HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>) ***
+/var/folders/9q/30znkg553fb1vt7_qnx2v0040000gn/T/.GY3IZg:
+(__TEXT,__text) section
+loWorld_Program_test__System_Runtime_Intrinsics_Vector128_1_int__System_Runtime_Intrinsics_Vector128_1_int__System_Runtime_Intrinsics_Vector128_1_int__:
+0000000000000000	pushq	%rbp
+0000000000000001	movq	%rsp, %rbp
+0000000000000004	subq	$0x40, %rsp
+0000000000000008	movq	%rdi, -0x8(%rbp)
+000000000000000c	movq	%rsi, -0x30(%rbp)
+0000000000000010	movq	%rdx, -0x28(%rbp)
+0000000000000014	movq	%rcx, -0x40(%rbp)
+0000000000000018	movq	%r8, -0x38(%rbp)
+000000000000001c	movabsq	$0x10dfa2e18, %rax
+0000000000000026	testl	$0x1, (%rax)
+000000000000002c	je	0x3b
+000000000000002e	movabsq	$0x109a0d6b4, %r11
+0000000000000038	callq	*%r11
+000000000000003b	movq	%rbp, %rdi
+000000000000003e	addq	$-0x20, %rdi
+0000000000000042	movq	-0x40(%rbp), %rcx
+0000000000000046	movq	-0x38(%rbp), %r8
+000000000000004a	movq	-0x30(%rbp), %rsi
+000000000000004e	movq	-0x28(%rbp), %rdx
+0000000000000052	leaq	(%rbp), %rbp
+0000000000000056	movabsq	$0x109be39e0, %r11
+0000000000000060	callq	*%r11
+0000000000000063	movups	-0x20(%rbp), %xmm0
+0000000000000067	movq	-0x8(%rbp), %rax
+000000000000006b	movups	%xmm0, (%rax)
+000000000000006e	leave
+000000000000006f	retq
+<3, 3, 3, 3>
+***
+

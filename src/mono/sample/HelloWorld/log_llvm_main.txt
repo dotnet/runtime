@@ -1,0 +1,652 @@
+converting llvm method void HelloWorld.Program:Main (string[])
+creating vars
+created temp 0 (R16) of type System.Object
+	arg [0]:  arg R16 <-
+creating locals
+	local [0]: created temp 1 (R17) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+	local [1]: created temp 2 (R18) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+	local [2]: created temp 3 (R19) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+locals done
+method to IR HelloWorld.Program:Main (string[])
+converting (in B3: stack: 0) IL_0000: nop       
+converting (in B3: stack: 0) IL_0001: ldc.i4.3  
+converting (in B3: stack: 1) IL_0002: call      0x0a000011
+cmethod = System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Create (int)
+converting (in B3: stack: 1) IL_0007: stloc.0   
+converting (in B3: stack: 0) IL_0008: ldc.i4.5  
+converting (in B3: stack: 1) IL_0009: call      0x0a000011
+cmethod = System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Create (int)
+converting (in B3: stack: 1) IL_000e: stloc.1   
+converting (in B3: stack: 0) IL_000f: ldloc.0   
+converting (in B3: stack: 1) IL_0010: ldloc.1   
+converting (in B3: stack: 2) IL_0011: call      0x06000001
+cmethod = System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)
+created temp 4 (R26) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+converting (in B3: stack: 1) IL_0016: stloc.2   
+converting (in B3: stack: 0) IL_0017: ldloc.2   
+converting (in B3: stack: 1) IL_0018: box       0x1b000001
+converting (in B3: stack: 1) IL_001d: call      0x0a000012
+cmethod = void System.Console:WriteLine (object)
+converting (in B3: stack: 0) IL_0022: nop       
+converting (in B3: stack: 0) IL_0023: ret       
+REGION BB0 IL_0000 ID_FFFFFFFF
+REGION BB2 IL_0000 ID_FFFFFFFF
+REGION BB3 IL_0023 ID_FFFFFFFF
+REGION BB1 IL_0000 ID_FFFFFFFF
+AFTER METHOD-TO-IR 0: [IN: , OUT:  BB2(0) ]
+AFTER METHOD-TO-IR 2: [IN:  BB0(0), OUT:  BB3(0) ]
+ xzero R17 <-
+ xzero R18 <-
+ xzero R19 <-
+AFTER METHOD-TO-IR 3: [IN:  BB2(0), OUT:  BB1(0) ]
+ il_seq_point intr il: 0x0
+ nop
+ il_seq_point il: 0x1
+ iconst R20 <- [3]
+ expand_i4 R21 <- R20
+ il_seq_point il: 0x7, nonempty-stack
+ xmove R17 <- R21
+ il_seq_point il: 0x8
+ iconst R22 <- [5]
+ expand_i4 R23 <- R22
+ il_seq_point il: 0xe, nonempty-stack
+ xmove R18 <- R23
+ il_seq_point il: 0xf
+ xmove R24 <- R17
+ xmove R25 <- R18
+ outarg_vtretaddr R27 <- R26
+ llvm_outarg_vt R28 <- R24
+ llvm_outarg_vt R29 <- R25
+ vcall R26 <- [System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rax <- R28] [%rax <- R29] clobbers: c
+ il_seq_point il: 0x16, nonempty-stack
+ xmove R19 <- R26
+ il_seq_point il: 0x17
+ xmove R30 <- R19
+ i8const R31 <- [140406424075320]
+ iconst R32 <- [32]
+ move R34 <- R31
+ move R35 <- R32
+ call R33 <- [(wrapper alloc) object object:AllocSmall (intptr,intptr)] [%rax <- R34] [%rax <- R35] clobbers: c
+ storex_membase [R33 + 0x10] <- R30
+ move R36 <- R33
+ voidcall [void System.Console:WriteLine (object)] [%rax <- R36] clobbers: c
+ il_seq_point il: 0x22, nonempty-stack
+ il_seq_point il: 0x22
+ nop
+ il_seq_point il: 0x23
+ br [B1]
+AFTER METHOD-TO-IR 1: [IN:  BB3(0), OUT:  ]
+CCOPY/2: R24 -> R17
+CCOPY/2: R25 -> R18
+
+HANDLE-GLOBAL-VREGS BLOCK 0:
+
+HANDLE-GLOBAL-VREGS BLOCK 2:
+ xzero R17 <-
+ xzero R18 <-
+ xzero R19 <-
+
+HANDLE-GLOBAL-VREGS BLOCK 3:
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ iconst R20 <- [3]
+ expand_i4 R21 <- R20
+ il_seq_point il: 0x7, nonempty-stack
+ xmove R17 <- R21
+ il_seq_point il: 0x8
+ iconst R22 <- [5]
+ expand_i4 R23 <- R22
+ il_seq_point il: 0xe, nonempty-stack
+ xmove R18 <- R23
+ il_seq_point il: 0xf
+ xmove R24 <- R17
+ xmove R25 <- R18
+ outarg_vtretaddr R27 <- R26
+ llvm_outarg_vt R28 <- R17
+ llvm_outarg_vt R29 <- R18
+ vcall R26 <- [System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rax <- R28] [%rax <- R29] clobbers: c
+ il_seq_point il: 0x16, nonempty-stack
+ xmove R19 <- R26
+ il_seq_point il: 0x17
+ xmove R30 <- R19
+ i8const R31 <- [140406424075320]
+ iconst R32 <- [32]
+ i8const R34 <- [140406424075320]
+ iconst R35 <- [32]
+ call R33 <- [(wrapper alloc) object object:AllocSmall (intptr,intptr)] [%rax <- R34] [%rax <- R35] clobbers: c
+ storex_membase [R33 + 0x10] <- R30
+ move R36 <- R33
+ voidcall [void System.Console:WriteLine (object)] [%rax <- R36] clobbers: c
+ il_seq_point il: 0x22, nonempty-stack
+ il_seq_point il: 0x22
+ il_seq_point il: 0x23
+ br [B1]
+
+HANDLE-GLOBAL-VREGS BLOCK 1:
+CONVERTED R26(4) TO VREG.
+	Reverse copyprop in BB3 on  xmove R19 <- R26
+	Reverse copyprop in BB3 on  xmove R18 <- R23
+	Reverse copyprop in BB3 on  xmove R17 <- R21
+BB0 IN: 
+BB2 IN: 0 
+BB3 IN: 2 
+BB1 IN: 3 
+DTREE HelloWorld.Program:Main (string[]) 0
+BB0(dfn=0) (IDOM=BB-1):  BB0
+BB2(dfn=1) (IDOM=BB0):  BB0 BB2
+BB3(dfn=2) (IDOM=BB2):  BB0 BB2 BB3
+BB1(dfn=3) (IDOM=BB3):  BB0 BB2 BB3 BB1
+SKIPPING SAFEPOINTS for code compiled with LLVM
+
+COMPUTE SSA 4 (R37-)
+
+
+LIVENESS:
+BLOCK BB0 (BB2, ):
+GEN  BB0: {}
+KILL BB0: {}
+BLOCK BB2 (BB3, ):
+	1  xzero R17 <-
+	KILL: R17(1)
+	1  xzero R18 <-
+	KILL: R18(2)
+	1  xzero R19 <-
+	KILL: R19(3)
+GEN  BB2: {}
+KILL BB2: {1, 2, 3}
+BLOCK BB3 (BB1, ):
+	1  il_seq_point intr il: 0x0
+	1  il_seq_point il: 0x1
+	1  iconst R20 <- [3]
+	1  expand_i4 R17 <- R20
+	KILL: R17(1)
+	1  il_seq_point il: 0x7, nonempty-stack
+	1  il_seq_point il: 0x8
+	1  iconst R22 <- [5]
+	1  expand_i4 R18 <- R22
+	KILL: R18(2)
+	1  il_seq_point il: 0xe, nonempty-stack
+	1  il_seq_point il: 0xf
+	1  outarg_vtretaddr R27 <- R26
+	1  llvm_outarg_vt R28 <- R17
+	GEN: R17(1)
+	1  llvm_outarg_vt R29 <- R18
+	GEN: R18(2)
+	1  vcall R19 <- [System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rax <- R28] [%rax <- R29] clobbers: c
+	KILL: R19(3)
+	1  il_seq_point il: 0x16, nonempty-stack
+	1  il_seq_point il: 0x17
+	1  xmove R30 <- R19
+	GEN: R19(3)
+	1  i8const R34 <- [140406424075320]
+	1  iconst R35 <- [32]
+	1  call R33 <- [(wrapper alloc) object object:AllocSmall (intptr,intptr)] [%rax <- R34] [%rax <- R35] clobbers: c
+	1  storex_membase [R33 + 0x10] <- R30
+	1  move R36 <- R33
+	1  voidcall [void System.Console:WriteLine (object)] [%rax <- R36] clobbers: c
+	1  il_seq_point il: 0x22, nonempty-stack
+	1  il_seq_point il: 0x22
+	1  il_seq_point il: 0x23
+	1  br [B1]
+GEN  BB3: {}
+KILL BB3: {1, 2, 3}
+BLOCK BB1 ():
+GEN  BB1: {}
+KILL BB1: {}
+
+ITERATION:
+P: BB1(3): IN: BB3 OUT:
+P: BB3(2): IN: BB2 OUT:BB1 
+	LIVE IN  BB3: {}
+P: BB2(1): IN: BB0 OUT:BB3 
+	LIVE IN  BB2: {}
+P: BB0(0): IN: OUT:BB2 
+	LIVE IN  BB0: {}
+IT: 4 3.
+LIVE IN  BB1: {}
+LIVE OUT BB1: {}
+LIVE IN  BB3: {}
+LIVE OUT BB3: {}
+LIVE IN  BB2: {}
+LIVE OUT BB2: {}
+LIVE IN  BB0: {}
+LIVE OUT BB0: {}
+V0: [0x0 - 0x0]
+V1: [0x40003 - 0x80018]
+V2: [0x40005 - 0x8001a]
+V3: [0x40007 - 0x80022]
+
+RENAME VARS BLOCK 0:
+
+RENAME VARS BLOCK 2:
+
+RENAME VARS BLOCK 3:
+created temp 4 (R37) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+  R17 -> R37
+created temp 5 (R38) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+  R18 -> R38
+created temp 6 (R39) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+  R19 -> R39
+
+RENAME VARS BLOCK 1:
+
+END COMPUTE SSA.
+
+IR code for method HelloWorld.Program:Main (string[])
+
+BB0 (0) (len: 0): 
+	prev:		succ: BB2
+	idom: BB-1
+	dominators: BB0
+	dfrontier:
+
+BB2 (1) (len: 0): 
+ xzero R17 <-
+ xzero R18 <-
+ xzero R19 <-
+	prev: BB0		succ: BB3
+	idom: BB0
+	dominators: [BB0] BB2
+	dfrontier:
+
+BB3 (2) (len: 36): 
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ iconst R20 <- [3]
+ expand_i4 R37 <- R20
+ il_seq_point il: 0x7, nonempty-stack
+ il_seq_point il: 0x8
+ iconst R22 <- [5]
+ expand_i4 R38 <- R22
+ il_seq_point il: 0xe, nonempty-stack
+ il_seq_point il: 0xf
+ outarg_vtretaddr R27 <- R26
+ llvm_outarg_vt R28 <- R37
+ llvm_outarg_vt R29 <- R38
+ vcall R39 <- [System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rax <- R28] [%rax <- R29] clobbers: c
+ il_seq_point il: 0x16, nonempty-stack
+ il_seq_point il: 0x17
+ xmove R30 <- R39
+ i8const R34 <- [140406424075320]
+ iconst R35 <- [32]
+ call R33 <- [(wrapper alloc) object object:AllocSmall (intptr,intptr)] [%rax <- R34] [%rax <- R35] clobbers: c
+ storex_membase [R33 + 0x10] <- R30
+ move R36 <- R33
+ voidcall [void System.Console:WriteLine (object)] [%rax <- R36] clobbers: c
+ il_seq_point il: 0x22, nonempty-stack
+ il_seq_point il: 0x22
+ il_seq_point il: 0x23
+ br [B1]
+	prev: BB2		succ: BB1
+	idom: BB2
+	dominators: BB0 [BB2] BB3
+	dfrontier:
+
+BB1 (3) (len: 0): 
+	prev: BB3		succ:
+	idom: BB3
+	dominators: BB0 BB2 [BB3] BB1
+	dfrontier:
+
+
+ABCREM BLOCK 0:
+
+ABCREM BLOCK 2:
+
+ABCREM BLOCK 3:
+ iconst R20 <- [3]
+Summarized variable 20: CONSTANT 3, not-null = 0
+ iconst R22 <- [5]
+Summarized variable 22: CONSTANT 5, not-null = 0
+ outarg_vtretaddr R27 <- R26
+Summarized variable 27: ANY
+ llvm_outarg_vt R28 <- R37
+Summarized variable 28: ANY
+ llvm_outarg_vt R29 <- R38
+Summarized variable 29: ANY
+ i8const R34 <- [140406424075320]
+Summarized variable 34: ANY
+ iconst R35 <- [32]
+Summarized variable 35: CONSTANT 32, not-null = 0
+ call R33 <- [(wrapper alloc) object object:AllocSmall (intptr,intptr)] [%rax <- R34] [%rax <- R35] clobbers: c
+Summarized variable 33: ANY
+ move R36 <- R33
+Summarized variable 36: VARIABLE 33, delta 0, not-null = 2
+
+ABCREM BLOCK 1:
+Added symmetric summarized value for variable variable 36 (to 33): VARIABLE 36, delta 0, not-null = 2
+
+ABCREM BLOCK/2 0 [dfn 0]...
+
+ABCREM BLOCK/2 2 [dfn 1]...
+ xzero R17 <-
+ xzero R18 <-
+ xzero R19 <-
+
+ABCREM BLOCK/2 3 [dfn 2]...
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ iconst R20 <- [3]
+ expand_i4 R37 <- R20
+ il_seq_point il: 0x7, nonempty-stack
+ il_seq_point il: 0x8
+ iconst R22 <- [5]
+ expand_i4 R38 <- R22
+ il_seq_point il: 0xe, nonempty-stack
+ il_seq_point il: 0xf
+ outarg_vtretaddr R27 <- R26
+ llvm_outarg_vt R28 <- R37
+ llvm_outarg_vt R29 <- R38
+ vcall R39 <- [System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rax <- R28] [%rax <- R29] clobbers: c
+ il_seq_point il: 0x16, nonempty-stack
+ il_seq_point il: 0x17
+ xmove R30 <- R39
+ i8const R34 <- [140406424075320]
+ iconst R35 <- [32]
+ call R33 <- [(wrapper alloc) object object:AllocSmall (intptr,intptr)] [%rax <- R34] [%rax <- R35] clobbers: c
+ storex_membase [R33 + 0x10] <- R30
+ move R36 <- R33
+ voidcall [void System.Console:WriteLine (object)] [%rax <- R36] clobbers: c
+ il_seq_point il: 0x22, nonempty-stack
+ il_seq_point il: 0x22
+ il_seq_point il: 0x23
+ br [B1]
+
+ABCREM BLOCK/2 1 [dfn 3]...
+BEFORE LOWER-VTYPE-OPTS  0: [IN: , OUT:  BB2(1) ]
+AFTER LOWER-VTYPE-OPTS  0: [IN: , OUT:  BB2(1) ]
+BEFORE LOWER-VTYPE-OPTS  2: [IN:  BB0(0), OUT:  BB3(2) ]
+ xzero R17 <-
+ xzero R18 <-
+ xzero R19 <-
+AFTER LOWER-VTYPE-OPTS  2: [IN:  BB0(0), OUT:  BB3(2) ]
+ xzero R17 <-
+ xzero R18 <-
+ xzero R19 <-
+BEFORE LOWER-VTYPE-OPTS  3: [IN:  BB2(1), OUT:  BB1(3) ]
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ iconst R20 <- [3]
+ expand_i4 R37 <- R20
+ il_seq_point il: 0x7, nonempty-stack
+ il_seq_point il: 0x8
+ iconst R22 <- [5]
+ expand_i4 R38 <- R22
+ il_seq_point il: 0xe, nonempty-stack
+ il_seq_point il: 0xf
+ outarg_vtretaddr R27 <- R26
+ llvm_outarg_vt R28 <- R37
+ llvm_outarg_vt R29 <- R38
+ vcall R39 <- [System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rax <- R28] [%rax <- R29] clobbers: c
+ il_seq_point il: 0x16, nonempty-stack
+ il_seq_point il: 0x17
+ xmove R30 <- R39
+ i8const R34 <- [140406424075320]
+ iconst R35 <- [32]
+ call R33 <- [(wrapper alloc) object object:AllocSmall (intptr,intptr)] [%rax <- R34] [%rax <- R35] clobbers: c
+ storex_membase [R33 + 0x10] <- R30
+ move R36 <- R33
+ voidcall [void System.Console:WriteLine (object)] [%rax <- R36] clobbers: c
+ il_seq_point il: 0x22, nonempty-stack
+ il_seq_point il: 0x22
+ il_seq_point il: 0x23
+ br [B1]
+AFTER LOWER-VTYPE-OPTS  3: [IN:  BB2(1), OUT:  BB1(3) ]
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ iconst R20 <- [3]
+ expand_i4 R37 <- R20
+ il_seq_point il: 0x7, nonempty-stack
+ il_seq_point il: 0x8
+ iconst R22 <- [5]
+ expand_i4 R38 <- R22
+ il_seq_point il: 0xe, nonempty-stack
+ il_seq_point il: 0xf
+ ldaddr R27 <- R39
+ llvm_outarg_vt R28 <- R37
+ llvm_outarg_vt R29 <- R38
+ vcall R39 <- [System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rax <- R28] [%rax <- R29] clobbers: c
+ il_seq_point il: 0x16, nonempty-stack
+ il_seq_point il: 0x17
+ xmove R30 <- R39
+ i8const R34 <- [140406424075320]
+ iconst R35 <- [32]
+ call R33 <- [(wrapper alloc) object object:AllocSmall (intptr,intptr)] [%rax <- R34] [%rax <- R35] clobbers: c
+ storex_membase [R33 + 0x10] <- R30
+ move R36 <- R33
+ voidcall [void System.Console:WriteLine (object)] [%rax <- R36] clobbers: c
+ il_seq_point il: 0x22, nonempty-stack
+ il_seq_point il: 0x22
+ il_seq_point il: 0x23
+ br [B1]
+BEFORE LOWER-VTYPE-OPTS  1: [IN:  BB3(2), OUT:  ]
+AFTER LOWER-VTYPE-OPTS  1: [IN:  BB3(2), OUT:  ]
+DUMP BLOCK 0:
+DUMP BLOCK 2:
+ xzero R17 <-
+ xzero R18 <-
+ xzero R19 <-
+DUMP BLOCK 3:
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ iconst R20 <- [3]
+ expand_i4 R37 <- R20
+ il_seq_point il: 0x7, nonempty-stack
+ il_seq_point il: 0x8
+ iconst R22 <- [5]
+ expand_i4 R38 <- R22
+ il_seq_point il: 0xe, nonempty-stack
+ il_seq_point il: 0xf
+ ldaddr R27 <- R39
+ llvm_outarg_vt R28 <- R37
+ llvm_outarg_vt R29 <- R38
+ vcall R39 <- [System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)] [%rax <- R28] [%rax <- R29] clobbers: c
+ il_seq_point il: 0x16, nonempty-stack
+ il_seq_point il: 0x17
+ xmove R30 <- R39
+ i8const R34 <- [140406424075320]
+ iconst R35 <- [32]
+ call R33 <- [(wrapper alloc) object object:AllocSmall (intptr,intptr)] [%rax <- R34] [%rax <- R35] clobbers: c
+ storex_membase [R33 + 0x10] <- R30
+ move R36 <- R33
+ voidcall [void System.Console:WriteLine (object)] [%rax <- R36] clobbers: c
+ il_seq_point il: 0x22, nonempty-stack
+ il_seq_point il: 0x22
+ il_seq_point il: 0x23
+ br [B1]
+DUMP BLOCK 1:
+
+*** Unoptimized LLVM IR for HelloWorld.Program:Main (string[]) ***
+; ModuleID = 'jit-module-Main'
+source_filename = "jit-module-Main"
+
+@mono_threads_state_poll = global void ()* inttoptr (i64 4382128016 to void ()*)
+@"[tramp_687] HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)" = global void (i64, i64, i64, i64, i64)* inttoptr (i64 4382777112 to void (i64, i64, i64, i64, i64)*)
+@"[tramp_688] (wrapper alloc) object:AllocSmall (intptr,intptr)" = global i64* (i64, i64)* inttoptr (i64 4382130653 to i64* (i64, i64)*)
+@"[tramp_689] System.Console:WriteLine (object)" = global void (i64*)* inttoptr (i64 4382777126 to void (i64*)*)
+
+; Function Attrs: uwtable
+define dso_local monocc void @"HelloWorld.Program:Main (string[])"(i64* %arg_args) #0 gc "coreclr" {
+BB0:
+  %vreg_loc_39 = alloca <4 x i32>, align 16
+  %llvm_outarg_vt1 = alloca <4 x i32>, align 16
+  %llvm_outarg_vt = alloca <4 x i32>, align 16
+  br label %BB2
+
+BB2:                                              ; preds = %BB0
+  br label %BB3
+
+BB3:                                              ; preds = %BB2
+  store <4 x i32> <i32 3, i32 3, i32 3, i32 3>, <4 x i32>* %llvm_outarg_vt, align 16
+  store <4 x i32> <i32 5, i32 5, i32 5, i32 5>, <4 x i32>* %llvm_outarg_vt1, align 16
+  %0 = load void (i64, i64, i64, i64, i64)*, void (i64, i64, i64, i64, i64)** @"[tramp_687] HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)", align 8
+  %1 = ptrtoint <4 x i32>* %vreg_loc_39 to i64
+  %2 = bitcast <4 x i32>* %llvm_outarg_vt to i8*
+  %3 = getelementptr i8, i8* %2, i32 0
+  %4 = bitcast i8* %3 to i64*
+  %5 = load i64, i64* %4, align 4
+  %6 = getelementptr i8, i8* %2, i32 8
+  %7 = bitcast i8* %6 to i64*
+  %8 = load i64, i64* %7, align 4
+  %9 = bitcast <4 x i32>* %llvm_outarg_vt1 to i8*
+  %10 = getelementptr i8, i8* %9, i32 0
+  %11 = bitcast i8* %10 to i64*
+  %12 = load i64, i64* %11, align 4
+  %13 = getelementptr i8, i8* %9, i32 8
+  %14 = bitcast i8* %13 to i64*
+  %15 = load i64, i64* %14, align 4
+  notail call monocc void %0(i64 %1, i64 %5, i64 %8, i64 %12, i64 %15), !managed_name !0
+  %process_call_vtype_ret_addr = load <4 x i32>, <4 x i32>* %vreg_loc_39, align 16
+  %16 = load volatile <4 x i32>, <4 x i32>* %vreg_loc_39, align 16
+  %17 = load i64* (i64, i64)*, i64* (i64, i64)** @"[tramp_688] (wrapper alloc) object:AllocSmall (intptr,intptr)", align 8
+  %18 = notail call monocc noalias nonnull align 8 i64* %17(i64 140406424075320, i64 32), !managed_name !1
+  %19 = ptrtoint i64* %18 to i64
+  %20 = add i64 %19, 16
+  %21 = inttoptr i64 %20 to <4 x i32>*
+  store <4 x i32> %16, <4 x i32>* %21, align 1
+  %22 = load void (i64*)*, void (i64*)** @"[tramp_689] System.Console:WriteLine (object)", align 8
+  notail call monocc void %22(i64* %18), !managed_name !2
+  br label %BB1
+
+BB1:                                              ; preds = %BB3
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone
+define void @gc.safepoint_poll() #1 {
+gc.safepoint_poll.entry:
+  %0 = load i64, i64* inttoptr (i64 4453764632 to i64*), align 4
+  %1 = icmp eq i64 %0, 0
+  br i1 %1, label %gc.safepoint_poll.exit, label %gc.safepoint_poll.poll, !prof !3
+
+gc.safepoint_poll.poll:                           ; preds = %gc.safepoint_poll.entry
+  %2 = load void ()*, void ()** @mono_threads_state_poll, align 8
+  call coldcc void %2()
+  br label %gc.safepoint_poll.exit
+
+gc.safepoint_poll.exit:                           ; preds = %gc.safepoint_poll.poll, %gc.safepoint_poll.entry
+  ret void
+}
+
+attributes #0 = { uwtable }
+attributes #1 = { noinline nounwind optnone }
+
+!0 = !{!"HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)"}
+!1 = !{!"(wrapper alloc) object:AllocSmall (intptr,intptr)"}
+!2 = !{!"System.Console:WriteLine (object)"}
+!3 = !{!"branch_weights", i32 1000, i32 1}
+
+***
+
+
+*** Optimized LLVM IR for HelloWorld.Program:Main (string[]) ***
+; ModuleID = 'jit-module-Main'
+source_filename = "jit-module-Main"
+target datalayout = "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+
+@mono_threads_state_poll = global void ()* inttoptr (i64 4382128016 to void ()*)
+@"[tramp_687] HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)" = global void (i64, i64, i64, i64, i64)* inttoptr (i64 4382777112 to void (i64, i64, i64, i64, i64)*)
+@"[tramp_688] (wrapper alloc) object:AllocSmall (intptr,intptr)" = global i64* (i64, i64)* inttoptr (i64 4382130653 to i64* (i64, i64)*)
+@"[tramp_689] System.Console:WriteLine (object)" = global void (i64*)* inttoptr (i64 4382777126 to void (i64*)*)
+
+; Function Attrs: uwtable
+define dso_local monocc void @"HelloWorld.Program:Main (string[])"(i64* %arg_args) #0 gc "coreclr" {
+BB0:
+  %vreg_loc_39 = alloca <4 x i32>, align 16
+  %0 = load void (i64, i64, i64, i64, i64)*, void (i64, i64, i64, i64, i64)** @"[tramp_687] HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)", align 8
+  %1 = ptrtoint <4 x i32>* %vreg_loc_39 to i64
+  %2 = load i64, i64* inttoptr (i64 4453764632 to i64*), align 4
+  %3 = icmp eq i64 %2, 0
+  br i1 %3, label %gc.safepoint_poll.exit, label %gc.safepoint_poll.poll.i, !prof !1
+
+gc.safepoint_poll.poll.i:                         ; preds = %BB0
+  %4 = load void ()*, void ()** @mono_threads_state_poll, align 8
+  call coldcc void %4() #2
+  br label %gc.safepoint_poll.exit
+
+gc.safepoint_poll.exit:                           ; preds = %BB0, %gc.safepoint_poll.poll.i
+  notail call monocc void %0(i64 %1, i64 12884901891, i64 12884901891, i64 21474836485, i64 21474836485), !managed_name !2
+  %5 = load volatile <4 x i32>, <4 x i32>* %vreg_loc_39, align 16
+  %6 = load i64* (i64, i64)*, i64* (i64, i64)** @"[tramp_688] (wrapper alloc) object:AllocSmall (intptr,intptr)", align 8
+  %7 = notail call monocc noalias nonnull align 8 i64* %6(i64 140406424075320, i64 32), !managed_name !3
+  %8 = ptrtoint i64* %7 to i64
+  %9 = add i64 %8, 16
+  %10 = inttoptr i64 %9 to <4 x i32>*
+  store <4 x i32> %5, <4 x i32>* %10, align 8
+  %11 = load void (i64*)*, void (i64*)** @"[tramp_689] System.Console:WriteLine (object)", align 8
+  notail call monocc void %11(i64* nonnull %7), !managed_name !4
+  ret void
+}
+
+; Function Attrs: noinline nounwind optnone
+define void @gc.safepoint_poll() #1 {
+gc.safepoint_poll.entry:
+  %0 = load i64, i64* inttoptr (i64 4453764632 to i64*), align 4
+  %1 = icmp eq i64 %0, 0
+  br i1 %1, label %gc.safepoint_poll.exit, label %gc.safepoint_poll.poll, !prof !1
+
+gc.safepoint_poll.poll:                           ; preds = %gc.safepoint_poll.entry
+  %2 = load void ()*, void ()** @mono_threads_state_poll, align 8
+  call coldcc void %2()
+  br label %gc.safepoint_poll.exit
+
+gc.safepoint_poll.exit:                           ; preds = %gc.safepoint_poll.poll, %gc.safepoint_poll.entry
+  ret void
+}
+
+attributes #0 = { uwtable }
+attributes #1 = { noinline nounwind optnone }
+attributes #2 = { nounwind }
+
+!mono.function_indexes = !{!0}
+
+!0 = !{!"HelloWorld.Program:Main (string[])", i32 1}
+!1 = !{!"branch_weights", i32 1000, i32 1}
+!2 = !{!"HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)"}
+!3 = !{!"(wrapper alloc) object:AllocSmall (intptr,intptr)"}
+!4 = !{!"System.Console:WriteLine (object)"}
+
+***
+
+CFA: [0] def_cfa: %rsp+0x8
+CFA: [0] offset: pc at cfa-0x8
+CFA: [4] advance loc
+CFA: [4] def_cfa_offset: 0x30
+LLVM Method void HelloWorld.Program:Main (string[]) emitted at 0x1053bdf40 to 0x1053bdfd5 (code length 149)
+
+*** ASM for HelloWorld.Program:Main (string[]) ***
+/var/folders/9q/30znkg553fb1vt7_qnx2v0040000gn/T/.ZTxSIZ:
+(__TEXT,__text) section
+loWorld_Program_Main__string___:
+0000000000000000	subq	$0x28, %rsp
+0000000000000004	movabsq	$0x600003ee9bc8, %rax
+000000000000000e	movq	(%rax), %r9
+0000000000000011	movabsq	$0x109770e18, %rax
+000000000000001b	cmpq	$0x0, (%rax)
+000000000000001f	jne	0x87
+0000000000000021	leaq	0x10(%rsp), %rdi
+0000000000000026	movabsq	$0x300000003, %rdx
+0000000000000030	movabsq	$0x500000005, %rcx
+000000000000003a	movq	%rdx, %rsi
+000000000000003d	movq	%rcx, %r8
+0000000000000040	callq	*%r9
+0000000000000043	vmovaps	0x10(%rsp), %xmm0
+0000000000000049	vmovaps	%xmm0, (%rsp)
+000000000000004e	movabsq	$0x600003ee9bd0, %rax
+0000000000000058	movabsq	$0x7fb2eb07fc38, %rdi
+0000000000000062	movl	$0x20, %esi
+0000000000000067	callq	*(%rax)
+0000000000000069	vmovaps	(%rsp), %xmm0
+000000000000006e	vmovups	%xmm0, 0x10(%rax)
+0000000000000073	movabsq	$0x600003ee9bd8, %rcx
+000000000000007d	movq	%rax, %rdi
+0000000000000080	callq	*(%rcx)
+0000000000000082	addq	$0x28, %rsp
+0000000000000086	retq
+0000000000000087	movabsq	$0x600003ee9bc0, %rax
+0000000000000091	callq	*(%rax)
+0000000000000093	jmp	0x21
+<8, 8, 8, 8>
+***
+
+~~~Reached emit_entry_bb for test

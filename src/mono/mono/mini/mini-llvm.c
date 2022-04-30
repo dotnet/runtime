@@ -3828,6 +3828,9 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (cfg->method, (const char **) names);
 
+	if (strstr(ctx->method_name, "test") != NULL)
+		printf("~~~Reached emit_entry_bb for test\n");
+
 	for (int i = 0; i < sig->param_count; ++i) {
 		LLVMArgInfo *ainfo = &linfo->args [i + sig->hasthis];
 		int reg = cfg->args [i + sig->hasthis]->dreg;
@@ -3857,6 +3860,12 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 			emit_args_to_vtype (ctx, builder, ainfo->type, ctx->addresses [reg], ainfo, args);
 			break;
+		}
+		case LLVMArgVtypeInSIMDReg: {
+			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
+
+			ctx->addresses [reg] = build_alloca (ctx, ainfo->type);
+			LLVMBuildStore (builder, arg, convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMTypeOf (arg), 0)));
 		}
 		case LLVMArgVtypeByVal: {
 			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
@@ -3949,6 +3958,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 		switch (ainfo->storage) {
 		case LLVMArgVtypeInReg:
+		case LLVMArgVtypeInSIMDReg:
 		case LLVMArgVtypeByVal:
 		case LLVMArgAsIArgs:
 			// FIXME: Enabling this fails on windows
@@ -4496,6 +4506,10 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 
 			// FIXME: alignment
 			// FIXME: Get rid of the VMOVE
+			break;
+		}
+		case LLVMArgVtypeInSIMDReg: {
+			args [pindex] = convert (ctx, LLVMBuildLoad (ctx->builder, addresses [reg], "load_param"), IntPtrType ());
 			break;
 		}
 		case LLVMArgVtypeByVal:
@@ -11597,6 +11611,9 @@ emit_method_inner (EmitContext *ctx)
 
 	sig = mono_method_signature_internal (cfg->method);
 	ctx->sig = sig;
+
+	if (strstr(ctx->method_name, "test") != NULL)
+		printf("~~~Reached emit_method_inner for test\n");
 
 	linfo = get_llvm_call_info (cfg, sig);
 	ctx->linfo = linfo;

@@ -1026,6 +1026,8 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 	case SN_Xor:
 		if (!is_element_type_primitive (fsig->params [0]))
 			return NULL;
+		if (id == SN_Min)
+			printf("~~~Reached!~~~\n");
 		return emit_simd_ins_for_binary_op (cfg, klass, fsig, args, arg0_type, id);
 	case SN_AndNot:
 #ifdef TARGET_ARM64

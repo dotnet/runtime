@@ -1,0 +1,404 @@
+converting llvm method System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)
+created temp 0 (R16) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+creating vars
+created temp 1 (R17) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+created temp 2 (R18) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+	return :  arg R16 <-
+	arg [0]:  arg R17 <-
+	arg [1]:  arg R18 <-
+creating locals
+	local [0]: created temp 3 (R19) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+locals done
+created temp 4 (R20) of type System.IntPtr
+vret_addr =  arg R20 <-
+method to IR HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)
+converting (in B3: stack: 0) IL_0000: nop       
+converting (in B3: stack: 0) IL_0001: ldarg.0   
+converting (in B3: stack: 1) IL_0002: ldarg.1   
+converting (in B3: stack: 2) IL_0003: call      0x2b000001
+cmethod = System.Runtime.Intrinsics.Vector128`1<int> System.Runtime.Intrinsics.Vector128:Add<int> (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)
+converting (in B3: stack: 1) IL_0008: stloc.0   
+converting (in B3: stack: 0) IL_0009: br.s      IL_000b
+converting (in B4: stack: 0) IL_000b: ldloc.0   
+converting (in B4: stack: 1) IL_000c: ret       
+REGION BB0 IL_0000 ID_FFFFFFFF
+REGION BB2 IL_0000 ID_FFFFFFFF
+REGION BB3 IL_0009 ID_FFFFFFFF
+REGION BB4 IL_000c ID_FFFFFFFF
+REGION BB1 IL_0000 ID_FFFFFFFF
+AFTER METHOD-TO-IR 0: [IN: , OUT:  BB2(0) ]
+AFTER METHOD-TO-IR 2: [IN:  BB0(0), OUT:  BB3(0) ]
+ xzero R19 <-
+AFTER METHOD-TO-IR 3: [IN:  BB2(0), OUT:  BB4(0) ]
+ il_seq_point intr il: 0x0
+ nop
+ il_seq_point il: 0x1
+ xmove R21 <- R17
+ xmove R22 <- R18
+ xbinop R23 <- R21 R22
+ il_seq_point il: 0x8, nonempty-stack
+ xmove R19 <- R23
+ il_seq_point il: 0x9
+ br [B4]
+AFTER METHOD-TO-IR 4: [IN:  BB3(0), OUT:  BB1(0) ]
+ il_seq_point il: 0xb
+ xmove R24 <- R19
+ il_seq_point intr il: 0xc
+ move R25 <- R20
+ storex_membase [R25] <- R24
+ br [B1]
+AFTER METHOD-TO-IR 1: [IN:  BB4(0), OUT:  ]
+CCOPY/2: R21 -> R17
+CCOPY/2: R22 -> R18
+CCOPY: R25 -> R20
+CCOPY/2: R24 -> R19
+
+HANDLE-GLOBAL-VREGS BLOCK 0:
+
+HANDLE-GLOBAL-VREGS BLOCK 2:
+ xzero R19 <-
+
+HANDLE-GLOBAL-VREGS BLOCK 3:
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ xmove R21 <- R17
+ xmove R22 <- R18
+ xbinop R23 <- R17 R18
+ il_seq_point il: 0x8, nonempty-stack
+ xmove R19 <- R23
+ il_seq_point il: 0x9
+ br [B4]
+
+HANDLE-GLOBAL-VREGS BLOCK 4:
+ il_seq_point il: 0xb
+ xmove R24 <- R19
+ il_seq_point intr il: 0xc
+ move R25 <- R20
+ storex_membase [R20] <- R19
+ br [B1]
+
+HANDLE-GLOBAL-VREGS BLOCK 1:
+ setret R16
+	Reverse copyprop in BB3 on  xmove R19 <- R23
+BB0 IN: 
+BB2 IN: 0 
+BB3 IN: 2 
+BB4 IN: 3 
+BB1 IN: 4 
+DTREE HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>) 0
+BB0(dfn=0) (IDOM=BB-1):  BB0
+BB2(dfn=1) (IDOM=BB0):  BB0 BB2
+BB3(dfn=2) (IDOM=BB2):  BB0 BB2 BB3
+BB4(dfn=3) (IDOM=BB3):  BB0 BB2 BB3 BB4
+BB1(dfn=4) (IDOM=BB4):  BB0 BB2 BB3 BB4 BB1
+SKIPPING SAFEPOINTS for code compiled with LLVM
+
+COMPUTE SSA 5 (R26-)
+
+
+LIVENESS:
+BLOCK BB0 (BB2, ):
+GEN  BB0: {}
+KILL BB0: {}
+BLOCK BB2 (BB3, ):
+	1  xzero R19 <-
+	KILL: R19(3)
+GEN  BB2: {}
+KILL BB2: {3}
+BLOCK BB3 (BB4, ):
+	1  il_seq_point intr il: 0x0
+	1  il_seq_point il: 0x1
+	1  xbinop R19 <- R17 R18
+	GEN: R17(1)
+	GEN: R18(2)
+	KILL: R19(3)
+	1  il_seq_point il: 0x8, nonempty-stack
+	1  il_seq_point il: 0x9
+	1  br [B4]
+GEN  BB3: {1, 2}
+KILL BB3: {3}
+BLOCK BB4 (BB1, ):
+	1  il_seq_point il: 0xb
+	1  il_seq_point intr il: 0xc
+	1  storex_membase [R20] <- R19
+	GEN: R19(3)
+	1  br [B1]
+GEN  BB4: {3, 4}
+KILL BB4: {}
+BLOCK BB1 ():
+	1  setret R16
+	GEN: R16(0)
+GEN  BB1: {0}
+KILL BB1: {}
+
+ITERATION:
+P: BB1(4): IN: BB4 OUT:
+P: BB4(3): IN: BB3 OUT:BB1 
+	LIVE IN  BB4: {0, 3, 4}
+P: BB3(2): IN: BB2 OUT:BB4 
+	LIVE IN  BB3: {0, 1, 2, 4}
+P: BB2(1): IN: BB0 OUT:BB3 
+	LIVE IN  BB2: {0, 1, 2, 4}
+P: BB0(0): IN: OUT:BB2 
+	LIVE IN  BB0: {0, 1, 2, 4}
+IT: 5 4.
+LIVE IN  BB1: {0}
+LIVE OUT BB1: {}
+LIVE IN  BB4: {0, 3, 4}
+LIVE OUT BB4: {0}
+LIVE IN  BB3: {0, 1, 2, 4}
+LIVE OUT BB3: {0, 3, 4}
+LIVE IN  BB2: {0, 1, 2, 4}
+LIVE OUT BB2: {0, 1, 2, 4}
+LIVE IN  BB0: {0, 1, 2, 4}
+LIVE OUT BB0: {0, 1, 2, 4}
+V0: [0x0 - 0x100002]
+V1: [0x0 - 0x80006]
+V2: [0x0 - 0x80006]
+V3: [0x40003 - 0xc0006]
+V4: [0x0 - 0xc0006]
+
+RENAME VARS BLOCK 0:
+
+RENAME VARS BLOCK 2:
+
+RENAME VARS BLOCK 3:
+created temp 5 (R26) of type System.Runtime.Intrinsics.Vector128<System.Int32>
+  R19 -> R26
+
+RENAME VARS BLOCK 4:
+
+RENAME VARS BLOCK 1:
+
+END COMPUTE SSA.
+
+IR code for method HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)
+
+BB0 (0) (len: 0): 
+	prev:		succ: BB2
+	idom: BB-1
+	dominators: BB0
+	dfrontier:
+
+BB2 (1) (len: 0): 
+ xzero R19 <-
+	prev: BB0		succ: BB3
+	idom: BB0
+	dominators: [BB0] BB2
+	dfrontier:
+
+BB3 (2) (len: 11): 
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ xbinop R26 <- R17 R18
+ il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+ br [B4]
+	prev: BB2		succ: BB4
+	idom: BB2
+	dominators: BB0 [BB2] BB3
+	dfrontier:
+
+BB4 (3) (len: 2): 
+ il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+ storex_membase [R20] <- R26
+ br [B1]
+	prev: BB3		succ: BB1
+	idom: BB3
+	dominators: BB0 BB2 [BB3] BB4
+	dfrontier:
+
+BB1 (4) (len: 0): 
+ setret R16
+	prev: BB4		succ:
+	idom: BB4
+	dominators: BB0 BB2 BB3 [BB4] BB1
+	dfrontier:
+
+
+ABCREM BLOCK 0:
+
+ABCREM BLOCK 2:
+
+ABCREM BLOCK 3:
+
+ABCREM BLOCK 4:
+
+ABCREM BLOCK 1:
+
+ABCREM BLOCK/2 0 [dfn 0]...
+
+ABCREM BLOCK/2 2 [dfn 1]...
+ xzero R19 <-
+
+ABCREM BLOCK/2 3 [dfn 2]...
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ xbinop R26 <- R17 R18
+ il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+ br [B4]
+
+ABCREM BLOCK/2 4 [dfn 3]...
+ il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+ storex_membase [R20] <- R26
+ br [B1]
+
+ABCREM BLOCK/2 1 [dfn 4]...
+ setret R16
+BEFORE LOWER-VTYPE-OPTS  0: [IN: , OUT:  BB2(1) ]
+AFTER LOWER-VTYPE-OPTS  0: [IN: , OUT:  BB2(1) ]
+BEFORE LOWER-VTYPE-OPTS  2: [IN:  BB0(0), OUT:  BB3(2) ]
+ xzero R19 <-
+AFTER LOWER-VTYPE-OPTS  2: [IN:  BB0(0), OUT:  BB3(2) ]
+ xzero R19 <-
+BEFORE LOWER-VTYPE-OPTS  3: [IN:  BB2(1), OUT:  BB4(3) ]
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ xbinop R26 <- R17 R18
+ il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+ br [B4]
+AFTER LOWER-VTYPE-OPTS  3: [IN:  BB2(1), OUT:  BB4(3) ]
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ xbinop R26 <- R17 R18
+ il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+ br [B4]
+BEFORE LOWER-VTYPE-OPTS  4: [IN:  BB3(2), OUT:  BB1(4) ]
+ il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+ storex_membase [R20] <- R26
+ br [B1]
+AFTER LOWER-VTYPE-OPTS  4: [IN:  BB3(2), OUT:  BB1(4) ]
+ il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+ storex_membase [R20] <- R26
+ br [B1]
+BEFORE LOWER-VTYPE-OPTS  1: [IN:  BB4(3), OUT:  ]
+ setret R16
+AFTER LOWER-VTYPE-OPTS  1: [IN:  BB4(3), OUT:  ]
+ setret R16
+DUMP BLOCK 0:
+DUMP BLOCK 2:
+ xzero R19 <-
+DUMP BLOCK 3:
+ il_seq_point intr il: 0x0
+ il_seq_point il: 0x1
+ xbinop R26 <- R17 R18
+ il_seq_point il: 0x8, nonempty-stack
+ il_seq_point il: 0x9
+ br [B4]
+DUMP BLOCK 4:
+ il_seq_point il: 0xb
+ il_seq_point intr il: 0xc
+ storex_membase [R20] <- R26
+ br [B1]
+DUMP BLOCK 1:
+ setret R16
+~~~Reached emit_entry_bb for test
+
+*** Unoptimized LLVM IR for HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>) ***
+; ModuleID = 'jit-module-test'
+source_filename = "jit-module-test"
+
+; Function Attrs: noinline uwtable
+define dso_local monocc void @"HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)"(i64 %vret, i64 %arg_a, i64 %0, i64 %arg_b, i64 %1) #0 {
+BB0:
+  %2 = alloca <4 x i32>, align 16
+  %3 = alloca <4 x i32>, align 16
+  %4 = bitcast <4 x i32>* %3 to i8*
+  %5 = getelementptr i8, i8* %4, i32 0
+  %6 = bitcast i8* %5 to i64*
+  store i64 %arg_a, i64* %6, align 4
+  %7 = getelementptr i8, i8* %4, i32 8
+  %8 = bitcast i8* %7 to i64*
+  store i64 %0, i64* %8, align 4
+  %simd_vtype = load <4 x i32>, <4 x i32>* %3, align 16
+  %9 = bitcast <4 x i32>* %2 to i8*
+  %10 = getelementptr i8, i8* %9, i32 0
+  %11 = bitcast i8* %10 to i64*
+  store i64 %arg_b, i64* %11, align 4
+  %12 = getelementptr i8, i8* %9, i32 8
+  %13 = bitcast i8* %12 to i64*
+  store i64 %1, i64* %13, align 4
+  %simd_vtype1 = load <4 x i32>, <4 x i32>* %2, align 16
+  br label %BB2
+
+BB2:                                              ; preds = %BB0
+  br label %BB3
+
+BB3:                                              ; preds = %BB2
+  %14 = add <4 x i32> %simd_vtype, %simd_vtype1
+  br label %BB4
+
+BB4:                                              ; preds = %BB3
+  %15 = add i64 %vret, 0
+  %16 = inttoptr i64 %15 to <4 x i32>*
+  store <4 x i32> %14, <4 x i32>* %16, align 1
+  br label %BB1
+
+BB1:                                              ; preds = %BB4
+  ret void
+}
+
+attributes #0 = { noinline uwtable }
+
+***
+
+
+*** Optimized LLVM IR for HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>) ***
+; ModuleID = 'jit-module-test'
+source_filename = "jit-module-test"
+target datalayout = "e-m:o-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+
+; Function Attrs: noinline uwtable
+define dso_local monocc void @"HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)"(i64 %vret, i64 %arg_a, i64 %0, i64 %arg_b, i64 %1) #0 {
+BB0:
+  %2 = bitcast i64 %arg_a to <2 x i32>
+  %.0.vec.expand = shufflevector <2 x i32> %2, <2 x i32> undef, <4 x i32> <i32 0, i32 1, i32 undef, i32 undef>
+  %3 = bitcast i64 %0 to <2 x i32>
+  %.8.vec.expand = shufflevector <2 x i32> %3, <2 x i32> undef, <4 x i32> <i32 undef, i32 undef, i32 0, i32 1>
+  %.8.vecblend = shufflevector <4 x i32> %.0.vec.expand, <4 x i32> %.8.vec.expand, <4 x i32> <i32 0, i32 1, i32 6, i32 7>
+  %4 = bitcast i64 %arg_b to <2 x i32>
+  %.0.vec.expand5 = shufflevector <2 x i32> %4, <2 x i32> undef, <4 x i32> <i32 0, i32 1, i32 undef, i32 undef>
+  %5 = bitcast i64 %1 to <2 x i32>
+  %.8.vec.expand8 = shufflevector <2 x i32> %5, <2 x i32> undef, <4 x i32> <i32 undef, i32 undef, i32 0, i32 1>
+  %.8.vecblend9 = shufflevector <4 x i32> %.0.vec.expand5, <4 x i32> %.8.vec.expand8, <4 x i32> <i32 0, i32 1, i32 6, i32 7>
+  %6 = add <4 x i32> %.8.vecblend, %.8.vecblend9
+  %7 = inttoptr i64 %vret to <4 x i32>*
+  store <4 x i32> %6, <4 x i32>* %7, align 1
+  ret void
+}
+
+attributes #0 = { noinline uwtable }
+
+!mono.function_indexes = !{!0}
+
+!0 = !{!"HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>)", i32 1}
+
+***
+
+CFA: [0] def_cfa: %rsp+0x8
+CFA: [0] offset: pc at cfa-0x8
+LLVM Method System.Runtime.Intrinsics.Vector128`1<int> HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>) emitted at 0x10da9e290 to 0x10da9e2b5 (code length 37)
+
+*** ASM for HelloWorld.Program:test (System.Runtime.Intrinsics.Vector128`1<int>,System.Runtime.Intrinsics.Vector128`1<int>) ***
+/var/folders/9q/30znkg553fb1vt7_qnx2v0040000gn/T/.AZpjcK:
+(__TEXT,__text) section
+loWorld_Program_test__System_Runtime_Intrinsics_Vector128_1_int__System_Runtime_Intrinsics_Vector128_1_int__:
+0000000000000000	vmovq	%rdx, %xmm0
+0000000000000005	vmovq	%rsi, %xmm1
+000000000000000a	vpunpcklqdq	%xmm0, %xmm1, %xmm0
+000000000000000e	vmovq	%r8, %xmm1
+0000000000000013	vmovq	%rcx, %xmm2
+0000000000000018	vpunpcklqdq	%xmm1, %xmm2, %xmm1
+000000000000001c	vpaddd	%xmm1, %xmm0, %xmm0
+0000000000000020	vmovdqu	%xmm0, (%rdi)
+0000000000000024	retq
+<8, 8, 8, 8>
+***
+
