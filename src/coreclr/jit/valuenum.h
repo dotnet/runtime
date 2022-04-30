@@ -16,104 +16,126 @@
 //
 // Finally, we will also use value numbers to express control-flow-dependent assertions.  Some test may
 // imply that after the test, something new is known about a value: that an object reference is non-null
-// after a dereference (since control flow continued because no exception was thrown); that an integer value
-// is restricted to some subrange in after a comparison test; etc.
+// after a dereference (since control flow continued because no exception was thrown); that an integer
+// value is restricted to some subrange in after a comparison test; etc.
 
 // In addition to classical numbering, this implementation also performs disambiguation of heap writes,
-// using memory SSA and the guarantee that two managed field accesses will not alias (if the fields do
-// not overlap). This is the sole reason for the existence of field sequences - providing information
-// to numbering on which addresses represent "proper", non-aliasing, bases for loads and stores. Note
-// that a field sequence is *only* about the address - it is the VN's responsibility to properly "give up"
-// on reads and stores that are too wide or of otherwise incompatible types - this logic is encapsulated
-// in the methods VNApplySelectorsTypeCheck and VNApplySelectorsAssignTypeCoerce. Note as well that this
-// design, based on symbols, not offsets, is why the compiler must take such great care in maintaining the
-// field sequences throughout its many transformations - accessing a field of type A "through" a field from
-// a distinct type B will result in effectively undefined behavior. We say this is by design for classes
-// (i. e. that people using Unsafe.As(object) need to *really* know what they're doing) and fix up places
-// where the compiler itself produces these type mismatches with structs (which can arise due to "reinterpret
-// casts" or morph's transforms which fold copies of structs with bitwise compatible layouts).
+// using memory SSA and the following aliasing model:
+//
+// 1. Arrays of different types do not alias - taking into account the array compatibilty rules, i. e.
+//    "int[] <-> uint[]" and such being allowed.
+// 2. Different static fields do not alias (meaning mutable overlapping RVA statics are not supported).
+// 3. Different class fields do not alias. Struct fields are allowed to alias - this supports code that
+//    does reinterpretation of structs (e. g. "Unsafe.As<StructOne, StructTwo>(...)"), but makes it UB
+//    to alias reference types in the same manner (including via explicit layout).
+//
+// The no aliasing rule for fields should be interpreted to mean that "ld[s]fld[a] FieldOne" cannot refer
+// to the same location as "ld[s]fld[a] FieldTwo". The aliasing model above reflects the fact type safety
+// rules in .NET largely only apply to reference types, while struct locations can be and often are treated
+// by user code (and, importantly, the compiler itself) as simple blobs of bytes.
 //
 // Abstractly, numbering maintains states of memory in "maps", which are indexed into with various "selectors",
-// loads reading from said maps and stores recording new states for them (note that as with everything VN, the
-// "maps" are immutable, thus an update is performed via deriving a new map from an existing one).
+// loads reading from said maps and stores recording new states for them (note that as with everything VN,
+// the "maps" are immutable, thus an update is performed via deriving a new map from an existing one).
 //
-// Memory states are represented with value numbers corresponding to the following VNFunc's:
-// 1. MemOpaque - for opaque memory states, usually caused by writing to byrefs, or other
-//    non-analyzable memory operations such as atomics or volatile writes (and reads!).
-// 2. PhiMemoryDef - this is simply the PHI function applied to multiple reaching memory
-//    definitions for a given block.
-// 3. MapStore - this is the "update" map, it represents a map after a "set" operation at a
-//    given index. Note that the value stored can itself be a map (memory state), for example,
-//    with the store to a field of a struct that itself is a field of a class, the value
-//    recorded for the struct is a MapStore($StructInClassFieldMap, $ValueField, $Value).
-//    Because of this, these VNs need to have proper types, those being the types that the
-//    maps they represent updated states of have (in the example above, the VN would have
-//    a "struct" type, for example). MapStore VNs naturally "chain" together, the next map
-//    representing an update of the previous, and VNForMapSelect, when it tries to find
-//    the value traverses through these chains, as long as the indices are constant (meaning
-//    that they represent distinct locations, e. g. different fields).
-// 4. MapSelect - if MapStore is an "update/assign" operation, MapSelect is the "read" one.
-//    It represents a "value" (which, as with MapStore, can itself can be a memory region)
-//    taken from another map at a given index. As such, it must have a type that corresponds
-//    to the "index/selector", in practical terms - the field's type.
+// Due to the fact we allow struct field access to alias, but still want to optimize it, our model has two
+// types of maps and selectors: precise and physical. Precise maps allow arbitrary selectors, and if those
+// are known to be distinct values (e. g. different constants), the values they select are also presumed to
+// represent distinct locations. Physical maps, on the other hand, can only have one type of selector: "the
+// physical selector", representing offset of the location and its size (in bytes), where both must be known
+// at compile time. Naturally, different physical selectors can refer to overlapping locations.
 //
-// Note that we give "placeholder" types (TYP_UNDEF and TYP_UNKNOWN as TYP_MEM and TYP_HEAP)
-// to maps that do not represent values found in IR. This is just to avoid confusion and
-// facilitate more precise validating checks.
+// The following "VNFunc"s are relevant when it comes to map numbering:
 //
-// Let's review the following snippet to demonstrate how the MapSelect/MapStore machinery works
-// together to deliver the results that it does. Say we have this snippet of (C#) code:
+// 1. "MapSelect" - represents a "value" taken from another map at a given index: "map[index] => value". It is
+//    the "VNForMapSelect[Work]" method that represents the core of the selection infrastructure: it performs
+//    various reductions based on the maps (listed below) being selected from, before "giving up" and creating
+//    a new "MapSelect" VN. "MapSelect"s are used for both precise and physical maps.
+// 2. "Phi[Memory]Def" - the PHI function applied to multiple reaching definitions for a given block. PHIs can
+//    be reduced by the selection process: "Phi(d:1, d:2, ...)[index]" is evaluated as "Phi(d:1[index], ...)",
+//    so if all the inner selections ("d:n[index]") agree, that value is returned as the selected one.
+// 3. "MapStore" - this is the precise "update" map, it represents a map after a "set" operation at some index.
+//    MapStore VNs naturally "chain" together, the next map representing an update of the previous, and will be
+//    traversed by the selection process as long as the store indices are constant, and different from the one
+//    being selected (meaning they represent distinct locations): "map[F0 := V0][F1 := V1][F0]" => "V0".
+// 4. "MapPhysicalStore" - the physical equivalent to "MapStore", can only be indexed with physical selectors,
+//    with the selection rules taking into account aliasability of physical locations.
+// 5. "BitCast" - the physical map representing "identity" selection ("map[0:sizeof(map) - 1]"). Exists because
+//    physical maps themselves do not have a strong type identity (the physical selector only cares about size).
+//    but the VN/IR at large do. Is a no-op in the selection process. One can notice that we could have chosen
+//    to represent this concept with an identity "MapPhysicalStore", however, a different "VNFunc" was ultimately
+//    chosen due to it being easier to reason about and a little cheaper, with the expectation that "BitCast"s
+//    would be reasonably common - the scenario they are meant to handle are stores/loads to/from structs with
+//    one field, where the location can be referenced from the IR as both TYP_STRUCT and the field's type.
+//
+// We give "placeholder" types (TYP_UNDEF and TYP_UNKNOWN as TYP_MEM and TYP_HEAP) to maps that do not represent
+// values found in IR, which are currently all precise (though that is not a requirement of the model).
+//
+// We choose to maintain the following invariants with regards to types of physical locations:
+//
+// 1. Tree VNs are always "normalized on load" - their types are made to match (via bitcasts). We presume this
+//    makes the rest of the compiler code simpler, as it will not have to reason about "TYP_INT" trees having
+//    "TYP_FLOAT" value numbers. This normalization is currently not always done; that should be fixed.
+// 2. Types of locals are "normalized on store" - this is different from the rest of physical locations, as not
+//    only VN looks at these value numbers (stored in SSA descriptors), and similar to the tree case, we presume
+//    it is simpler to reason about matching types.
+// 3. Types of all other locations (array elements and fields) are not normalized - these only appear in the VN
+//    itself as physical maps / values.
+//
+// Note as well how we handle type identity for structs: we canonicalize on their size. This has the significant
+// consequence that any two equally-sized structs can be given the same value number, even if they have different
+// ABI characteristics or GC layout. The primary motivations for this are throughout and simplicity, however, we
+// would also like the compiler at large to treat structs with compatible layouts as equivalent, so that we can
+// propagate copies between them freely.
+//
+//
+// Let's review the following snippet to demonstrate how the MapSelect/MapStore machinery works. Say we have this
+// snippet of (C#) code:
 //
 // int Procedure(OneClass obj, AnotherClass subj, int objVal, int subjVal)
 // {
-//     obj.StructField.AnotherStructField.ScalarField = objVal;
+//     obj.StructField.ScalarField = objVal;
 //     subj.OtherScalarField = subjVal;
 //
-//     return obj.StructField.AnotherStructField.ScalarField + subj.OtherScalarField;
+//     return obj.StructField.ScalarField + subj.OtherScalarField;
 // }
 //
-// On entry, we assign some VN to the GcHeap (VN mostly only cares about GcHeap, so from now on
-// the term "heap" will be used to mean GcHeap), $Heap.
+// On entry, we assign some VN to the GcHeap (VN mostly only cares about GcHeap, so from now on the term "heap"
+// will be used to mean GcHeap), $Heap.
 //
-// A store to the ScalarField is seen. Now, the value numbering of fields is done in the following
-// pattern for maps that it builds: [$Heap][$FirstField][$Object][$SecondField]...[$FieldToStoreInto].
-// It may seem odd that the indexing is done first for the field, and only then for the object, but
-// the reason for that is the fact that it enables MapStores to $Heap to refer to distinct selectors,
-// thus enabling the traversal through the map updates when looking for the values that were stored.
-// Were $Object VNs used for this, the traversal could not be performed, as two numerically different VNs
-// can, obviously, refer to the same object.
+// A store to the ScalarField is seen. Now, the value numbering of fields is done in the following pattern for
+// maps that it builds: [$Heap][$FirstField][$Object][offset:offset + size of the load]. It may seem odd that
+// the indexing is done first for the field, and only then for the object, but the reason for that is the fact
+// that it enables MapStores to $Heap to refer to distinct selectors, thus enabling the traversal through the
+// map updates when looking for the values that were stored. Were $Object VNs used for this, the traversal could
+// not be performed, as two numerically different VNs can, obviously, refer to the same object.
 //
 // With that in mind, the following maps are first built for the store ("field VNs" - VNs for handles):
 //
-//  $StructFieldMap        = MapSelect($Heap, $StructField)
-//  $StructFieldForObjMap  = MapSelect($StructFieldMap, $Obj)
-//  $AnotherStructFieldMap = MapSelect($StructFieldForObjMap, $AnotherStructField)
-//  $ScalarFieldMap        = MapSelect($AnotherStructFieldMap, $ScalarField)
+//  $StructFieldMap       = MapSelect($Heap, $StructField)
+//  $StructFieldForObjMap = MapSelect($StructFieldMap, $Obj)
 //
-// The building of maps for the individual fields in the sequence [AnotherStructField, ScalarField] is
-// usually performed by VNApplySelectors, which is just a convenience method that loops over all the
-// fields, calling VNForMapSelect on them. Now that we know where to store, the store maps are built:
+// Now that we know where to store, the store maps are built:
 //
-//  $NewAnotherStructFieldMap = MapStore($AnotherStructFieldMap, $ScalarField, $ObjVal)
-//  $NewStructFieldForObjMap  = MapStore($StructFieldForObjMap, $AnotherStructField, $NewAnotherStructFieldMap)
-//  $NewStructFieldMap        = MapStore($StructFieldMap, $Obj, $NewStructFieldForObjMap)
-//  $NewHeap                  = MapStore($Heap, $StructField, $NewStructFieldMap)
+//  $ScalarFieldSelector     = PhysicalSelector(offsetof(StructField) + offsetof(ScalarField), sizeof(ScalarField))
+//  $NewStructFieldForObjMap = MapPhysicalStore($StructFieldForObjMap, $ScalarFieldSelector, $ObjVal)
+//  $NewStructFieldMap       = MapStore($StructFieldMap, $Obj, $NewStructFieldForObjMap)
+//  $NewHeap                 = MapStore($Heap, $StructField, $NewStructFieldMap)
 //
-// Notice that the maps are built in the opposite order, as we must first know the value of the "narrower"
-// map to store into the "wider" map (this is implemented via recursion in VNApplySelectorsAssign).
+// Notice that the maps are built in the opposite order, as we must first know the value of the "narrower" map to
+// store into the "wider" map.
 //
-// Similarly, the numbering is performed for "subj.OtherScalarField = subjVal", and the heap state updated
-// (say to $NewHeapWithSubj). Now when we call VNForMapSelect to find out the stored values when numbering
-// the reads, the following traversal is performed (the '[]' operator representing VNForMapSelect):
+// Similarly, the numbering is performed for "subj.OtherScalarField = subjVal", and the heap state updated (say to
+// $NewHeapWithSubj). Now when we call "VNForMapSelect" to find out the stored values when numbering the reads, the
+// following traversal is performed:
 //
 //   $obj.StructField.AnotherStructField.ScalarField
-//     = $NewHeapWithSubj[$StructField][$Obj][$AnotherStructField][ScalarField]:
+//     = $NewHeapWithSubj[$StructField][$Obj][$ScalarFieldSelector]:
 //         "$NewHeapWithSubj.Index == $StructField" => false (not the needed map).
 //         "IsConst($NewHeapWithSubj.Index) && IsConst($StructField)" => true (can continue, non-aliasing indices).
 //         "$NewHeap.Index == $StructField" => true, Value is $NewStructFieldMap.
 //           "$NewStructFieldMap.Index == $Obj" => true, Value is $NewStructFieldForObjMap.
-//             "$NewStructFieldForObjMap.Index == $AnotherStructField" => true, Value is $NewAnotherStructFieldMap.
-//               "$NewAnotherStructFieldMap.Index == $ScalarField" => true, Value is $ObjVal (found the value!).
+//             "$NewStructFieldForObjMap.Index == $ScalarFieldSelector" => true, Value is $ObjVal (found it!).
 //
 // And similarly for the $SubjVal - we end up with a nice $Add($ObjVal, $SubjVal) feeding the return.
 //
@@ -121,8 +143,7 @@
 // modeled as straight indicies into the heap (MapSelect($Heap, $Field) returns the value of the field for them),
 // arrays - like fields, but with the primiary selector being not the first field, but the "equivalence class" of
 // an array, i. e. the type of its elements, taking into account things like "int[]" being legally aliasable as
-// "uint[]". MapSelect & MapStore are also used to number local fields, with the primary selectors being (VNs of)
-// their local numbers.
+// "uint[]". Physical maps are used to number local fields.
 
 /*****************************************************************************/
 #ifndef _VALUENUM_H_
