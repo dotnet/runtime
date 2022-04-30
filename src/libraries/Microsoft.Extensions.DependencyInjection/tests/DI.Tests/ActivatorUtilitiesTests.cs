@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Collections.Generic;
 using Xunit;
 
 namespace Microsoft.Extensions.DependencyInjection.Tests
@@ -10,7 +9,22 @@ namespace Microsoft.Extensions.DependencyInjection.Tests
     public class ActivatorUtilitiesTests
     {
         [Fact]
-        public void ShouldUseLongestAvailableConstructorOnlyIfConstructorsHaveTheSamePriority()
+        public void ShouldUseTheLongestAvailableConstructor()
+        {
+            var services = new ServiceCollection();
+            services.AddScoped<B>();
+            services.AddScoped<S>();
+            using var provider = services.BuildServiceProvider();
+            var a = new A();
+            var c = new C();
+
+            var instance = ActivatorUtilities.CreateInstance<Creatable>(provider, c, a);
+
+            Assert.NotNull(instance.B);
+        }
+
+        [Fact]
+        public void ShouldUseTheLongestAvailableConstructorOnlyIfConstructorsHaveTheSamePriority()
         {
             var services = new ServiceCollection();
             services.AddScoped<B>();
