@@ -4821,7 +4821,10 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             if (classSize != 1)
             {
                 GenTree* size = gtNewIconNode(classSize, TYP_INT);
+
+#ifdef TARGET_64BIT
                 size = gtNewCastNode(TYP_I_IMPL, size, /* uns */ false, TYP_I_IMPL);
+#endif
 
                 type = impGetByRefResultType(GT_MUL, /* uns */ false, &op2, &size);
                 tmp  = new (this, GT_CALL) GenTreeOp(GT_MUL, type, op2, size DEBUGARG(/* largeNode */ true));
@@ -5045,7 +5048,10 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* cns = gtNewIconNode(0, TYP_INT);
+
+#ifdef TARGET_64BIT
             cns = gtNewCastNode(TYP_I_IMPL, cns, uns, TYP_U_IMPL);
+#endif
 
             GenTree* tmp = gtNewOperNode(GT_EQ, TYP_INT, op1, cns);
             return gtFoldExpr(tmp);
@@ -5066,7 +5072,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 #endif
 
             GenTree* cns = gtNewIconNode(0, TYP_INT);
-            return gtNewCastNode(TYP_I_IMPL, cns, uns, TYP_U_IMPL);
+
+#ifdef TARGET_64BIT
+            cns = gtNewCastNode(TYP_I_IMPL, cns, uns, TYP_U_IMPL);
+#endif
+
+            return cns;
         }
 
         case NI_SRCS_UNSAFE_Read:
