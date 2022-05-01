@@ -44,7 +44,7 @@
     <MicrosoftCodeAnalysisCSharpCodeStyleVersion>4.3.0-1.22206.2</MicrosoftCodeAnalysisCSharpCodeStyleVersion>
     <MicrosoftCodeAnalysisCSharpWorkspacesVersion>4.3.0-1.22206.2</MicrosoftCodeAnalysisCSharpWorkspacesVersion>
     <MicrosoftCodeAnalysisCSharpVersion>4.3.0-1.22206.2</MicrosoftCodeAnalysisCSharpVersion>
-    <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22218.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
+    <MicrosoftCodeAnalysisNetAnalyzersVersion>7.0.0-preview1.22229.1</MicrosoftCodeAnalysisNetAnalyzersVersion>
     <MicrosoftCodeAnalysisVersion>4.3.0-1.22206.2</MicrosoftCodeAnalysisVersion>
     <!--
       TODO: Remove pinned version once arcade supplies a 4.3 compiler.

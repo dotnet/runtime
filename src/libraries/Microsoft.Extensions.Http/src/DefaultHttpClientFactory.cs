@@ -13,8 +13,6 @@ using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
-#pragma warning disable CA1852 // TODO InternalsVisibleTo: https://github.com/dotnet/roslyn-analyzers/pull/5972
-
 namespace Microsoft.Extensions.Http
 {
     internal class DefaultHttpClientFactory : IHttpClientFactory, IHttpMessageHandlerFactory

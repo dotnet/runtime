@@ -405,6 +405,9 @@ dotnet_diagnostic.CA1851.severity = none
 # CA1852: Seal internal types
 dotnet_diagnostic.CA1852.severity = none
 
+# CA1853: Unnecessary call to 'Dictionary.ContainsKey(key)'
+dotnet_diagnostic.CA1853.severity = none
+
 # CA2000: Dispose objects before losing scope
 dotnet_diagnostic.CA2000.severity = none
 
@@ -792,7 +795,7 @@ dotnet_diagnostic.CA5383.severity = none
 # CA5384: Do Not Use Digital Signature Algorithm (DSA)
 dotnet_diagnostic.CA5384.severity = none
 
-# CA5385: Use Rivest–Shamir–Adleman (RSA) Algorithm With Sufficient Key Size
+# CA5385: Use Rivest-Shamir-Adleman (RSA) Algorithm With Sufficient Key Size
 dotnet_diagnostic.CA5385.severity = none
 
 # CA5386: Avoid hardcoding SecurityProtocolType value
