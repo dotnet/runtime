@@ -733,6 +733,16 @@ namespace Internal.JitInterface
                 {
                     sig->sigInst.methInst = GetJitInstantiation(method.Instantiation);
                 }
+
+                Instantiation methodInst = method.Instantiation;
+                sig->sigInst.methInstCount = (uint)methodInst.Length;
+                if (methodInst.Length > 0)
+                {
+                    var methInst = new IntPtr[methodInst.Length];
+                    for (int i = 0; i < methodInst.Length; i++)
+                        methInst[i] = (IntPtr)ObjectToHandle(methodInst[i]);
+                    sig->sigInst.methInst = (CORINFO_CLASS_STRUCT_**)GetPin(methInst);
+                }
             }
 
             if (hasHiddenParameter)

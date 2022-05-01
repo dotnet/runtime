@@ -3677,6 +3677,11 @@ protected:
                                           CORINFO_SIG_INFO*     sig,
                                           bool                  mustExpand);
 
+    GenTree* impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
+                                    CORINFO_CLASS_HANDLE  clsHnd,
+                                    CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig);
+
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
                             CORINFO_CLASS_HANDLE  clsHnd,
