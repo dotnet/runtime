@@ -31,7 +31,7 @@
 #include "../binder/inc/bindertracing.h"
 #include "../binder/inc/defaultassemblybinder.h"
 
-extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack assemblyName,
+extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* pAssemblyNameParts,
                                                       QCall::ObjectHandleOnStack requestingAssembly,
                                                       QCall::StackCrawlMarkHandle stackMark,
                                                       BOOL fThrowOnFileNotFound,
@@ -42,52 +42,57 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack
 
     BEGIN_QCALL;
 
-    GCX_COOP();
-
-    if (assemblyName.Get() == NULL)
-    {
-        COMPlusThrow(kArgumentNullException, W("ArgumentNull_AssemblyName"));
-    }
-    ACQUIRE_STACKING_ALLOCATOR(pStackingAllocator);
-
     DomainAssembly * pParentAssembly = NULL;
     Assembly * pRefAssembly = NULL;
     AssemblyBinder *pBinder = NULL;
 
-    if (assemblyLoadContext.Get() != NULL)
     {
-        INT_PTR nativeAssemblyBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
-        pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyBinder);
+        GCX_COOP();
+
+        if (assemblyLoadContext.Get() != NULL)
+        {
+            INT_PTR nativeAssemblyBinder = ((ASSEMBLYLOADCONTEXTREF)assemblyLoadContext.Get())->GetNativeAssemblyBinder();
+            pBinder = reinterpret_cast<AssemblyBinder*>(nativeAssemblyBinder);
+        }
+
+        // Compute parent assembly
+        if (requestingAssembly.Get() != NULL)
+        {
+            pRefAssembly = ((ASSEMBLYREF)requestingAssembly.Get())->GetAssembly();
+        }
+        else if (pBinder == NULL)
+        {
+            pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
+        }
+        if (pRefAssembly)
+        {
+            pParentAssembly = pRefAssembly->GetDomainAssembly();
+        }
     }
 
     AssemblySpec spec;
-    ASSEMBLYNAMEREF assemblyNameRef = NULL;
 
-    GCPROTECT_BEGIN(assemblyNameRef);
-    assemblyNameRef = (ASSEMBLYNAMEREF)assemblyName.Get();
-    if (assemblyNameRef->GetSimpleName() == NULL)
-    {
+    if (pAssemblyNameParts->_pName == NULL)
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
-    }
 
-    // Compute parent assembly
-    if (requestingAssembly.Get() != NULL)
-    {
-        pRefAssembly = ((ASSEMBLYREF)requestingAssembly.Get())->GetAssembly();
-    }
-    else if (pBinder == NULL)
-    {
-        pRefAssembly = SystemDomain::GetCallersAssembly(stackMark);
-    }
-    if (pRefAssembly)
-    {
-        pParentAssembly = pRefAssembly->GetDomainAssembly();
-    }
+    StackSString ssName;
+    SString(SString::Literal, pAssemblyNameParts->_pName).ConvertToUTF8(ssName);
+
+    AssemblyMetaDataInternal asmInfo;
+
+    asmInfo.usMajorVersion = pAssemblyNameParts->_major;
+    asmInfo.usMinorVersion = pAssemblyNameParts->_minor;
+    asmInfo.usBuildNumber = pAssemblyNameParts->_build;
+    asmInfo.usRevisionNumber = pAssemblyNameParts->_revision;
+
+    SmallStackSString ssLocale;
+    if (pAssemblyNameParts->_pCultureName != NULL)
+        SString(SString::Literal, pAssemblyNameParts->_pCultureName).ConvertToUTF8(ssLocale);
+    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8NoConvert() : NULL;
 
     // Initialize spec
-    spec.InitializeSpec(pStackingAllocator, &assemblyNameRef);
-
-    GCPROTECT_END();
+    spec.Init(ssName.GetUTF8NoConvert(), &asmInfo,
+        pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
     if (pParentAssembly != NULL)
         spec.SetParentAssembly(pParentAssembly);
@@ -107,14 +112,11 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack
         spec.SetFallbackBinderForRequestingAssembly(pRefAssemblyManifestFile->GetFallbackBinder());
     }
 
-    Assembly *pAssembly;
-    {
-        GCX_PREEMP();
-        pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound);
-    }
+    Assembly *pAssembly = spec.LoadAssembly(FILE_LOADED, fThrowOnFileNotFound);
 
     if (pAssembly != NULL)
     {
+        GCX_COOP();
         retAssembly.Set(pAssembly->GetExposedObject());
     }
 

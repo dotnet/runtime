@@ -119,17 +119,17 @@ namespace System.Reflection
         // is returned.
         public override AssemblyName GetName(bool copiedName)
         {
-            string? codeBase = GetCodeBase();
+            var an = new AssemblyName();
+            an.Name = GetSimpleName();
+            an.Version = GetVersion();
+            an.CultureInfo = GetLocale();
 
-            var an = new AssemblyName(GetSimpleName(),
-                    GetPublicKey(),
-                    null, // public key token
-                    GetVersion(),
-                    GetLocale(),
-                    GetFlags() | AssemblyNameFlags.PublicKey);
+            an.SetPublicKey(GetPublicKey());
+
+            an.RawFlags = GetFlags() | AssemblyNameFlags.PublicKey;
 
 #pragma warning disable IL3000 // System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app.
-            an.CodeBase = codeBase;
+            an.CodeBase = GetCodeBase();
 #pragma warning restore IL3000
 
 #pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
@@ -341,27 +341,56 @@ namespace System.Reflection
         internal static RuntimeAssembly InternalLoad(string assemblyName, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
             => InternalLoad(new AssemblyName(assemblyName), ref stackMark, assemblyLoadContext);
 
-        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyName, ref StackCrawlMark stackMark, AssemblyLoadContext? assemblyLoadContext = null)
-            => InternalLoad(assemblyName, requestingAssembly: null, ref stackMark, throwOnFileNotFound: true, assemblyLoadContext);
-
-        internal static RuntimeAssembly InternalLoad(AssemblyName assemblyName,
-                                                     RuntimeAssembly? requestingAssembly,
-                                                     ref StackCrawlMark stackMark,
-                                                     bool throwOnFileNotFound,
-                                                     AssemblyLoadContext? assemblyLoadContext = null)
+        internal static unsafe RuntimeAssembly InternalLoad(AssemblyName assemblyName,
+                                                            ref StackCrawlMark stackMark,
+                                                            AssemblyLoadContext? assemblyLoadContext = null,
+                                                            RuntimeAssembly? requestingAssembly = null,
+                                                            bool throwOnFileNotFound = true)
         {
             RuntimeAssembly? retAssembly = null;
-            InternalLoad(ObjectHandleOnStack.Create(ref assemblyName),
-                         ObjectHandleOnStack.Create(ref requestingAssembly),
-                         new StackCrawlMarkHandle(ref stackMark),
-                         throwOnFileNotFound,
-                         ObjectHandleOnStack.Create(ref assemblyLoadContext),
-                         ObjectHandleOnStack.Create(ref retAssembly));
+
+            AssemblyNameFlags flags = assemblyName.RawFlags;
+
+            // Note that we prefer to take a public key token if present,
+            // even if flags indicate a full public key
+            byte[]? publicKeyOrToken;
+            if ((publicKeyOrToken = assemblyName.RawPublicKeyToken) != null)
+            {
+                flags |= ~AssemblyNameFlags.PublicKey;
+            }
+            else if ((publicKeyOrToken = assemblyName.RawPublicKey) != null)
+            {
+                flags |= AssemblyNameFlags.PublicKey;
+            }
+
+            fixed (char* pName = assemblyName.Name)
+            fixed (char* pCultureName = assemblyName.CultureName)
+            fixed (byte* pPublicKeyOrToken = publicKeyOrToken)
+            {
+                NativeAssemblyNameParts nameParts = default;
+
+                nameParts._flags = flags;
+                nameParts._pName = pName;
+                nameParts._pCultureName = pCultureName;
+
+                nameParts._pPublicKeyOrToken = pPublicKeyOrToken;
+                nameParts._cbPublicKeyOrToken = (publicKeyOrToken != null) ? publicKeyOrToken.Length : 0;
+
+                nameParts.SetVersion(assemblyName.Version, defaultValue: ushort.MaxValue);
+
+                InternalLoad(&nameParts,
+                             ObjectHandleOnStack.Create(ref requestingAssembly),
+                             new StackCrawlMarkHandle(ref stackMark),
+                             throwOnFileNotFound,
+                             ObjectHandleOnStack.Create(ref assemblyLoadContext),
+                             ObjectHandleOnStack.Create(ref retAssembly));
+            }
+
             return retAssembly!;
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_InternalLoad")]
-        private static partial void InternalLoad(ObjectHandleOnStack assemblyName,
+        private static unsafe partial void InternalLoad(NativeAssemblyNameParts* pAssemblyNameParts,
                                                 ObjectHandleOnStack requestingAssembly,
                                                 StackCrawlMarkHandle stackMark,
                                                 [MarshalAs(UnmanagedType.Bool)] bool throwOnFileNotFound,
@@ -509,7 +538,7 @@ namespace System.Reflection
                                               out int buildNum,
                                               out int revNum);
 
-        internal Version GetVersion()
+        private Version GetVersion()
         {
             RuntimeAssembly runtimeAssembly = this;
             GetVersion(new QCallAssembly(ref runtimeAssembly), out int majorVer, out int minorVer, out int build, out int revision);
@@ -519,7 +548,7 @@ namespace System.Reflection
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyNative_GetLocale")]
         private static partial void GetLocale(QCallAssembly assembly, StringHandleOnStack retString);
 
-        internal CultureInfo GetLocale()
+        private CultureInfo GetLocale()
         {
             string? locale = null;
 
@@ -605,7 +634,7 @@ namespace System.Reflection
             // This stack crawl mark is never used because the requesting assembly is explicitly specified,
             // so the value could be anything.
             StackCrawlMark unused = default;
-            RuntimeAssembly? retAssembly = InternalLoad(an, this, ref unused, throwOnFileNotFound);
+            RuntimeAssembly? retAssembly = InternalLoad(an, ref unused, requestingAssembly: this, throwOnFileNotFound: throwOnFileNotFound);
 
             if (retAssembly == this)
             {
