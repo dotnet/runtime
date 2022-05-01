@@ -940,11 +940,6 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             lastArg = call->gtArgs.InsertAfter(this, lastArg, arg);
         }
 
-        if (!varTypeIsStruct(jitSigType) && (genTypeSize(argNode) != genTypeSize(jitSigType)))
-        {
-            compGenTreeID++;
-        }
-
         call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
 
         sigArg = info.compCompHnd->getArgNext(sigArg);
