@@ -224,11 +224,12 @@ void Compiler::impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolv
     info.compCompHnd->resolveToken(pResolvedToken);
 }
 
-/*****************************************************************************
- *
- *  Pop one tree from the stack.
- */
-
+//------------------------------------------------------------------------
+// impPopStack: Pop one tree from the stack.
+//
+// Returns:
+//   The stack entry for the popped tree.
+//
 StackEntry Compiler::impPopStack()
 {
     if (verCurrentState.esStackDepth == 0)
@@ -239,6 +240,12 @@ StackEntry Compiler::impPopStack()
     return verCurrentState.esStack[--verCurrentState.esStackDepth];
 }
 
+//------------------------------------------------------------------------
+// impPopStack: Pop a variable number of trees from the stack.
+//
+// Arguments:
+//   n - The number of trees to pop.
+//
 void Compiler::impPopStack(unsigned n)
 {
     if (verCurrentState.esStackDepth < n)
@@ -813,11 +820,9 @@ void Compiler::impAssignTempGen(unsigned             tmpNum,
 //   their values.
 //
 // Parameters:
-//   count   - The number of arguments to pop
 //   sig     - Signature used to figure out classes the runtime must load, and
 //             also to record exact receiving argument types that may be needed for ABI
 //             purposes later.
-//             Can be nullptr for certain helpers.
 //   call    - The call to pop arguments into.
 //
 void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
@@ -829,32 +834,33 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         BADCODE("not enough arguments for call");
     }
 
-    CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
-    CallArg* lastArg = nullptr;
+    CORINFO_ARG_LIST_HANDLE sigArg  = sig->args;
+    CallArg*                lastArg = nullptr;
 
     unsigned spillCheckLevel = verCurrentState.esStackDepth - sig->numArgs;
     // Args are pushed in order, so last arg is at the top. Process them in
     // actual order so that we can walk the signature at the same time.
     for (unsigned stackIndex = sig->numArgs; stackIndex > 0; stackIndex--)
     {
-        unsigned fromTopIndex = stackIndex - 1;
-        const StackEntry& se = impStackTop(fromTopIndex);
+        const StackEntry& se = impStackTop(stackIndex - 1);
 
-        typeInfo   ti = se.seTypeInfo;
+        typeInfo ti      = se.seTypeInfo;
         GenTree* argNode = se.val;
 
-        CORINFO_CLASS_HANDLE classHnd = NO_CLASS_HANDLE;
-        CorInfoType corType = strip(info.compCompHnd->getArgType(sig, sigArg, &classHnd));
-        var_types jitSigType = JITtype2varType(corType);
+        CORINFO_CLASS_HANDLE classHnd   = NO_CLASS_HANDLE;
+        CorInfoType          corType    = strip(info.compCompHnd->getArgType(sig, sigArg, &classHnd));
+        var_types            jitSigType = JITtype2varType(corType);
 
         if (!impCheckImplicitArgumentCoercion(jitSigType, argNode->TypeGet()))
         {
             BADCODE("the call argument has a type that can't be implicitly converted to the signature type");
         }
 
-        if (varTypeIsStruct(jitSigType))
+        if (varTypeIsStruct(argNode))
         {
             // Morph trees that aren't already OBJs or MKREFANY to be OBJs
+            assert(ti.IsType(TI_STRUCT));
+            classHnd = ti.GetClassHandleForValueClass();
 
             bool forceNormalization = false;
             if (varTypeIsSIMD(argNode))
@@ -884,19 +890,21 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             JITDUMP("resulting tree:\n");
             DISPTREE(argNode);
         }
-
-        // insert implied casts (from float to double or double to float)
-        if ((jitSigType == TYP_DOUBLE) && argNode->TypeIs(TYP_FLOAT))
+        else
         {
-            argNode = gtNewCastNode(TYP_DOUBLE, argNode, false, TYP_DOUBLE);
-        }
-        else if ((jitSigType == TYP_FLOAT) && argNode->TypeIs(TYP_DOUBLE))
-        {
-            argNode = gtNewCastNode(TYP_FLOAT, argNode, false, TYP_FLOAT);
-        }
+            // insert implied casts (from float to double or double to float)
+            if ((jitSigType == TYP_DOUBLE) && argNode->TypeIs(TYP_FLOAT))
+            {
+                argNode = gtNewCastNode(TYP_DOUBLE, argNode, false, TYP_DOUBLE);
+            }
+            else if ((jitSigType == TYP_FLOAT) && argNode->TypeIs(TYP_DOUBLE))
+            {
+                argNode = gtNewCastNode(TYP_FLOAT, argNode, false, TYP_FLOAT);
+            }
 
-        // insert any widening or narrowing casts for backwards compatibility
-        argNode = impImplicitIorI4Cast(argNode, jitSigType);
+            // insert any widening or narrowing casts for backwards compatibility
+            argNode = impImplicitIorI4Cast(argNode, jitSigType);
+        }
 
         if (corType != CORINFO_TYPE_CLASS && corType != CORINFO_TYPE_BYREF && corType != CORINFO_TYPE_PTR &&
             corType != CORINFO_TYPE_VAR)
@@ -911,6 +919,16 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
                 // do a class-load from within GC.
                 info.compCompHnd->classMustBeLoadedBeforeCodeIsRun(argRealClass);
             }
+        }
+
+        const var_types nodeArgType = argNode->TypeGet();
+        if (!varTypeIsStruct(jitSigType) && genTypeSize(nodeArgType) != genTypeSize(jitSigType))
+        {
+            assert(!varTypeIsStruct(nodeArgType));
+            // Some ABI require precise size information for call arguments less than target pointer size,
+            // for example arm64 OSX. Create a special node to keep this information until morph
+            // consumes it into `CallArgs`.
+            argNode = gtNewOperNode(GT_PUTARG_TYPE, jitSigType, argNode);
         }
 
         NewCallArg arg;
@@ -938,7 +956,8 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
     }
 
     if ((sig->retTypeSigClass != nullptr) && (sig->retType != CORINFO_TYPE_CLASS) &&
-        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR) && (sig->retType != CORINFO_TYPE_VAR))
+        (sig->retType != CORINFO_TYPE_BYREF) && (sig->retType != CORINFO_TYPE_PTR) &&
+        (sig->retType != CORINFO_TYPE_VAR))
     {
         // Make sure that all valuetypes (including enums) that we push are loaded.
         // This is to guarantee that if a GC is triggerred from the prestub of this methods,
@@ -1062,9 +1081,7 @@ bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nod
  *  The first "skipReverseCount" items are not reversed.
  */
 
-void Compiler::impPopReverseCallArgs(CORINFO_SIG_INFO* sig,
-                                     GenTreeCall*      call,
-                                     unsigned          skipReverseCount)
+void Compiler::impPopReverseCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount)
 {
     assert(skipReverseCount <= sig->numArgs);
 
@@ -13235,7 +13252,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 impPopStack(3);
 
                 // Else call a helper function to do the assignment
-                op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, value, index, array);
+                op1 = gtNewHelperCallNode(CORINFO_HELP_ARRADDR_ST, TYP_VOID, array, index, value);
                 goto SPILL_APPEND;
             }
 
