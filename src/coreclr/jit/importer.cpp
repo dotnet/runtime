@@ -2721,7 +2721,7 @@ BasicBlock* Compiler::impPushCatchArgOnStack(BasicBlock* hndBlk, CORINFO_CLASS_H
 #if defined(JIT32_GCENCODER)
     const bool forceInsertNewBlock = isSingleBlockFilter || compStressCompile(STRESS_CATCH_ARG, 5);
 #else
-    const bool forceInsertNewBlock      = compStressCompile(STRESS_CATCH_ARG, 5);
+    const bool   forceInsertNewBlock    = compStressCompile(STRESS_CATCH_ARG, 5);
 #endif // defined(JIT32_GCENCODER)
 
     /* Spill GT_CATCH_ARG to a temp if there are jumps to the beginning of the handler */
@@ -4893,7 +4893,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_64BIT
             bool uns = true;
 #else
-            bool uns = false;
+            bool uns                    = false;
 #endif
 
             GenTree* op1 = impPopStack().val;
@@ -5044,7 +5044,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_64BIT
             bool uns = true;
 #else
-            bool uns = false;
+            bool uns                    = false;
 #endif
 
             GenTree* op1 = impPopStack().val;
@@ -5071,7 +5071,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 #ifdef TARGET_64BIT
             bool uns = true;
 #else
-            bool uns = false;
+            bool uns                    = false;
 #endif
 
             GenTree* cns = gtNewIconNode(0, TYP_INT);
