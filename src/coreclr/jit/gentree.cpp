@@ -16434,12 +16434,7 @@ bool GenTree::IsBlockProfileUpdate()
 
     GenTree* const addr = lhs->AsIndir()->Addr();
 
-    if (!addr->IsIconHandle())
-    {
-        return false;
-    }
-
-    return (addr->GetIconHandleFlag() == GTF_ICON_BBC_PTR);
+    return addr->IsIconHandle(GTF_ICON_BBC_PTR);
 }
 
 #ifdef DEBUG
