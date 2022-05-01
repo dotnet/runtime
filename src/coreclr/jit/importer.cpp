@@ -921,16 +921,6 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             }
         }
 
-        const var_types nodeArgType = argNode->TypeGet();
-        if (!varTypeIsStruct(jitSigType) && genTypeSize(nodeArgType) != genTypeSize(jitSigType))
-        {
-            assert(!varTypeIsStruct(nodeArgType));
-            // Some ABI require precise size information for call arguments less than target pointer size,
-            // for example arm64 OSX. Create a special node to keep this information until morph
-            // consumes it into `CallArgs`.
-            argNode = gtNewOperNode(GT_PUTARG_TYPE, jitSigType, argNode);
-        }
-
         NewCallArg arg;
         if (varTypeIsStruct(jitSigType))
         {
@@ -948,6 +938,11 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         else
         {
             lastArg = call->gtArgs.InsertAfter(this, lastArg, arg);
+        }
+
+        if (!varTypeIsStruct(jitSigType) && (genTypeSize(argNode) != genTypeSize(jitSigType)))
+        {
+            compGenTreeID++;
         }
 
         call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;

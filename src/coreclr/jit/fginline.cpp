@@ -1534,7 +1534,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             // Today we no longer have this contextual PUTARG_TYPE and morph
             // should properly handle substituting a TYP_INT node for a
             // TYP_SHORT LCL_VAR (at least for a call arg).
-            bool argHasPutArg = arg->AbiInfo.SignatureType != genActualType(argNode->TypeGet());
+            bool argHasPutArg = !varTypeIsStruct(arg->AbiInfo.SignatureType) && (genTypeSize(argNode) != genTypeSize(arg->AbiInfo.SignatureType));
 
             BasicBlockFlags bbFlags = BBF_EMPTY;
             argNode                 = argNode->gtRetExprVal(&bbFlags);
