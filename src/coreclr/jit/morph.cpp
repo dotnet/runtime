@@ -1998,7 +1998,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         {
             GenTree* stubAddrArg = comp->fgGetStubAddrArg(call);
             // And push the stub address onto the list of arguments
-            InsertAfterThisOrFirst(comp, NewCallArg::Primitive(stubAddrArg, stubAddrArg->TypeGet()).WellKnown(WellKnownArg::VirtualStubCell));
+            InsertAfterThisOrFirst(comp, NewCallArg::Primitive(stubAddrArg, stubAddrArg->TypeGet())
+                                             .WellKnown(WellKnownArg::VirtualStubCell));
         }
         else
         {
@@ -2061,7 +2062,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif // TARGET_ARM
 
         // Push the stub address onto the list of arguments.
-        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell));
+        InsertAfterThisOrFirst(comp,
+                               NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell));
     }
 #endif
 
@@ -2279,7 +2281,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // TARGET_POINTER_SIZE stack slots, or the sum of these if the argument is split between the registers and
         // the stack.
         //
-        isStructArg                   = varTypeIsStruct(argx);
+        isStructArg = varTypeIsStruct(argx);
         // Note that we internally in the JIT can change some struct args to
         // primitive args (e.g. OBJ<struct>(x) -> IND<TYP_LONG>(x)). Similarly,
         // the ABI type can also change from struct to primitive (e.g. a 8-byte
@@ -2953,8 +2955,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         if (arg.AbiInfo.IsStruct)
         {
-            arg.AbiInfo.PassedByRef = passStructByRef;
-            arg.AbiInfo.SignatureType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
+            arg.AbiInfo.PassedByRef   = passStructByRef;
+            arg.AbiInfo.SignatureType = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
         }
         else
         {
@@ -6438,7 +6440,8 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                     // will transiently retype all simple address-of implicit parameter args as
                                     // TYP_I_IMPL.
                                     //
-                                    if ((arg2.AbiInfo.SignatureType == TYP_BYREF) || (arg2.AbiInfo.SignatureType == TYP_I_IMPL))
+                                    if ((arg2.AbiInfo.SignatureType == TYP_BYREF) ||
+                                        (arg2.AbiInfo.SignatureType == TYP_I_IMPL))
                                     {
                                         JITDUMP("...arg is a byref, must run an alias check\n");
                                         bool checkExposure = true;
@@ -7650,8 +7653,8 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
     GenTree* retAddrSlot = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaRetAddrVar, TYP_I_IMPL));
 
     NewCallArg retAddrSlotArg = NewCallArg::Primitive(retAddrSlot);
-    NewCallArg callTargetArg = NewCallArg::Primitive(callTarget);
-    NewCallArg retValCallArg = NewCallArg::Primitive(retValArg);
+    NewCallArg callTargetArg  = NewCallArg::Primitive(callTarget);
+    NewCallArg retValCallArg  = NewCallArg::Primitive(retValArg);
     callDispatcherNode->gtArgs.PushFront(this, retAddrSlotArg, callTargetArg, retValCallArg);
 
     GenTree* finalTree = callDispatcherNode;

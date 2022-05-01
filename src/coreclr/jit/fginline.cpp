@@ -815,8 +815,8 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     {
         const var_types retType    = tree->TypeGet();
         GenTree*        foldedTree = comp->gtFoldExpr(tree);
-        *pTree       = foldedTree;
-        *madeChanges = true;
+        *pTree                     = foldedTree;
+        *madeChanges               = true;
     }
 
     return WALK_CONTINUE;
@@ -1534,7 +1534,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             // Today we no longer have this contextual PUTARG_TYPE and morph
             // should properly handle substituting a TYP_INT node for a
             // TYP_SHORT LCL_VAR (at least for a call arg).
-            bool argHasPutArg = !varTypeIsStruct(arg->AbiInfo.SignatureType) && (genTypeSize(argNode) != genTypeSize(arg->AbiInfo.SignatureType));
+            bool argHasPutArg = !varTypeIsStruct(arg->AbiInfo.SignatureType) &&
+                                (genTypeSize(argNode) != genTypeSize(arg->AbiInfo.SignatureType));
 
             BasicBlockFlags bbFlags = BBF_EMPTY;
             argNode                 = argNode->gtRetExprVal(&bbFlags);
@@ -1557,7 +1558,8 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 GenTree* argSingleUseNode = argInfo.argBashTmpNode;
 
-                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef && !argHasPutArg)
+                if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef &&
+                    !argHasPutArg)
                 {
                     // Change the temp in-place to the actual argument.
                     // We currently do not support this for struct arguments, so it must not be a GT_OBJ.

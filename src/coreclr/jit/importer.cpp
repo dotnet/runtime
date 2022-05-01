@@ -1388,7 +1388,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            call->gtArgs.InsertAfterThisOrFirst(this, NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
+            call->gtArgs.InsertAfterThisOrFirst(this,
+                                                NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
 
             // now returns void, not a struct
             src->gtType  = TYP_VOID;
@@ -2377,8 +2378,8 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         // ((sizeCheck fails || nullCheck fails))) ? (helperCall : handle).
         // Add checks and the handle as call arguments, indirect call transformer will handle this.
-        NewCallArg nullCheckArg = NewCallArg::Primitive(nullCheck);
-        NewCallArg sizeCheckArg = NewCallArg::Primitive(sizeCheck);
+        NewCallArg nullCheckArg       = NewCallArg::Primitive(nullCheck);
+        NewCallArg sizeCheckArg       = NewCallArg::Primitive(sizeCheck);
         NewCallArg handleForResultArg = NewCallArg::Primitive(handleForResult);
         helperCall->gtArgs.PushFront(this, nullCheckArg, sizeCheckArg, handleForResultArg);
         result = helperCall;
@@ -8717,7 +8718,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool bIntrinsicImported = false;
 
     CORINFO_SIG_INFO calliSig;
-    NewCallArg extraArg;
+    NewCallArg       extraArg;
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -9022,7 +9023,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
                 assert(fptr != nullptr);
 
-                call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
+                call->AsCall()
+                    ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
 
                 // Now make an indirect call through the function pointer
 
@@ -9349,7 +9351,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         varCookie = info.compCompHnd->getVarArgsHandle(sig, &pVarCookie);
         assert((!varCookie) != (!pVarCookie));
-        GenTree* cookieNode     = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
+        GenTree* cookieNode = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
         assert(extraArg.Node == nullptr);
         extraArg = NewCallArg::Primitive(cookieNode).WellKnown(WellKnownArg::VarArgsCookie);
     }

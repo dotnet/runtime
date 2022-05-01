@@ -4205,7 +4205,7 @@ struct NewCallArg
 
     NewCallArg WellKnown(::WellKnownArg type) const
     {
-        NewCallArg copy = *this;
+        NewCallArg copy   = *this;
         copy.WellKnownArg = type;
         return copy;
     }
@@ -4213,8 +4213,8 @@ struct NewCallArg
     static NewCallArg Struct(GenTree* node, var_types type, CORINFO_CLASS_HANDLE clsHnd)
     {
         NewCallArg arg;
-        arg.Node = node;
-        arg.SignatureType = type;
+        arg.Node            = node;
+        arg.SignatureType   = type;
         arg.SignatureClsHnd = clsHnd;
         arg.ValidateTypes();
         return arg;
@@ -4223,7 +4223,7 @@ struct NewCallArg
     static NewCallArg Primitive(GenTree* node, var_types type = TYP_UNDEF)
     {
         NewCallArg arg;
-        arg.Node = node;
+        arg.Node          = node;
         arg.SignatureType = type == TYP_UNDEF ? node->TypeGet() : type;
         arg.ValidateTypes();
         return arg;
@@ -4232,7 +4232,9 @@ struct NewCallArg
 #ifdef DEBUG
     void ValidateTypes();
 #else
-    void ValidateTypes() {}
+    void ValidateTypes()
+    {
+    }
 #endif
 };
 
@@ -4278,9 +4280,9 @@ public:
 
     CallArg(const NewCallArg& arg) : CallArg()
     {
-        m_earlyNode = arg.Node;
-        m_wellKnownArg = arg.WellKnownArg;
-        AbiInfo.SignatureType = arg.SignatureType;
+        m_earlyNode             = arg.Node;
+        m_wellKnownArg          = arg.WellKnownArg;
+        AbiInfo.SignatureType   = arg.SignatureType;
         AbiInfo.SignatureClsHnd = arg.SignatureClsHnd;
     }
 

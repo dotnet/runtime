@@ -1178,9 +1178,10 @@ void NewCallArg::ValidateTypes()
 
     if (varTypeIsStruct(SignatureType))
     {
-        Compiler* comp = JitTls::GetCompiler();
+        Compiler*            comp   = JitTls::GetCompiler();
         CORINFO_CLASS_HANDLE clsHnd = comp->gtGetStructHandleIfPresent(Node);
-        assert((clsHnd == nullptr) || (SignatureClsHnd == clsHnd) || (comp->info.compCompHnd->getClassSize(SignatureClsHnd) == comp->info.compCompHnd->getClassSize(clsHnd)));
+        assert((clsHnd == nullptr) || (SignatureClsHnd == clsHnd) ||
+               (comp->info.compCompHnd->getClassSize(SignatureClsHnd) == comp->info.compCompHnd->getClassSize(clsHnd)));
     }
 }
 #endif
@@ -1709,8 +1710,7 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, const NewCallArg&
 //
 CallArg* CallArgs::InsertInstParam(Compiler* comp, GenTree* node)
 {
-    NewCallArg newArg =
-        NewCallArg::Primitive(node).WellKnown(WellKnownArg::InstParam);
+    NewCallArg newArg = NewCallArg::Primitive(node).WellKnown(WellKnownArg::InstParam);
 
     if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
     {
@@ -8584,18 +8584,18 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     CallArg** tail = &m_head;
     for (CallArg& arg : other->Args())
     {
-        CallArg* carg     = new (comp, CMK_CallArgs) CallArg();
-        carg->m_earlyNode = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
-        carg->m_lateNode  = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
+        CallArg* carg        = new (comp, CMK_CallArgs) CallArg();
+        carg->m_earlyNode    = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
+        carg->m_lateNode     = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
         carg->m_wellKnownArg = arg.m_wellKnownArg;
-        carg->m_needTmp   = arg.m_needTmp;
-        carg->m_needPlace = arg.m_needPlace;
-        carg->m_isTmp     = arg.m_isTmp;
-        carg->m_processed = arg.m_processed;
-        carg->m_tmpNum    = arg.m_tmpNum;
-        carg->AbiInfo     = arg.AbiInfo;
-        *tail             = carg;
-        tail              = &carg->m_next;
+        carg->m_needTmp      = arg.m_needTmp;
+        carg->m_needPlace    = arg.m_needPlace;
+        carg->m_isTmp        = arg.m_isTmp;
+        carg->m_processed    = arg.m_processed;
+        carg->m_tmpNum       = arg.m_tmpNum;
+        carg->AbiInfo        = arg.AbiInfo;
+        *tail                = carg;
+        tail                 = &carg->m_next;
     }
 
     // Now copy late pointers. Note that these may not come in order.

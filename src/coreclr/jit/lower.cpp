@@ -2331,7 +2331,8 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             // morph, sequence and lower, to avoid redoing that for the actual target.
             GenTree*     targetPlaceholder = comp->gtNewZeroConNode(callTarget->TypeGet());
             GenTreeCall* validate          = comp->gtNewHelperCallNode(CORINFO_HELP_VALIDATE_INDIRECT_CALL, TYP_VOID);
-            NewCallArg newArg = NewCallArg::Primitive(targetPlaceholder).WellKnown(WellKnownArg::ValidateIndirectCallTarget);
+            NewCallArg   newArg =
+                NewCallArg::Primitive(targetPlaceholder).WellKnown(WellKnownArg::ValidateIndirectCallTarget);
             validate->gtArgs.PushFront(comp, newArg);
 
             comp->fgMorphTree(validate);
@@ -2379,7 +2380,8 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 #ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
             // Now insert the call target as an extra argument.
             //
-            CallArg* targetArg = call->gtArgs.PushBack(comp, NewCallArg::Primitive(callTarget, callTarget->TypeGet()).WellKnown(WellKnownArg::DispatchIndirectCallTarget));
+            CallArg* targetArg = call->gtArgs.PushBack(comp, NewCallArg::Primitive(callTarget, callTarget->TypeGet())
+                                                                 .WellKnown(WellKnownArg::DispatchIndirectCallTarget));
             targetArg->SetEarlyNode(nullptr);
             targetArg->SetLateNode(callTarget);
             call->gtArgs.PushLateBack(targetArg);
@@ -4341,7 +4343,8 @@ void Lowering::InsertPInvokeMethodProlog()
     call->gtArgs.PushBack(comp, NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame));
 // for x86/arm32 don't pass the secretArg.
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    call->gtArgs.PushBack(comp, NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM), TYP_I_IMPL).WellKnown(WellKnownArg::SecretStubParam));
+    call->gtArgs.PushBack(comp, NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM), TYP_I_IMPL)
+                                    .WellKnown(WellKnownArg::SecretStubParam));
 #endif
 
     // some sanity checks on the frame list root vardsc
