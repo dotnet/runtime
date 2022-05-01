@@ -2565,13 +2565,10 @@ namespace System.Xml.Serialization
         [RequiresUnreferencedCode("calls Load")]
         internal static void WriteInstanceOf(SourceInfo source, Type type, CodeGenerator ilg)
         {
-            {
-                source.Load(typeof(object));
-                ilg.IsInst(type);
-                ilg.Load(null);
-                ilg.Cne();
-                return;
-            }
+            source.Load(typeof(object));
+            ilg.IsInst(type);
+            ilg.Load(null);
+            ilg.Cne();
         }
 
         [RequiresUnreferencedCode("calls Load")]
@@ -2597,29 +2594,17 @@ namespace System.Xml.Serialization
         }
         internal static void WriteArrayTypeCompare(string variable, Type arrayType, CodeGenerator ilg)
         {
-            {
-                Debug.Assert(arrayType != null);
-                Debug.Assert(ilg != null);
-                ilg.Ldloc(typeof(Type), variable);
-                ilg.Ldc(arrayType);
-                ilg.Ceq();
-                return;
-            }
+            Debug.Assert(arrayType != null);
+            Debug.Assert(ilg != null);
+            ilg.Ldloc(typeof(Type), variable);
+            ilg.Ldc(arrayType);
+            ilg.Ceq();
         }
 
         [return: NotNullIfNotNull("value")]
-        internal static string? GetQuotedCSharpString(string? value)
-        {
-            if (value == null)
-            {
-                return null;
-            }
-            StringBuilder writer = new StringBuilder();
-            writer.Append("@\"");
-            writer.Append(GetCSharpString(value));
-            writer.Append('"');
-            return writer.ToString();
-        }
+        internal static string? GetQuotedCSharpString(string? value) =>
+            value is null ? null :
+            $"@\"{GetCSharpString(value)}\"";
 
         [return: NotNullIfNotNull("value")]
         internal static string? GetCSharpString(string? value)
@@ -2628,35 +2613,66 @@ namespace System.Xml.Serialization
             {
                 return null;
             }
-            StringBuilder writer = new StringBuilder();
-            foreach (char ch in value)
+
+            // Find the first character to be escaped.
+            int i;
+            for (i = 0; i < value.Length; i++)
             {
+                if (value[i] is < (char)32 or '\"')
+                {
+                    break;
+                }
+            }
+
+            // If nothing needs to be escaped, return the original string.
+            if (i == value.Length)
+            {
+                return value;
+            }
+
+            var builder = new ValueStringBuilder(stackalloc char[128]);
+
+            // Copy over all text that needn't be escaped.
+            builder.Append(value.AsSpan(0, i));
+
+            // Process the remainder of the string, escaping each value that needs to be.
+            for (; i < value.Length; i++)
+            {
+                char ch = value[i];
+
                 if (ch < 32)
                 {
                     if (ch == '\r')
-                        writer.Append("\\r");
+                    {
+                        builder.Append("\\r");
+                    }
                     else if (ch == '\n')
-                        writer.Append("\\n");
+                    {
+                        builder.Append("\\n");
+                    }
                     else if (ch == '\t')
-                        writer.Append("\\t");
+                    {
+                        builder.Append("\\t");
+                    }
                     else
                     {
                         byte b = (byte)ch;
-                        writer.Append("\\x");
-                        writer.Append(HexConverter.ToCharUpper(b >> 4));
-                        writer.Append(HexConverter.ToCharUpper(b));
+                        builder.Append("\\x");
+                        builder.Append(HexConverter.ToCharUpper(b >> 4));
+                        builder.Append(HexConverter.ToCharUpper(b));
                     }
                 }
                 else if (ch == '\"')
                 {
-                    writer.Append("\"\"");
+                    builder.Append("\"\"");
                 }
                 else
                 {
-                    writer.Append(ch);
+                    builder.Append(ch);
                 }
             }
-            return writer.ToString();
+
+            return builder.ToString();
         }
     }
 }
