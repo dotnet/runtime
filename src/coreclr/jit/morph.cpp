@@ -2955,8 +2955,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
         if (arg.AbiInfo.IsStruct)
         {
-            arg.AbiInfo.PassedByRef   = passStructByRef;
-            arg.AbiInfo.AbiType = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
+            arg.AbiInfo.PassedByRef = passStructByRef;
+            arg.AbiInfo.AbiType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
         }
         else
         {
@@ -6440,8 +6440,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                     // will transiently retype all simple address-of implicit parameter args as
                                     // TYP_I_IMPL.
                                     //
-                                    if ((arg2.AbiInfo.AbiType == TYP_BYREF) ||
-                                        (arg2.AbiInfo.AbiType == TYP_I_IMPL))
+                                    if ((arg2.AbiInfo.AbiType == TYP_BYREF) || (arg2.AbiInfo.AbiType == TYP_I_IMPL))
                                     {
                                         JITDUMP("...arg is a byref, must run an alias check\n");
                                         bool checkExposure = true;

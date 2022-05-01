@@ -4070,7 +4070,7 @@ private:
 
 public:
     // The ABI type of this argument. This is generally the signature type of
-    // the argument, but when a struct is passed as a scalar type,
+    // the argument, but when a struct is passed as a primitive type,
     // AddFinalArgsAndDetermineABIInfo changes it to that type. Note that if a
     // struct is passed by reference this will still be the struct type.
     var_types AbiType : 5;
@@ -4284,7 +4284,7 @@ public:
     {
         m_earlyNode             = arg.Node;
         m_wellKnownArg          = arg.WellKnownArg;
-        AbiInfo.AbiType   = arg.SignatureType;
+        AbiInfo.AbiType         = arg.SignatureType;
         AbiInfo.SignatureClsHnd = arg.SignatureClsHnd;
     }
 
