@@ -4022,7 +4022,7 @@ struct CallArgABIInformation
 #ifdef TARGET_LOONGARCH64
         , StructFloatFieldType()
 #endif
-        , SignatureType(TYP_UNDEF)
+        , AbiType(TYP_UNDEF)
         , IsBackFilled(false)
         , IsStruct(false)
         , PassedByRef(false)
@@ -4039,6 +4039,8 @@ struct CallArgABIInformation
         }
     }
 
+    // The handle of the class in the callee signature. May be NO_CLASS_HANDLE
+    // for primitive types (check AbiType).
     CORINFO_CLASS_HANDLE SignatureClsHnd;
 
     // Count of number of registers that this argument uses. Note that on ARM,
@@ -4067,11 +4069,11 @@ private:
     regNumberSmall RegNums[MAX_ARG_REG_COUNT];
 
 public:
-    // The signature type of this argument. This is generally the original
-    // argument type, but when a struct is passed as a scalar type, this is
-    // that type. Note that if a struct is passed by reference, this will still
-    // be the struct type.
-    var_types SignatureType : 5;
+    // The ABI type of this argument. This is generally the signature type of
+    // the argument, but when a struct is passed as a scalar type,
+    // AddFinalArgsAndDetermineABIInfo changes it to that type. Note that if a
+    // struct is passed by reference this will still be the struct type.
+    var_types AbiType : 5;
     // True when the argument fills a register slot skipped due to alignment
     // requirements of previous arguments.
     bool IsBackFilled : 1;
@@ -4282,7 +4284,7 @@ public:
     {
         m_earlyNode             = arg.Node;
         m_wellKnownArg          = arg.WellKnownArg;
-        AbiInfo.SignatureType   = arg.SignatureType;
+        AbiInfo.AbiType   = arg.SignatureType;
         AbiInfo.SignatureClsHnd = arg.SignatureClsHnd;
     }
 
