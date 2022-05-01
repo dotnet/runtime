@@ -11169,10 +11169,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
         }
 
-        /* Morphing along with folding and inlining may have changed the
-         * side effect flags, so we have to reset them
-         *
-         * NOTE: Don't reset the exception flags on nodes that may throw */
+        // Morphing along with folding and inlining may have changed the
+        // side effect flags, so we have to reset them
+        //
+        // NOTE: Don't reset the exception flags on nodes that may throw
 
         assert(tree->gtOper != GT_CALL);
 
@@ -11181,11 +11181,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             tree->gtFlags &= ~GTF_CALL;
         }
 
-        /* Propagate the new flags */
+        // Propagate the new flags
         tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
 
-        // &aliasedVar doesn't need GTF_GLOB_REF, though alisasedVar does
-        if (oper == GT_ADDR && (op1->gtOper == GT_LCL_VAR))
+        // addresses of locals do not need GTF_GLOB_REF, even if the child has
+        // it (is address exposed). Note that general addressing may still need
+        // GTF_GLOB_REF, for example if the subtree has a comma that involves a
+        // global reference.
+        if (((tree->gtFlags & GTF_GLOB_REF) != 0) && tree->IsLocalAddrExpr())
         {
             tree->gtFlags &= ~GTF_GLOB_REF;
         }
