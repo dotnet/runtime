@@ -4319,9 +4319,6 @@ ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType,
         if ((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT))
         {
             value = VNForBitCast(value, indType);
-            JITDUMP("    VNForLoadStoreBitcast returns ");
-            JITDUMPEXEC(m_pComp->vnPrint(value, 1));
-            JITDUMP("\n");
         }
         else
         {
@@ -4333,14 +4330,20 @@ ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType,
                 JITDUMP("    *** Mismatched types in VNForLoadStoreBitcast (indType is SIMD)\n");
                 value = VNForExpr(m_pComp->compCurBB, indType);
             }
+            else if (!varTypeIsFloating(typeOfValue) && !varTypeIsFloating(indType))
+            {
+                // TODO-PhysicalVN: implement constant folding for bitcasts and remove this special case.
+                value = VNForCast(value, indType, TypeOfVN(value));
+            }
             else
             {
-                // We are trying to read "value" of type "typeOfValue" using "indType" read.
-                // Insert a cast - this handles small types, i. e. "IND(byte ADDR(int))".
-                // TODO-Bug: this does not not handle "IND(float ADDR(int))" correctly.
-                value = VNForCast(value, indType, typeOfValue);
+                value = VNForBitCast(value, indType);
             }
         }
+
+        JITDUMP("    VNForLoadStoreBitcast returns ");
+        JITDUMPEXEC(m_pComp->vnPrint(value, 1));
+        JITDUMP("\n");
     }
 
     assert(genActualType(TypeOfVN(value)) == genActualType(indType));
@@ -9658,15 +9661,18 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
         srcVN = srcVNFunc.m_args[0];
     }
 
-    if (TypeOfVN(srcVN) == castToType)
+    var_types srcType = TypeOfVN(srcVN);
+
+    if (srcType == castToType)
     {
         return srcVN;
     }
 
-    assert((castToType != TYP_STRUCT) || (TypeOfVN(srcVN) != TYP_STRUCT));
+    assert((castToType != TYP_STRUCT) || (srcType != TYP_STRUCT));
 
-    // TODO-CQ: implement constant folding for BitCast.
-    if (srcVNFunc.m_func == VNF_ZeroObj)
+    // TODO-PhysicalVN: implement proper constant folding for BitCast.
+    if ((srcVNFunc.m_func == VNF_ZeroObj) ||
+        ((castToType != TYP_STRUCT) && (srcType != TYP_STRUCT) && (srcVN == VNZeroForType(srcType))))
     {
         return VNZeroForType(castToType);
     }
