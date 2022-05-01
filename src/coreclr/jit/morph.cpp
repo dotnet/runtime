@@ -1769,16 +1769,18 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         if (setupArg != nullptr)
         {
             arg.SetEarlyNode(setupArg);
+
+            // Make sure we do not break recognition of retbuf-as-local
+            // optimization here. If this is hit it indicates that we are
+            // unnecessarily creating temps for some ret buf addresses, and
+            // gtCallGetDefinedRetBufLclAddr relies on this not to happen.
+            noway_assert((arg.GetWellKnownArg() != WellKnownArg::RetBuffer) || !call->IsOptimizingRetBufAsLocal());
         }
 
         arg.SetLateNode(defArg);
         *lateTail = &arg;
         lateTail  = &arg.LateNextRef();
     }
-
-    // Make sure we did not do anything here that stops us from being able to
-    // find the local ret buf if we are optimizing it.
-    noway_assert(!call->IsOptimizingRetBufAsLocal() || (comp->gtCallGetDefinedRetBufLclAddr(call) != nullptr));
 
 #ifdef DEBUG
     if (comp->verbose)
