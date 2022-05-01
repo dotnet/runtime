@@ -787,7 +787,7 @@ namespace System.Net.WebSockets
                                     cancellationToken).ConfigureAwait(false);
                                 if (numBytesRead <= 0)
                                 {
-                                    ThrowOnEOFUnexpected();
+                                    ThrowEOFUnexpected();
                                     break;
                                 }
                                 totalBytesReceived += numBytesRead;
@@ -1365,7 +1365,7 @@ namespace System.Net.WebSockets
                     Debug.Assert(numRead >= 0, $"Expected non-negative bytes read, got {numRead}");
                     if (numRead <= 0)
                     {
-                        ThrowOnEOFUnexpected();
+                        ThrowEOFUnexpected();
                         break;
                     }
                     _receiveBufferCount += numRead;
@@ -1373,12 +1373,11 @@ namespace System.Net.WebSockets
             }
         }
 
-        private void ThrowOnEOFUnexpected()
+        private void ThrowEOFUnexpected()
         {
             // The connection closed before we were able to read everything we needed.
-            // If it was due to us being disposed, fail.  If it was due to the connection
-            // being closed and it wasn't expected, fail.  If it was due to the connection
-            // being closed and that was expected, exit gracefully.
+            // If it was due to us being disposed, fail with the correct exception.
+            // Otherwise, it was due to the connection being closed and it wasn't expected.
             if (_disposed)
             {
                 throw new ObjectDisposedException(nameof(WebSocket));
