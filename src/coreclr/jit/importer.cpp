@@ -4886,7 +4886,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // conv.u
             // ret
 
-#if (REGSIZE_BYTES == 8)
+#ifdef TARGET_64BIT
             bool uns = true;
 #else
             bool uns = false;
@@ -5036,7 +5036,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // ceq
             // ret
 
-#if (REGSIZE_BYTES == 8)
+#ifdef TARGET_64BIT
             bool uns = true;
 #else
             bool uns = false;
@@ -5059,7 +5059,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // conv.u
             // ret
 
-#if (REGSIZE_BYTES == 8)
+#ifdef TARGET_64BIT
             bool uns = true;
 #else
             bool uns = false;
