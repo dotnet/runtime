@@ -7,11 +7,14 @@
 
 // clang-format off
 ValueNumFuncDef(MemOpaque, 1, false, false, false)          // Args: 0: loop num
+ValueNumFuncDef(MapSelect, 2, false, false, false)          // Args: 0: map, 1: key.
 ValueNumFuncDef(MapStore, 4, false, false, false)           // Args: 0: map, 1: index (e. g. field handle), 2: value being stored, 3: loop num.
 ValueNumFuncDef(MapPhysicalStore, 3, false, false, false)   // Args: 0: map, 1: "physical selector": offset and size, 2: value being stored
 ValueNumFuncDef(BitCast, 2, false, false, false)            // Args: 0: VN of the arg, 1: VN of the target type
 ValueNumFuncDef(ZeroObj, 1, false, false, false)            // Args: 0: VN of the class handle.
-ValueNumFuncDef(MapSelect, 2, false, false, false)          // Args: 0: map, 1: key.
+ValueNumFuncDef(PhiDef, 3, false, false, false)             // Args: 0: local var # (or -1 for memory), 1: SSA #, 2: VN of definition.
+ValueNumFuncDef(PhiMemoryDef, 2, false, false, false)       // Args: 0: VN for basic block pointer, 1: VN of definition
+ValueNumFuncDef(Phi, 2, false, false, false)                // A phi function.  Only occurs as arg of PhiDef or PhiMemoryDef.  Arguments are SSA numbers of var being defined.
 
 ValueNumFuncDef(PtrToLoc, 2, false, true, false)            // Pointer (byref) to a local variable.  Args: VN's of: 0: var num, 1: FieldSeq.
 ValueNumFuncDef(PtrToArrElem, 4, false, false, false)       // Pointer (byref) to an array element.  Args: 0: array elem type eq class var_types value, VN's of: 1: array, 2: index, 3: "ArrElemOffset" VN.
@@ -21,13 +24,7 @@ ValueNumFuncDef(PtrToStatic, 3, false, true, false)         // Pointer (byref) t
                                                             //       1: (VN of) the field sequence, of which the first element is the static itself.
                                                             //       2: (VN of) offset for the constituent struct fields
 
-ValueNumFuncDef(Phi, 2, false, false, false)        // A phi function.  Only occurs as arg of PhiDef or PhiMemoryDef.  Arguments are SSA numbers of var being defined.
-ValueNumFuncDef(PhiDef, 3, false, false, false)     // Args: 0: local var # (or -1 for memory), 1: SSA #, 2: VN of definition.
-// Wouldn't need this if I'd made memory a regular local variable...
-ValueNumFuncDef(PhiMemoryDef, 2, false, false, false) // Args: 0: VN for basic block pointer, 1: VN of definition
 ValueNumFuncDef(InitVal, 1, false, false, false)    // An input arg, or init val of a local Args: 0: a constant VN.
-
-
 
 ValueNumFuncDef(Cast, 2, false, false, false)           // VNF_Cast: Cast Operation changes the representations size and unsigned-ness.
                                                         //           Args: 0: Source for the cast operation.
