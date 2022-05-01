@@ -41,6 +41,8 @@
              Link="Common\Interop\Windows\Interop.Errors.cs" />
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonPath)System\Collections\Generic\ArrayBuilder.cs"
+             Link="Common\System\Collections\Generic\ArrayBuilder.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.EnumProcessModules.cs"
@@ -344,11 +346,6 @@
     <Compile Include="System\Diagnostics\Process.iOS.cs" />
     <Compile Include="System\Diagnostics\ProcessManager.iOS.cs" />
     <Compile Include="System\Diagnostics\ProcessThread.iOS.cs" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'UnknownUnix'">
-    <Compile Include="System\Diagnostics\Process.UnknownUnix.cs" />
-    <Compile Include="System\Diagnostics\ProcessManager.UnknownUnix.cs" />
-    <Compile Include="System\Diagnostics\ProcessThread.UnknownUnix.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
