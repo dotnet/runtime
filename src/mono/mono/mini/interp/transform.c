@@ -9669,8 +9669,6 @@ mono_test_interp_generate_code (TransformData *td, MonoMethod *method, MonoMetho
 	return generate_code (td, method, header, generic_context, error);
 }
 
-static mono_mutex_t calc_section;
-
 #ifdef ENABLE_EXPERIMENT_TIERED
 static gboolean
 tiered_patcher (MiniTieredPatchPointContext *ctx, gpointer patchsite)
@@ -9698,8 +9696,6 @@ tiered_patcher (MiniTieredPatchPointContext *ctx, gpointer patchsite)
 void
 mono_interp_transform_init (void)
 {
-	mono_os_mutex_init_recursive(&calc_section);
-
 #ifdef ENABLE_EXPERIMENT_TIERED
 	mini_tiered_register_callsite_patcher (tiered_patcher, TIERED_PATCH_KIND_INTERP);
 #endif
@@ -9780,12 +9776,13 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 				g_assert_not_reached ();
 		}
 		if (nm == NULL) {
-			mono_os_mutex_lock (&calc_section);
+			MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+			jit_mm_lock (jit_mm);
 			imethod->alloca_size = sizeof (stackval); /* for tracing */
 			mono_memory_barrier ();
 			imethod->transformed = TRUE;
 			mono_interp_stats.methods_transformed++;
-			mono_os_mutex_unlock (&calc_section);
+			jit_mm_unlock (jit_mm);
 			MONO_PROFILER_RAISE (jit_done, (method, NULL));
 			return;
 		}
@@ -9815,7 +9812,9 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 
 	/* Copy changes back */
 	imethod = real_imethod;
-	mono_os_mutex_lock (&calc_section);
+
+	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
+	jit_mm_lock (jit_mm);
 	if (!imethod->transformed) {
 		// Ignore the first two fields which are unchanged. next_jit_code_hash shouldn't
 		// be modified because it is racy with internal hash table insert.
@@ -9826,21 +9825,18 @@ mono_interp_transform_method (InterpMethod *imethod, ThreadContext *context, Mon
 		mono_interp_stats.methods_transformed++;
 		mono_atomic_fetch_add_i32 (&mono_jit_stats.methods_with_interp, 1);
 
+		// FIXME Publishing of seq points seems to be racy with tiereing. We can have both tiered and untiered method
+		// running at the same time. We could therefore get the optimized imethod seq points for the unoptimized method.
+		gpointer seq_points = g_hash_table_lookup (jit_mm->seq_points, imethod->method);
+		if (!seq_points || seq_points != imethod->jinfo->seq_points)
+			g_hash_table_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
 	}
-	mono_os_mutex_unlock (&calc_section);
+	jit_mm_unlock (jit_mm);
 
 	if (mono_stats_method_desc && mono_method_desc_full_match (mono_stats_method_desc, imethod->method)) {
 		g_printf ("Printing runtime stats at method: %s\n", mono_method_get_full_name (imethod->method));
 		mono_runtime_print_stats ();
 	}
-
-	MonoJitMemoryManager *jit_mm = get_default_jit_mm ();
-	jit_mm_lock (jit_mm);
-	gpointer seq_points = g_hash_table_lookup (jit_mm->seq_points, imethod->method);
-	if (!seq_points || seq_points != imethod->jinfo->seq_points)
-		g_hash_table_replace (jit_mm->seq_points, imethod->method, imethod->jinfo->seq_points);
-
-	jit_mm_unlock (jit_mm);
 
 	// FIXME: Add a different callback ?
 	MONO_PROFILER_RAISE (jit_done, (method, imethod->jinfo));
