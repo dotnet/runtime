@@ -8269,7 +8269,9 @@ private:
     }
 
 #if defined(FEATURE_HW_INTRINSICS)
-    CORINFO_CLASS_HANDLE gtGetStructHandleForSimdOrHW(var_types simdType, CorInfoType simdBaseJitType, bool isSimdAsHWIntrinsic = false)
+    CORINFO_CLASS_HANDLE gtGetStructHandleForSimdOrHW(var_types   simdType,
+                                                      CorInfoType simdBaseJitType,
+                                                      bool        isSimdAsHWIntrinsic = false)
     {
         CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
 
