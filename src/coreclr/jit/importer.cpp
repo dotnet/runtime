@@ -4834,8 +4834,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                 tmp = op2;
             }
 
-            type = impGetByRefResultType(GT_ADD, /* uns */ false, &tmp, &op1);
-            return gtNewOperNode(GT_ADD, type, tmp, op1);
+            type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &tmp);
+            return gtNewOperNode(GT_ADD, type, op1, tmp);
         }
 
         case NI_SRCS_UNSAFE_AddByteOffset:
@@ -5136,7 +5136,33 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // sub
             // ret
 
-            return nullptr;
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+            impBashVarAddrsToI(op1, op2);
+
+            GenTree*  tmp  = nullptr;
+            var_types type = TYP_UNKNOWN;
+
+            unsigned classSize = info.compCompHnd->getClassSize(sig->sigInst.methInst[0]);
+
+            if (classSize != 1)
+            {
+                GenTree* size = gtNewIconNode(classSize, TYP_INT);
+
+#ifdef TARGET_64BIT
+                size = gtNewCastNode(TYP_I_IMPL, size, /* uns */ false, TYP_I_IMPL);
+#endif
+
+                type = impGetByRefResultType(GT_MUL, /* uns */ false, &op2, &size);
+                tmp  = new (this, GT_CALL) GenTreeOp(GT_MUL, type, op2, size DEBUGARG(/* largeNode */ true));
+            }
+            else
+            {
+                tmp = op2;
+            }
+
+            type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &tmp);
+            return gtNewOperNode(GT_SUB, type, op1, tmp);
         }
 
         case NI_SRCS_UNSAFE_SubtractByteOffset:
@@ -5148,7 +5174,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // sub
             // ret
 
-            return nullptr;
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+            impBashVarAddrsToI(op1, op2);
+
+            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &op2);
+            return gtNewOperNode(GT_SUB, type, op1, op2);
         }
 
         case NI_SRCS_UNSAFE_Unbox:
