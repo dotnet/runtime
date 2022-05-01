@@ -16411,6 +16411,32 @@ unsigned GenTree::IsLclVarUpdateTree(GenTree** pOtherTree, genTreeOps* pOper)
     return lclNum;
 }
 
+//------------------------------------------------------------------------
+// IsBlockProfileUpdate: Determine whether this tree is updating
+//                       a basic block profile counter
+//
+// Return Value:
+//    True if this tree is updating a block profile count
+//
+bool GenTree::IsBlockProfileUpdate()
+{
+    if (!OperIs(GT_ASG))
+    {
+        return false;
+    }
+
+    GenTree* const lhs = AsOp()->gtOp1;
+
+    if (!lhs->OperIs(GT_IND))
+    {
+        return false;
+    }
+
+    GenTree* const addr = lhs->AsIndir()->Addr();
+
+    return addr->IsIconHandle(GTF_ICON_BBC_PTR);
+}
+
 #ifdef DEBUG
 //------------------------------------------------------------------------
 // canBeContained: check whether this tree node may be a subcomponent of its parent for purposes
