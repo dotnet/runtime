@@ -11190,7 +11190,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         // it (is address exposed). Note that general addressing may still need
         // GTF_GLOB_REF, for example if the subtree has a comma that involves a
         // global reference.
-        if (((tree->gtFlags & GTF_GLOB_REF) != 0) && tree->IsLocalAddrExpr())
+        if (tree->OperIs(GT_ADDR) && ((tree->gtFlags & GTF_GLOB_REF) != 0) && tree->IsLocalAddrExpr())
         {
             tree->gtFlags &= ~GTF_GLOB_REF;
         }

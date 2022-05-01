@@ -3086,7 +3086,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
     });
 
     // Addresses of locals never need GTF_GLOB_REF
-    if (tree->IsLocalAddrExpr())
+    if (tree->OperIs(GT_ADDR) && tree->IsLocalAddrExpr())
     {
         expectedFlags &= ~GTF_GLOB_REF;
     }
