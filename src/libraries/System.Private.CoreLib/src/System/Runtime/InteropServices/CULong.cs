@@ -478,22 +478,27 @@ namespace System.Runtime.InteropServices
         public static CULong TrailingZeroCount(CULong value) => new CULong(NativeType.TrailingZeroCount(value._value));
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        long IBinaryInteger<CULong>.GetShortestBitLength()
+        unsafe long IBinaryInteger<CULong>.GetShortestBitLength()
         {
+#if TARGET_WINDOWS
             NativeType value = _value;
+#else
+            // Explicitly use nuint rather than NativeType to ensure operators are available
+            nuint value = _value;
+#endif
 
             if (value >= 0)
             {
-                return (sizeof(NativeType) * 8) - NativeType.LeadingZeroCount(value);
+                return (sizeof(NativeType) * 8) - BitOperations.LeadingZeroCount(value);
             }
             else
             {
-                return (sizeof(NativeType) * 8) + 1 - NativeType.LeadingZeroCount(~value);
+                return (sizeof(NativeType) * 8) + 1 - BitOperations.LeadingZeroCount(~value);
             }
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
-        int IBinaryInteger<CULong>.GetByteCount() => sizeof(NativeType);
+        unsafe int IBinaryInteger<CULong>.GetByteCount() => sizeof(NativeType);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         unsafe bool IBinaryInteger<CULong>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -577,7 +582,13 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         public static CULong operator --(CULong value)
         {
+#if TARGET_WINDOWS
             NativeType tmp = value._value;
+#else
+            // Explicitly use nuint rather than NativeType to ensure operators are available
+            nuint tmp = value._value;
+#endif
+
             --tmp;
             return new CULong(tmp);
         }
@@ -585,7 +596,12 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         public static CULong operator checked --(CULong value)
         {
+#if TARGET_WINDOWS
             NativeType tmp = value._value;
+#else
+            // Explicitly use nuint rather than NativeType to ensure operators are available
+            nuint tmp = value._value;
+#endif
 
             checked
             {
@@ -628,7 +644,13 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         public static CULong operator ++(CULong value)
         {
+#if TARGET_WINDOWS
             NativeType tmp = value._value;
+#else
+            // Explicitly use nuint rather than NativeType to ensure operators are available
+            nuint tmp = value._value;
+#endif
+
             ++tmp;
             return new CULong(tmp);
         }
@@ -636,7 +658,12 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
         public static CULong operator checked ++(CULong value)
         {
+#if TARGET_WINDOWS
             NativeType tmp = value._value;
+#else
+            // Explicitly use nuint rather than NativeType to ensure operators are available
+            nuint tmp = value._value;
+#endif
 
             checked
             {

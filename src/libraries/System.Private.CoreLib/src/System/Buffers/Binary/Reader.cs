@@ -45,6 +45,19 @@ namespace System.Buffers.Binary
         public static long ReverseEndianness(long value) => (long)ReverseEndianness((ulong)value);
 
         /// <summary>
+        /// Reverses a primitive value - performs an endianness swap
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static nint ReverseEndianness(nint value)
+        {
+#if TARGET_64BIT
+            return (nint)ReverseEndianness((long)value);
+#else
+            return (nint)ReverseEndianness((int)value);
+#endif
+        }
+
+        /// <summary>
         /// This is a no-op and added only for consistency.
         /// This allows the caller to read a struct of numeric primitives and reverse each field
         /// rather than having to skip byte fields.
@@ -115,6 +128,19 @@ namespace System.Buffers.Binary
 
             return ((ulong)ReverseEndianness((uint)value) << 32)
                 + ReverseEndianness((uint)(value >> 32));
+        }
+
+        /// <summary>
+        /// Reverses a primitive value - performs an endianness swap
+        /// </summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static nuint ReverseEndianness(nuint value)
+        {
+#if TARGET_64BIT
+            return (nuint)ReverseEndianness((ulong)value);
+#else
+            return (nuint)ReverseEndianness((uint)value);
+#endif
         }
     }
 }
