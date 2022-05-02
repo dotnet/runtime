@@ -55,19 +55,8 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 			// If the return value is empty (TopValue basically) and the Operation tree
 			// reports it as having a constant value, use that as it will automatically cover
 			// cases we don't need/want to handle.
-			if (operation != null && returnValue.IsEmpty () && operation.ConstantValue.HasValue) {
-				object? constantValue = operation.ConstantValue.Value;
-				if (constantValue == null)
-					return NullValue.Instance;
-				else if (operation.Type?.SpecialType == SpecialType.System_String && constantValue is string stringConstantValue)
-					return new KnownStringValue (stringConstantValue);
-				else if (operation.Type?.TypeKind == TypeKind.Enum && constantValue is int enumConstantValue)
-					return new ConstIntValue (enumConstantValue);
-				else if (operation.Type?.SpecialType == SpecialType.System_Int32 && constantValue is int intConstantValue)
-					return new ConstIntValue (intConstantValue);
-				else if (operation.Type?.SpecialType == SpecialType.System_Boolean && constantValue is bool boolConstantValue)
-					return new ConstIntValue (boolConstantValue ? 1 : 0);
-			}
+			if (operation != null && returnValue.IsEmpty () && TryGetConstantValue (operation, out var constValue))
+				return constValue;
 
 			return returnValue;
 		}
@@ -138,6 +127,9 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					return new KnownStringValue (string.Empty);
 				}
 			}
+
+			if (TryGetConstantValue (fieldRef, out var constValue))
+				return constValue;
 
 			if (fieldRef.Field.Type.IsTypeInterestingForDataflow ())
 				return new FieldValue (fieldRef.Field);
@@ -296,6 +288,32 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 					isReturnValue: true
 				);
 			}
+		}
+
+		static bool TryGetConstantValue (IOperation operation, out MultiValue constValue)
+		{
+			if (operation.ConstantValue.HasValue) {
+				object? constantValue = operation.ConstantValue.Value;
+				if (constantValue == null) {
+					constValue = NullValue.Instance;
+					return true;
+				} else if (operation.Type?.SpecialType == SpecialType.System_String && constantValue is string stringConstantValue) {
+					constValue = new KnownStringValue (stringConstantValue);
+					return true;
+				} else if (operation.Type?.TypeKind == TypeKind.Enum && constantValue is int enumConstantValue) {
+					constValue = new ConstIntValue (enumConstantValue);
+					return true;
+				} else if (operation.Type?.SpecialType == SpecialType.System_Int32 && constantValue is int intConstantValue) {
+					constValue = new ConstIntValue (intConstantValue);
+					return true;
+				} else if (operation.Type?.SpecialType == SpecialType.System_Boolean && constantValue is bool boolConstantValue) {
+					constValue = new ConstIntValue (boolConstantValue ? 1 : 0);
+					return true;
+				}
+			}
+
+			constValue = default;
+			return false;
 		}
 	}
 }
