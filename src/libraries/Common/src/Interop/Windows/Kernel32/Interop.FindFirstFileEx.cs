@@ -21,12 +21,6 @@ internal static partial class Interop
             fileName = PathInternal.EnsureExtendedPrefixIfNeeded(fileName);
 
             // use FindExInfoBasic since we don't care about short name and it has better perf
-            return FindFirstFilePrefixed(fileName, ref data);
-        }
-
-        internal static SafeFindHandle FindFirstFilePrefixed(string fileName, ref WIN32_FIND_DATA data)
-        {
-            // use FindExInfoBasic since we don't care about short name and it has better perf
             return FindFirstFileExPrivate(fileName, FINDEX_INFO_LEVELS.FindExInfoBasic, ref data, FINDEX_SEARCH_OPS.FindExSearchNameMatch, IntPtr.Zero, 0);
         }
 

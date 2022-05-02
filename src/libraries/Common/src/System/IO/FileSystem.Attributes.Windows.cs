@@ -88,7 +88,7 @@ namespace System.IO
                 if (!IsPathUnreachableError(errorCode))
                 {
                     // Assert so we can track down other cases (if any) to add to our test suite
-                    Debug.Assert(errorCode is Interop.Errors.ERROR_ACCESS_DENIED or Interop.Errors.ERROR_SHARING_VIOLATION or Interop.Errors.ERROR_SEM_TIMEOUT,
+                    Debug.Assert(errorCode == Interop.Errors.ERROR_ACCESS_DENIED || errorCode == Interop.Errors.ERROR_SHARING_VIOLATION || errorCode == Interop.Errors.ERROR_SEM_TIMEOUT,
                         $"Unexpected error code getting attributes {errorCode} from path {path}");
 
                     // Files that are marked for deletion will not let you GetFileAttributes,
@@ -104,7 +104,7 @@ namespace System.IO
                     // pagefile.sys case. As such we're probably stuck filtering out specific
                     // cases that we know we don't want to retry on.
 
-                    using SafeFindHandle handle = Interop.Kernel32.FindFirstFilePrefixed(prefixedString!, ref findData);
+                    using SafeFindHandle handle = Interop.Kernel32.FindFirstFile(prefixedString!, ref findData);
                     if (handle.IsInvalid)
                     {
                         errorCode = Marshal.GetLastWin32Error();

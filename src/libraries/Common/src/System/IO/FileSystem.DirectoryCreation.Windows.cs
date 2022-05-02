@@ -34,17 +34,15 @@ namespace System.IO
             // isn't threadsafe.
 
             bool somepathexists = false;
-
-            ReadOnlySpan<char> fullPathSpan = fullPath;
-            int length = fullPathSpan.Length;
+            int length = fullPath.Length;
 
             // We need to trim the trailing slash or the code will try to create 2 directories of the same name.
-            if (length >= 2 && PathInternal.IsDirectorySeparator(fullPathSpan[^1]))
+            if (length >= 2 && PathInternal.IsDirectorySeparator(fullPath.AsSpan()[^1]))
             {
                 length--;
             }
 
-            int lengthRoot = PathInternal.GetRootLength(fullPathSpan);
+            int lengthRoot = PathInternal.GetRootLength(fullPath.AsSpan());
 
             using (DisableMediaInsertionPrompt.Create())
             {
@@ -54,7 +52,7 @@ namespace System.IO
                     int i = length - 1;
                     while (i >= lengthRoot && !somepathexists)
                     {
-                        ReadOnlySpan<char> dir = fullPathSpan[..(i + 1)];
+                        ReadOnlySpan<char> dir = fullPath.AsSpan()[..(i + 1)];
 
                         // Neither GetFileAttributes or FindFirstFile like trailing separators
                         dir = PathInternal.TrimEndingDirectorySeparator(dir);
@@ -130,12 +128,11 @@ namespace System.IO
             // Handle CreateDirectory("X:\\") when X: doesn't exist. Similarly for n/w paths.
             if ((count == 0) && !somepathexists)
             {
-                ReadOnlySpan<char> root = Path.GetPathRoot(fullPathSpan);
-                string rootString = new(root);
+                string? root = Path.GetPathRoot(fullPath);
 
-                if (!DirectoryExists(rootString))
+                if (!DirectoryExists(root))
                 {
-                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, rootString);
+                    throw Win32Marshal.GetExceptionForWin32Error(Interop.Errors.ERROR_PATH_NOT_FOUND, root);
                 }
 
                 return;
