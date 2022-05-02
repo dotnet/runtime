@@ -1686,19 +1686,19 @@ namespace System.Runtime.InteropServices.Tests
             }
             else
             {
-                Assert.True(NumberHelper<CULong>.TryCreate<CULong>((CULong)0x00000000, out result));
+                Assert.True(NumberHelper<CULong>.TryCreate<nuint>((nuint)0x00000000, out result));
                 Assert.Equal((CULong)0x00000000, result);
 
-                Assert.True(NumberHelper<CULong>.TryCreate<CULong>((CULong)0x00000001, out result));
+                Assert.True(NumberHelper<CULong>.TryCreate<nuint>((nuint)0x00000001, out result));
                 Assert.Equal((CULong)0x00000001, result);
 
-                Assert.True(NumberHelper<CULong>.TryCreate<CULong>((CULong)0x7FFFFFFF, out result));
+                Assert.True(NumberHelper<CULong>.TryCreate<nuint>((nuint)0x7FFFFFFF, out result));
                 Assert.Equal((CULong)0x7FFFFFFF, result);
 
-                Assert.True(NumberHelper<CULong>.TryCreate<CULong>(unchecked((CULong)0x80000000), out result));
+                Assert.True(NumberHelper<CULong>.TryCreate<nuint>(unchecked((nuint)0x80000000), out result));
                 Assert.Equal((CULong)0x80000000, result);
 
-                Assert.True(NumberHelper<CULong>.TryCreate<CULong>(unchecked((CULong)0xFFFFFFFF), out result));
+                Assert.True(NumberHelper<CULong>.TryCreate<nuint>(unchecked((nuint)0xFFFFFFFF), out result));
                 Assert.Equal((CULong)0xFFFFFFFF, result);
             }
         }
