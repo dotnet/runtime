@@ -5127,7 +5127,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // ret
 
             impPopStack();
-            return new (this, GT_NO_OP) GenTree(GT_NO_OP, TYP_VOID);
+            return gtNewNothingNode();
         }
 
         case NI_SRCS_UNSAFE_Subtract:
