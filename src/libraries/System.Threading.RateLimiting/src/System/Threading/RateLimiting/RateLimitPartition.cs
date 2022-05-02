@@ -12,6 +12,9 @@ namespace System.Threading.RateLimiting
         /// Defines a partition with the given rate limiter factory.
         /// </summary>
         /// <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
+        /// <remarks>
+        /// The <paramref name="factory"/> should return a new instance of a rate limiter every time it is called.
+        /// </remarks>
         /// <param name="partitionKey">The specific key for this partition. This will be used to check for an existing cached limiter before calling the <paramref name="factory"/>.</param>
         /// <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This should be a new instance of a rate limiter every time it is called.</param>
         /// <returns></returns>
@@ -72,6 +75,60 @@ namespace System.Threading.RateLimiting
                         options.ReplenishmentPeriod, options.TokensPerPeriod, autoReplenishment: false);
                 }
                 return new TokenBucketRateLimiter(options);
+            });
+        }
+
+        /// <summary>
+        /// Defines a partition with a <see cref="SlidingWindowRateLimiter"/> with the given <see cref="SlidingWindowRateLimiterOptions"/>.
+        /// </summary>
+        /// <remarks>
+        /// Set <see cref="SlidingWindowRateLimiterOptions.AutoReplenishment"/> to <see langword="false"/> to save an allocation. This method will create a new options type and set <see cref="SlidingWindowRateLimiterOptions.AutoReplenishment"/> to <see langword="false"/> otherwise.
+        /// </remarks>
+        /// <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
+        /// <param name="partitionKey">The specific key for this partition.</param>
+        /// <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This can return the same instance of <see cref="SlidingWindowRateLimiterOptions"/> across different calls.</param>
+        /// <returns></returns>
+        public static RateLimitPartition<TKey> CreateSlidingWindowLimiter<TKey>(
+            TKey partitionKey,
+            Func<TKey, SlidingWindowRateLimiterOptions> factory)
+        {
+            return Create(partitionKey, key =>
+            {
+                SlidingWindowRateLimiterOptions options = factory(key);
+                // We don't want individual SlidingWindowRateLimiters to have timers. We will instead have our own internal Timer handling all of them
+                if (options.AutoReplenishment is true)
+                {
+                    options = new SlidingWindowRateLimiterOptions(options.PermitLimit, options.QueueProcessingOrder, options.QueueLimit,
+                        options.Window, options.SegmentsPerWindow, autoReplenishment: false);
+                }
+                return new SlidingWindowRateLimiter(options);
+            });
+        }
+
+        /// <summary>
+        /// Defines a partition with a <see cref="FixedWindowRateLimiter"/> with the given <see cref="FixedWindowRateLimiterOptions"/>.
+        /// </summary>
+        /// <remarks>
+        /// Set <see cref="FixedWindowRateLimiterOptions.AutoReplenishment"/> to <see langword="false"/> to save an allocation. This method will create a new options type and set <see cref="FixedWindowRateLimiterOptions.AutoReplenishment"/> to <see langword="false"/> otherwise.
+        /// </remarks>
+        /// <typeparam name="TKey">The type to distinguish partitions with.</typeparam>
+        /// <param name="partitionKey">The specific key for this partition.</param>
+        /// <param name="factory">The function called when a rate limiter for the given <paramref name="partitionKey"/> is needed. This can return the same instance of <see cref="FixedWindowRateLimiterOptions"/> across different calls.</param>
+        /// <returns></returns>
+        public static RateLimitPartition<TKey> CreateFixedWindowLimiter<TKey>(
+            TKey partitionKey,
+            Func<TKey, FixedWindowRateLimiterOptions> factory)
+        {
+            return Create(partitionKey, key =>
+            {
+                FixedWindowRateLimiterOptions options = factory(key);
+                // We don't want individual FixedWindowRateLimiters to have timers. We will instead have our own internal Timer handling all of them
+                if (options.AutoReplenishment is true)
+                {
+                    options = new FixedWindowRateLimiterOptions(options.PermitLimit, options.QueueProcessingOrder, options.QueueLimit,
+                        options.Window, autoReplenishment: false);
+                }
+                return new FixedWindowRateLimiter(options);
             });
         }
     }
