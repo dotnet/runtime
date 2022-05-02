@@ -62,7 +62,7 @@ namespace System.IO.Tests
             }
         }
 
-        private void SettingUpdatesPropertiesCore(T item, T? linkTarget)
+        private void SettingUpdatesPropertiesCore(T item, T? linkTarget = default)
         {
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
@@ -96,7 +96,7 @@ namespace System.IO.Tests
         public void SettingUpdatesProperties()
         {
             T item = GetExistingItem();
-            SettingUpdatesPropertiesCore(item, default);
+            SettingUpdatesPropertiesCore(item);
         }
 
         [Fact]
@@ -108,7 +108,7 @@ namespace System.IO.Tests
             }
 
             T item = GetExistingItem(readOnly: true);
-            SettingUpdatesPropertiesCore(item, default);
+            SettingUpdatesPropertiesCore(item);
         }
 
         [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
