@@ -4925,6 +4925,13 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1, op2);
 
+            unsigned temp = lvaGrabTemp(true DEBUGARG("Evaluate op1 to a local so side-effects can be preserved"));
+
+            impAssignTempGen(temp, op1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr, impCurStmtDI);
+            var_types type = genActualType(lvaTable[temp].TypeGet());
+
+            op1 = gtNewLclvNode(temp, type);
+
             var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op2, &op1);
             return gtNewOperNode(GT_SUB, type, op2, op1);
         }
