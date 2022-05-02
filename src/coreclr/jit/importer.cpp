@@ -4813,12 +4813,10 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1, op2);
 
-            GenTree*  tmp  = nullptr;
-            var_types type = TYP_UNKNOWN;
-
             op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
 
-            unsigned classSize = info.compCompHnd->getClassSize(sig->sigInst.methInst[0]);
+            var_types type      = TYP_UNKNOWN;
+            unsigned  classSize = info.compCompHnd->getClassSize(sig->sigInst.methInst[0]);
 
             if (classSize != 1)
             {
@@ -4829,15 +4827,11 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 #endif
 
                 type = impGetByRefResultType(GT_MUL, /* uns */ false, &op2, &size);
-                tmp  = new (this, GT_CALL) GenTreeOp(GT_MUL, type, op2, size DEBUGARG(/* largeNode */ true));
-            }
-            else
-            {
-                tmp = op2;
+                op2  = new (this, GT_CALL) GenTreeOp(GT_MUL, type, op2, size DEBUGARG(/* largeNode */ true));
             }
 
-            type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &tmp);
-            return gtNewOperNode(GT_ADD, type, op1, tmp);
+            type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &op2);
+            return gtNewOperNode(GT_ADD, type, op1, op2);
         }
 
         case NI_SRCS_UNSAFE_AddByteOffset:
