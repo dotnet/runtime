@@ -5093,10 +5093,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 
             if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
             {
-                op1 = gtUnusedValNode(op1);
+                return gtUnusedValNode(op1);
             }
-
-            return gtNewNothingNode();
+            else
+            {
+                return gtNewNothingNode();
+            }
         }
 
         case NI_SRCS_UNSAFE_Subtract:
