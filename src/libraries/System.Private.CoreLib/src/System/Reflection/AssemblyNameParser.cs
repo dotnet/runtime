@@ -54,13 +54,6 @@ namespace System.Reflection
         private static readonly char[] s_illegalCharactersInSimpleName = { '/', '\\', ':' };
         private ReadOnlySpan<char> _input;
         private int _index;
-        private string? _inputAsString;
-
-        private AssemblyNameParser(string input)
-            : this(input.AsSpan())
-        {
-            _inputAsString = input;
-        }
 
         private AssemblyNameParser(ReadOnlySpan<char> input)
         {
@@ -439,6 +432,6 @@ namespace System.Reflection
 
         [DoesNotReturn]
         private void ThrowInvalidAssemblyName()
-            => throw new FileLoadException(SR.InvalidAssemblyName, _inputAsString ?? _input.ToString());
+            => throw new FileLoadException(SR.InvalidAssemblyName, _input.ToString());
     }
 }
