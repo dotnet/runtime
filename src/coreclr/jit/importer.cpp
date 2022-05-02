@@ -4816,6 +4816,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             GenTree*  tmp  = nullptr;
             var_types type = TYP_UNKNOWN;
 
+            op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
+
             unsigned classSize = info.compCompHnd->getClassSize(sig->sigInst.methInst[0]);
 
             if (classSize != 1)
