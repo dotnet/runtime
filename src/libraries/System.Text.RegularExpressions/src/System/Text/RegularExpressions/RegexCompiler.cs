@@ -5203,7 +5203,9 @@ namespace System.Text.RegularExpressions
             // Next, handle sets where the high - low + 1 range is <= 64.  In that case, we can emit
             // a branchless lookup in a ulong that does not rely on loading any objects (e.g. the string-based
             // lookup we use later).  This nicely handles common sets like [0-9A-Fa-f], [0-9a-f], [A-Za-z], etc.
-            if (analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
+            // We skip this on 32-bit, as otherwise using 64-bit numbers in this manner is a deoptimization
+            // when compared to the subsequent fallbacks.
+            if (IntPtr.Size == 8 && analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
             {
                 // Create the 64-bit value with 1s at indices corresponding to every character in the set,
                 // where the bit is computed to be the char value minus the lower bound starting from

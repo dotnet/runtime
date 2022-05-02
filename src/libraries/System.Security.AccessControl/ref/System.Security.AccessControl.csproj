@@ -2,10 +2,14 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Security.AccessControl.cs" />
   </ItemGroup>
+
   <ItemGroup>
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.NonGeneric\ref\System.Collections.NonGeneric.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
 </Project>

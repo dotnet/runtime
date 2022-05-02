@@ -189,9 +189,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             using (var c2 = new X509Certificate2(TestData.PfxData, TestData.PfxDataPassword))
             {
                 RSA rsa = c2.GetRSAPrivateKey();
-                byte[] hash = new byte[20];
-                byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
+                byte[] hash = new byte[SHA256.HashSizeInBytes];
+                byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
 
                 c1.Dispose();
                 rsa.Dispose();
@@ -202,9 +202,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                 // Verify other cert and previous key do not affect cert
                 using (rsa = c2.GetRSAPrivateKey())
                 {
-                    hash = new byte[20];
-                    sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                    Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
+                    hash = new byte[SHA256.HashSizeInBytes];
+                    sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
                 }
             }
         }
@@ -259,9 +259,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             {
                 using (RSA rsa = c.GetRSAPrivateKey())
                 {
-                    byte[] hash = new byte[20];
-                    byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-                    Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
+                    byte[] hash = new byte[SHA256.HashSizeInBytes];
+                    byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                    Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
                 }
             }
             else

@@ -462,21 +462,6 @@
         <target state="translated">Abstraktní typ odvozený ze SafeHandle nelze zařadit pomocí odkazu. Poskytnutý typ musí být konkrétní.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedDescription">
-        <source>P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks.</source>
-        <target state="translated">Generování zdroje voláním P/Invoke se u neznámé cílové architektura v{0} nepodporuje. Generovaný zdroj nebude kompatibilní s ostatními architekturami.</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedMessage">
-        <source>'LibraryImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</source>
-        <target state="translated">LibraryImportAttribute nelze použít pro zdrojem generovaná volání P/Invokes v neznámé cílové architektuře v{0}.</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedTitle">
-        <source>Current target framework is not supported by source-generated P/Invokes</source>
-        <target state="translated">Současná cílová architektura není podporována zdrojem generovanými voláními P/Invokes</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
         <source>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
         <target state="translated">Typ zařazování, které poskytuje metodu ToNativeValue, by měl určovat, že podporuje funkci TwoStageMarshalling.</target>

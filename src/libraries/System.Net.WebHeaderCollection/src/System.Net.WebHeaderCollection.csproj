@@ -23,6 +23,5 @@
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Tracing" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

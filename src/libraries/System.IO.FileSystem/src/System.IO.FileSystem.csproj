@@ -9,6 +9,5 @@
   </ItemGroup>
   <ItemGroup>
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
   </ItemGroup>
 </Project>

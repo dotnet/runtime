@@ -2720,7 +2720,7 @@ namespace System.Text.RegularExpressions
         public bool IsNotoneFamily => Kind is RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy;
 
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage] // Used only for debugging assistance
         public override string ToString()
         {
             RegexNode? curNode = this;
@@ -2753,7 +2753,7 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage] // Used only for debugging assistance
         private string Describe()
         {
             var sb = new StringBuilder(Kind.ToString());

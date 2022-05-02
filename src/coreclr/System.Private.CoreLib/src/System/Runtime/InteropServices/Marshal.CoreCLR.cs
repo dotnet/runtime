@@ -79,7 +79,9 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadInt64(Object, Int32) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+#pragma warning disable CS0618 // Type or member is obsolete
         public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] object ptr, int ofs)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt64(nativeHome, offset));
         }
@@ -251,8 +253,9 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsPinnable(object? obj);
+        // Note: Callers are required to keep obj alive
+        internal static unsafe bool IsPinnable(object? obj)
+            => (obj == null) || !RuntimeHelpers.GetMethodTable(obj)->ContainsGCPointers;
 
 #if TARGET_WINDOWS
         internal static bool IsBuiltInComSupported { get; } = IsBuiltInComSupportedInternal();

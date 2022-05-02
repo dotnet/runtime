@@ -312,51 +312,33 @@ namespace System.Runtime.Intrinsics
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector128<T> other)
         {
-            ThrowHelper.ThrowForUnsupportedIntrinsicsVector128BaseType<T>();
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
 
-            if (Sse.IsSupported && (typeof(T) == typeof(float)))
+            if (Vector128.IsHardwareAccelerated)
             {
-                Vector128<float> result = Sse.CompareEqual(this.AsSingle(), other.AsSingle());
-                return Sse.MoveMask(result) == 0b1111; // We have one bit per element
-            }
-
-            if (Sse2.IsSupported)
-            {
-                if (typeof(T) == typeof(double))
+                if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
                 {
-                    Vector128<double> result = Sse2.CompareEqual(this.AsDouble(), other.AsDouble());
-                    return Sse2.MoveMask(result) == 0b11; // We have one bit per element
-                }
-                else if (Sse41.IsSupported)
-                {
-                    // xor + testz is slightly better for integer types
-                    Vector128<byte> xored = Sse2.Xor(this.AsByte(), other.AsByte());
-                    return Sse41.TestZ(xored, xored);
+                    Vector128<T> result = Vector128.Equals(this, other) | ~(Vector128.Equals(this, this) | Vector128.Equals(other, other));
+                    return result.AsInt32() == Vector128<int>.AllBitsSet;
                 }
                 else
                 {
-                    // Unlike float/double, there are no special values to consider
-                    // for integral types and we can just do a comparison that all
-                    // bytes are exactly the same.
-
-                    Debug.Assert((typeof(T) != typeof(float)) && (typeof(T) != typeof(double)));
-                    Vector128<byte> result = Sse2.CompareEqual(this.AsByte(), other.AsByte());
-                    return Sse2.MoveMask(result) == 0b1111_1111_1111_1111; // We have one bit per element
+                    return this == other;
                 }
             }
 
             return SoftwareFallback(in this, other);
 
-            static bool SoftwareFallback(in Vector128<T> vector, Vector128<T> other)
+            static bool SoftwareFallback(in Vector128<T> self, Vector128<T> other)
             {
-                for (int i = 0; i < Count; i++)
+                for (int index = 0; index < Count; index++)
                 {
-                    if (!((IEquatable<T>)(vector.GetElement(i))).Equals(other.GetElement(i)))
+                    if (!Scalar<T>.ObjectEquals(self.GetElementUnsafe(index), other.GetElementUnsafe(index)))
                     {
                         return false;
                     }
                 }
-
                 return true;
             }
         }

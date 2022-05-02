@@ -26,14 +26,9 @@
     <Reference Include="System.Net.WebSockets.Client" />
     <Reference Include="System.Numerics.Vectors" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
     <Reference Include="System.Security.Cryptography" />
-    <Reference Include="System.Security.Cryptography.Algorithms" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
-    <Reference Include="System.Security.Principal" />
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />

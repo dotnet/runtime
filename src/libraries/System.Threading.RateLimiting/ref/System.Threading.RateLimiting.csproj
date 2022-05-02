@@ -3,12 +3,11 @@
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
   </PropertyGroup>
 
-  <ItemGroup>
-    <Compile Include="System.Threading.RateLimiting.cs" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\ref\Microsoft.Bcl.AsyncInterfaces.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="System.Threading.RateLimiting.cs" />
   </ItemGroup>
 </Project>

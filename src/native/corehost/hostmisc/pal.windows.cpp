@@ -791,39 +791,43 @@ bool pal::is_running_in_wow64()
 }
 
 typedef BOOL (WINAPI* is_wow64_process2)(
-  HANDLE hProcess,
-  USHORT *pProcessMachine,
-  USHORT *pNativeMachine
+    HANDLE hProcess,
+    USHORT *pProcessMachine,
+    USHORT *pNativeMachine
 );
 
 bool pal::is_emulating_x64()
 {
-    USHORT pProcessMachine, pNativeMachine;
+#if defined(TARGET_AMD64)
     auto kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (kernel32)
+    if (kernel32 == nullptr)
     {
-        is_wow64_process2 isWow64Process2Func = (is_wow64_process2)GetProcAddress(kernel32, "IsWow64Process2");
-        if (!isWow64Process2Func)
-        {
-            // Could not find IsWow64Process2.
-            return false;
-        }
-
-        if (!isWow64Process2Func(GetCurrentProcess(), &pProcessMachine, &pNativeMachine))
-        {
-            // IsWow64Process2 failed. Log the error and continue.
-            trace::info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
-            return false;
-        }
-
-        // Check if we are running an x64 process on a non-x64 windows machine.
-        return pProcessMachine != pNativeMachine && pProcessMachine == IMAGE_FILE_MACHINE_AMD64;
+        // Loading kernel32.dll failed, log the error and continue.
+        trace::info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
+        return false;
     }
 
-    // Loading kernel32.dll failed, log the error and continue.
-    trace::info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
+    is_wow64_process2 is_wow64_process2_func = (is_wow64_process2)::GetProcAddress(kernel32, "IsWow64Process2");
+    if (is_wow64_process2_func == nullptr)
+    {
+        // Could not find IsWow64Process2.
+        return false;
+    }
 
+    USHORT process_machine;
+    USHORT native_machine;
+    if (!is_wow64_process2_func(GetCurrentProcess(), &process_machine, &native_machine))
+    {
+        // IsWow64Process2 failed. Log the error and continue.
+        trace::info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
+        return false;
+    }
+
+    // If we are running targeting x64 on a non-x64 machine, we are emulating
+    return native_machine != IMAGE_FILE_MACHINE_AMD64;
+#else
     return false;
+#endif
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

@@ -348,8 +348,7 @@ GCInfo::WriteBarrierForm GCInfo::gcWriteBarrierFormFromTargetAddress(GenTree* tg
 
     if (tgtAddr->OperGet() == GT_LCL_VAR)
     {
-        unsigned lclNum = tgtAddr->AsLclVar()->GetLclNum();
-
+        unsigned   lclNum = tgtAddr->AsLclVar()->GetLclNum();
         LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
 
         // Instead of marking LclVar with 'lvStackByref',
