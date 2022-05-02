@@ -17,16 +17,20 @@ namespace Sample
         [MethodImpl(MethodImplOptions.NoInlining)]
         public static async Task<int> StartAsyncWork()
         {
-            int a = 0;
+            int a;
             int b = 1;
             const int N = 30;
             const int expected = 832040;
-            for (int i = 1; i < N; i++)
+            for (int j = 0; j < 1000; j++)
             {
-                int tmp = a + b;
-                a = b;
-                b = tmp;
-                await Task.Yield();
+                a = 0; b = 1;
+                for (int i = 1; i < N; i++)
+                {
+                    int tmp = a + b;
+                    a = b;
+                    b = tmp;
+                    await Task.Yield();
+                }
             }
             return b == expected ? 42 : 0;
         }
