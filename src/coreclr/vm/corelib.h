@@ -282,6 +282,9 @@ DEFINE_FIELD(DELEGATE,            METHOD_PTR_AUX,         _methodPtrAux)
 DEFINE_METHOD(DELEGATE,             CONSTRUCT_DELEGATE,     DelegateConstruct,          IM_Obj_IntPtr_RetVoid)
 DEFINE_METHOD(DELEGATE,             GET_INVOKE_METHOD,      GetInvokeMethod,            IM_RetIntPtr)
 
+DEFINE_CLASS(INT128,               System,                 Int128)
+DEFINE_CLASS(UINT128,              System,                 UInt128)
+
 DEFINE_CLASS(DYNAMICMETHOD,         ReflectionEmit,         DynamicMethod)
 
 DEFINE_CLASS(DYNAMICRESOLVER,       ReflectionEmit,         DynamicResolver)
