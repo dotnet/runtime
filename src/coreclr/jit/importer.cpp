@@ -4877,7 +4877,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // ldarg.0
             // conv.u
             // ret
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1);
@@ -5029,7 +5028,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // conv.u
             // ceq
             // ret
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             GenTree* op1 = impPopStack().val;
             GenTree* cns = gtNewIconNode(0, TYP_BYREF);
@@ -5044,7 +5042,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // ldc.i4.0
             // conv.u
             // ret
-            CLANG_FORMAT_COMMENT_ANCHOR;
 
             return gtNewIconNode(0, TYP_BYREF);
         }
