@@ -395,6 +395,28 @@ jobs:
     alwaysRun: ${{ variables.isRollingBuild }}
 
 #
+# Temporarily add a leg that makes sure the wasm runtime with threading enabled
+# builds. We are working on making this a normal part of the wasm build.
+#
+- template: /eng/pipelines/common/platform-matrix.yml
+  parameters:
+    jobTemplate: /eng/pipelines/common/global-build-job.yml
+    buildConfig: release
+    runtimeFlavor: mono
+    platforms:
+      - Browser_wasm
+    jobParameters:
+      buildArgs: -s mono+libs -c $(_BuildConfig) /p:WasmEnableThreads=true
+      nameSuffix: Threading_AllSubsets_Mono
+      timeoutInMinutes: 180
+      condition: >-
+        or(
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_mono.containsChange'], true),
+          eq(dependencies.evaluate_paths.outputs['SetPathVars_installer.containsChange'], true),
+          eq(variables['isRollingBuild'], true))
+
+#
 # iOS/tvOS devices - Full AOT + AggressiveTrimming to reduce size
 # Build the whole product using Mono and run libraries tests
 #
