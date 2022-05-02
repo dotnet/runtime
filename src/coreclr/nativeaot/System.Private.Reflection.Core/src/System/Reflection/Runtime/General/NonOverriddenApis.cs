@@ -41,7 +41,9 @@ namespace System.Reflection.Runtime.Assemblies
         public sealed override bool IsDynamic => base.IsDynamic;
         public sealed override string ToString() => base.ToString();
         [RequiresAssemblyFilesAttribute("The code will return an empty string for assemblies embedded in a single-file app")]
+#pragma warning disable SYSLIB0012
         public sealed override string EscapedCodeBase => base.EscapedCodeBase;
+#pragma warning restore SYSLIB0012
         [RequiresAssemblyFiles("The code will throw for assemblies embedded in a single-file app")]
         public sealed override FileStream[] GetFiles() => base.GetFiles();
 #endif //DEBUG

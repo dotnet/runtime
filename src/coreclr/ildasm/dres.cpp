@@ -181,7 +181,7 @@ DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
             PIMAGE_RESOURCE_DIRECTORY pirdType = (PIMAGE_RESOURCE_DIRECTORY)pbResBase;
             PIMAGE_RESOURCE_DIRECTORY_ENTRY pirdeType = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(pbResBase+sizeof(IMAGE_RESOURCE_DIRECTORY));
             DWORD	dwTypeID;
-            unsigned short i = 0,N = pirdType->NumberOfNamedEntries+pirdType->NumberOfIdEntries;
+            unsigned i = 0,N = pirdType->NumberOfNamedEntries+pirdType->NumberOfIdEntries;
             PAL_CPP_TRY {
                 for(i=0; i < N; i++, pirdeType++)
                 {
@@ -192,7 +192,7 @@ DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
                         PIMAGE_RESOURCE_DIRECTORY pirdName = (PIMAGE_RESOURCE_DIRECTORY)pbNameBase;
                         PIMAGE_RESOURCE_DIRECTORY_ENTRY pirdeName = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(pbNameBase+sizeof(IMAGE_RESOURCE_DIRECTORY));
                         DWORD   dwNameID;
-                        unsigned short i,N = VAL16(pirdName->NumberOfNamedEntries)+VAL16(pirdName->NumberOfIdEntries);
+                        unsigned i,N = VAL16(pirdName->NumberOfNamedEntries)+VAL16(pirdName->NumberOfIdEntries);
 
                         for(i=0; i < N; i++, pirdeName++)
                         {
@@ -203,7 +203,7 @@ DWORD   DumpResourceToFile(_In_ __nullterminated WCHAR*   wzFileName)
                                 PIMAGE_RESOURCE_DIRECTORY pirdLang = (PIMAGE_RESOURCE_DIRECTORY)pbLangBase;
                                 PIMAGE_RESOURCE_DIRECTORY_ENTRY pirdeLang = (PIMAGE_RESOURCE_DIRECTORY_ENTRY)(pbLangBase+sizeof(IMAGE_RESOURCE_DIRECTORY));
                                 DWORD   dwLangID;
-                                unsigned short i,N = VAL16(pirdLang->NumberOfNamedEntries)+VAL16(pirdLang->NumberOfIdEntries);
+                                unsigned i,N = VAL16(pirdLang->NumberOfNamedEntries)+VAL16(pirdLang->NumberOfIdEntries);
 
                                 for(i=0; i < N; i++, pirdeLang++)
                                 {

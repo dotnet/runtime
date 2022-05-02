@@ -1251,6 +1251,7 @@ See MSDN doc.
 --*/
 VOID
 PALAPI
+DECLSPEC_NORETURN
 RaiseFailFastException(
     IN PEXCEPTION_RECORD pExceptionRecord,
     IN PCONTEXT pContextRecord,

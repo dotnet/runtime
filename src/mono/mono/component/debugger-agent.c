@@ -8997,7 +8997,7 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 		start_frame = decode_int (p, &p, end);
 		length = decode_int (p, &p, end);
 
-		if (start_frame != 0 || length != -1)
+		if (start_frame != 0)
 			return ERR_NOT_IMPLEMENTED;
 		GET_TLS_DATA_FROM_THREAD (thread);
 		if (tls == NULL)
@@ -9005,8 +9005,8 @@ thread_commands (int command, guint8 *p, guint8 *end, Buffer *buf)
 
 		compute_frame_info (thread, tls, TRUE); //the last parameter is TRUE to force that the frame info that will be send is synchronised with the debugged thread
 
-		buffer_add_int (buf, tls->frame_count);
-		for (i = 0; i < tls->frame_count; ++i) {
+		buffer_add_int (buf, length != -1 ? (length > tls->frame_count ? tls->frame_count : length) : tls->frame_count);
+		for (i = 0; i < tls->frame_count && (i < length || length == -1); ++i) {
 			buffer_add_int (buf, tls->frames [i]->id);
 			buffer_add_methodid (buf, tls->frames [i]->de.domain, tls->frames [i]->actual_method);
 			buffer_add_int (buf, tls->frames [i]->il_offset);

@@ -833,7 +833,7 @@ RtlVirtualUnwind_Unsafe(
 //
 
 #ifdef TARGET_X86
-#ifndef TARGET_UNIX
+#ifndef HOST_UNIX
 //
 // x86 ABI does not define RUNTIME_FUNCTION. Define our own to allow unification between x86 and other platforms.
 //
@@ -847,7 +847,7 @@ typedef struct _DISPATCHER_CONTEXT {
     _EXCEPTION_REGISTRATION_RECORD* RegistrationPointer;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 #endif // HOST_X86
-#endif // !TARGET_UNIX
+#endif // !HOST_UNIX
 
 #define RUNTIME_FUNCTION__BeginAddress(prf)             (prf)->BeginAddress
 #define RUNTIME_FUNCTION__SetBeginAddress(prf,addr)     ((prf)->BeginAddress = (addr))

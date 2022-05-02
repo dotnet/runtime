@@ -1341,6 +1341,7 @@ namespace Microsoft.VisualBasic.FileIO
         public TextFieldParser(string path) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding) { }
         public TextFieldParser(string path, System.Text.Encoding defaultEncoding, bool detectEncoding) { }
+        [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Advanced)]
         public string[]? CommentTokens { get { throw null; } set { } }
         public string[]? Delimiters { get { throw null; } set { } }
         public bool EndOfData { get { throw null; } }

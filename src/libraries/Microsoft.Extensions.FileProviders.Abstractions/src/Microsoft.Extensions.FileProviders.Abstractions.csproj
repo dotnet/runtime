@@ -21,10 +21,4 @@ Microsoft.Extensions.FileProviders.IFileProvider</PackageDescription>
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Linq.Expressions" />
-  </ItemGroup>
 </Project>

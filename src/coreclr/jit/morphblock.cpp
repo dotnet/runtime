@@ -46,10 +46,6 @@ protected:
     GenTree*             m_dstAddr            = nullptr;
     ssize_t              m_dstAddOff          = 0;
 
-#if defined(DEBUG)
-    bool m_isLateArg = false;
-#endif // DEBUG
-
     enum class BlockTransformation
     {
         Undefined,
@@ -129,8 +125,6 @@ GenTree* MorphInitBlockHelper::Morph()
     PrepareDst();
     PrepareSrc();
 
-    INDEBUG(m_isLateArg = (m_asg->gtFlags & GTF_LATE_ARG) != 0);
-
     TrySpecialCases();
 
     if (m_transformationDecision == BlockTransformation::Undefined)
@@ -155,17 +149,6 @@ GenTree* MorphInitBlockHelper::Morph()
 
     assert(m_transformationDecision != BlockTransformation::Undefined);
     assert(m_result != nullptr);
-
-    if (m_result != m_asg)
-    {
-        const bool isLateArg = ((m_asg->gtFlags & GTF_LATE_ARG) != 0);
-        assert(m_isLateArg == isLateArg);
-        if (isLateArg)
-        {
-            assert(!m_initBlock && "do not expect a block init as a late arg.");
-            m_result->gtFlags |= GTF_LATE_ARG;
-        }
-    }
 
 #ifdef DEBUG
     if (m_result != m_asg)

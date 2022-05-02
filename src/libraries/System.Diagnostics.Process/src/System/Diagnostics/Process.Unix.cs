@@ -121,7 +121,7 @@ namespace System.Diagnostics
                 return;
             }
 
-            IReadOnlyList<Process> children = GetChildProcesses();
+            List<Process> children = GetChildProcesses();
 
             int killResult = Interop.Sys.Kill(_processId, Interop.Sys.Signals.SIGKILL);
             if (killResult != 0)

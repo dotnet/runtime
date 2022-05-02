@@ -475,22 +475,34 @@ namespace System.Diagnostics.Tests
             bool hasStarted = false;
             SafeProcessHandle handle = null;
             Process p = null;
+            string workingDirectory = null;
 
             try
             {
                 p = CreateProcessLong();
 
+                workingDirectory = string.IsNullOrEmpty(p.StartInfo.WorkingDirectory)
+                    ? Directory.GetCurrentDirectory()
+                    : p.StartInfo.WorkingDirectory;
+
                 if (PlatformDetection.IsNotWindowsServerCore) // for this particular Windows version it fails with Attempted to perform an unauthorized operation (#46619)
                 {
                     // ensure the new user can access the .exe (otherwise you get Access is denied exception)
-                    SetAccessControl(username, p.StartInfo.FileName, add: true);
+                    SetAccessControl(username, p.StartInfo.FileName, workingDirectory, add: true);
                 }
 
                 p.StartInfo.LoadUserProfile = true;
                 p.StartInfo.UserName = username;
                 p.StartInfo.PasswordInClearText = password;
 
-                hasStarted = p.Start();
+                try
+                {
+                    hasStarted = p.Start();
+                }
+                catch (Win32Exception ex) when (ex.NativeErrorCode == ERROR_SHARING_VIOLATION)
+                {
+                    throw new SkipTestException($"{p.StartInfo.FileName} has been locked by some other process");
+                }
 
                 if (Interop.OpenProcessToken(p.SafeHandle, 0x8u, out handle))
                 {
@@ -523,29 +535,38 @@ namespace System.Diagnostics.Tests
 
                 if (PlatformDetection.IsNotWindowsServerCore)
                 {
-                    SetAccessControl(username, p.StartInfo.FileName, add: false); // remove the access
+                    SetAccessControl(username, p.StartInfo.FileName, workingDirectory, add: false); // remove the access
                 }
 
                 Assert.Equal(Interop.ExitCodes.NERR_Success, Interop.NetUserDel(null, username));
             }
         }
 
-        private static void SetAccessControl(string userName, string filePath, bool add)
+        private static void SetAccessControl(string userName, string filePath, string directoryPath, bool add)
         {
             FileInfo fileInfo = new FileInfo(filePath);
-            FileSecurity accessControl = fileInfo.GetAccessControl();
-            FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, FileSystemRights.ReadAndExecute, AccessControlType.Allow);
+            FileSecurity fileSecurity = fileInfo.GetAccessControl();
+            Apply(userName, fileSecurity, FileSystemRights.ReadAndExecute, add);
+            fileInfo.SetAccessControl(fileSecurity);
 
-            if (add)
-            {
-                accessControl.AddAccessRule(fileSystemAccessRule);
-            }
-            else
-            {
-                accessControl.RemoveAccessRule(fileSystemAccessRule);
-            }
+            DirectoryInfo directoryInfo = new DirectoryInfo(directoryPath);
+            DirectorySecurity directorySecurity = directoryInfo.GetAccessControl();
+            Apply(userName, directorySecurity, FileSystemRights.Read , add);
+            directoryInfo.SetAccessControl(directorySecurity);
 
-            fileInfo.SetAccessControl(accessControl);
+            static void Apply(string userName, FileSystemSecurity accessControl, FileSystemRights rights, bool add)
+            {
+                FileSystemAccessRule fileSystemAccessRule = new FileSystemAccessRule(userName, rights, AccessControlType.Allow);
+
+                if (add)
+                {
+                    accessControl.AddAccessRule(fileSystemAccessRule);
+                }
+                else
+                {
+                    accessControl.RemoveAccessRule(fileSystemAccessRule);
+                }
+            }
         }
 
         private static List<string> GetNamesOfUserProfiles()
@@ -1210,6 +1231,7 @@ namespace System.Diagnostics.Tests
         private const int ERROR_SUCCESS = 0x0;
         private const int ERROR_FILE_NOT_FOUND = 0x2;
         private const int ERROR_BAD_EXE_FORMAT = 0xC1;
+        private const int ERROR_SHARING_VIOLATION = 0x20;
 
         [Theory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34685", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]

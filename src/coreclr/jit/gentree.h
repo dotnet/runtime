@@ -405,7 +405,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_UNSIGNED    = 0x00008000, // With GT_CAST:   the source operand is an unsigned type
                                   // With operators: the specified node is an unsigned operator
-    GTF_LATE_ARG    = 0x00010000, // The specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
 
 // The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
@@ -487,9 +486,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
-    GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
-    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
-    GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_TGT_HEAP
+    GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
+    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD -- field access requires preceding class/static init helper
+    GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX/GT_INDEX_ADDR -- the array reference should be range-checked.
     GTF_INX_STRING_LAYOUT       = 0x40000000, // GT_INDEX -- this uses the special string array layout
@@ -516,12 +515,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
                     GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
-
-    GTF_CLS_VAR_VOLATILE        = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
-    GTF_CLS_VAR_INITCLASS       = 0x20000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_FLD_INITCLASS
-    GTF_CLS_VAR_TGT_HEAP        = 0x10000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_TGT_HEAP
-    GTF_CLS_VAR_ASG_LHS         = 0x04000000, // GT_CLS_VAR   -- this GT_CLS_VAR node is (the effective val) of the LHS
-                                              //                 of an assignment; don't evaluate it independently.
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
@@ -1916,7 +1909,11 @@ public:
 
     // Simpler variant of the above which just returns the local node if this is an expression that
     // yields an address into a local
-    GenTreeLclVarCommon* IsLocalAddrExpr();
+    const GenTreeLclVarCommon* IsLocalAddrExpr() const;
+    GenTreeLclVarCommon*       IsLocalAddrExpr()
+    {
+        return const_cast<GenTreeLclVarCommon*>(static_cast<const GenTree*>(this)->IsLocalAddrExpr());
+    }
 
     // Determine if this tree represents the value of an entire implicit byref parameter,
     // and if so return the tree for the parameter.
@@ -1929,6 +1926,9 @@ public:
     // Determine whether this is an assignment tree of the form X = X (op) Y,
     // where Y is an arbitrary tree, and X is a lclVar.
     unsigned IsLclVarUpdateTree(GenTree** otherTree, genTreeOps* updateOper);
+
+    // Determine whether this tree is a basic block profile count update.
+    bool IsBlockProfileUpdate();
 
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
 
@@ -5031,6 +5031,11 @@ struct GenTreeCall final : public GenTree
         return (gtCallMoreFlags & GTF_CALL_M_EXPANDED_EARLY) != 0;
     }
 
+    bool IsOptimizingRetBufAsLocal()
+    {
+        return (gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) != 0;
+    }
+
     //-----------------------------------------------------------------------------------------
     // GetIndirectionCellArgKind: Get the kind of indirection cell used by this call.
     //
@@ -5158,8 +5163,6 @@ struct GenTreeCall final : public GenTree
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
 
-    void ReplaceCallOperand(GenTree** operandUseEdge, GenTree* replacement);
-
     bool AreArgsComplete() const;
 
     CorInfoCallConvExtension GetUnmanagedCallConv() const
@@ -5177,39 +5180,6 @@ struct GenTreeCall final : public GenTree
     {
     }
 #endif
-
-    GenTree* GetLclRetBufArgNode()
-    {
-        if (!gtArgs.HasRetBuffer() || ((gtCallMoreFlags & GTF_CALL_M_RETBUFFARG_LCLOPT) == 0))
-        {
-            return nullptr;
-        }
-
-        CallArg* retBufArg        = gtArgs.GetRetBufferArg();
-        GenTree* lclRetBufArgNode = retBufArg->GetEarlyNode();
-        if (lclRetBufArgNode == nullptr)
-        {
-            lclRetBufArgNode = retBufArg->GetLateNode();
-        }
-
-        switch (lclRetBufArgNode->OperGet())
-        {
-            // Get the true value from setup args
-            case GT_ASG:
-                return lclRetBufArgNode->AsOp()->gtGetOp2();
-            case GT_STORE_LCL_VAR:
-                return lclRetBufArgNode->AsUnOp()->gtGetOp1();
-
-            // Get the value from putarg wrapper nodes
-            case GT_PUTARG_REG:
-            case GT_PUTARG_STK:
-                return lclRetBufArgNode->AsOp()->gtGetOp1();
-
-            // Otherwise the node should be in the Use*
-            default:
-                return lclRetBufArgNode;
-        }
-    }
 };
 
 struct GenTreeCmpXchg : public GenTree
@@ -7160,24 +7130,15 @@ public:
     pointers) must be flagged as 'large' in GenTree::InitNodeSize().
  */
 
-/* AsClsVar() -- 'static data member' (GT_CLS_VAR) */
-
+// GenTreeClsVar: data address node (GT_CLS_VAR_ADDR).
+//
 struct GenTreeClsVar : public GenTree
 {
     CORINFO_FIELD_HANDLE gtClsVarHnd;
-    FieldSeqNode*        gtFieldSeq;
 
-    GenTreeClsVar(var_types type, CORINFO_FIELD_HANDLE clsVarHnd, FieldSeqNode* fldSeq)
-        : GenTree(GT_CLS_VAR, type), gtClsVarHnd(clsVarHnd), gtFieldSeq(fldSeq)
+    GenTreeClsVar(var_types type, CORINFO_FIELD_HANDLE clsVarHnd)
+        : GenTree(GT_CLS_VAR_ADDR, type), gtClsVarHnd(clsVarHnd)
     {
-        gtFlags |= GTF_GLOB_REF;
-    }
-
-    GenTreeClsVar(genTreeOps oper, var_types type, CORINFO_FIELD_HANDLE clsVarHnd, FieldSeqNode* fldSeq)
-        : GenTree(oper, type), gtClsVarHnd(clsVarHnd), gtFieldSeq(fldSeq)
-    {
-        assert((oper == GT_CLS_VAR) || (oper == GT_CLS_VAR_ADDR));
-        gtFlags |= GTF_GLOB_REF;
     }
 
 #if DEBUGGABLE_GENTREE

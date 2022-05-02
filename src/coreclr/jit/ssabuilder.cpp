@@ -740,10 +740,6 @@ void SsaBuilder::RenameDef(GenTree* defNode, BasicBlock* block)
         {
             lhs->gtFlags |= GTF_IND_ASG_LHS;
         }
-        else if (lhs->OperIs(GT_CLS_VAR))
-        {
-            lhs->gtFlags |= GTF_CLS_VAR_ASG_LHS;
-        }
     }
 
     GenTreeLclVarCommon* lclNode;

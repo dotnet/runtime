@@ -30,7 +30,7 @@ steps:
   #      IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.ios-!(*.symbols).nupkg
   #      IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.iossimulator-!(*.symbols).nupkg
   #      IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-!(*.symbols).nupkg
-        
+
   #    # Other artifacts to include once they are being built
   #    # EX. IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NETCore.App.Runtime.Mono.maccatalyst-*.nupkg
 
@@ -42,15 +42,15 @@ steps:
   #    cleanTargetFolder: false
   #    targetFolder: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
   #    flattenFolders: true
-  
+
   #- script: |
   #    for file in *.nupkg
-  #      do     
-  #        mv -v "$file" "${file%.nupkg}.zip" 
+  #      do
+  #        mv -v "$file" "${file%.nupkg}.zip"
   #      done
   #  displayName: Change nupkgs to zips
   #  workingDirectory: $(Build.SourcesDirectory)/MauiTesting/ArtifactPacks
-    
+
 
   ##Unzip the nuget packages to make the actual runtimes accessible
   #- task: ExtractFiles@1
@@ -206,11 +206,62 @@ steps:
     displayName: Build MAUI MacCatalyst
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
 
+  - script: |
+      ./dotnet new maui-blazor -n MauiBlazorTesting
+      cd MauiBlazorTesting
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.props ./Directory.Build.props
+      cp $(Build.SourcesDirectory)/src/tests/Common/maui/MauiScenario.targets ./Directory.Build.targets
+      cp $(Build.SourcesDirectory)/NuGet.config ./NuGet.config
+
+      echo -e "using Microsoft.AspNetCore.Components;
+        #if ANDROID
+          using Android.App;
+        #endif
+
+        namespace MauiBlazorTesting.Pages
+        {
+            public partial class Index
+            {
+                protected override void OnAfterRender(bool firstRender)
+                {
+                    if (firstRender)
+                    {
+                        #if ANDROID
+                          var activity = MainActivity.Context as Activity;
+                          activity.ReportFullyDrawn();
+                        #else
+                          System.Console.WriteLine("__MAUI_Blazor_WebView_OnAfterRender__");
+                        #endif
+                    }
+                }
+            }
+        }" > Pages/Index.razor.cs
+
+      sed -i'' -e "s/{/{\npublic static Android.Content.Context Context { get; private set; }\npublic MainActivity() { Context = this; }/g" Platforms/Android/MainActivity.cs
+    displayName: Setup MAUI Blazor Hybrid Project
+    workingDirectory: $(Build.SourcesDirectory)
+
+  - script: |
+      chmod -R a+r .
+      # Restore is split out because of https://github.com/dotnet/sdk/issues/21877, can be removed with --no-restore once fixed
+      ../dotnet restore
+      ../dotnet publish -bl:MauiBlazorAndroid.binlog -f net6.0-android -c Release -r android-arm64 --no-restore --self-contained
+      mv ./bin/Release/net6.0-android/android-arm64/com.companyname.mauiblazortesting-Signed.apk ./MauiBlazorAndroidDefault.apk
+    displayName: Build MAUI Blazor Android
+    workingDirectory: $(Build.SourcesDirectory)/MauiBlazorTesting
+
   - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiAndroid binlog'
     condition: always()
     inputs:
       pathtoPublish: $(Build.SourcesDirectory)/MauiTesting/MauiAndroid.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiBlazorAndroid binlog'
+    condition: always()
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorAndroid.binlog
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
@@ -240,6 +291,16 @@ steps:
         includeRootFolder: true
         displayName: Maui Android App
         artifactName: MauiAndroidApp
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+
+  - template: /eng/pipelines/common/upload-artifact-step.yml
+    parameters:
+        rootFolder: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorAndroidDefault.apk
+        includeRootFolder: true
+        displayName: Maui Blazor Android App
+        artifactName: MauiBlazorAndroidApp
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
@@ -286,7 +347,12 @@ steps:
 
   - script: rm -r -f ./bin
     workingDirectory: $(Build.SourcesDirectory)/MauiTesting
-    displayName: Clean bin directory
+    displayName: Clean MauiTesting bin directory
+    condition: succeededOrFailed()
+
+  - script: rm -r -f ./bin
+    workingDirectory: $(Build.SourcesDirectory)/MauiBlazorTesting
+    displayName: Clean MauiBlazorTesting bin directory
     condition: succeededOrFailed()
 
   - template: /eng/pipelines/common/upload-artifact-step.yml
