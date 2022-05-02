@@ -19,6 +19,8 @@ namespace System.Threading
         private const int LockedMask = 1;
         private const int WaiterCountIncrement = 2;
 
+        private static readonly Func<object, bool> s_spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
+
         // Layout:
         //   - Bit 0: 1 if the lock is locked, 0 otherwise
         //   - Remaining bits: Number of threads waiting to acquire a lock
@@ -33,13 +35,11 @@ namespace System.Threading
         private bool _isAnyWaitingThreadSignaled;
 
         private LowLevelSpinWaiter _spinWaiter;
-        private readonly Func<bool> _spinWaitTryAcquireCallback;
         private LowLevelMonitor _monitor;
 
         public LowLevelLock()
         {
             _spinWaiter = default(LowLevelSpinWaiter);
-            _spinWaitTryAcquireCallback = SpinWaitTryAcquireCallback;
             _monitor.Initialize();
         }
 
@@ -135,7 +135,11 @@ namespace System.Threading
             return (state & LockedMask) == 0 && Interlocked.CompareExchange(ref _state, state + LockedMask, state) == state;
         }
 
-        private bool SpinWaitTryAcquireCallback() => TryAcquire_NoFastPath(_state);
+        private static bool SpinWaitTryAcquireCallback(object state)
+        {
+            var thisRef = (LowLevelLock)state;
+            return thisRef.TryAcquire_NoFastPath(thisRef._state);
+        }
 
         public void Acquire()
         {
@@ -150,7 +154,7 @@ namespace System.Threading
             VerifyIsNotLocked();
 
             // Spin a bit to see if the lock becomes available, before forcing the thread into a wait state
-            if (_spinWaiter.SpinWaitForCondition(_spinWaitTryAcquireCallback, SpinCount, SpinSleep0Threshold))
+            if (_spinWaiter.SpinWaitForCondition(s_spinWaitTryAcquireCallback, this, SpinCount, SpinSleep0Threshold))
             {
                 Debug.Assert((_state & LockedMask) != 0);
                 SetOwnerThreadToCurrent();

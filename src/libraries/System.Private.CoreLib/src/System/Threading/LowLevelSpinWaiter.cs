@@ -16,7 +16,7 @@ namespace System.Threading
     {
         private int _spinningThreadCount;
 
-        public bool SpinWaitForCondition(Func<bool> condition, int spinCount, int sleep0Threshold)
+        public bool SpinWaitForCondition(Func<object, bool> condition, object state, int spinCount, int sleep0Threshold)
         {
             Debug.Assert(condition != null);
 
@@ -36,7 +36,7 @@ namespace System.Threading
                         // The caller should check the condition in a fast path before calling this method, so wait first
                         Wait(spinIndex, sleep0Threshold, processorCount);
 
-                        if (condition())
+                        if (condition(state))
                         {
                             return true;
                         }
