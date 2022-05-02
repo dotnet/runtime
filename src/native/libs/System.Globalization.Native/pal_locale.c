@@ -140,7 +140,7 @@ const char* DetectDefaultLocaleName()
 
     if (strcmp(icuLocale, "en_US_POSIX") == 0)
     {
-#if TARGET_OS_MAC
+#ifdef TARGET_OS_MAC
         icuLocale = DetectDefaultAppleLocaleName();
 #else
         return "";
