@@ -93,6 +93,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void GetFunctionPointerForDelegate_MarshalledOpenStaticDelegate()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
@@ -102,6 +103,7 @@ namespace System.Runtime.InteropServices.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser.")]
         public void GetFunctionPointerForDelegate_MarshalledClosedStaticDelegate()
         {
             MethodInfo targetMethod = typeof(GetFunctionPointerForDelegateTests).GetMethod(nameof(Method), BindingFlags.NonPublic | BindingFlags.Static);
