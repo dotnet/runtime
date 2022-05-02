@@ -18,4 +18,9 @@ Microsoft.Extensions.Caching.Memory.IMemoryCache</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Primitives\src\Microsoft.Extensions.Primitives.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Remove="Microsoft.Extensions.Caching.Abstractions.Typeforwards.netcoreapp.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" Link="Common\System\Runtime\CompilerServices\IsExternalInit.cs" />
+  </ItemGroup>
+
 </Project>

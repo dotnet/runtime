@@ -491,9 +491,9 @@ BOOL MethodTable::ValidateWithPossibleAV()
     // for that. We need to do more sanity checking to
     // make sure that our pointer here is in fact a valid object.
     PTR_EEClass pEEClass = this->GetClassWithPossibleAV();
-    return ((this == pEEClass->GetMethodTableWithPossibleAV()) ||
+    return ((pEEClass && (this == pEEClass->GetMethodTableWithPossibleAV())) ||
         ((HasInstantiation() || IsArray()) &&
-        (pEEClass->GetMethodTableWithPossibleAV()->GetClassWithPossibleAV() == pEEClass)));
+        (pEEClass && (pEEClass->GetMethodTableWithPossibleAV()->GetClassWithPossibleAV() == pEEClass))));
 }
 
 #ifndef DACCESS_COMPILE

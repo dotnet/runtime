@@ -1138,7 +1138,7 @@ void EEResourceException::GetMessage(SString &result)
     // since we don't want to call managed code here.
     //
 
-    result.Printf("%s (message resource %s)",
+    result.Printf("%s (message resource %S)",
                   CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUnicode());
 }
 

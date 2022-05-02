@@ -188,7 +188,7 @@ FUNCTIONS
     CORINFO_CLASS_HANDLE getTokenTypeAsHandle(CORINFO_RESOLVED_TOKEN* pResolvedToken)
     bool isValidToken(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
     bool isValidStringRef(CORINFO_MODULE_HANDLE module, unsigned metaTOK)
-    const char16_t * getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+    int getStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
     CorInfoType asCorInfoType(CORINFO_CLASS_HANDLE cls)
     const char* getClassName(CORINFO_CLASS_HANDLE cls)
     const char* getClassNameFromMetadata(CORINFO_CLASS_HANDLE cls, const char **namespaceName)

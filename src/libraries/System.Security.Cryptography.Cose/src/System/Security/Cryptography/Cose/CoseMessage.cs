@@ -4,8 +4,11 @@
 using System.Buffers;
 using System.Diagnostics;
 using System.Formats.Cbor;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Security.Cryptography.Cose
 {
@@ -181,19 +184,80 @@ namespace System.Security.Cryptography.Cose
             return reader.ReadByteString();
         }
 
-        internal static int CreateToBeSigned(string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content, Span<byte> destination)
+        internal static void AppendToBeSigned(Span<byte> buffer, IncrementalHash hasher, string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> contentBytes, Stream? contentStream, HashAlgorithmName hashAlgorithm)
+        {
+            int bytesWritten = CreateToBeSigned(buffer, context, encodedProtectedHeader, ReadOnlySpan<byte>.Empty);
+            bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
+
+            hasher.AppendData(buffer.Slice(0, bytesWritten));
+
+            if (contentStream == null)
+            {
+                // content length
+                CoseHelpers.WriteByteStringLength(hasher, (ulong)contentBytes.Length);
+
+                //content
+                hasher.AppendData(contentBytes);
+            }
+            else
+            {
+                // content length
+                CoseHelpers.WriteByteStringLength(hasher, (ulong)(contentStream.Length - contentStream.Position));
+
+                //content
+                byte[] contentBuffer = ArrayPool<byte>.Shared.Rent(4096);
+                int bytesRead;
+
+                try
+                {
+                    while ((bytesRead = contentStream.Read(contentBuffer, 0, contentBuffer.Length)) > 0)
+                    {
+                        hasher.AppendData(contentBuffer, 0, bytesRead);
+                    }
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(contentBuffer, clearArray: true);
+                }
+            }
+        }
+
+        internal static async Task AppendToBeSignedAsync(byte[] buffer, IncrementalHash hasher, string context, ReadOnlyMemory<byte> encodedProtectedHeader, Stream content, HashAlgorithmName hashAlgorithm, CancellationToken cancellationToken)
+        {
+            int bytesWritten = CreateToBeSigned(buffer, context, encodedProtectedHeader.Span, ReadOnlySpan<byte>.Empty);
+            bytesWritten -= 1; // Trim the empty bstr content, it is just a placeholder.
+
+            hasher.AppendData(buffer, 0, bytesWritten);
+
+            //content length
+            CoseHelpers.WriteByteStringLength(hasher, (ulong)(content.Length - content.Position));
+
+            // content
+            byte[] contentBuffer = ArrayPool<byte>.Shared.Rent(4096);
+            int bytesRead;
+#if NETSTANDARD2_0 || NETFRAMEWORK
+            while ((bytesRead = await content.ReadAsync(contentBuffer, 0, contentBuffer.Length, cancellationToken).ConfigureAwait(false)) > 0)
+#else
+            while ((bytesRead = await content.ReadAsync(contentBuffer, cancellationToken).ConfigureAwait(false)) > 0)
+#endif
+            {
+                hasher.AppendData(contentBuffer, 0, bytesRead);
+            }
+
+            ArrayPool<byte>.Shared.Return(contentBuffer, clearArray: true);
+        }
+
+        internal static int CreateToBeSigned(Span<byte> destination, string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content)
         {
             var writer = new CborWriter();
             writer.WriteStartArray(4);
             writer.WriteTextString(context); // context
             writer.WriteByteString(encodedProtectedHeader); // body_protected
             writer.WriteByteString(Span<byte>.Empty); // external_aad
-            writer.WriteByteString(content); //payload or content
+            writer.WriteByteString(content); // content
             writer.WriteEndArray();
-            int bytesWritten = writer.Encode(destination);
 
-            Debug.Assert(bytesWritten == writer.BytesWritten && bytesWritten == ComputeToBeSignedEncodedSize(context, encodedProtectedHeader, content));
-            return bytesWritten;
+            return writer.Encode(destination);
         }
 
         internal static int ComputeToBeSignedEncodedSize(string context, ReadOnlySpan<byte> encodedProtectedHeader, ReadOnlySpan<byte> content)
@@ -224,6 +288,16 @@ namespace System.Security.Cryptography.Cose
         {
             ECDsa,
             RSA,
+        }
+
+        internal static KeyType GetKeyType(AsymmetricAlgorithm key)
+        {
+            return key switch
+            {
+                ECDsa => KeyType.ECDsa,
+                RSA => KeyType.RSA,
+                _ => throw new CryptographicException(SR.Format(SR.Sign1UnsupportedKey, key.GetType()))
+            };
         }
     }
 }

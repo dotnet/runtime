@@ -620,8 +620,8 @@ namespace System.Net.Quic.Tests
 
                     await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1], cts.Token).AsTask());
 
-                    // next write would also throw
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1]).AsTask());
+                    // aborting write causes the write direction to throw on subsequent operations
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => stream.WriteAsync(new byte[1]).AsTask());
 
                     // manual write abort is still required
                     stream.AbortWrite(expectedErrorCode);
@@ -672,7 +672,7 @@ namespace System.Net.Quic.Tests
                     await Assert.ThrowsAsync<OperationCanceledException>(() => WriteUntilCanceled().WaitAsync(TimeSpan.FromSeconds(3)));
 
                     // next write would also throw
-                    await Assert.ThrowsAsync<OperationCanceledException>(() => stream.WriteAsync(new byte[1]).AsTask());
+                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => stream.WriteAsync(new byte[1]).AsTask());
 
                     // manual write abort is still required
                     stream.AbortWrite(expectedErrorCode);
@@ -820,7 +820,6 @@ namespace System.Net.Quic.Tests
 
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67612")]
         public async Task WriteAsync_LocalAbort_Throws()
         {
             if (IsMockProvider)
@@ -830,13 +829,12 @@ namespace System.Net.Quic.Tests
             }
 
             const int ExpectedErrorCode = 0xfffffff;
-
-            TaskCompletionSource waitForAbortTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            SemaphoreSlim sem = new SemaphoreSlim(0);
 
             await RunBidirectionalClientServer(
                 clientStream =>
                 {
-                    return Task.CompletedTask;
+                    return sem.WaitAsync();
                 },
                 async serverStream =>
                 {
@@ -848,6 +846,7 @@ namespace System.Net.Quic.Tests
                     serverStream.AbortWrite(ExpectedErrorCode);
 
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(() => writeTask.WaitAsync(TimeSpan.FromSeconds(3)));
+                    sem.Release();
                 });
         }
 

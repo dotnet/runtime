@@ -50,13 +50,12 @@ namespace Microsoft.Extensions.Hosting
         /// </remarks>
         /// <param name="args">The command line args.</param>
         /// <returns>The initialized <see cref="IHostBuilder"/>.</returns>
-        public static IHostBuilder CreateDefaultBuilder(string[] args)
+        public static IHostBuilder CreateDefaultBuilder(string[]? args)
         {
             HostBuilder builder = new();
             return builder.ConfigureDefaults(args);
         }
 
-#nullable enable
         /// <summary>
         /// Initializes a new instance of the <see cref="HostApplicationBuilder"/> class with pre-configured defaults.
         /// </summary>
@@ -95,6 +94,5 @@ namespace Microsoft.Extensions.Hosting
         /// </remarks>
         /// <param name="args">The command line args.</param>
         public static HostApplicationBuilder CreateApplicationBuilder(string[]? args) => new HostApplicationBuilder(args);
-#nullable disable
     }
 }

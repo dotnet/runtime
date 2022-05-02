@@ -2871,20 +2871,6 @@ GetModuleFileNameW(
 #define GetModuleFileName GetModuleFileNameA
 #endif
 
-PALIMPORT
-DWORD
-PALAPI
-GetModuleFileNameExW(
-    IN HANDLE hProcess,
-    IN HMODULE hModule,
-    OUT LPWSTR lpFilename,
-    IN DWORD nSize
-    );
-
-#ifdef UNICODE
-#define GetModuleFileNameEx GetModuleFileNameExW
-#endif
-
 // Get base address of the module containing a given symbol
 PALIMPORT
 LPCVOID
@@ -3141,16 +3127,6 @@ OpenProcess(
     IN DWORD dwDesiredAccess, /* PROCESS_DUP_HANDLE or PROCESS_ALL_ACCESS */
     IN BOOL bInheritHandle,
     IN DWORD dwProcessId
-    );
-
-PALIMPORT
-BOOL
-PALAPI
-EnumProcessModules(
-    IN HANDLE hProcess,
-    OUT HMODULE *lphModule,
-    IN DWORD cb,
-    OUT LPDWORD lpcbNeeded
     );
 
 PALIMPORT

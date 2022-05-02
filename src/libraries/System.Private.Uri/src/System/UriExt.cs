@@ -248,7 +248,7 @@ namespace System
         //  Returns true if the string represents a valid argument to the Uri ctor
         //  If uriKind != AbsoluteUri then certain parsing errors are ignored but Uri usage is limited
         //
-        public static bool TryCreate([NotNullWhen(true)] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
+        public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string? uriString, UriKind uriKind, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
             {
@@ -268,7 +268,7 @@ namespace System
         /// <param name="creationOptions">Options that control how the <seealso cref="Uri"/> is created and behaves.</param>
         /// <param name="result">The constructed <see cref="Uri"/>.</param>
         /// <returns><see langword="true"/> if the <see cref="Uri"/> was successfully created; otherwise, <see langword="false"/>.</returns>
-        public static bool TryCreate([NotNullWhen(true)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
+        public static bool TryCreate([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri)] string? uriString, in UriCreationOptions creationOptions, [NotNullWhen(true)] out Uri? result)
         {
             if (uriString is null)
             {
@@ -400,7 +400,7 @@ namespace System
             return Syntax.InternalIsWellFormedOriginalString(this);
         }
 
-        public static bool IsWellFormedUriString([NotNullWhen(true)] string? uriString, UriKind uriKind)
+        public static bool IsWellFormedUriString([NotNullWhen(true), StringSyntax(StringSyntaxAttribute.Uri, "uriKind")] string? uriString, UriKind uriKind)
         {
             Uri? result;
 

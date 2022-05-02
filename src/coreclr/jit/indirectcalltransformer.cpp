@@ -436,56 +436,8 @@ private:
             Statement*   fatStmt = compiler->gtCloneStmt(stmt);
             GenTreeCall* fatCall = GetCall(fatStmt);
             fatCall->gtCallAddr  = actualCallAddress;
-            AddHiddenArgument(fatCall, hiddenArgument);
+            fatCall->gtArgs.InsertInstParam(compiler, hiddenArgument);
             return fatStmt;
-        }
-
-        //------------------------------------------------------------------------
-        // AddHiddenArgument: add hidden argument to the call argument list.
-        //
-        // Arguments:
-        //    fatCall - fat call node
-        //    hiddenArgument - generic context hidden argument
-        //
-        void AddHiddenArgument(GenTreeCall* fatCall, GenTree* hiddenArgument)
-        {
-#if USER_ARGS_COME_LAST
-            if (fatCall->HasRetBufArg())
-            {
-                GenTreeCall::Use* retBufArg = fatCall->gtCallArgs;
-                compiler->gtInsertNewCallArgAfter(hiddenArgument, retBufArg);
-            }
-            else
-            {
-                fatCall->gtCallArgs = compiler->gtPrependNewCallArg(hiddenArgument, fatCall->gtCallArgs);
-            }
-#else
-            if (fatCall->gtCallArgs == nullptr)
-            {
-                fatCall->gtCallArgs = compiler->gtNewCallArgs(hiddenArgument);
-            }
-            else
-            {
-                AddArgumentToTail(fatCall->gtCallArgs, hiddenArgument);
-            }
-#endif
-        }
-
-        //------------------------------------------------------------------------
-        // AddArgumentToTail: add hidden argument to the tail of the call argument list.
-        //
-        // Arguments:
-        //    argList - fat call node
-        //    hiddenArgument - generic context hidden argument
-        //
-        void AddArgumentToTail(GenTreeCall::Use* argList, GenTree* hiddenArgument)
-        {
-            GenTreeCall::Use* iterator = argList;
-            while (iterator->GetNext() != nullptr)
-            {
-                iterator = iterator->GetNext();
-            }
-            iterator->SetNext(compiler->gtNewCallArgs(hiddenArgument));
         }
 
     private:
@@ -587,7 +539,7 @@ private:
             checkBlock->bbJumpKind = BBJ_COND;
 
             // Fetch method table from object arg to call.
-            GenTree* thisTree = compiler->gtCloneExpr(origCall->gtCallThisArg->GetNode());
+            GenTree* thisTree = compiler->gtCloneExpr(origCall->gtArgs.GetThisArg()->GetEarlyNode());
 
             // Create temp for this if the tree is costly.
             if (!thisTree->IsLocal())
@@ -602,7 +554,7 @@ private:
 
                 // Propagate the new this to the call. Must be a new expr as the call
                 // will live on in the else block and thisTree is used below.
-                origCall->gtCallThisArg = compiler->gtNewCallArgs(compiler->gtNewLclvNode(thisTempNum, TYP_REF));
+                origCall->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTempNum, TYP_REF));
             }
 
             // Remember the current last statement. If we're doing a chained GDV, we'll clone/copy
@@ -732,14 +684,14 @@ private:
 
             // copy 'this' to temp with exact type.
             const unsigned thisTemp  = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt this exact temp"));
-            GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtCallThisArg->GetNode());
+            GenTree*       clonedObj = compiler->gtCloneExpr(origCall->gtArgs.GetThisArg()->GetEarlyNode());
             GenTree*       assign    = compiler->gtNewTempAssign(thisTemp, clonedObj);
             compiler->lvaSetClass(thisTemp, clsHnd, true);
             compiler->fgNewStmtAtEnd(thenBlock, assign);
 
             // Clone call. Note we must use the special candidate helper.
-            GenTreeCall* call   = compiler->gtCloneCandidateCall(origCall);
-            call->gtCallThisArg = compiler->gtNewCallArgs(compiler->gtNewLclvNode(thisTemp, TYP_REF));
+            GenTreeCall* call = compiler->gtCloneCandidateCall(origCall);
+            call->gtArgs.GetThisArg()->SetEarlyNode(compiler->gtNewLclvNode(thisTemp, TYP_REF));
             call->SetIsGuarded();
 
             JITDUMP("Direct call [%06u] in block " FMT_BB "\n", compiler->dspTreeID(call), thenBlock->bbNum);
@@ -1147,23 +1099,21 @@ private:
         //
         virtual void CreateCheck() override
         {
-            GenTreeCall::UseIterator argsIter  = origCall->Args().begin();
-            GenTree*                 nullCheck = argsIter.GetUse()->GetNode();
-            ++argsIter;
-            GenTree* sizeCheck = argsIter.GetUse()->GetNode();
-            ++argsIter;
-            origCall->gtCallArgs = argsIter.GetUse();
+            CallArg* nullCheck = origCall->gtArgs.GetArgByIndex(0);
+            CallArg* sizeCheck = origCall->gtArgs.GetArgByIndex(1);
+            origCall->gtArgs.Remove(nullCheck);
+            origCall->gtArgs.Remove(sizeCheck);
             // The first argument is the handle now.
             checkBlock = CreateAndInsertBasicBlock(BBJ_COND, currBlock);
 
-            assert(sizeCheck->OperIs(GT_LE));
-            GenTree*   sizeJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck);
+            assert(sizeCheck->GetEarlyNode()->OperIs(GT_LE));
+            GenTree*   sizeJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, sizeCheck->GetEarlyNode());
             Statement* sizeJmpStmt = compiler->fgNewStmtFromTree(sizeJmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock, sizeJmpStmt);
 
             checkBlock2 = CreateAndInsertBasicBlock(BBJ_COND, checkBlock);
-            assert(nullCheck->OperIs(GT_EQ));
-            GenTree*   nullJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, nullCheck);
+            assert(nullCheck->GetEarlyNode()->OperIs(GT_EQ));
+            GenTree*   nullJmpTree = compiler->gtNewOperNode(GT_JTRUE, TYP_VOID, nullCheck->GetEarlyNode());
             Statement* nullJmpStmt = compiler->fgNewStmtFromTree(nullJmpTree, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(checkBlock2, nullJmpStmt);
         }
@@ -1176,13 +1126,11 @@ private:
         {
             thenBlock = CreateAndInsertBasicBlock(BBJ_ALWAYS, checkBlock2);
 
-            GenTreeCall::UseIterator argsIter     = origCall->Args().begin();
-            GenTree*                 resultHandle = argsIter.GetUse()->GetNode();
-            ++argsIter;
+            CallArg* resultHandle = origCall->gtArgs.GetArgByIndex(0);
             // The first argument is the real first argument for the call now.
-            origCall->gtCallArgs = argsIter.GetUse();
+            origCall->gtArgs.Remove(resultHandle);
 
-            GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, resultHandle);
+            GenTree*   asg     = compiler->gtNewTempAssign(resultLclNum, resultHandle->GetEarlyNode());
             Statement* asgStmt = compiler->gtNewStmt(asg, stmt->GetDebugInfo());
             compiler->fgInsertStmtAtEnd(thenBlock, asgStmt);
         }

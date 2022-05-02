@@ -123,7 +123,7 @@ namespace System.Security.Cryptography
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (index > array.Length - Count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 
@@ -137,7 +137,7 @@ namespace System.Security.Cryptography
         public void CopyTo(CryptographicAttributeObject[] array!!, int index)
         {
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (index > array.Length - Count)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 

@@ -97,7 +97,7 @@
     <When Condition="'$(NeedsEMSDK)' == 'true'">
       <PropertyGroup>
         <NeedsDotNetSdk>true</NeedsDotNetSdk>
-        <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
+        <!--<UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>-->
         <IncludeXHarnessCli>true</IncludeXHarnessCli>
         <EnableXHarnessTelemetry>false</EnableXHarnessTelemetry>
       </PropertyGroup>

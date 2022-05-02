@@ -14,10 +14,10 @@ namespace System.Numerics
         /// <returns>The unary negation of <paramref name="value" />.</returns>
         static abstract TResult operator -(TSelf value);
 
-        // /// <summary>Computes the unary negation of a value.</summary>
-        // /// <param name="value">The value for which to compute its unary negation.</param>
-        // /// <returns>The unary negation of <paramref name="value" />.</returns>
-        // /// <exception cref="OverflowException">The unary negation of <paramref name="value" /> is not representable by <typeparamref name="TResult" />.</exception>
-        // static abstract TResult operator checked -(TSelf value);
+        /// <summary>Computes the unary negation of a value.</summary>
+        /// <param name="value">The value for which to compute its unary negation.</param>
+        /// <returns>The unary negation of <paramref name="value" />.</returns>
+        /// <exception cref="OverflowException">The unary negation of <paramref name="value" /> is not representable by <typeparamref name="TResult" />.</exception>
+        static abstract TResult operator checked -(TSelf value);
     }
 }

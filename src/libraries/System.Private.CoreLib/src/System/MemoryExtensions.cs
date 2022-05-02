@@ -2009,6 +2009,94 @@ namespace System
             }
         }
 
+        /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <returns>The length of the common prefix shared by the two spans.  If there's no shared prefix, 0 is returned.</returns>
+        public static int CommonPrefixLength<T>(this Span<T> span, ReadOnlySpan<T> other) =>
+            CommonPrefixLength((ReadOnlySpan<T>)span, other);
+
+        /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or null to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>The length of the common prefix shared by the two spans.  If there's no shared prefix, 0 is returned.</returns>
+        public static int CommonPrefixLength<T>(this Span<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer) =>
+            CommonPrefixLength((ReadOnlySpan<T>)span, other, comparer);
+
+        /// <summary>Finds the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
+        /// <typeparam name="T">The type of the elements in the spans.</typeparam>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <returns>The length of the common prefix shared by the two spans.  If there's no shared prefix, 0 is returned.</returns>
+        public static int CommonPrefixLength<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other)
+        {
+            // Shrink one of the spans if necessary to ensure they're both the same length. We can then iterate until
+            // the Length of one of them and at least have bounds checks removed from that one.
+            SliceLongerSpanToMatchShorterLength(ref span, ref other);
+
+            // Find the first element pairwise that is not equal, and return its index as the length
+            // of the sequence before it that matches.
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!EqualityComparer<T>.Default.Equals(span[i], other[i]))
+                {
+                    return i;
+                }
+            }
+
+            return span.Length;
+        }
+
+        /// <summary>Determines the length of any common prefix shared between <paramref name="span"/> and <paramref name="other"/>.</summary>
+        /// <typeparam name="T">The type of the elements in the sequences.</typeparam>
+        /// <param name="span">The first sequence to compare.</param>
+        /// <param name="other">The second sequence to compare.</param>
+        /// <param name="comparer">The <see cref="IEqualityComparer{T}"/> implementation to use when comparing elements, or null to use the default <see cref="IEqualityComparer{T}"/> for the type of an element.</param>
+        /// <returns>The length of the common prefix shared by the two spans.  If there's no shared prefix, 0 is returned.</returns>
+        public static int CommonPrefixLength<T>(this ReadOnlySpan<T> span, ReadOnlySpan<T> other, IEqualityComparer<T>? comparer)
+        {
+            // If the comparer is null or the default, and T is a value type, we want to use EqualityComparer<T>.Default.Equals
+            // directly to enable devirtualization.  The non-comparer overload already does so, so just use it.
+            if (typeof(T).IsValueType && (comparer is null || comparer == EqualityComparer<T>.Default))
+            {
+                return CommonPrefixLength(span, other);
+            }
+
+            // Shrink one of the spans if necessary to ensure they're both the same length. We can then iterate until
+            // the Length of one of them and at least have bounds checks removed from that one.
+            SliceLongerSpanToMatchShorterLength(ref span, ref other);
+
+            // Ensure we have a comparer, then compare the spans.
+            comparer ??= EqualityComparer<T>.Default;
+            for (int i = 0; i < span.Length; i++)
+            {
+                if (!comparer.Equals(span[i], other[i]))
+                {
+                    return i;
+                }
+            }
+
+            return span.Length;
+        }
+
+        /// <summary>Determines if one span is longer than the other, and slices the longer one to match the length of the shorter.</summary>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static void SliceLongerSpanToMatchShorterLength<T>(ref ReadOnlySpan<T> span, ref ReadOnlySpan<T> other)
+        {
+            if (other.Length > span.Length)
+            {
+                other = other.Slice(0, span.Length);
+            }
+            else if (span.Length > other.Length)
+            {
+                span = span.Slice(0, other.Length);
+            }
+            Debug.Assert(span.Length == other.Length);
+        }
+
         /// <summary>Writes the specified interpolated string to the character span.</summary>
         /// <param name="destination">The span to which the interpolated string should be formatted.</param>
         /// <param name="handler">The interpolated string.</param>

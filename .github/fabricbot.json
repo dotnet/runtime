@@ -1616,7 +1616,7 @@
     "subCapability": "ScheduledSearch",
     "version": "1.1",
     "config": {
-      "taskName": "Add no-recent-activity label to PRs",
+      "taskName": "Add no-recent-activity label to needs-author-action PRs",
       "frequency": [
         {
           "weekDay": 0,
@@ -1702,6 +1702,130 @@
           "name": "hasLabel",
           "parameters": {
             "label": "needs-author-action"
+          }
+        },
+        {
+          "name": "noActivitySince",
+          "parameters": {
+            "days": 14
+          }
+        },
+        {
+          "name": "noLabel",
+          "parameters": {
+            "label": "no-recent-activity"
+          }
+        }
+      ],
+      "actions": [
+        {
+          "name": "addLabel",
+          "parameters": {
+            "label": "no-recent-activity"
+          }
+        },
+        {
+          "name": "addReply",
+          "parameters": {
+            "comment": "This pull request has been automatically marked `no-recent-activity` because it has not had any activity for 14 days. It will be closed if no further activity occurs within 14 more days. Any new comment (by anyone, not necessarily the author) will remove `no-recent-activity`."
+          }
+        }
+      ]
+    },
+    "disabled": false
+  },
+  {
+    "taskType": "scheduled",
+    "capabilityId": "ScheduledSearch",
+    "subCapability": "ScheduledSearch",
+    "version": "1.1",
+    "config": {
+      "taskName": "Add no-recent-activity label to Draft PRs",
+      "frequency": [
+        {
+          "weekDay": 0,
+          "hours": [
+            4,
+            10,
+            16,
+            22
+          ],
+          "timezoneOffset": 1
+        },
+        {
+          "weekDay": 1,
+          "hours": [
+            4,
+            10,
+            16,
+            22
+          ],
+          "timezoneOffset": 1
+        },
+        {
+          "weekDay": 2,
+          "hours": [
+            4,
+            10,
+            16,
+            22
+          ],
+          "timezoneOffset": 1
+        },
+        {
+          "weekDay": 3,
+          "hours": [
+            4,
+            10,
+            16,
+            22
+          ],
+          "timezoneOffset": 1
+        },
+        {
+          "weekDay": 4,
+          "hours": [
+            4,
+            10,
+            16,
+            22
+          ],
+          "timezoneOffset": 1
+        },
+        {
+          "weekDay": 5,
+          "hours": [
+            4,
+            10,
+            16,
+            22
+          ],
+          "timezoneOffset": 1
+        },
+        {
+          "weekDay": 6,
+          "hours": [
+            4,
+            10,
+            16,
+            22
+          ],
+          "timezoneOffset": 1
+        }
+      ],
+      "searchTerms": [
+        {
+          "name": "isPr",
+          "parameters": {}
+        },
+        {
+          "name": "isOpen",
+          "parameters": {}
+        },
+        {
+          "name": "isDraftPr",
+          "parameters": {
+            "value": "true"
           }
         },
         {
@@ -1858,117 +1982,6 @@
       ],
       "enableForPullRequests": true,
       "replyTemplate": "Tagging subscribers to 'arch-android': ${mentionees}\nSee info in area-owners.md if you want to be subscribed."
-    }
-  },
-  {
-    "taskType": "scheduled",
-    "capabilityId": "ScheduledSearch",
-    "subCapability": "ScheduledSearch",
-    "version": "1.1",
-    "config": {
-      "frequency": [
-        {
-          "weekDay": 0,
-          "hours": [
-            5,
-            11,
-            17,
-            23
-          ],
-          "timezoneOffset": 0
-        },
-        {
-          "weekDay": 1,
-          "hours": [
-            5,
-            11,
-            17,
-            23
-          ],
-          "timezoneOffset": 0
-        },
-        {
-          "weekDay": 2,
-          "hours": [
-            5,
-            11,
-            17,
-            23
-          ],
-          "timezoneOffset": 0
-        },
-        {
-          "weekDay": 3,
-          "hours": [
-            5,
-            11,
-            17,
-            23
-          ],
-          "timezoneOffset": 0
-        },
-        {
-          "weekDay": 4,
-          "hours": [
-            5,
-            11,
-            17,
-            23
-          ],
-          "timezoneOffset": 0
-        },
-        {
-          "weekDay": 5,
-          "hours": [
-            5,
-            11,
-            17,
-            23
-          ],
-          "timezoneOffset": 0
-        },
-        {
-          "weekDay": 6,
-          "hours": [
-            5,
-            11,
-            17,
-            23
-          ],
-          "timezoneOffset": 0
-        }
-      ],
-      "searchTerms": [
-        {
-          "name": "isDraftPr",
-          "parameters": {
-            "value": "true"
-          }
-        },
-        {
-          "name": "isOpen",
-          "parameters": {}
-        },
-        {
-          "name": "noActivitySince",
-          "parameters": {
-            "days": 30
-          }
-        }
-      ],
-      "taskName": "Close inactive Draft PRs",
-      "actions": [
-        {
-          "name": "closeIssue",
-          "parameters": {}
-        },
-        {
-          "name": "addReply",
-          "parameters": {
-            "comment": "Draft Pull Request was automatically closed for inactivity. Please [let us know](https://github.com/dotnet/runtime/blob/main/docs/area-owners.md) if you'd like to reopen it."
-          }
-        }
-      ]
     }
   },
   {
@@ -4562,7 +4575,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+                  "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
                   "columnName": "Triaged",
                   "isOrgProject": true
                 }
@@ -4671,7 +4684,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
               "isOrgProject": true
             }
           }
@@ -4682,12 +4695,12 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Carlos / Jeremy - Issue Triage] Moved to Another Area",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Moved to Another Area",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
           }
@@ -4854,7 +4867,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+                      "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -4863,7 +4876,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+                  "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
                   "isOrgProject": true,
                   "columnName": "Triaged"
                 }
@@ -4877,19 +4890,19 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Carlos / Jeremy - Issue Triage] Needs Triage",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Needs Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -4989,7 +5002,7 @@
                   {
                     "name": "isInProject",
                     "parameters": {
-                      "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+                      "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
                       "isOrgProject": true
                     }
                   }
@@ -4998,7 +5011,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+                  "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
                   "columnName": "Triaged",
                   "isOrgProject": true
                 }
@@ -5011,19 +5024,19 @@
       "eventNames": [
         "issue_comment"
       ],
-      "taskName": "[Area Pod: Carlos / Jeremy - Issue Triage] Needs Further Triage",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Needs Further Triage",
       "actions": [
         {
           "name": "removeFromProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "isOrgProject": true
           }
         },
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Needs Triage",
             "isOrgProject": true
           }
@@ -5044,7 +5057,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+              "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
               "isOrgProject": true
             }
           },
@@ -5082,12 +5095,12 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Carlos / Jeremy - Issue Triage] Triaged",
+      "taskName": "[Area Pod: Carlos / Viktor - Issue Triage] Triaged",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Jeremy - Issue Triage",
+            "projectName": "Area Pod: Carlos / Viktor - Issue Triage",
             "columnName": "Triaged",
             "isOrgProject": true
           }
@@ -5117,7 +5130,7 @@
               {
                 "name": "isInProjectColumn",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Jeremy - PRs",
+                  "projectName": "Area Pod: Carlos / Viktor - PRs",
                   "columnName": "Done",
                   "isOrgProject": true
                 }
@@ -5220,7 +5233,7 @@
           {
             "name": "isInProject",
             "parameters": {
-              "projectName": "Area Pod: Carlos / Jeremy - PRs",
+              "projectName": "Area Pod: Carlos / Viktor - PRs",
               "isOrgProject": true
             }
           }
@@ -5232,12 +5245,12 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Carlos / Jeremy - PRs] Moved to Another Area",
+      "taskName": "[Area Pod: Carlos / Viktor - PRs] Moved to Another Area",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Jeremy - PRs",
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
             "columnName": "Done",
             "isOrgProject": true
           }
@@ -5314,7 +5327,7 @@
               {
                 "name": "isInProject",
                 "parameters": {
-                  "projectName": "Area Pod: Carlos / Jeremy - PRs",
+                  "projectName": "Area Pod: Carlos / Viktor - PRs",
                   "isOrgProject": true
                 }
               }
@@ -5328,12 +5341,12 @@
         "issues",
         "project_card"
       ],
-      "taskName": "[Area Pod: Carlos / Jeremy - PRs] Needs Champion",
+      "taskName": "[Area Pod: Carlos / Viktor - PRs] Needs Champion",
       "actions": [
         {
           "name": "addToProject",
           "parameters": {
-            "projectName": "Area Pod: Carlos / Jeremy - PRs",
+            "projectName": "Area Pod: Carlos / Viktor - PRs",
             "columnName": "Needs Champion",
             "isOrgProject": true
           }

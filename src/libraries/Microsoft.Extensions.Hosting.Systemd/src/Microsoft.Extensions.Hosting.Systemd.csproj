@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.1</TargetFrameworks>
+    <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
     <PackageDescription>.NET hosting infrastructure for Systemd Services.</PackageDescription>
     <!-- Use targeting pack references instead of granular ones in the project file. -->

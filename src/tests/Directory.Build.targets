@@ -217,12 +217,17 @@
   </Target>
 
   <Target Name="CopyAllNativeProjectReferenceBinaries"
-          DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference">
+          DependsOnTargets="ResolveCMakeNativeProjectReference;ConsolidateNativeProjectReference"
+          BeforeTargets="Build">
 
     <ItemGroup Condition="'$(IsMergedTestRunnerAssembly)' == 'true'">
-      <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)')" />
+      <OutOfProcessTestMarkers Include="$(OutDir)/../**/*.OutOfProcessTest" />
+      <OutOfProcessTestFolders Include="$([MSBuild]::NormalizePath('$([System.IO.Path]::GetDirectoryName('%(OutOfProcessTestMarkers.FullPath)'))'))" Condition="'@(OutOfProcessTestMarkers)' != ''" />
+      <MergedWrapperReferenceFolders Include="@(ProjectReference->'$([MSBuild]::NormalizePath('$([System.IO.Path]::GetFullPath('%(ProjectReference.Identity)/..', '$(OutDir)/..'))/%(ProjectReference.FileName)'))')" />
+      <!-- Don't copy out-of-process test components to the merged wrapper output folder -->
+      <MergedWrapperReferenceFolders Remove="@(OutOfProcessTestFolders)" />
       <!-- For merged project wrappers, include native libraries in all project references -->
-      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" />
+      <MergedWrapperReferenceFiles Include="%(MergedWrapperReferenceFolders.Identity)/*$(LibSuffix)" Condition="'@(MergedWrapperReferenceFolders)' != ''" />
     </ItemGroup>
     <Copy SourceFiles="@(MergedWrapperReferenceFiles)"
         DestinationFiles="@(MergedWrapperReferenceFiles->'$(OutDir)/%(FileName)%(Extension)')"
@@ -291,7 +296,7 @@
     <!-- We don't want the out-of-process test marker file to be included in referencing projects, so we don't include it as content. -->
     <WriteLinesToFile
         Condition="'$(RequiresProcessIsolation)' == 'true' and '$(BuildAsStandalone)' != 'true'"
-        File="$(OutputPath)\$(MSBuildProjectName).OutOfProcessTest"
+        File="$(OutputPath)\$(AssemblyName).OutOfProcessTest"
         Lines="OutOfProcessTest"
         Overwrite="true"
         WriteOnlyWhenDifferent="true" />
@@ -337,7 +342,6 @@
 
     <ItemGroup>
       <RunTimeArtifactsExcludeFiles Include="PDB/createdump.pdb" />
-      <RunTimeArtifactsExcludeFiles Include="PDB/dbgshim.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/linuxonjit.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/mcs.pdb" />
       <RunTimeArtifactsExcludeFiles Include="PDB/mscordaccore.pdb" />

@@ -147,7 +147,7 @@ break_coop_alertable_wait (gpointer user_data)
 static gint
 coop_cond_timedwait_alertable (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout_ms, gboolean *alertable)
 {
-	BreakCoopAlertableWaitUD *ud;
+	BreakCoopAlertableWaitUD *ud = NULL;
 	int res;
 
 	if (alertable) {
@@ -426,7 +426,7 @@ mono_domain_finalize (MonoDomain *domain, guint32 timeout)
 	MonoInternalThread *thread = mono_thread_internal_current ();
 	gint res;
 	gboolean ret;
-	gint64 start;
+	gint64 start = 0;
 
 	if (mono_thread_internal_current () == gc_thread)
 		/* We are called from inside a finalizer, not much we can do here */

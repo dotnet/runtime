@@ -157,8 +157,16 @@ namespace System.IO
                 : data;
         }
 
-        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool sameDirectoryDifferentCase)
+        private static void MoveDirectory(string sourceFullPath, string destFullPath, bool isCaseSensitiveRename)
         {
+            // Source and destination must have the same root.
+            ReadOnlySpan<char> sourceRoot = Path.GetPathRoot(sourceFullPath);
+            ReadOnlySpan<char> destinationRoot = Path.GetPathRoot(destFullPath);
+            if (!sourceRoot.Equals(destinationRoot, StringComparison.OrdinalIgnoreCase))
+            {
+                throw new IOException(SR.IO_SourceDestMustHaveSameRoot);
+            }
+
             if (!Interop.Kernel32.MoveFile(sourceFullPath, destFullPath, overwrite: false))
             {
                 int errorCode = Marshal.GetLastWin32Error();

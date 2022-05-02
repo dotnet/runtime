@@ -140,55 +140,130 @@ namespace System.Reflection
             }
         }
 
-        private protected Span<object?> CheckArguments(ref StackAllocedArguments stackArgs, ReadOnlySpan<object?> parameters, Binder? binder,
-            BindingFlags invokeAttr, CultureInfo? culture, RuntimeType[] sigTypes)
+        private protected unsafe void CheckArguments(
+            Span<object?> copyOfParameters,
+            IntPtr* byrefParameters,
+            Span<bool> shouldCopyBack,
+            ReadOnlySpan<object?> parameters,
+            RuntimeType[] sigTypes,
+            Binder? binder,
+            CultureInfo? culture,
+            BindingFlags invokeAttr
+        )
         {
-            Debug.Assert(Unsafe.SizeOf<StackAllocedArguments>() == StackAllocedArguments.MaxStackAllocArgCount * Unsafe.SizeOf<object>(),
-                "MaxStackAllocArgCount not properly defined.");
             Debug.Assert(!parameters.IsEmpty);
 
-            // We need to perform type safety validation against the incoming arguments, but we also need
-            // to be resilient against the possibility that some other thread (or even the binder itself!)
-            // may mutate the array after we've validated the arguments but before we've properly invoked
-            // the method. The solution is to copy the arguments to a different, not-user-visible buffer
-            // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
-            // considered user-visible to threads which may still be holding on to returned instances.
-
-            Span<object?> copyOfParameters = (parameters.Length <= StackAllocedArguments.MaxStackAllocArgCount)
-                    ? MemoryMarshal.CreateSpan(ref stackArgs._arg0, parameters.Length)
-                    : new Span<object?>(new object?[parameters.Length]);
-
-            ParameterInfo[]? p = null;
+            ParameterInfo[]? paramInfos = null;
             for (int i = 0; i < parameters.Length; i++)
             {
+                bool copyBackArg = false;
+                bool isValueType;
                 object? arg = parameters[i];
-                RuntimeType argRT = sigTypes[i];
+                RuntimeType sigType = sigTypes[i];
 
-                if (arg == Type.Missing)
+                if (arg is null)
                 {
-                    p ??= GetParametersNoCopy();
-                    if (p[i].DefaultValue == System.DBNull.Value)
-                        throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
-                    arg = p[i].DefaultValue!;
+                    // Fast path that avoids calling CheckValue() for reference types.
+                    isValueType = RuntimeTypeHandle.IsValueType(sigType);
+                    if (isValueType || RuntimeTypeHandle.IsByRef(sigType))
+                    {
+                        isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                    }
                 }
-                copyOfParameters[i] = argRT.CheckValue(arg, binder, culture, invokeAttr);
-            }
+                else if (ReferenceEquals(arg.GetType(), sigType))
+                {
+                    // Fast path that avoids calling CheckValue() when argument value matches the signature type.
+                    isValueType = RuntimeTypeHandle.IsValueType(sigType);
+                }
+                else
+                {
+                    paramInfos ??= GetParametersNoCopy();
+                    ParameterInfo paramInfo = paramInfos[i];
+                    if (!ReferenceEquals(arg, Type.Missing))
+                    {
+                        isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                    }
+                    else
+                    {
+                        if (paramInfo.DefaultValue == DBNull.Value)
+                        {
+                            throw new ArgumentException(SR.Arg_VarMissNull, nameof(parameters));
+                        }
 
-            return copyOfParameters;
+                        arg = paramInfo.DefaultValue;
+                        if (ReferenceEquals(arg?.GetType(), sigType))
+                        {
+                            isValueType = RuntimeTypeHandle.IsValueType(sigType);
+                        }
+                        else
+                        {
+                            isValueType = sigType.CheckValue(ref arg, ref copyBackArg, binder, culture, invokeAttr);
+                        }
+                    }
+                }
+
+                // We need to perform type safety validation against the incoming arguments, but we also need
+                // to be resilient against the possibility that some other thread (or even the binder itself!)
+                // may mutate the array after we've validated the arguments but before we've properly invoked
+                // the method. The solution is to copy the arguments to a different, not-user-visible buffer
+                // as we validate them. n.b. This disallows use of ArrayPool, as ArrayPool-rented arrays are
+                // considered user-visible to threads which may still be holding on to returned instances.
+                // This separate array is also used to hold default values when 'null' is specified for value
+                // types, and also used to hold the results from conversions such as from Int16 to Int32; these
+                // default values and conversions should not be applied to the incoming arguments.
+                shouldCopyBack[i] = copyBackArg;
+                copyOfParameters[i] = arg;
+
+                if (isValueType)
+                {
+#if DEBUG
+                    // Once Mono has managed conversion logic, VerifyValueType() can be lifted here as Asserts.
+                    sigType.VerifyValueType(arg);
+#endif
+                    ByReference<byte> valueTypeRef = new(ref copyOfParameters[i]!.GetRawData());
+                    *(ByReference<byte>*)(byrefParameters + i) = valueTypeRef;
+                }
+                else
+                {
+                    ByReference<object?> objRef = new(ref copyOfParameters[i]);
+                    *(ByReference<object?>*)(byrefParameters + i) = objRef;
+                }
+            }
         }
 
+        internal const int MaxStackAllocArgCount = 4;
+
         // Helper struct to avoid intermediate object[] allocation in calls to the native reflection stack.
-        // Typical usage is to define a local of type default(StackAllocedArguments), then pass 'ref theLocal'
-        // as the first parameter to CheckArguments. CheckArguments will try to utilize storage within this
-        // struct instance if there's sufficient space; otherwise CheckArguments will allocate a temp array.
-        private protected struct StackAllocedArguments
+        // When argument count <= MaxStackAllocArgCount, define a local of type default(StackAllocatedByRefs)
+        // and pass it to CheckArguments().
+        // For argument count > MaxStackAllocArgCount, do a stackalloc of void* pointers along with
+        // GCReportingRegistration to safely track references.
+        [StructLayout(LayoutKind.Sequential)]
+        private protected ref struct StackAllocedArguments
         {
-            internal const int MaxStackAllocArgCount = 4;
             internal object? _arg0;
 #pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
             private object? _arg1;
             private object? _arg2;
             private object? _arg3;
+#pragma warning restore CA1823, CS0169, IDE0051
+            internal bool _copyBack0;
+#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
+            private bool _copyBack1;
+            private bool _copyBack2;
+            private bool _copyBack3;
+#pragma warning restore CA1823, CS0169, IDE0051
+        }
+
+        // Helper struct to avoid intermediate IntPtr[] allocation and RegisterForGCReporting in calls to the native reflection stack.
+        [StructLayout(LayoutKind.Sequential)]
+        private protected ref struct StackAllocatedByRefs
+        {
+            internal ByReference<byte> _arg0;
+#pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
+            private ByReference<byte> _arg1;
+            private ByReference<byte> _arg2;
+            private ByReference<byte> _arg3;
 #pragma warning restore CA1823, CS0169, IDE0051
         }
 #endif

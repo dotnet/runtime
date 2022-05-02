@@ -439,7 +439,7 @@ namespace System.Collections.Generic
         {
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - arrayIndex < Count)
@@ -468,7 +468,7 @@ namespace System.Collections.Generic
 
             if (index < 0 || index > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - index < Count)
@@ -522,7 +522,7 @@ namespace System.Collections.Generic
         public TValue GetValueAtIndex(int index)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
             return values[index];
         }
 
@@ -530,7 +530,7 @@ namespace System.Collections.Generic
         public void SetValueAtIndex(int index, TValue value)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
             values[index] = value;
             version++;
         }
@@ -559,7 +559,7 @@ namespace System.Collections.Generic
         public TKey GetKeyAtIndex(int index)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
             return keys[index];
         }
 
@@ -681,7 +681,7 @@ namespace System.Collections.Generic
         public void RemoveAt(int index)
         {
             if (index < 0 || index >= _size)
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLess);
             _size--;
             if (index < _size)
             {

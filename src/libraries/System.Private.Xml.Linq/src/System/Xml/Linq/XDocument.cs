@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -183,7 +184,7 @@ namespace System.Xml.Linq
         /// An <see cref="XDocument"/> initialized with the contents of the file referenced
         /// in the passed in uri parameter.
         /// </returns>
-        public static XDocument Load(string uri)
+        public static XDocument Load([StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
             return Load(uri, LoadOptions.None);
         }
@@ -211,7 +212,7 @@ namespace System.Xml.Linq
         /// in the passed uri parameter.  If LoadOptions.PreserveWhitespace is enabled then
         /// all whitespace will be preserved.
         /// </returns>
-        public static XDocument Load(string uri, LoadOptions options)
+        public static XDocument Load([StringSyntax(StringSyntaxAttribute.Uri)] string uri, LoadOptions options)
         {
             XmlReaderSettings rs = GetXmlReaderSettings(options);
             using (XmlReader r = XmlReader.Create(uri, rs))

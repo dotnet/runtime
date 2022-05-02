@@ -43,7 +43,7 @@ namespace System.Runtime.InteropServices
             if (structure == null)
                 throw new ArgumentNullException(nameof(structure));
 
-            if (!allowValueClasses && structure.EETypePtr.IsValueType)
+            if (!allowValueClasses && structure.GetEETypePtr().IsValueType)
             {
                 throw new ArgumentException(nameof(structure), SR.Argument_StructMustNotBeValueClass);
             }
@@ -207,7 +207,7 @@ namespace System.Runtime.InteropServices
 
         internal static bool IsPinnable(object o)
         {
-            return (o == null) || o.EETypePtr.MightBeBlittable();
+            return (o == null) || o.GetEETypePtr().MightBeBlittable();
         }
 
         [EditorBrowsable(EditorBrowsableState.Never)]
@@ -270,7 +270,7 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
 
-            if (ptr.EETypePtr.IsArray ||
+            if (ptr.GetEETypePtr().IsArray ||
                 ptr is string ||
                 ptr is StringBuilder)
             {
@@ -349,7 +349,7 @@ namespace System.Runtime.InteropServices
                 throw new AccessViolationException();
             }
 
-            if (ptr.EETypePtr.IsArray ||
+            if (ptr.GetEETypePtr().IsArray ||
                 ptr is string ||
                 ptr is StringBuilder)
             {

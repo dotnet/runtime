@@ -72,6 +72,7 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task SerializeUnsupportedType()
         {
+            // TODO refactor to Xunit theory
             await RunTest(typeof(int));
             await RunTest(new SerializationInfo(typeof(Type), new FormatterConverter()));
             await RunTest((IntPtr)123);
@@ -96,7 +97,6 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains("$", exAsStr);
 
                 ClassWithType<T> obj = new ClassWithType<T> { Prop = value };
-
                 ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(obj));
                 exAsStr = ex.ToString();
                 Assert.Contains(fullName, exAsStr);
@@ -124,6 +124,20 @@ namespace System.Text.Json.Serialization.Tests
                     serialized = await Serializer.SerializeWrapper(obj, new JsonSerializerOptions { IgnoreNullValues = true });
                     Assert.Equal(@"{}", serialized);
                 }
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+                Type runtimeType = GetNullableOfTUnderlyingType(value.GetType(), out bool _);
+
+                ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper<object>(value));
+                exAsStr = ex.ToString();
+                Assert.Contains(runtimeType.FullName, exAsStr);
+                Assert.Contains("$", exAsStr);
+
+                ClassWithType<object> polyObj = new ClassWithType<object> { Prop = value };
+                ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(polyObj));
+                exAsStr = ex.ToString();
+                Assert.Contains(runtimeType.FullName, exAsStr);
+#endif
             }
         }
 

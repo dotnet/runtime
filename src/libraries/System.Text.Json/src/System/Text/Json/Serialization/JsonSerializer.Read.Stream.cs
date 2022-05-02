@@ -305,6 +305,7 @@ namespace System.Text.Json
                 JsonConverter converter = QueueOfTConverter<Queue<TValue>, TValue>.Instance;
                 JsonTypeInfo jsonTypeInfo = CreateQueueJsonTypeInfo<TValue>(converter, options);
                 ReadStack readStack = default;
+                jsonTypeInfo.EnsureConfigured();
                 readStack.Initialize(jsonTypeInfo, supportContinuation: true);
                 var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
@@ -334,7 +335,7 @@ namespace System.Text.Json
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
         private static JsonTypeInfo CreateQueueJsonTypeInfo<TValue>(JsonConverter queueConverter, JsonSerializerOptions queueOptions) =>
-                new JsonTypeInfo(typeof(Queue<TValue>), queueConverter, queueOptions);
+                new ReflectionJsonTypeInfo<Queue<TValue>>(queueConverter, queueOptions);
 
         internal static async ValueTask<TValue?> ReadAllAsync<TValue>(
             Stream utf8Json,
@@ -344,6 +345,7 @@ namespace System.Text.Json
             JsonSerializerOptions options = jsonTypeInfo.Options;
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
             ReadStack readStack = default;
+            jsonTypeInfo.EnsureConfigured();
             readStack.Initialize(jsonTypeInfo, supportContinuation: true);
             JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
@@ -374,6 +376,7 @@ namespace System.Text.Json
             JsonSerializerOptions options = jsonTypeInfo.Options;
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
             ReadStack readStack = default;
+            jsonTypeInfo.EnsureConfigured();
             readStack.Initialize(jsonTypeInfo, supportContinuation: true);
             JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());

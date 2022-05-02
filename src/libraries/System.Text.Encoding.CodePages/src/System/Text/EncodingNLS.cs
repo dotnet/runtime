@@ -98,7 +98,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(s), SR.ArgumentOutOfRange_IndexCount);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             int byteCount = bytes.Length - byteIndex;
 
@@ -135,7 +135,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(chars), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (byteIndex < 0 || byteIndex > bytes.Length)
-                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(byteIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             // If nothing to encode return 0, avoid fixed problem
             if (chars.Length == 0)
@@ -215,7 +215,7 @@ namespace System.Text
                 throw new ArgumentOutOfRangeException(nameof(bytes), SR.ArgumentOutOfRange_IndexCountBuffer);
 
             if (charIndex < 0 || charIndex > chars.Length)
-                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(charIndex), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
 
             // If no input, return 0 & avoid fixed problem
             if (bytes.Length == 0)
@@ -340,11 +340,10 @@ namespace System.Text
 
                     if (_encodingName.StartsWith("Globalization_cp_", StringComparison.OrdinalIgnoreCase))
                     {
-                        // On ProjectN, resource strings are stripped from retail builds and replaced by
+                        // Resource strings may be stripped from retail builds and replaced by
                         // their identifier names. Since this property is meant to be a localized string,
-                        // but we don't localize ProjectN, we specifically need to do something reasonable
-                        // in this case. This currently returns the English name of the encoding from a
-                        // static data table.
+                        // we specifically need to do something reasonable in this case. This currently
+                        // returns the English name of the encoding from a static data table.
                         _encodingName = EncodingTable.GetEnglishNameFromCodePage(CodePage);
                         if (_encodingName == null)
                         {

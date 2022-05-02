@@ -49,9 +49,7 @@ namespace System.Runtime.CompilerServices
                 case ByRefFields:
                 case UnmanagedSignatureCallingConvention:
                 case DefaultImplementationsOfInterfaces:
-#pragma warning disable CA2252
                 case VirtualStaticsInInterfaces:
-#pragma warning restore CA2252
                     return true;
                 case nameof(IsDynamicCodeSupported):
                     return IsDynamicCodeSupported;

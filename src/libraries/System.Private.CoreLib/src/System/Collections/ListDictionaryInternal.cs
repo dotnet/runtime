@@ -150,7 +150,7 @@ namespace System.Collections
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
 
             if (array.Length - index < this.Count)
-                throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
+                throw new ArgumentException(SR.ArgumentOutOfRange_IndexMustBeLessOrEqual, nameof(index));
 
             for (DictionaryNode? node = head; node != null; node = node.next)
             {
@@ -300,7 +300,7 @@ namespace System.Collections
                 if (index < 0)
                     throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
                 if (array.Length - index < list.Count)
-                    throw new ArgumentException(SR.ArgumentOutOfRange_Index, nameof(index));
+                    throw new ArgumentException(SR.ArgumentOutOfRange_IndexMustBeLessOrEqual, nameof(index));
                 for (DictionaryNode? node = list.head; node != null; node = node.next)
                 {
                     array.SetValue(isKeys ? node.key : node.value, index);

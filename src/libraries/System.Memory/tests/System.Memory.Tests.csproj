@@ -54,6 +54,7 @@
     <Compile Include="Span\AsSpan.cs" />
     <Compile Include="Span\Fill.cs" />
     <Compile Include="Span\Clear.cs" />
+    <Compile Include="Span\CommonPrefixLength.T.cs" />
     <Compile Include="Span\Contains.T.cs" />
     <Compile Include="Span\CopyTo.cs" />
     <Compile Include="Span\CtorArray.cs" />

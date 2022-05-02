@@ -11,7 +11,7 @@ using System.Net;
 namespace System.Text.RegularExpressions.Symbolic
 {
     [ExcludeFromCodeCoverage(Justification = "Currently only used for testing")]
-    internal static class DgmlWriter<T> where T : notnull
+    internal static class DgmlWriter<TSet> where TSet : IComparable<TSet>
     {
         /// <summary>Write the DFA or NFA in DGML format into the TextWriter.</summary>
         /// <param name="matcher">The <see cref="SymbolicRegexMatcher"/> for the regular expression.</param>
@@ -22,11 +22,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="maxStates">The approximate maximum number of states to include; less than or equal to 0 for no maximum.</param>
         /// <param name="maxLabelLength">maximum length of labels in nodes anything over that length is indicated with .. </param>
         public static void Write(
-            TextWriter writer, SymbolicRegexMatcher<T> matcher,
+            TextWriter writer, SymbolicRegexMatcher<TSet> matcher,
             bool nfa = false, bool addDotStar = true, bool reverse = false, int maxStates = -1, int maxLabelLength = -1)
         {
+            var charSetSolver = new CharSetSolver();
             var explorer = new DfaExplorer(matcher, nfa, addDotStar, reverse, maxStates);
-            var nonEpsilonTransitions = new Dictionary<(int SourceState, int TargetState), List<(SymbolicRegexNode<T>?, T)>>();
+            var nonEpsilonTransitions = new Dictionary<(int SourceState, int TargetState), List<(SymbolicRegexNode<TSet>?, TSet)>>();
             var epsilonTransitions = new List<Transition>();
 
             foreach (Transition transition in explorer.GetTransitions())
@@ -38,9 +39,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 else
                 {
                     (int SourceState, int TargetState) p = (transition.SourceState, transition.TargetState);
-                    if (!nonEpsilonTransitions.TryGetValue(p, out List<(SymbolicRegexNode<T>?, T)>? rules))
+                    if (!nonEpsilonTransitions.TryGetValue(p, out List<(SymbolicRegexNode<TSet>?, TSet)>? rules))
                     {
-                        nonEpsilonTransitions[p] = rules = new List<(SymbolicRegexNode<T>?, T)>();
+                        nonEpsilonTransitions[p] = rules = new List<(SymbolicRegexNode<TSet>?, TSet)>();
                     }
 
                     rules.Add(transition.Label);
@@ -50,8 +51,8 @@ namespace System.Text.RegularExpressions.Symbolic
             writer.WriteLine("<?xml version=\"1.0\" encoding=\"utf-8\"?>");
             writer.WriteLine("<DirectedGraph xmlns=\"http://schemas.microsoft.com/vs/2009/dgml\" ZoomLevel=\"1.5\" GraphDirection=\"TopToBottom\" >");
             writer.WriteLine("    <Nodes>");
-            writer.WriteLine("        <Node Id=\"dfa\" Label=\" \" Group=\"Collapsed\" Category=\"DFA\" DFAInfo=\"{0}\" />", GetDFAInfo(explorer));
-            writer.WriteLine("        <Node Id=\"dfainfo\" Category=\"DFAInfo\" Label=\"{0}\"/>", GetDFAInfo(explorer));
+            writer.WriteLine("        <Node Id=\"dfa\" Label=\" \" Group=\"Collapsed\" Category=\"DFA\" DFAInfo=\"{0}\" />", GetDFAInfo(explorer, charSetSolver));
+            writer.WriteLine("        <Node Id=\"dfainfo\" Category=\"DFAInfo\" Label=\"{0}\"/>", GetDFAInfo(explorer, charSetSolver));
             foreach (int state in explorer.GetStates())
             {
                 writer.WriteLine("        <Node Id=\"{0}\" Label=\"{0}\" Category=\"State\" Group=\"Collapsed\" StateInfo=\"{1}\">", state, explorer.DescribeState(state));
@@ -76,9 +77,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 writer.WriteLine("        <Link Source=\"{0}\" Target=\"{1}\" Category=\"EpsilonTransition\" />", transition.SourceState, transition.TargetState);
             }
 
-            foreach (KeyValuePair<(int, int), List<(SymbolicRegexNode<T>?, T)>> transition in nonEpsilonTransitions)
+            foreach (KeyValuePair<(int, int), List<(SymbolicRegexNode<TSet>?, TSet)>> transition in nonEpsilonTransitions)
             {
-                string label = string.Join($",{Environment.NewLine} ", DescribeLabels(explorer, transition.Value));
+                string label = string.Join($",{Environment.NewLine} ", DescribeLabels(explorer, transition.Value, charSetSolver));
                 string info = "";
                 if (label.Length > (uint)maxLabelLength)
                 {
@@ -160,33 +161,33 @@ namespace System.Text.RegularExpressions.Symbolic
             writer.WriteLine("</DirectedGraph>");
         }
 
-        private static string GetDFAInfo(DfaExplorer explorer)
+        private static string GetDFAInfo(DfaExplorer explorer, CharSetSolver solver)
         {
             StringBuilder sb = new();
             sb.Append($"States = {explorer.StateCount}&#13;");
             sb.Append($"Transitions = {explorer.TransitionCount}&#13;");
-            sb.Append($"Min Terms ({explorer._builder._solver.GetMinterms()!.Length}) = ").AppendJoin(',', DescribeLabels(explorer, explorer.Alphabet));
+            sb.Append($"Min Terms ({explorer._builder._solver.GetMinterms()!.Length}) = ").AppendJoin(',', DescribeLabels(explorer, explorer.Alphabet, solver));
             return sb.ToString();
         }
 
-        private static IEnumerable<string> DescribeLabels(DfaExplorer explorer, IList<(SymbolicRegexNode<T>?, T)> items)
+        private static IEnumerable<string> DescribeLabels(DfaExplorer explorer, IList<(SymbolicRegexNode<TSet>?, TSet)> items, CharSetSolver solver)
         {
             for (int i = 0; i < items.Count; i++)
             {
-                yield return explorer.DescribeLabel(items[i]);
+                yield return explorer.DescribeLabel(items[i], solver);
             }
         }
 
         /// <summary>Used to unwind a regex into a DFA up to a bound that limits the number of states</summary>
         private sealed class DfaExplorer
         {
-            private readonly DfaMatchingState<T> _initialState;
+            private readonly DfaMatchingState<TSet> _initialState;
             private readonly List<int> _states = new();
             private readonly List<Transition> _transitions = new();
-            private readonly SymbolicNFA<T>? _nfa;
-            internal readonly SymbolicRegexBuilder<T> _builder;
+            private readonly SymbolicNFA<TSet>? _nfa;
+            internal readonly SymbolicRegexBuilder<TSet> _builder;
 
-            internal DfaExplorer(SymbolicRegexMatcher<T> srm, bool nfa, bool addDotStar, bool reverse, int maxStates)
+            internal DfaExplorer(SymbolicRegexMatcher<TSet> srm, bool nfa, bool addDotStar, bool reverse, int maxStates)
             {
                 _builder = srm._builder;
                 uint startId = reverse ?
@@ -205,7 +206,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     for (int q = 0; q < _nfa.StateCount; q++)
                     {
                         _states.Add(q);
-                        foreach ((T, SymbolicRegexNode<T>?, int) branch in _nfa.EnumeratePaths(q))
+                        foreach ((TSet, SymbolicRegexNode<TSet>?, int) branch in _nfa.EnumeratePaths(q))
                         {
                             _transitions.Add(new Transition(q, branch.Item3, (branch.Item2, branch.Item1)));
                         }
@@ -213,24 +214,24 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
                 else
                 {
-                    Dictionary<(int, int), T> normalizedMoves = new();
-                    Stack<DfaMatchingState<T>> stack = new();
+                    Dictionary<(int, int), TSet> normalizedMoves = new();
+                    Stack<DfaMatchingState<TSet>> stack = new();
                     stack.Push(_initialState);
                     _states.Add(_initialState.Id);
 
                     HashSet<int> stateSet = new();
                     stateSet.Add(_initialState.Id);
 
-                    T[]? minterms = _builder._solver.GetMinterms();
+                    TSet[]? minterms = _builder._solver.GetMinterms();
                     Debug.Assert(minterms is not null);
 
                     // Unwind until the stack is empty or the bound has been reached
                     while (stack.Count > 0 && (maxStates <= 0 || _states.Count < maxStates))
                     {
-                        DfaMatchingState<T> q = stack.Pop();
-                        foreach (T c in minterms)
+                        DfaMatchingState<TSet> q = stack.Pop();
+                        foreach (TSet c in minterms)
                         {
-                            DfaMatchingState<T> p = q.Next(c);
+                            DfaMatchingState<TSet> p = q.Next(c);
 
                             // check that p is not a dead-end
                             if (!p.IsNothing)
@@ -249,20 +250,20 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
                     }
 
-                    foreach (KeyValuePair<(int, int), T> entry in normalizedMoves)
+                    foreach (KeyValuePair<(int, int), TSet> entry in normalizedMoves)
                     {
                         _transitions.Add(new Transition(entry.Key.Item1, entry.Key.Item2, (null, entry.Value)));
                     }
                 }
             }
 
-            public (SymbolicRegexNode<T>?, T)[] Alphabet
+            public (SymbolicRegexNode<TSet>?, TSet)[] Alphabet
             {
                 get
                 {
-                    T[]? alphabet = _builder._solver.GetMinterms();
+                    TSet[]? alphabet = _builder._solver.GetMinterms();
                     Debug.Assert(alphabet is not null);
-                    var results = new (SymbolicRegexNode<T>?, T)[alphabet.Length];
+                    var results = new (SymbolicRegexNode<TSet>?, TSet)[alphabet.Length];
                     for (int i = 0; i < alphabet.Length; i++)
                     {
                         results[i] = (null, alphabet[i]);
@@ -277,10 +278,10 @@ namespace System.Text.RegularExpressions.Symbolic
 
             public int TransitionCount => _transitions.Count;
 
-            public string DescribeLabel((SymbolicRegexNode<T>?, T) lab) =>
+            public string DescribeLabel((SymbolicRegexNode<TSet>?, TSet) lab, CharSetSolver solver) =>
                 WebUtility.HtmlEncode(lab.Item1 is null ? // Conditional nullability based on anchors
-                    _builder._solver.PrettyPrint(lab.Item2) :
-                    $"{lab.Item1}/{_builder._solver.PrettyPrint(lab.Item2)}");
+                    _builder._solver.PrettyPrint(lab.Item2, solver) :
+                    $"{lab.Item1}/{_builder._solver.PrettyPrint(lab.Item2, solver)}");
 
             public string DescribeState(int state)
             {
@@ -312,7 +313,7 @@ namespace System.Text.RegularExpressions.Symbolic
             public List<Transition> GetTransitions() => _transitions;
         }
 
-        private record Transition(int SourceState, int TargetState, (SymbolicRegexNode<T>?, T) Label)
+        private record Transition(int SourceState, int TargetState, (SymbolicRegexNode<TSet>?, TSet) Label)
         {
             public bool IsEpsilon => Label.Equals(default);
         }

@@ -17,15 +17,16 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             Debug.Assert((options & (RegexOptions.RightToLeft | RegexOptions.ECMAScript)) == 0);
 
-            var bddBuilder = new SymbolicRegexBuilder<BDD>(CharSetSolver.Instance);
+            var charSetSolver = new CharSetSolver();
+            var bddBuilder = new SymbolicRegexBuilder<BDD>(charSetSolver, charSetSolver);
             var converter = new RegexNodeConverter(bddBuilder, culture, regexTree.CaptureNumberSparseMapping);
 
             SymbolicRegexNode<BDD> rootNode = converter.ConvertToSymbolicRegexNode(regexTree.Root, tryCreateFixedLengthMarker: true);
             BDD[] minterms = rootNode.ComputeMinterms();
 
             _matcher = minterms.Length > 64 ?
-                SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorAlgebra(minterms), matchTimeout) :
-                SymbolicRegexMatcher<ulong>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new UInt64Algebra(minterms), matchTimeout);
+                SymbolicRegexMatcher<BitVector>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new BitVectorSolver(minterms, charSetSolver), matchTimeout) :
+                SymbolicRegexMatcher<ulong>.Create(regexTree.CaptureCount, regexTree.FindOptimizations, bddBuilder, rootNode, new UInt64Solver(minterms, charSetSolver), matchTimeout);
         }
 
         /// <summary>Creates a <see cref="RegexRunner"/> object.</summary>
@@ -39,16 +40,16 @@ namespace System.Text.RegularExpressions.Symbolic
         /// all runner instances, but the runner itself has state (e.g. for captures, positions, etc.)
         /// and must not be shared between concurrent uses.
         /// </remarks>
-        private sealed class Runner<TSetType> : RegexRunner where TSetType : notnull
+        private sealed class Runner<TSet> : RegexRunner where TSet : IComparable<TSet>
         {
             /// <summary>The matching engine.</summary>
             /// <remarks>The matcher is stateless and may be shared by any number of threads executing concurrently.</remarks>
-            private readonly SymbolicRegexMatcher<TSetType> _matcher;
+            private readonly SymbolicRegexMatcher<TSet> _matcher;
             /// <summary>Runner-specific data to pass to the matching engine.</summary>
             /// <remarks>This state is per runner and is thus only used by one thread at a time.</remarks>
-            private readonly SymbolicRegexMatcher<TSetType>.PerThreadData _perThreadData;
+            private readonly SymbolicRegexMatcher<TSet>.PerThreadData _perThreadData;
 
-            internal Runner(SymbolicRegexMatcher<TSetType> matcher)
+            internal Runner(SymbolicRegexMatcher<TSet> matcher)
             {
                 _matcher = matcher;
                 _perThreadData = matcher.CreatePerThreadData();

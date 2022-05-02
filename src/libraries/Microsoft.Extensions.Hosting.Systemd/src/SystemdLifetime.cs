@@ -41,12 +41,12 @@ namespace Microsoft.Extensions.Hosting.Systemd
         {
             _applicationStartedRegistration = ApplicationLifetime.ApplicationStarted.Register(state =>
             {
-                ((SystemdLifetime)state).OnApplicationStarted();
+                ((SystemdLifetime)state!).OnApplicationStarted();
             },
             this);
             _applicationStoppingRegistration = ApplicationLifetime.ApplicationStopping.Register(state =>
             {
-                ((SystemdLifetime)state).OnApplicationStopping();
+                ((SystemdLifetime)state!).OnApplicationStopping();
             },
             this);
 

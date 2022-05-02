@@ -76,8 +76,8 @@ namespace System.Drawing.Printing
                 int dpiY = Interop.Gdi32.GetDeviceCaps(new HandleRef(_dc, _dc.Hdc), Interop.Gdi32.DeviceCapability.LOGPIXELSY);
                 int hardMarginX_DU = Interop.Gdi32.GetDeviceCaps(new HandleRef(_dc, _dc.Hdc), Interop.Gdi32.DeviceCapability.PHYSICALOFFSETX);
                 int hardMarginY_DU = Interop.Gdi32.GetDeviceCaps(new HandleRef(_dc, _dc.Hdc), Interop.Gdi32.DeviceCapability.PHYSICALOFFSETY);
-                float hardMarginX = hardMarginX_DU * 100 / dpiX;
-                float hardMarginY = hardMarginY_DU * 100 / dpiY;
+                float hardMarginX = hardMarginX_DU * 100f / dpiX;
+                float hardMarginY = hardMarginY_DU * 100f / dpiY;
 
                 _graphics.TranslateTransform(-hardMarginX, -hardMarginY);
                 _graphics.TranslateTransform(document.DefaultPageSettings.Margins.Left, document.DefaultPageSettings.Margins.Top);

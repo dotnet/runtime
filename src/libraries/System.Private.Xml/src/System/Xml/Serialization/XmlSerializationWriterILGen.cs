@@ -10,7 +10,6 @@ using System.Reflection;
 using System.Reflection.Emit;
 using System.Text;
 using System.Xml.Schema;
-using System.Xml.Extensions;
 using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Serialization

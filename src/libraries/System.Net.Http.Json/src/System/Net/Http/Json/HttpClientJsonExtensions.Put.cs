@@ -12,7 +12,7 @@ namespace System.Net.Http.Json
     public static partial class HttpClientJsonExtensions
     {
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client!!, string? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client!!, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             JsonContent content = JsonContent.Create(value, mediaType: null, options);
             return client.PutAsync(requestUri, content, cancellationToken);
@@ -26,14 +26,14 @@ namespace System.Net.Http.Json
         }
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, string? requestUri, TValue value, CancellationToken cancellationToken)
+        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, TValue value, CancellationToken cancellationToken)
             => client.PutAsJsonAsync(requestUri, value, options: null, cancellationToken);
 
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
         public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client, Uri? requestUri, TValue value, CancellationToken cancellationToken)
             => client.PutAsJsonAsync(requestUri, value, options: null, cancellationToken);
 
-        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client!!, string? requestUri, TValue value, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> PutAsJsonAsync<TValue>(this HttpClient client!!, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, TValue value, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
             JsonContent<TValue> content = new(value, jsonTypeInfo);
             return client.PutAsync(requestUri, content, cancellationToken);

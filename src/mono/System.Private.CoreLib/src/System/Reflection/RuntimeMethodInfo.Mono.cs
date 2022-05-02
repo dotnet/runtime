@@ -151,6 +151,7 @@ namespace System.Reflection
         private string? toString;
         private RuntimeType[]? parameterTypes;
         private InvocationFlags invocationFlags;
+        private MethodInvoker? invoker;
 
         internal InvocationFlags InvocationFlags
         {
@@ -163,6 +164,16 @@ namespace System.Reflection
                     flags = ComputeAndUpdateInvocationFlags(this, ref invocationFlags);
                 }
                 return flags;
+            }
+        }
+
+        private MethodInvoker Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                invoker ??= new MethodInvoker(this);
+                return invoker;
             }
         }
 
@@ -343,7 +354,7 @@ namespace System.Reflection
             return MonoMethodInfo.GetParametersInfo(mhandle, this).Length;
         }
 
-        private RuntimeType[] ArgumentTypes
+        internal RuntimeType[] ArgumentTypes
         {
             get
             {
@@ -374,7 +385,7 @@ namespace System.Reflection
         internal extern object? InternalInvoke(object? obj, in Span<object?> parameters, out Exception? exc);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> parameters)
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* byrefParameters, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {
             Exception? exc;
             object? o;
@@ -383,7 +394,7 @@ namespace System.Reflection
             {
                 try
                 {
-                    o = InternalInvoke(obj, parameters, out exc);
+                    o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
                 }
                 catch (Mono.NullByRefReturnException)
                 {
@@ -402,7 +413,7 @@ namespace System.Reflection
             {
                 try
                 {
-                    o = InternalInvoke(obj, parameters, out exc);
+                    o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
                 }
                 catch (Mono.NullByRefReturnException)
                 {
@@ -412,38 +423,8 @@ namespace System.Reflection
 
             if (exc != null)
                 throw exc;
+
             return o;
-        }
-
-        internal static void ConvertValues(Binder binder, object?[]? args, ParameterInfo[] pinfo, CultureInfo? culture, BindingFlags invokeAttr)
-        {
-            if (args == null)
-            {
-                if (pinfo.Length == 0)
-                    return;
-
-                throw new TargetParameterCountException();
-            }
-
-            if (pinfo.Length != args.Length)
-                throw new TargetParameterCountException();
-
-            for (int i = 0; i < args.Length; ++i)
-            {
-                object? arg = args[i];
-                ParameterInfo pi = pinfo[i];
-                if (arg == Type.Missing)
-                {
-                    if (pi.DefaultValue == DBNull.Value)
-                        throw new ArgumentException(SR.Arg_VarMissNull, "parameters");
-
-                    args[i] = pi.DefaultValue;
-                    continue;
-                }
-
-                var rt = (RuntimeType)pi.ParameterType;
-                args[i] = rt.CheckValue(arg, binder, culture, invokeAttr);
-            }
         }
 
         public override RuntimeMethodHandle MethodHandle
@@ -784,6 +765,7 @@ namespace System.Reflection
         private string? toString;
         private RuntimeType[]? parameterTypes;
         private InvocationFlags invocationFlags;
+        private ConstructorInvoker? invoker;
 
         internal InvocationFlags InvocationFlags
         {
@@ -796,6 +778,16 @@ namespace System.Reflection
                     flags = ComputeAndUpdateInvocationFlags(this, ref invocationFlags);
                 }
                 return flags;
+            }
+        }
+
+        internal ConstructorInvoker Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                invoker ??= new ConstructorInvoker(this);
+                return invoker;
             }
         }
 
@@ -833,7 +825,7 @@ namespace System.Reflection
             return pi == null ? 0 : pi.Length;
         }
 
-        private RuntimeType[] ArgumentTypes
+        internal RuntimeType[] ArgumentTypes
         {
             get
             {
@@ -860,20 +852,6 @@ namespace System.Reflection
             // See https://github.com/dotnet/runtime/issues/40351
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object? InvokeWorker(object? obj, BindingFlags invokeAttr, Span<object?> arguments)
-        {
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return InternalInvoke(obj, arguments, wrapExceptions);
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal object InvokeCtorWorker(BindingFlags invokeAttr, Span<object?> arguments)
-        {
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
-            return InternalInvoke(null, arguments, wrapExceptions)!;
-        }
-
         /*
          * InternalInvoke() receives the parameters correctly converted by the binder
          * to match the types of the method signature.
@@ -881,16 +859,18 @@ namespace System.Reflection
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal extern object InternalInvoke(object? obj, in Span<object?> parameters, out Exception exc);
 
-        private object? InternalInvoke(object? obj, Span<object?> parameters, bool wrapExceptions)
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* byrefParameters, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
         {
             Exception exc;
             object? o;
 
-            if (wrapExceptions)
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
             {
                 try
                 {
-                    o = InternalInvoke(obj, parameters, out exc);
+                    o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
                 }
                 catch (MethodAccessException)
                 {
@@ -907,7 +887,7 @@ namespace System.Reflection
             }
             else
             {
-                o = InternalInvoke(obj, parameters, out exc);
+                o = InternalInvoke(obj, argsForTemporaryMonoSupport, out exc);
             }
 
             if (exc != null)

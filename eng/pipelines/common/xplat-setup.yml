@@ -14,11 +14,6 @@ parameters:
 jobs:
 - template: ${{ coalesce(parameters.helixQueuesTemplate, parameters.jobTemplate) }}
   parameters:
-    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'coreclr') }}:
-      runtimeFlavorDisplayName: 'CoreCLR'
-    ${{ if eq(parameters.jobParameters.runtimeFlavor, 'mono') }}:
-      runtimeFlavorDisplayName: 'Mono'
-
     shouldContinueOnError: ${{ and(endsWith(variables['Build.DefinitionName'], 'staging'), eq(variables['Build.Reason'], 'PullRequest')) }}
 
     # keep in sync with /eng/pipelines/common/variables.yml

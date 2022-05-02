@@ -466,7 +466,7 @@ ILStubLinker::LogILInstruction(
 
     if (isLabeled)
     {
-        strLabel.Printf(W("IL_%04x:"), curOffset);
+        strLabel.Printf(W("IL_%04Ix:"), curOffset);
     }
     else
     {
@@ -502,7 +502,7 @@ ILStubLinker::LogILInstruction(
     {
         size_t branchDistance = (size_t)pInstruction->uArg;
         size_t targetOffset = curOffset + s_rgbOpcodeSizes[instr] + branchDistance;
-        strArgument.Printf(W("IL_%04x"), targetOffset);
+        strArgument.Printf(W("IL_%04Ix"), targetOffset);
     }
     else if ((ILCodeStream::ILInstrEnum)CEE_NOP == instr)
     {
@@ -520,7 +520,7 @@ ILStubLinker::LogILInstruction(
         case ShortInlineVar:
         case ShortInlineI:
         case InlineI:
-            strArgument.Printf(W("0x%x"), pInstruction->uArg);
+            strArgument.Printf(W("0x%Ix"), pInstruction->uArg);
             break;
 
         case InlineI8:
@@ -536,7 +536,7 @@ ILStubLinker::LogILInstruction(
         case InlineTok:
             // No token value when we dump IL for ETW
             if (pDumpILStubCode == NULL)
-                strArgument.Printf(W("0x%08x"), pInstruction->uArg);
+                strArgument.Printf(W("0x%08Ix"), pInstruction->uArg);
 
             // Dump to szTokenNameBuffer if logging, otherwise dump to szArgumentBuffer to avoid an extra space because we are omitting the token
             _ASSERTE(FitsIn<mdToken>(pInstruction->uArg));
@@ -620,11 +620,11 @@ ILStubLinker::LogILStubWorker(
     {
         if (pDumpILStubCode)
         {
-            pDumpILStubCode->AppendPrintf(W("IL_%04x:\n"), *pcbCode);
+            pDumpILStubCode->AppendPrintf(W("IL_%04Ix:\n"), *pcbCode);
         }
         else
         {
-            LOG((LF_STUBS, LL_INFO1000, "IL_%04x:\n", *pcbCode));
+            LOG((LF_STUBS, LL_INFO1000, "IL_%04Ix:\n", *pcbCode));
         }
     }
 }

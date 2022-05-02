@@ -158,7 +158,7 @@ namespace System.Threading
         internal static unsafe OverlappedData GetOverlappedFromNative(NativeOverlapped* pNativeOverlapped)
         {
             GCHandle handle = *(GCHandle*)(pNativeOverlapped + 1);
-            return (OverlappedData)handle.Target;
+            return (OverlappedData)handle.Target!;
         }
     }
 

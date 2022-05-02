@@ -3269,18 +3269,9 @@ namespace System.Xml
             Debug.Assert(_ps.encoding != null);
             Debug.Assert(_ps.bytes != null);
             ReadOnlySpan<byte> preamble = _ps.encoding.Preamble;
-            int preambleLen = preamble.Length;
-            int i;
-            for (i = 0; i < preambleLen && i < _ps.bytesUsed; i++)
+            if (_ps.bytes.AsSpan(0, _ps.bytesUsed).StartsWith(preamble))
             {
-                if (_ps.bytes[i] != preamble[i])
-                {
-                    break;
-                }
-            }
-            if (i == preambleLen)
-            {
-                _ps.bytePos = preambleLen;
+                _ps.bytePos = preamble.Length;
             }
         }
 

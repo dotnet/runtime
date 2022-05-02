@@ -44,6 +44,7 @@ namespace System.Text.Json.SourceGeneration
         public bool ImplementsIJsonOnSerialized { get; private set; }
         public bool ImplementsIJsonOnSerializing { get; private set; }
 
+        public bool IsPolymorphic { get; private set; }
         public bool IsValueType { get; private set; }
 
         public bool CanBeNull { get; private set; }
@@ -126,7 +127,8 @@ namespace System.Text.Json.SourceGeneration
             bool implementsIJsonOnSerializing,
             bool hasTypeFactoryConverter,
             bool canContainNullableReferenceAnnotations,
-            bool hasPropertyFactoryConverters)
+            bool hasPropertyFactoryConverters,
+            bool isPolymorphic)
         {
             GenerationMode = generationMode;
             TypeRef = type.GetCompilableName();
@@ -135,6 +137,7 @@ namespace System.Text.Json.SourceGeneration
             ClassType = classType;
             IsValueType = type.IsValueType;
             CanBeNull = !IsValueType || nullableUnderlyingTypeMetadata != null;
+            IsPolymorphic = isPolymorphic;
             NumberHandling = numberHandling;
             PropertyGenSpecList = propertyGenSpecList;
             CtorParamGenSpecArray = ctorParamGenSpecArray;
@@ -238,6 +241,11 @@ namespace System.Text.Json.SourceGeneration
 
         private bool FastPathIsSupported()
         {
+            if (IsPolymorphic)
+            {
+                return false;
+            }
+
             if (ClassType == ClassType.Object)
             {
                 if (ExtensionDataPropertyTypeSpec != null)

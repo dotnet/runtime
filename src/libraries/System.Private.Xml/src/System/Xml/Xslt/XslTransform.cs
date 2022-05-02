@@ -75,13 +75,13 @@ namespace System.Xml.Xsl
             Compile(stylesheet, resolver);
         }
 
-        public void Load(string url)
+        public void Load([StringSyntax(StringSyntaxAttribute.Uri)] string url)
         {
             XmlTextReaderImpl tr = new XmlTextReaderImpl(url);
             Compile(Compiler.LoadDocument(tr).CreateNavigator(), CreateDefaultResolver());
         }
 
-        public void Load(string url, XmlResolver? resolver)
+        public void Load([StringSyntax(StringSyntaxAttribute.Uri)] string url, XmlResolver? resolver)
         {
             XmlTextReaderImpl tr = new XmlTextReaderImpl(url);
             {

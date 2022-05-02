@@ -16,11 +16,11 @@ namespace System.Numerics
         /// <returns>The quotient of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
         static abstract TResult operator /(TSelf left, TOther right);
 
-        // /// <summary>Divides two values together to compute their quotient.</summary>
-        // /// <param name="left">The value which <paramref name="right" /> divides.</param>
-        // /// <param name="right">The value which divides <paramref name="left" />.</param>
-        // /// <returns>The quotient of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
-        // /// <exception cref="OverflowException">The quotient of <paramref name="left" /> divided-by <paramref name="right" /> is not representable by <typeparamref name="TResult" />.</exception>
-        // static abstract TResult operator checked /(TSelf left, TOther right);
+        /// <summary>Divides two values together to compute their quotient.</summary>
+        /// <param name="left">The value which <paramref name="right" /> divides.</param>
+        /// <param name="right">The value which divides <paramref name="left" />.</param>
+        /// <returns>The quotient of <paramref name="left" /> divided-by <paramref name="right" />.</returns>
+        /// <exception cref="OverflowException">The quotient of <paramref name="left" /> divided-by <paramref name="right" /> is not representable by <typeparamref name="TResult" />.</exception>
+        static abstract TResult operator checked /(TSelf left, TOther right);
     }
 }

@@ -142,19 +142,19 @@ namespace System.CodeDom.Compiler
             _writer.Write(value);
         }
 
-        public override void Write(string format, object? arg0)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             OutputTabs();
             _writer.Write(format, arg0);
         }
 
-        public override void Write(string format, object? arg0, object? arg1)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             OutputTabs();
             _writer.Write(format, arg0, arg1);
         }
 
-        public override void Write(string format, params object?[] arg)
+        public override void Write([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
             OutputTabs();
             _writer.Write(format, arg);
@@ -317,21 +317,21 @@ namespace System.CodeDom.Compiler
             _tabsPending = true;
         }
 
-        public override void WriteLine(string format, object? arg0)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0)
         {
             OutputTabs();
             _writer.WriteLine(format, arg0);
             _tabsPending = true;
         }
 
-        public override void WriteLine(string format, object? arg0, object? arg1)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, object? arg0, object? arg1)
         {
             OutputTabs();
             _writer.WriteLine(format, arg0, arg1);
             _tabsPending = true;
         }
 
-        public override void WriteLine(string format, params object?[] arg)
+        public override void WriteLine([StringSyntax(StringSyntaxAttribute.CompositeFormat)] string format, params object?[] arg)
         {
             OutputTabs();
             _writer.WriteLine(format, arg);

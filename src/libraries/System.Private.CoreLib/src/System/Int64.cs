@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -108,17 +109,17 @@ namespace System
             return Number.FormatInt64(m_value, null, provider);
         }
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format)
         {
             return Number.FormatInt64(m_value, format, null);
         }
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return Number.FormatInt64(m_value, format, provider);
         }
 
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null)
         {
             return Number.TryFormatInt64(m_value, format, provider, destination, out charsWritten);
         }
@@ -285,8 +286,8 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static long IAdditionOperators<long, long, long>.operator +(long left, long right) => left + right;
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static long IAdditionOperators<long, long, long>.operator checked +(long left, long right) => checked(left + right);
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static long IAdditionOperators<long, long, long>.operator checked +(long left, long right) => checked(left + right);
 
         //
         // IAdditiveIdentity
@@ -316,6 +317,42 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
         public static long TrailingZeroCount(long value) => BitOperations.TrailingZeroCount(value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
+        long IBinaryInteger<long>.GetShortestBitLength()
+        {
+            long value = m_value;
+
+            if (value >= 0)
+            {
+                return (sizeof(long) * 8) - LeadingZeroCount(value);
+            }
+            else
+            {
+                return (sizeof(long) * 8) + 1 - LeadingZeroCount(~value);
+            }
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
+        int IBinaryInteger<long>.GetByteCount() => sizeof(long);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<long>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(long))
+            {
+                long value = BitConverter.IsLittleEndian ? m_value : BinaryPrimitives.ReverseEndianness(m_value);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(long);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         //
         // IBinaryNumber
@@ -373,8 +410,8 @@ namespace System
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static long IDecrementOperators<long>.operator --(long value) => --value;
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        // static long IDecrementOperators<long>.operator checked --(long value) => checked(--value);
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static long IDecrementOperators<long>.operator checked --(long value) => checked(--value);
 
         //
         // IDivisionOperators
@@ -383,8 +420,8 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static long IDivisionOperators<long, long, long>.operator /(long left, long right) => left / right;
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static long IDivisionOperators<long, long, long>.operator checked /(long left, long right) => checked(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static long IDivisionOperators<long, long, long>.operator checked /(long left, long right) => left / right;
 
         //
         // IEqualityOperators
@@ -403,8 +440,8 @@ namespace System
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         static long IIncrementOperators<long>.operator ++(long value) => ++value;
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static long IIncrementOperators<long>.operator checked ++(long value) => checked(++value);
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static long IIncrementOperators<long>.operator checked ++(long value) => checked(++value);
 
         //
         // IMinMaxValue
@@ -437,8 +474,8 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         static long IMultiplyOperators<long, long, long>.operator *(long left, long right) => left * right;
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static long IMultiplyOperators<long, long, long>.operator checked *(long left, long right) => checked(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        static long IMultiplyOperators<long, long, long>.operator checked *(long left, long right) => checked(left * right);
 
         //
         // INumber
@@ -901,13 +938,13 @@ namespace System
         //
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static long IShiftOperators<long, long>.operator <<(long value, int shiftAmount) => value << (int)shiftAmount;
+        static long IShiftOperators<long, long>.operator <<(long value, int shiftAmount) => value << shiftAmount;
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static long IShiftOperators<long, long>.operator >>(long value, int shiftAmount) => value >> (int)shiftAmount;
+        static long IShiftOperators<long, long>.operator >>(long value, int shiftAmount) => value >> shiftAmount;
 
-        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        // static long IShiftOperators<long, long>.operator >>>(long value, int shiftAmount) => (long)((ulong)value >> (int)shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        static long IShiftOperators<long, long>.operator >>>(long value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISignedNumber
@@ -933,8 +970,8 @@ namespace System
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         static long ISubtractionOperators<long, long, long>.operator -(long left, long right) => left - right;
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static long ISubtractionOperators<long, long, long>.operator checked -(long left, long right) => checked(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static long ISubtractionOperators<long, long, long>.operator checked -(long left, long right) => checked(left - right);
 
         //
         // IUnaryNegationOperators
@@ -943,8 +980,8 @@ namespace System
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         static long IUnaryNegationOperators<long, long>.operator -(long value) => -value;
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static long IUnaryNegationOperators<long, long>.operator checked -(long value) => checked(-value);
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static long IUnaryNegationOperators<long, long>.operator checked -(long value) => checked(-value);
 
         //
         // IUnaryPlusOperators

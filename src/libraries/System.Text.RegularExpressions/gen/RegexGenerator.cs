@@ -138,7 +138,7 @@ namespace System.Text.RegularExpressions.Generator
                 // To minimize generated code in the event of duplicated regexes, we only emit one derived Regex type per unique
                 // expression/options/timeout.  A Dictionary<(expression, options, timeout), RegexMethod> is used to deduplicate, where the value of the
                 // pair is the implementation used for the key.
-                var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int Timeout), RegexMethod>();
+                var emittedExpressions = new Dictionary<(string Pattern, RegexOptions Options, int? Timeout), RegexMethod>();
 
                 // If we have any (RegexMethod regexMethod, string generatedName, string reason, Diagnostic diagnostic), these are regexes for which we have
                 // limited support and need to simply output boilerplate.  We need to emit their diagnostics.
@@ -244,16 +244,23 @@ namespace System.Text.RegularExpressions.Generator
                 if (requiredHelpers.Count != 0)
                 {
                     writer.Indent += 2;
+                    writer.WriteLine($"/// <summary>Helper methods used by generated <see cref=\"Regex\"/>-derived implementations.</summary>");
                     writer.WriteLine($"private static class {HelpersTypeName}");
                     writer.WriteLine($"{{");
                     writer.Indent++;
+                    bool sawFirst = false;
                     foreach (KeyValuePair<string, string[]> helper in requiredHelpers)
                     {
+                        if (sawFirst)
+                        {
+                            writer.WriteLine();
+                        }
+                        sawFirst = true;
+
                         foreach (string value in helper.Value)
                         {
                             writer.WriteLine(value);
                         }
-                        writer.WriteLine();
                     }
                     writer.Indent--;
                     writer.WriteLine($"}}");

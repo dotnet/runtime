@@ -1,7 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Runtime.Versioning;
 using Xunit;
 
 namespace System.Tests
@@ -55,6 +54,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedAdditionTest()
+        {
+            Assert.Equal((char)0x0001, AdditionOperatorsHelper<char, char, char>.op_CheckedAddition((char)0x0000, (char)1));
+            Assert.Equal((char)0x0002, AdditionOperatorsHelper<char, char, char>.op_CheckedAddition((char)0x0001, (char)1));
+            Assert.Equal((char)0x8000, AdditionOperatorsHelper<char, char, char>.op_CheckedAddition((char)0x7FFF, (char)1));
+            Assert.Equal((char)0x8001, AdditionOperatorsHelper<char, char, char>.op_CheckedAddition((char)0x8000, (char)1));
+
+            Assert.Throws<OverflowException>(() => AdditionOperatorsHelper<char, char, char>.op_CheckedAddition((char)0xFFFF, (char)1));
+        }
+
+        [Fact]
         public static void LeadingZeroCountTest()
         {
             Assert.Equal((char)0x0010, BinaryIntegerHelper<char>.LeadingZeroCount((char)0x0000));
@@ -102,6 +112,16 @@ namespace System.Tests
             Assert.Equal((char)0x0000, BinaryIntegerHelper<char>.TrailingZeroCount((char)0x7FFF));
             Assert.Equal((char)0x000F, BinaryIntegerHelper<char>.TrailingZeroCount((char)0x8000));
             Assert.Equal((char)0x0000, BinaryIntegerHelper<char>.TrailingZeroCount((char)0xFFFF));
+        }
+
+        [Fact]
+        public static void GetShortestBitLengthTest()
+        {
+            Assert.Equal(0x00, BinaryIntegerHelper<char>.GetShortestBitLength((char)0x0000));
+            Assert.Equal(0x01, BinaryIntegerHelper<char>.GetShortestBitLength((char)0x0001));
+            Assert.Equal(0x0F, BinaryIntegerHelper<char>.GetShortestBitLength((char)0x7FFF));
+            Assert.Equal(0x10, BinaryIntegerHelper<char>.GetShortestBitLength((char)0x8000));
+            Assert.Equal(0x10, BinaryIntegerHelper<char>.GetShortestBitLength((char)0xFFFF));
         }
 
         [Fact]
@@ -215,6 +235,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedDecrementTest()
+        {
+            Assert.Equal((char)0x0000, DecrementOperatorsHelper<char>.op_CheckedDecrement((char)0x0001));
+            Assert.Equal((char)0x7FFE, DecrementOperatorsHelper<char>.op_CheckedDecrement((char)0x7FFF));
+            Assert.Equal((char)0x7FFF, DecrementOperatorsHelper<char>.op_CheckedDecrement((char)0x8000));
+            Assert.Equal((char)0xFFFE, DecrementOperatorsHelper<char>.op_CheckedDecrement((char)0xFFFF));
+
+            Assert.Throws<OverflowException>(() => DecrementOperatorsHelper<char>.op_CheckedDecrement((char)0x0000));
+        }
+
+        [Fact]
         public static void op_DivisionTest()
         {
             Assert.Equal((char)0x0000, DivisionOperatorsHelper<char, char, char>.op_Division((char)0x0000, (char)2));
@@ -222,6 +253,20 @@ namespace System.Tests
             Assert.Equal((char)0x3FFF, DivisionOperatorsHelper<char, char, char>.op_Division((char)0x7FFF, (char)2));
             Assert.Equal((char)0x4000, DivisionOperatorsHelper<char, char, char>.op_Division((char)0x8000, (char)2));
             Assert.Equal((char)0x7FFF, DivisionOperatorsHelper<char, char, char>.op_Division((char)0xFFFF, (char)2));
+
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<char, char, char>.op_Division((char)0x0001, (char)0));
+        }
+
+        [Fact]
+        public static void op_CheckedDivisionTest()
+        {
+            Assert.Equal((char)0x0000, DivisionOperatorsHelper<char, char, char>.op_CheckedDivision((char)0x0000, (char)2));
+            Assert.Equal((char)0x0000, DivisionOperatorsHelper<char, char, char>.op_CheckedDivision((char)0x0001, (char)2));
+            Assert.Equal((char)0x3FFF, DivisionOperatorsHelper<char, char, char>.op_CheckedDivision((char)0x7FFF, (char)2));
+            Assert.Equal((char)0x4000, DivisionOperatorsHelper<char, char, char>.op_CheckedDivision((char)0x8000, (char)2));
+            Assert.Equal((char)0x7FFF, DivisionOperatorsHelper<char, char, char>.op_CheckedDivision((char)0xFFFF, (char)2));
+
+            Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<char, char, char>.op_CheckedDivision((char)0x0001, (char)0));
         }
 
         [Fact]
@@ -255,6 +300,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedIncrementTest()
+        {
+            Assert.Equal((char)0x0001, IncrementOperatorsHelper<char>.op_CheckedIncrement((char)0x0000));
+            Assert.Equal((char)0x0002, IncrementOperatorsHelper<char>.op_CheckedIncrement((char)0x0001));
+            Assert.Equal((char)0x8000, IncrementOperatorsHelper<char>.op_CheckedIncrement((char)0x7FFF));
+            Assert.Equal((char)0x8001, IncrementOperatorsHelper<char>.op_CheckedIncrement((char)0x8000));
+
+            Assert.Throws<OverflowException>(() => IncrementOperatorsHelper<char>.op_CheckedIncrement((char)0xFFFF));
+        }
+
+        [Fact]
         public static void op_ModulusTest()
         {
             Assert.Equal((char)0x0000, ModulusOperatorsHelper<char, char, char>.op_Modulus((char)0x0000, (char)2));
@@ -262,6 +318,8 @@ namespace System.Tests
             Assert.Equal((char)0x0001, ModulusOperatorsHelper<char, char, char>.op_Modulus((char)0x7FFF, (char)2));
             Assert.Equal((char)0x0000, ModulusOperatorsHelper<char, char, char>.op_Modulus((char)0x8000, (char)2));
             Assert.Equal((char)0x0001, ModulusOperatorsHelper<char, char, char>.op_Modulus((char)0xFFFF, (char)2));
+
+            Assert.Throws<DivideByZeroException>(() => ModulusOperatorsHelper<char, char, char>.op_Modulus((char)0x0001, (char)0));
         }
 
         [Fact]
@@ -272,6 +330,17 @@ namespace System.Tests
             Assert.Equal((char)0xFFFE, MultiplyOperatorsHelper<char, char, char>.op_Multiply((char)0x7FFF, (char)2));
             Assert.Equal((char)0x0000, MultiplyOperatorsHelper<char, char, char>.op_Multiply((char)0x8000, (char)2));
             Assert.Equal((char)0xFFFE, MultiplyOperatorsHelper<char, char, char>.op_Multiply((char)0xFFFF, (char)2));
+        }
+
+        [Fact]
+        public static void op_CheckedMultiplyTest()
+        {
+            Assert.Equal((char)0x0000, MultiplyOperatorsHelper<char, char, char>.op_CheckedMultiply((char)0x0000, (char)2));
+            Assert.Equal((char)0x0002, MultiplyOperatorsHelper<char, char, char>.op_CheckedMultiply((char)0x0001, (char)2));
+            Assert.Equal((char)0xFFFE, MultiplyOperatorsHelper<char, char, char>.op_CheckedMultiply((char)0x7FFF, (char)2));
+
+            Assert.Throws<OverflowException>(() => MultiplyOperatorsHelper<char, char, char>.op_CheckedMultiply((char)0x8000, (char)2));
+            Assert.Throws<OverflowException>(() => MultiplyOperatorsHelper<char, char, char>.op_CheckedMultiply((char)0xFFFF, (char)2));
         }
 
         [Fact]
@@ -1002,7 +1071,47 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void GetByteCountTest()
+        {
+            Assert.Equal(2, BinaryIntegerHelper<char>.GetByteCount((char)0x0000));
+            Assert.Equal(2, BinaryIntegerHelper<char>.GetByteCount((char)0x0001));
+            Assert.Equal(2, BinaryIntegerHelper<char>.GetByteCount((char)0x7FFF));
+            Assert.Equal(2, BinaryIntegerHelper<char>.GetByteCount((char)0x8000));
+            Assert.Equal(2, BinaryIntegerHelper<char>.GetByteCount((char)0xFFFF));
+        }
 
+        [Fact]
+        public static void TryWriteLittleEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[2];
+            int bytesWritten = 0;
+
+            Assert.True(BinaryIntegerHelper<char>.TryWriteLittleEndian((char)0x0000, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<char>.TryWriteLittleEndian((char)0x0001, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<char>.TryWriteLittleEndian((char)0x7FFF, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0x7F }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<char>.TryWriteLittleEndian((char)0x8000, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x80 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<char>.TryWriteLittleEndian((char)0xFFFF, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
+
+            Assert.False(BinaryIntegerHelper<char>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
+        }
+
+        [Fact]
         public static void op_LeftShiftTest()
         {
             Assert.Equal((char)0x0000, ShiftOperatorsHelper<char, char>.op_LeftShift((char)0x0000, 1));
@@ -1023,6 +1132,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_UnsignedRightShiftTest()
+        {
+            Assert.Equal((char)0x0000, ShiftOperatorsHelper<char, char>.op_UnsignedRightShift((char)0x0000, 1));
+            Assert.Equal((char)0x0000, ShiftOperatorsHelper<char, char>.op_UnsignedRightShift((char)0x0001, 1));
+            Assert.Equal((char)0x3FFF, ShiftOperatorsHelper<char, char>.op_UnsignedRightShift((char)0x7FFF, 1));
+            Assert.Equal((char)0x4000, ShiftOperatorsHelper<char, char>.op_UnsignedRightShift((char)0x8000, 1));
+            Assert.Equal((char)0x7FFF, ShiftOperatorsHelper<char, char>.op_UnsignedRightShift((char)0xFFFF, 1));
+        }
+
+        [Fact]
         public static void op_SubtractionTest()
         {
             Assert.Equal((char)0xFFFF, SubtractionOperatorsHelper<char, char, char>.op_Subtraction((char)0x0000, (char)1));
@@ -1033,6 +1152,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_CheckedSubtractionTest()
+        {
+            Assert.Equal((char)0x0000, SubtractionOperatorsHelper<char, char, char>.op_CheckedSubtraction((char)0x0001, (char)1));
+            Assert.Equal((char)0x7FFE, SubtractionOperatorsHelper<char, char, char>.op_CheckedSubtraction((char)0x7FFF, (char)1));
+            Assert.Equal((char)0x7FFF, SubtractionOperatorsHelper<char, char, char>.op_CheckedSubtraction((char)0x8000, (char)1));
+            Assert.Equal((char)0xFFFE, SubtractionOperatorsHelper<char, char, char>.op_CheckedSubtraction((char)0xFFFF, (char)1));
+
+            Assert.Throws<OverflowException>(() => SubtractionOperatorsHelper<char, char, char>.op_CheckedSubtraction((char)0x0000, (char)1));
+        }
+
+        [Fact]
         public static void op_UnaryNegationTest()
         {
             Assert.Equal((char)0x0000, UnaryNegationOperatorsHelper<char, char>.op_UnaryNegation((char)0x0000));
@@ -1040,6 +1170,17 @@ namespace System.Tests
             Assert.Equal((char)0x8001, UnaryNegationOperatorsHelper<char, char>.op_UnaryNegation((char)0x7FFF));
             Assert.Equal((char)0x8000, UnaryNegationOperatorsHelper<char, char>.op_UnaryNegation((char)0x8000));
             Assert.Equal((char)0x0001, UnaryNegationOperatorsHelper<char, char>.op_UnaryNegation((char)0xFFFF));
+        }
+
+        [Fact]
+        public static void op_CheckedUnaryNegationTest()
+        {
+            Assert.Equal((char)0x0000, UnaryNegationOperatorsHelper<char, char>.op_CheckedUnaryNegation((char)0x0000));
+
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<char, char>.op_CheckedUnaryNegation((char)0x0001));
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<char, char>.op_CheckedUnaryNegation((char)0x7FFF));
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<char, char>.op_CheckedUnaryNegation((char)0x8000));
+            Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<char, char>.op_CheckedUnaryNegation((char)0xFFFF));
         }
 
         [Fact]

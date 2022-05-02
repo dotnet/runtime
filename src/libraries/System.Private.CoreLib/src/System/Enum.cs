@@ -1015,7 +1015,7 @@ namespace System
             };
         }
 
-        public static string Format(Type enumType, object value!!, string format!!)
+        public static string Format(Type enumType, object value!!, [StringSyntax(StringSyntaxAttribute.EnumFormat)] string format!!)
         {
             RuntimeType rtType = ValidateRuntimeType(enumType);
 
@@ -1282,14 +1282,14 @@ namespace System
 
         #region IFormattable
         [Obsolete("The provider argument is not used. Use ToString(String) instead.")]
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.EnumFormat)] string? format, IFormatProvider? provider)
         {
             return ToString(format);
         }
         #endregion
 
         #region Public Methods
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.EnumFormat)] string? format)
         {
             if (string.IsNullOrEmpty(format))
             {

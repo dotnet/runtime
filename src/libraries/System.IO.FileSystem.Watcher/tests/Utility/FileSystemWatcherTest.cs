@@ -40,24 +40,15 @@ namespace System.IO.Tests
             FileSystemEventHandler changeHandler = (o, e) =>
             {
                 Assert.Equal(WatcherChangeTypes.Changed, e.ChangeType);
-                VerifyExpectedPaths(expectedPaths, e);
-                eventOccurred.Set();
+
+                if (expectedPaths == null || expectedPaths.Contains(e.FullPath))
+                {
+                    eventOccurred.Set();
+                }
             };
 
             watcher.Changed += changeHandler;
             return (eventOccurred, changeHandler);
-        }
-
-        private static void VerifyExpectedPaths(string[] expectedPaths, FileSystemEventArgs e)
-        {
-            string fullPath = Path.GetFullPath(e.FullPath);
-            if (expectedPaths is not null && !expectedPaths.Contains(fullPath))
-            {
-                // Assert.Contains does not print a full content of collection which makes it hard to diagnose issues like #65601
-                throw new XunitException($"Expected path(s):{Environment.NewLine}"
-                    + string.Join(Environment.NewLine, expectedPaths)
-                    + $"{Environment.NewLine}Actual path: {fullPath}");
-            }
         }
 
         /// <summary>
@@ -77,9 +68,11 @@ namespace System.IO.Tests
                 }
 
                 Assert.Equal(WatcherChangeTypes.Created, e.ChangeType);
-                VerifyExpectedPaths(expectedPaths, e);
 
-                eventOccurred.Set();
+                if (expectedPaths == null || expectedPaths.Contains(e.FullPath))
+                {
+                    eventOccurred.Set();
+                }
             };
 
             watcher.Created += handler;
@@ -101,9 +94,10 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Deleted, e.ChangeType);
                 }
 
-                VerifyExpectedPaths(expectedPaths, e);
-
-                eventOccurred.Set();
+                if (expectedPaths == null || expectedPaths.Contains(e.FullPath))
+                {
+                    eventOccurred.Set();
+                }
             };
 
             watcher.Deleted += handler;
@@ -126,9 +120,10 @@ namespace System.IO.Tests
                     Assert.Equal(WatcherChangeTypes.Renamed, e.ChangeType);
                 }
 
-                VerifyExpectedPaths(expectedPaths, e);
-
-                eventOccurred.Set();
+                if (expectedPaths == null || expectedPaths.Contains(e.FullPath))
+                {
+                    eventOccurred.Set();
+                }
             };
 
             watcher.Renamed += handler;
@@ -236,7 +231,7 @@ namespace System.IO.Tests
         /// <param name="expectedPath">Optional. Adds path verification to all expected events.</param>
         public static void ExpectNoEvent(FileSystemWatcher watcher, WatcherChangeTypes unExpectedEvents, Action action, Action cleanup = null, string expectedPath = null, int timeout = WaitForExpectedEventTimeout)
         {
-            bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, new string[] { expectedPath }, timeout);
+            bool result = ExecuteAndVerifyEvents(watcher, unExpectedEvents, action, false, expectedPath == null ? null : new string[] { expectedPath }, timeout);
             Assert.False(result, "Expected Event occured");
 
             if (cleanup != null)

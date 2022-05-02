@@ -300,6 +300,8 @@ struct Native
         [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task InOutAttributes_Forwarded_To_ForwardedParameter()
         {
+            // This code is invalid configuration from the source generator's perspective.
+            // We just use it as validation for forwarding the In and Out attributes.
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
@@ -307,7 +309,7 @@ partial class C
 {
     [LibraryImportAttribute(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool Method1([In, Out] int[] a);
+    public static partial bool Method1([In, Out] int a);
 }
 " + CodeSnippets.LibraryImportAttributeDeclaration;
             Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
@@ -320,12 +322,6 @@ partial class C
             INamedTypeSymbol outAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_OutAttribute)!;
             Assert.Collection(targetMethod.Parameters,
                 param => Assert.Collection(param.GetAttributes(),
-                    attr =>
-                    {
-                        Assert.Equal(marshalAsAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
-                        Assert.Equal(UnmanagedType.LPArray, (UnmanagedType)attr.ConstructorArguments[0].Value!);
-                        Assert.Empty(attr.NamedArguments);
-                    },
                     attr =>
                     {
                         Assert.Equal(inAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
@@ -368,40 +364,6 @@ partial class C
                         Assert.Equal(UnmanagedType.I2, (UnmanagedType)attr.ConstructorArguments[0].Value!);
                         Assert.Empty(attr.NamedArguments);
                     }));
-        }
-
-        [Fact]
-        [OuterLoop("Uses the network for downlevel ref packs")]
-        public async Task MarshalAsAttribute_Forwarded_To_ForwardedParameter_Array()
-        {
-            string source = @"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-partial class C
-{
-    [LibraryImportAttribute(""DoesNotExist"")]
-    [return: MarshalAs(UnmanagedType.Bool)]
-    public static partial bool Method1([MarshalAs(UnmanagedType.LPArray, SizeConst = 10, SizeParamIndex = 1, ArraySubType = UnmanagedType.I4)] int[] a, int b);
-}
-" + CodeSnippets.LibraryImportAttributeDeclaration;
-            Compilation origComp = await TestUtils.CreateCompilation(source, TestTargetFramework.Standard);
-            Compilation newComp = TestUtils.RunGenerators(origComp, out _, new Microsoft.Interop.LibraryImportGenerator());
-
-            IMethodSymbol targetMethod = GetGeneratedPInvokeTargetFromCompilation(newComp);
-
-            INamedTypeSymbol marshalAsAttribute = newComp.GetTypeByMetadataName(TypeNames.System_Runtime_InteropServices_MarshalAsAttribute)!;
-            Assert.Collection(targetMethod.Parameters,
-                param => Assert.Collection(param.GetAttributes(),
-                    attr =>
-                    {
-                        Assert.Equal(marshalAsAttribute, attr.AttributeClass, SymbolEqualityComparer.Default);
-                        Assert.Equal(UnmanagedType.LPArray, (UnmanagedType)attr.ConstructorArguments[0].Value!);
-                        var namedArgs = attr.NamedArguments.ToImmutableDictionary();
-                        Assert.Equal(10, namedArgs["SizeConst"].Value);
-                        Assert.Equal((short)1, namedArgs["SizeParamIndex"].Value);
-                        Assert.Equal(UnmanagedType.I4, (UnmanagedType)namedArgs["ArraySubType"].Value!);
-                    }),
-                param => Assert.Equal(SpecialType.System_Int32, param.Type.SpecialType));
         }
 
         private static IMethodSymbol GetGeneratedPInvokeTargetFromCompilation(Compilation newComp)

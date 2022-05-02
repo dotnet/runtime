@@ -1132,6 +1132,7 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
     {
         case INS_ldxrb:
         case INS_ldarb:
+        case INS_ldaprb:
         case INS_ldaxrb:
         case INS_stxrb:
         case INS_stlrb:
@@ -1145,6 +1146,7 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
 
         case INS_ldxrh:
         case INS_ldarh:
+        case INS_ldaprh:
         case INS_ldaxrh:
         case INS_stxrh:
         case INS_stlrh:
@@ -1181,6 +1183,7 @@ emitAttr emitter::emitInsTargetRegSize(instrDesc* id)
 
         case INS_ldxr:
         case INS_ldar:
+        case INS_ldapr:
         case INS_ldaxr:
         case INS_stxr:
         case INS_stlr:
@@ -1212,6 +1215,7 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
     switch (ins)
     {
         case INS_ldarb:
+        case INS_ldaprb:
         case INS_stlrb:
         case INS_ldrb:
         case INS_strb:
@@ -1223,6 +1227,7 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
             break;
 
         case INS_ldarh:
+        case INS_ldaprh:
         case INS_stlrh:
         case INS_ldrh:
         case INS_strh:
@@ -1247,6 +1252,7 @@ emitAttr emitter::emitInsLoadStoreSize(instrDesc* id)
             break;
 
         case INS_ldar:
+        case INS_ldapr:
         case INS_stlr:
         case INS_ldr:
         case INS_str:
@@ -4460,6 +4466,7 @@ void emitter::emitIns_R_R(
             break;
 
         case INS_ldar:
+        case INS_ldapr:
         case INS_ldaxr:
         case INS_ldxr:
         case INS_stlr:
@@ -4468,9 +4475,11 @@ void emitter::emitIns_R_R(
             FALLTHROUGH;
 
         case INS_ldarb:
+        case INS_ldaprb:
         case INS_ldaxrb:
         case INS_ldxrb:
         case INS_ldarh:
+        case INS_ldaprh:
         case INS_ldaxrh:
         case INS_ldxrh:
         case INS_stlrb:
@@ -14206,7 +14215,7 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
 
         case IF_LS_2A: // ldr, ldrsw, ldrb, ldrh, ldrsb, ldrsh, str, strb, strh (no immediate)
-                       // ldar, ldarb, ldarh, ldxr, ldxrb, ldxrh,
+                       // ldar, ldarb, ldarh, ldapr, ldaprb, ldaprh, ldxr, ldxrb, ldxrh,
                        // ldaxr, ldaxrb, ldaxrh, stlr, stlrb, stlrh
 
             result.insThroughput = PERFSCORE_THROUGHPUT_1C;

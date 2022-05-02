@@ -16,7 +16,7 @@ namespace System.Diagnostics
             Source = source;
         }
 
-        public override bool ShouldTrace(TraceEventCache? cache, string source!!, TraceEventType eventType, int id, string? formatOrMessage,
+        public override bool ShouldTrace(TraceEventCache? cache, string source!!, TraceEventType eventType, int id, [StringSyntax(StringSyntaxAttribute.CompositeFormat)] string? formatOrMessage,
                                          object?[]? args, object? data1, object?[]? data)
         {
             return string.Equals(_src, source);

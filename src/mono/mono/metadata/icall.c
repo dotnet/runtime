@@ -2240,7 +2240,7 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 		goto invalid_operation;
 
 	if (image_is_dynamic (m_class_get_image (m_field_get_parent (field)))) {
-		MonoClass *klass = m_field_get_parent (field);
+		klass = m_field_get_parent (field);
 		int fidx = field - m_class_get_fields (klass);
 		MonoFieldDefaultValue *def_values = mono_class_get_field_def_values (klass);
 
@@ -2273,8 +2273,6 @@ ves_icall_RuntimeFieldInfo_GetRawConstantValue (MonoReflectionFieldHandle rfield
 	case MONO_TYPE_U8:
 	case MONO_TYPE_I8:
 	case MONO_TYPE_R8: {
-		MonoType *t;
-
 		/* boxed value type */
 		t = g_new0 (MonoType, 1);
 		t->type = def_type;
@@ -3248,44 +3246,47 @@ init_io_stream_slots (void)
 	io_stream_slots_set = TRUE;
 }
 
-MonoBoolean
-ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, MonoError *error)
+
+static MonoBoolean
+stream_has_overriden_begin_or_end_method (MonoObjectHandle stream, int begin_slot, int end_slot, MonoError *error)
 {
 	MonoClass* curr_klass = MONO_HANDLE_GET_CLASS (stream);
 	MonoClass* base_klass = mono_class_try_get_stream_class ();
 
-	if (!io_stream_slots_set)
-		init_io_stream_slots ();
+	mono_class_setup_vtable (curr_klass);
+	if (mono_class_has_failure (curr_klass)) {
+		mono_error_set_for_class_failure (error, curr_klass);
+		return_val_if_nok (error, FALSE);
+	}
 
 	// slots can still be -1 and it means Linker removed the methods from the base class (Stream)
 	// in this case we can safely assume the methods are not overridden
 	// otherwise - check vtable
 	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
-	gboolean begin_read_is_overriden = io_stream_begin_read_slot != -1 && curr_klass_vtable [io_stream_begin_read_slot]->klass != base_klass;
-	gboolean end_read_is_overriden = io_stream_end_read_slot != -1 && curr_klass_vtable [io_stream_end_read_slot]->klass != base_klass;
+	gboolean begin_is_overriden = begin_slot != -1 && curr_klass_vtable [begin_slot] != NULL && curr_klass_vtable [begin_slot]->klass != base_klass;
+	gboolean end_is_overriden = end_slot != -1 && curr_klass_vtable [end_slot] != NULL && curr_klass_vtable [end_slot]->klass != base_klass;
+
+	return begin_is_overriden || end_is_overriden;
+}
+
+MonoBoolean
+ves_icall_System_IO_Stream_HasOverriddenBeginEndRead (MonoObjectHandle stream, MonoError *error)
+{
+	if (!io_stream_slots_set)
+		init_io_stream_slots ();
 
 	// return true if BeginRead or EndRead were overriden
-	return begin_read_is_overriden || end_read_is_overriden;
+	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_read_slot, io_stream_end_read_slot, error);
 }
 
 MonoBoolean
 ves_icall_System_IO_Stream_HasOverriddenBeginEndWrite (MonoObjectHandle stream, MonoError *error)
 {
-	MonoClass* curr_klass = MONO_HANDLE_GETVAL (stream, vtable)->klass;
-	MonoClass* base_klass = mono_class_try_get_stream_class ();
-
 	if (!io_stream_slots_set)
 		init_io_stream_slots ();
 
-	// slots can still be -1 and it means Linker removed the methods from the base class (Stream)
-	// in this case we can safely assume the methods are not overridden
-	// otherwise - check vtable
-	MonoMethod **curr_klass_vtable = m_class_get_vtable (curr_klass);
-	gboolean begin_write_is_overriden = io_stream_begin_write_slot != -1 && curr_klass_vtable [io_stream_begin_write_slot]->klass != base_klass;
-	gboolean end_write_is_overriden = io_stream_end_write_slot != -1 && curr_klass_vtable [io_stream_end_write_slot]->klass != base_klass;
-
 	// return true if BeginWrite or EndWrite were overriden
-	return begin_write_is_overriden || end_write_is_overriden;
+	return stream_has_overriden_begin_or_end_method (stream, io_stream_begin_write_slot, io_stream_end_write_slot, error);
 }
 
 MonoBoolean
@@ -6018,11 +6019,17 @@ ves_icall_System_Environment_Exit (int result)
 void
 ves_icall_System_Environment_FailFast (MonoStringHandle message, MonoExceptionHandle exception, MonoStringHandle errorSource, MonoError *error)
 {
-	if (MONO_HANDLE_IS_NULL (message)) {
+	if (MONO_HANDLE_IS_NULL (errorSource)) {
 		g_warning ("Process terminated.");
 	} else {
+		char *errorSourceMsg = mono_string_handle_to_utf8 (errorSource, error);
+		g_warning ("Process terminated. %s", errorSourceMsg);
+		g_free (errorSourceMsg);
+	}
+
+	if (!MONO_HANDLE_IS_NULL (message)) {
 		char *msg = mono_string_handle_to_utf8 (message, error);
-		g_warning ("Process terminated due to \"%s\"", msg);
+		g_warning (msg);
 		g_free (msg);
 	}
 
@@ -6175,7 +6182,7 @@ ves_icall_System_ArgIterator_IntGetNextArg (MonoArgIterator *iter, MonoTypedRef 
 	res->type = iter->sig->params [i];
 	res->klass = mono_class_from_mono_type_internal (res->type);
 	arg_size = mono_type_stack_size (res->type, &align);
-#if defined(__arm__) || defined(__mips__)
+#if defined(__arm__)
 	iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
 	res->value = iter->args;
@@ -6209,7 +6216,7 @@ ves_icall_System_ArgIterator_IntGetNextArgWithType (MonoArgIterator *iter, MonoT
 		res->klass = mono_class_from_mono_type_internal (res->type);
 		/* FIXME: endianess issue... */
 		arg_size = mono_type_stack_size (res->type, &align);
-#if defined(__arm__) || defined(__mips__)
+#if defined(__arm__)
 		iter->args = (guint8*)(((gsize)iter->args + (align) - 1) & ~(align - 1));
 #endif
 		res->value = iter->args;

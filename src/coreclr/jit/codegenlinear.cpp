@@ -1211,7 +1211,7 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             assert(spillType != TYP_UNDEF);
 
 // TODO-Cleanup: The following code could probably be further merged and cleaned up.
-#if defined(TARGET_XARCH) || defined(TARGET_ARM64)
+#if defined(TARGET_XARCH) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // Load local variable from its home location.
             // Never allow truncating the locals here, otherwise a subsequent
             // use of the local with a wider type would see the truncated
@@ -1223,6 +1223,13 @@ void CodeGen::genUnspillRegIfNeeded(GenTree* tree)
             {
                 spillType = lclLoadType;
             }
+
+#if defined(TARGET_LOONGARCH64)
+            if (varTypeIsFloating(spillType) && emitter::isGeneralRegister(tree->GetRegNum()))
+            {
+                spillType = spillType == TYP_FLOAT ? TYP_INT : TYP_LONG;
+            }
+#endif
 #elif defined(TARGET_ARM)
 // No normalizing for ARM
 #else
@@ -2518,7 +2525,13 @@ CodeGen::GenIntCastDesc::GenIntCastDesc(GenTreeCast* cast)
             m_checkKind = CHECK_NONE;
         }
 
-        m_extendKind    = COPY;
+#ifdef TARGET_LOONGARCH64
+        // For LoongArch64's ISA which is same with the MIPS64 ISA, even the instructions of 32bits operation need
+        // the upper 32bits be sign-extended to 64 bits.
+        m_extendKind = SIGN_EXTEND_INT;
+#else
+        m_extendKind = COPY;
+#endif
         m_extendSrcSize = 4;
     }
 #endif
@@ -2595,6 +2608,7 @@ void CodeGen::genStoreLongLclVar(GenTree* treeNode)
 }
 #endif // !defined(TARGET_64BIT)
 
+#ifndef TARGET_LOONGARCH64
 //------------------------------------------------------------------------
 // genCodeForJumpTrue: Generate code for a GT_JTRUE node.
 //
@@ -2697,3 +2711,4 @@ void CodeGen::genCodeForSetcc(GenTreeCC* setcc)
     inst_SETCC(setcc->gtCondition, setcc->TypeGet(), setcc->GetRegNum());
     genProduceReg(setcc);
 }
+#endif // !TARGET_LOONGARCH64

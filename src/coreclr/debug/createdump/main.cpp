@@ -28,6 +28,7 @@ const char* g_help = "createdump [options] pid\n"
 "--crashreport - write crash report file (dump file path + .crashreport.json).\n"
 "--crashthread <id> - the thread id of the crashing thread.\n"
 "--signal <code> - the signal code of the crash.\n"
+"--singlefile - enable single-file app check.\n"
 #endif
 ;
 
@@ -37,6 +38,7 @@ FILE *g_stderr = stderr;
 bool g_diagnostics = false;
 bool g_diagnosticsVerbose = false;
 #ifdef HOST_UNIX
+bool g_checkForSingleFile = false;
 uint64_t g_ticksPerMS = 0;
 uint64_t GetTickFrequency();
 #endif
@@ -134,6 +136,10 @@ int __cdecl main(const int argc, const char* argv[])
             else if (strcmp(*argv, "--signal") == 0)
             {
                 signal = atoi(*++argv);
+            }
+            else if (strcmp(*argv, "--singlefile") == 0)
+            {
+                g_checkForSingleFile = true;
             }
 #endif
             else if ((strcmp(*argv, "-d") == 0) || (strcmp(*argv, "--diag") == 0))

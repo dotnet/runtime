@@ -143,6 +143,18 @@ namespace System.Runtime.CompilerServices
             return RuntimeTypeHandle.HasReferences((obj.GetType() as RuntimeType)!);
         }
 
+        // A conservative GC already scans the stack looking for potential object-refs or by-refs.
+        // Mono uses a conservative GC so there is no need for this API to be full implemented.
+        internal unsafe ref struct GCFrameRegistration
+        {
+            public GCFrameRegistration(void* allocation, uint elemCount, bool areByRefs = true)
+            {
+            }
+        }
+
+        internal static unsafe void RegisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
+        internal static unsafe void UnregisterForGCReporting(GCFrameRegistration* pRegistration) { /* nop */ }
+
         public static object GetUninitializedObject(
             // This API doesn't call any constructors, but the type needs to be seen as constructed.
             // A type is seen as constructed if a constructor is kept.

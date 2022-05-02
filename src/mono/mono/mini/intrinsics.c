@@ -393,7 +393,6 @@ static MonoInst*
 emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsig, MonoInst **args)
 {
 	MonoInst *ins;
-	int dreg, align;
 	MonoGenericContext *ctx = mono_method_get_context (cmethod);
 	MonoType *t;
 
@@ -403,7 +402,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 
 		t = ctx->method_inst->type_argv [0];
 		if (ctx->method_inst->type_argc == 2) {
-			dreg = alloc_preg (cfg);
+			int dreg = alloc_preg (cfg);
 			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
 			ins->type = STACK_OBJ;
 			ins->klass = mono_get_object_class ();
@@ -414,7 +413,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			// Casts the given object to the specified type, performs no dynamic type checking.
 			g_assert (fsig->param_count == 1);
 			g_assert (fsig->params [0]->type == MONO_TYPE_OBJECT);
-			dreg = alloc_preg (cfg);
+			int dreg = alloc_preg (cfg);
 			EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
 			ins->type = STACK_OBJ;
 			ins->klass = mono_class_from_mono_type_internal (ctx->method_inst->type_argv [0]);
@@ -426,7 +425,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 1);
 
-		dreg = alloc_preg (cfg);
+		int dreg = alloc_preg (cfg);
 		EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
 		ins->type = STACK_PTR;
 		return ins;
@@ -436,7 +435,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 1);
 
-		dreg = alloc_preg (cfg);
+		int dreg = alloc_preg (cfg);
 		EMIT_NEW_UNALU (cfg, ins, OP_MOVE, dreg, args [0]->dreg);
 		ins->type = STACK_OBJ;
 		ins->klass = mono_get_object_class ();
@@ -447,7 +446,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
-		dreg = alloc_ireg (cfg);
+		int dreg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		EMIT_NEW_UNALU (cfg, ins, OP_PCEQ, dreg, -1);
 		return ins;
@@ -457,7 +456,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
-		dreg = alloc_ireg (cfg);
+		int dreg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		EMIT_NEW_UNALU (cfg, ins, OP_PCLT_UN, dreg, -1);
 		return ins;
@@ -467,7 +466,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		g_assert (ctx->method_inst->type_argc == 1);
 		g_assert (fsig->param_count == 2);
 
-		dreg = alloc_ireg (cfg);
+		int dreg = alloc_ireg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_COMPARE, -1, args [0]->dreg, args [1]->dreg);
 		EMIT_NEW_UNALU (cfg, ins, OP_PCGT_UN, dreg, -1);
 		return ins;
@@ -483,8 +482,10 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		MonoInst *esize_ins;
 		if (mini_is_gsharedvt_variable_type (t)) {
 			esize_ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (t), MONO_RGCTX_INFO_CLASS_SIZEOF);
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			if (SIZEOF_REGISTER == 8)
 				MONO_EMIT_NEW_UNALU (cfg, OP_SEXT_I4, esize_ins->dreg, esize_ins->dreg);
+MONO_RESTORE_WARNING
 		} else {
 			t = mini_type_get_underlying_type (t);
 			int esize = mono_class_array_element_size (mono_class_from_mono_type_internal (t));
@@ -495,7 +496,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		EMIT_NEW_BIALU (cfg, ins, OP_PMUL, mul_reg, args [1]->dreg, esize_ins->dreg);
 		ins->type = STACK_PTR;
 
-		dreg = alloc_preg (cfg);
+		int dreg = alloc_preg (cfg);
 		EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, mul_reg);
 		ins->type = STACK_PTR;
 		return ins;
@@ -512,10 +513,12 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 			return ins;
 		} else if (fsig->params [1]->type == MONO_TYPE_U8) {
 			int sreg = args [1]->dreg;
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			if (SIZEOF_REGISTER == 4) {
 				sreg = alloc_ireg (cfg);
 				EMIT_NEW_UNALU (cfg, ins, OP_LCONV_TO_U4, sreg, args [1]->dreg);
 			}
+MONO_RESTORE_WARNING
 			int dreg = alloc_preg (cfg);
 			EMIT_NEW_BIALU (cfg, ins, OP_PADD, dreg, args [0]->dreg, sreg);
 			ins->type = STACK_PTR;
@@ -531,6 +534,7 @@ emit_unsafe_intrinsics (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignatu
 		if (mini_is_gsharedvt_variable_type (t)) {
 			ins = mini_emit_get_gsharedvt_info_klass (cfg, mono_class_from_mono_type_internal (t), MONO_RGCTX_INFO_CLASS_SIZEOF);
 		} else {
+			int align;
 			int esize = mono_type_size (t, &align);
 			EMIT_NEW_ICONST (cfg, ins, esize);
 		}
@@ -1311,7 +1315,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 		else if (strcmp (cmethod->name, "Exchange") == 0 && fsig->param_count == 2 && m_type_is_byref (fsig->params [0])) {
 			MonoInst *f2i = NULL, *i2f;
-			guint32 opcode, f2i_opcode, i2f_opcode;
+			guint32 opcode, f2i_opcode = 0, i2f_opcode = 0;
 			gboolean is_ref = byref_arg_is_reference (fsig->params [0]);
 			gboolean is_float = fsig->params [0]->type == MONO_TYPE_R4 || fsig->params [0]->type == MONO_TYPE_R8;
 
@@ -1407,7 +1411,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 		}
 		else if ((strcmp (cmethod->name, "CompareExchange") == 0) && fsig->param_count == 3) {
 			MonoInst *f2i_new = NULL, *f2i_cmp = NULL, *i2f;
-			guint32 opcode, f2i_opcode, i2f_opcode;
+			guint32 opcode, f2i_opcode = 0, i2f_opcode = 0;
 			gboolean is_ref = mini_type_is_reference (fsig->params [1]);
 			gboolean is_float = fsig->params [1]->type == MONO_TYPE_R4 || fsig->params [1]->type == MONO_TYPE_R8;
 

@@ -15,6 +15,7 @@ namespace System.Threading.RateLimiting
     {
         private int _permitCount;
         private int _queueCount;
+        private long? _idleSince = Stopwatch.GetTimestamp();
         private bool _disposed;
 
         private readonly ConcurrencyLimiterOptions _options;
@@ -23,9 +24,13 @@ namespace System.Threading.RateLimiting
         private static readonly ConcurrencyLease SuccessfulLease = new ConcurrencyLease(true, null, 0);
         private static readonly ConcurrencyLease FailedLease = new ConcurrencyLease(false, null, 0);
         private static readonly ConcurrencyLease QueueLimitLease = new ConcurrencyLease(false, null, 0, "Queue limit reached");
+        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 
         // Use the queue as the lock field so we don't need to allocate another object for a lock and have another field in the object
         private object Lock => _queue;
+
+        /// <inheritdoc />
+        public override TimeSpan? IdleDuration => _idleSince is null ? null : new TimeSpan((long)((Stopwatch.GetTimestamp() - _idleSince) * TickFrequency));
 
         /// <summary>
         /// Initializes the <see cref="ConcurrencyLimiter"/>.
@@ -155,6 +160,7 @@ namespace System.Threading.RateLimiting
                 // b. if there are items queued but the processing order is newest first, then we can lease the incoming request since it is the newest
                 if (_queueCount == 0 || (_queueCount > 0 && _options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst))
                 {
+                    _idleSince = null;
                     _permitCount -= permitCount;
                     Debug.Assert(_permitCount >= 0);
                     lease = new ConcurrencyLease(true, this, permitCount);
@@ -212,6 +218,13 @@ namespace System.Threading.RateLimiting
                     {
                         break;
                     }
+                }
+
+                if (_permitCount == _options.PermitLimit)
+                {
+                    Debug.Assert(_idleSince is null);
+                    Debug.Assert(_queueCount == 0);
+                    _idleSince = Stopwatch.GetTimestamp();
                 }
             }
         }

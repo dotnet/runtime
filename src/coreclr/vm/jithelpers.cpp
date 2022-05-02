@@ -2701,9 +2701,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     pMT->CheckRestore();
 
-    // You can only box valuetypes
-    if (!pMT->IsValueType())
-        COMPlusThrow(kInvalidCastException, W("Arg_ObjObj"));
+    _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {

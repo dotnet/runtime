@@ -26,9 +26,9 @@ namespace Microsoft.Extensions.Hosting.Systemd
         /// <summary>
         /// Create custom ServiceState.
         /// </summary>
-        public ServiceState(string state)
+        public ServiceState(string state!!)
         {
-            _data = Encoding.UTF8.GetBytes(state ?? throw new ArgumentNullException(nameof(state)));
+            _data = Encoding.UTF8.GetBytes(state);
         }
 
         /// <summary>

@@ -796,6 +796,7 @@ namespace System
         private object? m_e;
         private object? m_f;
         private object? m_g;
+        private object? m_h;
 #pragma warning restore CA1823, 414, 169
 
         public RuntimeMethodHandleInternal m_value;
@@ -975,10 +976,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool MatchesNameHash(RuntimeMethodHandleInternal method, uint hash);
 
-        [DebuggerStepThroughAttribute]
-        [Diagnostics.DebuggerHidden]
+        [DebuggerStepThrough]
+        [DebuggerHidden]
         [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern object? InvokeMethod(object? target, in Span<object?> arguments, Signature sig, bool constructor, bool wrapExceptions);
+        internal static extern object? InvokeMethod(object? target, void** arguments, Signature sig, bool isConstructor);
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "RuntimeMethodHandle_GetMethodInstantiation")]
         private static partial void GetMethodInstantiation(RuntimeMethodHandleInternal method, ObjectHandleOnStack types, Interop.BOOL fAsRuntimeTypeArray);
@@ -1130,6 +1131,7 @@ namespace System
         private object? m_d;
         private int m_b;
         private object? m_e;
+        private object? m_f;
         private RuntimeFieldHandleInternal m_fieldHandle;
 #pragma warning restore 414, 169
 

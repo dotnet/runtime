@@ -49,25 +49,25 @@ namespace {namespacename}
             for (int i = 0; i <= char.MaxValue; i++)
             {
                 char ch = (char)i;
-                catMap[char.GetUnicodeCategory(ch)].Add(i);
+                catMap[char.GetUnicodeCategory(ch)].Add(ch);
                 if (whitespaceRegex.IsMatch(ch.ToString()))
                 {
-                    whitespace.Add(i);
+                    whitespace.Add(ch);
                 }
             }
 
-            CharSetSolver charSetSolver = CharSetSolver.Instance;
+            var charSetSolver = new CharSetSolver();
 
             sw.WriteLine("        /// <summary>Serialized BDD representation of the set of all whitespace characters.</summary>");
             sw.Write($"        public static ReadOnlySpan<byte> SerializedWhitespaceBDD => ");
-            WriteByteArrayInitSyntax(sw, charSetSolver.CreateBddForIntRanges(whitespace.ranges).SerializeToBytes());
+            WriteByteArrayInitSyntax(sw, charSetSolver.CreateSetFromRanges(whitespace.ranges).SerializeToBytes());
             sw.WriteLine(";");
 
             // Generate a BDD representation of each UnicodeCategory.
             BDD[] catBDDs = new BDD[catMap.Count];
             for (int c = 0; c < catBDDs.Length; c++)
             {
-                catBDDs[c] = charSetSolver.CreateBddForIntRanges(catMap[(UnicodeCategory)c].ranges);
+                catBDDs[c] = charSetSolver.CreateSetFromRanges(catMap[(UnicodeCategory)c].ranges);
             }
 
             sw.WriteLine();
@@ -110,20 +110,24 @@ namespace {namespacename}
     [ExcludeFromCodeCoverage]
     internal sealed class Ranges
     {
-        public readonly List<int[]> ranges = new List<int[]>();
+        public readonly List<(char Lower, char Upper)> ranges = new List<(char Lower, char Upper)>();
 
-        public void Add(int n)
+        public void Add(char n)
         {
+            // Add the character, extending an existing range if there's already one contiguous
+            // with the new character.
+
             for (int i = 0; i < ranges.Count; i++)
             {
-                if (ranges[i][1] == (n - 1))
+                (char lower, char upper) = ranges[i];
+                if (upper == (n - 1))
                 {
-                    ranges[i][1] = n;
+                    ranges[i] = (lower, n);
                     return;
                 }
             }
 
-            ranges.Add(new int[] { n, n });
+            ranges.Add((n, n));
         }
 
         public int Count => ranges.Count;

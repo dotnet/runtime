@@ -492,17 +492,10 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.SupportsTls13))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/58927", TestPlatforms.Windows)]
         [InlineData(true)]
         [InlineData(false)]
         public async Task SslStream_NegotiateClientCertificateAsyncTls13_Succeeds(bool sendClientCertificate)
         {
-            if (PlatformDetection.IsWindows10Version22000OrGreater)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58927")]
-                throw new SkipTestException("Unstable on Windows 11");
-            }
-
             bool negotiateClientCertificateCalled = false;
             using CancellationTokenSource cts = new CancellationTokenSource();
             cts.CancelAfter(TestConfiguration.PassingTestTimeout);

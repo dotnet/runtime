@@ -109,9 +109,6 @@
     <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
              Link="Common\System\Text\ValueUtf8Converter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'UnknownUnix'">
-    <Compile Include="System\IO\FileSystemWatcher.UnknownUnix.cs" />
-  </ItemGroup>
   <ItemGroup>
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.ComponentModel" />

@@ -439,7 +439,7 @@ is_session_id_in_collection (EventPipeSessionID session_id)
 
 	ep_requires_lock_held ();
 
-	const EventPipeSession *const session = (EventPipeSession *)session_id;
+	const EventPipeSession *const session = (EventPipeSession *)(uintptr_t)session_id;
 	for (uint32_t i = 0; i < EP_MAX_NUMBER_OF_SESSIONS; ++i) {
 		if (ep_volatile_load_session (i) == session) {
 			EP_ASSERT (i == ep_session_get_index (session));
@@ -564,7 +564,7 @@ disable_holding_lock (
 	ep_requires_lock_held ();
 
 	if (is_session_id_in_collection (id)) {
-		EventPipeSession *const session = (EventPipeSession *)id;
+		EventPipeSession *const session = (EventPipeSession *)(uintptr_t)id;
 
 		if (session_requested_sampling (session)) {
 			// Disable the profiler.
@@ -1154,7 +1154,7 @@ ep_get_session (EventPipeSessionID session_id)
 
 ep_on_exit:
 	ep_requires_lock_not_held ();
-	return (EventPipeSession *)session_id;
+	return (EventPipeSession *)(uintptr_t)session_id;
 
 ep_on_error:
 	session_id = 0;
@@ -1165,7 +1165,7 @@ bool
 ep_is_session_enabled (EventPipeSessionID session_id)
 {
 	ep_return_false_if_nok (session_id != 0);
-	return ep_volatile_load_session (ep_session_get_index ((EventPipeSession *)session_id)) != NULL;
+	return ep_volatile_load_session (ep_session_get_index ((EventPipeSession *)(uintptr_t)session_id)) != NULL;
 }
 
 void
@@ -1176,7 +1176,7 @@ ep_start_streaming (EventPipeSessionID session_id)
 	EP_LOCK_ENTER (section1)
 		ep_raise_error_if_nok_holding_lock (is_session_id_in_collection (session_id), section1);
 		if (_ep_can_start_threads)
-			ep_session_start_streaming ((EventPipeSession *)session_id);
+			ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
 		else
 			ep_rt_session_id_array_append (&_ep_deferred_enable_session_ids, session_id);
 	EP_LOCK_EXIT (section1)
@@ -1376,7 +1376,7 @@ ep_finish_init (void)
 			while (!ep_rt_session_id_array_iterator_end (&_ep_deferred_enable_session_ids, &deferred_session_ids_iterator)) {
 				EventPipeSessionID session_id = ep_rt_session_id_array_iterator_value (&deferred_session_ids_iterator);
 				if (is_session_id_in_collection (session_id))
-					ep_session_start_streaming ((EventPipeSession *)session_id);
+					ep_session_start_streaming ((EventPipeSession *)(uintptr_t)session_id);
 				ep_rt_session_id_array_iterator_next (&deferred_session_ids_iterator);
 			}
 			ep_rt_session_id_array_clear (&_ep_deferred_enable_session_ids);
@@ -1659,7 +1659,7 @@ ep_ipc_stream_factory_callback_set (EventPipeIpcStreamFactorySuspendedPortsCallb
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe;
 const char quiet_linker_empty_file_warning_eventpipe = 0;
 #endif

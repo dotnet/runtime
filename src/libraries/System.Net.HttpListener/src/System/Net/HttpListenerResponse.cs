@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 
@@ -259,7 +260,7 @@ namespace System.Net
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"Exiting Set-Cookie: {Headers[HttpResponseHeader.SetCookie]} Set-Cookie2: {Headers[HttpKnownHeaderNames.SetCookie2]}");
         }
 
-        public void Redirect(string url)
+        public void Redirect([StringSyntax(StringSyntaxAttribute.Uri)] string url)
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"url={url}");
             Headers[HttpResponseHeader.Location] = url;

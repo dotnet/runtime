@@ -22,6 +22,10 @@
     <HighAotMemoryUsageAssembly Include="System.Text.Json.Tests.dll" />
   </ItemGroup>
 
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
+  </ItemGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\IO\WrappedMemoryStream.cs" Link="CommonTest\System\IO\WrappedMemoryStream.cs" />
     <Compile Include="$(CommonTestPath)System\DateTimeTestHelpers.cs" Link="CommonTest\System\DateTimeTestHelpers.cs" />
@@ -163,6 +167,7 @@
     <Compile Include="Serialization\InvalidTypeTests.cs" />
     <Compile Include="Serialization\JsonDocumentTests.cs" />
     <Compile Include="Serialization\JsonElementTests.cs" />
+    <Compile Include="Serialization\JsonPolymorphicTypeConfigurationTests.cs" />
     <Compile Include="Serialization\JsonSerializerApiValidation.cs" />
     <Compile Include="Serialization\JsonSerializerWrapper.Reflection.cs" />
     <Compile Include="Serialization\MetadataTests\MetadataTests.cs" />
@@ -178,6 +183,7 @@
     <Compile Include="Serialization\OnSerializeTests.cs" />
     <Compile Include="Serialization\OptionsTests.cs" />
     <Compile Include="Serialization\PolymorphicTests.cs" />
+    <Compile Include="Serialization\PolymorphicTests.CustomTypeHierarchies.cs" />
     <Compile Include="Serialization\PropertyNameTests.cs" />
     <Compile Include="Serialization\PropertyOrderTests.cs" />
     <Compile Include="Serialization\PropertyVisibilityTests.cs" />

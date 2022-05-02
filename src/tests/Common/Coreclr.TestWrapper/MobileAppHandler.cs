@@ -21,11 +21,11 @@ namespace CoreclrTestLib
 
         private static int HandleMobileApp(string action, string platform, string category, string testBinaryBase, string reportBase)
         {
-            //install or uninstall mobile app
             int exitCode = -100;
 
-            if (action == "install" && (File.Exists($"{testBinaryBase}/.retry") || File.Exists($"{testBinaryBase}/.reboot")))
+            if (File.Exists($"{testBinaryBase}/.retry"))
             {
+                // We have requested a work item retry because of an infra issue - no point executing further tests
                 return exitCode;
             }
 
@@ -128,11 +128,12 @@ namespace CoreclrTestLib
                             // 86 - PACKAGE_INSTALLATION_TIMEOUT
                             // 88 - SIMULATOR_FAILURE
                             // 89 - DEVICE_FAILURE
-                            var retriableCodes = new[] { 78, 81, 85, 86, 88, 89 };
-                            if (action == "install" && retriableCodes.Contains(exitCode))
+                            // 90 - APP_LAUNCH_TIMEOUT
+                            // 91 - ADB_FAILURE
+                            var retriableCodes = new[] { 78, 81, 85, 86, 88, 89, 90, 91 };
+                            if (retriableCodes.Contains(exitCode))
                             {
                                 CreateRetryFile($"{testBinaryBase}/.retry", exitCode, category);
-                                CreateRetryFile($"{testBinaryBase}/.reboot", exitCode, category);
                                 return exitCode;
                             }
 

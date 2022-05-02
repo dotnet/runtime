@@ -9,13 +9,13 @@ using System.Diagnostics;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Represents the exploration of a symbolic regex as a symbolic NFA</summary>
-    internal sealed class SymbolicNFA<S> where S : notnull
+    internal sealed class SymbolicNFA<TSet> where TSet : IComparable<TSet>
     {
-        private readonly IBooleanAlgebra<S> _solver;
+        private readonly ISolver<TSet> _solver;
         private readonly Transition[] _transitionFunction;
-        private readonly SymbolicRegexNode<S>[] _finalCondition;
+        private readonly SymbolicRegexNode<TSet>[] _finalCondition;
         private readonly HashSet<int> _unexplored;
-        private readonly SymbolicRegexNode<S>[] _nodes;
+        private readonly SymbolicRegexNode<TSet>[] _nodes;
 
         private const int DeadendState = -1;
         private const int UnexploredState = -2;
@@ -23,12 +23,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>If true then some states have not been explored</summary>
         public bool IsIncomplete => _unexplored.Count > 0;
 
-        private SymbolicNFA(IBooleanAlgebra<S> solver, Transition[] transitionFunction, HashSet<int> unexplored, SymbolicRegexNode<S>[] nodes)
+        private SymbolicNFA(ISolver<TSet> solver, Transition[] transitionFunction, HashSet<int> unexplored, SymbolicRegexNode<TSet>[] nodes)
         {
             Debug.Assert(transitionFunction.Length > 0 && nodes.Length == transitionFunction.Length);
             _solver = solver;
             _transitionFunction = transitionFunction;
-            _finalCondition = new SymbolicRegexNode<S>[nodes.Length];
+            _finalCondition = new SymbolicRegexNode<TSet>[nodes.Length];
             for (int i = 0; i < nodes.Length; i++)
             {
                 _finalCondition[i] = nodes[i].ExtractNullabilityTest();
@@ -59,13 +59,13 @@ namespace System.Text.RegularExpressions.Symbolic
         public bool IsNullable(int state) => _finalCondition[state].IsNullable;
 
         /// <summary>Gets the underlying node of the state</summary>
-        public SymbolicRegexNode<S> GetNode(int state) => _nodes[state];
+        public SymbolicRegexNode<TSet> GetNode(int state) => _nodes[state];
 
         /// <summary>Enumerates all target states from the given source state</summary>
         /// <param name="sourceState">must be a an integer between 0 and StateCount-1</param>
         /// <param name="input">must be a value that acts as a minterm for the transitions emanating from the source state</param>
         /// <param name="context">reflects the immediate surrounding of the input and is used to determine nullability of anchors</param>
-        public IEnumerable<int> EnumerateTargetStates(int sourceState, S input, uint context)
+        public IEnumerable<int> EnumerateTargetStates(int sourceState, TSet input, uint context)
         {
             Debug.Assert(sourceState >= 0 && sourceState < _transitionFunction.Length);
 
@@ -88,10 +88,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     case TransitionRegexKind.Conditional:
                         Debug.Assert(transition._test is not null && transition._first is not null && transition._second is not null);
                         // Branch according to the input condition in relation to the test condition
-                        if (_solver.IsSatisfiable(_solver.And(input, transition._test)))
+                        if (!_solver.IsEmpty(_solver.And(input, transition._test)))
                         {
                             // in a conditional transition input must be exclusive
-                            Debug.Assert(!_solver.IsSatisfiable(_solver.And(input, _solver.Not(transition._test))));
+                            Debug.Assert(_solver.IsEmpty(_solver.And(input, _solver.Not(transition._test))));
                             transition = transition._first;
                         }
                         else
@@ -131,10 +131,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     case TransitionRegexKind.Conditional:
                         Debug.Assert(transition._test is not null && transition._first is not null && transition._second is not null);
                         // Branch according to the input condition in relation to the test condition
-                        if (_solver.IsSatisfiable(_solver.And(input, transition._test)))
+                        if (!_solver.IsEmpty(_solver.And(input, transition._test)))
                         {
                             // in a conditional transition input must be exclusive
-                            Debug.Assert(!_solver.IsSatisfiable(_solver.And(input, _solver.Not(transition._test))));
+                            Debug.Assert(_solver.IsEmpty(_solver.And(input, _solver.Not(transition._test))));
                             todo.Push(transition._first);
                         }
                         else
@@ -158,19 +158,19 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        public IEnumerable<(S, SymbolicRegexNode<S>?, int)> EnumeratePaths(int sourceState) =>
-            _transitionFunction[sourceState].EnumeratePaths(_solver, _solver.True);
+        public IEnumerable<(TSet, SymbolicRegexNode<TSet>?, int)> EnumeratePaths(int sourceState) =>
+            _transitionFunction[sourceState].EnumeratePaths(_solver, _solver.Full);
 
         /// <summary>
         /// TODO: Explore an unexplored state on transition further.
         /// </summary>
         public static void ExploreState(int state) => new NotImplementedException();
 
-        public static SymbolicNFA<S> Explore(SymbolicRegexNode<S> root, int bound)
+        public static SymbolicNFA<TSet> Explore(SymbolicRegexNode<TSet> root, int bound)
         {
-            (Dictionary<TransitionRegex<S>, Transition> cache,
-             Dictionary<SymbolicRegexNode<S>, int> statemap,
-             List<SymbolicRegexNode<S>> nodes,
+            (Dictionary<TransitionRegex<TSet>, Transition> cache,
+             Dictionary<SymbolicRegexNode<TSet>, int> statemap,
+             List<SymbolicRegexNode<TSet>> nodes,
              Stack<int> front) workState = (new(), new(), new(), new());
 
             workState.nodes.Add(root);
@@ -207,11 +207,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 }
             }
 
-            SymbolicRegexNode<S>[] nodes_array = workState.nodes.ToArray();
+            SymbolicRegexNode<TSet>[] nodes_array = workState.nodes.ToArray();
 
             // All states are numbered from 0 to nodes.Count-1
             Transition[] transition_array = new Transition[nodes_array.Length];
-            foreach (KeyValuePair<int, SymbolicNFA<S>.Transition> entry in transitions)
+            foreach (KeyValuePair<int, SymbolicNFA<TSet>.Transition> entry in transitions)
             {
                 transition_array[entry.Key] = entry.Value;
             }
@@ -226,14 +226,14 @@ namespace System.Text.RegularExpressions.Symbolic
             // At this point no entry can be null in the transition array
             Debug.Assert(Array.TrueForAll(transition_array, tr => tr is not null));
 
-            var nfa = new SymbolicNFA<S>(root._builder._solver, transition_array, unexplored, nodes_array);
+            var nfa = new SymbolicNFA<TSet>(root._builder._solver, transition_array, unexplored, nodes_array);
             return nfa;
         }
 
-        private static Transition Convert(TransitionRegex<S> tregex,
-            (Dictionary<TransitionRegex<S>, Transition> cache,
-             Dictionary<SymbolicRegexNode<S>, int> statemap,
-             List<SymbolicRegexNode<S>> nodes,
+        private static Transition Convert(TransitionRegex<TSet> tregex,
+            (Dictionary<TransitionRegex<TSet>, Transition> cache,
+             Dictionary<SymbolicRegexNode<TSet>, int> statemap,
+             List<SymbolicRegexNode<TSet>> nodes,
              Stack<int> front) args)
         {
             Transition? transition;
@@ -242,12 +242,12 @@ namespace System.Text.RegularExpressions.Symbolic
                 return transition;
             }
 
-            Stack<(TransitionRegex<S>, bool)> work = new();
+            Stack<(TransitionRegex<TSet>, bool)> work = new();
             work.Push((tregex, false));
 
-            while (work.TryPop(out (TransitionRegex<S>, bool) top))
+            while (work.TryPop(out (TransitionRegex<TSet>, bool) top))
             {
-                TransitionRegex<S> tr = top.Item1;
+                TransitionRegex<TSet> tr = top.Item1;
                 bool wasPushedSecondTime = top.Item2;
                 if (wasPushedSecondTime)
                 {
@@ -315,15 +315,15 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             public readonly TransitionRegexKind _kind;
             public readonly int _leaf;
-            public readonly S? _test;
-            public readonly SymbolicRegexNode<S>? _look;
+            public readonly TSet? _test;
+            public readonly SymbolicRegexNode<TSet>? _look;
             public readonly Transition? _first;
             public readonly Transition? _second;
 
             public static readonly Transition s_deadend = new Transition(TransitionRegexKind.Leaf, leaf: DeadendState);
             public static readonly Transition s_unexplored = new Transition(TransitionRegexKind.Leaf, leaf: UnexploredState);
 
-            internal Transition(TransitionRegexKind kind, int leaf = 0, S? test = default(S), SymbolicRegexNode<S>? look = null, Transition? first = null, Transition? second = null)
+            internal Transition(TransitionRegexKind kind, int leaf = 0, TSet? test = default(TSet), SymbolicRegexNode<TSet>? look = null, Transition? first = null, Transition? second = null)
             {
                 _kind = kind;
                 _leaf = leaf;
@@ -334,7 +334,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             /// <summary>Enumerates all the paths in this transition excluding paths to dead-ends (and unexplored states if any)</summary>
-            internal IEnumerable<(S, SymbolicRegexNode<S>?, int)> EnumeratePaths(IBooleanAlgebra<S> solver, S pathCondition)
+            internal IEnumerable<(TSet, SymbolicRegexNode<TSet>?, int)> EnumeratePaths(ISolver<TSet> solver, TSet pathCondition)
             {
                 switch (_kind)
                 {
@@ -348,11 +348,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     case TransitionRegexKind.Union:
                         Debug.Assert(_first is not null && _second is not null);
-                        foreach ((S, SymbolicRegexNode<S>?, int) path in _first.EnumeratePaths(solver, pathCondition))
+                        foreach ((TSet, SymbolicRegexNode<TSet>?, int) path in _first.EnumeratePaths(solver, pathCondition))
                         {
                             yield return path;
                         }
-                        foreach ((S, SymbolicRegexNode<S>?, int) path in _second.EnumeratePaths(solver, pathCondition))
+                        foreach ((TSet, SymbolicRegexNode<TSet>?, int) path in _second.EnumeratePaths(solver, pathCondition))
                         {
                             yield return path;
                         }
@@ -360,11 +360,11 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     case TransitionRegexKind.Conditional:
                         Debug.Assert(_test is not null && _first is not null && _second is not null);
-                        foreach ((S, SymbolicRegexNode<S>?, int) path in _first.EnumeratePaths(solver, solver.And(pathCondition, _test)))
+                        foreach ((TSet, SymbolicRegexNode<TSet>?, int) path in _first.EnumeratePaths(solver, solver.And(pathCondition, _test)))
                         {
                             yield return path;
                         }
-                        foreach ((S, SymbolicRegexNode<S>?, int) path in _second.EnumeratePaths(solver, solver.And(pathCondition, solver.Not(_test))))
+                        foreach ((TSet, SymbolicRegexNode<TSet>?, int) path in _second.EnumeratePaths(solver, solver.And(pathCondition, solver.Not(_test))))
                         {
                             yield return path;
                         }
@@ -372,15 +372,15 @@ namespace System.Text.RegularExpressions.Symbolic
 
                     default:
                         Debug.Assert(_kind is TransitionRegexKind.Lookaround && _look is not null && _first is not null && _second is not null);
-                        foreach ((S, SymbolicRegexNode<S>?, int) path in _first.EnumeratePaths(solver, pathCondition))
+                        foreach ((TSet, SymbolicRegexNode<TSet>?, int) path in _first.EnumeratePaths(solver, pathCondition))
                         {
-                            SymbolicRegexNode<S> nullabilityTest = path.Item2 is null ? _look : _look._builder.And(path.Item2, _look);
+                            SymbolicRegexNode<TSet> nullabilityTest = path.Item2 is null ? _look : _look._builder.And(path.Item2, _look);
                             yield return (path.Item1, nullabilityTest, path.Item3);
                         }
-                        foreach ((S, SymbolicRegexNode<S>?, int) path in _second.EnumeratePaths(solver, pathCondition))
+                        foreach ((TSet, SymbolicRegexNode<TSet>?, int) path in _second.EnumeratePaths(solver, pathCondition))
                         {
                             // Complement the nullability test
-                            SymbolicRegexNode<S> nullabilityTest = path.Item2 is null ? _look._builder.Not(_look) : _look._builder.And(path.Item2, _look._builder.Not(_look));
+                            SymbolicRegexNode<TSet> nullabilityTest = path.Item2 is null ? _look._builder.Not(_look) : _look._builder.And(path.Item2, _look._builder.Not(_look));
                             yield return (path.Item1, nullabilityTest, path.Item3);
                         }
                         break;

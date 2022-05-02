@@ -10,6 +10,8 @@
 **
 ===========================================================*/
 
+using System.Diagnostics.CodeAnalysis;
+
 namespace System
 {
     /// <summary>
@@ -21,6 +23,7 @@ namespace System
         /// <summary>
         /// The composite format string.
         /// </summary>
+        [StringSyntax(StringSyntaxAttribute.CompositeFormat)]
         public abstract string Format { get; }
 
         /// <summary>

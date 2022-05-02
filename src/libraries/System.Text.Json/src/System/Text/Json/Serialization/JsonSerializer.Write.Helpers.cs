@@ -64,6 +64,7 @@ namespace System.Text.Json
                 "Incorrect method called. WriteUsingGeneratedSerializer() should have been called instead.");
 
             WriteStack state = default;
+            jsonTypeInfo.EnsureConfigured();
             state.Initialize(jsonTypeInfo, supportContinuation: false, supportAsync: false);
 
             JsonConverter converter = jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase;

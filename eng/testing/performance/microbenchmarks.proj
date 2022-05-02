@@ -41,7 +41,7 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(WasmDotnet)' == 'true'">
-    <CliArguments>$(CliArguments) --run-isolated --wasm --dotnet-path %24HELIX_CORRELATION_PAYLOAD/dotnet-wasm/dotnet-workload/</CliArguments>
+    <CliArguments>$(CliArguments) --run-isolated --wasm --dotnet-path %24HELIX_CORRELATION_PAYLOAD/dotnet/</CliArguments>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(MonoDotnet)' == 'true' and '$(AGENT_OS)' == 'Windows_NT'">

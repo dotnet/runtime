@@ -14,7 +14,7 @@ namespace System.Text.Json.Serialization.Converters
 
             return
                 // There's no safe way to construct a Type from untrusted user input.
-                type == typeof(Type) ||
+                typeof(Type).IsAssignableFrom(type) ||
                 // (De)serialization of SerializationInfo is already disallowed due to Type being disallowed
                 // (the two ctors on SerializationInfo take a Type, and a Type member is present when serializing).
                 // Explicitly disallowing this type provides a clear exception when ctors with

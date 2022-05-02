@@ -52,10 +52,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 // Singletons and multis
 
                 case RegexNodeKind.One:
-                    return _builder.CreateSingleton(CharSetSolver.Instance.CharConstraint(node.Ch));
+                    return _builder.CreateSingleton(_builder._solver.CreateFromChar(node.Ch));
 
                 case RegexNodeKind.Notone:
-                    return _builder.CreateSingleton(CharSetSolver.Instance.Not(CharSetSolver.Instance.CharConstraint(node.Ch)));
+                    return _builder.CreateSingleton(_builder._solver.Not(_builder._solver.CreateFromChar(node.Ch)));
 
                 case RegexNodeKind.Set:
                     return ConvertSet(node);
@@ -69,7 +69,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         var nodes = new SymbolicRegexNode<BDD>[str.Length];
                         for (int i = 0; i < nodes.Length; i++)
                         {
-                            nodes[i] = _builder.CreateSingleton(CharSetSolver.Instance.CharConstraint(str[i]));
+                            nodes[i] = _builder.CreateSingleton(_builder._solver.CreateFromChar(str[i]));
                         }
                         return _builder.CreateConcat(nodes, tryCreateFixedLengthMarker);
                     }
@@ -107,10 +107,10 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         // Create a BDD that represents the character, then create a loop around it.
                         bool ignoreCase = (node.Options & RegexOptions.IgnoreCase) != 0;
-                        BDD bdd = CharSetSolver.Instance.CharConstraint(node.Ch);
+                        BDD bdd = _builder._solver.CreateFromChar(node.Ch);
                         if (node.IsNotoneFamily)
                         {
-                            bdd = CharSetSolver.Instance.Not(bdd);
+                            bdd = _builder._solver.Not(bdd);
                         }
                         return _builder.CreateLoop(_builder.CreateSingleton(bdd), node.Kind is RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy, node.M, node.N);
                     }
@@ -219,20 +219,20 @@ namespace System.Text.RegularExpressions.Symbolic
 
             void EnsureNewlinePredicateInitialized()
             {
-                // Update the \n predicate in the builder if it has not been updated already
-                if (_builder._newLinePredicate.Equals(_builder._solver.False))
+                // Initialize the \n set in the builder if it has not been updated already
+                if (_builder._newLineSet.Equals(_builder._solver.Empty))
                 {
-                    _builder._newLinePredicate = _builder._solver.CharConstraint('\n');
+                    _builder._newLineSet = _builder._solver.CreateFromChar('\n');
                 }
             }
 
             void EnsureWordLetterPredicateInitialized()
             {
-                // Update the word letter predicate based on the Unicode definition of it if it was not updated already
-                if (_builder._wordLetterPredicateForAnchors.Equals(_builder._solver.False))
+                // Initialize the word letter set based on the Unicode definition of it if it was not updated already
+                if (_builder._wordLetterForBoundariesSet.Equals(_builder._solver.Empty))
                 {
-                    // Use the predicate including joiner and non joiner
-                    _builder._wordLetterPredicateForAnchors = UnicodeCategoryConditions.WordLetterForAnchors;
+                    // Use the set including joiner and non-joiner
+                    _builder._wordLetterForBoundariesSet = UnicodeCategoryConditions.WordLetterForAnchors((CharSetSolver)_builder._solver);
                 }
             }
 
@@ -303,6 +303,7 @@ namespace System.Text.RegularExpressions.Symbolic
             BDD Compute(bool ignoreCase, string set)
             {
                 List<BDD> conditions = new();
+                var charSetSolver = (CharSetSolver)_builder._solver;
 
                 // The set string is composed of four parts: flags (which today are just for negation), ranges (a list
                 // of pairs of values representing the ranges a character that matches the set could fall in (or if it's
@@ -322,10 +323,10 @@ namespace System.Text.RegularExpressions.Symbolic
                 {
                     foreach ((char first, char last) in ranges)
                     {
-                        BDD bdd = CharSetSolver.Instance.RangeConstraint(first, last);
+                        BDD bdd = charSetSolver.CreateSetFromRange(first, last);
                         if (negate)
                         {
-                            bdd = CharSetSolver.Instance.Not(bdd);
+                            bdd = charSetSolver.Not(bdd);
                         }
                         conditions.Add(bdd);
                     }
@@ -354,7 +355,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         BDD cond = MapCategoryCodeToCondition((UnicodeCategory)(Math.Abs(categoryCode) - 1));
                         if ((categoryCode < 0) ^ negate)
                         {
-                            cond = CharSetSolver.Instance.Not(cond);
+                            cond = charSetSolver.Not(cond);
                         }
                         conditions.Add(cond);
                         continue;
@@ -385,7 +386,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     BDD bdd = MapCategoryCodeSetToCondition(categoryCodes);
                     if (negate ^ negatedGroup)
                     {
-                        bdd = CharSetSolver.Instance.Not(bdd);
+                        bdd = charSetSolver.Not(bdd);
                     }
                     conditions.Add(bdd);
                 }
@@ -406,8 +407,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 // This situation arises in particular for RegexOptions.SingleLine with a . (dot),
                 // which translates into a set string that accepts everything.
                 BDD result = conditions.Count == 0 ?
-                    (negate ? CharSetSolver.Instance.False : CharSetSolver.Instance.True) :
-                    (negate ? CharSetSolver.Instance.And(CollectionsMarshal.AsSpan(conditions)) : CharSetSolver.Instance.Or(CollectionsMarshal.AsSpan(conditions)));
+                    (negate ? charSetSolver.Empty : charSetSolver.Full) :
+                    (negate ? charSetSolver.And(CollectionsMarshal.AsSpan(conditions)) : charSetSolver.Or(CollectionsMarshal.AsSpan(conditions)));
 
                 // Now apply the subtracted condition if there is one.  As a subtly of Regex semantics,
                 // the subtractor is not within the scope of the negation (if there is any negation).
@@ -417,7 +418,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 // masking off anything matched by the subtraction set.
                 if (subtractorCond is not null)
                 {
-                    result = CharSetSolver.Instance.And(result, CharSetSolver.Instance.Not(subtractorCond));
+                    result = charSetSolver.And(result, charSetSolver.Not(subtractorCond));
                 }
 
                 return result;
@@ -428,7 +429,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(catCodes.Count > 0);
 
                     // \w is so common, to help speed up construction we special-case it by using
-                    // the combined \w predicate rather than an or (disjunction) of the component categories.
+                    // the combined \w set rather than an or (disjunction) of the component categories.
                     // This is done by validating that all of the categories for \w are there, and then removing
                     // them all if they are and instead starting our BDD off as \w.
                     BDD? result = null;
@@ -450,7 +451,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         catCodes.Remove(UnicodeCategory.DecimalDigitNumber);
                         catCodes.Remove(UnicodeCategory.ConnectorPunctuation);
 
-                        result = UnicodeCategoryConditions.WordLetter;
+                        result = UnicodeCategoryConditions.WordLetter(charSetSolver);
                     }
 
                     // For any remaining categories, create a condition for each and
@@ -458,7 +459,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     foreach (UnicodeCategory cat in catCodes)
                     {
                         BDD cond = MapCategoryCodeToCondition(cat);
-                        result = result is null ? cond : CharSetSolver.Instance.Or(result, cond);
+                        result = result is null ? cond : charSetSolver.Or(result, cond);
                     }
 
                     Debug.Assert(result is not null);

@@ -602,7 +602,7 @@ inline bool isRegParamType(var_types type)
 #endif // !TARGET_X86
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH)
+#if defined(TARGET_AMD64) || defined(TARGET_ARMARCH) || defined(TARGET_LOONGARCH64)
 /*****************************************************************************/
 // Returns true if 'type' is a struct that can be enregistered for call args
 //                         or can be returned by value in multiple registers.
@@ -660,7 +660,7 @@ inline bool Compiler::VarTypeIsMultiByteAndCanEnreg(var_types                typ
 
     return result;
 }
-#endif // TARGET_AMD64 || TARGET_ARMARCH
+#endif // TARGET_AMD64 || TARGET_ARMARCH || TARGET_LOONGARCH64
 
 /*****************************************************************************/
 
@@ -996,10 +996,11 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 // Return Value:
 //    New CT_HELPER node
 
-inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types type, GenTreeCall::Use* args)
+inline GenTreeCall* Compiler::gtNewHelperCallNode(
+    unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
 {
     GenTreeFlags flags  = s_helperCallProperties.NoThrow((CorInfoHelpFunc)helper) ? GTF_EMPTY : GTF_EXCEPT;
-    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type, args);
+    GenTreeCall* result = gtNewCallNode(CT_HELPER, eeFindHelper(helper), type);
     result->gtFlags |= flags;
 
 #if DEBUG
@@ -1007,6 +1008,24 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(unsigned helper, var_types typ
 
     result->gtInlineObservation = InlineObservation::CALLSITE_IS_CALL_TO_HELPER;
 #endif
+
+    if (arg3 != nullptr)
+    {
+        result->gtArgs.PushFront(this, arg3);
+        result->gtFlags |= arg3->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    if (arg2 != nullptr)
+    {
+        result->gtArgs.PushFront(this, arg2);
+        result->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
+    }
+
+    if (arg1 != nullptr)
+    {
+        result->gtArgs.PushFront(this, arg1);
+        result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
+    }
 
     return result;
 }
@@ -1027,10 +1046,9 @@ inline GenTreeCall* Compiler::gtNewRuntimeLookupHelperCallNode(CORINFO_RUNTIME_L
                                                                GenTree*                ctxTree,
                                                                void*                   compileTimeHandle)
 {
-    GenTree* argNode = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
-    GenTreeCall::Use* helperArgs = gtNewCallArgs(ctxTree, argNode);
-
-    return gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, helperArgs);
+    GenTree* argNode  = gtNewIconEmbHndNode(pRuntimeLookup->signature, nullptr, GTF_ICON_GLOBAL_PTR, compileTimeHandle);
+    GenTreeCall* call = gtNewHelperCallNode(pRuntimeLookup->helper, TYP_I_IMPL, ctxTree, argNode);
+    return call;
 }
 
 //------------------------------------------------------------------------
@@ -1108,7 +1126,7 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
         LclVarDsc* varDsc = lvaGetDesc(obj->AsUnOp()->gtOp1->AsLclVarCommon());
 
         varDsc->lvFieldAccessed = 1;
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // These structs are passed by reference and can easily become global
         // references if those references are exposed. We clear out
         // address-exposure information for these parameters when they are
@@ -1120,7 +1138,7 @@ inline GenTreeField* Compiler::gtNewFieldRef(var_types type, CORINFO_FIELD_HANDL
         {
             fieldNode->gtFlags |= GTF_GLOB_REF;
         }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     }
     else
     {
@@ -1343,6 +1361,10 @@ inline void GenTree::SetOper(genTreeOps oper, ValueNumberUpdate vnUpdate)
         case GT_LCL_FLD:
             AsLclFld()->SetLclOffs(0);
             AsLclFld()->SetFieldSeq(FieldSeqStore::NotAField());
+            break;
+
+        case GT_CALL:
+            new (&AsCall()->gtArgs, jitstd::placement_t()) CallArgs();
             break;
 
         default:
@@ -1837,10 +1859,10 @@ inline void LclVarDsc::incRefCnts(weight_t weight, Compiler* comp, RefCountState
 
             bool doubleWeight = lvIsTemp;
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
             // and, for the time being, implicit byref params
             doubleWeight |= lvIsImplicitByRef;
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
             if (doubleWeight && (weight * 2 > weight))
             {
@@ -3084,6 +3106,8 @@ inline unsigned genMapFloatRegNumToRegArgNum(regNumber regNum)
 
 #ifdef TARGET_ARM
     return regNum - REG_F0;
+#elif defined(TARGET_LOONGARCH64)
+    return regNum - REG_F0;
 #elif defined(TARGET_ARM64)
     return regNum - REG_V0;
 #elif defined(UNIX_AMD64_ABI)
@@ -3609,7 +3633,7 @@ inline bool Compiler::IsSharedStaticHelper(GenTree* tree)
 
     bool result1 =
         // More helpers being added to IsSharedStaticHelper (that have similar behaviors but are not true
-        // ShareStaticHelperts)
+        // ShareStaticHelpers)
         helper == CORINFO_HELP_STRCNS || helper == CORINFO_HELP_BOX ||
 
         // helpers being added to IsSharedStaticHelper
@@ -4345,22 +4369,18 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_CALL:
         {
             GenTreeCall* const call = this->AsCall();
-            if ((call->gtCallThisArg != nullptr) && (visitor(call->gtCallThisArg->GetNode()) == VisitResult::Abort))
-            {
-                return;
-            }
 
-            for (GenTreeCall::Use& use : call->Args())
+            for (CallArg& arg : call->gtArgs.Args())
             {
-                if (visitor(use.GetNode()) == VisitResult::Abort)
+                if (visitor(arg.GetEarlyNode()) == VisitResult::Abort)
                 {
                     return;
                 }
             }
 
-            for (GenTreeCall::Use& use : call->LateArgs())
+            for (CallArg& arg : call->gtArgs.LateArgs())
             {
-                if (visitor(use.GetNode()) == VisitResult::Abort)
+                if (visitor(arg.GetLateNode()) == VisitResult::Abort)
                 {
                     return;
                 }
@@ -4419,19 +4439,14 @@ void GenTree::VisitBinOpOperands(TVisitor visitor)
  *  not zero-initialized and can contain data from a prior allocation lifetime.
  */
 
-inline void* __cdecl operator new(size_t sz, Compiler* compiler, CompMemKind cmk)
+inline void* operator new(size_t sz, Compiler* compiler, CompMemKind cmk)
 {
     return compiler->getAllocator(cmk).allocate<char>(sz);
 }
 
-inline void* __cdecl operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
+inline void* operator new[](size_t sz, Compiler* compiler, CompMemKind cmk)
 {
     return compiler->getAllocator(cmk).allocate<char>(sz);
-}
-
-inline void* __cdecl operator new(size_t sz, void* p, const jitstd::placement_t& /* syntax_difference */)
-{
-    return p;
 }
 
 /*****************************************************************************/
@@ -4480,9 +4495,9 @@ inline static bool StructHasCustomLayout(DWORD attribs)
     return ((attribs & CORINFO_FLG_CUSTOMLAYOUT) != 0);
 }
 
-inline static bool StructHasNoPromotionFlagSet(DWORD attribs)
+inline static bool StructHasDontDigFieldsFlagSet(DWORD attribs)
 {
-    return ((attribs & CORINFO_FLG_DONT_PROMOTE) != 0);
+    return ((attribs & CORINFO_FLG_DONT_DIG_FIELDS) != 0);
 }
 
 //------------------------------------------------------------------------------

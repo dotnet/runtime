@@ -91,7 +91,6 @@ namespace Microsoft.Extensions.Configuration.CommandLine
                             key = currentArg.Substring(keyStartIndex);
                         }
 
-                        string previousKey = enumerator.Current;
                         if (!enumerator.MoveNext())
                         {
                             // ignore missing values

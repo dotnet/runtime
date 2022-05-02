@@ -263,7 +263,7 @@ bool DetectCPUFeatures()
     {
         return false;
     }
-#endif // HOST_X86 || HOST_AMD64
+#endif // HOST_X86|| HOST_AMD64 || HOST_ARM64
 
     return true;
 }

@@ -39,7 +39,6 @@ namespace System.Text.RegularExpressions
         private RegexOpcode _operator;
         private int _codepos;
         private bool _rightToLeft;
-        private bool _caseInsensitive;
 
         public RegexInterpreter(RegexInterpreterCode code, TextInfo? textInfo)
         {
@@ -164,8 +163,7 @@ namespace System.Text.RegularExpressions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetOperator(RegexOpcode op)
         {
-            _operator = op & ~(RegexOpcode.RightToLeft | RegexOpcode.CaseInsensitive);
-            _caseInsensitive = (op & RegexOpcode.CaseInsensitive) != 0;
+            _operator = op & ~RegexOpcode.RightToLeft;
             _rightToLeft = (op & RegexOpcode.RightToLeft) != 0;
         }
 
@@ -265,7 +263,7 @@ namespace System.Text.RegularExpressions
             return true;
         }
 
-        private bool MatchRef(int index, int length, ReadOnlySpan<char> inputSpan)
+        private bool MatchRef(int index, int length, ReadOnlySpan<char> inputSpan, bool caseInsensitive)
         {
             int pos;
             if (!_rightToLeft)
@@ -290,7 +288,7 @@ namespace System.Text.RegularExpressions
             int cmpos = index + length;
             int c = length;
 
-            if (!_caseInsensitive)
+            if (!caseInsensitive)
             {
                 while (c-- != 0)
                 {
@@ -856,11 +854,12 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.Backreference:
+                    case RegexOpcode.Backreference | RegexOpcode.CaseInsensitive:
                         {
                             int capnum = Operand(0);
                             if (IsMatched(capnum))
                             {
-                                if (!MatchRef(MatchIndex(capnum), MatchLength(capnum), inputSpan))
+                                if (!MatchRef(MatchIndex(capnum), MatchLength(capnum), inputSpan, (_operator & RegexOpcode.CaseInsensitive) != 0))
                                 {
                                     break;
                                 }
@@ -976,9 +975,9 @@ namespace System.Text.RegularExpressions
                             char ch = (char)Operand(0);
                             int i;
 
-                            if (!_rightToLeft && !_caseInsensitive)
+                            if (!_rightToLeft)
                             {
-                                // We're left-to-right and case-sensitive, so we can employ the vectorized IndexOf
+                                // We're left-to-right, so we can employ the vectorized IndexOf
                                 // to search for the character.
                                 i = inputSpan.Slice(runtextpos, len).IndexOf(ch);
                                 if (i == -1)

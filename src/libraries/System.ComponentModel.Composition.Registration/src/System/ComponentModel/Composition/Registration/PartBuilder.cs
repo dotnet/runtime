@@ -13,7 +13,6 @@ namespace System.ComponentModel.Composition.Registration
         private static readonly List<Attribute> s_importingConstructorList = new List<Attribute>() { new ImportingConstructorAttribute() };
         private static readonly Type s_exportAttributeType = typeof(ExportAttribute);
         private readonly List<ExportBuilder> _typeExportBuilders;
-        private readonly List<ImportBuilder> _constructorImportBuilders;
         private bool _setCreationPolicy;
         private CreationPolicy _creationPolicy;
 
@@ -38,7 +37,6 @@ namespace System.ComponentModel.Composition.Registration
             _setCreationPolicy = false;
             _creationPolicy = CreationPolicy.Any;
             _typeExportBuilders = new List<ExportBuilder>();
-            _constructorImportBuilders = new List<ImportBuilder>();
             _propertyExports = new List<Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ExportBuilder>, Type>>();
             _propertyImports = new List<Tuple<Predicate<PropertyInfo>, Action<PropertyInfo, ImportBuilder>, Type>>();
             _interfaceExports = new List<Tuple<Predicate<Type>, Action<Type, ExportBuilder>>>();

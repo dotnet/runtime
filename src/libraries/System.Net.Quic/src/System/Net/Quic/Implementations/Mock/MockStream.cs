@@ -133,7 +133,7 @@ namespace System.Net.Quic.Implementations.Mock
             if (Volatile.Read(ref _writesCanceled))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                throw new OperationCanceledException();
+                throw new QuicOperationAbortedException();
             }
 
             StreamBuffer? streamBuffer = WriteStreamBuffer;

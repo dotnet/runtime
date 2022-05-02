@@ -14,9 +14,6 @@ namespace Microsoft.Interop
         private static readonly VariantBoolMarshaller s_variantBool = new();
 
         private static readonly Utf16CharMarshaller s_utf16Char = new();
-        private static readonly IMarshallingGenerator s_utf16String = new PinnableManagedValueMarshaller(new Utf16StringMarshaller());
-        private static readonly Utf8StringMarshaller s_utf8String = new();
-        private static readonly AnsiStringMarshaller s_ansiString = new AnsiStringMarshaller(s_utf8String);
 
         private static readonly Forwarder s_forwarder = new();
         private static readonly BlittableMarshaller s_blittable = new();
@@ -109,7 +106,7 @@ namespace Microsoft.Interop
                     return CreateCharMarshaller(info, context);
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_String } }:
-                    return CreateStringMarshaller(info, context);
+                    return ReportStringMarshallingNotSupported(info, context);
 
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Void } }:
                     return s_forwarder;
@@ -158,7 +155,7 @@ namespace Microsoft.Interop
             throw new MarshallingNotSupportedException(info, context);
         }
 
-        private static IMarshallingGenerator CreateStringMarshaller(TypePositionInfo info, StubCodeContext context)
+        private static IMarshallingGenerator ReportStringMarshallingNotSupported(TypePositionInfo info, StubCodeContext context)
         {
             MarshallingInfo marshalInfo = info.MarshallingAttributeInfo;
             if (marshalInfo is NoMarshallingInfo)
@@ -170,33 +167,7 @@ namespace Microsoft.Interop
                 };
             }
 
-            // Explicit MarshalAs takes precedence over string encoding info
-            if (marshalInfo is MarshalAsInfo marshalAsInfo)
-            {
-                switch (marshalAsInfo.UnmanagedType)
-                {
-                    case UnmanagedType.LPStr:
-                        return s_ansiString;
-                    case UnmanagedType.LPTStr:
-                    case UnmanagedType.LPWStr:
-                        return s_utf16String;
-                    case (UnmanagedType)0x30:// UnmanagedType.LPUTF8Str
-                        return s_utf8String;
-                }
-            }
-            else if (marshalInfo is MarshallingInfoStringSupport marshalStringInfo)
-            {
-                switch (marshalStringInfo.CharEncoding)
-                {
-                    case CharEncoding.Ansi:
-                        return s_ansiString;
-                    case CharEncoding.Utf16:
-                        return s_utf16String;
-                    case CharEncoding.Utf8:
-                        return s_utf8String;
-                }
-            }
-
+            // Supported string marshalling should have gone through custom type marshallers.
             throw new MarshallingNotSupportedException(info, context);
         }
     }

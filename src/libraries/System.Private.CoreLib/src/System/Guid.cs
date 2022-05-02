@@ -255,10 +255,10 @@ namespace System
             }
         }
 
-        public static Guid ParseExact(string input!!, string format!!) =>
+        public static Guid ParseExact(string input!!, [StringSyntax(StringSyntaxAttribute.GuidFormat)] string format!!) =>
             ParseExact((ReadOnlySpan<char>)input, (ReadOnlySpan<char>)format);
 
-        public static Guid ParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format)
+        public static Guid ParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format)
         {
             if (format.Length != 1)
             {
@@ -282,7 +282,7 @@ namespace System
             return result.ToGuid();
         }
 
-        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true)] string? format, out Guid result)
+        public static bool TryParseExact([NotNullWhen(true)] string? input, [NotNullWhen(true), StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format, out Guid result)
         {
             if (input == null)
             {
@@ -293,7 +293,7 @@ namespace System
             return TryParseExact((ReadOnlySpan<char>)input, format, out result);
         }
 
-        public static bool TryParseExact(ReadOnlySpan<char> input, ReadOnlySpan<char> format, out Guid result)
+        public static bool TryParseExact(ReadOnlySpan<char> input, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, out Guid result)
         {
             if (format.Length != 1)
             {
@@ -1005,7 +1005,7 @@ namespace System
 
         public static bool operator !=(Guid a, Guid b) => !EqualsCore(a, b);
 
-        public string ToString(string? format)
+        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format)
         {
             return ToString(format, null);
         }
@@ -1041,7 +1041,7 @@ namespace System
 
         // IFormattable interface
         // We currently ignore provider
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.GuidFormat)] string? format, IFormatProvider? provider)
         {
             if (string.IsNullOrEmpty(format))
             {
@@ -1088,7 +1088,7 @@ namespace System
         }
 
         // Returns whether the guid is successfully formatted as a span.
-        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default)
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format = default)
         {
             if (format.Length == 0)
             {
@@ -1211,7 +1211,7 @@ namespace System
             return true;
         }
 
-        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        bool ISpanFormattable.TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.GuidFormat)] ReadOnlySpan<char> format, IFormatProvider? provider)
         {
             // Like with the IFormattable implementation, provider is ignored.
             return TryFormat(destination, out charsWritten, format);

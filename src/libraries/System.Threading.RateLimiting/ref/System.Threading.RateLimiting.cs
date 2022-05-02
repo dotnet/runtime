@@ -9,6 +9,7 @@ namespace System.Threading.RateLimiting
     public sealed partial class ConcurrencyLimiter : System.Threading.RateLimiting.RateLimiter
     {
         public ConcurrencyLimiter(System.Threading.RateLimiting.ConcurrencyLimiterOptions options) { }
+        public override System.TimeSpan? IdleDuration { get { throw null; } }
         protected override System.Threading.RateLimiting.RateLimitLease AcquireCore(int permitCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
@@ -60,6 +61,7 @@ namespace System.Threading.RateLimiting
     public abstract partial class RateLimiter : System.IAsyncDisposable, System.IDisposable
     {
         protected RateLimiter() { }
+        public abstract System.TimeSpan? IdleDuration { get; }
         public System.Threading.RateLimiting.RateLimitLease Acquire(int permitCount = 1) { throw null; }
         protected abstract System.Threading.RateLimiting.RateLimitLease AcquireCore(int permitCount);
         public void Dispose() { }
@@ -81,14 +83,24 @@ namespace System.Threading.RateLimiting
         public abstract bool TryGetMetadata(string metadataName, out object? metadata);
         public bool TryGetMetadata<T>(System.Threading.RateLimiting.MetadataName<T> metadataName, [System.Diagnostics.CodeAnalysis.MaybeNullAttribute] out T metadata) { throw null; }
     }
-    public sealed partial class TokenBucketRateLimiter : System.Threading.RateLimiting.RateLimiter
+    public abstract partial class ReplenishingRateLimiter : System.Threading.RateLimiting.RateLimiter
+    {
+        protected ReplenishingRateLimiter() { }
+        public abstract bool IsAutoReplenishing { get; }
+        public abstract System.TimeSpan ReplenishmentPeriod { get; }
+        public abstract bool TryReplenish();
+    }
+    public sealed partial class TokenBucketRateLimiter : System.Threading.RateLimiting.ReplenishingRateLimiter
     {
         public TokenBucketRateLimiter(System.Threading.RateLimiting.TokenBucketRateLimiterOptions options) { }
+        public override System.TimeSpan? IdleDuration { get { throw null; } }
+        public override bool IsAutoReplenishing { get { throw null; } }
+        public override System.TimeSpan ReplenishmentPeriod { get { throw null; } }
         protected override System.Threading.RateLimiting.RateLimitLease AcquireCore(int tokenCount) { throw null; }
         protected override void Dispose(bool disposing) { }
         protected override System.Threading.Tasks.ValueTask DisposeAsyncCore() { throw null; }
         public override int GetAvailablePermits() { throw null; }
-        public bool TryReplenish() { throw null; }
+        public override bool TryReplenish() { throw null; }
         protected override System.Threading.Tasks.ValueTask<System.Threading.RateLimiting.RateLimitLease> WaitAsyncCore(int tokenCount, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
     }
     public sealed partial class TokenBucketRateLimiterOptions

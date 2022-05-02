@@ -182,6 +182,8 @@ namespace System
             return corElemType == CorElementType.ELEMENT_TYPE_SZARRAY;
         }
 
+        internal static bool IsValueType(RuntimeType type) => type.IsValueType;
+
         internal static bool HasElementType(RuntimeType type)
         {
             CorElementType corElemType = GetCorElementType(type);

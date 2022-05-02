@@ -276,9 +276,11 @@ namespace System.Reflection
 
             // Get the path where requesting assembly lives and check if it is in the list
             // of assemblies for which LoadFrom was invoked.
-            string requestorPath = Path.GetFullPath(requestingAssembly.Location);
+            string requestorPath = requestingAssembly.Location;
             if (string.IsNullOrEmpty(requestorPath))
                 return null;
+
+            requestorPath = Path.GetFullPath(requestorPath);
 
             lock (s_loadFromAssemblyList)
             {

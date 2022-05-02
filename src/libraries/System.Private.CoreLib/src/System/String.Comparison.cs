@@ -388,13 +388,13 @@ namespace System
             if (indexA < 0 || indexB < 0)
             {
                 string paramName = indexA < 0 ? nameof(indexA) : nameof(indexB);
-                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (strA.Length - indexA < 0 || strB.Length - indexB < 0)
             {
                 string paramName = strA.Length - indexA < 0 ? nameof(indexA) : nameof(indexB);
-                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))
@@ -483,7 +483,7 @@ namespace System
             if (indexA < 0 || indexB < 0)
             {
                 string paramName = indexA < 0 ? nameof(indexA) : nameof(indexB);
-                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             int lengthA = Math.Min(length, strA.Length - indexA);
@@ -492,7 +492,7 @@ namespace System
             if (lengthA < 0 || lengthB < 0)
             {
                 string paramName = lengthA < 0 ? nameof(indexA) : nameof(indexB);
-                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (length == 0 || (object.ReferenceEquals(strA, strB) && indexA == indexB))

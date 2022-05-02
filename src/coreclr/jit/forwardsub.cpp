@@ -286,14 +286,9 @@ public:
             //
             GenTreeFlags oldUseFlags = m_useFlags;
 
-            if (m_callAncestor->gtCallThisArg != nullptr)
+            for (CallArg& arg : m_callAncestor->gtArgs.Args())
             {
-                m_useFlags |= (m_callAncestor->gtCallThisArg->GetNode()->gtFlags & GTF_GLOB_EFFECT);
-            }
-
-            for (GenTreeCall::Use& use : m_callAncestor->Args())
-            {
-                m_useFlags |= (use.GetNode()->gtFlags & GTF_GLOB_EFFECT);
+                m_useFlags |= (arg.GetEarlyNode()->gtFlags & GTF_GLOB_EFFECT);
             }
 
             if (oldUseFlags != m_useFlags)

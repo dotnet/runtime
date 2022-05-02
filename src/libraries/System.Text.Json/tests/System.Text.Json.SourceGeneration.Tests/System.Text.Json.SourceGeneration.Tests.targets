@@ -6,12 +6,17 @@
     <!-- SYSLIB0020: JsonSerializerOptions.IgnoreNullValues is obsolete -->
     <!-- SYSLIB1037: Suppress init-only property deserialization warning -->
     <!-- SYSLIB1038: Suppress JsonInclude on inaccessible members warning -->
-    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB1037;SYSLIB1038</NoWarn>
+    <!-- SYSLIB1039: Suppress Polymorphic types not supported warning -->
+    <NoWarn>$(NoWarn);SYSLIB0020;SYSLIB1037;SYSLIB1038;SYSLIB1039</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);BUILDING_SOURCE_GENERATOR_TESTS</DefineConstants>
   </PropertyGroup>
+
+  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" Link="System\Runtime\Versioning\RequiresPreviewFeaturesAttribute.cs" />
+  </ItemGroup>
 
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\DateTimeTestHelpers.cs" Link="CommonTest\System\DateTimeTestHelpers.cs" />

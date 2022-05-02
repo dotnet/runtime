@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Runtime.InteropServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -15,6 +16,9 @@ namespace Microsoft.Interop
 
     public class AttributedMarshallingModelGeneratorFactory : IMarshallingGeneratorFactory
     {
+        private static readonly ImmutableDictionary<string, string> AddDisableRuntimeMarshallingAttributeProperties =
+            ImmutableDictionary<string, string>.Empty.Add(GeneratorDiagnosticProperties.AddDisableRuntimeMarshallingAttribute, GeneratorDiagnosticProperties.AddDisableRuntimeMarshallingAttribute);
+
         private static readonly BlittableMarshaller s_blittable = new BlittableMarshaller();
         private static readonly Forwarder s_forwarder = new Forwarder();
 
@@ -55,7 +59,8 @@ namespace Microsoft.Interop
                 UnmanagedBlittableMarshallingInfo or NativeMarshallingAttributeInfo when !Options.RuntimeMarshallingDisabled =>
                     throw new MarshallingNotSupportedException(info, context)
                     {
-                        NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled
+                        NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
+                        DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
                     },
                 GeneratedNativeMarshallingAttributeInfo => s_forwarder,
                 MissingSupportMarshallingInfo => s_forwarder,

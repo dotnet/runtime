@@ -747,7 +747,7 @@ processing_build_callback_data (int generation)
 	int i, j;
 	int num_sccs, num_xrefs;
 	int max_entries, max_xrefs;
-	MonoObject *obj G_GNUC_UNUSED;
+	MonoObject *obj = NULL;
 	HashEntry *entry;
 	HashEntry **all_entries;
 	MonoGCBridgeSCC **api_sccs;
@@ -792,7 +792,7 @@ processing_build_callback_data (int generation)
 
 	dyn_array_scc_init (&sccs);
 	for (i = 0; i < hash_table.num_entries; ++i) {
-		HashEntry *entry = all_entries [i];
+		entry = all_entries [i];
 		if (entry->v.dfs2.scc_index < 0) {
 			int index = dyn_array_scc_size (&sccs);
 			current_scc = dyn_array_scc_add (&sccs);
@@ -889,27 +889,27 @@ processing_build_callback_data (int generation)
 	if (bridge_accounting_enabled) {
 		for (i = hash_table.num_entries - 1; i >= 0; --i) {
 			double w;
-			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
+			HashEntryWithAccounting *entry_acc = (HashEntryWithAccounting*)all_entries [i];
 
-			entry->weight += (double)sgen_safe_object_get_size (sgen_hash_table_key_for_value_pointer (entry));
-			w = entry->weight / dyn_array_ptr_size (&entry->entry.srcs);
-			for (j = 0; j < dyn_array_ptr_size (&entry->entry.srcs); ++j) {
-				HashEntryWithAccounting *other = (HashEntryWithAccounting *)dyn_array_ptr_get (&entry->entry.srcs, j);
+			entry_acc->weight += (double)sgen_safe_object_get_size (sgen_hash_table_key_for_value_pointer (entry_acc));
+			w = entry_acc->weight / dyn_array_ptr_size (&entry_acc->entry.srcs);
+			for (j = 0; j < dyn_array_ptr_size (&entry_acc->entry.srcs); ++j) {
+				HashEntryWithAccounting *other = (HashEntryWithAccounting *)dyn_array_ptr_get (&entry_acc->entry.srcs, j);
 				other->weight += w;
 			}
 		}
 		for (i = 0; i < hash_table.num_entries; ++i) {
-			HashEntryWithAccounting *entry = (HashEntryWithAccounting*)all_entries [i];
-			if (entry->entry.is_bridge) {
-				MonoObject *obj = sgen_hash_table_key_for_value_pointer (entry);
-				MonoClass *klass = SGEN_LOAD_VTABLE (obj)->klass;
-				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", m_class_get_name_space (klass), m_class_get_name (klass), obj, entry->weight);
+			HashEntryWithAccounting *entry_acc = (HashEntryWithAccounting*)all_entries [i];
+			if (entry_acc->entry.is_bridge) {
+				MonoObject *instance = sgen_hash_table_key_for_value_pointer (entry_acc);
+				MonoClass *klass = SGEN_LOAD_VTABLE (instance)->klass;
+				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_GC, "OBJECT %s::%s (%p) weight %f", m_class_get_name_space (klass), m_class_get_name (klass), instance, entry_acc->weight);
 			}
 		}
 	}
 
 	for (i = 0; i < hash_table.num_entries; ++i) {
-		HashEntry *entry = all_entries [i];
+		entry = all_entries [i];
 		second_pass_links += dyn_array_ptr_size (&entry->srcs);
 	}
 

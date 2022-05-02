@@ -82,7 +82,6 @@ namespace System.Reflection.Runtime.Assemblies
 
         [RequiresUnreferencedCode("Assembly references might be removed")]
         public sealed override AssemblyName[] GetReferencedAssemblies() { throw new PlatformNotSupportedException(); }
-        public sealed override Module GetModule(string name) { throw new PlatformNotSupportedException(); }
     }
 }
 

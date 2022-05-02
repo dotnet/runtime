@@ -23,7 +23,7 @@ namespace System.Net.Http.Json
         /// <returns>The task object representing the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="client"/> is null.</exception>
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<HttpResponseMessage> PatchAsJsonAsync<TValue>(this HttpClient client!!, string? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> PatchAsJsonAsync<TValue>(this HttpClient client!!, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, TValue value, JsonSerializerOptions? options = null, CancellationToken cancellationToken = default)
         {
             JsonContent content = JsonContent.Create(value, mediaType: null, options);
             return client.PatchAsync(requestUri, content, cancellationToken);
@@ -58,7 +58,7 @@ namespace System.Net.Http.Json
         /// <returns>The task object representing the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="client"/> is null.</exception>
         [RequiresUnreferencedCode(HttpContentJsonExtensions.SerializationUnreferencedCodeMessage)]
-        public static Task<HttpResponseMessage> PatchAsJsonAsync<TValue>(this HttpClient client, string? requestUri, TValue value, CancellationToken cancellationToken)
+        public static Task<HttpResponseMessage> PatchAsJsonAsync<TValue>(this HttpClient client, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, TValue value, CancellationToken cancellationToken)
             => client.PatchAsJsonAsync(requestUri, value, options: null, cancellationToken);
 
         /// <summary>
@@ -86,7 +86,7 @@ namespace System.Net.Http.Json
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <returns>The task object representing the asynchronous operation.</returns>
         /// <exception cref="ArgumentNullException">The <paramref name="client"/> is null.</exception>
-        public static Task<HttpResponseMessage> PatchAsJsonAsync<TValue>(this HttpClient client!!, string? requestUri, TValue value, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
+        public static Task<HttpResponseMessage> PatchAsJsonAsync<TValue>(this HttpClient client!!, [StringSyntax(StringSyntaxAttribute.Uri)] string? requestUri, TValue value, JsonTypeInfo<TValue> jsonTypeInfo, CancellationToken cancellationToken = default)
         {
             JsonContent<TValue> content = new(value, jsonTypeInfo);
             return client.PatchAsync(requestUri, content, cancellationToken);
