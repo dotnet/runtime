@@ -135,15 +135,16 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
 const char* DetectDefaultLocaleName()
 {
     const char* icuLocale;
-#ifdef __APPLE__
-    icuLocale = DetectDefaultAppleLocaleName();
-if (icuLocale == NULL || icuLocale[0] == 0)
-#endif
+
     icuLocale = uloc_getDefault();
 
     if (strcmp(icuLocale, "en_US_POSIX") == 0)
     {
+#if TARGET_OS_MAC
+        icuLocale = DetectDefaultAppleLocaleName();
+#else
         return "";
+#endif
     }
 
     return icuLocale;
