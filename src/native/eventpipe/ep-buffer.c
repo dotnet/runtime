@@ -93,10 +93,10 @@ ep_buffer_write_event (
 
 	// Calculate the location of the data payload.
 	uint8_t *data_dest;
-	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof(EventPipeEventInstance) - sizeof (EventPipeStackContents) + ep_stack_contents_get_total_size (stack));
+	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof(EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_get_instance_size (stack));
 
 	// Calculate the size of the event.
-	uint32_t event_size = sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContents) + ep_stack_contents_get_total_size (stack) + ep_event_payload_get_size (payload);
+	uint32_t event_size = sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_get_instance_size (stack) + ep_event_payload_get_size (payload);
 
 	// Make sure we have enough space to write the event.
 	if(buffer->current + event_size > buffer->limit)
@@ -118,7 +118,7 @@ ep_buffer_write_event (
 
 	// Copy the stack if a separate stack trace was provided.
 	if (stack != NULL)
-		ep_stack_contents_copyto (stack, ep_event_instance_get_stack_contents_ref (instance));
+		ep_stack_contents_flatten (stack, ep_event_instance_get_stack_contents_instance_ref (instance));
 
 	// Write the event payload data to the buffer.
 	if (ep_event_payload_get_size (payload) > 0)

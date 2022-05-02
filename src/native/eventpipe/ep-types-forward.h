@@ -39,6 +39,7 @@ typedef struct _EventPipeSequencePoint EventPipeSequencePoint;
 typedef struct _EventPipeSequencePointBlock EventPipeSequencePointBlock;
 typedef struct _EventPipeStackBlock EventPipeStackBlock;
 typedef struct _EventPipeStackContents EventPipeStackContents;
+typedef struct _EventPipeStackContentsInstance EventPipeStackContentsInstance;
 typedef struct _EventPipeSystemTime EventPipeSystemTime;
 typedef struct _EventPipeThread EventPipeThread;
 typedef struct _EventPipeThreadHolder EventPipeThreadHolder;
@@ -60,7 +61,7 @@ typedef struct _StreamWriterVtable StreamWriterVtable;
 
 #define EP_ACTIVITY_ID_SIZE EP_GUID_SIZE
 
-#define EP_MAX_STACK_DEPTH 100
+#define EP_MAX_STACK_DEPTH 512
 
 /*
  * EventPipe Enums.

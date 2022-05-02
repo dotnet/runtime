@@ -35,11 +35,7 @@ struct _EventPipeEventInstance_Internal {
 	uint32_t debug_event_start;
 	uint32_t debug_event_end;
 #endif
-	// TODO: Look at optimizing this when writing into buffer manager.
-	// Only write up to next available frame to better utilize memory.
-	// Even events not requesting a stack will still waste space in buffer manager.
-	// Needs to go last since number of frames will set size in stream.
-	EventPipeStackContents stack_contents;
+	EventPipeStackContentsInstance stack_contents_instance;
 };
 
 #if !defined(EP_INLINE_GETTER_SETTER) && !defined(EP_IMPL_EVENT_INSTANCE_GETTER_SETTER)
@@ -59,7 +55,7 @@ EP_DEFINE_GETTER_ARRAY_REF(EventPipeEventInstance *, event_instance, uint8_t *, 
 EP_DEFINE_GETTER_ARRAY_REF(EventPipeEventInstance *, event_instance, uint8_t *, const uint8_t *, related_activity_id, related_activity_id[0])
 EP_DEFINE_GETTER(EventPipeEventInstance *, event_instance, const uint8_t *, data)
 EP_DEFINE_GETTER(EventPipeEventInstance *, event_instance, uint32_t, data_len)
-EP_DEFINE_GETTER_REF(EventPipeEventInstance *, event_instance, EventPipeStackContents *, stack_contents)
+EP_DEFINE_GETTER_REF(EventPipeEventInstance *, event_instance, EventPipeStackContentsInstance *, stack_contents_instance)
 
 EventPipeEventInstance *
 ep_event_instance_alloc (
@@ -108,8 +104,8 @@ ep_event_instance_get_flattened_size (const EventPipeEventInstance *ep_event_ins
 {
 	EP_ASSERT (ep_event_instance != NULL);
 	return ep_event_instance_get_data (ep_event_instance) ?
-		sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContents) + ep_stack_contents_get_total_size (ep_event_instance_get_stack_contents_cref (ep_event_instance)) + ep_event_instance_get_data_len (ep_event_instance) :
-		sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContents) + ep_stack_contents_get_total_size (ep_event_instance_get_stack_contents_cref (ep_event_instance));
+		sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_instance_get_total_size (ep_event_instance_get_stack_contents_instance_cref (ep_event_instance)) + ep_event_instance_get_data_len (ep_event_instance) :
+		sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_instance_get_total_size (ep_event_instance_get_stack_contents_instance_cref (ep_event_instance));
 }
 
 /*
