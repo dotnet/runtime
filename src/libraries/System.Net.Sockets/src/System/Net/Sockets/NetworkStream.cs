@@ -41,8 +41,10 @@ namespace System.Net.Sockets
         {
         }
 
-        public NetworkStream(Socket socket!!, FileAccess access, bool ownsSocket)
+        public NetworkStream(Socket socket, FileAccess access, bool ownsSocket)
         {
+            ArgumentNullException.ThrowIfNull(socket);
+
             if (!socket.Blocking)
             {
                 // Stream.Read*/Write* are incompatible with the semantics of non-blocking sockets, and

@@ -218,7 +218,7 @@ namespace System.Linq.Expressions
                 ParameterInfo rightParam = pms[1];
                 foreach (SwitchCase c in caseList)
                 {
-                    ContractUtils.RequiresNotNull(c, nameof(cases));
+                    ArgumentNullException.ThrowIfNull(c, nameof(cases));
                     ValidateSwitchCaseType(c.Body, customType, resultType, nameof(cases));
                     for (int i = 0, n = c.TestValues.Count; i < n; i++)
                     {
@@ -253,7 +253,7 @@ namespace System.Linq.Expressions
                 Expression firstTestValue = caseList[0].TestValues[0];
                 foreach (SwitchCase c in caseList)
                 {
-                    ContractUtils.RequiresNotNull(c, nameof(cases));
+                    ArgumentNullException.ThrowIfNull(c, nameof(cases));
                     ValidateSwitchCaseType(c.Body, customType, resultType, nameof(cases));
                     // When no comparison method is provided, require all test values to have the same type.
                     for (int i = 0, n = c.TestValues.Count; i < n; i++)

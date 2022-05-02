@@ -10,23 +10,31 @@ namespace System.Reflection
     public class CustomAttributeData
     {
         #region Public Static Members
-        public static IList<CustomAttributeData> GetCustomAttributes(MemberInfo target!!)
+        public static IList<CustomAttributeData> GetCustomAttributes(MemberInfo target)
         {
+            ArgumentNullException.ThrowIfNull(target);
+
             return target.GetCustomAttributesData();
         }
 
-        public static IList<CustomAttributeData> GetCustomAttributes(Module target!!)
+        public static IList<CustomAttributeData> GetCustomAttributes(Module target)
         {
+            ArgumentNullException.ThrowIfNull(target);
+
             return target.GetCustomAttributesData();
         }
 
-        public static IList<CustomAttributeData> GetCustomAttributes(Assembly target!!)
+        public static IList<CustomAttributeData> GetCustomAttributes(Assembly target)
         {
+            ArgumentNullException.ThrowIfNull(target);
+
             return target.GetCustomAttributesData();
         }
 
-        public static IList<CustomAttributeData> GetCustomAttributes(ParameterInfo target!!)
+        public static IList<CustomAttributeData> GetCustomAttributes(ParameterInfo target)
         {
+            ArgumentNullException.ThrowIfNull(target);
+
             return target.GetCustomAttributesData();
         }
         #endregion

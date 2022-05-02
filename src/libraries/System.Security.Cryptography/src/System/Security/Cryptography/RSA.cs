@@ -162,8 +162,10 @@ namespace System.Security.Cryptography
         public virtual byte[] EncryptValue(byte[] rgb) =>
             throw new NotSupportedException(SR.NotSupported_Method); // Same as Desktop
 
-        public byte[] SignData(byte[] data!!, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             return SignData(data, 0, data.Length, hashAlgorithm, padding);
         }
 
@@ -211,8 +213,10 @@ namespace System.Security.Cryptography
             return false;
         }
 
-        public bool VerifyData(byte[] data!!, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
+        public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
+            ArgumentNullException.ThrowIfNull(data);
+
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm, padding);
         }
 
@@ -375,10 +379,12 @@ namespace System.Security.Cryptography
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<char> password,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 password,
@@ -396,10 +402,12 @@ namespace System.Security.Cryptography
 
         public override bool TryExportEncryptedPkcs8PrivateKey(
             ReadOnlySpan<byte> passwordBytes,
-            PbeParameters pbeParameters!!,
+            PbeParameters pbeParameters,
             Span<byte> destination,
             out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(pbeParameters);
+
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
                 ReadOnlySpan<char>.Empty,

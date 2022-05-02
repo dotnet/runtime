@@ -17,7 +17,7 @@ namespace System.IO.Internal
 #if CODEDOM
     public
 #else
-    internal
+    internal sealed
 #endif
     class TempFileCollection : ICollection, IDisposable
     {
@@ -46,7 +46,12 @@ namespace System.IO.Internal
             GC.SuppressFinalize(this);
         }
 
-        protected virtual void Dispose(bool disposing)
+#if CODEDOM
+        protected virtual
+#else
+        internal
+#endif
+        void Dispose(bool disposing)
         {
             SafeDelete();
         }

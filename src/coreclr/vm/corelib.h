@@ -113,10 +113,6 @@ DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_OFFSET,               m_offset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_COUNT,                m_count)
 
-DEFINE_CLASS(ASSEMBLY_HASH_ALGORITHM,   Assemblies,         AssemblyHashAlgorithm)
-DEFINE_CLASS(PORTABLE_EXECUTABLE_KINDS, Reflection,         PortableExecutableKinds)
-DEFINE_CLASS(IMAGE_FILE_MACHINE,        Reflection,         ImageFileMachine)
-
 DEFINE_CLASS_U(Reflection,             AssemblyName,           AssemblyNameBaseObject)
 DEFINE_FIELD_U(_name,                      AssemblyNameBaseObject, _name)
 DEFINE_FIELD_U(_publicKey,                 AssemblyNameBaseObject, _publicKey)
@@ -128,8 +124,7 @@ DEFINE_FIELD_U(_hashAlgorithm,             AssemblyNameBaseObject, _hashAlgorith
 DEFINE_FIELD_U(_versionCompatibility,      AssemblyNameBaseObject, _versionCompatibility)
 DEFINE_FIELD_U(_flags,                     AssemblyNameBaseObject, _flags)
 DEFINE_CLASS(ASSEMBLY_NAME,         Reflection,             AssemblyName)
-DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_RetV)
-DEFINE_METHOD(ASSEMBLY_NAME,        SET_PROC_ARCH_INDEX,    SetProcArchIndex,          IM_PEK_IFM_RetV)
+DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_Str_ArrB_ArrB_Ver_CI_ANF_RetV)
 
 DEFINE_CLASS_U(System,                 Version,                    VersionBaseObject)
 DEFINE_FIELD_U(_Major,                     VersionBaseObject,    m_Major)
@@ -140,8 +135,6 @@ DEFINE_CLASS(VERSION,               System,                 Version)
 DEFINE_METHOD(VERSION,              CTOR_Ix2,               .ctor,                      IM_Int_Int_RetVoid)
 DEFINE_METHOD(VERSION,              CTOR_Ix3,               .ctor,                      IM_Int_Int_Int_RetVoid)
 DEFINE_METHOD(VERSION,              CTOR_Ix4,               .ctor,                      IM_Int_Int_Int_Int_RetVoid)
-
-DEFINE_CLASS(ASSEMBLY_VERSION_COMPATIBILITY, Assemblies,    AssemblyVersionCompatibility)
 
 DEFINE_CLASS(ASSEMBLY_NAME_FLAGS,   Reflection,             AssemblyNameFlags)
 

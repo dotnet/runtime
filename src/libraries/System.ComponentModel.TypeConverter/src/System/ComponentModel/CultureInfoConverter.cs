@@ -29,8 +29,10 @@ namespace System.ComponentModel
         /// <summary>
         /// Retrieves the Name for a input CultureInfo.
         /// </summary>
-        protected virtual string GetCultureName(CultureInfo culture!!)
+        protected virtual string GetCultureName(CultureInfo culture)
         {
+            ArgumentNullException.ThrowIfNull(culture);
+
             return culture.Name;
         }
 

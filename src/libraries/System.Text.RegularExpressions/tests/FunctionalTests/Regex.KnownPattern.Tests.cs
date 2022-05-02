@@ -118,10 +118,10 @@ namespace System.Text.RegularExpressions.Tests
                     return false;
                 }
 
+                Regex r = await RegexHelpers.GetRegexAsync(engine, @"(@)(.+)$", RegexOptions.None);
+
                 try
                 {
-                    Regex r = await RegexHelpers.GetRegexAsync(engine, @"(@)(.+)$", RegexOptions.None, TimeSpan.FromMilliseconds(200));
-
                     // Normalize the domain part of the email
                     email = r.Replace(email, match =>
                     {
@@ -134,30 +134,18 @@ namespace System.Text.RegularExpressions.Tests
                         return match.Groups[1].Value + domainName;
                     });
                 }
-                catch (RegexMatchTimeoutException)
-                {
-                    return false;
-                }
                 catch (ArgumentException)
                 {
-                    return false;
+                    return false; // for invalid IDN name with IdnMapping
                 }
 
-                try
-                {
-                    Regex r = await RegexHelpers.GetRegexAsync(
-                        engine,
-                        @"^(?("")("".+?(?<!\\)""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))" +
-                        @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-0-9a-z]*[0-9a-z]*\.)+[a-z0-9][\-a-z0-9]{0,22}[a-z0-9]))$",
-                        RegexOptions.IgnoreCase,
-                        TimeSpan.FromMilliseconds(250));
+                r = await RegexHelpers.GetRegexAsync(
+                    engine,
+                    @"^(?("")("".+?(?<!\\)""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))" +
+                    @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-0-9a-z]*[0-9a-z]*\.)+[a-z0-9][\-a-z0-9]{0,22}[a-z0-9]))$",
+                    RegexOptions.IgnoreCase);
 
-                    return r.IsMatch(email);
-                }
-                catch (RegexMatchTimeoutException)
-                {
-                    return false;
-                }
+                return r.IsMatch(email);
             }
         }
 

@@ -276,6 +276,7 @@ namespace System.Text.RegularExpressions
         private StringBuilder? _categories;
         private RegexCharClass? _subtractor;
         private bool _negate;
+        private RegexCaseBehavior _caseBehavior;
 
 #if DEBUG
         static RegexCharClass()
@@ -440,7 +441,7 @@ namespace System.Text.RegularExpressions
                     (char First, char Last) range = rangeList[i];
                     if (range.First == range.Last)
                     {
-                        if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(range.First, culture, out ReadOnlySpan<char> equivalences))
+                        if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(range.First, culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
                         {
                             foreach (char equivalence in equivalences)
                             {
@@ -464,7 +465,7 @@ namespace System.Text.RegularExpressions
         {
             for (int i = chMin; i <= chMax; i++)
             {
-                if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior((char)i, culture, out ReadOnlySpan<char> equivalences))
+                if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior((char)i, culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
                 {
                     foreach (char equivalence in equivalences)
                     {

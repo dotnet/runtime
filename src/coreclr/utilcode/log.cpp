@@ -136,8 +136,6 @@ VOID InitLogging()
                 WriteFile(GetStdHandle(STD_OUTPUT_HANDLE), msg, (DWORD)strlen(msg), &written, 0);
             }
         }
-        if (LogFileHandle == INVALID_HANDLE_VALUE)
-            UtilMessageBoxNonLocalized(NULL, W("Could not open log file"), W("CLR logging"), MB_OK | MB_ICONINFORMATION, FALSE, TRUE);
         if (LogFileHandle != INVALID_HANDLE_VALUE)
         {
             if (LogFlags & LOG_ENABLE_APPEND_FILE)

@@ -30,8 +30,10 @@ namespace System.Runtime.InteropServices
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr OffsetOf(Type t!!, string fieldName)
+        public static IntPtr OffsetOf(Type t, string fieldName)
         {
+            ArgumentNullException.ThrowIfNull(t);
+
             FieldInfo? f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             if (f is null)
@@ -263,8 +265,10 @@ namespace System.Runtime.InteropServices
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
         /// an HInstance.  In Memory (Dynamic) Modules won't have an HInstance.
         /// </summary>
-        public static IntPtr GetHINSTANCE(Module m!!)
+        public static IntPtr GetHINSTANCE(Module m)
         {
+            ArgumentNullException.ThrowIfNull(m);
+
             if (m is RuntimeModule rtModule)
             {
                 return GetHINSTANCE(new QCallModule(ref rtModule));
@@ -294,8 +298,10 @@ namespace System.Runtime.InteropServices
         /// Given a managed object that wraps an ITypeInfo, return its name.
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static string GetTypeInfoName(ITypeInfo typeInfo!!)
+        public static string GetTypeInfoName(ITypeInfo typeInfo)
         {
+            ArgumentNullException.ThrowIfNull(typeInfo);
+
             typeInfo.GetDocumentation(-1, out string strTypeLibName, out _, out _, out _);
             return strTypeLibName;
         }
@@ -325,8 +331,10 @@ namespace System.Runtime.InteropServices
         /// where the RCW was first seen. Will return null otherwise.
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static IntPtr /* IUnknown* */ GetIUnknownForObject(object o!!)
+        public static IntPtr /* IUnknown* */ GetIUnknownForObject(object o)
         {
+            ArgumentNullException.ThrowIfNull(o);
+
             return GetIUnknownForObjectNative(o);
         }
 
@@ -337,8 +345,10 @@ namespace System.Runtime.InteropServices
         /// Return the IDispatch* for an Object.
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o!!)
+        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o)
         {
+            ArgumentNullException.ThrowIfNull(o);
+
             return GetIDispatchForObjectNative(o);
         }
 
@@ -351,8 +361,11 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o!!, Type T!!)
+        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T)
         {
+            ArgumentNullException.ThrowIfNull(o);
+            ArgumentNullException.ThrowIfNull(T);
+
             return GetComInterfaceForObjectNative(o, T, true);
         }
 
@@ -366,8 +379,11 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o!!, Type T!!, CustomQueryInterfaceMode mode)
+        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
+            ArgumentNullException.ThrowIfNull(o);
+            ArgumentNullException.ThrowIfNull(T);
+
             bool bEnableCustomizedQueryInterface = ((mode == CustomQueryInterfaceMode.Allow) ? true : false);
             return GetComInterfaceForObjectNative(o, T, bEnableCustomizedQueryInterface);
         }
@@ -449,8 +465,10 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Checks if the object is classic COM component.
         /// </summary>
-        public static bool IsComObject(object o!!)
+        public static bool IsComObject(object o)
         {
+            ArgumentNullException.ThrowIfNull(o);
+
             return o is __ComObject;
         }
 

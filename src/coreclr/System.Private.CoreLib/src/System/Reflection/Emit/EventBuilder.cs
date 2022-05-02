@@ -46,8 +46,10 @@ namespace System.Reflection.Emit
             return m_evToken;
         }
 
-        private void SetMethodSemantics(MethodBuilder mdBuilder!!, MethodSemanticsAttributes semantics)
+        private void SetMethodSemantics(MethodBuilder mdBuilder, MethodSemanticsAttributes semantics)
         {
+            ArgumentNullException.ThrowIfNull(mdBuilder);
+
             m_type.ThrowIfCreated();
             ModuleBuilder module = m_module;
             TypeBuilder.DefineMethodSemantics(
@@ -79,8 +81,11 @@ namespace System.Reflection.Emit
 
         // Use this function if client decides to form the custom attribute blob themselves
 
-        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
             m_type.ThrowIfCreated();
 
             TypeBuilder.DefineCustomAttribute(
@@ -91,8 +96,10 @@ namespace System.Reflection.Emit
         }
 
         // Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
             m_type.ThrowIfCreated();
             customBuilder.CreateCustomAttribute(m_module, m_evToken);
         }

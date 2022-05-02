@@ -388,57 +388,136 @@ namespace System.Net.Quic.Tests
             serverConnection.Dispose();
         }
 
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67302")]
-        public async Task WaitForAvailableUnidirectionStreamsAsyncWorks()
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task OpenStreamAsync_BlocksUntilAvailable(bool unidirectional)
         {
+            ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection) => unidirectional
+                ? connection.OpenUnidirectionalStreamAsync()
+                : connection.OpenBidirectionalStreamAsync();
+
             QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
             listenerOptions.MaxUnidirectionalStreams = 1;
-            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
-
-            // No stream opened yet, should return immediately.
-            Assert.True(clientConnection.WaitForAvailableUnidirectionalStreamsAsync().IsCompletedSuccessfully);
-
-            // Open one stream, should wait till it closes.
-            QuicStream stream = clientConnection.OpenUnidirectionalStream();
-            ValueTask waitTask = clientConnection.WaitForAvailableUnidirectionalStreamsAsync();
-            Assert.False(waitTask.IsCompleted);
-            Assert.Throws<QuicException>(() => clientConnection.OpenUnidirectionalStream());
-            // Close the streams, the waitTask should finish as a result.
-            stream.Dispose();
-            QuicStream newStream = await serverConnection.AcceptStreamAsync();
-            newStream.Dispose();
-
-            await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
-            clientConnection.Dispose();
-            serverConnection.Dispose();
-        }
-
-        [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67302")]
-        public async Task WaitForAvailableBidirectionStreamsAsyncWorks()
-        {
-            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
             listenerOptions.MaxBidirectionalStreams = 1;
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
 
-            // No stream opened yet, should return immediately.
-            Assert.True(clientConnection.WaitForAvailableBidirectionalStreamsAsync().IsCompletedSuccessfully);
-
-            // Open one stream, should wait till it closes.
-            QuicStream stream = clientConnection.OpenBidirectionalStream();
-            ValueTask waitTask = clientConnection.WaitForAvailableBidirectionalStreamsAsync();
+            // Open one stream, second call should block
+            QuicStream stream = await OpenStreamAsync(clientConnection);
+            ValueTask<QuicStream> waitTask = OpenStreamAsync(clientConnection);
             Assert.False(waitTask.IsCompleted);
-            Assert.Throws<QuicException>(() => clientConnection.OpenBidirectionalStream());
 
             // Close the streams, the waitTask should finish as a result.
             stream.Dispose();
             QuicStream newStream = await serverConnection.AcceptStreamAsync();
             newStream.Dispose();
-            await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+
+            newStream = await waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+            newStream.Dispose();
+
             clientConnection.Dispose();
             serverConnection.Dispose();
         }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task OpenStreamAsync_Canceled_Throws_OperationCanceledException(bool unidirectional)
+        {
+            ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection, CancellationToken token = default) => unidirectional
+                ? connection.OpenUnidirectionalStreamAsync(token)
+                : connection.OpenBidirectionalStreamAsync(token);
+
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.MaxUnidirectionalStreams = 1;
+            listenerOptions.MaxBidirectionalStreams = 1;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+
+            // Open one stream, second call should block
+            QuicStream stream = await OpenStreamAsync(clientConnection);
+            ValueTask<QuicStream> waitTask = OpenStreamAsync(clientConnection, cts.Token);
+            Assert.False(waitTask.IsCompleted);
+
+            cts.Cancel();
+
+            // awaiting the task should throw
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            // Close the streams, the waitTask should finish as a result.
+            stream.Dispose();
+            QuicStream newStream = await serverConnection.AcceptStreamAsync();
+            newStream.Dispose();
+
+            // next call should work as intended
+            newStream = await OpenStreamAsync(clientConnection).AsTask().WaitAsync(TimeSpan.FromSeconds(10));
+            newStream.Dispose();
+
+            clientConnection.Dispose();
+            serverConnection.Dispose();
+        }
+
+        [Theory]
+        [InlineData(false)]
+        [InlineData(true)]
+        public async Task OpenStreamAsync_PreCanceled_Throws_OperationCanceledException(bool unidirectional)
+        {
+            ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection, CancellationToken token = default) => unidirectional
+                ? connection.OpenUnidirectionalStreamAsync(token)
+                : connection.OpenBidirectionalStreamAsync(token);
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, CreateQuicListenerOptions());
+
+            CancellationTokenSource cts = new CancellationTokenSource();
+            cts.Cancel();
+
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(() => OpenStreamAsync(clientConnection, cts.Token).AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            Assert.Equal(cts.Token, ex.CancellationToken);
+
+            clientConnection.Dispose();
+            serverConnection.Dispose();
+        }
+
+        [Theory]
+        [InlineData(false, false)]
+        [InlineData(true, true)] // the code path for uni/bidirectional streams differs only in a flag passed to MsQuic, so there is no need to test all possible combinations.
+        public async Task OpenStreamAsync_ConnectionAbort_Throws(bool unidirectional, bool localAbort)
+        {
+            ValueTask<QuicStream> OpenStreamAsync(QuicConnection connection, CancellationToken token = default) => unidirectional
+                ? connection.OpenUnidirectionalStreamAsync(token)
+                : connection.OpenBidirectionalStreamAsync(token);
+
+            QuicListenerOptions listenerOptions = CreateQuicListenerOptions();
+            listenerOptions.MaxUnidirectionalStreams = 1;
+            listenerOptions.MaxBidirectionalStreams = 1;
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection(null, listenerOptions);
+
+            // Open one stream, second call should block
+            QuicStream stream = await OpenStreamAsync(clientConnection);
+            ValueTask<QuicStream> waitTask = OpenStreamAsync(clientConnection);
+            Assert.False(waitTask.IsCompleted);
+
+            if (localAbort)
+            {
+                await clientConnection.CloseAsync(0);
+                // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
+                // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
+                // To be revisited once we standartize on exceptions.
+                // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
+                await Assert.ThrowsAnyAsync<QuicException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            }
+            else
+            {
+                await serverConnection.CloseAsync(0);
+                await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => waitTask.AsTask().WaitAsync(TimeSpan.FromSeconds(3)));
+            }
+
+            clientConnection.Dispose();
+            serverConnection.Dispose();
+        }
+
 
         [Fact]
         [OuterLoop("May take several seconds")]
@@ -462,7 +541,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    await using QuicStream stream = clientConnection.OpenUnidirectionalStream();
+                    await using QuicStream stream = await clientConnection.OpenUnidirectionalStreamAsync();
 
                     foreach (int[] bufferLengths in writes)
                     {
@@ -555,7 +634,7 @@ namespace System.Net.Quic.Tests
             ReadOnlySequence<byte> ros = CreateReadOnlySequenceFromBytes(helloWorld.ToArray());
 
             Assert.False(ros.IsSingleSegment);
-            using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+            using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
             ValueTask writeTask = clientStream.WriteAsync(ros);
             using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
 
@@ -701,7 +780,7 @@ namespace System.Net.Quic.Tests
                     },
                     clientFunction: async connection =>
                     {
-                        await using QuicStream stream = connection.OpenBidirectionalStream();
+                        await using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
 
                         for (int pos = 0; pos < data.Length; pos += writeSize)
                         {
@@ -729,7 +808,7 @@ namespace System.Net.Quic.Tests
             {
                 (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-                using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
                 Assert.Equal(0, clientStream.StreamId);
 
                 // TODO: stream that is opened by client but left unaccepted by server may cause AccessViolationException in its Finalizer
@@ -749,7 +828,7 @@ namespace System.Net.Quic.Tests
             {
                 (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-                using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
                 Assert.Equal(0, clientStream.StreamId);
 
                 // Dispose all connections before the streams;
@@ -771,7 +850,7 @@ namespace System.Net.Quic.Tests
             {
                 (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-                await using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                await using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
                 await clientStream.WriteAsync(new byte[1]);
 
                 await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
@@ -792,7 +871,7 @@ namespace System.Net.Quic.Tests
             {
                 (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
 
-                await using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                await using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
                 await clientStream.WriteAsync(new byte[1]);
 
                 await using QuicStream serverStream = await serverConnection.AcceptStreamAsync();
@@ -817,7 +896,7 @@ namespace System.Net.Quic.Tests
             {
                 byte[] buffer = new byte[1] { 42 };
 
-                QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
                 Task<QuicStream> t = serverConnection.AcceptStreamAsync().AsTask();
                 await TaskTimeoutExtensions.WhenAllOrAnyFailed(clientStream.WriteAsync(buffer).AsTask(), t, PassingTestTimeoutMilliseconds);
                 QuicStream serverStream = t.Result;
@@ -881,7 +960,7 @@ namespace System.Net.Quic.Tests
                 },
                 clientFunction: async connection =>
                 {
-                    using QuicStream stream = connection.OpenBidirectionalStream();
+                    using QuicStream stream = await connection.OpenBidirectionalStreamAsync();
                     Assert.False(stream.ReadsCompleted);
 
                     await stream.WriteAsync(s_data, endStream: true);

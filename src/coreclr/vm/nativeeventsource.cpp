@@ -133,4 +133,14 @@ extern "C" void QCALLTYPE LogThreadPoolWorkingThreadCount(_In_z_ uint count, _In
 
     END_QCALL;
 }
+
+extern "C" void QCALLTYPE LogThreadPoolIOPack(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ short ClrInstanceID)
+{
+    QCALL_CONTRACT;
+    BEGIN_QCALL;
+
+    FireEtwThreadPoolIOPack(nativeOverlapped, overlapped, ClrInstanceID);
+
+    END_QCALL;
+}
 #endif // FEATURE_PERFTRACING

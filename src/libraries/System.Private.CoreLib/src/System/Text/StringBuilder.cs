@@ -180,8 +180,10 @@ namespace System.Text
             m_ChunkChars = GC.AllocateUninitializedArray<char>(capacity);
         }
 
-        private StringBuilder(SerializationInfo info!!, StreamingContext context)
+        private StringBuilder(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             int persistedCapacity = 0;
             string? persistedString = null;
             int persistedMaxCapacity = int.MaxValue;
@@ -238,8 +240,10 @@ namespace System.Text
             AssertInvariants();
         }
 
-        void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             AssertInvariants();
             info.AddValue(MaxCapacityField, m_MaxCapacity);
             info.AddValue(CapacityField, Capacity);
@@ -898,8 +902,10 @@ namespace System.Text
             return Append(Environment.NewLine);
         }
 
-        public void CopyTo(int sourceIndex, char[] destination!!, int destinationIndex, int count)
+        public void CopyTo(int sourceIndex, char[] destination, int destinationIndex, int count)
         {
+            ArgumentNullException.ThrowIfNull(destination);
+
             if (destinationIndex < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(destinationIndex), SR.Format(SR.ArgumentOutOfRange_MustBeNonNegNum, nameof(destinationIndex)));
@@ -1449,8 +1455,10 @@ namespace System.Text
         private const int IndexLimit = 1000000; // Note:            0 <= ArgIndex < IndexLimit
         private const int WidthLimit = 1000000; // Note:  -WidthLimit <  ArgAlign < WidthLimit
 
-        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format!!, ParamsArray args)
+        internal StringBuilder AppendFormatHelper(IFormatProvider? provider, string format, ParamsArray args)
         {
+            ArgumentNullException.ThrowIfNull(format);
+
             int pos = 0;
             int len = format.Length;
             char ch = '\x0';

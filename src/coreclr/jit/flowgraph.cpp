@@ -1057,7 +1057,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 
     assert(call->gtArgs.HasThisPointer());
     assert(call->gtArgs.CountArgs() == 3);
-    GenTree* targetMethod = call->gtArgs.GetArgByIndex(2)->GetEarlyNode();
+    assert(!call->gtArgs.AreArgsComplete());
+    GenTree* targetMethod = call->gtArgs.GetArgByIndex(2)->GetNode();
     noway_assert(targetMethod->TypeGet() == TYP_I_IMPL);
     genTreeOps            oper            = targetMethod->OperGet();
     CORINFO_METHOD_HANDLE targetMethodHnd = nullptr;
@@ -1071,7 +1072,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
     else if (oper == GT_CALL && targetMethod->AsCall()->gtCallMethHnd == eeFindHelper(CORINFO_HELP_VIRTUAL_FUNC_PTR))
     {
         assert(targetMethod->AsCall()->gtArgs.CountArgs() == 3);
-        GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetEarlyNode();
+        GenTree* handleNode = targetMethod->AsCall()->gtArgs.GetArgByIndex(2)->GetNode();
 
         if (handleNode->OperGet() == GT_CNS_INT)
         {
@@ -1110,7 +1111,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         GenTreeCall* runtimeLookupCall = qmarkNode->AsOp()->gtOp2->AsOp()->gtOp1->AsCall();
 
         // This could be any of CORINFO_HELP_RUNTIMEHANDLE_(METHOD|CLASS)(_LOG?)
-        GenTree* tokenNode = runtimeLookupCall->gtArgs.GetArgByIndex(1)->GetEarlyNode();
+        GenTree* tokenNode = runtimeLookupCall->gtArgs.GetArgByIndex(1)->GetNode();
         noway_assert(tokenNode->OperGet() == GT_CNS_INT);
         targetMethodHnd = CORINFO_METHOD_HANDLE(tokenNode->AsIntCon()->gtCompileTimeHandle);
     }
@@ -1142,8 +1143,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             {
                 JITDUMP("optimized\n");
 
-                GenTree*       thisPointer       = call->gtArgs.GetThisArg()->GetEarlyNode();
-                GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetEarlyNode();
+                GenTree*       thisPointer       = call->gtArgs.GetThisArg()->GetNode();
+                GenTree*       targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
                 CORINFO_LOOKUP pLookup;
                 info.compCompHnd->getReadyToRunDelegateCtorHelper(&ldftnToken->m_token, ldftnToken->m_tokenConstraint,
                                                                   clsHnd, &pLookup);
@@ -1175,8 +1176,8 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
         {
             JITDUMP("optimized\n");
 
-            GenTree* thisPointer       = call->gtArgs.GetArgByIndex(0)->GetEarlyNode();
-            GenTree* targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetEarlyNode();
+            GenTree* thisPointer       = call->gtArgs.GetArgByIndex(0)->GetNode();
+            GenTree* targetObjPointers = call->gtArgs.GetArgByIndex(1)->GetNode();
             call = gtNewHelperCallNode(CORINFO_HELP_READYTORUN_DELEGATE_CTOR, TYP_VOID, thisPointer, targetObjPointers);
 
             CORINFO_LOOKUP entryPoint;
@@ -3843,284 +3844,79 @@ BasicBlock* Compiler::fgRngChkTarget(BasicBlock* block, SpecialCodeKind kind)
     return fgAddCodeRef(block, bbThrowIndex(block), kind);
 }
 
-// Sequences the tree.
-// prevTree is what gtPrev of the first node in execution order gets set to.
-// Returns the first node (execution order) in the sequenced tree.
-GenTree* Compiler::fgSetTreeSeq(GenTree* tree, GenTree* prevTree, bool isLIR)
+//------------------------------------------------------------------------
+// fgSetTreeSeq: Sequence the tree, setting the "gtPrev" and "gtNext" links.
+//
+// Also sets the sequence numbers for dumps. The last and first node of
+// the resulting "range" will have their "gtNext" and "gtPrev" links set
+// to "nullptr".
+//
+// Arguments:
+//    tree  - the tree to sequence
+//    isLIR - whether the sequencing is being done for LIR. If so, the
+//            GTF_REVERSE_OPS flag will be cleared on all nodes.
+//
+// Return Value:
+//    The first node to execute in the sequenced tree.
+//
+GenTree* Compiler::fgSetTreeSeq(GenTree* tree, bool isLIR)
 {
-    GenTree list;
-
-    if (prevTree == nullptr)
+    class SetTreeSeqVisitor final : public GenTreeVisitor<SetTreeSeqVisitor>
     {
-        prevTree = &list;
-    }
-    fgTreeSeqLst = prevTree;
-    fgTreeSeqNum = 0;
-    fgTreeSeqBeg = nullptr;
-    fgSetTreeSeqHelper(tree, isLIR);
+        GenTree*   m_prevNode;
+        const bool m_isLIR;
 
-    GenTree* result = prevTree->gtNext;
-    if (prevTree == &list)
-    {
-        list.gtNext->gtPrev = nullptr;
-    }
-
-    return result;
-}
-
-/*****************************************************************************
- *
- *  Assigns sequence numbers to the given tree and its sub-operands, and
- *  threads all the nodes together via the 'gtNext' and 'gtPrev' fields.
- *  Uses 'global' - fgTreeSeqLst
- */
-
-void Compiler::fgSetTreeSeqHelper(GenTree* tree, bool isLIR)
-{
-    // TODO-List-Cleanup: measure what using GenTreeVisitor here brings.
-    genTreeOps oper;
-    unsigned   kind;
-
-    noway_assert(tree);
-    assert(!IsUninitialized(tree));
-
-    /* Figure out what kind of a node we have */
-
-    oper = tree->OperGet();
-    kind = tree->OperKind();
-
-    /* Is this a leaf/constant node? */
-
-    if (kind & GTK_LEAF)
-    {
-        fgSetTreeSeqFinish(tree, isLIR);
-        return;
-    }
-
-    /* Is it a 'simple' unary/binary operator? */
-
-    if (kind & GTK_SMPOP)
-    {
-        GenTree* op1 = tree->AsOp()->gtOp1;
-        GenTree* op2 = tree->gtGetOp2IfPresent();
-
-        /* Special handling for AddrMode */
-        if (tree->OperIsAddrMode())
+    public:
+        enum
         {
-            bool reverse = ((tree->gtFlags & GTF_REVERSE_OPS) != 0);
-            if (reverse)
-            {
-                assert(op1 != nullptr && op2 != nullptr);
-                fgSetTreeSeqHelper(op2, isLIR);
-            }
-            if (op1 != nullptr)
-            {
-                fgSetTreeSeqHelper(op1, isLIR);
-            }
-            if (!reverse && op2 != nullptr)
-            {
-                fgSetTreeSeqHelper(op2, isLIR);
-            }
+            DoPostOrder       = true,
+            UseExecutionOrder = true
+        };
 
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
+        SetTreeSeqVisitor(Compiler* compiler, GenTree* tree, bool isLIR)
+            : GenTreeVisitor<SetTreeSeqVisitor>(compiler), m_prevNode(tree), m_isLIR(isLIR)
+        {
+            INDEBUG(tree->gtSeqNum = 0);
         }
 
-        /* Check for a nilary operator */
-
-        if (op1 == nullptr)
+        fgWalkResult PostOrderVisit(GenTree** use, GenTree* user)
         {
-            noway_assert(op2 == nullptr);
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
+            GenTree* node = *use;
+
+            if (m_isLIR)
+            {
+                node->ClearReverseOp();
+            }
+
+            node->gtPrev       = m_prevNode;
+            m_prevNode->gtNext = node;
+
+            INDEBUG(node->gtSeqNum = m_prevNode->gtSeqNum + 1);
+
+            m_prevNode = node;
+
+            return fgWalkResult::WALK_CONTINUE;
         }
 
-        /* Is this a unary operator? */
-
-        if (op2 == nullptr)
+        GenTree* Sequence()
         {
-            /* Visit the (only) operand and we're done */
+            // We have set "m_prevNode" to "tree" in the constructor - this will give us a
+            // circular list here ("tree->gtNext == firstNode", "firstNode->gtPrev == tree").
+            GenTree* tree = m_prevNode;
+            WalkTree(&tree, nullptr);
+            assert(tree == m_prevNode);
 
-            fgSetTreeSeqHelper(op1, isLIR);
-            fgSetTreeSeqFinish(tree, isLIR);
-            return;
+            // Extract the first node in the sequence and break the circularity.
+            GenTree* lastNode  = tree;
+            GenTree* firstNode = lastNode->gtNext;
+            lastNode->gtNext   = nullptr;
+            firstNode->gtPrev  = nullptr;
+
+            return firstNode;
         }
+    };
 
-        // By the time execution order is being set, all QMARKs must have been rationalized.
-        assert(compQmarkRationalized && (oper != GT_QMARK) && (oper != GT_COLON));
-
-        /* This is a binary operator */
-
-        if (tree->gtFlags & GTF_REVERSE_OPS)
-        {
-            fgSetTreeSeqHelper(op2, isLIR);
-            fgSetTreeSeqHelper(op1, isLIR);
-        }
-        else
-        {
-            fgSetTreeSeqHelper(op1, isLIR);
-            fgSetTreeSeqHelper(op2, isLIR);
-        }
-
-        fgSetTreeSeqFinish(tree, isLIR);
-        return;
-    }
-
-    /* See what kind of a special operator we have here */
-
-    switch (oper)
-    {
-        case GT_CALL:
-
-            for (CallArg& arg : tree->AsCall()->gtArgs.Args())
-            {
-                fgSetTreeSeqHelper(arg.GetEarlyNode(), isLIR);
-            }
-
-            for (CallArg& arg : tree->AsCall()->gtArgs.LateArgs())
-            {
-                fgSetTreeSeqHelper(arg.GetLateNode(), isLIR);
-            }
-
-            if ((tree->AsCall()->gtCallType == CT_INDIRECT) && (tree->AsCall()->gtCallCookie != nullptr))
-            {
-                fgSetTreeSeqHelper(tree->AsCall()->gtCallCookie, isLIR);
-            }
-
-            if (tree->AsCall()->gtCallType == CT_INDIRECT)
-            {
-                fgSetTreeSeqHelper(tree->AsCall()->gtCallAddr, isLIR);
-            }
-
-            if (tree->AsCall()->gtControlExpr)
-            {
-                fgSetTreeSeqHelper(tree->AsCall()->gtControlExpr, isLIR);
-            }
-
-            break;
-
-#if defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-#if defined(FEATURE_SIMD)
-        case GT_SIMD:
-#endif
-#if defined(FEATURE_HW_INTRINSICS)
-        case GT_HWINTRINSIC:
-#endif
-            if (tree->IsReverseOp())
-            {
-                assert(tree->AsMultiOp()->GetOperandCount() == 2);
-                fgSetTreeSeqHelper(tree->AsMultiOp()->Op(2), isLIR);
-                fgSetTreeSeqHelper(tree->AsMultiOp()->Op(1), isLIR);
-            }
-            else
-            {
-                for (GenTree* operand : tree->AsMultiOp()->Operands())
-                {
-                    fgSetTreeSeqHelper(operand, isLIR);
-                }
-            }
-            break;
-#endif // defined(FEATURE_SIMD) || defined(FEATURE_HW_INTRINSICS)
-
-        case GT_ARR_ELEM:
-
-            fgSetTreeSeqHelper(tree->AsArrElem()->gtArrObj, isLIR);
-
-            unsigned dim;
-            for (dim = 0; dim < tree->AsArrElem()->gtArrRank; dim++)
-            {
-                fgSetTreeSeqHelper(tree->AsArrElem()->gtArrInds[dim], isLIR);
-            }
-
-            break;
-
-        case GT_ARR_OFFSET:
-            fgSetTreeSeqHelper(tree->AsArrOffs()->gtOffset, isLIR);
-            fgSetTreeSeqHelper(tree->AsArrOffs()->gtIndex, isLIR);
-            fgSetTreeSeqHelper(tree->AsArrOffs()->gtArrObj, isLIR);
-            break;
-
-        case GT_PHI:
-            for (GenTreePhi::Use& use : tree->AsPhi()->Uses())
-            {
-                fgSetTreeSeqHelper(use.GetNode(), isLIR);
-            }
-            break;
-
-        case GT_FIELD_LIST:
-            for (GenTreeFieldList::Use& use : tree->AsFieldList()->Uses())
-            {
-                fgSetTreeSeqHelper(use.GetNode(), isLIR);
-            }
-            break;
-
-        case GT_CMPXCHG:
-            // Evaluate the trees left to right
-            fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpLocation, isLIR);
-            fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpValue, isLIR);
-            fgSetTreeSeqHelper(tree->AsCmpXchg()->gtOpComparand, isLIR);
-            break;
-
-        case GT_STORE_DYN_BLK:
-            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Addr(), isLIR);
-            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->Data(), isLIR);
-            fgSetTreeSeqHelper(tree->AsStoreDynBlk()->gtDynamicSize, isLIR);
-            break;
-
-        default:
-#ifdef DEBUG
-            gtDispTree(tree);
-            noway_assert(!"unexpected operator");
-#endif // DEBUG
-            break;
-    }
-
-    fgSetTreeSeqFinish(tree, isLIR);
-}
-
-void Compiler::fgSetTreeSeqFinish(GenTree* tree, bool isLIR)
-{
-    // If we are sequencing for LIR:
-    // - Clear the reverse ops flag
-    // - If we are processing a node that does not appear in LIR, do not add it to the list.
-    if (isLIR)
-    {
-        tree->gtFlags &= ~GTF_REVERSE_OPS;
-
-        if (tree->OperIs(GT_ARGPLACE))
-        {
-            return;
-        }
-    }
-
-    /* Append to the node list */
-    ++fgTreeSeqNum;
-
-#ifdef DEBUG
-    tree->gtSeqNum = fgTreeSeqNum;
-
-    if (verbose & 0)
-    {
-        printf("SetTreeOrder: ");
-        printTreeID(fgTreeSeqLst);
-        printf(" followed by ");
-        printTreeID(tree);
-        printf("\n");
-    }
-#endif // DEBUG
-
-    fgTreeSeqLst->gtNext = tree;
-    tree->gtNext         = nullptr;
-    tree->gtPrev         = fgTreeSeqLst;
-    fgTreeSeqLst         = tree;
-
-    /* Remember the very first node */
-
-    if (!fgTreeSeqBeg)
-    {
-        fgTreeSeqBeg = tree;
-        assert(tree->gtSeqNum == 1);
-    }
+    return SetTreeSeqVisitor(this, tree, isLIR).Sequence();
 }
 
 /*****************************************************************************
@@ -4241,81 +4037,13 @@ void Compiler::fgSetBlockOrder()
 
 void Compiler::fgSetStmtSeq(Statement* stmt)
 {
-    GenTree list; // helper node that we use to start the StmtList
-                  // It's located in front of the first node in the list
-
-    /* Assign numbers and next/prev links for this tree */
-
-    fgTreeSeqNum = 0;
-    fgTreeSeqLst = &list;
-    fgTreeSeqBeg = nullptr;
-
-    fgSetTreeSeqHelper(stmt->GetRootNode(), false);
-
-    /* Record the address of the first node */
-
-    stmt->SetTreeList(fgTreeSeqBeg);
+    stmt->SetTreeList(fgSetTreeSeq(stmt->GetRootNode()));
 
 #ifdef DEBUG
-
-    if (list.gtNext->gtPrev != &list)
+    // Keep track of the highest # of tree nodes.
+    if (BasicBlock::s_nMaxTrees < stmt->GetRootNode()->gtSeqNum)
     {
-        printf("&list ");
-        printTreeID(&list);
-        printf(" != list.next->prev ");
-        printTreeID(list.gtNext->gtPrev);
-        printf("\n");
-        goto BAD_LIST;
-    }
-
-    GenTree* temp;
-    GenTree* last;
-    for (temp = list.gtNext, last = &list; temp != nullptr; last = temp, temp = temp->gtNext)
-    {
-        if (temp->gtPrev != last)
-        {
-            printTreeID(temp);
-            printf("->gtPrev = ");
-            printTreeID(temp->gtPrev);
-            printf(", but last = ");
-            printTreeID(last);
-            printf("\n");
-
-        BAD_LIST:;
-
-            printf("\n");
-            gtDispTree(stmt->GetRootNode());
-            printf("\n");
-
-            for (GenTree* bad = &list; bad != nullptr; bad = bad->gtNext)
-            {
-                printf("  entry at ");
-                printTreeID(bad);
-                printf(" (prev=");
-                printTreeID(bad->gtPrev);
-                printf(",next=)");
-                printTreeID(bad->gtNext);
-                printf("\n");
-            }
-
-            printf("\n");
-            noway_assert(!"Badly linked tree");
-            break;
-        }
-    }
-#endif // DEBUG
-
-    /* Fix the first node's 'prev' link */
-
-    noway_assert(list.gtNext->gtPrev == &list);
-    list.gtNext->gtPrev = nullptr;
-
-#ifdef DEBUG
-    /* Keep track of the highest # of tree nodes */
-
-    if (BasicBlock::s_nMaxTrees < fgTreeSeqNum)
-    {
-        BasicBlock::s_nMaxTrees = fgTreeSeqNum;
+        BasicBlock::s_nMaxTrees = stmt->GetRootNode()->gtSeqNum;
     }
 #endif // DEBUG
 }

@@ -16,19 +16,14 @@ namespace System.Reflection
             byte[]? publicKeyToken,
             Version? version,
             CultureInfo? cultureInfo,
-            AssemblyHashAlgorithm hashAlgorithm,
-            AssemblyVersionCompatibility versionCompatibility,
-            string? codeBase,
             AssemblyNameFlags flags)
+            : this()
         {
             _name = name;
             _publicKey = publicKey;
             _publicKeyToken = publicKeyToken;
             _version = version;
             _cultureInfo = cultureInfo;
-            _hashAlgorithm = hashAlgorithm;
-            _versionCompatibility = versionCompatibility;
-            _codeBase = codeBase;
             _flags = flags;
         }
 

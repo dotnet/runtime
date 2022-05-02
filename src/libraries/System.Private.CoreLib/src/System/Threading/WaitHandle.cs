@@ -238,8 +238,10 @@ namespace System.Threading
             }
         }
 
-        private static int WaitMultiple(WaitHandle[] waitHandles!!, bool waitAll, int millisecondsTimeout)
+        private static int WaitMultiple(WaitHandle[] waitHandles, bool waitAll, int millisecondsTimeout)
         {
+            ArgumentNullException.ThrowIfNull(waitHandles);
+
             return WaitMultiple(new ReadOnlySpan<WaitHandle>(waitHandles), waitAll, millisecondsTimeout);
         }
 
@@ -348,8 +350,11 @@ namespace System.Threading
             return waitResult;
         }
 
-        private static bool SignalAndWait(WaitHandle toSignal!!, WaitHandle toWaitOn!!, int millisecondsTimeout)
+        private static bool SignalAndWait(WaitHandle toSignal, WaitHandle toWaitOn, int millisecondsTimeout)
         {
+            ArgumentNullException.ThrowIfNull(toSignal);
+            ArgumentNullException.ThrowIfNull(toWaitOn);
+
             if (millisecondsTimeout < -1)
             {
                 throw new ArgumentOutOfRangeException(nameof(millisecondsTimeout), SR.ArgumentOutOfRange_NeedNonNegOrNegative1);

@@ -89,8 +89,6 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(QCall::ObjectHandleOnStack
 
     GCPROTECT_END();
 
-    spec.SetCodeBase(NULL);
-
     if (pParentAssembly != NULL)
         spec.SetParentAssembly(pParentAssembly);
 
@@ -163,7 +161,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
         }
 
         StackSString name;
-        spec.GetFileOrDisplayName(0, name);
+        spec.GetDisplayName(0, name);
         COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
     }
 
@@ -999,7 +997,7 @@ FCIMPL1(Object*, AssemblyNative::GetReferencedAssemblies, AssemblyBaseObject * p
         spec.InitializeSpec(mdAssemblyRef, pImport);
 
         gc.pObj = (ASSEMBLYNAMEREF) AllocateObject(pAsmNameClass);
-        spec.AssemblyNameInit(&gc.pObj,NULL);
+        spec.AssemblyNameInit(&gc.pObj);
 
         gc.ItemArray->SetAt(i, (OBJECTREF) gc.pObj);
     }
@@ -1089,23 +1087,6 @@ extern "C" void QCALLTYPE AssemblyNative_GetEntryAssembly(QCall::ObjectHandleOnS
 
     return;
 }
-
-// return the in memory assembly module for reflection emit. This only works for dynamic assembly.
-FCIMPL1(ReflectModuleBaseObject *, AssemblyNative::GetInMemoryAssemblyModule, AssemblyBaseObject* pAssemblyUNSAFE)
-{
-    FCALL_CONTRACT;
-
-
-    ASSEMBLYREF refAssembly = (ASSEMBLYREF)ObjectToOBJECTREF(pAssemblyUNSAFE);
-
-    if (refAssembly == NULL)
-        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
-
-    DomainAssembly *pAssembly = refAssembly->GetDomainAssembly();
-
-    FC_RETURN_MODULE_OBJECT(pAssembly->GetModule(), refAssembly);
-}
-FCIMPLEND
 
 extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyHandle pAssembly, QCall::StringHandleOnStack retString)
 {

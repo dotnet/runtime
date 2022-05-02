@@ -66,8 +66,17 @@ namespace System.Threading.Tasks.Dataflow
         /// <param name="dataflowBlockOptions">The options with which to configure this <see cref="ActionBlock{T}"/>.</param>
         /// <exception cref="System.ArgumentNullException">The <paramref name="action"/> is null (Nothing in Visual Basic).</exception>
         /// <exception cref="System.ArgumentNullException">The <paramref name="dataflowBlockOptions"/> is null (Nothing in Visual Basic).</exception>
-        private ActionBlock(Delegate action!!, ExecutionDataflowBlockOptions dataflowBlockOptions!!)
+        private ActionBlock(Delegate action, ExecutionDataflowBlockOptions dataflowBlockOptions)
         {
+            if (action is null)
+            {
+                throw new ArgumentNullException(nameof(action));
+            }
+            if (dataflowBlockOptions is null)
+            {
+                throw new ArgumentNullException(nameof(dataflowBlockOptions));
+            }
+
             // Ensure we have options that can't be changed by the caller
             dataflowBlockOptions = dataflowBlockOptions.DefaultOrClone();
 
@@ -226,8 +235,13 @@ namespace System.Threading.Tasks.Dataflow
         }
 
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
-        void IDataflowBlock.Fault(Exception exception!!)
+        void IDataflowBlock.Fault(Exception exception)
         {
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
+
             if (_defaultTarget != null)
             {
                 _defaultTarget.Complete(exception, dropPendingMessages: true);

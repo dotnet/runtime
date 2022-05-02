@@ -116,8 +116,10 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public void DeleteFile(string file!!)
+        public void DeleteFile(string file)
         {
+            ArgumentNullException.ThrowIfNull(file);
+
             EnsureStoreIsValid();
 
             try
@@ -131,22 +133,28 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public bool FileExists(string path!!)
+        public bool FileExists(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             EnsureStoreIsValid();
 
             return File.Exists(GetFullPath(path));
         }
 
-        public bool DirectoryExists(string path!!)
+        public bool DirectoryExists(string path)
         {
+            ArgumentNullException.ThrowIfNull(path);
+
             EnsureStoreIsValid();
 
             return Directory.Exists(GetFullPath(path));
         }
 
-        public void CreateDirectory(string dir!!)
+        public void CreateDirectory(string dir)
         {
+            ArgumentNullException.ThrowIfNull(dir);
+
             EnsureStoreIsValid();
 
             string isPath = GetFullPath(dir); // Prepend IS root
@@ -178,8 +186,10 @@ namespace System.IO.IsolatedStorage
             }
         }
 
-        public void DeleteDirectory(string dir!!)
+        public void DeleteDirectory(string dir)
         {
+            ArgumentNullException.ThrowIfNull(dir);
+
             EnsureStoreIsValid();
 
             try
@@ -199,8 +209,10 @@ namespace System.IO.IsolatedStorage
         }
 
         // foo\abc*.txt will give all abc*.txt files in foo directory
-        public string[] GetFileNames(string searchPattern!!)
+        public string[] GetFileNames(string searchPattern)
         {
+            ArgumentNullException.ThrowIfNull(searchPattern);
+
             EnsureStoreIsValid();
 
             try
@@ -221,8 +233,10 @@ namespace System.IO.IsolatedStorage
         }
 
         // foo\data* will give all directory names in foo directory that starts with data
-        public string[] GetDirectoryNames(string searchPattern!!)
+        public string[] GetDirectoryNames(string searchPattern)
         {
+            ArgumentNullException.ThrowIfNull(searchPattern);
+
             EnsureStoreIsValid();
 
             try

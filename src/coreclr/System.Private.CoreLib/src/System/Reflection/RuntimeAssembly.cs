@@ -123,10 +123,15 @@ namespace System.Reflection
                     null, // public key token
                     GetVersion(),
                     GetLocale(),
-                    GetHashAlgorithm(),
-                    AssemblyVersionCompatibility.SameMachine,
-                    codeBase,
                     GetFlags() | AssemblyNameFlags.PublicKey);
+
+#pragma warning disable IL3000 // System.Reflection.AssemblyName.CodeBase' always returns an empty string for assemblies embedded in a single-file app.
+            an.CodeBase = codeBase;
+#pragma warning restore IL3000
+
+#pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
+            an.HashAlgorithm = GetHashAlgorithm();
+#pragma warning restore SYSLIB0037
 
             Module manifestModule = ManifestModule;
             if (manifestModule.MDStreamVersion > 0x10000)
@@ -186,9 +191,11 @@ namespace System.Reflection
 
         [RequiresUnreferencedCode("Types might be removed")]
         public override Type? GetType(
-            string name!!, // throw on null strings regardless of the value of "throwOnError"
+            string name, // throw on null strings regardless of the value of "throwOnError"
             bool throwOnError, bool ignoreCase)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             RuntimeType? type = null;
             object? keepAlive = null;
             AssemblyLoadContext? assemblyLoadContextStack = AssemblyLoadContext.CurrentContextualReflectionContext;
@@ -303,16 +310,20 @@ namespace System.Reflection
             return CustomAttribute.GetCustomAttributes(this, (typeof(object) as RuntimeType)!);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.GetCustomAttributes(this, attributeRuntimeType);
         }
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -569,8 +580,10 @@ namespace System.Reflection
         }
 
         // Useful for binding to a very specific version of a satellite assembly
-        public override Assembly GetSatelliteAssembly(CultureInfo culture!!, Version? version)
+        public override Assembly GetSatelliteAssembly(CultureInfo culture, Version? version)
         {
+            ArgumentNullException.ThrowIfNull(culture);
+
             return InternalGetSatelliteAssembly(culture, version, throwOnFileNotFound: true)!;
         }
 

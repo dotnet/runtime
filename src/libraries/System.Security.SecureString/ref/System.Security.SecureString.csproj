@@ -2,10 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
-    <Compile Include="System.Security.SecureString.cs" />
     <Compile Include="System.Security.SecureString.Forwards.cs" />
   </ItemGroup>
   <ItemGroup>

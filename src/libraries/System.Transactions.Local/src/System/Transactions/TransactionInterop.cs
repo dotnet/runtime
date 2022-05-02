@@ -22,10 +22,7 @@ namespace System.Transactions
     {
         internal static DistributedTransaction ConvertToDistributedTransaction(Transaction transaction)
         {
-            if (null == transaction)
-            {
-                throw new ArgumentNullException(nameof(transaction));
-            }
+            ArgumentNullException.ThrowIfNull(transaction);
 
             if (transaction.Disposed)
             {
@@ -60,8 +57,11 @@ namespace System.Transactions
         /// </summary>
         public static readonly Guid PromoterTypeDtc = new Guid("14229753-FFE1-428D-82B7-DF73045CB8DA");
 
-        public static byte[] GetExportCookie(Transaction transaction!!, byte[] whereabouts!!)
+        public static byte[] GetExportCookie(Transaction transaction, byte[] whereabouts)
         {
+            ArgumentNullException.ThrowIfNull(transaction);
+            ArgumentNullException.ThrowIfNull(whereabouts);
+
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -83,8 +83,10 @@ namespace System.Transactions
             return cookie;
         }
 
-        public static Transaction GetTransactionFromExportCookie(byte[] cookie!!)
+        public static Transaction GetTransactionFromExportCookie(byte[] cookie)
         {
+            ArgumentNullException.ThrowIfNull(cookie);
+
             if (cookie.Length < 32)
             {
                 throw new ArgumentException(SR.InvalidArgument, nameof(cookie));
@@ -132,10 +134,7 @@ namespace System.Transactions
 
         public static byte[] GetTransmitterPropagationToken(Transaction transaction)
         {
-            if (null == transaction)
-            {
-                throw new ArgumentNullException(nameof(transaction));
-            }
+            ArgumentNullException.ThrowIfNull(transaction);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -154,8 +153,10 @@ namespace System.Transactions
             return token;
         }
 
-        public static Transaction GetTransactionFromTransmitterPropagationToken(byte[] propagationToken!!)
+        public static Transaction GetTransactionFromTransmitterPropagationToken(byte[] propagationToken)
         {
+            ArgumentNullException.ThrowIfNull(propagationToken);
+
             if (propagationToken.Length < 24)
             {
                 throw new ArgumentException(SR.InvalidArgument, nameof(propagationToken));
@@ -198,10 +199,7 @@ namespace System.Transactions
 
         public static IDtcTransaction GetDtcTransaction(Transaction transaction)
         {
-            if (null == transaction)
-            {
-                throw new ArgumentNullException(nameof(transaction));
-            }
+            ArgumentNullException.ThrowIfNull(transaction);
 
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
@@ -220,8 +218,10 @@ namespace System.Transactions
             return transactionNative;
         }
 
-        public static Transaction GetTransactionFromDtcTransaction(IDtcTransaction transactionNative!!)
+        public static Transaction GetTransactionFromDtcTransaction(IDtcTransaction transactionNative)
         {
+            ArgumentNullException.ThrowIfNull(transactionNative);
+
             TransactionsEtwProvider etwLog = TransactionsEtwProvider.Log;
             if (etwLog.IsEnabled())
             {
@@ -254,8 +254,10 @@ namespace System.Transactions
             return returnValue;
         }
 
-        internal static DistributedTransaction GetDistributedTransactionFromTransmitterPropagationToken(byte[] propagationToken!!)
+        internal static DistributedTransaction GetDistributedTransactionFromTransmitterPropagationToken(byte[] propagationToken)
         {
+            ArgumentNullException.ThrowIfNull(propagationToken);
+
             if (propagationToken.Length < 24)
             {
                 throw new ArgumentException(SR.InvalidArgument, nameof(propagationToken));

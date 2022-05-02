@@ -22,6 +22,7 @@
 #include "strongnameinternal.h"
 #include "strongnameholders.h"
 #include "eventtrace.h"
+#include "assemblynative.hpp"
 
 #include "../binder/inc/bindertracing.h"
 
@@ -144,38 +145,6 @@ AssemblySpecHash::~AssemblySpecHash()
 
         ++i;
     }
-}
-
-// Check assembly name for invalid characters
-// Return value:
-//      TRUE: If no invalid characters were found, or if the assembly name isn't set
-//      FALSE: If invalid characters were found
-// This is needed to prevent security loopholes with ':', '/' and '\' in the assembly name
-BOOL AssemblySpec::IsValidAssemblyName()
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-    }
-    CONTRACTL_END;
-
-    if (GetName())
-    {
-        SString ssAssemblyName(SString::Utf8, GetName());
-        for (SString::Iterator i = ssAssemblyName.Begin(); i[0] != W('\0'); i++) {
-            switch (i[0]) {
-                case W(':'):
-                case W('\\'):
-                case W('/'):
-                    return FALSE;
-
-                default:
-                    break;
-            }
-        }
-    }
-    return TRUE;
 }
 
 HRESULT AssemblySpec::InitializeSpecInternal(mdToken kAssemblyToken,
@@ -371,7 +340,7 @@ void AssemblySpec::InitializeSpec(StackingAllocator* alloc, ASSEMBLYNAMEREF* pNa
     CloneFieldsToStackingAllocator(alloc);
 }
 
-void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageInfo)
+void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName)
 {
     CONTRACTL
     {
@@ -496,20 +465,7 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
     if(GetName())
         gc.Name = StringObject::NewString(GetName());
 
-    if (GetCodeBase())
-        gc.CodeBase = StringObject::NewString(GetCodeBase());
-
     BOOL fPublicKey = m_dwFlags & afPublicKey;
-
-    ULONG hashAlgId=0;
-    if (pImageInfo != NULL)
-    {
-        if(!pImageInfo->GetMDImport()->IsValidToken(TokenFromRid(1, mdtAssembly)))
-        {
-            ThrowHR(COR_E_BADIMAGEFORMAT);
-        }
-        IfFailThrow(pImageInfo->GetMDImport()->GetAssemblyProps(TokenFromRid(1, mdtAssembly), NULL, NULL, &hashAlgId, NULL, NULL, NULL));
-    }
 
     MethodDescCallSite init(METHOD__ASSEMBLY_NAME__CTOR);
 
@@ -523,32 +479,10 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName, PEImage* pImageIn
         ObjToArgSlot(gc.PublicKeyOrToken), // public key token
         ObjToArgSlot(gc.Version),
         ObjToArgSlot(gc.CultureInfo),
-        (ARG_SLOT) hashAlgId,
-        (ARG_SLOT) 1, // AssemblyVersionCompatibility.SameMachine
-        ObjToArgSlot(gc.CodeBase),
         (ARG_SLOT) m_dwFlags,
     };
 
     init.Call(MethodArgs);
-
-    // Only set the processor architecture if we're looking at a newer binary that has
-    // that information in the PE, and we're not looking at a reference assembly.
-    if(pImageInfo && !pImageInfo->HasV1Metadata() && !pImageInfo->IsReferenceAssembly())
-    {
-        DWORD dwMachine, dwKind;
-
-        pImageInfo->GetPEKindAndMachine(&dwMachine,&dwKind);
-
-        MethodDescCallSite setPA(METHOD__ASSEMBLY_NAME__SET_PROC_ARCH_INDEX);
-
-        ARG_SLOT PAMethodArgs[] = {
-            ObjToArgSlot(*pAsmName),
-            (ARG_SLOT)dwMachine,
-            (ARG_SLOT)dwKind
-        };
-
-        setPA.Call(PAMethodArgs);
-    }
 
     GCPROTECT_END();
 }
@@ -579,7 +513,7 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
         spec.SetCulture(culture);
     }
 
-    spec.AssemblyNameInit(assemblyNameRef, NULL);
+    spec.AssemblyNameInit(assemblyNameRef);
 }
 
 
@@ -786,9 +720,19 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
     }
     CONTRACT_END;
 
-    AssemblySpec spec;
-    spec.SetCodeBase(pFilePath);
-    RETURN spec.LoadAssembly(FILE_LOADED);
+    GCX_PREEMP();
+
+    PEImageHolder pILImage;
+
+    pILImage = PEImage::OpenImage(pFilePath,
+        MDInternalImport_Default,
+        Bundle::ProbeAppBundle(pFilePath));
+
+    // Need to verify that this is a valid CLR assembly.
+    if (!pILImage->CheckILFormat())
+        THROW_BAD_FORMAT(BFA_BAD_IL, pILImage.GetValue());
+
+    RETURN AssemblyNative::LoadFromPEImage(AppDomain::GetCurrentDomain()->GetDefaultBinder(), pILImage);
 }
 
 HRESULT AssemblySpec::CheckFriendAssemblyName()

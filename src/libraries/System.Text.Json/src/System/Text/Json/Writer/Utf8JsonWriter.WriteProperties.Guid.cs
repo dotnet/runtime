@@ -49,8 +49,14 @@ namespace System.Text.Json
         /// Writes the <see cref="Guid"/> using the default <see cref="StandardFormat"/> (that is, 'D'), as the form: nnnnnnnn-nnnn-nnnn-nnnn-nnnnnnnnnnnn.
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteString(string propertyName!!, Guid value)
-            => WriteString(propertyName.AsSpan(), value);
+        public void WriteString(string propertyName, Guid value)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteString(propertyName.AsSpan(), value);
+        }
 
         /// <summary>
         /// Writes the property name and <see cref="Guid"/> value (as a JSON string) as part of a name/value pair of a JSON object.

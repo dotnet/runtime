@@ -943,6 +943,11 @@ namespace System.Runtime.InteropServices
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public bool Equals(System.Runtime.InteropServices.NFloat other) { throw null; }
         public static System.Runtime.InteropServices.NFloat Exp(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp10(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp10M1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp2(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Exp2M1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat ExpM1(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Floor(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat FusedMultiplyAdd(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right, System.Runtime.InteropServices.NFloat addend) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -960,11 +965,18 @@ namespace System.Runtime.InteropServices
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat newBase) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log10(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Log10P1(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Log2(System.Runtime.InteropServices.NFloat value) { throw null; }
+        public static System.Runtime.InteropServices.NFloat Log2P1(System.Runtime.InteropServices.NFloat x) { throw null; }
+        public static System.Runtime.InteropServices.NFloat LogP1(System.Runtime.InteropServices.NFloat x) { throw null; }
         public static System.Runtime.InteropServices.NFloat Max(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MaxMagnitude(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MaxMagnitudeNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MaxNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat Min(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat MinMagnitude(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MinMagnitudeNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
+        public static System.Runtime.InteropServices.NFloat MinNumber(System.Runtime.InteropServices.NFloat x, System.Runtime.InteropServices.NFloat y) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator +(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator --(System.Runtime.InteropServices.NFloat value) { throw null; }
         public static System.Runtime.InteropServices.NFloat operator /(System.Runtime.InteropServices.NFloat left, System.Runtime.InteropServices.NFloat right) { throw null; }

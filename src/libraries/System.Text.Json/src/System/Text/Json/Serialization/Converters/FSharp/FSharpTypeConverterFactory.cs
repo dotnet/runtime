@@ -10,8 +10,6 @@ namespace System.Text.Json.Serialization.Converters
 {
     internal sealed class FSharpTypeConverterFactory : JsonConverterFactory
     {
-        // Temporary solution to account for not implemented support for type-level attributes
-        // TODO remove once addressed https://github.com/mono/linker/issues/1742#issuecomment-875036480
         [RequiresUnreferencedCode(FSharpCoreReflectionProxy.FSharpCoreUnreferencedCodeMessage)]
         public FSharpTypeConverterFactory() { }
 
