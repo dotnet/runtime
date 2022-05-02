@@ -499,7 +499,11 @@ namespace System.Net.Http
 
                 RequestQueue<HttpConnection>.QueueItem queueItem = _http11RequestQueue.PeekNextRequestForConnectionAttempt();
 
-                Task.Run(() => AddHttp11ConnectionAsync(queueItem));
+                // Queue the creation of the connection to escape the held lock
+                ThreadPool.QueueUserWorkItem(static state =>
+                {
+                    _ = state.thisRef.AddHttp11ConnectionAsync(state.queueItem); // ignore returned task
+                }, (thisRef: this, queueItem), preferLocal: true);
             }
         }
 
@@ -721,7 +725,11 @@ namespace System.Net.Http
 
                 RequestQueue<Http2Connection?>.QueueItem queueItem = _http2RequestQueue.PeekNextRequestForConnectionAttempt();
 
-                Task.Run(() => AddHttp2ConnectionAsync(queueItem));
+                // Queue the creation of the connection to escape the held lock
+                ThreadPool.QueueUserWorkItem(static state =>
+                {
+                    _ = state.thisRef.AddHttp2ConnectionAsync(state.queueItem); // ignore returned task
+                }, (thisRef: this, queueItem), preferLocal: true);
             }
         }
 

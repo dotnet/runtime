@@ -165,6 +165,8 @@ CONFIG_INTEGER(JitStressBiasedCSE, W("JitStressBiasedCSE"), 0x101)     // Intern
 CONFIG_INTEGER(JitStressModeNamesOnly, W("JitStressModeNamesOnly"), 0) // Internal Jit stress: if nonzero, only enable
                                                                        // stress modes listed in JitStressModeNames
 CONFIG_INTEGER(JitStressRegs, W("JitStressRegs"), 0)
+CONFIG_STRING(JitStressRegsRange, W("JitStressRegsRange")) // Only apply JitStressRegs to methods in this hash range
+
 CONFIG_INTEGER(JitVNMapSelLimit, W("JitVNMapSelLimit"), 0) // If non-zero, assert if # of VNF_MapSelect applications
                                                            // considered reaches this
 CONFIG_INTEGER(NgenHashDump, W("NgenHashDump"), -1)        // same as JitHashDump, but for ngen

@@ -245,21 +245,17 @@
     <Reference Include="System.ComponentModel" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Drawing.Primitives" />
-    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Linq" />
     <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Security" />
     <Reference Include="System.ObjectModel" />
     <Reference Include="System.Resources.Writer" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Runtime.Loader" />
     <Reference Include="System.Runtime.Serialization.Formatters" />
     <Reference Include="System.Text.RegularExpressions" />
     <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Xml.XDocument" />
   </ItemGroup>
 </Project>

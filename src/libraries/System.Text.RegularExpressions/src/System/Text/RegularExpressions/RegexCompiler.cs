@@ -356,7 +356,9 @@ namespace System.Text.RegularExpressions
 
             // Generate length check.  If the input isn't long enough to possibly match, fail quickly.
             // It's rare for min required length to be 0, so we don't bother special-casing the check,
-            // especially since we want the "return false" code regardless.
+            // especially since we want the "return false" code regardless.  This differs from the source
+            // generator, where the return false is emitted at the end of the find method, and thus
+            // avoids the branch for the 0 case.
             int minRequiredLength = _regexTree.FindOptimizations.MinRequiredLength;
             Debug.Assert(minRequiredLength >= 0);
             Label returnFalse = DefineLabel();
@@ -4972,10 +4974,6 @@ namespace System.Text.RegularExpressions
                 Call(tryFindNextStartingPositionMethod);
                 BrfalseFar(returnLabel);
 
-                // Check the timeout every time we run the whole match logic at a new starting location, as each such
-                // operation could do work at least linear in the length of the input.
-                EmitTimeoutCheckIfNeeded();
-
                 // if (TryMatchAtCurrentPosition(text) || runtextpos == text.length) // or == 0 for rtl
                 //   return;
                 Ldthis();
@@ -4995,12 +4993,16 @@ namespace System.Text.RegularExpressions
                 Ceq();
                 BrtrueFar(returnLabel);
 
-                // runtextpos += 1 // or -1 for rtl
+                // runtextpos++ // or -- for rtl
                 Ldthis();
                 Ldthisfld(s_runtextposField);
                 Ldc(!rtl ? 1 : -1);
                 Add();
                 Stfld(s_runtextposField);
+
+                // Check the timeout every time we run the whole match logic at a new starting location, as each such
+                // operation could do work at least linear in the length of the input.
+                EmitTimeoutCheckIfNeeded();
 
                 // End loop body.
                 BrFar(whileLoopBody);
@@ -5201,7 +5203,9 @@ namespace System.Text.RegularExpressions
             // Next, handle sets where the high - low + 1 range is <= 64.  In that case, we can emit
             // a branchless lookup in a ulong that does not rely on loading any objects (e.g. the string-based
             // lookup we use later).  This nicely handles common sets like [0-9A-Fa-f], [0-9a-f], [A-Za-z], etc.
-            if (analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
+            // We skip this on 32-bit, as otherwise using 64-bit numbers in this manner is a deoptimization
+            // when compared to the subsequent fallbacks.
+            if (IntPtr.Size == 8 && analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
             {
                 // Create the 64-bit value with 1s at indices corresponding to every character in the set,
                 // where the bit is computed to be the char value minus the lower bound starting from
@@ -5459,17 +5463,26 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Emits a timeout check if one has been set explicitly or implicitly via a default setting.</summary>
-        /// <remarks>
         /// Regex timeouts exist to avoid catastrophic backtracking.  The goal with timeouts isn't to be accurate to the timeout value,
         /// but to ensure that significant backtracking can be stopped.  As such, we allow for up to O(n) work in the length of the input
         /// between checks, which means we emit checks anywhere backtracking is introduced, such that every check can have O(n) work
         /// associated with it.  This means checks:
-        /// - when restarting the whole match evaluation at a new index
-        /// - when backtracking backwards in a loop
-        /// - when backtracking forwards in a lazy loop
-        /// - when backtracking to the next branch of an alternation
-        /// - when processing a lookaround
-        /// </remarks>
+        /// - when restarting the whole match evaluation at a new index. Every match could end up doing O(n) work without a timeout
+        ///   check, and since this could then result in O(n) matches, we need a timeout check on each new position in order to
+        ///   avoid O(n^2) work without a timeout check.
+        /// - when backtracking backwards in a loop. Every backtracking step through the loop could evaluate the remainder of the
+        ///   pattern, which can lead to O(2^n) work if unchecked.
+        /// - when backtracking forwards in a lazy loop. Every backtracking step through the loop could evaluate the remainder of the
+        ///   pattern, which can lead to O(2^n) work if unchecked.
+        /// - when backtracking to the next branch of an alternation. Every branch of the alternation could evaluate the remainder of the
+        ///   pattern, which can lead to O(2^n) work if unchecked.
+        /// - when performing a lookaround.  Each lookaround can result in doing O(n) work, which means m lookarounds can result in
+        ///   O(m*n) work.  Lookarounds can be in loops, so without timeout checks in a lookaround, a pattern like `((?=(?>a*))a)+`
+        ///   could do O(n^2) work without a timeout check.
+        /// Note that some other constructs have code that needs to deal with backtracking, e.g. conditionals needing to ensure
+        /// that if any of their children have backtracking that code which backtracks back into the conditional is appropriately
+        /// routed to the correct child, but such constructs aren't actually introducing backtracking and thus don't need to be
+        /// instrumented for timeouts.
         private void EmitTimeoutCheckIfNeeded()
         {
             if (_hasTimeout)

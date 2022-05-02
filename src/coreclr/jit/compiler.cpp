@@ -9272,18 +9272,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 }
                 break;
 
-            case GT_CLS_VAR:
-
-                if (tree->gtFlags & GTF_CLS_VAR_ASG_LHS)
-                {
-                    chars += printf("[CLS_VAR_ASG_LHS]");
-                }
-                if (tree->gtFlags & GTF_CLS_VAR_TGT_HEAP)
-                {
-                    chars += printf("[CLS_VAR_TGT_HEAP]");
-                }
-                break;
-
             case GT_MUL:
 #if !defined(TARGET_64BIT)
             case GT_MUL_LONG:
@@ -9692,10 +9680,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         if (tree->gtFlags & GTF_UNSIGNED)
         {
             chars += printf("[SMALL_UNSIGNED]");
-        }
-        if (tree->gtFlags & GTF_LATE_ARG)
-        {
-            chars += printf("[SMALL_LATE_ARG]");
         }
         if (tree->gtFlags & GTF_SPILL)
         {

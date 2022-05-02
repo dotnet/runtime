@@ -134,9 +134,9 @@ namespace System.Security.Cryptography.X509Certificates.Tests
 
         private static void VerifyPrivateKey(RSA rsa)
         {
-            byte[] hash = new byte[20];
-            byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA1, RSASignaturePadding.Pkcs1);
-            Assert.Equal(TestData.PfxSha1Empty_ExpectedSig, sig);
+            byte[] hash = new byte[SHA256.HashSizeInBytes];
+            byte[] sig = rsa.SignHash(hash, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+            Assert.Equal(TestData.PfxSha256Empty_ExpectedSig, sig);
         }
 
         [Theory]

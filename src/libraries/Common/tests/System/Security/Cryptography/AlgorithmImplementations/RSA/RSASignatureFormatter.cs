@@ -10,7 +10,7 @@ namespace System.Security.Cryptography.Rsa.Tests
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
     public partial class RSASignatureFormatterTests : AsymmetricSignatureFormatterTests
     {
-        [Fact]
+        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
         public static void VerifySignature_SHA1()
         {
             using (RSA rsa = RSAFactory.Create())
@@ -66,7 +66,7 @@ namespace System.Security.Cryptography.Rsa.Tests
             }
         }
 
-        [Fact]
+        [ConditionalFact(typeof(RSAFactory), nameof(RSAFactory.SupportsSha1Signatures))]
         public static void VerifyKnownSignature()
         {
             byte[] hash = "012d161304fa0c6321221516415813022320620c".HexToByteArray();

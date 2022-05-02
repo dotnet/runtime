@@ -21,7 +21,7 @@
                           or ('@(ProjectReference)' != ''
                             and @(ProjectReference->AnyHaveMetadataValue('Identity', '$(CoreLibProject)')))
                           or ('$(NetCoreAppCurrentTargetFrameworkMoniker)' == '$(TargetFrameworkMoniker)'
-                            and '$(DisableImplicitAssemblyReferences)' != 'true'))" />
+                            and '$(DisableImplicitFrameworkReferences)' != 'true'))" />
     <EnabledGenerators Include="LibraryImportGenerator"
                        Condition="'$(EnableLibraryImportGenerator)' == ''
                         and '$(IsSourceProject)' == 'true'

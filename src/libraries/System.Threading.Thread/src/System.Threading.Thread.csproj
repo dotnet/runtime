@@ -2,6 +2,7 @@
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <FeatureWasmThreads>false</FeatureWasmThreads>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />

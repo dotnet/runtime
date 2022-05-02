@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Workaround for overriding the XML comments related warnings that are being supressed repo wide (within arcade): -->
     <!-- https://github.com/dotnet/arcade/blob/ea6addfdc65e5df1b2c036f11614a5f922e36267/src/Microsoft.DotNet.Arcade.Sdk/tools/ProjectDefaults.props#L90 -->
     <!-- For this project, we want warnings if there are public APIs/types without properly formatted XML comments (particularly CS1591). -->
@@ -21,6 +21,7 @@ System.Text.Json.Nodes.JsonArray
 System.Text.Json.Nodes.JsonObject
 System.Text.Json.Nodes.JsonValue</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <!-- For the inbox library (that is shipping with the product), this should always be true. -->
@@ -28,6 +29,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <DefineConstants Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETCoreApp'">$(DefineConstants);BUILDING_INBOX_LIBRARY</DefineConstants>
     <NoWarn Condition="$([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) != '.NETCoreApp'">$(NoWarn);nullable</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="$(CommonPath)System\HexConverter.cs" Link="Common\System\HexConverter.cs" />
     <Compile Include="$(CommonPath)System\Text\Json\PooledByteBufferWriter.cs" Link="Common\System\Text\Json\PooledByteBufferWriter.cs" />
@@ -316,6 +318,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\ReflectionExtensions.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Collections\Generic\ReferenceEqualityComparer.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Runtime\CompilerServices\IsExternalInit.cs" />
@@ -326,23 +329,28 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System.Text.Json.Typeforwards.netcoreapp.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\Collections\Generic\StackExtensions.netstandard.cs" />
     <!-- Common or Common-branched source files -->
     <Compile Include="$(CommonPath)System\Buffers\ArrayBufferWriter.cs" Link="Common\System\Buffers\ArrayBufferWriter.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
   </ItemGroup>
+
   <!-- Application tfms (.NETCoreApp, .NETFramework) need to use the same or higher version of .NETStandard's dependencies. -->
   <ItemGroup>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Encodings.Web\src\System.Text.Encodings.Web.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Memory" />
@@ -355,9 +363,11 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Reference Include="System.Text.Encoding.Extensions" />
     <Reference Include="System.Threading" />
   </ItemGroup>
+
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <PackageReference Include="System.Runtime.CompilerServices.Unsafe" Version="$(SystemRuntimeCompilerServicesUnsafeVersion)" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
@@ -366,6 +376,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'" />
     <ProjectReference Include="$(LibrariesProjectRoot)Microsoft.Bcl.AsyncInterfaces\src\Microsoft.Bcl.AsyncInterfaces.csproj" />
   </ItemGroup>
+
   <ItemGroup>
     <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
     <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" />

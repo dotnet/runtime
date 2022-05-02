@@ -2790,6 +2790,8 @@ public:
     // Check if this tree is a gc static base helper call
     bool gtIsStaticGCBaseHelperCall(GenTree* tree);
 
+    GenTree* gtCallGetDefinedRetBufLclAddr(GenTreeCall* call);
+
 //-------------------------------------------------------------------------
 // Functions to display the trees
 
@@ -6122,6 +6124,10 @@ public:
         GenTree*   lpTestTree;         // pointer to the node containing the loop test
         genTreeOps lpTestOper() const; // the type of the comparison between the iterator and the limit (GT_LE, GT_GE,
                                        // etc.)
+
+        bool lpIsIncreasingLoop() const; // if the loop iterator increases from low to high value.
+        bool lpIsDecreasingLoop() const; // if the loop iterator decreases from high to low value.
+
         void VERIFY_lpTestTree() const;
 
         bool     lpIsReversed() const; // true if the iterator node is the second operand in the loop condition
@@ -10648,7 +10654,6 @@ public:
 #endif // !FEATURE_EH_FUNCLETS
             case GT_PHI_ARG:
             case GT_JMPTABLE:
-            case GT_CLS_VAR:
             case GT_CLS_VAR_ADDR:
             case GT_PHYSREG:
             case GT_EMITNOP:

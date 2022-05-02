@@ -1581,9 +1581,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
             {
                 // Create a copy of the temp to go into the late argument list
                 defArg = MakeTmpArgNode(comp, &arg);
-
-                // mark the original node as a late argument
-                argx->gtFlags |= GTF_LATE_ARG;
             }
             else
             {
@@ -1711,9 +1708,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 #endif // TARGET_ARM
                 }
 
-                /* mark the assignment as a late argument */
-                setupArg->gtFlags |= GTF_LATE_ARG;
-
 #ifdef DEBUG
                 if (comp->verbose)
                 {
@@ -1781,6 +1775,10 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         *lateTail = &arg;
         lateTail  = &arg.LateNextRef();
     }
+
+    // Make sure we did not do anything here that stops us from being able to
+    // find the local ret buf if we are optimizing it.
+    noway_assert(!call->IsOptimizingRetBufAsLocal() || (comp->gtCallGetDefinedRetBufLclAddr(call) != nullptr));
 
 #ifdef DEBUG
     if (comp->verbose)
@@ -3637,8 +3635,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        bool     isLateArg = arg.GetLateNode() != nullptr;
-        GenTree* argx      = arg.GetNode();
+        GenTree*& argx = arg.GetLateNode() != nullptr ? arg.LateNodeRef() : arg.EarlyNodeRef();
 
         if (!arg.AbiInfo.IsStruct)
         {
@@ -3681,19 +3678,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                 }
 
                 GenTree* newArgx = fgMorphMultiregStructArg(&arg);
-
-                // Did we replace 'argx' with a new tree?
-                if (newArgx != argx)
-                {
-                    if (isLateArg)
-                    {
-                        arg.SetLateNode(newArgx);
-                    }
-                    else
-                    {
-                        arg.SetEarlyNode(newArgx);
-                    }
-                }
+                argx             = newArgx;
             }
         }
     }
@@ -5319,7 +5304,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
         }
         else
         {
-            // Only simple statics get importred as GT_FIELDs.
+            // Only simple statics get imported as GT_FIELDs.
             fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, FieldSeqNode::FieldKind::SimpleStatic);
         }
     }
@@ -5546,8 +5531,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             GenTree* lclVar = gtNewLclvNode(lclNum, objRefType);
             nullchk         = gtNewNullCheck(lclVar, compCurBB);
 
-            nullchk->gtFlags |= GTF_DONT_CSE; // Don't try to create a CSE for these TYP_BYTE indirections
-
             if (asg)
             {
                 // Create the "comma" node.
@@ -5602,8 +5585,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
         tree->SetOper(GT_IND);
         tree->AsOp()->gtOp1 = addr;
-
-        tree->SetIndirExceptionFlags(this);
 
         if (addExplicitNullCheck)
         {
@@ -5758,72 +5739,46 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             }
 #endif // TARGET_64BIT
 
-            // TODO: choices made below have mostly historical reasons and
-            // should be unified to always use the IND(<address>) form.
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if defined(TARGET_64BIT) || defined(TARGET_X86)
-            bool preferIndir = true;
-#else  // !TARGET_64BIT
-            bool preferIndir = isBoxedStatic;
-#endif // !TARGET_64BIT
-
-            if (preferIndir)
+            GenTreeFlags handleKind = GTF_EMPTY;
+            if (isBoxedStatic)
             {
-                GenTreeFlags handleKind = GTF_EMPTY;
-                if (isBoxedStatic)
-                {
-                    handleKind = GTF_ICON_STATIC_BOX_PTR;
-                }
-                else if (isStaticReadOnlyInited)
-                {
-                    handleKind = GTF_ICON_CONST_PTR;
-                }
-                else
-                {
-                    handleKind = GTF_ICON_STATIC_HDL;
-                }
-                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
-
-                // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
-                if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
-                {
-                    tree->gtFlags &= ~GTF_FLD_INITCLASS;
-                    addr->gtFlags |= GTF_ICON_INITCLASS;
-                }
-
-                tree->SetOper(GT_IND);
-                tree->AsOp()->gtOp1 = addr;
-
-                if (isBoxedStatic)
-                {
-                    // The box for the static cannot be null, and is logically invariant, since it
-                    // represents (a base for) the static's address.
-                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-                }
-                else if (isStaticReadOnlyInited)
-                {
-                    JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
-
-                    // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
-                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-                }
-
-                return fgMorphSmpOp(tree);
+                handleKind = GTF_ICON_STATIC_BOX_PTR;
+            }
+            else if (isStaticReadOnlyInited)
+            {
+                handleKind = GTF_ICON_CONST_PTR;
             }
             else
             {
-                assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_FLD_TGT_HEAP | GTF_COMMON_MASK)) ==
-                       0);
-                static_assert_no_msg(GTF_FLD_VOLATILE == GTF_CLS_VAR_VOLATILE);
-                static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
-                static_assert_no_msg(GTF_FLD_TGT_HEAP == GTF_CLS_VAR_TGT_HEAP);
-                tree->SetOper(GT_CLS_VAR);
-                tree->AsClsVar()->gtClsVarHnd = symHnd;
-                tree->AsClsVar()->gtFieldSeq  = fieldSeq;
+                handleKind = GTF_ICON_STATIC_HDL;
+            }
+            GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+
+            // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
+            if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
+            {
+                tree->gtFlags &= ~GTF_FLD_INITCLASS;
+                addr->gtFlags |= GTF_ICON_INITCLASS;
             }
 
-            return tree;
+            tree->SetOper(GT_IND);
+            tree->AsOp()->gtOp1 = addr;
+
+            if (isBoxedStatic)
+            {
+                // The box for the static cannot be null, and is logically invariant, since it
+                // represents (a base for) the static's address.
+                tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+            }
+            else if (isStaticReadOnlyInited)
+            {
+                JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
+
+                // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
+                tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+            }
+
+            return fgMorphSmpOp(tree);
         }
     }
     noway_assert(tree->gtOper == GT_IND);
@@ -8278,7 +8233,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     for (CallArg& arg : recursiveTailCall->gtArgs.EarlyArgs())
     {
         GenTree* earlyArg = arg.GetEarlyNode();
-        if ((earlyArg->gtFlags & GTF_LATE_ARG) != 0)
+        if (arg.GetLateNode() != nullptr)
         {
             // This is a setup node so we need to hoist it.
             Statement* earlyArgStmt = gtNewStmt(earlyArg, callDI);
@@ -8701,8 +8656,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
                 assert(argNode != arr);
                 assert(argNode != index);
-
-                argNode->gtFlags &= ~GTF_LATE_ARG;
 
                 GenTree* op1 = argSetup;
                 if (op1 == nullptr)
@@ -11232,8 +11185,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
         tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
 
         // &aliasedVar doesn't need GTF_GLOB_REF, though alisasedVar does
-        // Similarly for clsVar
-        if (oper == GT_ADDR && (op1->gtOper == GT_LCL_VAR || op1->gtOper == GT_CLS_VAR))
+        if (oper == GT_ADDR && (op1->gtOper == GT_LCL_VAR))
         {
             tree->gtFlags &= ~GTF_GLOB_REF;
         }
@@ -11535,7 +11487,7 @@ DONE_MORPHING_CHILDREN:
             effectiveOp1 = op1->gtEffectiveVal();
 
             // If we are storing a small type, we might be able to omit a cast.
-            if ((effectiveOp1->OperIs(GT_IND, GT_CLS_VAR) ||
+            if ((effectiveOp1->OperIs(GT_IND) ||
                  (effectiveOp1->OperIs(GT_LCL_VAR) &&
                   lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())) &&
                 varTypeIsSmall(effectiveOp1))
@@ -11857,7 +11809,7 @@ DONE_MORPHING_CHILDREN:
         {
             // If we have IND(ADDR(X)) and X has GTF_GLOB_REF, we must set GTF_GLOB_REF on
             // the OBJ. Note that the GTF_GLOB_REF will have been cleared on ADDR(X) where X
-            // is a local or CLS_VAR, even if it has been address-exposed.
+            // is a local, even if it has been address-exposed.
             if (op1->OperIs(GT_ADDR))
             {
                 tree->gtFlags |= (op1->AsUnOp()->gtGetOp1()->gtFlags & GTF_GLOB_REF);
@@ -12377,7 +12329,7 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    op2->gtFlags |= (tree->gtFlags & (GTF_DONT_CSE | GTF_LATE_ARG));
+                    op2->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
                     DEBUG_DESTROY_NODE(tree);
                     DEBUG_DESTROY_NODE(op1);
                     return op2;
@@ -12387,7 +12339,7 @@ DONE_MORPHING_CHILDREN:
                 // comma throw, in which case we want the top-level morphing loop to recognize it.
                 if (op2->IsNothingNode() && op1->TypeIs(TYP_VOID) && !fgIsCommaThrow(tree))
                 {
-                    op1->gtFlags |= (tree->gtFlags & (GTF_DONT_CSE | GTF_LATE_ARG));
+                    op1->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
                     DEBUG_DESTROY_NODE(tree);
                     DEBUG_DESTROY_NODE(op2);
                     return op1;
@@ -12574,7 +12526,7 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 
         // For indir-like nodes, we may be able to change their type to satisfy (and discard) the cast.
         if (varTypeIsSmall(castToType) && (genTypeSize(castToType) == genTypeSize(src)) &&
-            src->OperIs(GT_IND, GT_CLS_VAR, GT_LCL_FLD))
+            src->OperIs(GT_IND, GT_LCL_FLD))
         {
             // We're changing the type here so we need to update the VN;
             // in other cases we discard the cast without modifying src

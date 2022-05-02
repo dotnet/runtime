@@ -1042,16 +1042,30 @@ namespace System.Text.RegularExpressions.Tests
             {
                 if (RegexHelpers.IsNonBacktracking(engine))
                 {
+                    // NonBacktracking provides O(n) matching performance and thus doesn't have all
+                    // the timeout checks the backtracking engines require.
                     continue;
                 }
-
-                // All of the below tests have catastrophic backtracking...
 
                 string a50 = new string('a', 50);
                 string a64 = new string('a', 64);
                 string a100 = new string('a', 100);
+                string a1_000_000 = new string('a', 1_000_000);
                 string b50 = new string('b', 50);
 
+                // These aren't catastrophic backtracking, but they will result in O(M*N) work, evaluating
+                // each lookaround at every iteration of the loop and without any backtracking.  We still
+                // want timeouts here at least every O(N) work.
+
+                // Lookarounds
+                yield return new object[] { engine, @"((?=(?>a*))a)+", a1_000_000 };
+                yield return new object[] { engine, @"((?<=(?>a*))a)+", a1_000_000 };
+                yield return new object[] { engine, @"((?!(?>[^a]*))a)+", a1_000_000 };
+                yield return new object[] { engine, @"((?<!(?>[^a]*))a)+", a1_000_000 };
+
+                // All of the below tests have catastrophic backtracking...
+
+                // Loops
                 foreach (string lazyInner in new[] { "", "?" })
                 {
                     foreach (string lazyOuter in new[] { "", "?" })

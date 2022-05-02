@@ -292,6 +292,13 @@ steps:
       artifactName:  ${{ parameters.artifactName }}
 
   - task: PublishBuildArtifacts@1
+    displayName: 'Publish MauiBlazorAndroid binlog'
+    condition: always()
+    inputs:
+      pathtoPublish: $(Build.SourcesDirectory)/MauiBlazorTesting/MauiBlazorAndroid.binlog
+      artifactName:  ${{ parameters.artifactName }}
+
+  - task: PublishBuildArtifacts@1
     displayName: 'Publish MauiiOS binlog'
     condition: always()
     inputs:

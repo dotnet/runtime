@@ -15637,7 +15637,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // generated for ARM as well as x86, so the following IR will be accepted:
                     // STMTx (IL 0x... ???)
                     //   *  ASG long
-                    //   +--*  CLS_VAR   long
+                    //   +--*  LCL_VAR   long
                     //   \--*  CNS_INT   int    2
 
                     if ((op1->TypeGet() != op2->TypeGet()) && op2->OperIsConst() && varTypeIsIntOrI(op2->TypeGet()) &&

@@ -1128,9 +1128,9 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
                         type = TYP_UINT;
                     }
                 }
-                const emitAttr attr     = emitTypeSize(type);
+
+                const emitAttr attr     = emitActualTypeSize(type);
                 const unsigned moveSize = genTypeSize(type);
-                assert(EA_SIZE_IN_BYTES(attr) == moveSize);
 
                 remainingSize -= moveSize;
 

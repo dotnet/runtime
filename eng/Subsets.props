@@ -71,8 +71,7 @@
     <DefaultLibrariesSubsets Condition="'$(BuildTargetFramework)' == '$(NetCoreAppCurrent)' or
                                         '$(BuildTargetFramework)' == '' or
                                         '$(BuildAllConfigurations)' == 'true'">libs.native+</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.sfx+libs.oob</DefaultLibrariesSubsets>
-    <DefaultLibrariesSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultLibrariesSubsets)+libs.pretest</DefaultLibrariesSubsets>
+    <DefaultLibrariesSubsets>$(DefaultLibrariesSubsets)libs.sfx+libs.oob+libs.pretest</DefaultLibrariesSubsets>
 
     <DefaultHostSubsets>host.native+host.tools</DefaultHostSubsets>
     <DefaultHostSubsets Condition="'$(DotNetBuildFromSource)' != 'true'">$(DefaultHostSubsets)+host.pkg+host.tests</DefaultHostSubsets>
