@@ -680,17 +680,17 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CULong CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther> => new CULong(nuint.CreateChecked(value));
+            where TOther : INumber<TOther> => new CULong(UIntPtr.CreateChecked(value));
 
         /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CULong CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther> => new CULong(nuint.CreateSaturating(value));
+            where TOther : INumber<TOther> => new CULong(UIntPtr.CreateSaturating(value));
 
         /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CULong CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther> => new CULong(nuint.CreateTruncating(value));
+            where TOther : INumber<TOther> => new CULong(UIntPtr.CreateTruncating(value));
 
         /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
         public static bool IsNegative(CULong value) => false;
@@ -722,7 +722,7 @@ namespace System.Runtime.InteropServices
             where TOther : INumber<TOther>
         {
             Unsafe.SkipInit(out result);
-            return nuint.TryCreate(value, out Unsafe.As<CULong, nuint>(ref result));
+            return UIntPtr.TryCreate(value, out Unsafe.As<CULong, nuint>(ref result));
         }
 
         /// <inheritdoc cref="INumber{TSelf}.TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)" />

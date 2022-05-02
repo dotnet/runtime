@@ -670,17 +670,17 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CLong CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther> => new CLong(nint.CreateChecked(value));
+            where TOther : INumber<TOther> => new CLong(IntPtr.CreateChecked(value));
 
         /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CLong CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther> => new CLong(nint.CreateSaturating(value));
+            where TOther : INumber<TOther> => new CLong(IntPtr.CreateSaturating(value));
 
         /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CLong CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther> => new CLong(nint.CreateTruncating(value));
+            where TOther : INumber<TOther> => new CLong(IntPtr.CreateTruncating(value));
 
         /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
         public static bool IsNegative(CLong value) => nint.IsNegative(value._value);
@@ -712,7 +712,7 @@ namespace System.Runtime.InteropServices
             where TOther : INumber<TOther>
         {
             Unsafe.SkipInit(out result);
-            return nint.TryCreate(value, out Unsafe.As<CLong, nint>(ref result));
+            return IntPtr.TryCreate(value, out Unsafe.As<CLong, nint>(ref result));
         }
 
         /// <inheritdoc cref="INumber{TSelf}.TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)" />
