@@ -5160,12 +5160,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // sub
             // ret
 
-            GenTree* op2 = impPopStack().val;
-            GenTree* op1 = impPopStack().val;
-            impBashVarAddrsToI(op1, op2);
-
-            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &op2);
-            return gtNewOperNode(GT_SUB, type, op1, op2);
+            return nullptr;
         }
 
         case NI_SRCS_UNSAFE_Unbox:
