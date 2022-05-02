@@ -1486,7 +1486,7 @@ class AssemblyLoadContextBaseObject : public Object
     //  classlib class definition of this object.
 #ifdef TARGET_64BIT
     OBJECTREF     _unloadLock;
-    OBJECTREF     _resovlingUnmanagedDll;
+    OBJECTREF     _resolvingUnmanagedDll;
     OBJECTREF     _resolving;
     OBJECTREF     _unloading;
     OBJECTREF     _name;
@@ -1497,7 +1497,7 @@ class AssemblyLoadContextBaseObject : public Object
 #else // TARGET_64BIT
     int64_t       _id; // On 32-bit platforms this 64-bit value type is larger than a pointer so JIT places it first
     OBJECTREF     _unloadLock;
-    OBJECTREF     _resovlingUnmanagedDll;
+    OBJECTREF     _resolvingUnmanagedDll;
     OBJECTREF     _resolving;
     OBJECTREF     _unloading;
     OBJECTREF     _name;
@@ -1517,70 +1517,22 @@ class AssemblyLoadContextBaseObject : public Object
 #include "poppack.h"
 #endif // defined(TARGET_X86) && !defined(TARGET_UNIX)
 
+struct NativeAssemblyNameParts
+{
+    PCWSTR      _pName;
+    UINT16      _major, _minor, _build, _revision;
+    PCWSTR      _pCultureName;
+    BYTE*       _pPublicKeyOrToken;
+    int         _cbPublicKeyOrToken;
+    DWORD       _flags;
+};
+
 // AssemblyNameBaseObject
 // This class is the base class for assembly names
 //
 class AssemblyNameBaseObject : public Object
 {
-    friend class AssemblyNative;
-    friend class AppDomainNative;
-    friend class CoreLibBinder;
-
-  protected:
-    // READ ME:
-    // Modifying the order or fields of this object may require other changes to the
-    //  classlib class definition of this object.
-
-    OBJECTREF     _name;
-    U1ARRAYREF    _publicKey;
-    U1ARRAYREF    _publicKeyToken;
-    OBJECTREF     _cultureInfo;
-    OBJECTREF     _codeBase;
-    OBJECTREF     _version;
-    DWORD         _hashAlgorithm;
-    DWORD         _versionCompatibility;
-    DWORD         _flags;
-
-  protected:
-    AssemblyNameBaseObject() { LIMITED_METHOD_CONTRACT; }
-   ~AssemblyNameBaseObject() { LIMITED_METHOD_CONTRACT; }
-
-  public:
-    OBJECTREF GetSimpleName() { LIMITED_METHOD_CONTRACT; return _name; }
-    U1ARRAYREF GetPublicKey() { LIMITED_METHOD_CONTRACT; return _publicKey; }
-    U1ARRAYREF GetPublicKeyToken() { LIMITED_METHOD_CONTRACT; return _publicKeyToken; }
-    OBJECTREF GetCultureInfo() { LIMITED_METHOD_CONTRACT; return _cultureInfo; }
-    OBJECTREF GetAssemblyCodeBase() { LIMITED_METHOD_CONTRACT; return _codeBase; }
-    OBJECTREF GetVersion() { LIMITED_METHOD_CONTRACT; return _version; }
-    DWORD GetAssemblyHashAlgorithm() { LIMITED_METHOD_CONTRACT; return _hashAlgorithm; }
-    DWORD GetFlags() { LIMITED_METHOD_CONTRACT; return _flags; }
-};
-
-// VersionBaseObject
-// This class is the base class for versions
-//
-class VersionBaseObject : public Object
-{
-    friend class CoreLibBinder;
-
-  protected:
-    // READ ME:
-    // Modifying the order or fields of this object may require other changes to the
-    //  classlib class definition of this object.
-
-    int m_Major;
-    int m_Minor;
-    int m_Build;
-    int m_Revision;
-
-    VersionBaseObject() {LIMITED_METHOD_CONTRACT;}
-   ~VersionBaseObject() {LIMITED_METHOD_CONTRACT;}
-
-  public:
-    int GetMajor() { LIMITED_METHOD_CONTRACT; return m_Major; }
-    int GetMinor() { LIMITED_METHOD_CONTRACT; return m_Minor; }
-    int GetBuild() { LIMITED_METHOD_CONTRACT; return m_Build; }
-    int GetRevision() { LIMITED_METHOD_CONTRACT; return m_Revision; }
+    // Dummy definition
 };
 
 class WeakReferenceObject : public Object
@@ -1601,16 +1553,11 @@ typedef REF<ReflectFieldObject> REFLECTFIELDREF;
 
 typedef REF<ThreadBaseObject> THREADBASEREF;
 
-typedef REF<MarshalByRefObjectBaseObject> MARSHALBYREFOBJECTBASEREF;
-
 typedef REF<AssemblyBaseObject> ASSEMBLYREF;
 
 typedef REF<AssemblyLoadContextBaseObject> ASSEMBLYLOADCONTEXTREF;
 
 typedef REF<AssemblyNameBaseObject> ASSEMBLYNAMEREF;
-
-typedef REF<VersionBaseObject> VERSIONREF;
-
 
 typedef REF<WeakReferenceObject> WEAKREFERENCEREF;
 
@@ -1658,8 +1605,6 @@ typedef PTR_AssemblyLoadContextBaseObject ASSEMBLYLOADCONTEXTREF;
 typedef PTR_AssemblyNameBaseObject ASSEMBLYNAMEREF;
 
 #ifndef DACCESS_COMPILE
-typedef MarshalByRefObjectBaseObject* MARSHALBYREFOBJECTBASEREF;
-typedef VersionBaseObject* VERSIONREF;
 typedef WeakReferenceObject* WEAKREFERENCEREF;
 #endif // #ifndef DACCESS_COMPILE
 

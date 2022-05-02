@@ -212,7 +212,7 @@ int LinearScan::BuildCall(GenTreeCall* call)
         // the target. We do not handle these constraints on the same
         // refposition too well so we help ourselves a bit here by forcing the
         // null check with LR.
-        regMaskTP candidates = call->IsFastTailCall() ? RBM_LR : 0;
+        regMaskTP candidates = call->IsFastTailCall() ? RBM_LR : RBM_NONE;
         buildInternalIntRegisterDefForNode(call, candidates);
     }
 #endif // TARGET_ARM
@@ -339,14 +339,14 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // because the code generator doesn't actually consider it live,
     // so it can't be spilled.
 
-    for (CallArg& arg : call->gtArgs.Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* argNode = arg.GetEarlyNode();
 
-        // Skip arguments that have been moved to the Late Arg list
-        if ((argNode->gtFlags & GTF_LATE_ARG) == 0)
+        // Skip arguments that have been moved to the late list
+        if (arg.GetLateNode() == nullptr)
         {
-            // PUTARG_SPLIT nodes must be in the gtCallLateArgs list, since they
+            // PUTARG_SPLIT nodes must be in the late list, since they
             // define registers used by the call.
             assert(argNode->OperGet() != GT_PUTARG_SPLIT);
             if (argNode->gtOper == GT_PUTARG_STK)
@@ -632,9 +632,7 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                     buildInternalIntRegisterDefForNode(blkNode);
                 }
 
-                const bool isDstRegAddrAlignmentKnown = dstAddr->OperIsLocalAddr();
-
-                if (isDstRegAddrAlignmentKnown && (size > FP_REGSIZE_BYTES))
+                if (size > FP_REGSIZE_BYTES)
                 {
                     // For larger block sizes CodeGen can choose to use 16-byte SIMD instructions.
                     buildInternalFloatRegisterDefForNode(blkNode, internalFloatRegCandidates());
@@ -710,10 +708,9 @@ int LinearScan::BuildBlockStore(GenTreeBlk* blkNode)
                                                 ((srcAddrOrFill != nullptr) && srcAddrOrFill->OperIsLocalAddr());
                     const bool isDstAddrLocal = dstAddr->OperIsLocalAddr();
 
-                    // CodeGen can use 16-byte SIMD ldp/stp for larger block sizes
-                    // only when both source and destination base address registers have known alignment.
+                    // CodeGen can use 16-byte SIMD ldp/stp for larger block sizes.
                     // This is the case, when both registers are either sp or fp.
-                    bool canUse16ByteWideInstrs = isSrcAddrLocal && isDstAddrLocal && (size >= 2 * FP_REGSIZE_BYTES);
+                    bool canUse16ByteWideInstrs = (size >= 2 * FP_REGSIZE_BYTES);
 
                     // Note that the SIMD registers allocation is speculative - LSRA doesn't know at this point
                     // whether CodeGen will use SIMD registers (i.e. if such instruction sequence will be more optimal).

@@ -10,6 +10,7 @@ namespace System.Net
     {
         SystemDefault = 0,
 #pragma warning disable CS0618
+        [Obsolete("SecurityProtocolType.Ssl3 has been deprecated and is not supported.")]
         Ssl3 = SslProtocols.Ssl3,
 #pragma warning restore CS0618
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete

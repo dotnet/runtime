@@ -43,9 +43,15 @@ bool MetricsSummary::SaveToFile(const char* path)
     int len =
         sprintf_s(
             buffer, sizeof(buffer),
-            "Successful compiles,Failing compiles,Missing compiles,Code bytes,Diffed code bytes\n"
-            "%d,%d,%d,%lld,%lld\n",
-            SuccessfulCompiles, FailingCompiles, MissingCompiles, NumCodeBytes, NumDiffedCodeBytes);
+            "Successful compiles,Failing compiles,Missing compiles,Code bytes,Diffed code bytes,Executed instructions,Diff executed instructions\n"
+            "%d,%d,%d,%lld,%lld,%lld,%lld\n",
+            SuccessfulCompiles,
+            FailingCompiles,
+            MissingCompiles,
+            NumCodeBytes,
+            NumDiffedCodeBytes,
+            NumExecutedInstructions,
+            NumDiffExecutedInstructions);
     DWORD numWritten;
     if (!WriteFile(file.get(), buffer, static_cast<DWORD>(len), &numWritten, nullptr) || numWritten != static_cast<DWORD>(len))
     {
@@ -69,21 +75,30 @@ bool MetricsSummary::LoadFromFile(const char* path, MetricsSummary* metrics)
         return false;
     }
 
-    std::vector<char> content(static_cast<size_t>(len.QuadPart));
+    DWORD stringLen = static_cast<DWORD>(len.QuadPart);
+    std::vector<char> content(stringLen + 1);
     DWORD numRead;
-    if (!ReadFile(file.get(), content.data(), static_cast<DWORD>(content.size()), &numRead, nullptr) || numRead != content.size())
+    if (!ReadFile(file.get(), content.data(), stringLen, &numRead, nullptr) || numRead != stringLen)
     {
         return false;
     }
+
+    content[stringLen] = '\0';
  
     int scanResult =
         sscanf_s(
             content.data(),
-            "Successful compiles,Failing compiles,Missing compiles,Code bytes,Diffed code bytes\n"
-            "%d,%d,%d,%lld,%lld\n",
-            &metrics->SuccessfulCompiles, &metrics->FailingCompiles, &metrics->MissingCompiles, &metrics->NumCodeBytes, &metrics->NumDiffedCodeBytes);
+            "Successful compiles,Failing compiles,Missing compiles,Code bytes,Diffed code bytes,Executed instructions,Diff executed instructions\n"
+            "%d,%d,%d,%lld,%lld,%lld,%lld\n",
+            &metrics->SuccessfulCompiles,
+            &metrics->FailingCompiles,
+            &metrics->MissingCompiles,
+            &metrics->NumCodeBytes,
+            &metrics->NumDiffedCodeBytes,
+            &metrics->NumExecutedInstructions,
+            &metrics->NumDiffExecutedInstructions);
 
-    return scanResult == 5;
+    return scanResult == 7;
 }
 
 void MetricsSummary::AggregateFrom(const MetricsSummary& other)
@@ -93,4 +108,6 @@ void MetricsSummary::AggregateFrom(const MetricsSummary& other)
     MissingCompiles += other.MissingCompiles;
     NumCodeBytes += other.NumCodeBytes;
     NumDiffedCodeBytes += other.NumDiffedCodeBytes;
+    NumExecutedInstructions += other.NumExecutedInstructions;
+    NumDiffExecutedInstructions += other.NumDiffExecutedInstructions;
 }

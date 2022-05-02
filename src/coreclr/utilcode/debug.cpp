@@ -32,10 +32,6 @@ Volatile<LONG> g_DbgSuppressAllocationAsserts = 0;
 
 #ifdef _DEBUG
 
-int LowResourceMessageBoxHelperAnsi(
-                  LPCSTR szText,    // Text message
-                  LPCSTR szTitle,   // Title
-                  UINT uType);      // Style of MessageBox
 
 //*****************************************************************************
 // This struct tracks the asserts we want to ignore in the rest of this
@@ -176,7 +172,7 @@ BOOL DebugBreakOnAssert()
     return fRet;
 }
 
-VOID TerminateOnAssert()
+VOID DECLSPEC_NORETURN TerminateOnAssert()
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -188,8 +184,6 @@ VOID TerminateOnAssert()
 #endif
     RaiseFailFastException(NULL, NULL, 0);
 }
-
-thread_local bool f_bDisplayingAssertDlg;
 
 VOID LogAssert(
     LPCSTR      szFile,
@@ -305,7 +299,6 @@ HRESULT _OutOfMemory(LPCSTR szFile, int iLine)
     return (E_OUTOFMEMORY);
 }
 
-int _DbgBreakCount = 0;
 static const char * szLowMemoryAssertMessage = "Assert failure (unable to format)";
 
 //*****************************************************************************
@@ -419,101 +412,8 @@ bool _DbgBreakCheck(
         return true;       // like a retry
     }
 
-    if (NoGuiOnAssert())
-    {
-        TerminateOnAssert();
-    }
-
-    if (f_bDisplayingAssertDlg)
-    {
-        // We are already displaying an assert dialog box on this thread. The reason why we came here is
-        // the message loop run by the API we call to display the UI. A message was dispatched and execution
-        // ended up in the runtime where it fired another assertion. If this happens before the dialog had
-        // a chance to fully initialize the original assert may not be visible which is misleading for the
-        // user. So we just continue.
-        return false;
-    }
-
-    f_bDisplayingAssertDlg = true;
-
-    // Tell user there was an error.
-    _DbgBreakCount++;
-    int ret;
-    if (formattedMessages)
-    {
-        ret = UtilMessageBoxCatastrophicNonLocalized(
-            W("%s"), dialogTitle, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION, TRUE, (const WCHAR*)dialogOutput);
-    }
-    else
-    {
-        ret = LowResourceMessageBoxHelperAnsi(
-            szExpr, szLowMemoryAssertMessage, MB_ABORTRETRYIGNORE | MB_ICONEXCLAMATION);
-    }
-    --_DbgBreakCount;
-
-    f_bDisplayingAssertDlg = false;
-
-    switch(ret)
-    {
-    case 0:
-#if 0
-        // The message box was not displayed. Tell caller to break.
-        return true;
-#endif
-    // For abort, just quit the app.
-    case IDABORT:
-#ifdef HOST_WINDOWS
-        CreateCrashDumpIfEnabled();
-#endif
-        TerminateProcess(GetCurrentProcess(), 1);
-        break;
-
-    // Tell caller to break at the correct location.
-    case IDRETRY:
-        if (IsDebuggerPresent())
-        {
-            SetErrorMode(0);
-        }
-        else
-        {
-            LaunchJITDebugger();
-        }
-        return true;
-
-    // If we want to ignore the assert, find out if this is forever.
-    case IDIGNORE:
-        if (formattedMessages)
-        {
-            if (UtilMessageBoxCatastrophicNonLocalized(
-                                   dialogIgnoreMessage,
-                                   W("Ignore Assert Forever?"),
-                                   MB_ICONQUESTION | MB_YESNO,
-                                   TRUE) != IDYES)
-            {
-                break;
-            }
-        }
-        else
-        {
-            if (LowResourceMessageBoxHelperAnsi(
-                                   "Ignore the assert for the rest of this run?\nYes - Assert will never fire again.\nNo - Assert will continue to fire.\n",
-                                   "Ignore Assert Forever?",
-                                   MB_ICONQUESTION | MB_YESNO) != IDYES)
-            {
-                break;
-            }
-        }
-        if ((psData = pDBGIFNORE->Append()) == 0)
-        {
-            return false;
-        }
-        psData->bIgnore = true;
-        psData->iLine = iLine;
-        strcpy(psData->rcFile, szFile);
-        break;
-    }
-
-    return false;
+    TerminateOnAssert();
+    UNREACHABLE();
 }
 
 bool _DbgBreakCheckNoThrow(
@@ -743,37 +643,6 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
 } // GetStackTraceAtContext
 #endif // !defined(DACCESS_COMPILE)
 #endif // _DEBUG
-
-BOOL NoGuiOnAssert()
-{
-    STATIC_CONTRACT_NOTHROW;
-    STATIC_CONTRACT_GC_NOTRIGGER;
-    STATIC_CONTRACT_DEBUG_ONLY;
-
-    static ConfigDWORD fNoGui;
-    return fNoGui.val(CLRConfig::INTERNAL_NoGuiOnAssert);
-}
-
-// This helper will throw up a message box without allocating or using stack if possible, and is
-// appropriate for either low memory or low stack situations.
-int LowResourceMessageBoxHelperAnsi(
-                  LPCSTR szText,    // Text message
-                  LPCSTR szTitle,   // Title
-                  UINT uType)       // Style of MessageBox
-{
-    CONTRACTL
-    {
-        NOTHROW;
-        INJECT_FAULT(return IDCANCEL;);
-    }
-    CONTRACTL_END;
-
-    // In low memory or stack constrained code we cannot format or convert strings, so use the
-    // ANSI version.
-    int result = MessageBoxA(NULL, szText, szTitle, uType);
-    return result;
-}
-
 
 /****************************************************************************
    The following two functions are defined to allow Free builds to call

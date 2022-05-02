@@ -88,7 +88,6 @@ class Crst;
 #ifdef FEATURE_COMINTEROP
 class RCWCleanupList;
 #endif // FEATURE_COMINTEROP
-class BBSweep;
 
 //
 // loader handles are opaque types that track object pointers that have a lifetime
@@ -345,7 +344,6 @@ GARY_DECL(TypeHandle, g_pPredefinedArrayTypes, ELEMENT_TYPE_MAX);
 
 extern "C" Volatile<int32_t>   g_TrapReturningThreads;
 
-EXTERN BBSweep              g_BBSweep;
 EXTERN IBCLogger            g_IBCLogger;
 
 #ifdef _DEBUG

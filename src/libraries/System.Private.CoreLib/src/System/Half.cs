@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
@@ -85,10 +86,10 @@ namespace System
 
         public static Half NaN => new Half(NegativeQNaNBits);                       //  0.0 / 0.0
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         public static Half MinValue => new Half(MinValueBits);                      // -65504
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static Half MaxValue => new Half(MaxValueBits);                      //  65504
 
         private readonly ushort _value;
@@ -929,6 +930,12 @@ namespace System
             if (destination.Length >= sizeof(ushort))
             {
                 ushort significand = Significand;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
+
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
 
                 bytesWritten = sizeof(ushort);

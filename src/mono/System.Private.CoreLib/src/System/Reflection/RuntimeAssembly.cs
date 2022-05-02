@@ -89,6 +89,7 @@ namespace System.Reflection
 
         public override bool ReflectionOnly => false;
 
+        [Obsolete("Assembly.CodeBase and Assembly.EscapedCodeBase are only included for .NET Framework compatibility. Use Assembly.Location.", DiagnosticId = "SYSLIB0012", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         [RequiresAssemblyFiles(ThrowingMessageInRAF)]
         public override string? CodeBase => GetInfo(AssemblyInfoKind.CodeBase);
 

@@ -1248,12 +1248,6 @@
 	<Comment> generic CryptographicUnexpectedOperationException </Comment>
 </HRESULT>
 
-<HRESULT NumericValue="0x80131442">
-	<SymbolicName>CORSECATTR_E_BAD_ACTION</SymbolicName>
-	<Message>"Invalid security action code."</Message>
-	<Comment> Invalid security action code </Comment>
-</HRESULT>
-
 <HRESULT NumericValue="0x80131500">
 	<SymbolicName>COR_E_EXCEPTION</SymbolicName>
 	<Message>"General Exception"</Message>

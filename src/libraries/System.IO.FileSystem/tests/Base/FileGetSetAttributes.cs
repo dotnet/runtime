@@ -99,7 +99,7 @@ namespace System.IO.Tests
         {
             string path = CreateItem();
             streamName = path + streamName;
-            File.Create(streamName);
+            File.Create(streamName).Dispose();
 
             FileAttributes attributes = GetAttributes(streamName);
             Assert.NotEqual((FileAttributes)0, attributes);

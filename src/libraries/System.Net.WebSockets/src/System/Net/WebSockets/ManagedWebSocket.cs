@@ -682,7 +682,7 @@ namespace System.Net.WebSockets
                                 // Make sure we have the first two bytes, which includes the start of the payload length.
                                 if (_receiveBufferCount < 2)
                                 {
-                                    await EnsureBufferContainsAsync(2, cancellationToken, throwOnPrematureClosure: true).ConfigureAwait(false);
+                                    await EnsureBufferContainsAsync(2, cancellationToken).ConfigureAwait(false);
                                 }
 
                                 // Then make sure we have the full header based on the payload length.
@@ -787,7 +787,7 @@ namespace System.Net.WebSockets
                                     cancellationToken).ConfigureAwait(false);
                                 if (numBytesRead <= 0)
                                 {
-                                    ThrowIfEOFUnexpected(throwOnPrematureClosure: true);
+                                    ThrowEOFUnexpected();
                                     break;
                                 }
                                 totalBytesReceived += numBytesRead;
@@ -1344,7 +1344,7 @@ namespace System.Net.WebSockets
         }
 
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder))]
-        private async ValueTask EnsureBufferContainsAsync(int minimumRequiredBytes, CancellationToken cancellationToken, bool throwOnPrematureClosure = true)
+        private async ValueTask EnsureBufferContainsAsync(int minimumRequiredBytes, CancellationToken cancellationToken)
         {
             Debug.Assert(minimumRequiredBytes <= _receiveBuffer.Length, $"Requested number of bytes {minimumRequiredBytes} must not exceed {_receiveBuffer.Length}");
 
@@ -1365,7 +1365,7 @@ namespace System.Net.WebSockets
                     Debug.Assert(numRead >= 0, $"Expected non-negative bytes read, got {numRead}");
                     if (numRead <= 0)
                     {
-                        ThrowIfEOFUnexpected(throwOnPrematureClosure);
+                        ThrowEOFUnexpected();
                         break;
                     }
                     _receiveBufferCount += numRead;
@@ -1373,20 +1373,17 @@ namespace System.Net.WebSockets
             }
         }
 
-        private void ThrowIfEOFUnexpected(bool throwOnPrematureClosure)
+        private void ThrowEOFUnexpected()
         {
             // The connection closed before we were able to read everything we needed.
-            // If it was due to us being disposed, fail.  If it was due to the connection
-            // being closed and it wasn't expected, fail.  If it was due to the connection
-            // being closed and that was expected, exit gracefully.
+            // If it was due to us being disposed, fail with the correct exception.
+            // Otherwise, it was due to the connection being closed and it wasn't expected.
             if (_disposed)
             {
                 throw new ObjectDisposedException(nameof(WebSocket));
             }
-            if (throwOnPrematureClosure)
-            {
-                throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
-            }
+
+            throw new WebSocketException(WebSocketError.ConnectionClosedPrematurely);
         }
 
         /// <summary>Gets a send buffer from the pool.</summary>

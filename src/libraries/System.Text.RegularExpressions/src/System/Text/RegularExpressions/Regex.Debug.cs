@@ -11,19 +11,6 @@ namespace System.Text.RegularExpressions
 {
     public partial class Regex
     {
-        /// <summary>True if debug tracing should be enabled, only in debug builds.</summary>
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal static bool EnableDebugTracing
-        {
-            // These members aren't used from IsDebug, but we want to keep them in debug builds for now,
-            // so this is a convenient place to include them rather than needing a debug-only illink file.
-            [DynamicDependency(nameof(SaveDGML))]
-            [DynamicDependency(nameof(GenerateUnicodeTables))]
-            [DynamicDependency(nameof(GenerateRandomMembers))]
-            get;
-            set;
-        }
-
         /// <summary>Unwind the regex and save the resulting state graph in DGML</summary>
         /// <param name="writer">Writer to which the DGML is written.</param>
         /// <param name="nfa">True to create an NFA instead of a DFA.</param>

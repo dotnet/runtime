@@ -2973,10 +2973,6 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
     switch (tree->OperGet())
     {
-        case GT_CLS_VAR:
-            expectedFlags |= GTF_GLOB_REF;
-            break;
-
         case GT_CATCH_ARG:
             expectedFlags |= GTF_ORDER_SIDEEFF;
             break;
@@ -3033,6 +3029,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
                 // Currently we expect all indirections with constant addresses to be nonfaulting.
                 expectedFlags |= GTF_IND_NONFAULTING;
             }
+
+            assert(((tree->gtFlags & GTF_IND_TGT_NOT_HEAP) == 0) || ((tree->gtFlags & GTF_IND_TGT_HEAP) == 0));
             break;
 
         case GT_CALL:
@@ -3045,7 +3043,11 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
             {
                 // TODO-Cleanup: this is a patch for a violation in our GT_ASG propagation.
                 // see https://github.com/dotnet/runtime/issues/13758
-                actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
+                if (arg.GetEarlyNode() != nullptr)
+                {
+                    actualFlags |= arg.GetEarlyNode()->gtFlags & GTF_ASG;
+                }
+
                 if (arg.GetLateNode() != nullptr)
                 {
                     actualFlags |= arg.GetLateNode()->gtFlags & GTF_ASG;
@@ -3084,7 +3086,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
     });
 
     // ADDR nodes break the "parent flags >= operands flags" invariant for GTF_GLOB_REF.
-    if (tree->OperIs(GT_ADDR) && op1->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_CLS_VAR))
+    if (tree->OperIs(GT_ADDR) && op1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
     {
         expectedFlags &= ~GTF_GLOB_REF;
     }
