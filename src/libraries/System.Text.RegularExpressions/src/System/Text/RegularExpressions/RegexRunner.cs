@@ -196,17 +196,11 @@ namespace System.Text.RegularExpressions
             while (true)
             {
                 // Find the next potential location for a match in the input.
-#if DEBUG
-                Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling FindFirstChar at {nameof(runtextbeg)}={runtextbeg}, {nameof(runtextpos)}={runtextpos}, {nameof(runtextend)}={runtextend}");
-#endif
                 if (FindFirstChar())
                 {
                     CheckTimeout();
 
                     // See if there's a match at this position.
-#if DEBUG
-                    Debug.WriteLineIf(Regex.EnableDebugTracing, $"Calling Go at {nameof(runtextpos)}={runtextpos}");
-#endif
                     Go();
 
                     if (runmatch!.FoundMatch)
@@ -565,90 +559,5 @@ namespace System.Text.RegularExpressions
         {
             return runmatch!.MatchLength(cap);
         }
-
-#if DEBUG
-        /// <summary>
-        /// Dump the current state
-        /// </summary>
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal virtual void DebugTraceCurrentState()
-        {
-            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Text:  {DescribeTextPosition()}");
-            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Track: {DescribeStack(runtrack!, runtrackpos)}");
-            Debug.WriteLineIf(Regex.EnableDebugTracing, $"Stack: {DescribeStack(runstack!, runstackpos)}");
-
-            string DescribeTextPosition()
-            {
-                var sb = new StringBuilder();
-
-                sb.Append(runtextpos);
-
-                if (sb.Length < 8)
-                {
-                    sb.Append(' ', 8 - sb.Length);
-                }
-
-                if (runtextpos > runtextbeg)
-                {
-                    if (runtext != null)
-                    {
-                        sb.Append(RegexCharClass.DescribeChar(runtext[runtextpos - 1]));
-                    }
-                }
-                else
-                {
-                    sb.Append('^');
-                }
-
-                sb.Append('>');
-
-                for (int i = runtextpos; i < runtextend; i++)
-                {
-                    if (runtext != null)
-                    {
-                        sb.Append(RegexCharClass.DescribeChar(runtext[i]));
-                    }
-                }
-                if (sb.Length >= 64)
-                {
-                    sb.Length = 61;
-                    sb.Append("...");
-                }
-                else
-                {
-                    sb.Append('$');
-                }
-
-                return sb.ToString();
-            }
-
-            static string DescribeStack(int[] stack, int index)
-            {
-                var sb = new StringBuilder();
-
-                sb.Append(stack.Length - index).Append('/').Append(stack.Length);
-
-                if (sb.Length < 8)
-                {
-                    sb.Append(' ', 8 - sb.Length);
-                }
-
-                sb.Append('(');
-
-                for (int i = index; i < stack.Length; i++)
-                {
-                    if (i > index)
-                    {
-                        sb.Append(' ');
-                    }
-                    sb.Append(stack[i]);
-                }
-
-                sb.Append(')');
-
-                return sb.ToString();
-            }
-        }
-#endif
     }
 }

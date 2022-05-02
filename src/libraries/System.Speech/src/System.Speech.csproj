@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent);$(NetCoreAppMinimum)-windows;$(NetCoreAppMinimum);netstandard2.0</TargetFrameworks>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- CS0649: uninitialized interop type fields -->
     <!-- SA1129: https://github.com/DotNetAnalyzers/StyleCopAnalyzers/issues/3277 -->
     <!-- CA1846: Prefer 'AsSpan' over 'Substring' when span-based overloads are available -->
@@ -17,6 +17,7 @@ Commonly Used Types
 System.Speech.Synthesis.SpeechSynthesizer
 System.Speech.Recognition.SpeechRecognizer</PackageDescription>
   </PropertyGroup>
+
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
     <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
@@ -24,6 +25,7 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' != 'windows'">SR.PlatformNotSupported_SystemSpeech</GeneratePlatformNotSupportedAssemblyMessage>
     <OmitResources Condition="'$(GeneratePlatformNotSupportedAssemblyMessage)' == ''">true</OmitResources>
   </PropertyGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="SR.cs" />
     <Compile Include="SRID.cs" />
@@ -223,64 +225,32 @@ System.Speech.Recognition.SpeechRecognizer</PackageDescription>
     <Compile Include="$(CommonPath)Interop\Windows\WinMm\Interop.waveOutWrite.cs"
             Link="Common\Interop\Windows\WinMm\Interop.waveOutWrite.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0-windows'))">
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
-    <EmbeddedResource Include="Resources\Strings.resx">
-      <Visible>true</Visible>
-      <ManifestResourceName>ExceptionStringTable</ManifestResourceName>
-    </EmbeddedResource>
+    <EmbeddedResource Include="Resources\Strings.resx"
+                      Visible="true"
+                      ManifestResourceName="ExceptionStringTable" />
   </ItemGroup>
+
   <ItemGroup>
-    <EmbeddedResource Include="upstable_chs.upsmap">
-      <LogicalName>upstable_chs.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_cht.upsmap">
-      <LogicalName>upstable_cht.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_deu.upsmap">
-      <LogicalName>upstable_deu.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_enu.upsmap">
-      <LogicalName>upstable_enu.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_esp.upsmap">
-      <LogicalName>upstable_esp.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_fra.upsmap">
-      <LogicalName>upstable_fra.upsmap</LogicalName>
-    </EmbeddedResource>
-    <EmbeddedResource Include="upstable_jpn.upsmap">
-      <LogicalName>upstable_jpn.upsmap</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="Microsoft.Win32.Registry" />
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Collections.Specialized" />
-    <Reference Include="System.ComponentModel.EventBasedAsync" />
-    <Reference Include="System.ComponentModel.Primitives" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.Diagnostics.TraceSource" />
-    <Reference Include="System.IO.FileSystem" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Net.Primitives" />
-    <Reference Include="System.Net.Requests" />
-    <Reference Include="System.Net.WebClient" />
-    <Reference Include="System.ObjectModel" />
-    <Reference Include="System.Resources.ResourceManager" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.InteropServices" />
-    <Reference Include="System.Runtime.Serialization.Formatters" />
-    <Reference Include="System.Threading" />
-    <Reference Include="System.Threading.Tasks" />
-    <Reference Include="System.Threading.Thread" />
-    <Reference Include="System.Threading.ThreadPool" />
-    <Reference Include="System.Xml.ReaderWriter" />
+    <EmbeddedResource Include="upstable_chs.upsmap"
+                      LogicalName="upstable_chs.upsmap" />
+    <EmbeddedResource Include="upstable_cht.upsmap"
+                      LogicalName="upstable_cht.upsmap" />
+    <EmbeddedResource Include="upstable_deu.upsmap"
+                      LogicalName="upstable_deu.upsmap" />
+    <EmbeddedResource Include="upstable_enu.upsmap"
+                      LogicalName="upstable_enu.upsmap" />
+    <EmbeddedResource Include="upstable_esp.upsmap"
+                      LogicalName="upstable_esp.upsmap" />
+    <EmbeddedResource Include="upstable_fra.upsmap"
+                      LogicalName="upstable_fra.upsmap" />
+    <EmbeddedResource Include="upstable_jpn.upsmap"
+                      LogicalName="upstable_jpn.upsmap" />
   </ItemGroup>
 </Project>

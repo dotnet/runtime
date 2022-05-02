@@ -1560,6 +1560,7 @@ public:
         uint8_t* classProfile = m_schema[*m_currentSchemaIndex].Offset + m_profileMemory;
         *m_currentSchemaIndex += 2; // There are 2 schema entries per class probe
 
+        assert(!call->gtArgs.AreArgsComplete());
         CallArg* objUse = nullptr;
         if (compiler->impIsCastHelperEligibleForClassProbe(call))
         {

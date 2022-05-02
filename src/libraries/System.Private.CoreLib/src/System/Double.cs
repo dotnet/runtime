@@ -11,6 +11,7 @@
 **
 ===========================================================*/
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -684,6 +685,12 @@ namespace System
             if (destination.Length >= sizeof(short))
             {
                 short exponent = Exponent;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
+                }
+
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
 
                 bytesWritten = sizeof(short);
@@ -708,6 +715,12 @@ namespace System
             if (destination.Length >= sizeof(ulong))
             {
                 ulong significand = Significand;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
+
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
 
                 bytesWritten = sizeof(ulong);

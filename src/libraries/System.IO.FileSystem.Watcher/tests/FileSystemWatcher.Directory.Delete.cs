@@ -12,10 +12,9 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Delete()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            using (var watcher = new FileSystemWatcher(TestDirectory))
             {
-                string dirName = Path.Combine(testDirectory.Path, "dir");
+                string dirName = Path.Combine(TestDirectory, "dir");
                 watcher.Filter = Path.GetFileName(dirName);
 
                 Action action = () => Directory.Delete(dirName);
@@ -29,15 +28,13 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Delete_InNestedDirectory()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var firstDir = new TempDirectory(Path.Combine(dir.Path, "dir1")))
-            using (var nestedDir = new TempDirectory(Path.Combine(firstDir.Path, "nested")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string nestedDir = CreateTestDirectory(TestDirectory, "dir1", "nested");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
-                string dirName = Path.Combine(nestedDir.Path, "dir");
+                string dirName = Path.Combine(nestedDir, "dir");
                 Action action = () => Directory.Delete(dirName);
                 Action cleanup = () => Directory.CreateDirectory(dirName);
                 cleanup();
@@ -50,15 +47,14 @@ namespace System.IO.Tests
         [OuterLoop("This test has a longer than average timeout and may fail intermittently")]
         public void FileSystemWatcher_Directory_Delete_DeepDirectoryStructure()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var deepDir = new TempDirectory(Path.Combine(dir.Path, "dir", "dir", "dir", "dir", "dir", "dir", "dir")))
-            using (var watcher = new FileSystemWatcher(dir.Path, "*"))
+            string deepDir = CreateTestDirectory(TestDirectory, "dir", "dir", "dir", "dir", "dir", "dir", "dir");
+            using (var watcher = new FileSystemWatcher(TestDirectory, "*"))
             {
                 watcher.IncludeSubdirectories = true;
                 watcher.NotifyFilter = NotifyFilters.DirectoryName;
 
                 // Put a directory at the very bottom and expect it to raise an event
-                string dirPath = Path.Combine(deepDir.Path, "leafdir");
+                string dirPath = Path.Combine(deepDir, "leafdir");
                 Action action = () => Directory.Delete(dirPath);
                 Action cleanup = () => Directory.CreateDirectory(dirPath);
                 cleanup();
@@ -70,15 +66,14 @@ namespace System.IO.Tests
         [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_Directory_Delete_SymLink()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var tempDir = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir.Path), "*"))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            string tempDir = CreateTestDirectory();
+            using (var watcher = new FileSystemWatcher(Path.GetFullPath(dir), "*"))
             {
                 // Make the symlink in our path (to the temp folder) and make sure an event is raised
-                string symLinkPath = Path.Combine(dir.Path, GetRandomLinkName());
+                string symLinkPath = Path.Combine(dir, GetRandomLinkName());
                 Action action = () => Directory.Delete(symLinkPath);
-                Action cleanup = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, tempDir.Path, true));
+                Action cleanup = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, tempDir, true));
                 cleanup();
 
                 ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, expectedPath: symLinkPath);
@@ -88,13 +83,12 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_Directory_Delete_SynchronizingObject()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path))
+            using (var watcher = new FileSystemWatcher(TestDirectory))
             {
                 TestISynchronizeInvoke invoker = new TestISynchronizeInvoke();
                 watcher.SynchronizingObject = invoker;
 
-                string dirName = Path.Combine(testDirectory.Path, "dir");
+                string dirName = Path.Combine(TestDirectory, "dir");
                 watcher.Filter = Path.GetFileName(dirName);
 
                 Action action = () => Directory.Delete(dirName);

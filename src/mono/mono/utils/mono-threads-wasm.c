@@ -8,13 +8,19 @@
 
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-mmap.h>
+#include <mono/utils/mono-threads-debug.h>
 
 #include <glib.h>
 
 #ifdef HOST_BROWSER
 
+#include <mono/utils/mono-threads-wasm.h>
+
 #include <emscripten.h>
 #include <emscripten/stack.h>
+#ifndef DISABLE_THREADS
+#include <emscripten/threading.h>
+#endif
 
 #define round_down(addr, val) ((void*)((addr) & ~((val) - 1)))
 
@@ -109,7 +115,6 @@ mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {
 	return id1 == id2;
 }
-
 
 MonoNativeThreadId
 mono_native_thread_id_get (void)
@@ -319,11 +324,22 @@ mono_memory_barrier_process_wide (void)
 G_EXTERN_C
 extern void schedule_background_exec (void);
 
+/* jobs is not protected by a mutex, only access from a single thread! */
 static GSList *jobs;
 
 void
 mono_threads_schedule_background_job (background_job_cb cb)
 {
+#ifndef DISABLE_THREADS
+	if (!mono_threads_wasm_is_browser_thread ()) {
+		THREADS_DEBUG ("worker %p queued job %p\n", (gpointer)pthread_self(), (gpointer) cb);
+		mono_threads_wasm_async_run_in_main_thread_vi ((void (*)(gpointer))mono_threads_schedule_background_job, cb);
+		return;
+	}
+#endif
+
+	THREADS_DEBUG ("main thread queued job %p\n", (gpointer) cb);
+
 	if (!jobs)
 		schedule_background_exec ();
 
@@ -339,6 +355,9 @@ G_EXTERN_C
 EMSCRIPTEN_KEEPALIVE void
 mono_background_exec (void)
 {
+#ifndef DISABLE_THREADS
+	g_assert (mono_threads_wasm_is_browser_thread ());
+#endif
 	GSList *j = jobs, *cur;
 	jobs = NULL;
 
@@ -348,6 +367,40 @@ mono_background_exec (void)
 	}
 	g_slist_free (j);
 }
+
+gboolean
+mono_threads_platform_is_main_thread (void)
+{
+#ifdef DISABLE_THREADS
+	return TRUE;
+#else
+	return emscripten_is_main_runtime_thread ();
+#endif
+}
+
+gboolean
+mono_threads_wasm_is_browser_thread (void)
+{
+#ifdef DISABLE_THREADS
+	return TRUE;
+#else
+	return emscripten_is_main_browser_thread ();
+#endif
+}
+
+#ifndef DISABLE_THREADS
+void
+mono_threads_wasm_async_run_in_main_thread (void (*func) (void))
+{
+	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_V, func);
+}
+
+void
+mono_threads_wasm_async_run_in_main_thread_vi (void (*func) (gpointer), gpointer user_data)
+{
+	emscripten_async_run_in_main_runtime_thread (EM_FUNC_SIG_VI, func, user_data);
+}
+#endif /* DISABLE_THREADS */
 
 #endif /* HOST_BROWSER */
 

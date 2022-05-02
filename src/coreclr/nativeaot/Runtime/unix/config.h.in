@@ -4,6 +4,7 @@
 #cmakedefine01 HAVE_SYS_VMPARAM_H
 #cmakedefine01 HAVE_MACH_VM_TYPES_H
 #cmakedefine01 HAVE_MACH_VM_PARAM_H
+#cmakedefine01 HAVE_AUXV_HWCAP_H
 
 #cmakedefine01 HAVE_PTHREAD_ATTR_GET_NP
 #cmakedefine01 HAVE_PTHREAD_GETATTR_NP
@@ -11,6 +12,7 @@
 #cmakedefine01 HAVE_PTHREAD_GETTHREADID_NP
 
 #cmakedefine01 HAVE_CLOCK_NANOSLEEP
+#cmakedefine01 HAVE_SYSCTLBYNAME
 
 #cmakedefine01 HAVE_GREGSET_T
 #cmakedefine01 HAVE___GREGSET_T

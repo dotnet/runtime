@@ -238,6 +238,10 @@ namespace System.Net.NetworkInformation
         public abstract long IncomingUnknownProtocolPackets { get; }
         public abstract long NonUnicastPacketsReceived { get; }
         public abstract long NonUnicastPacketsSent { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("freebsd")]
         public abstract long OutgoingPacketsDiscarded { get; }
         public abstract long OutgoingPacketsWithErrors { get; }
         public abstract long OutputQueueLength { get; }
@@ -270,6 +274,10 @@ namespace System.Net.NetworkInformation
         public abstract long IncomingUnknownProtocolPackets { get; }
         public abstract long NonUnicastPacketsReceived { get; }
         public abstract long NonUnicastPacketsSent { get; }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("osx")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("ios")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("tvos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("freebsd")]
         public abstract long OutgoingPacketsDiscarded { get; }
         public abstract long OutgoingPacketsWithErrors { get; }
         public abstract long OutputQueueLength { get; }
@@ -345,8 +353,12 @@ namespace System.Net.NetworkInformation
         protected NetworkInterface() { }
         public virtual string Description { get { throw null; } }
         public virtual string Id { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static int IPv6LoopbackInterfaceIndex { get { throw null; } }
         public virtual bool IsReceiveOnly { get { throw null; } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static int LoopbackInterfaceIndex { get { throw null; } }
         public virtual string Name { get { throw null; } }
         public virtual System.Net.NetworkInformation.NetworkInterfaceType NetworkInterfaceType { get { throw null; } }

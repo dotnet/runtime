@@ -68,5 +68,12 @@ namespace System.Diagnostics.Tracing
             uint Count,
             ushort ClrInstanceID
         );
+
+        [NonEvent]
+        [MethodImplAttribute(MethodImplOptions.InternalCall)]
+        internal static extern void LogThreadPoolIOPack(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID);
     }
 }

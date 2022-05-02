@@ -671,10 +671,13 @@ namespace Microsoft.Interop
                 // Attribute data may be null when using runtime-provided marshallers by default for certain types (strings, for example)
                 // without the user explicitly putting an attribute on the type or parameter. The marshallers should have the correct shape
                 // already in thoses cases, so the diagnostic here is not so interesting.
-                Debug.Assert(bufferElementType is not null || attrData is not null);
-                if (bufferElementType is null && attrData is not null)
+                if (bufferElementType is null)
                 {
-                    _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.ValueInCallerAllocatedBufferRequiresSpanConstructorMessage), nativeType.ToDisplayString(), type.ToDisplayString());
+                    if (attrData is not null)
+                    {
+                        _diagnostics.ReportInvalidMarshallingAttributeInfo(attrData, nameof(SR.ValueInCallerAllocatedBufferRequiresSpanConstructorMessage), nativeType.ToDisplayString(), type.ToDisplayString());
+                    }
+
                     return NoMarshallingInfo.Instance;
                 }
 

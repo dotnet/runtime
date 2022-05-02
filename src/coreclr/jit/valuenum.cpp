@@ -4813,6 +4813,8 @@ bool ValueNumStore::IsVNHandle(ValueNum vn)
 //
 ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 {
+    assert(vn == VNNormalValue(vn));
+
     if (vrk == VN_RELATION_KIND::VRK_Same)
     {
         return vn;
@@ -4823,16 +4825,10 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
         return NoVN;
     }
 
-    // Pull out any exception set.
-    //
-    ValueNum valueVN;
-    ValueNum excepVN;
-    VNUnpackExc(vn, &valueVN, &excepVN);
-
     // Verify we have a binary func application
     //
     VNFuncApp funcAttr;
-    if (!GetVNFunc(valueVN, &funcAttr))
+    if (!GetVNFunc(vn, &funcAttr))
     {
         return NoVN;
     }
@@ -4932,8 +4928,7 @@ ValueNum ValueNumStore::GetRelatedRelop(ValueNum vn, VN_RELATION_KIND vrk)
 
     // Create the resulting VN, swapping arguments if needed.
     //
-    ValueNum newVN  = VNForFunc(TYP_INT, newFunc, funcAttr.m_args[swap ? 1 : 0], funcAttr.m_args[swap ? 0 : 1]);
-    ValueNum result = VNWithExc(newVN, excepVN);
+    ValueNum result = VNForFunc(TYP_INT, newFunc, funcAttr.m_args[swap ? 1 : 0], funcAttr.m_args[swap ? 0 : 1]);
 
     return result;
 }
@@ -8054,32 +8049,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
         }
         break;
 
-        case GT_CLS_VAR:
-        {
-            bool isVolatile = (lhs->gtFlags & GTF_FLD_VOLATILE) != 0;
-
-            if (isVolatile)
-            {
-                // For Volatile store indirection, first mutate GcHeap/ByrefExposed
-                fgMutateGcHeap(lhs DEBUGARG("GTF_CLS_VAR - store")); // always change fgCurMemoryVN
-            }
-
-            FieldSeqNode* fldSeq = lhs->AsClsVar()->gtFieldSeq;
-            assert(fldSeq != nullptr);
-
-            // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
-            ValueNum storeVal = rhsVNPair.GetLiberal();
-            ValueNum newHeapVN =
-                vnStore->VNApplySelectorsAssign(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, storeVal, lhs->TypeGet());
-
-            // bbMemoryDef must include GcHeap for any block that mutates the GC heap
-            assert((compCurBB->bbMemoryDef & memoryKindSet(GcHeap)) != 0);
-
-            // Update the field map for the fgCurMemoryVN and SSA for the tree
-            recordGcHeapStore(tree, newHeapVN DEBUGARG("Static Field store"));
-        }
-        break;
-
         default:
             unreached();
     }
@@ -8492,68 +8461,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
                 break;
 
-            case GT_CLS_VAR:
-                // Skip GT_CLS_VAR nodes that are the LHS of an assignment.  (We labeled these earlier.)
-                // We will "evaluate" this as part of the assignment.
-                //
-                if ((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
-                {
-                    bool isVolatile = (tree->gtFlags & GTF_FLD_VOLATILE) != 0;
-
-                    if (isVolatile)
-                    {
-                        // For Volatile indirection, first mutate GcHeap/ByrefExposed
-                        fgMutateGcHeap(tree DEBUGARG("GTF_FLD_VOLATILE - read"));
-                    }
-
-                    // We just mutate GcHeap/ByrefExposed if isVolatile is true, and then do the read as normal.
-                    //
-                    // This allows:
-                    //   1: read s;
-                    //   2: volatile read s;
-                    //   3: read s;
-                    //
-                    // We should never assume that the values read by 1 and 2 are the same (because the heap was mutated
-                    // in between them)... but we *should* be able to prove that the values read in 2 and 3 are the
-                    // same.
-                    //
-
-                    ValueNumPair   clsVarVNPair;
-                    GenTreeClsVar* clsVar = tree->AsClsVar();
-                    FieldSeqNode*  fldSeq = clsVar->gtFieldSeq;
-                    assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField())); // We need to have one.
-
-                    // This is a reference to heap memory.
-                    // We model statics as indices into GcHeap (which is a subset of ByrefExposed).
-                    size_t   structSize = 0;
-                    ValueNum selectedStaticVar =
-                        vnStore->VNApplySelectors(VNK_Liberal, fgCurMemoryVN[GcHeap], fldSeq, &structSize);
-                    selectedStaticVar =
-                        vnStore->VNApplySelectorsTypeCheck(selectedStaticVar, tree->TypeGet(), structSize);
-
-                    clsVarVNPair.SetLiberal(selectedStaticVar);
-                    // The conservative interpretation always gets a new, unique VN.
-                    clsVarVNPair.SetConservative(vnStore->VNForExpr(compCurBB, tree->TypeGet()));
-
-                    // The ValueNum returned must represent the full-sized IL-Stack value
-                    // If we need to widen this value then we need to introduce a VNF_Cast here to represent
-                    // the widened value.    This is necessary since the CSE package can replace all occurrences
-                    // of a given ValueNum with a LclVar that is a full-sized IL-Stack value
-                    //
-                    if (varTypeIsSmall(tree->TypeGet()))
-                    {
-                        var_types castToType = tree->TypeGet();
-                        clsVarVNPair         = vnStore->VNPairForCast(clsVarVNPair, castToType, castToType);
-                    }
-                    tree->gtVNPair = clsVarVNPair;
-                }
-                else
-                {
-                    // Location nodes get the "Void" VN.
-                    tree->gtVNPair = vnStore->VNPForVoid();
-                }
-                break;
-
             case GT_MEMORYBARRIER: // Leaf
                 // For MEMORYBARRIER add an arbitrary side effect on GcHeap/ByrefExposed.
                 fgMutateGcHeap(tree DEBUGARG("MEMORYBARRIER"));
@@ -8568,12 +8475,6 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             case GT_END_LFIN: // Control flow
 #endif
                 tree->gtVNPair = vnStore->VNPForVoid();
-                break;
-
-            case GT_ARGPLACE:
-                // This node is a standin for an argument whose value will be computed later.  (Perhaps it's
-                // a register argument, and we don't want to preclude use of the register in arg evaluation yet.)
-                // We defer giving this a value number now; we'll reset it later, when numbering the call.
                 break;
 
             case GT_PHI_ARG:
@@ -8753,7 +8654,17 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             }
             else if (isVolatile)
             {
-                // For Volatile indirection, mutate GcHeap/ByrefExposed
+                // We just mutate GcHeap/ByrefExposed if isVolatile is true, and then do the read as normal.
+                //
+                // This allows:
+                //   1: read s;
+                //   2: volatile read s;
+                //   3: read s;
+                //
+                // We should never assume that the values read by 1 and 2 are the same (because the heap was mutated
+                // in between them)... but we *should* be able to prove that the values read in 2 and 3 are the
+                // same.
+                //
                 fgMutateGcHeap(tree DEBUGARG("GTF_IND_VOLATILE - read"));
 
                 // The value read by the GT_IND can immediately change
@@ -9692,9 +9603,8 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
         case VNF_JitNewArr:
         {
-            generateUniqueVN = true;
-            // TODO-ARGS: Should this really be early arg?
-            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(1)->GetEarlyNode()->gtVNPair);
+            generateUniqueVN  = true;
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(1)->GetNode()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -9731,7 +9641,7 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
         case VNF_JitReadyToRunNewArr:
         {
             generateUniqueVN  = true;
-            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(0)->GetEarlyNode()->gtVNPair);
+            ValueNumPair vnp1 = vnStore->VNPNormalPair(args->GetArgByIndex(0)->GetNode()->gtVNPair);
 
             // The New Array helper may throw an overflow exception
             vnpExc = vnStore->VNPExcSetSingleton(vnStore->VNPairForFunc(TYP_REF, VNF_NewArrOverflowExc, vnp1));
@@ -9772,9 +9682,6 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
     if (call->IsR2RRelativeIndir())
     {
 #ifdef DEBUG
-        assert(args->GetArgByIndex(0)->GetEarlyNode()->OperGet() == GT_ARGPLACE);
-
-        // Find the corresponding late arg.
         GenTree* indirectCellAddress = args->GetArgByIndex(0)->GetNode();
         assert(indirectCellAddress->IsCnsIntOrI() && indirectCellAddress->GetRegNum() == REG_R2R_INDIRECT_PARAM);
 #endif // DEBUG
@@ -9883,28 +9790,6 @@ void Compiler::fgValueNumberHelperCallFunc(GenTreeCall* call, VNFunc vnf, ValueN
 
 void Compiler::fgValueNumberCall(GenTreeCall* call)
 {
-    // First: do value numbering of any argument placeholder nodes in the argument list
-    // (by transferring from the VN of the late arg that they are standing in for...)
-
-    for (CallArg& arg : call->gtArgs.LateArgs())
-    {
-        if (arg.GetEarlyNode()->OperIs(GT_ARGPLACE))
-        {
-            assert(arg.GetLateNode()->gtVNPair.BothDefined());
-            arg.GetEarlyNode()->gtVNPair = arg.GetLateNode()->gtVNPair;
-#ifdef DEBUG
-            if (verbose)
-            {
-                printf("VN of ARGPLACE tree ");
-                Compiler::printTreeID(arg.GetEarlyNode());
-                printf(" updated to ");
-                vnpPrint(arg.GetEarlyNode()->gtVNPair, 1);
-                printf("\n");
-            }
-#endif
-        }
-    }
-
     if (call->gtCallType == CT_HELPER)
     {
         bool modHeap = fgValueNumberHelperCall(call);

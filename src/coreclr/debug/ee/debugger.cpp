@@ -6629,6 +6629,8 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM64;
+#elif defined(TARGET_LOONGARCH64)
+    s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unknown processor.
 #endif
@@ -13523,6 +13525,9 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp,
         pContext->EFlags));
+#elif defined(TARGET_LOONGARCH64)
+    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p\n",
+        tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp));
 #endif
 
     // This memory is used as IPC during the hijack. We will place a pointer to this in
@@ -16553,10 +16558,15 @@ void DebuggerHeap::Free(void *pMem)
 }
 
 #ifndef DACCESS_COMPILE
-
-
-// Undef this so we can call them from the EE versions.
-#undef UtilMessageBoxVA
+// forward declare for specific type needed.
+int UtilMessageBoxVA(
+        HWND hWnd,        // Handle to Owner Window
+        UINT uText,       // Resource Identifier for Text message
+        UINT uCaption,    // Resource Identifier for Caption
+        UINT uType,       // Style of MessageBox
+        BOOL displayForNonInteractive,    // Display even if the process is running non interactive
+        BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
+        va_list args);    // Additional Arguments
 
 // Message box API for the left side of the debugger. This API handles calls from the
 // debugger helper thread as well as from normal EE threads. It is the only one that
@@ -16591,9 +16601,6 @@ int Debugger::MessageBox(
 
     return result;
 }
-
-// Redefine this to an error just in case code is added after this point in the file.
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
 
 #else // DACCESS_COMPILE
 void

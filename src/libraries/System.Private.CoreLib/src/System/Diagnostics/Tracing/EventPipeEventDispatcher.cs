@@ -70,10 +70,7 @@ namespace System.Diagnostics.Tracing
             lock (m_dispatchControlLock)
             {
                 // Remove the event listener from the list of subscribers.
-                if (m_subscriptions.ContainsKey(listener))
-                {
-                    m_subscriptions.Remove(listener);
-                }
+                m_subscriptions.Remove(listener);
 
                 // Commit the configuration change.
                 CommitDispatchConfiguration();

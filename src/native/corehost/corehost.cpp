@@ -84,12 +84,27 @@ bool is_exe_enabled_for_execution(pal::string_t* app_dll)
 #define CURHOST_EXE
 #endif
 
-void need_newer_framework_error()
+void need_newer_framework_error(const pal::string_t& dotnet_root, const pal::string_t& host_path)
 {
-    pal::string_t url = get_download_url();
-    trace::error(_X("  _ To run this application, you need to install a newer version of .NET Core."));
-    trace::error(_X(""));
-    trace::error(_X("  - %s&apphost_version=%s"), url.c_str(), _STRINGIFY(COMMON_HOST_PKG_VER));
+    trace::error(
+        INSTALL_OR_UPDATE_NET_ERROR_MESSAGE
+        _X("\n\n")
+        _X("App: %s\n")
+        _X("Architecture: %s\n")
+        _X("App host version: %s\n")
+        _X(".NET location: %s\n")
+        _X("\n")
+        _X("Learn about runtime installation:\n")
+        DOTNET_APP_LAUNCH_FAILED_URL
+        _X("\n\n")
+        _X("Download the .NET runtime:\n")
+        _X("%s&apphost_version=%s"),
+        host_path.c_str(),
+        get_arch(),
+        _STRINGIFY(COMMON_HOST_PKG_VER),
+        dotnet_root.c_str(),
+        get_download_url().c_str(),
+        _STRINGIFY(COMMON_HOST_PKG_VER));
 }
 
 #if defined(CURHOST_EXE)
@@ -211,7 +226,7 @@ int exe_start(const int argc, const pal::char_t* argv[])
         {
             // An outdated hostfxr can only be found for framework-related apps.
             trace::error(_X("The required library %s does not support single-file apps."), fxr.fxr_path().c_str());			
-            need_newer_framework_error();
+            need_newer_framework_error(fxr.dotnet_root(), host_path);
             rc = StatusCode::FrameworkMissingFailure;
         }
     }
@@ -235,10 +250,12 @@ int exe_start(const int argc, const pal::char_t* argv[])
 
             rc = hostfxr_main_startupinfo(argc, argv, host_path_cstr, dotnet_root_cstr, app_path_cstr);
 
-            // This check exists to provide an error message for UI apps when running 3.0 apps on 2.0 only hostfxr, which doesn't support error writer redirection. 
+            // This check exists to provide an error message for apps when running 3.0 apps on 2.0 only hostfxr, which doesn't support error writer redirection.
+            // Note that this is not only for UI apps - on Windows we always write errors to event log as well (regardless of UI) and it uses
+            // the same mechanism of redirecting error writers.
             if (trace::get_error_writer() != nullptr && rc == static_cast<int>(StatusCode::FrameworkMissingFailure) && set_error_writer == nullptr)
             {
-                need_newer_framework_error();
+                need_newer_framework_error(fxr.dotnet_root(), host_path);
             }
         }
 #if !defined(FEATURE_STATIC_HOST)

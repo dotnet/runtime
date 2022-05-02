@@ -158,7 +158,6 @@ BEGIN
 	MSG_FOR_URT_HR(CORSEC_E_SIGNATURE_MISMATCH) "Signature size mismatch."
 	MSG_FOR_URT_HR(CORSEC_E_CRYPTO) "Failure during Cryptographic operation."
 	MSG_FOR_URT_HR(CORSEC_E_CRYPTO_UNEX_OPER) "Unexpected Cryptographic operation."
-	MSG_FOR_URT_HR(CORSECATTR_E_BAD_ACTION) "Invalid security action code."
 	MSG_FOR_URT_HR(COR_E_EXCEPTION) "General Exception"
 	MSG_FOR_URT_HR(COR_E_SYSTEM) "System.Exception"
 	MSG_FOR_URT_HR(COR_E_ARGUMENTOUTOFRANGE) "An argument was out of its legal range."
