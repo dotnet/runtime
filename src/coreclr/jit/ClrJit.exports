@@ -5,3 +5,4 @@ EXPORTS
     getJit
     jitStartup
     getLikelyClasses
+    jitBuildString

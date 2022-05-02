@@ -4707,5 +4707,19 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
             Assert.Equal(vector[2], values[2]);
             Assert.Equal(vector[3], values[3]);
         }
+
+        [Fact]
+        public void Vector256DoubleEqualsNaNTest()
+        {
+            Vector256<double> nan = Vector256.Create(double.NaN);
+            Assert.True(nan.Equals(nan));
+        }
+
+        [Fact]
+        public void Vector256SingleEqualsNaNTest()
+        {
+            Vector256<float> nan = Vector256.Create(float.NaN);
+            Assert.True(nan.Equals(nan));
+        }
     }
 }

@@ -18,7 +18,7 @@ namespace System.Net.Internals
 #if SYSTEM_NET_PRIMITIVES_DLL
     public
 #else
-    internal
+    internal sealed
 #endif
     class SocketAddress
     {

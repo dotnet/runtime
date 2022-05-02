@@ -83,18 +83,6 @@ typedef struct SeqPointInfo SeqPointInfo;
 #define MINI_DEBUG(level,limit,code) do {if (G_UNLIKELY ((level) >= (limit))) code} while (0)
 #endif
 
-#if !defined(DISABLE_TASKLETS) && defined(MONO_ARCH_SUPPORT_TASKLETS)
-#if defined(__GNUC__)
-#define MONO_SUPPORT_TASKLETS 1
-#elif defined(HOST_WIN32)
-#define MONO_SUPPORT_TASKLETS 1
-// Replace some gnu intrinsics needed for tasklets with MSVC equivalents.
-#define __builtin_extract_return_addr(x) x
-#define __builtin_return_address(x) _ReturnAddress()
-#define __builtin_frame_address(x) _AddressOfReturnAddress()
-#endif
-#endif
-
 #if ENABLE_LLVM
 #define COMPILE_LLVM(cfg) ((cfg)->compile_llvm)
 #define LLVM_ENABLED TRUE
@@ -1076,7 +1064,9 @@ typedef enum {
 	/* The InterpMethod for a method */
 	MONO_RGCTX_INFO_INTERP_METHOD                 = 35,
 	/* The llvmonly interp entry for a method */
-	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36
+	MONO_RGCTX_INFO_LLVMONLY_INTERP_ENTRY         = 36,
+	/* Same as VIRT_METHOD_CODE, but resolve MonoMethod* instead of code */
+	MONO_RGCTX_INFO_VIRT_METHOD                   = 37
 } MonoRgctxInfoType;
 
 /* How an rgctx is passed to a method */

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol } from "./types";
+import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
 import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
@@ -14,6 +14,7 @@ import { find_corlib_class } from "./class-loader";
 import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
+import { mono_wasm_new_root } from "./roots";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -25,6 +26,29 @@ export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) =>
 let ctx: DownloadAssetsContext | null = null;
 
 export function configure_emscripten_startup(module: DotnetModule, exportedAPI: DotnetPublicAPI): void {
+    // HACK: Emscripten expects us to provide it a fully qualified path where it can find
+    //  our main script so that it can be loaded from inside of workers, because workers
+    //  have their paths relative to the root instead of relative to our location
+    // In the browser we can create a hyperlink and set its href to a relative URL,
+    //  and the browser will convert it into an absolute one for us
+    if (
+        (typeof (globalThis.document) === "object") &&
+        (typeof (globalThis.document.createElement) === "function")
+    ) {
+        // blazor injects a module preload link element for dotnet.[version].[sha].js
+        const blazorDotNetJS = Array.from (document.head.getElementsByTagName("link")).filter(elt => elt.rel !== undefined && elt.rel == "modulepreload" && elt.href !== undefined && elt.href.indexOf("dotnet") != -1 && elt.href.indexOf (".js") != -1);
+        if (blazorDotNetJS.length == 1) {
+            const hr = blazorDotNetJS[0].href;
+            console.log("determined url of main script to be " + hr);
+            (<any>module)["mainScriptUrlOrBlob"] = hr;
+        } else {
+            const temp = globalThis.document.createElement("a");
+            temp.href = "dotnet.js";
+            console.log("determined url of main script to be " + temp.href);
+            (<any>module)["mainScriptUrlOrBlob"] = temp.href;
+        }
+    }
+
     // these could be overriden on DotnetModuleConfig
     if (!module.preInit) {
         module.preInit = [];
@@ -403,11 +427,14 @@ export function bindings_lazy_init(): void {
     if (!runtimeHelpers.wasm_runtime_class)
         throw "Can't find " + binding_fqn_class + " class";
 
-    runtimeHelpers.get_call_sig = get_method("GetCallSignature");
-    if (!runtimeHelpers.get_call_sig)
-        throw "Can't find GetCallSignature method";
+    runtimeHelpers.get_call_sig_ref = get_method("GetCallSignatureRef");
+    if (!runtimeHelpers.get_call_sig_ref)
+        throw "Can't find GetCallSignatureRef method";
 
     _create_primitive_converters();
+
+    runtimeHelpers._box_root = mono_wasm_new_root<MonoObject>();
+    runtimeHelpers._null_root = mono_wasm_new_root<MonoObject>();
 }
 
 // Initializes the runtime and loads assemblies, debug information, and other files.

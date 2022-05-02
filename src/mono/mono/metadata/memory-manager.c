@@ -351,9 +351,11 @@ mix_hash (uintptr_t source)
 	// Actual hash
 	hash = (((hash * 215497) >> 16) ^ ((hash * 1823231) + hash));
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	// Mix in highest bits on 64-bit systems only
 	if (sizeof (source) > 4)
 		hash = hash ^ ((source >> 31) >> 1);
+MONO_RESTORE_WARNING
 
 	return hash;
 }

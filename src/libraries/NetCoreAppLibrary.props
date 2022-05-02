@@ -60,6 +60,7 @@
       System.Drawing.Primitives;
       System.Dynamic.Runtime;
       System.Formats.Asn1;
+      System.Formats.Tar;
       System.Globalization;
       System.Globalization.Calendars;
       System.Globalization.Extensions;

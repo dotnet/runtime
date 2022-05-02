@@ -81,8 +81,10 @@ namespace Microsoft.Extensions.Configuration
             _providerManager.Dispose();
         }
 
-        IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source!!)
+        IConfigurationBuilder IConfigurationBuilder.Add(IConfigurationSource source)
         {
+            ThrowHelper.ThrowIfNull(source);
+
             _sources.Add(source);
             return this;
         }

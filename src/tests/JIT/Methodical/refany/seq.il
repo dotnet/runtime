@@ -16,9 +16,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {C18F1061-8239-420B-AC69-D4CB0BB38F2B}
-.namespace JitTest
+.namespace JitTest_seq_refany_il
 {
-  .class private auto ansi Test extends [mscorlib]System.Object
+  .class public auto ansi Test extends [mscorlib]System.Object
   {
   	.field private static unsigned int64 m_fld
     .method private hidebysig static vararg native unsigned int TestFunc(unsigned int64 FIXEDARG) il managed
@@ -112,7 +112,7 @@
     	ret
     }
 
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00
@@ -123,7 +123,7 @@
 		ldc.i4.0
 		conv.i8
 		dup
-		tail. call vararg native unsigned int JitTest.Test::TestFunc(unsigned int64, ..., unsigned int64)
+		tail. call vararg native unsigned int JitTest_seq_refany_il.Test::TestFunc(unsigned int64, ..., unsigned int64)
 		ret
     } // end of method Test::Main
 
@@ -137,6 +137,6 @@
 
   } // end of class Test
 
-} // end of namespace JitTest
+} // end of namespace JitTest_seq_refany_il
 
 //*********** DISASSEMBLY COMPLETE ***********************

@@ -2583,9 +2583,11 @@ public class name<, name, [attribute()]  name, name, name, [()] [name1()] [name2
 
         private void AssertEqualLong(string expected, string actual)
         {
+            string normalizedExpected = LineEndingsHelper.Normalize(expected);
+
             try
             {
-                Assert.Equal(LineEndingsHelper.Normalize(expected), actual);
+                Assert.Equal(normalizedExpected, actual);
             }
             catch (Xunit.Sdk.AssertActualExpectedException)
             {
@@ -2599,7 +2601,7 @@ public class name<, name, [attribute()]  name, name, name, [()] [name1()] [name2
 
                 var s = new StringBuilder();
                 s.AppendLine();
-                s.AppendLine($"Expected: {Environment.NewLine}$@\"{Normalize(expected)}\"");
+                s.AppendLine($"Expected: {Environment.NewLine}$@\"{Normalize(normalizedExpected)}\"");
                 s.AppendLine($"Actual:   {Environment.NewLine}$@\"{Normalize(actual)}\"");
 
                 throw new Exception(s.ToString());

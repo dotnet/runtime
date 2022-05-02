@@ -39,7 +39,7 @@
     Condition="'$(RuntimeFlavor)' != 'Mono'">
     <Copy SourceFiles="$(SingleFileHostPath);$(SingleFileHostSymbolsPath)" DestinationFiles="$(SingleFileHostDestinationPath);$(SingleFileHostSymbolsPath)" />
     <Exec Condition="'$(TargetOS)' == 'windows'"
-          Command="$(NetCoreRoot)dotnet exec @(InjectResourceTool) --bin &quot;$(DacPath)&quot; --image &quot;$(SingleFileHostDestinationPath)&quot; --name MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER" />
+          Command="&quot;$(DotNetTool)&quot; exec @(InjectResourceTool) --bin &quot;$(DacPath)&quot; --image &quot;$(SingleFileHostDestinationPath)&quot; --name MINIDUMP_EMBEDDED_AUXILIARY_PROVIDER" />
   </Target>
   
   <Target Name="PrepareSingleFileHostWithEmbeddedDac"

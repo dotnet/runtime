@@ -57,13 +57,6 @@ class Program
 
 */
 
-
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 4.0.30215.0
-//  Copyright (c) Microsoft Corporation.  All rights reserved.
-
-
-
-// Metadata version: v4.0.30215
 .assembly extern mscorlib
 {
   .publickeytoken = (B7 7A 5C 56 19 34 E0 89 )                         // .z\V.4..

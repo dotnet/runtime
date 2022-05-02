@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace Test
+namespace Test_refarg_f4_cs
 {
     internal class AA
     {
@@ -40,7 +41,7 @@ namespace Test
         }
     }
 
-    internal class App
+    public class App
     {
         private static AA s_aa = new AA(0);
 
@@ -67,7 +68,8 @@ namespace Test
             return 100;
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             int exitCode = Test(ref s_aa.mm2);
             GC.Collect();

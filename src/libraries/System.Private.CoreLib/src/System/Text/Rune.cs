@@ -849,7 +849,7 @@ namespace System.Text
 
             if ((uint)index >= (uint)input!.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessException();
             }
 
             // Optimistically assume input is within BMP.

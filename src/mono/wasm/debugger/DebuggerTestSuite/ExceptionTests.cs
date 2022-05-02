@@ -2,19 +2,18 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-using System.Linq;
 using System.Threading.Tasks;
-using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
 using System.Threading;
 using Xunit;
+using Xunit.Sdk;
 
 namespace DebuggerTests
 {
 
-    public class ExceptionTests : DebuggerTestBase
+    public class ExceptionTests : DebuggerTests
     {
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionTestAll()
         {
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
@@ -61,15 +60,15 @@ namespace DebuggerTests
             await CheckString(exception_members, "message", "not implemented uncaught");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task JSExceptionTestAll()
         {
             await SetPauseOnException("all");
 
             var eval_expr = "window.setTimeout(function () { exceptions_test (); }, 1)";
-            var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, "exception_caught_test", null, null);
+            var pause_location = await EvaluateAndCheck(eval_expr, null, 0, 0, null);
+            pause_location = await WaitForJSException(pause_location, "exception_caught_test");
 
-            Assert.Equal("exception", pause_location["reason"]);
             await CheckValue(pause_location["data"], JObject.FromObject(new
             {
                 type = "object",
@@ -81,9 +80,9 @@ namespace DebuggerTests
             var exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
             await CheckString(exception_members, "message", "exception caught");
 
-            pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0, "exception_uncaught_test");
+            pause_location = await SendCommandAndCheck(null, "Debugger.resume", null, 0, 0, null);
+            pause_location = await WaitForJSException(pause_location, "exception_uncaught_test");
 
-            Assert.Equal("exception", pause_location["reason"]);
             await CheckValue(pause_location["data"], JObject.FromObject(new
             {
                 type = "object",
@@ -94,11 +93,41 @@ namespace DebuggerTests
 
             exception_members = await GetProperties(pause_location["data"]["objectId"]?.Value<string>());
             await CheckString(exception_members, "message", "exception uncaught");
+
+            async Task<JObject> WaitForJSException(JObject pause_location, string exp_fn_name)
+            {
+                while (true)
+                {
+                    if (pause_location != null)
+                    {
+                        AssertEqual("exception", pause_location["reason"]?.Value<string>(), $"Expected to only pause because of an exception. {pause_location}");
+
+                        string actual_fn_name = pause_location["callFrames"]?[0]?["functionName"]?.Value<string>();
+
+                        // return if we hit a managed exception, or an uncaught one
+                        if (pause_location["data"]?["objectId"]?.Value<string>()?.StartsWith("dotnet:object:", StringComparison.Ordinal) == true)
+                        {
+                            Console.WriteLine($"Hit an unexpected managed exception, with function name: {actual_fn_name}. {pause_location}");
+                            throw new XunitException($"Hit an unexpected managed exception, with function name: {actual_fn_name}");
+                        }
+
+                        if (pause_location["data"]?["uncaught"]?.Value<bool>() == true)
+                            break;
+
+                        if (actual_fn_name == exp_fn_name)
+                            break;
+                    }
+
+                    pause_location = await SendCommandAndCheck(JObject.FromObject(new { }), "Debugger.resume", null, 0, 0, null);
+                }
+
+                return pause_location;
+            }
         }
 
         // FIXME? BUG? We seem to get the stack trace for Runtime.exceptionThrown at `call_method`,
         // but JS shows the original error type, and original trace
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionTestNone()
         {
             //Collect events
@@ -133,7 +162,7 @@ namespace DebuggerTests
             Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task JSExceptionTestNone()
         {
             await SetPauseOnException("none");
@@ -166,7 +195,7 @@ namespace DebuggerTests
             Assert.True(false, "Expected to get an ArgumentException from the uncaught user exception");
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("function () { exceptions_test (); }", null, 0, 0, "exception_uncaught_test", "RangeError", "exception uncaught")]
         [InlineData("function () { invoke_static_method ('[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions'); }",
             "dotnet://debugger-test.dll/debugger-exception-test.cs", 28, 16, "run",
@@ -192,7 +221,7 @@ namespace DebuggerTests
             await CheckString(exception_members, "message", exception_message);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionTestUncaughtWithReload()
         {
             string entry_method_name = "[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions";
@@ -232,7 +261,7 @@ namespace DebuggerTests
             await CheckString(exception_members, "message", "not implemented uncaught");
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClassDefault:TestExceptions", "System.Exception", 76)]
         [InlineData("[debugger-test] DebuggerTests.ExceptionTestsClass:TestExceptions", "DebuggerTests.CustomException", 28)]
         public async Task ExceptionTestAllWithReload(string entry_method_name, string class_name, int line_number)

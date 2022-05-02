@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Nullable>enable</Nullable>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
@@ -51,4 +50,10 @@
   <ItemGroup>
     <ProjectReference Include="$(CoreLibProject)" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- Add the source generator as an analyzer reference so that it gets included in the ref pack.
+         See https://github.com/dotnet/runtime/issues/61321 -->
+    <AnalyzerReference Include="..\gen\LibraryImportGenerator\LibraryImportGenerator.csproj" />
+  </ItemGroup>
+
 </Project>

@@ -263,7 +263,8 @@ elseif(CMAKE_SYSTEM_NAME STREQUAL "Windows")
   set(MONO_ZERO_LEN_ARRAY 1)
   set(INTERNAL_ZLIB 1)
   set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>") # statically link VC runtime library
-  add_compile_options(/W3)   # set warning level 3
+  add_compile_options(/W4)   # set warning level 4
+  add_compile_options($<$<COMPILE_LANGUAGE:C,CXX>:/WX>) # treat warnings as errors
   add_compile_options(/EHsc) # set exception handling behavior
   add_compile_options(/FC)   # use full pathnames in diagnostics
   add_link_options(/STACK:0x800000)  # set stack size to 8MB (default is 1MB)
@@ -554,19 +555,6 @@ set(MONO_llvm_extra_libs_armcodegen_1100 "LLVMARMCodeGen" "LLVMCFGuard" "LLVMGlo
 # llvm-config --libs aarch64codegen
 set(MONO_llvm_extra_libs_aarch64codegen_1100 "LLVMAArch64CodeGen" "LLVMCFGuard" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMTextAPI" "LLVMMCParser" "LLVMBitReader" "LLVMCore" "LLVMRemarks" "LLVMBitstreamReader" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
 
-
-# llvm-config --libs analysis core bitwriter mcjit orcjit
-set(MONO_llvm_core_libs_900 "LLVMOrcJIT" "LLVMJITLink" "LLVMMCJIT" "LLVMExecutionEngine" "LLVMRuntimeDyld" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
-
-# llvm-config --libs x86codegen
-set(MONO_llvm_extra_libs_x86codegen_900 "LLVMX86CodeGen" "LLVMGlobalISel" "LLVMX86Desc" "LLVMX86Utils" "LLVMX86Info" "LLVMMCDisassembler" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMBinaryFormat" "LLVMSupport" "LLVMDemangle")
-
-# llvm-config --libs armcodegen
-set(MONO_llvm_extra_libs_armcodegen_900 "LLVMARMCodeGen" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMARMDesc" "LLVMMCDisassembler" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMARMUtils" "LLVMARMInfo" "LLVMSupport" "LLVMDemangle")
-
-# llvm-config --libs aarch64codegen
-set(MONO_llvm_extra_libs_aarch64codegen_900 "LLVMAArch64CodeGen" "LLVMGlobalISel" "LLVMSelectionDAG" "LLVMAsmPrinter" "LLVMDebugInfoDWARF" "LLVMCodeGen" "LLVMTarget" "LLVMScalarOpts" "LLVMInstCombine" "LLVMAggressiveInstCombine" "LLVMTransformUtils" "LLVMBitWriter" "LLVMAnalysis" "LLVMProfileData" "LLVMObject" "LLVMMCParser" "LLVMBitReader" "LLVMBitstreamReader" "LLVMCore" "LLVMRemarks" "LLVMAArch64Desc" "LLVMMC" "LLVMDebugInfoCodeView" "LLVMDebugInfoMSF" "LLVMBinaryFormat" "LLVMAArch64Utils" "LLVMAArch64Info" "LLVMSupport" "LLVMDemangle")
-
 ######################################
 # LLVM CHECKS
 ######################################
@@ -633,7 +621,7 @@ if(LLVM_PREFIX)
     separate_arguments(llvm_libs NATIVE_COMMAND ${llvm_libs_space_separated})
   endif()
 
-  if (${llvm_api_version} LESS 900)
+  if (${llvm_api_version} LESS 1100)
     message(FATAL_ERROR "LLVM version too old.")
   endif()
 
@@ -643,7 +631,14 @@ if(LLVM_PREFIX)
   set(LLVM_LIBDIR "${LLVM_PREFIX}/lib")
   set(LLVM_INCLUDEDIR "${llvm_includedir}")
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${llvm_cflags}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
+  if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    # /EHsc already enabled, prevent LLVM flags to disable it. Corresponds to -fexceptions.
+    string(REPLACE "/EHs-c-" "" llvm_cxxflags "${llvm_cxxflags}")
+    # /GR- already enabled and inherited from LLVM flags. Corresponds to -fno-rtti.
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags}")
+  else()
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${llvm_cxxflags} -fexceptions -fno-rtti")
+  endif()
   add_definitions(-DLLVM_API_VERSION=${llvm_api_version})
 endif()
 
@@ -876,10 +871,6 @@ if(HOST_IOS OR HOST_ANDROID OR HOST_MACCAT)
   unset(DISABLE_DLLMAP)
 else()
   set(DISABLE_DLLMAP 1)
-endif()
-if (TARGET_BROWSER)
-  # sys/errno.h exists, but just emits a warning and includes errno.h
-  unset(HAVE_SYS_ERRNO_H)
 endif()
 ### End of OS specific checks
 

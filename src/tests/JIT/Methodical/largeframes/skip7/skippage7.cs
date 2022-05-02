@@ -4,7 +4,10 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
+namespace Test_skippage7
+{
 // Exercise stack probing after localloc, on architectures with fixed outgoing argument
 // space. Some implementations did not probe after re-establishing the outgoing argument
 // space after a localloc.
@@ -81,7 +84,8 @@ namespace BigFrames
         {
         }
 
-        public static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             Test1(1); // force JIT of this
             Test1(80);
@@ -97,4 +101,5 @@ namespace BigFrames
             return iret;
         }
     }
+}
 }

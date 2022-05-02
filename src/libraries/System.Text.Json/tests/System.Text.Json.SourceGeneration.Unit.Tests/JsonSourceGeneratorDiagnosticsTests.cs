@@ -237,6 +237,52 @@ namespace System.Text.Json.SourceGeneration.UnitTests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
+        public void DoNotWarnOnClassesWithConstructorInitOnlyProperties()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithConstructorInitOnlyProperties();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+        
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
+        public void WarnOnClassesWithMixedInitOnlyProperties()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithMixedInitOnlyProperties();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            Location location = compilation.GetSymbolsWithName("Orphaned").First().Locations[0];
+
+            (Location, string)[] expectedWarningDiagnostics = new (Location, string)[]
+            {
+                (location, "The type 'MyClass' defines init-only properties, deserialization of which is currently not supported in source generation mode.")
+            };
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, expectedWarningDiagnostics);
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
+        public void DoNotWarnOnRecordsWithInitOnlyPositionalParameters()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithRecordPositionalParameters();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+
+        [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58226", TestPlatforms.Browser)]
         public void WarnOnClassesWithInaccessibleJsonIncludeProperties()
         {

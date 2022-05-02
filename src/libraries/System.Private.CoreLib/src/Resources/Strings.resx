@@ -636,9 +636,6 @@
   <data name="Arg_NotSupportedException" xml:space="preserve">
     <value>Specified method is not supported.</value>
   </data>
-  <data name="Arg_NullIndex" xml:space="preserve">
-    <value>Arrays indexes must be set to an object instance.</value>
-  </data>
   <data name="Arg_NullReferenceException" xml:space="preserve">
     <value>Object reference not set to an instance of an object.</value>
   </data>
@@ -1105,7 +1102,7 @@
     <value>Target array type is not compatible with the type of items in the collection.</value>
   </data>
   <data name="InvalidAssemblyName" xml:space="preserve">
-    <value>The given assembly name or codebase was invalid.</value>
+    <value>The given assembly name was invalid.</value>
   </data>
   <data name="Argument_InvalidCalendar" xml:space="preserve">
     <value>Not a valid calendar for the given culture.</value>
@@ -1315,9 +1312,6 @@
   <data name="Argument_MustBeRuntimeMethodInfo" xml:space="preserve">
     <value>MethodInfo must be a runtime MethodInfo object.</value>
   </data>
-  <data name="Argument_MustBeRuntimeReflectionObject" xml:space="preserve">
-    <value>The object must be a runtime Reflection object.</value>
-  </data>
   <data name="Argument_MustBeRuntimeType" xml:space="preserve">
     <value>Type must be a runtime Type object.</value>
   </data>
@@ -1513,9 +1507,6 @@
   <data name="Argument_TypeNotComObject" xml:space="preserve">
     <value>The type must be __ComObject or be derived from __ComObject.</value>
   </data>
-  <data name="Argument_TypeNotValid" xml:space="preserve">
-    <value>The Type object is not valid.</value>
-  </data>
   <data name="Argument_UnclosedExceptionBlock" xml:space="preserve">
     <value>The IL Generator cannot be used while there are unclosed exceptions.</value>
   </data>
@@ -1547,7 +1538,7 @@
     <value>The object is not an array with the same number of elements as the array to compare it to.</value>
   </data>
   <data name="ArgumentException_NotIsomorphic" xml:space="preserve">
-    <value>Object contains non-primitive or non-blittable data.</value>
+    <value>Object contains references.</value>
   </data>
   <data name="ArgumentException_TupleIncorrectType" xml:space="preserve">
     <value>Argument must be of type {0}.</value>
@@ -1702,8 +1693,11 @@
   <data name="ArgumentOutOfRange_HugeArrayNotSupported" xml:space="preserve">
     <value>Arrays larger than 2GB are not supported.</value>
   </data>
-  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+  <data name="ArgumentOutOfRange_IndexMustBeLess" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
   </data>
   <data name="ArgumentOutOfRange_IndexCount" xml:space="preserve">
     <value>Index and count must refer to a location within the string.</value>
@@ -2158,6 +2152,9 @@
   </data>
   <data name="FileNotFound_ResolveAssembly" xml:space="preserve">
     <value>Could not resolve assembly '{0}'.</value>
+  </data>
+  <data name="FileNotFound_LoadFile" xml:space="preserve">
+    <value>Could not load file or assembly '{0}'. The system cannot find the file specified.</value>
   </data>
   <data name="Format_AttributeUsage" xml:space="preserve">
     <value>Duplicate AttributeUsageAttribute found on attribute type {0}.</value>

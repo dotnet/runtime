@@ -65,13 +65,15 @@ namespace System.ComponentModel
         /// <summary>
         /// Converts the given value object to the specified destination type.
         /// </summary>
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (destinationType == typeof(string))
             {
                 if (value == null)
                 {
-                    return SR.none;
+                    return SR.GetResourceString(nameof(SR.none), "(none)");
                 }
                 else
                 {

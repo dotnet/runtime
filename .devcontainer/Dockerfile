@@ -34,3 +34,8 @@ RUN sudo apt-get install libnss3 -y \
     && apt-get install libpango-1.0-0 -y \
     && apt-get install libcairo2 -y \
     && apt-get install libasound2 -y 
+
+#install firefox dependecies to run debugger tests:
+RUN sudo apt-get install libdbus-glib-1-2 -y \
+    && apt-get install libgtk-3-0 -y \
+    && apt-get install libx11-xcb-dev  -y

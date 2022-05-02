@@ -21,7 +21,6 @@
 #include "dbginterface.h"
 #include <winver.h>
 #include "dlwrap.h"
-#include "eemessagebox.h"
 #include "eventreporter.h"
 #include "utilcode.h"
 #include "../dlls/mscorrc/resource.h"   // for resource ids
@@ -954,6 +953,13 @@ void ResetWatsonBucketsFavorWorker(void * pParam)
     return;
 }
 
+// Forward declare the needed MessageBox API.
+int UtilMessageBoxCatastrophic(
+                  UINT uText,       // Text for MessageBox
+                  UINT uTitle,      // Title for MessageBox
+                  UINT uType,       // Style of MessageBox
+                  BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
+                  ...);    // Additional Arguments
 
 //----------------------------------------------------------------------------
 // CreateThread() callback to invoke native Watson or put up our fake Watson
@@ -985,7 +991,7 @@ static DWORD WINAPI DoFaultReportCreateThreadCallback(LPVOID pFaultReportInfoAsV
     }
     else
     {
-        int res = EEMessageBoxCatastrophicWithCustomizedStyle(
+        int res = UtilMessageBoxCatastrophic(
                                IDS_DEBUG_UNHANDLEDEXCEPTION,
                                IDS_DEBUG_SERVICE_CAPTION,
                                MB_OKCANCEL | MB_ICONEXCLAMATION,
