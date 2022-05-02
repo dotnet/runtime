@@ -10,16 +10,6 @@ const char* DetectDefaultAppleLocaleName()
 {
     NSLocale *currentLocale = [NSLocale currentLocale];
     NSString *localeName = @"";
-    const char* envLocaleName;
-    
-    // Match the ICU behavior where the default locale can be overriden by 
-    // and env variable.
-    envLocaleName = getenv("LANG");
-
-    if (envLocaleName != NULL)
-    {
-        return envLocaleName;
-    }
     
     if (!currentLocale)
     {
