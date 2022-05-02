@@ -389,7 +389,7 @@ while :; do
             ;;
 
 	ppc64le|-ppc64le)
-            __TragetArch=ppc64le
+            __TargetArch=ppc64le
             ;;
 
         wasm|-wasm)

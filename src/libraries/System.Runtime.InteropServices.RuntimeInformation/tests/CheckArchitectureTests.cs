@@ -40,7 +40,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
                     Assert.Equal(Architecture.S390x, processArch);
                     break;
 
-		case Architecture.POWERPC64:
+		case Architecture.PowerPC64:
                     Assert.Equal(Architecture.PowerPC64, processArch);
                     break;
                     
