@@ -1710,6 +1710,10 @@ public:
     inline bool IsSIMDZero() const;
     inline bool IsFloatPositiveZero() const;
     inline bool IsVectorZero() const;
+    inline bool IsVectorAllBitsSet() const;
+    inline bool IsVectorConst();
+
+    inline uint64_t GetIntegralVectorConstElement(size_t index);
 
     inline bool IsBoxedValue();
 
@@ -8137,6 +8141,155 @@ inline bool GenTree::IsVectorZero() const
 #elif defined(TARGET_ARM64)
         return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
 #endif // !TARGET_XARCH && !TARGET_ARM64
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsVectorAllBitsSet: returns true if this node is a HWIntrinsic that is Vector*_get_AllBitsSet.
+//
+// Returns:
+//     True if this represents a HWIntrinsic node that is Vector*_get_AllBitsSet.
+//
+inline bool GenTree::IsVectorAllBitsSet() const
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (gtOper == GT_HWINTRINSIC)
+    {
+        const GenTreeHWIntrinsic* node        = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = node->GetHWIntrinsicId();
+
+#if defined(TARGET_XARCH)
+        return (intrinsicId == NI_Vector128_get_AllBitsSet) || (intrinsicId == NI_Vector256_get_AllBitsSet);
+#elif defined(TARGET_ARM64)
+        return (intrinsicId == NI_Vector64_get_AllBitsSet) || (intrinsicId == NI_Vector128_get_AllBitsSet);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsVectorConst: returns true if this node is a HWIntrinsic that represents a constant.
+//
+// Returns:
+//     True if this represents a HWIntrinsic node that represents a constant.
+//
+inline bool GenTree::IsVectorConst()
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (gtOper == GT_HWINTRINSIC)
+    {
+        const GenTreeHWIntrinsic* node        = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = node->GetHWIntrinsicId();
+
+#if defined(TARGET_XARCH)
+        if ((intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create))
+        {
+            for (GenTree* arg : Operands())
+            {
+                if (!arg->IsIntegralConst() && !arg->IsCnsFltOrDbl())
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+#elif defined(TARGET_ARM64)
+        if ((intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create))
+        {
+            for (GenTree* arg : Operands())
+            {
+                if (!arg->IsIntegralConst() && !arg->IsCnsFltOrDbl())
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+        return IsVectorZero() || IsVectorAllBitsSet();
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// GetIntegralVectorConstElement: Gets the value of a given element in an integral vector constant
+//
+// Returns:
+//     The value of a given element in an integral vector constant
+//
+inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index)
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (gtOper == GT_HWINTRINSIC)
+    {
+        const GenTreeHWIntrinsic* node          = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId   = node->GetHWIntrinsicId();
+        size_t                    operandsCount = node->GetOperandCount();
+
+        CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+        var_types   simdBaseType    = node->GetSimdBaseType();
+
+#if defined(TARGET_XARCH)
+        if ((intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create))
+        {
+            return (uint64_t)node->Op(index + 1)->AsIntConCommon()->IntegralValue();
+        }
+#elif defined(TARGET_ARM64)
+        if ((intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create))
+        {
+            return (uint64_t)node->Op(index + 1)->AsIntConCommon()->IntegralValue();
+        }
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+        if (IsVectorZero())
+        {
+            return 0;
+        }
+
+        if (IsVectorAllBitsSet())
+        {
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    return 0xFF;
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    return 0xFFFF;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    return 0xFFFFFFFF;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    return 0xFFFFFFFFFFFFFFFF;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+        }
     }
 #endif // FEATURE_HW_INTRINSICS
 

@@ -1810,8 +1810,10 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
 //    otherwise insert a comma form temp
 //
 // Arguments:
-//    ppTree  - a pointer to the child node we will be replacing with the comma expression that
-//              evaluates ppTree to a temp and returns the result
+//    ppTree     - a pointer to the child node we will be replacing with the comma expression that
+//                 evaluates ppTree to a temp and returns the result
+//
+//    structType - value type handle if the temp created is of TYP_STRUCT.
 //
 // Return Value:
 //    A fresh GT_LCL_VAR node referencing the temp which has not been used
@@ -1822,7 +1824,7 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
 //
 //    Can be safely called in morph preorder, before GTF_GLOB_REF is reliable.
 //
-GenTree* Compiler::fgMakeMultiUse(GenTree** pOp)
+GenTree* Compiler::fgMakeMultiUse(GenTree** pOp, CORINFO_CLASS_HANDLE structType /*= nullptr*/)
 {
     GenTree* const tree = *pOp;
 
@@ -1840,7 +1842,7 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp)
         }
     }
 
-    return fgInsertCommaFormTemp(pOp);
+    return fgInsertCommaFormTemp(pOp, structType);
 }
 
 //------------------------------------------------------------------------------
