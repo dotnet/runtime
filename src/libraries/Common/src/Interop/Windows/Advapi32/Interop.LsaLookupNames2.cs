@@ -26,6 +26,7 @@ internal static partial class Interop
             internal ushort MaximumLength;
             internal string Buffer;
 
+            [CustomTypeMarshaller(typeof(MARSHALLED_UNICODE_STRING), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             public struct Native
             {
                 internal ushort Length;

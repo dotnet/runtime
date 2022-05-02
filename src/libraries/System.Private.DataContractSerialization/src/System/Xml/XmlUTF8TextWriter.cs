@@ -16,8 +16,11 @@ namespace System.Xml
     {
         private XmlUTF8NodeWriter? _writer;
 
-        public void SetOutput(Stream stream!!, Encoding encoding!!, bool ownsStream)
+        public void SetOutput(Stream stream, Encoding encoding, bool ownsStream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+            ArgumentNullException.ThrowIfNull(encoding);
+
             if (encoding.WebName != Encoding.UTF8.WebName)
             {
                 stream = new EncodingStreamWrapper(stream, encoding, true);
@@ -628,7 +631,7 @@ namespace System.Xml
             }
         }
 
-        private int ToBase16(byte[] chars, int offset, uint value)
+        private static int ToBase16(byte[] chars, int offset, uint value)
         {
             int count = 0;
             do

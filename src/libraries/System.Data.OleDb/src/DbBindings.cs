@@ -288,7 +288,7 @@ namespace System.Data.OleDb
             {
                 if (ADP.IsDirection(parameters[i], ParameterDirection.Input))
                 {
-                    columnBindings[i].SetOffset(parameters[i].Offset);
+                    columnBindings[i].SetOffset(OleDbParameter.Offset);
                     columnBindings[i].Value(parameters[i].GetCoercedValue());
                 }
                 else

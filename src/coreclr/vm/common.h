@@ -408,7 +408,6 @@ extern DummyGlobalContract ___contract;
 
 #endif // defined(_DEBUG)
 
-
 // All files get to see all of these .inl files to make sure all files
 // get the benefit of inlining.
 #include "ceeload.inl"

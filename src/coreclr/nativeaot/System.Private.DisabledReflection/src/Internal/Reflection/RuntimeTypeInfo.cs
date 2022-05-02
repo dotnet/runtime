@@ -23,11 +23,11 @@ namespace Internal.Reflection
             _typeHandle = typeHandle;
         }
 
-        private bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
+        private static bool DoNotThrowForNames => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForNames", out bool doNotThrow) && doNotThrow;
 
-        private bool DoNotThrowForAssembly => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAssembly", out bool doNotThrow) && doNotThrow;
+        private static bool DoNotThrowForAssembly => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAssembly", out bool doNotThrow) && doNotThrow;
 
-        private bool DoNotThrowForAttributes => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAttributes", out bool doNotThrow) && doNotThrow;
+        private static bool DoNotThrowForAttributes => AppContext.TryGetSwitch("Switch.System.Reflection.Disabled.DoNotThrowForAttributes", out bool doNotThrow) && doNotThrow;
 
         public override RuntimeTypeHandle TypeHandle => _typeHandle;
 
@@ -53,7 +53,7 @@ namespace Internal.Reflection
         {
             get
             {
-                if (RuntimeAugments.TryGetBaseType(_typeHandle, out RuntimeTypeHandle baseTypeHandle))
+                if (RuntimeAugments.TryGetBaseType(_typeHandle, out RuntimeTypeHandle baseTypeHandle) && !baseTypeHandle.Equals(default))
                 {
                     return GetRuntimeTypeInfo(baseTypeHandle);
                 }
@@ -187,7 +187,10 @@ namespace Internal.Reflection
             return RuntimeAugments.IsByRefType(_typeHandle);
         }
 
-        protected override bool IsCOMObjectImpl() => throw new NotSupportedException(SR.Reflection_Disabled);
+        protected override bool IsCOMObjectImpl()
+        {
+            return false;
+        }
 
         protected override bool IsPointerImpl()
         {

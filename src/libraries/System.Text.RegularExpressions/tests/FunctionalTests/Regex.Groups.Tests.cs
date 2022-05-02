@@ -961,22 +961,26 @@ namespace System.Text.RegularExpressions.Tests
                 return;
             }
 
-            Match match = regex.Match(input);
-
-            Assert.True(match.Success);
-            Assert.Equal(expectedGroups[0], match.Value);
-
-            Assert.Equal(expectedGroups.Length, match.Groups.Count);
-
-            int[] groupNumbers = regex.GetGroupNumbers();
-            string[] groupNames = regex.GetGroupNames();
-            for (int i = 0; i < expectedGroups.Length; i++)
+            foreach (string prefix in new[] { "", "IGNORETHIS" })
             {
-                Assert.Equal(expectedGroups[i], match.Groups[groupNumbers[i]].Value);
-                Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
+                Match match = prefix.Length == 0 ?
+                    regex.Match(input) : // validate the original input
+                    regex.Match(prefix + input, prefix.Length, input.Length); // validate we handle groups and beginning/length correctly
 
-                Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
-                Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
+                Assert.True(match.Success);
+                Assert.Equal(expectedGroups[0], match.Value);
+                Assert.Equal(expectedGroups.Length, match.Groups.Count);
+
+                int[] groupNumbers = regex.GetGroupNumbers();
+                string[] groupNames = regex.GetGroupNames();
+                for (int i = 0; i < expectedGroups.Length; i++)
+                {
+                    Assert.Equal(expectedGroups[i], match.Groups[groupNumbers[i]].Value);
+                    Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
+
+                    Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
+                    Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
+                }
             }
         }
 

@@ -42,6 +42,7 @@ ThreadPoolWorkerThreadStart
 ThreadPoolWorkerThreadStop
 ThreadPoolWorkerThreadWait
 ThreadPoolWorkingThreadCount
+ThreadPoolIOPack
 ThreadTerminated
 TypeLoadStart
 TypeLoadStop

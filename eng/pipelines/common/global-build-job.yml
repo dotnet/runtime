@@ -113,7 +113,6 @@ jobs:
         ${{ if ne(parameters.buildingOnSourceBuildImage, true) }}:
           value: ''
 
-
       - ${{ each variable in parameters.variables }}:
         - ${{ variable }}
 
@@ -192,6 +191,9 @@ jobs:
       inputs:
         PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
         PublishLocation: Container
-        ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+        ${{ if ne(parameters.osGroup, 'Browser') }}:
+          ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+        ${{ if eq(parameters.osGroup, 'Browser') }}:
+          ArtifactName: Logs_Build_Browser_wasm_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
       continueOnError: true
       condition: always()

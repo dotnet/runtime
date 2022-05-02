@@ -30,11 +30,16 @@ namespace System.Runtime
             if (pItfType->IsCloned)
                 pItfType = pItfType->CanonicalEEType;
 
+            // We first look at non-default implementation. Default implementations are only considered
+            // if the "old algorithm" didn't come up with an answer.
+            bool fDoDefaultImplementationLookup = false;
+
+        again:
             while (pCur != null)
             {
                 ushort implSlotNumber;
                 if (FindImplSlotForCurrentType(
-                        pCur, pItfType, itfSlotNumber, &implSlotNumber))
+                        pCur, pItfType, itfSlotNumber, fDoDefaultImplementationLookup, &implSlotNumber))
                 {
                     IntPtr targetMethod;
                     if (implSlotNumber < pCur->NumVtableSlots)
@@ -63,6 +68,15 @@ namespace System.Runtime
                 else
                     pCur = pCur->NonArrayBaseType;
             }
+
+            // If we haven't found an implementation, do a second pass looking for a default implementation.
+            if (!fDoDefaultImplementationLookup)
+            {
+                fDoDefaultImplementationLookup = true;
+                pCur = pTgtType;
+                goto again;
+            }
+
             return IntPtr.Zero;
         }
 
@@ -70,6 +84,7 @@ namespace System.Runtime
         private static bool FindImplSlotForCurrentType(MethodTable* pTgtType,
                                         MethodTable* pItfType,
                                         ushort itfSlotNumber,
+                                        bool fDoDefaultImplementationLookup,
                                         ushort* pImplSlotNumber)
         {
             bool fRes = false;
@@ -87,17 +102,11 @@ namespace System.Runtime
 
             if (pTgtType->HasDispatchMap)
             {
-                // We first look at non-default implementation. Default implementations are only considered
-                // if the "old algorithm" didn't come up with an answer.
-
-                bool fDoDefaultImplementationLookup = false;
-
                 // For variant interface dispatch, the algorithm is to walk the parent hierarchy, and at each level
                 // attempt to dispatch exactly first, and then if that fails attempt to dispatch variantly. This can
                 // result in interesting behavior such as a derived type only overriding one particular instantiation
                 // and funneling all the dispatches to it, but its the algorithm.
 
-            again:
                 bool fDoVariantLookup = false; // do not check variance for first scan of dispatch map
 
                 fRes = FindImplSlotInSimpleMap(
@@ -108,13 +117,6 @@ namespace System.Runtime
                     fDoVariantLookup = true; // check variance for second scan of dispatch map
                     fRes = FindImplSlotInSimpleMap(
                      pTgtType, pItfType, itfSlotNumber, pImplSlotNumber, fDoVariantLookup, fDoDefaultImplementationLookup);
-                }
-
-                // If we haven't found anything and haven't looked at the default implementations yet, look now
-                if (!fRes && !fDoDefaultImplementationLookup)
-                {
-                    fDoDefaultImplementationLookup = true;
-                    goto again;
                 }
             }
 

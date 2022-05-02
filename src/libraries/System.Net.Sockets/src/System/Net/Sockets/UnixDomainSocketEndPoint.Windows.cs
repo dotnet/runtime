@@ -12,7 +12,7 @@ namespace System.Net.Sockets
         private static readonly int s_nativeAddressSize = s_nativePathOffset + s_nativePathLength; // sizeof(sockaddr_un)
 #pragma warning restore CA1802
 
-        private SocketAddress CreateSocketAddressForSerialize() =>
+        private static SocketAddress CreateSocketAddressForSerialize() =>
             new SocketAddress(AddressFamily.Unix, s_nativeAddressSize);
 
         // from afunix.h:

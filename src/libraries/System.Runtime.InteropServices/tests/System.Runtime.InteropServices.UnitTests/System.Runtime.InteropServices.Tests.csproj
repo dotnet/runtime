@@ -194,4 +194,8 @@
     <Compile Include="System\Runtime\InteropServices\PosixSignalRegistrationTests.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs" Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
+  <ItemGroup>
+    <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
+    <Compile Include="System\Runtime\InteropServices\NFloatTests.GenericMath.cs" />
+  </ItemGroup>
 </Project>

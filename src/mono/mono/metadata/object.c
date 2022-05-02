@@ -39,8 +39,6 @@
 #include <mono/metadata/environment.h>
 #include "mono/metadata/profiler-private.h"
 #include <mono/metadata/reflection-internals.h>
-#include <mono/metadata/w32event.h>
-#include <mono/metadata/w32process.h>
 #include <mono/metadata/custom-attrs-internals.h>
 #include <mono/metadata/abi-details.h>
 #include <mono/metadata/runtime.h>
@@ -53,6 +51,7 @@
 #include <mono/utils/mono-threads.h>
 #include <mono/utils/mono-threads-coop.h>
 #include <mono/utils/mono-logger-internals.h>
+#include <minipal/getexepath.h>
 #include "cominterop.h"
 #include <mono/utils/w32api.h>
 #include <mono/utils/unlocked.h>
@@ -108,7 +107,7 @@ static GString *
 quote_escape_and_append_string (char *src_str, GString *target_str);
 
 static GString *
-format_cmd_line (int argc, char **argv, gboolean add_host);
+format_cmd_line (int argc, char **argv);
 
 /**
  * mono_runtime_object_init:
@@ -1529,8 +1528,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				 * add_imt_builder_entry anyway.
 				 */
 				method = mono_class_get_method_by_index (mono_class_get_generic_class (iface)->container_class, method_slot_in_interface);
-				if (m_method_is_static (method))
+				if (m_method_is_static (method)) {
+					if (m_method_is_virtual (method))
+						vt_slot ++;
 					continue;
+				}
 				if (mono_method_get_imt_slot (method) != slot_num) {
 					vt_slot ++;
 					continue;
@@ -1543,8 +1545,11 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 				continue;
 			}
 
-			if (m_method_is_static (method))
+			if (m_method_is_static (method)) {
+				if (m_method_is_virtual (method))
+					vt_slot ++;
 				continue;
+			}
 
 			if (method->flags & METHOD_ATTRIBUTE_VIRTUAL) {
 				add_imt_builder_entry (imt_builder, method, &imt_collisions_bitmap, vt_slot, slot_num);
@@ -1912,6 +1917,7 @@ alloc_vtable (MonoClass *klass, size_t vtable_size, size_t imt_table_bytes)
 	 * address bits.  The IMT has an odd number of entries, however, so on 32 bits the
 	 * alignment will be off.  In that case we allocate 4 more bytes and skip over them.
 	 */
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof (gpointer) == 4 && (imt_table_bytes & 7)) {
 		g_assert ((imt_table_bytes & 7) == 4);
 		vtable_size += 4;
@@ -1919,6 +1925,7 @@ alloc_vtable (MonoClass *klass, size_t vtable_size, size_t imt_table_bytes)
 	} else {
 		alloc_offset = 0;
 	}
+MONO_RESTORE_WARNING
 
 	return (gpointer*) ((char*)m_class_alloc0 (klass, (guint)vtable_size) + alloc_offset);
 }
@@ -3925,7 +3932,6 @@ mono_runtime_set_main_args (int argc, char* argv[])
 
 	free_main_args ();
 	main_args = g_new0 (char*, argc);
-	num_main_args = argc;
 
 	for (i = 0; i < argc; ++i) {
 		gchar *utf8_arg;
@@ -3938,6 +3944,8 @@ mono_runtime_set_main_args (int argc, char* argv[])
 
 		main_args [i] = utf8_arg;
 	}
+
+	num_main_args = argc;
 
 	MONO_EXTERNAL_ONLY (int, 0);
 }
@@ -3964,7 +3972,6 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 	mono_thread_set_main (mono_thread_current ());
 
 	main_args = g_new0 (char*, argc);
-	num_main_args = argc;
 
 	if (!g_path_is_absolute (argv [0])) {
 		gchar *basename = g_path_get_basename (argv [0]);
@@ -4007,6 +4014,9 @@ prepare_run_main (MonoMethod *method, int argc, char *argv[])
 
 		main_args [i] = utf8_arg;
 	}
+
+	num_main_args = argc;
+
 	argc--;
 	argv++;
 
@@ -4838,6 +4848,20 @@ mono_runtime_try_invoke_span (MonoMethod *method, void *obj, MonoSpanOfObjects *
 			res = mono_runtime_try_invoke (box_method, NULL, box_args, &box_exc, error);
 			g_assert (box_exc == NULL);
 			mono_error_assert_ok (error);
+		}
+
+		if (has_byref_nullables) {
+			/*
+			 * The runtime invoke wrapper already converted byref nullables back,
+			 * and stored them in pa, we just need to copy them back to the
+			 * managed array.
+			 */
+			for (i = 0; i < params_length; i++) {
+				MonoType *t = sig->params [i];
+
+				if (m_type_is_byref (t) && t->type == MONO_TYPE_GENERICINST && mono_class_is_nullable (mono_class_from_mono_type_internal (t)))
+					mono_span_setref (params_span, i, pa [i]);
+			}
 		}
 	}
 	goto exit;
@@ -7837,24 +7861,14 @@ quote_escape_and_append_string (char *src_str, GString *target_str)
 }
 
 static GString *
-format_cmd_line (int argc, char **argv, gboolean add_host)
+format_cmd_line (int argc, char **argv)
 {
+	// managed cmdline -> native host + managed argv (which includes the entrypoint assembly)
 	size_t total_size = 0;
 	char *host_path = NULL;
 	GString *cmd_line = NULL;
 
-	if (add_host) {
-#if !defined(HOST_WIN32) && defined(HAVE_GETPID)
-		host_path = mono_w32process_get_path (getpid ());
-#elif defined(HOST_WIN32)
-		gunichar2 *host_path_ucs2 = NULL;
-		guint32 host_path_ucs2_len = 0;
-		if (mono_get_module_filename (NULL, &host_path_ucs2, &host_path_ucs2_len)) {
-			host_path = g_utf16_to_utf8 (host_path_ucs2, -1, NULL, NULL, NULL);
-			g_free (host_path_ucs2);
-		}
-#endif
-	}
+	host_path = minipal_getexepath ();
 
 	if (host_path)
 		// quote + string + quote
@@ -7891,24 +7905,21 @@ format_cmd_line (int argc, char **argv, gboolean add_host)
 		}
 	}
 
-	g_free (host_path);
+	// minipal_getexepath doesn't use Mono APIs to allocate strings so we can't use g_free
+	free (host_path);
 
 	return cmd_line;
-}
-
-char *
-mono_runtime_get_cmd_line (int argc, char **argv)
-{
-	MONO_REQ_GC_NEUTRAL_MODE;
-	GString *cmd_line = format_cmd_line (num_main_args, main_args, FALSE);
-	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
 }
 
 char *
 mono_runtime_get_managed_cmd_line (void)
 {
 	MONO_REQ_GC_NEUTRAL_MODE;
-	GString *cmd_line = format_cmd_line (num_main_args, main_args, TRUE);
+
+	if (num_main_args == 0)
+		return NULL;
+
+	GString *cmd_line = format_cmd_line (num_main_args, main_args);
 	return cmd_line ? g_string_free (cmd_line, FALSE) : NULL;
 }
 

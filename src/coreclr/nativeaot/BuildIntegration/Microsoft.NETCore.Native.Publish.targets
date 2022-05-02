@@ -49,6 +49,7 @@
 
     <!-- Fail with descriptive error message for common mistake. -->
     <Error Condition="$([MSBuild]::VersionLessThan('$(NETCoreSdkVersion)', '6.0.0'))" Text=".NET SDK 6+ is required for native compilation." />
+    <Error Condition="$([MSBuild]::VersionLessThan('$(TargetFrameworkVersion)', '6.0'))" Text="For native compilation, the project needs to target .NET 6 or higher." />
     <Error Condition="'$(RuntimeIdentifier)' == ''"
       Text="RuntimeIdentifier is required for native compilation. Try running dotnet publish with the -r option value specified." />
     <Error Condition="'$(GeneratePackageOnBuild)' == 'true'" Text="GeneratePackageOnBuild is not supported for native compilation." />

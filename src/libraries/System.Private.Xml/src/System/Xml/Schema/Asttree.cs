@@ -690,7 +690,7 @@ namespace System.Xml.Schema
         // for (1) & (4) i will have URN set properly
         // for (2) the URN is null
         // for (3) the URN is empty
-        private void SetURN(Axis axis, XmlNamespaceManager nsmgr)
+        private static void SetURN(Axis axis, XmlNamespaceManager nsmgr)
         {
             if (axis.Prefix.Length != 0)
             {      // (1) (4)

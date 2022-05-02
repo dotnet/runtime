@@ -13,8 +13,10 @@ namespace System.Net.Security
         internal CipherSuitesPolicyPal Pal { get; private set; }
 
         [CLSCompliant(false)]
-        public CipherSuitesPolicy(IEnumerable<TlsCipherSuite> allowedCipherSuites!!)
+        public CipherSuitesPolicy(IEnumerable<TlsCipherSuite> allowedCipherSuites)
         {
+            ArgumentNullException.ThrowIfNull(allowedCipherSuites);
+
             Pal = new CipherSuitesPolicyPal(allowedCipherSuites);
         }
 

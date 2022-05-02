@@ -17,6 +17,8 @@ c_static_assert(PAL_SSL_ERROR_WANT_READ == SSL_ERROR_WANT_READ);
 c_static_assert(PAL_SSL_ERROR_WANT_WRITE == SSL_ERROR_WANT_WRITE);
 c_static_assert(PAL_SSL_ERROR_SYSCALL == SSL_ERROR_SYSCALL);
 c_static_assert(PAL_SSL_ERROR_ZERO_RETURN == SSL_ERROR_ZERO_RETURN);
+c_static_assert(SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE == 65);
+c_static_assert(TLSEXT_STATUSTYPE_ocsp == 1);
 
 #define DOTNET_DEFAULT_CIPHERSTRING \
     "ECDHE-ECDSA-AES256-GCM-SHA384:" \
@@ -35,6 +37,53 @@ static void EnsureLibSsl10Initialized()
 {
     SSL_library_init();
     SSL_load_error_strings();
+}
+#endif
+
+#ifdef FEATURE_DISTRO_AGNOSTIC_SSL
+// redirect all SSL_CTX_set_options and SSL_set_options calls via dynamic shims
+// to work around ABI breaking change between 1.1 and 3.0
+
+#undef SSL_CTX_set_options
+#define SSL_CTX_set_options SSL_CTX_set_options_dynamic
+static uint64_t SSL_CTX_set_options_dynamic(SSL_CTX* ctx, uint64_t options)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-function-type"
+    if (API_EXISTS(ERR_new)) // OpenSSL 3.0 sentinel function
+    {
+        // OpenSSL 3.0 and newer, use uint64_t for options
+        uint64_t (*func)(SSL_CTX* ctx, uint64_t op) = (uint64_t(*)(SSL_CTX*, uint64_t))SSL_CTX_set_options_ptr;
+        return func(ctx, options);
+    }
+    else
+    {
+        // OpenSSL 1.1 and earlier, use uint32_t for options
+        uint32_t (*func)(SSL_CTX* ctx, uint32_t op) = (uint32_t(*)(SSL_CTX*, uint32_t))SSL_CTX_set_options_ptr;
+        return func(ctx, (uint32_t)options);
+    }
+#pragma clang diagnostic pop
+}
+
+#undef SSL_set_options
+#define SSL_set_options SSL_set_options_dynamic
+static uint64_t SSL_set_options_dynamic(SSL* s, uint64_t options)
+{
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcast-function-type"
+    if (API_EXISTS(ERR_new)) // OpenSSL 3.0 sentinel function
+    {
+        // OpenSSL 3.0 and newer, use uint64_t for options
+        uint64_t (*func)(SSL* s, uint64_t op) = (uint64_t(*)(SSL*, uint64_t))SSL_set_options_ptr;
+        return func(s, options);
+    }
+    else
+    {
+        // OpenSSL 1.1 and earlier, use uint32_t for options
+        uint32_t (*func)(SSL* s, uint32_t op) = (uint32_t(*)(SSL*, uint32_t))SSL_set_options_ptr;
+        return func(s, (uint32_t)options);
+    }
+#pragma clang diagnostic pop
 }
 #endif
 
@@ -186,6 +235,12 @@ SSL_CTX* CryptoNative_SslCtxCreate(const SSL_METHOD* method)
                 SSL_CTX_free(ctx);
                 return NULL;
             }
+        }
+
+        // Opportunistically request the server present a stapled OCSP response.
+        if (SSL_CTX_ctrl(ctx, SSL_CTRL_SET_TLSEXT_STATUS_REQ_TYPE, TLSEXT_STATUSTYPE_ocsp, NULL) != 1)
+        {
+            ERR_clear_error();
         }
     }
 
@@ -512,8 +567,26 @@ int32_t CryptoNative_IsSslStateOK(SSL* ssl)
 
 X509* CryptoNative_SslGetPeerCertificate(SSL* ssl)
 {
+    const uint8_t* data = NULL;
+    long len = SSL_get_tlsext_status_ocsp_resp(ssl, &data);
+    X509* cert = SSL_get1_peer_certificate(ssl);
+
+    if (len > 0 && cert != NULL)
+    {
+        OCSP_RESPONSE* ocspResp = d2i_OCSP_RESPONSE(NULL, &data, len);
+
+        if (ocspResp == NULL)
+        {
+            ERR_clear_error();
+        }
+        else
+        {
+            X509_set_ex_data(cert, g_x509_ocsp_index, ocspResp);
+        }
+    }
+
     // No error queue impact.
-    return SSL_get1_peer_certificate(ssl);
+    return cert;
 }
 
 X509Stack* CryptoNative_SslGetPeerCertChain(SSL* ssl)
@@ -576,8 +649,21 @@ void CryptoNative_SslSetVerifyPeer(SSL* ssl)
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
 }
 
-void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode)
+int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
 {
+    int retValue = 1;
+    if (mode && !API_EXISTS(SSL_SESSION_get0_hostname))
+    {
+        // Disable caching on old OpenSSL.
+        // While TLS resume is optional, none of this is critical.
+        mode = 0;
+
+        if (newSessionCb != NULL || removeSessionCb != NULL)
+        {
+            // Indicate unwillingness to restore sessions
+            retValue = 0;
+        }
+    }
     // void shim functions don't lead to exceptions, so skip the unconditional error clearing.
 
     // We never reuse same CTX for both client and server
@@ -586,6 +672,60 @@ void CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode)
     {
         SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
     }
+
+    if (newSessionCb != NULL)
+    {
+        SSL_CTX_sess_set_new_cb(ctx, newSessionCb);
+    }
+
+    if (removeSessionCb != NULL)
+    {
+        SSL_CTX_sess_set_remove_cb(ctx, removeSessionCb);
+    }
+
+    return retValue;
+}
+
+const char* CryptoNative_SslGetServerName(SSL* ssl)
+{
+    return SSL_get_servername(ssl, TLSEXT_NAMETYPE_host_name);
+}
+
+int32_t CryptoNative_SslSetSession(SSL* ssl, SSL_SESSION* session)
+{
+    return SSL_set_session(ssl, session);
+}
+
+void CryptoNative_SslSessionFree(SSL_SESSION* session)
+{
+    SSL_SESSION_free(session);
+}
+
+const char* CryptoNative_SslSessionGetHostname(SSL_SESSION* session)
+{
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
+    if (API_EXISTS(SSL_SESSION_get0_hostname))
+    {
+        return SSL_SESSION_get0_hostname(session);
+    }
+#else
+    (void*)session;
+#endif
+    return NULL;
+}
+
+int CryptoNative_SslSessionSetHostname(SSL_SESSION* session, const char* hostname)
+{
+#if defined NEED_OPENSSL_1_1 || defined NEED_OPENSSL_3_0
+    if (API_EXISTS(SSL_SESSION_set1_hostname))
+    {
+        SSL_SESSION_set1_hostname(session, hostname);
+    }
+#else
+    (void*)session;
+    (const void*)hostname;
+#endif
+    return 0;
 }
 
 int32_t CryptoNative_SslCtxSetEncryptionPolicy(SSL_CTX* ctx, EncryptionPolicy policy)
@@ -808,7 +948,7 @@ void CryptoNative_SslCtxSetAlpnSelectCb(SSL_CTX* ctx, SslCtxSetAlpnCallback cb, 
 #endif
 }
 
-static int client_certificate_cb(SSL *ssl, void* state)
+static int client_certificate_cb(SSL* ssl, void* state)
 {
     (void*)ssl;
     (void*)state;
@@ -836,7 +976,7 @@ void CryptoNative_SslSetPostHandshakeAuth(SSL* ssl, int32_t val)
 #endif
 }
 
-int32_t CryptoNative_SslSetData(SSL* ssl, void *ptr)
+int32_t CryptoNative_SslSetData(SSL* ssl, void* ptr)
 {
     ERR_clear_error();
     return SSL_set_ex_data(ssl, 0, ptr);
@@ -846,6 +986,16 @@ void* CryptoNative_SslGetData(SSL* ssl)
 {
     // No error queue impact.
     return SSL_get_ex_data(ssl, 0);
+}
+
+int32_t CryptoNative_SslCtxSetData(SSL_CTX* ctx, void* ptr)
+{
+    return SSL_CTX_set_ex_data(ctx, 0, ptr);
+}
+
+void* CryptoNative_SslCtxGetData(SSL_CTX* ctx)
+{
+    return SSL_CTX_get_ex_data(ctx, 0);
 }
 
 int32_t CryptoNative_SslSetAlpnProtos(SSL* ssl, const uint8_t* protos, uint32_t protos_len)
@@ -912,7 +1062,7 @@ int32_t CryptoNative_SslGetCurrentCipherId(SSL* ssl, int32_t* cipherId)
 }
 
 // This function generates key pair and creates simple certificate.
-static int MakeSelfSignedCertificate(X509 * cert, EVP_PKEY* evp)
+static int MakeSelfSignedCertificate(X509* cert, EVP_PKEY* evp)
 {
     RSA* rsa = NULL;
     ASN1_TIME* time = ASN1_TIME_new();

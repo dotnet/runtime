@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -99,6 +99,8 @@
              Link="ProductionCode\System\Net\Http\Headers\ContentDispositionHeaderValue.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\ContentRangeHeaderValue.cs"
              Link="ProductionCode\System\Net\Http\Headers\ContentRangeHeaderValue.cs" />
+    <Compile Include="..\..\src\System\Net\Http\Headers\CookieHeaderParser.cs"
+             Link="ProductionCode\System\Net\Http\Headers\CookieHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\DateHeaderParser.cs"
              Link="ProductionCode\System\Net\Http\Headers\DateHeaderParser.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\EntityTagHeaderValue.cs"

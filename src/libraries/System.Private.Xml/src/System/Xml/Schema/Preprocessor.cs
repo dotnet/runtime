@@ -170,7 +170,7 @@ namespace System.Xml.Schema
             return !HasErrors;
         }
 
-        private void Cleanup(XmlSchema schema)
+        private static void Cleanup(XmlSchema schema)
         {
             if (schema == Preprocessor.GetBuildInSchema())
             {
@@ -188,7 +188,7 @@ namespace System.Xml.Schema
             schema.IsCompiledBySet = false;
         }
 
-        private void CleanupRedefine(XmlSchemaExternal include)
+        private static void CleanupRedefine(XmlSchemaExternal include)
         {
             XmlSchemaRedefine rdef = (include as XmlSchemaRedefine)!;
             rdef.AttributeGroups.Clear();
@@ -2184,7 +2184,7 @@ namespace System.Xml.Schema
             return chameleonSchema;
         }
 
-        private void SetParent(XmlSchemaObject child, XmlSchemaObject parent)
+        private static void SetParent(XmlSchemaObject child, XmlSchemaObject parent)
         {
             child.Parent = parent;
         }

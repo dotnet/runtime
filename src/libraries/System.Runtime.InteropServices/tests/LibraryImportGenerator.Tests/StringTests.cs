@@ -188,43 +188,43 @@ namespace LibraryImportGenerator.IntegrationTests
         {
             public partial class Utf16
             {
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, StringMarshallingCustomType = typeof(SharedTypes.Utf16StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReturnLength, StringMarshallingCustomType = typeof(Utf16StringMarshaller))]
                 public static partial int ReturnLength(string s);
 
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn, StringMarshallingCustomType = typeof(SharedTypes.Utf16StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReturn, StringMarshallingCustomType = typeof(Utf16StringMarshaller))]
                 public static partial string Reverse_Return(string s);
 
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseOut, StringMarshallingCustomType = typeof(SharedTypes.Utf16StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseOut, StringMarshallingCustomType = typeof(Utf16StringMarshaller))]
                 public static partial void Reverse_Out(string s, out string ret);
 
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, StringMarshallingCustomType = typeof(SharedTypes.Utf16StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, StringMarshallingCustomType = typeof(Utf16StringMarshaller))]
                 public static partial void Reverse_Ref(ref string s);
 
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, StringMarshallingCustomType = typeof(SharedTypes.Utf16StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseInplace, StringMarshallingCustomType = typeof(Utf16StringMarshaller))]
                 public static partial void Reverse_In(in string s);
 
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReplace, StringMarshallingCustomType = typeof(SharedTypes.Utf16StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.UShort.ReverseReplace, StringMarshallingCustomType = typeof(Utf16StringMarshaller))]
                 public static partial void Reverse_Replace_Ref(ref string s);
             }
 
             public partial class Utf8
             {
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, StringMarshallingCustomType = typeof(SharedTypes.Utf8StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReturnLength, StringMarshallingCustomType = typeof(Utf8StringMarshaller))]
                 public static partial int ReturnLength(string s);
 
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn, StringMarshallingCustomType = typeof(SharedTypes.Utf8StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReturn, StringMarshallingCustomType = typeof(Utf8StringMarshaller))]
                 public static partial string Reverse_Return(string s);
 
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseOut, StringMarshallingCustomType = typeof(SharedTypes.Utf8StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseOut, StringMarshallingCustomType = typeof(Utf8StringMarshaller))]
                 public static partial void Reverse_Out(string s, out string ret);
 
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, StringMarshallingCustomType = typeof(SharedTypes.Utf8StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, StringMarshallingCustomType = typeof(Utf8StringMarshaller))]
                 public static partial void Reverse_Ref(ref string s);
 
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, StringMarshallingCustomType = typeof(SharedTypes.Utf8StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseInplace, StringMarshallingCustomType = typeof(Utf8StringMarshaller))]
                 public static partial void Reverse_In(in string s);
 
-                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReplace, StringMarshallingCustomType = typeof(SharedTypes.Utf8StringMarshaller))]
+                [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.Byte.ReverseReplace, StringMarshallingCustomType = typeof(Utf8StringMarshaller))]
                 public static partial void Reverse_Replace_Ref(ref string s);
             }
         }

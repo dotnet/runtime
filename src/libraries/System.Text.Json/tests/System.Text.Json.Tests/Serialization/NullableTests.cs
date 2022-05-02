@@ -41,23 +41,27 @@ namespace System.Text.Json.Serialization.Tests
                 dictOfDictWithNull: new MyDictionaryWrapper<MyDictionaryWrapper<float?>> { { "key", dictWrapperWithFloatNull } },
                 42.0f);
 
-            MyIDictionaryWrapper<float?> idictWrapperWithFloatValue = new MyIDictionaryWrapper<float?>() { { "key", 42.0f } };
-            MyIDictionaryWrapper<float?> idictWrapperWithFloatNull = new MyIDictionaryWrapper<float?>() { { "key", null } };
-            TestDictionaryWithNullableValue<MyIDictionaryWrapper<float?>, MyIDictionaryWrapper<MyIDictionaryWrapper<float?>>, float?>(
-                idictWrapperWithFloatValue,
-                idictWrapperWithFloatNull,
-                dictOfDictWithValue: new MyIDictionaryWrapper<MyIDictionaryWrapper<float?>> { { "key", idictWrapperWithFloatValue } },
-                dictOfDictWithNull: new MyIDictionaryWrapper<MyIDictionaryWrapper<float?>> { { "key", idictWrapperWithFloatNull } },
-                42.0f);
+            // https://github.com/dotnet/runtime/issues/66220
+            if (!PlatformDetection.IsAppleMobile)
+            {
+                MyIDictionaryWrapper<float?> idictWrapperWithFloatValue = new MyIDictionaryWrapper<float?>() { { "key", 42.0f } };
+                MyIDictionaryWrapper<float?> idictWrapperWithFloatNull = new MyIDictionaryWrapper<float?>() { { "key", null } };
+                TestDictionaryWithNullableValue<MyIDictionaryWrapper<float?>, MyIDictionaryWrapper<MyIDictionaryWrapper<float?>>, float?>(
+                    idictWrapperWithFloatValue,
+                    idictWrapperWithFloatNull,
+                    dictOfDictWithValue: new MyIDictionaryWrapper<MyIDictionaryWrapper<float?>> { { "key", idictWrapperWithFloatValue } },
+                    dictOfDictWithNull: new MyIDictionaryWrapper<MyIDictionaryWrapper<float?>> { { "key", idictWrapperWithFloatNull } },
+                    42.0f);
 
-            IDictionary<string, DateTime?> idictWithDateTimeValue = new Dictionary<string, DateTime?> { { "key", now } };
-            IDictionary<string, DateTime?> idictWithDateTimeNull = new Dictionary<string, DateTime?> { { "key", null } };
-            TestDictionaryWithNullableValue<IDictionary<string, DateTime?>, IDictionary<string, IDictionary<string, DateTime?>>, DateTime?>(
-                idictWithDateTimeValue,
-                idictWithDateTimeNull,
-                dictOfDictWithValue: new Dictionary<string, IDictionary<string, DateTime?>> { { "key", idictWithDateTimeValue } },
-                dictOfDictWithNull: new Dictionary<string, IDictionary<string, DateTime?>> { { "key", idictWithDateTimeNull } },
-                now);
+                IDictionary<string, DateTime?> idictWithDateTimeValue = new Dictionary<string, DateTime?> { { "key", now } };
+                IDictionary<string, DateTime?> idictWithDateTimeNull = new Dictionary<string, DateTime?> { { "key", null } };
+                TestDictionaryWithNullableValue<IDictionary<string, DateTime?>, IDictionary<string, IDictionary<string, DateTime?>>, DateTime?>(
+                    idictWithDateTimeValue,
+                    idictWithDateTimeNull,
+                    dictOfDictWithValue: new Dictionary<string, IDictionary<string, DateTime?>> { { "key", idictWithDateTimeValue } },
+                    dictOfDictWithNull: new Dictionary<string, IDictionary<string, DateTime?>> { { "key", idictWithDateTimeNull } },
+                    now);
+            }
 
             ImmutableDictionary<string, DateTime?> immutableDictWithDateTimeValue = ImmutableDictionary.CreateRange(new Dictionary<string, DateTime?> { { "key", now } });
             ImmutableDictionary<string, DateTime?> immutableDictWithDateTimeNull = ImmutableDictionary.CreateRange(new Dictionary<string, DateTime?> { { "key", null } });

@@ -16,9 +16,11 @@ namespace System.Security.Cryptography
     [StructLayout(LayoutKind.Sequential)]  // The [StructLayout] is here to prevent a spurious ApiReviewer alert. We do not actually depend on the layout of this struct.
     public struct CngProperty : IEquatable<CngProperty>
     {
-        public CngProperty(string name!!, byte[]? value, CngPropertyOptions options)
+        public CngProperty(string name, byte[]? value, CngPropertyOptions options)
             : this()
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             Name = name;
             Options = options;
             _lazyHashCode = default(int?);

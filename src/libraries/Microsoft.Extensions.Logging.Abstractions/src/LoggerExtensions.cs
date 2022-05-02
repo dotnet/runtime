@@ -383,8 +383,10 @@ namespace Microsoft.Extensions.Logging
         /// <param name="exception">The exception to log.</param>
         /// <param name="message">Format string of the log message.</param>
         /// <param name="args">An object array that contains zero or more objects to format.</param>
-        public static void Log(this ILogger logger!!, LogLevel logLevel, EventId eventId, Exception? exception, string? message, params object?[] args)
+        public static void Log(this ILogger logger, LogLevel logLevel, EventId eventId, Exception? exception, string? message, params object?[] args)
         {
+            ThrowHelper.ThrowIfNull(logger);
+
             logger.Log(logLevel, eventId, new FormattedLogValues(message, args), exception, _messageFormatter);
         }
 
@@ -402,11 +404,13 @@ namespace Microsoft.Extensions.Logging
         /// {
         /// }
         /// </example>
-        public static IDisposable BeginScope(
-            this ILogger logger!!,
+        public static IDisposable? BeginScope(
+            this ILogger logger,
             string messageFormat,
             params object?[] args)
         {
+            ThrowHelper.ThrowIfNull(logger);
+
             return logger.BeginScope(new FormattedLogValues(messageFormat, args));
         }
 

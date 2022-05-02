@@ -300,7 +300,7 @@ namespace Internal.Runtime.TypeLoader
             _callerArgs.Reset();
         }
 
-        internal void ResetPinnedObjects()
+        internal static void ResetPinnedObjects()
         {
             // Reset all pinned gchandles to null.
             // Freeing of gchandles is done in the destructor of GCHandleContainer when the thread dies.

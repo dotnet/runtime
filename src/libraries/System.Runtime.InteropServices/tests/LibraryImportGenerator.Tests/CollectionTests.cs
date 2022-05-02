@@ -36,20 +36,20 @@ namespace LibraryImportGenerator.IntegrationTests
             public static partial void CreateRange_Out(int start, int end, out int numValues, [MarshalUsing(typeof(ListMarshaller<int>), CountElementName = "numValues")] out List<int> res);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "sum_string_lengths")]
-            public static partial int SumStringLengths([MarshalUsing(typeof(ListMarshaller<string>)), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)] List<string> strArray);
+            public static partial int SumStringLengths([MarshalUsing(typeof(ListMarshaller<string>)), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] List<string> strArray);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_replace")]
-            public static partial void ReverseStrings_Ref([MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)] ref List<string> strArray, out int numElements);
+            public static partial void ReverseStrings_Ref([MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] ref List<string> strArray, out int numElements);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_return")]
-            [return: MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)]
-            public static partial List<string> ReverseStrings_Return([MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)] List<string> strArray, out int numElements);
+            [return: MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)]
+            public static partial List<string> ReverseStrings_Return([MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] List<string> strArray, out int numElements);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "reverse_strings_out")]
             public static partial void ReverseStrings_Out(
-                [MarshalUsing(typeof(ListMarshaller<string>)), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)] List<string> strArray,
+                [MarshalUsing(typeof(ListMarshaller<string>)), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] List<string> strArray,
                 out int numElements,
-                [MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionLevel = 1)] out List<string> res);
+                [MarshalUsing(typeof(ListMarshaller<string>), CountElementName = "numElements"), MarshalUsing(typeof(Utf16StringMarshaller), ElementIndirectionDepth = 1)] out List<string> res);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = "get_long_bytes")]
             [return:MarshalUsing(typeof(ListMarshaller<byte>), ConstantElementCount = sizeof(long))]

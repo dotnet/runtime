@@ -6,6 +6,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>preview</LangVersion>
     <Nullable>enable</Nullable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
 
     <!-- Indicate to the compiler to output generated files to disk. Source addded
          by the LibraryImportGenerator can be found in the intermediate directory. -->

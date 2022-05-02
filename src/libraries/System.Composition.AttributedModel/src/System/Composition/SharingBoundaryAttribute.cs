@@ -27,9 +27,9 @@ namespace System.Composition
         /// Construct a <see cref="SharingBoundaryAttribute"/> for the specified boundary names.
         /// </summary>
         /// <param name="sharingBoundaryNames">Boundaries implemented by the created ExportLifetimeContext{T}s.</param>
-        public SharingBoundaryAttribute(params string[] sharingBoundaryNames!!)
+        public SharingBoundaryAttribute(params string[] sharingBoundaryNames)
         {
-            _sharingBoundaryNames = sharingBoundaryNames;
+            _sharingBoundaryNames = sharingBoundaryNames ?? throw new ArgumentNullException(nameof(sharingBoundaryNames));
         }
 
         /// <summary>

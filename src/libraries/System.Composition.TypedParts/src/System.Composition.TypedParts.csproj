@@ -2,9 +2,10 @@
   <PropertyGroup>
     <RootNamespace>System.Composition</RootNamespace>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
+    <Nullable>disable</Nullable>
     <IsTrimmable>false</IsTrimmable>
-    <IsPackable>true</IsPackable>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IsPackable>true</IsPackable>
     <PackageDescription>Provides some extension methods for the Managed Extensibility Framework.
 
 Commonly Used Types:
@@ -18,6 +19,8 @@ System.Composition.Hosting.ContainerConfiguration</PackageDescription>
     <Compile Include="System\Composition\Debugging\ContainerConfigurationDebuggerProxy.cs" />
     <Compile Include="System\Composition\Debugging\DiscoveredPartDebuggerProxy.cs" />
     <Compile Include="System\Composition\Hosting\ContainerConfiguration.cs" />
+    <Compile Include="System\Composition\Hosting\InstanceExportDescriptorProvider.cs" />
+    <Compile Include="System\Composition\Hosting\SinglePartExportDescriptorProvider.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\ActivationFeature.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\DisposalFeature.cs" />
     <Compile Include="System\Composition\TypedParts\ActivationFeatures\LifetimeFeature.cs" />
@@ -42,12 +45,5 @@ System.Composition.Hosting.ContainerConfiguration</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.AttributedModel\src\System.Composition.AttributedModel.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Hosting\src\System.Composition.Hosting.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Composition.Runtime\src\System.Composition.Runtime.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Linq" />
-    <Reference Include="System.Linq.Expressions" />
-    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

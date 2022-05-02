@@ -16,9 +16,9 @@ Official Starting Page: https://dotnet.microsoft.com
   * [Install daily builds](docs/project/dogfooding.md)
   * [Documentation](https://docs.microsoft.com/dotnet/core) (Get Started, Tutorials, Porting from .NET Framework, API reference, ...)
     * [Deploying apps](https://docs.microsoft.com/dotnet/core/deploying)
-  * [Supported OS versions](https://github.com/dotnet/core/blob/master/os-lifecycle-policy.md)
-* [Roadmap](https://github.com/dotnet/core/blob/master/roadmap.md)
-* [Releases](https://github.com/dotnet/core/tree/master/release-notes)
+  * [Supported OS versions](https://github.com/dotnet/core/blob/main/os-lifecycle-policy.md)
+* [Roadmap](https://github.com/dotnet/core/blob/main/roadmap.md)
+* [Releases](https://github.com/dotnet/core/tree/main/release-notes)
 
 ## How can I contribute?
 

@@ -1931,9 +1931,9 @@ typedef VOID(__cdecl* PRTLRESTORECONTEXT)(PCONTEXT ContextRecord, struct _EXCEPT
 PRTLRESTORECONTEXT pfnRtlRestoreContext = NULL;
 
 #define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_FLOATING_POINT |       \
-                          CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
+                          CONTEXT_DEBUG_REGISTERS | CONTEXT_EXTENDED_REGISTERS)
 #else
-#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS | CONTEXT_EXCEPTION_REQUEST)
+#define CONTEXT_COMPLETE (CONTEXT_FULL | CONTEXT_DEBUG_REGISTERS)
 #endif
 
 CONTEXT* AllocateOSContextHelper(BYTE** contextBuffer)
@@ -2889,6 +2889,8 @@ BOOL Thread::RedirectThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt)
     bRes &= SetXStateFeaturesMask(pCtx, XSTATE_MASK_AVX);
 #endif //defined(TARGET_X86) || defined(TARGET_AMD64)
 
+    // Make sure we specify CONTEXT_EXCEPTION_REQUEST to detect "trap frame reporting".
+    pCtx->ContextFlags |= CONTEXT_EXCEPTION_REQUEST;
     bRes &= EEGetThreadContext(this, pCtx);
     _ASSERTE(bRes && "Failed to GetThreadContext in RedirectThreadAtHandledJITCase - aborting redirect.");
 
@@ -2985,8 +2987,7 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     _ASSERTE(PreemptiveGCDisabledOther());
     _ASSERTE(IsAddrOfRedirectFunc(pTgt));
     _ASSERTE(pCurrentThreadCtx);
-    _ASSERTE((pCurrentThreadCtx->ContextFlags & (CONTEXT_COMPLETE - CONTEXT_EXCEPTION_REQUEST))
-                                             == (CONTEXT_COMPLETE - CONTEXT_EXCEPTION_REQUEST));
+    _ASSERTE((pCurrentThreadCtx->ContextFlags & CONTEXT_COMPLETE) == CONTEXT_COMPLETE);
     _ASSERTE(ExecutionManager::IsManagedCode(GetIP(pCurrentThreadCtx)));
 
     ////////////////////////////////////////////////////////////////
@@ -3033,10 +3034,6 @@ BOOL Thread::RedirectCurrentThreadAtHandledJITCase(PFN_REDIRECTTARGET pTgt, CONT
     _ASSERTE(success);
     if (!success)
         return FALSE;
-
-    // Ensure that this flag is set for the next time through the normal path,
-    // RedirectThreadAtHandledJITCase.
-    pCtx->ContextFlags |= CONTEXT_EXCEPTION_REQUEST;
 
     ////////////////////////////////////////////////////
     // Now redirect the thread to the helper function
@@ -3704,7 +3701,7 @@ void Thread::CommitGCStressInstructionUpdate()
         else
             *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
         *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
@@ -4863,7 +4860,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     {
                          // We already have the caller context available at this point
                         _ASSERTE(pRDT->IsCallerContextValid);
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
                         // Why do we use CallerContextPointers below?
                         //
@@ -4882,7 +4879,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                         // Note that the JIT always pushes LR even for leaf methods to make hijacking
                         // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
 
+#if defined(TARGET_LOONGARCH64)
+                        if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
+#else
                         if(pRDT->pCallerContextPointers->Lr == &pRDT->pContext->Lr)
+#endif
                         {
                             // This is the case when we are either:
                             //
@@ -4917,7 +4918,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             // This is the case of IP being inside the method body and LR is
                             // pushed on the stack. We get it to determine the return address
                             // in the caller of the current non-interruptible frame.
+#if defined(TARGET_LOONGARCH64)
+                            pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
+#else
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
+#endif
                         }
 #elif defined(TARGET_X86) || defined(TARGET_AMD64)
                         pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));
@@ -5299,10 +5304,10 @@ BOOL Thread::GetSafelyRedirectableThreadContext(DWORD dwOptions, CONTEXT * pCtx,
     }
 #endif // DEBUGGING_SUPPORTED
 
-    // Make sure we specify CONTEXT_EXCEPTION_REQUEST to detect "trap frame reporting".
     _ASSERTE(GetFilterContext() == NULL);
-
     ZeroMemory(pCtx, sizeof(*pCtx));
+
+    // Make sure we specify CONTEXT_EXCEPTION_REQUEST to detect "trap frame reporting".
     pCtx->ContextFlags = CONTEXT_FULL | CONTEXT_EXCEPTION_REQUEST;
     if (!EEGetThreadContext(this, pCtx))
     {

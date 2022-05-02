@@ -73,7 +73,7 @@ namespace Wasm.Build.NativeRebuild.Tests
 
             string objDir = Path.Combine(_projectDir!, "obj", config, DefaultTargetFramework, "wasm");
 
-            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked));
+            BlazorBuild(new BlazorBuildOptions(id, config, NativeFilesType.Relinked), "-p:EmccLinkOptimizationFlag=-O2");
             File.Move(Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build.binlog"),
                         Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-build-first.binlog"));
 

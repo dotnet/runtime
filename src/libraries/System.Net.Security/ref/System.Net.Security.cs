@@ -139,7 +139,6 @@ namespace System.Net.Security
         public static SslCertificateTrust CreateForX509Store(
                                                 System.Security.Cryptography.X509Certificates.X509Store store,
                                                 bool sendTrustInHandshake = false) { throw null;  }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
         public static SslCertificateTrust CreateForX509Collection(
                                                 System.Security.Cryptography.X509Certificates.X509Certificate2Collection trustList,
                                                 bool sendTrustInHandshake = false) { throw null; }

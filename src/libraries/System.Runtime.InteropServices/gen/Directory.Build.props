@@ -1,11 +1,12 @@
 <Project>
   <Import Project="..\Directory.Build.props" />
   <PropertyGroup>
-    <IsShipping>false</IsShipping>
-    <!-- We manually enable LibraryImportGenerator for projects in this folder as part of testing. -->
     <EnableLibraryImportGenerator>false</EnableLibraryImportGenerator>
     <EnableDefaultItems>true</EnableDefaultItems>
     <CLSCompliant>false</CLSCompliant>
-    <ILLinkTrimAssembly>false</ILLinkTrimAssembly>
+
+    <!-- Localization -->
+    <UsingToolXliff>true</UsingToolXliff>
+    <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
   </PropertyGroup>
 </Project>

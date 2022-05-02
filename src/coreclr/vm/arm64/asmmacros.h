@@ -1,12 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-;; ==++==
-;;
-
-;;
-;; ==--==
-
 ;-----------------------------------------------------------------------------
 ; Macro used to assign an alternate name to a symbol containing characters normally disallowed in a symbol
 ; name (e.g. C++ decorated names).
@@ -146,6 +140,9 @@ __EndLabelName SETS "$FuncName":CC:"_End"
 $__EndLabelName
 
     LEAF_END $FuncName
+
+    ; make sure this symbol gets its own address
+    nop
 
     MEND
 ;-----------------------------------------------------------------------------

@@ -107,11 +107,11 @@ if(CLR_CMAKE_HOST_UNIX)
 
     add_subdirectory(pal)
     add_subdirectory(hosts)
-else(CLR_CMAKE_HOST_UNIX)
+else()
     if(CLR_CMAKE_TARGET_UNIX)
-        add_subdirectory(pal/src/libunwind)
-    endif(CLR_CMAKE_TARGET_UNIX)
-endif(CLR_CMAKE_HOST_UNIX)
+        add_subdirectory(${CLR_SRC_NATIVE_DIR}/external/libunwind_extras ${CLR_ARTIFACTS_OBJ_DIR}/external/libunwind)
+    endif()
+endif()
 
 # Add this subdir. We install the headers for the jit.
 add_subdirectory(pal/prebuilt/inc)

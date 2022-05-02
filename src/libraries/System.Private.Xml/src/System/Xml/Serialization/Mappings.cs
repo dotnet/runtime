@@ -1264,7 +1264,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private bool Match(XmlSchemaElement e1, XmlSchemaElement e2)
+        private static bool Match(XmlSchemaElement e1, XmlSchemaElement e2)
         {
             if (e1.IsNillable != e2.IsNillable)
                 return false;

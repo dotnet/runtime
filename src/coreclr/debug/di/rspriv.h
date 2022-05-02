@@ -2235,7 +2235,7 @@ public:
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     static COM_METHOD CreateObjectTelesto(REFIID id, void ** pObject);
 #endif // FEATURE_DBGIPC_TRANSPORT_DI
-    static COM_METHOD CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, REFIID id, void **object);
+    static COM_METHOD CreateObject(CorDebugInterfaceVersion iDebuggerVersion, DWORD pid, LPCWSTR lpApplicationGroupId, LPCWSTR lpwstrDacModulePath, REFIID id, void** object);
 
     //-----------------------------------------------------------
     // ICorDebugRemote
@@ -2308,6 +2308,7 @@ public:
 
 private:
     Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd);
+    Cordb(CorDebugInterfaceVersion iDebuggerVersion, const ProcessDescriptor& pd, LPCWSTR dacModulePath);
 
     //-----------------------------------------------------------
     // Data members
@@ -2323,6 +2324,8 @@ public:
     CordbRCEventThread*         m_rcEventThread;
 
     CorDebugInterfaceVersion    GetDebuggerVersion() const;
+
+    PathString& GetDacModulePath() { return m_dacModulePath; }
 
     HMODULE GetTargetCLR() { return m_targetCLR; }
 
@@ -2344,6 +2347,8 @@ private:
 
     // Store information about the process to be debugged
     ProcessDescriptor m_pd;
+
+    PathString m_dacModulePath;
 
     HMODULE m_targetCLR;
 };

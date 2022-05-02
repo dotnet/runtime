@@ -3,6 +3,7 @@ parameters:
   extraBuildArgs: ''
   extraHelixArgs: ''
   isExtraPlatformsBuild: false
+  buildAOTOnHelix: true
   nameSuffix: ''
   platforms: []
   runAOT: false 
@@ -18,7 +19,7 @@ jobs:
     platforms: ${{ parameters.platforms }}
     nameSuffix: ${{ parameters.nameSuffix }}
     isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
-    extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=true /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
+    extraBuildArgs: /p:EnableAggressiveTrimming=true /p:BuildAOTTestsOnHelix=${{ parameters.buildAOTOnHelix }} /p:RunAOTCompilation=${{ parameters.runAOT }} ${{ parameters.extraBuildArgs }}
     extraHelixArgs: /p:NeedsToBuildWasmAppsOnHelix=true ${{ parameters.extraHelixArgs }}
     alwaysRun: ${{ parameters.alwaysRun }}
     runSmokeOnlyArg: $(_runSmokeTestsOnlyArg)

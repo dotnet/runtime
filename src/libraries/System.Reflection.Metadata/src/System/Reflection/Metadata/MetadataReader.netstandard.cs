@@ -42,8 +42,13 @@ namespace System.Reflection.Metadata
             return assemblyName;
         }
 
-        internal static unsafe AssemblyName GetAssemblyName(string assemblyFile!!)
+        internal static unsafe AssemblyName GetAssemblyName(string assemblyFile)
         {
+            if (assemblyFile is null)
+            {
+                Throw.ArgumentNull(nameof(assemblyFile));
+            }
+
             FileStream? fileStream = null;
             MemoryMappedFile? mappedFile = null;
             MemoryMappedViewAccessor? accessor = null;
@@ -84,7 +89,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        private AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
+        private static AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
         {
             AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
 
@@ -103,7 +108,7 @@ namespace System.Reflection.Metadata
             return assemblyNameFlags;
         }
 
-        private AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
+        private static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
         {
             return (AssemblyContentType)(((int)flags & (int)AssemblyFlags.ContentTypeMask) >> 9);
         }

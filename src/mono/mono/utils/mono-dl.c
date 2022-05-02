@@ -15,6 +15,7 @@
 #include "mono/utils/mono-embed.h"
 #include "mono/utils/mono-path.h"
 #include "mono/utils/mono-threads-api.h"
+#include "mono/utils/mono-error-internals.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -173,24 +174,24 @@ fix_libc_name (const char *name)
 
 /**
  * mono_dl_open_self:
- * \param error_msg pointer for error message on failure
+ * \param error pointer to MonoError
  *
  * Returns a handle to the main program, on android x86 it's not possible to
  * call dl_open(null), it returns a null handle, so this function returns RTLD_DEFAULT
  * handle in this platform.
+ * \p error points to MonoError where an error will be stored in
+ * case of failure.   The error needs to be cleared when done using it, \c mono_error_cleanup.
+ * \returns a \c MonoDl pointer on success, NULL on failure.
  */
 MonoDl*
-mono_dl_open_self (char **error_msg)
+mono_dl_open_self (MonoError *error)
 {
 
 #if defined(TARGET_ANDROID) && !defined(WIN32)
 	MonoDl *module;
-	if (error_msg)
-		*error_msg = NULL;
 	module = (MonoDl *) g_malloc (sizeof (MonoDl));
 	if (!module) {
-		if (error_msg)
-			*error_msg = g_strdup ("Out of memory");
+		mono_error_set_out_of_memory (error, NULL);
 		return NULL;
 	}
 	mono_refcount_init (module, NULL);
@@ -199,7 +200,7 @@ mono_dl_open_self (char **error_msg)
 	module->full_name = NULL;
 	return module;
 #else
-	return mono_dl_open (NULL, MONO_DL_LAZY, error_msg);
+	return mono_dl_open (NULL, MONO_DL_LAZY, error);
 #endif
 }
 
@@ -207,7 +208,7 @@ mono_dl_open_self (char **error_msg)
  * mono_dl_open:
  * \param name name of file containing shared module
  * \param flags flags
- * \param error_msg pointer for error message on failure
+ * \param error pointer to MonoError
  *
  * Load the given file \p name as a shared library or dynamically loadable
  * module. \p name can be NULL to indicate loading the currently executing
@@ -215,18 +216,18 @@ mono_dl_open_self (char **error_msg)
  * \p flags can have the \c MONO_DL_LOCAL bit set to avoid exporting symbols
  * from the module to the shared namespace. The \c MONO_DL_LAZY bit can be set
  * to lazily load the symbols instead of resolving everything at load time.
- * \p error_msg points to a string where an error message will be stored in
- * case of failure.   The error must be released with \c g_free.
+ * \p error points to MonoError where an error will be stored in
+ * case of failure.   The error needs to be cleared when done using it, \c mono_error_cleanup.
  * \returns a \c MonoDl pointer on success, NULL on failure.
  */
 MonoDl*
-mono_dl_open (const char *name, int flags, char **error_msg)
+mono_dl_open (const char *name, int flags, MonoError *error)
 {
-	return mono_dl_open_full (name, flags, 0, error_msg);
+	return mono_dl_open_full (name, flags, 0, error);
 }
 
 MonoDl *
-mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **error_msg)
+mono_dl_open_full (const char *name, int mono_flags, int native_flags, MonoError *error)
 {
 	MonoDl *module;
 	void *lib;
@@ -234,21 +235,30 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 	int lflags = mono_dl_convert_flags (mono_flags, native_flags);
 	char *found_name = NULL;
 
-	if (error_msg)
-		*error_msg = NULL;
-
 	module = (MonoDl *) g_malloc (sizeof (MonoDl));
 	if (!module) {
-		if (error_msg)
-			*error_msg = g_strdup ("Out of memory");
+		mono_error_set_out_of_memory (error, NULL);
 		return NULL;
 	}
 	module->main_module = name == NULL? TRUE: FALSE;
 
 	name = fix_libc_name (name);
 
+	ERROR_DECL (load_error);
+
 	// No GC safe transition because this is called early in main.c
-	lib = mono_dl_open_file (name, lflags);
+	lib = mono_dl_open_file (name, lflags, load_error);
+
+	if (!lib && !is_ok (load_error) && mono_error_get_error_code (load_error) == MONO_ERROR_BAD_IMAGE) {
+		char *error_msg = mono_dl_current_error_string ();
+		mono_error_set_error (error, MONO_ERROR_BAD_IMAGE, "%s", error_msg);
+		g_free (error_msg);
+		mono_error_cleanup (load_error);
+		return NULL;
+	}
+
+	mono_error_cleanup (load_error);
+
 	if (lib)
 		found_name = g_strdup (name);
 
@@ -256,12 +266,9 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 		GSList *node;
 		for (node = fallback_handlers; node != NULL; node = node->next){
 			MonoDlFallbackHandler *handler = (MonoDlFallbackHandler *) node->data;
-			if (error_msg)
-				*error_msg = NULL;
-
-			lib = handler->load_func (name, lflags, error_msg, handler->user_data);
-			if (error_msg && *error_msg != NULL)
-				g_free (*error_msg);
+			char *error_msg = NULL;
+			lib = handler->load_func (name, lflags, &error_msg, handler->user_data);
+			g_free (error_msg);
 
 			if (lib != NULL){
 				dl_fallback = handler;
@@ -278,6 +285,7 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 		/* This platform does not support dlopen */
 		if (name == NULL) {
 			g_free (module);
+			mono_error_set_not_supported (error, NULL);
 			return NULL;
 		}
 
@@ -289,7 +297,10 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 		llname = get_dl_name_from_libtool (lname);
 		g_free (lname);
 		if (llname) {
-			lib = mono_dl_open_file (llname, lflags);
+			error_init_reuse (load_error);
+			lib = mono_dl_open_file (llname, lflags, load_error);
+			mono_error_cleanup (load_error);
+
 			if (lib)
 				found_name = g_strdup (llname);
 #if defined (_AIX)
@@ -304,7 +315,9 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 				/* try common suffix */
 				char *llaixname;
 				llaixname = g_strconcat (llname, "(shr_64.o)", (const char*)NULL);
-				lib = mono_dl_open_file (llaixname, lflags);
+				error_init_reuse (load_error);
+				lib = mono_dl_open_file (llaixname, lflags, load_error);
+				mono_error_cleanup (load_error);
 				if (lib)
 					found_name = g_strdup (llaixname);
 				/* XXX: try another suffix like (shr.o)? */
@@ -314,9 +327,9 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
 			g_free (llname);
 		}
 		if (!lib) {
-			if (error_msg) {
-				*error_msg = mono_dl_current_error_string ();
-			}
+			char *error_msg = mono_dl_current_error_string ();
+			mono_error_set_error (error, MONO_ERROR_FILE_NOT_FOUND, "%s", error_msg);
+			g_free (error_msg);
 			g_free (module);
 			return NULL;
 		}
@@ -332,13 +345,14 @@ mono_dl_open_full (const char *name, int mono_flags, int native_flags, char **er
  * mono_dl_symbol:
  * \param module a MonoDl pointer
  * \param name symbol name
- * \param symbol pointer for the result value
+ * \param error pointer to MonoError
  * Load the address of symbol \p name from the given \p module.
- * The address is stored in the pointer pointed to by \p symbol.
- * \returns NULL on success, an error message on failure
+ * \p error points to MonoError where an error will be stored in
+ * case of failure.   The error needs to be cleared when done using it, \c mono_error_cleanup.
+ * \returns address to symbol on success, NULL on failure
  */
-char*
-mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
+void*
+mono_dl_symbol (MonoDl *module, const char *name, MonoError *error)
 {
 	void *sym;
 	char *err = NULL;
@@ -350,23 +364,28 @@ mono_dl_symbol (MonoDl *module, const char *name, void **symbol)
 	}
 
 	if (sym) {
-		if (symbol)
-			*symbol = sym;
-		return NULL;
+		mono_error_assert_ok (error);
+		return sym;
 	}
-	if (symbol)
-		*symbol = NULL;
-	return (module->dl_fallback != NULL) ? err :  mono_dl_current_error_string ();
+
+	err = (module->dl_fallback != NULL) ? err :  mono_dl_current_error_string ();
+	mono_error_set_generic_error (error, "System", "EntryPointNotFoundException", "%s", err);
+	g_free (err);
+
+	return NULL;
 }
 
 /**
  * mono_dl_close:
  * \param module a \c MonoDl pointer
+ * \param error pointer to a MonoError.
  * Unload the given module and free the module memory.
+ * \p error points to a MonoError where an error will be stored in
+ * case of failure.   The error needs to be cleared when done using it, \c mono_error_cleanup.
  * \returns \c 0 on success.
  */
 void
-mono_dl_close (MonoDl *module)
+mono_dl_close (MonoDl *module, MonoError *error)
 {
 	MonoDlFallbackHandler *dl_fallback = module->dl_fallback;
 
@@ -374,7 +393,7 @@ mono_dl_close (MonoDl *module)
 		if (dl_fallback->close_func != NULL)
 			dl_fallback->close_func (module->handle, dl_fallback->user_data);
 	} else
-		mono_dl_close_handle (module);
+		mono_dl_close_handle (module, error);
 
 	g_free (module->full_name);
 	g_free (module);
@@ -581,16 +600,16 @@ mono_dl_fallback_unregister (MonoDlFallbackHandler *handler)
 }
 
 static MonoDl*
-try_load (const char *lib_name, char *dir, int flags, char **err)
+try_load (const char *lib_name, char *dir, int flags, MonoError *error)
 {
 	gpointer iter;
 	MonoDl *runtime_lib;
 	char *path;
 	iter = NULL;
-	*err = NULL;
 	while ((path = mono_dl_build_path (dir, lib_name, &iter))) {
-		g_free (*err);
-		runtime_lib = mono_dl_open (path, flags, err);
+		mono_error_cleanup (error);
+		error_init_reuse (error);
+		runtime_lib = mono_dl_open (path, flags, error);
 		g_free (path);
 		if (runtime_lib)
 			return runtime_lib;
@@ -599,10 +618,9 @@ try_load (const char *lib_name, char *dir, int flags, char **err)
 }
 
 MonoDl*
-mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
+mono_dl_open_runtime_lib (const char* lib_name, int flags, MonoError *error)
 {
 	MonoDl *runtime_lib = NULL;
-	*error_msg = NULL;
 
 	char *resolvedname = minipal_getexepath();
 
@@ -612,33 +630,42 @@ mono_dl_open_runtime_lib (const char* lib_name, int flags, char **error_msg)
 		char *baseparent = NULL;
 		base = g_path_get_dirname (resolvedname);
 		name = g_strdup_printf ("%s/.libs", base);
-		runtime_lib = try_load (lib_name, name, flags, error_msg);
+		runtime_lib = try_load (lib_name, name, flags, error);
 		g_free (name);
 		if (!runtime_lib)
 			baseparent = g_path_get_dirname (base);
 		if (!runtime_lib) {
+			mono_error_cleanup (error);
+			error_init_reuse (error);
 			name = g_strdup_printf ("%s/lib", baseparent);
-			runtime_lib = try_load (lib_name, name, flags, error_msg);
+			runtime_lib = try_load (lib_name, name, flags, error);
 			g_free (name);
 		}
 #ifdef __MACH__
 		if (!runtime_lib) {
+			mono_error_cleanup (error);
+			error_init_reuse (error);
 			name = g_strdup_printf ("%s/Libraries", baseparent);
-			runtime_lib = try_load (lib_name, name, flags, error_msg);
+			runtime_lib = try_load (lib_name, name, flags, error);
 			g_free (name);
 		}
 #endif
 		if (!runtime_lib) {
+			mono_error_cleanup (error);
+			error_init_reuse (error);
 			name = g_strdup_printf ("%s/profiler/.libs", baseparent);
-			runtime_lib = try_load (lib_name, name, flags, error_msg);
+			runtime_lib = try_load (lib_name, name, flags, error);
 			g_free (name);
 		}
 		g_free (base);
 		g_free (resolvedname);
 		g_free (baseparent);
 	}
-	if (!runtime_lib)
-		runtime_lib = try_load (lib_name, NULL, flags, error_msg);
+	if (!runtime_lib) {
+		mono_error_cleanup (error);
+		error_init_reuse (error);
+		runtime_lib = try_load (lib_name, NULL, flags, error);
+	}
 
 	return runtime_lib;
 }

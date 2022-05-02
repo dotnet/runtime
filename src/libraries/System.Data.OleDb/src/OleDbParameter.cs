@@ -575,17 +575,17 @@ namespace System.Data.OleDb
             }
         }
 
-        private byte ValuePrecision(object? value)
+        private static byte ValuePrecision(object? value)
         {
             return ValuePrecisionCore(value);
         }
 
-        private byte ValueScale(object? value)
+        private static byte ValueScale(object? value)
         {
             return ValueScaleCore(value);
         }
 
-        private int ValueSize(object? value)
+        private static int ValueSize(object? value)
         {
             return ValueSizeCore(value);
         }
@@ -650,7 +650,7 @@ namespace System.Data.OleDb
                 return base.ConvertTo(context, culture, value, destinationType);
             }
 
-            private System.ComponentModel.Design.Serialization.InstanceDescriptor ConvertToInstanceDescriptor(OleDbParameter p)
+            private static System.ComponentModel.Design.Serialization.InstanceDescriptor ConvertToInstanceDescriptor(OleDbParameter p)
             {
                 int flags = 0;
 

@@ -16,7 +16,7 @@ namespace Microsoft.Extensions.Http.Logging
     public class LoggingScopeHttpMessageHandler : DelegatingHandler
     {
         private ILogger _logger;
-        private readonly HttpClientFactoryOptions _options;
+        private readonly HttpClientFactoryOptions? _options;
 
         private static readonly Func<string, bool> _shouldNotRedactHeaderValue = (header) => false;
 
@@ -25,8 +25,10 @@ namespace Microsoft.Extensions.Http.Logging
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> is <see langword="null"/>.</exception>
-        public LoggingScopeHttpMessageHandler(ILogger logger!!)
+        public LoggingScopeHttpMessageHandler(ILogger logger)
         {
+            ThrowHelper.ThrowIfNull(logger);
+
             _logger = logger;
         }
 
@@ -36,27 +38,36 @@ namespace Microsoft.Extensions.Http.Logging
         /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
         /// <param name="options">The <see cref="HttpClientFactoryOptions"/> used to configure the <see cref="LoggingScopeHttpMessageHandler"/> instance.</param>
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
-        public LoggingScopeHttpMessageHandler(ILogger logger!!, HttpClientFactoryOptions options!!)
+        public LoggingScopeHttpMessageHandler(ILogger logger, HttpClientFactoryOptions options)
         {
+            ThrowHelper.ThrowIfNull(logger);
+            ThrowHelper.ThrowIfNull(options);
+
             _logger = logger;
             _options = options;
         }
 
         /// <inheritdoc />
         /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
-        protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            var stopwatch = ValueStopwatch.StartNew();
+            ThrowHelper.ThrowIfNull(request);
+            return Core(request, cancellationToken);
 
-            Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
-
-            using (Log.BeginRequestPipelineScope(_logger, request))
+            async Task<HttpResponseMessage> Core(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                Log.RequestPipelineStart(_logger, request, shouldRedactHeaderValue);
-                HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-                Log.RequestPipelineEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
+                var stopwatch = ValueStopwatch.StartNew();
 
-                return response;
+                Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
+
+                using (Log.BeginRequestPipelineScope(_logger, request))
+                {
+                    Log.RequestPipelineStart(_logger, request, shouldRedactHeaderValue);
+                    HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                    Log.RequestPipelineEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
+
+                    return response;
+                }
             }
         }
 
@@ -72,19 +83,19 @@ namespace Microsoft.Extensions.Http.Logging
                 public static readonly EventId ResponseHeader = new EventId(103, "RequestPipelineResponseHeader");
             }
 
-            private static readonly Func<ILogger, HttpMethod, string, IDisposable> _beginRequestPipelineScope = LoggerMessage.DefineScope<HttpMethod, string>("HTTP {HttpMethod} {Uri}");
+            private static readonly Func<ILogger, HttpMethod, string?, IDisposable?> _beginRequestPipelineScope = LoggerMessage.DefineScope<HttpMethod, string?>("HTTP {HttpMethod} {Uri}");
 
-            private static readonly Action<ILogger, HttpMethod, string, Exception> _requestPipelineStart = LoggerMessage.Define<HttpMethod, string>(
+            private static readonly Action<ILogger, HttpMethod, string?, Exception?> _requestPipelineStart = LoggerMessage.Define<HttpMethod, string?>(
                 LogLevel.Information,
                 EventIds.PipelineStart,
                 "Start processing HTTP request {HttpMethod} {Uri}");
 
-            private static readonly Action<ILogger, double, int, Exception> _requestPipelineEnd = LoggerMessage.Define<double, int>(
+            private static readonly Action<ILogger, double, int, Exception?> _requestPipelineEnd = LoggerMessage.Define<double, int>(
                 LogLevel.Information,
                 EventIds.PipelineEnd,
                 "End processing HTTP request after {ElapsedMilliseconds}ms - {StatusCode}");
 
-            public static IDisposable BeginRequestPipelineScope(ILogger logger, HttpRequestMessage request)
+            public static IDisposable? BeginRequestPipelineScope(ILogger logger, HttpRequestMessage request)
             {
                 return _beginRequestPipelineScope(logger, request.Method, GetUriString(request.RequestUri));
             }

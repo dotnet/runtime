@@ -19,5 +19,8 @@ internal static partial class Interop
 
         [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_FreeLibrary")]
         internal static partial void FreeLibrary(IntPtr handle);
+
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDefaultSearchOrderPseudoHandle", SetLastError = true)]
+        internal static partial IntPtr GetDefaultSearchOrderPseudoHandle();
     }
 }

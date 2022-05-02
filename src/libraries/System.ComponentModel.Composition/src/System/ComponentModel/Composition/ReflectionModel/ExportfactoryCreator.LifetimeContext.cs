@@ -11,7 +11,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private sealed class LifetimeContext
         {
-            public Tuple<T, Action> GetExportLifetimeContextFromExport<T>(Export export)
+            public static Tuple<T, Action> GetExportLifetimeContextFromExport<T>(Export export)
             {
                 T exportedValue;
                 Action disposeAction;

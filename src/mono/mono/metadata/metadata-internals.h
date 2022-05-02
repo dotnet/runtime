@@ -723,6 +723,7 @@ mono_image_strdup_vprintf (MonoImage *image, const char *format, va_list args);
 char*
 mono_image_strdup_printf (MonoImage *image, const char *format, ...) MONO_ATTR_FORMAT_PRINTF(2,3);
 
+MONO_COMPONENT_API
 GList*
 mono_g_list_prepend_image (MonoImage *image, GList *list, gpointer data);
 
@@ -953,8 +954,6 @@ void mono_assembly_close_finish (MonoAssembly *assembly);
 
 
 gboolean mono_public_tokens_are_equal (const unsigned char *pubt1, const unsigned char *pubt2);
-
-void mono_config_parse_publisher_policy (const char *filename, MonoAssemblyBindingInfo *binding_info);
 
 gboolean
 mono_assembly_name_parse_full 		     (const char	   *name,

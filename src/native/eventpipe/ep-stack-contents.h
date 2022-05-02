@@ -109,20 +109,6 @@ ep_stack_contents_get_length (EventPipeStackContents *stack_contents)
 	return ep_stack_contents_get_next_available_frame (stack_contents);
 }
 
-static
-inline
-uintptr_t
-ep_stack_contents_get_ip (
-	EventPipeStackContents *stack_contents,
-	uint32_t frame_index)
-{
-	EP_ASSERT (frame_index < EP_MAX_STACK_DEPTH);
-	if (frame_index >= EP_MAX_STACK_DEPTH)
-		return 0;
-
-	return ep_stack_contents_get_stack_frames_cref (stack_contents)[frame_index];
-}
-
 #ifdef EP_CHECKED_BUILD
 static
 inline

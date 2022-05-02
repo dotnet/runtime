@@ -271,7 +271,11 @@ namespace System.Diagnostics
 #endif
         private static uint MostRecentSize = DefaultCachedBufferSize;
 
-        internal static unsafe ProcessInfo[] GetProcessInfos(int? processIdFilter = null)
+        /// <summary>Gets <see cref="ProcessInfo"/> objects for each process on the local system.</summary>
+        /// <param name="processIdFilter">Optional filter used to filter processes down to only those with the specified id.</param>
+        /// <param name="processNameFilter">Optional filter used to filter processes down to only those with the specified name.</param>
+        /// <remarks>All specified non-null filters are applied.</remarks>
+        internal static unsafe ProcessInfo[] GetProcessInfos(int? processIdFilter = null, string? processNameFilter = null)
         {
             // Start with the default buffer size.
             uint bufferSize = MostRecentSize;
@@ -300,7 +304,7 @@ namespace System.Diagnostics
                         Debug.Assert(actualSize > 0 && actualSize <= bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
                         MostRecentSize = GetEstimatedBufferSize(actualSize);
                         // Parse the data block to get process information
-                        return GetProcessInfos(new ReadOnlySpan<byte>(bufferPtr, (int)actualSize), processIdFilter);
+                        return GetProcessInfos(new ReadOnlySpan<byte>(bufferPtr, (int)actualSize), processIdFilter, processNameFilter);
                     }
 
                     Debug.Assert(actualSize > bufferSize, $"Actual size reported by NtQuerySystemInformation was {actualSize} for a buffer of size={bufferSize}.");
@@ -317,7 +321,7 @@ namespace System.Diagnostics
         // kicked in since new call to NtQuerySystemInformation
         private static uint GetEstimatedBufferSize(uint actualSize) => actualSize + 1024 * 10;
 
-        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter)
+        private static unsafe ProcessInfo[] GetProcessInfos(ReadOnlySpan<byte> data, int? processIdFilter, string? processNameFilter)
         {
             // Use a dictionary to avoid duplicate entries if any
             // 60 is a reasonable number for processes on a normal machine.
@@ -330,71 +334,63 @@ namespace System.Diagnostics
                 ref readonly SYSTEM_PROCESS_INFORMATION pi = ref MemoryMarshal.AsRef<SYSTEM_PROCESS_INFORMATION>(data.Slice(processInformationOffset));
 
                 // Process ID shouldn't overflow. OS API GetCurrentProcessID returns DWORD.
-                int processInfoProcessId = pi.UniqueProcessId.ToInt32();
-                if (processIdFilter == null || processIdFilter.GetValueOrDefault() == processInfoProcessId)
+                int processId = pi.UniqueProcessId.ToInt32();
+                if (processIdFilter == null || processIdFilter.GetValueOrDefault() == processId)
                 {
-                    // get information for a process
-                    ProcessInfo processInfo = new ProcessInfo((int)pi.NumberOfThreads)
-                    {
-                        ProcessId = processInfoProcessId,
-                        SessionId = (int)pi.SessionId,
-                        PoolPagedBytes = (long)pi.QuotaPagedPoolUsage,
-                        PoolNonPagedBytes = (long)pi.QuotaNonPagedPoolUsage,
-                        VirtualBytes = (long)pi.VirtualSize,
-                        VirtualBytesPeak = (long)pi.PeakVirtualSize,
-                        WorkingSetPeak = (long)pi.PeakWorkingSetSize,
-                        WorkingSet = (long)pi.WorkingSetSize,
-                        PageFileBytesPeak = (long)pi.PeakPagefileUsage,
-                        PageFileBytes = (long)pi.PagefileUsage,
-                        PrivateBytes = (long)pi.PrivatePageCount,
-                        BasePriority = pi.BasePriority,
-                        HandleCount = (int)pi.HandleCount,
-                    };
+                    string? processName = null;
+                    ReadOnlySpan<char> processNameSpan =
+                        pi.ImageName.Buffer != IntPtr.Zero ? GetProcessShortName(new ReadOnlySpan<char>(pi.ImageName.Buffer.ToPointer(), pi.ImageName.Length / sizeof(char))) :
+                        (processName =
+                            processId == NtProcessManager.SystemProcessID ? "System" :
+                            processId == NtProcessManager.IdleProcessID ? "Idle" :
+                            processId.ToString(CultureInfo.InvariantCulture)); // use the process ID for a normal process without a name
 
-                    if (pi.ImageName.Buffer == IntPtr.Zero)
+                    if (string.IsNullOrEmpty(processNameFilter) || processNameSpan.Equals(processNameFilter, StringComparison.OrdinalIgnoreCase))
                     {
-                        if (processInfo.ProcessId == NtProcessManager.SystemProcessID)
-                        {
-                            processInfo.ProcessName = "System";
-                        }
-                        else if (processInfo.ProcessId == NtProcessManager.IdleProcessID)
-                        {
-                            processInfo.ProcessName = "Idle";
-                        }
-                        else
-                        {
-                            // for normal process without name, using the process ID.
-                            processInfo.ProcessName = processInfo.ProcessId.ToString(CultureInfo.InvariantCulture);
-                        }
-                    }
-                    else
-                    {
-                        string processName = GetProcessShortName(new ReadOnlySpan<char>(pi.ImageName.Buffer.ToPointer(), pi.ImageName.Length / sizeof(char)));
-                        processInfo.ProcessName = processName;
-                    }
+                        processName ??= processNameSpan.ToString();
 
-                    // get the threads for current process
-                    processInfos[processInfo.ProcessId] = processInfo;
-
-                    int threadInformationOffset = processInformationOffset + sizeof(SYSTEM_PROCESS_INFORMATION);
-                    for (int i = 0; i < pi.NumberOfThreads; i++)
-                    {
-                        ref readonly SYSTEM_THREAD_INFORMATION ti = ref MemoryMarshal.AsRef<SYSTEM_THREAD_INFORMATION>(data.Slice(threadInformationOffset));
-
-                        ThreadInfo threadInfo = new ThreadInfo
+                        // get information for a process
+                        ProcessInfo processInfo = new ProcessInfo((int)pi.NumberOfThreads)
                         {
-                            _processId = (int)ti.ClientId.UniqueProcess,
-                            _threadId = (ulong)ti.ClientId.UniqueThread,
-                            _basePriority = ti.BasePriority,
-                            _currentPriority = ti.Priority,
-                            _startAddress = ti.StartAddress,
-                            _threadState = (ThreadState)ti.ThreadState,
-                            _threadWaitReason = NtProcessManager.GetThreadWaitReason((int)ti.WaitReason),
+                            ProcessName = processName,
+                            ProcessId = processId,
+                            SessionId = (int)pi.SessionId,
+                            PoolPagedBytes = (long)pi.QuotaPagedPoolUsage,
+                            PoolNonPagedBytes = (long)pi.QuotaNonPagedPoolUsage,
+                            VirtualBytes = (long)pi.VirtualSize,
+                            VirtualBytesPeak = (long)pi.PeakVirtualSize,
+                            WorkingSetPeak = (long)pi.PeakWorkingSetSize,
+                            WorkingSet = (long)pi.WorkingSetSize,
+                            PageFileBytesPeak = (long)pi.PeakPagefileUsage,
+                            PageFileBytes = (long)pi.PagefileUsage,
+                            PrivateBytes = (long)pi.PrivatePageCount,
+                            BasePriority = pi.BasePriority,
+                            HandleCount = (int)pi.HandleCount,
                         };
 
-                        processInfo._threadInfoList.Add(threadInfo);
+                        processInfos[processInfo.ProcessId] = processInfo;
 
-                        threadInformationOffset += sizeof(SYSTEM_THREAD_INFORMATION);
+                        // get the threads for current process
+                        int threadInformationOffset = processInformationOffset + sizeof(SYSTEM_PROCESS_INFORMATION);
+                        for (int i = 0; i < pi.NumberOfThreads; i++)
+                        {
+                            ref readonly SYSTEM_THREAD_INFORMATION ti = ref MemoryMarshal.AsRef<SYSTEM_THREAD_INFORMATION>(data.Slice(threadInformationOffset));
+
+                            ThreadInfo threadInfo = new ThreadInfo
+                            {
+                                _processId = (int)ti.ClientId.UniqueProcess,
+                                _threadId = (ulong)ti.ClientId.UniqueThread,
+                                _basePriority = ti.BasePriority,
+                                _currentPriority = ti.Priority,
+                                _startAddress = ti.StartAddress,
+                                _threadState = (ThreadState)ti.ThreadState,
+                                _threadWaitReason = NtProcessManager.GetThreadWaitReason((int)ti.WaitReason),
+                            };
+
+                            processInfo._threadInfoList.Add(threadInfo);
+
+                            threadInformationOffset += sizeof(SYSTEM_THREAD_INFORMATION);
+                        }
                     }
                 }
 
@@ -414,7 +410,7 @@ namespace System.Diagnostics
         //
         // This is from GetProcessShortName in NT code base.
         // Check base\screg\winreg\perfdlls\process\perfsprc.c for details.
-        internal static string GetProcessShortName(ReadOnlySpan<char> name)
+        internal static ReadOnlySpan<char> GetProcessShortName(ReadOnlySpan<char> name)
         {
             if (name.IsEmpty)
             {
@@ -427,13 +423,19 @@ namespace System.Diagnostics
             for (int i = 0; i < name.Length; i++)
             {
                 if (name[i] == '\\')
+                {
                     slash = i;
+                }
                 else if (name[i] == '.')
+                {
                     period = i;
+                }
             }
 
             if (period == -1)
+            {
                 period = name.Length - 1; // set to end of string
+            }
             else
             {
                 // if a period was found, then see if the extension is
@@ -442,19 +444,27 @@ namespace System.Diagnostics
                 ReadOnlySpan<char> extension = name.Slice(period);
 
                 if (extension.Equals(".exe", StringComparison.OrdinalIgnoreCase))
+                {
                     period--;                 // point to character before period
+                }
                 else
+                {
                     period = name.Length - 1; // set to end of string
+                }
             }
 
             if (slash == -1)
+            {
                 slash = 0;     // set to start of string
+            }
             else
+            {
                 slash++;       // point to character next to slash
+            }
 
-            // copy characters between period (or end of string) and
-            // slash (or start of string) to make image name
-            return name.Slice(slash, period - slash + 1).ToString();
+            // Slice to the characters between a slash (or start of the string)
+            // and a period (or end of string).
+            return name.Slice(slash, period - slash + 1);
         }
     }
 }

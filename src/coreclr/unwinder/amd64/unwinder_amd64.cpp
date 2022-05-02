@@ -448,11 +448,11 @@ HRESULT.
     ULONG Index;
     PULONG64 IntegerAddress;
     PULONG64 IntegerRegister;
-    ULONG OpInfo;
+    ULONG OpInfo = 0;
     PULONG64 ReturnAddress;
     PULONG64 StackAddress;
     PUNWIND_INFO UnwindInfo;
-    UNWIND_CODE UnwindOp;
+    UNWIND_CODE UnwindOp = {};
 
     //
     // A canonical epilogue sequence consists of the following operations:
@@ -1074,10 +1074,10 @@ Arguments:
 
     ULONG64 BranchTarget;
     LONG Displacement;
-    ULONG EpilogueOffset;
+    ULONG EpilogueOffset = 0;
     ULONG EpilogueSize;
     PEXCEPTION_ROUTINE FoundHandler;
-    ULONG FrameRegister;
+    ULONG FrameRegister = 0;
     ULONG FrameOffset;
     ULONG Index;
     BOOL InEpilogue;

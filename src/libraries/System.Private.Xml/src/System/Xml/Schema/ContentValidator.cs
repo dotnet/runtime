@@ -39,15 +39,15 @@ namespace System.Xml.Schema
     internal sealed class SymbolsDictionary
     {
         private int _last;
-        private readonly Hashtable _names;
-        private Hashtable? _wildcards;
+        private readonly Dictionary<XmlQualifiedName, int> _names;
+        private Dictionary<string, int>? _wildcards;
         private readonly ArrayList _particles;
         private object? _particleLast;
         private bool _isUpaEnforced = true;
 
         public SymbolsDictionary()
         {
-            _names = new Hashtable();
+            _names = new Dictionary<XmlQualifiedName, int>();
             _particles = new ArrayList();
         }
 
@@ -71,10 +71,8 @@ namespace System.Xml.Schema
         /// </summary>
         public int AddName(XmlQualifiedName name, object? particle)
         {
-            object? lookup = _names[name];
-            if (lookup != null)
+            if (_names.TryGetValue(name, out int symbol))
             {
-                int symbol = (int)lookup;
                 if (_particles[symbol] != particle)
                 {
                     _isUpaEnforced = false;
@@ -116,13 +114,9 @@ namespace System.Xml.Schema
 
         private void AddWildcard(string wildcard, object? particle)
         {
-            if (_wildcards == null)
-            {
-                _wildcards = new Hashtable();
-            }
+            _wildcards ??= new Dictionary<string, int>();
 
-            object? lookup = _wildcards[wildcard];
-            if (lookup == null)
+            if (!_wildcards.TryGetValue(wildcard, out int lookup))
             {
                 _wildcards.Add(wildcard, _last);
                 _particles.Add(particle);
@@ -131,15 +125,16 @@ namespace System.Xml.Schema
             }
             else if (particle != null)
             {
-                _particles[(int)lookup] = particle;
+                _particles[lookup] = particle;
             }
         }
 
         public ICollection GetNamespaceListSymbols(NamespaceList list)
         {
             ArrayList match = new ArrayList();
-            foreach (XmlQualifiedName? name in _names.Keys)
+            foreach (KeyValuePair<XmlQualifiedName, int> entry in _names)
             {
+                XmlQualifiedName name = entry.Key;
                 Debug.Assert(name != null);
                 if (name != XmlQualifiedName.Empty && list.Allows(name))
                 {
@@ -149,11 +144,11 @@ namespace System.Xml.Schema
 
             if (_wildcards != null)
             {
-                foreach (string wildcard in _wildcards.Keys)
+                foreach (KeyValuePair<string, int> wildcard in _wildcards)
                 {
-                    if (list.Allows(wildcard))
+                    if (list.Allows(wildcard.Key))
                     {
-                        match.Add(_wildcards[wildcard]);
+                        match.Add(wildcard.Value);
                     }
                 }
             }
@@ -173,19 +168,14 @@ namespace System.Xml.Schema
         {
             get
             {
-                object? lookup = _names[name];
-                if (lookup != null)
+                if (_names.TryGetValue(name, out int symbol))
                 {
-                    return (int)lookup;
+                    return symbol;
                 }
 
-                if (_wildcards != null)
+                if (_wildcards != null && _wildcards.TryGetValue(name.Namespace, out int lookup))
                 {
-                    lookup = _wildcards[name.Namespace];
-                    if (lookup != null)
-                    {
-                        return (int)lookup;
-                    }
+                    return lookup;
                 }
 
                 return _last; // true wildcard
@@ -195,16 +185,7 @@ namespace System.Xml.Schema
         /// <summary>
         /// Check if a name exists in the symbol dictionary
         /// </summary>
-        public bool Exists(XmlQualifiedName name)
-        {
-            object? lookup = _names[name];
-            if (lookup != null)
-            {
-                return true;
-            }
-
-            return false;
-        }
+        public bool Exists(XmlQualifiedName name) => _names.ContainsKey(name);
 
         /// <summary>
         /// Return content processing mode for the symbol
@@ -219,21 +200,21 @@ namespace System.Xml.Schema
         /// </summary>
         public string NameOf(int symbol)
         {
-            foreach (DictionaryEntry de in _names)
+            foreach (KeyValuePair<XmlQualifiedName, int> name in _names)
             {
-                if ((int)de.Value! == symbol)
+                if (name.Value == symbol)
                 {
-                    return ((XmlQualifiedName)de.Key).ToString();
+                    return name.Key.ToString();
                 }
             }
 
             if (_wildcards != null)
             {
-                foreach (DictionaryEntry de in _wildcards)
+                foreach (KeyValuePair<string, int> wildcard in _wildcards)
                 {
-                    if ((int)de!.Value! == symbol)
+                    if (wildcard.Value == symbol)
                     {
-                        return $"{(string)de.Key}:*";
+                        return $"{wildcard.Key}:*";
                     }
                 }
             }
@@ -1467,7 +1448,7 @@ namespace System.Xml.Schema
             ArrayList transitionTable = new ArrayList();
 
             // state lookup table (Dstate in the book)
-            Hashtable stateTable = new Hashtable();
+            Dictionary<BitSet, int> stateTable = new();
 
             // Add empty set that would signal an error
             stateTable.Add(new BitSet(positionsCount), -1);
@@ -1485,7 +1466,7 @@ namespace System.Xml.Schema
             while (unmarked.Count > 0)
             {
                 BitSet statePosSet = unmarked.Dequeue(); // all positions that constitute DFA state
-                Debug.Assert(state == (int)stateTable[statePosSet]!); // just make sure that statePosSet is for correct state
+                Debug.Assert(state == stateTable[statePosSet]); // just make sure that statePosSet is for correct state
                 int[] transition = (int[])transitionTable[state]!;
                 if (statePosSet[endMarkerPos])
                 {
@@ -1509,10 +1490,9 @@ namespace System.Xml.Schema
 
                     // if U is not empty and is not in Dstates then
                     //      add U as an unmarked state to Dstates
-                    object? lookup = stateTable[newset];
-                    if (lookup != null)
+                    if (stateTable.TryGetValue(newset, out int lookup))
                     {
-                        transition[symbol] = (int)lookup;
+                        transition[symbol] = lookup;
                     }
                     else
                     {
@@ -2151,33 +2131,33 @@ namespace System.Xml.Schema
 
     internal sealed class AllElementsContentValidator : ContentValidator
     {
-        private readonly Hashtable _elements;     // unique terminal names to positions in Bitset mapping
+        private readonly Dictionary<XmlQualifiedName, int> _elements;     // unique terminal names to positions in Bitset mapping
         private readonly object[] _particles;
         private readonly BitSet _isRequired;      // required flags
         private int _countRequired;
 
         public AllElementsContentValidator(XmlSchemaContentType contentType, int size, bool isEmptiable) : base(contentType, false, isEmptiable)
         {
-            _elements = new Hashtable(size);
+            _elements = new Dictionary<XmlQualifiedName, int>(size);
             _particles = new object[size];
             _isRequired = new BitSet(size);
         }
 
         public bool AddElement(XmlQualifiedName name, object particle, bool isEmptiable)
         {
-            if (_elements[name] != null)
-            {
-                return false;
-            }
             int i = _elements.Count;
-            _elements.Add(name, i);
-            _particles[i] = particle;
-            if (!isEmptiable)
+            if (_elements.TryAdd(name, i))
             {
-                _isRequired.Set(i);
-                _countRequired++;
+                _particles[i] = particle;
+                if (!isEmptiable)
+                {
+                    _isRequired.Set(i);
+                    _countRequired++;
+                }
+                return true;
             }
-            return true;
+
+            return false;
         }
 
         public override bool IsEmptiable
@@ -2194,15 +2174,14 @@ namespace System.Xml.Schema
 
         public override object? ValidateElement(XmlQualifiedName name, ValidationState context, out int errorCode)
         {
-            object? lookup = _elements[name];
             errorCode = 0;
-            if (lookup == null)
+
+            if (!_elements.TryGetValue(name, out int index))
             {
                 context.NeedValidateChildren = false;
                 return null;
             }
 
-            int index = (int)lookup;
             if (context.AllElementsSet![index])
             {
                 errorCode = -2;
@@ -2236,16 +2215,12 @@ namespace System.Xml.Schema
         public override ArrayList? ExpectedElements(ValidationState context, bool isRequiredOnly)
         {
             ArrayList? names = null;
-            foreach (DictionaryEntry entry in _elements)
+            foreach (KeyValuePair<XmlQualifiedName, int> element in _elements)
             {
-                if (!context.AllElementsSet![(int)entry.Value!] && (!isRequiredOnly || _isRequired[(int)entry.Value]))
+                if (!context.AllElementsSet![element.Value] && (!isRequiredOnly || _isRequired[element.Value]))
                 {
-                    if (names == null)
-                    {
-                        names = new ArrayList();
-                    }
-
-                    names.Add(entry.Key);
+                    names ??= new ArrayList();
+                    names.Add(element.Key);
                 }
             }
 
@@ -2255,11 +2230,11 @@ namespace System.Xml.Schema
         public override ArrayList ExpectedParticles(ValidationState context, bool isRequiredOnly, XmlSchemaSet schemaSet)
         {
             ArrayList expectedParticles = new ArrayList();
-            foreach (DictionaryEntry entry in _elements)
+            foreach (KeyValuePair<XmlQualifiedName, int> element in _elements)
             {
-                if (!context.AllElementsSet![(int)entry.Value!] && (!isRequiredOnly || _isRequired[(int)entry.Value]))
+                if (!context.AllElementsSet![element.Value] && (!isRequiredOnly || _isRequired[element.Value]))
                 {
-                    AddParticleToExpected((_particles[(int)entry.Value] as XmlSchemaParticle)!, schemaSet, expectedParticles);
+                    AddParticleToExpected((_particles[element.Value] as XmlSchemaParticle)!, schemaSet, expectedParticles);
                 }
             }
 

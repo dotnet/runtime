@@ -3299,7 +3299,7 @@ void ComMethodTable::LayOutClassMethodTable()
 
     if (!m_pMT->HasGenericClassInstantiationInHierarchy())
     {
-        ExecutableWriterHolder<BYTE> methodDescMemoryWriteableHolder;
+        ExecutableWriterHolderNoLog<BYTE> methodDescMemoryWriteableHolder;
         //
         // Allocate method desc's for the rest of the slots.
         //
@@ -3310,7 +3310,7 @@ void ComMethodTable::LayOutClassMethodTable()
             pMDMemoryPtr = m_pMT->GetLoaderAllocator()->GetStubHeap()->AllocMem(S_SIZE_T(cbAlloc + sizeof(UINT_PTR)));
             pMethodDescMemory = pMDMemoryPtr;
 
-            methodDescMemoryWriteableHolder = ExecutableWriterHolder<BYTE>(pMethodDescMemory, cbAlloc + sizeof(UINT_PTR));
+            methodDescMemoryWriteableHolder.AssignExecutableWriterHolder(pMethodDescMemory, cbAlloc + sizeof(UINT_PTR));
             writeableOffset = methodDescMemoryWriteableHolder.GetRW() - pMethodDescMemory;
 
             // initialize the method desc memory to zero

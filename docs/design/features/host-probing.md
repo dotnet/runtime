@@ -48,7 +48,7 @@ The list of probing paths ordered according to their priority. First path in the
   If the app (or framework) has dependencies on frameworks, these frameworks are used as probing paths.
   The order is from the higher level framework to lower level framework. The app is considered the highest level, it direct dependencies are next and so on.
   For assets from frameworks, only that framework and lower level frameworks are considered.
-  Note: These directories come directly out of the framework resolution process. Special note on Windows where global locations are always considered even if the app is not executed via the shared `dotnet.exe`. More details can be found in [Multi-level Shared FX Lookup](multilevel-sharedfx-lookup.md).
+  Note: These directories come directly out of the framework resolution process. Special note on Windows where global locations are always considered even if the app is not executed via the shared `dotnet.exe`. More details can be found in [Shared FX Lookup](sharedfx-lookup.md).
 * Shared store paths
   * `$DOTNET_SHARED_STORE/|arch|/|tfm|` - The environment variable `DOTNET_SHARED_STORE` can contain multiple paths, in which case each is appended with `|arch|/|tfm|` and used as a probing path.
   * If the app is executed through `dotnet.exe` then path relative to the directory with the `dotnet.exe` is used

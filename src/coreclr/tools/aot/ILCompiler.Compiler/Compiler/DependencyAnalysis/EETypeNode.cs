@@ -315,8 +315,16 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType defType = _type.GetClosestDefType();
 
+            // Interfaces don't have vtables and we don't need to track their slot use.
+            // The only exception are those interfaces that provide IDynamicInterfaceCastable implementations;
+            // those have slots and we dispatch on them.
+            bool needsDependenciesForVirtualMethodImpls = !defType.IsInterface
+                || ((MetadataType)defType).IsDynamicInterfaceCastableImplementation();
+
             // If we're producing a full vtable, none of the dependencies are conditional.
-            if (!factory.VTable(defType).HasFixedSlots)
+            needsDependenciesForVirtualMethodImpls &= !factory.VTable(defType).HasFixedSlots;
+            
+            if (needsDependenciesForVirtualMethodImpls)
             {
                 foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
                 {

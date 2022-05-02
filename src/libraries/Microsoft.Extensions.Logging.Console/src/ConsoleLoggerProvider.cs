@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Microsoft.Extensions.Options;
@@ -22,7 +23,7 @@ namespace Microsoft.Extensions.Logging.Console
         private ConcurrentDictionary<string, ConsoleFormatter> _formatters;
         private readonly ConsoleLoggerProcessor _messageQueue;
 
-        private IDisposable _optionsReloadToken;
+        private IDisposable? _optionsReloadToken;
         private IExternalScopeProvider _scopeProvider = NullExternalScopeProvider.Instance;
 
         /// <summary>
@@ -37,7 +38,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// </summary>
         /// <param name="options">The options to create <see cref="ConsoleLogger"/> instances with.</param>
         /// <param name="formatters">Log formatters added for <see cref="ConsoleLogger"/> insteaces.</param>
-        public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options, IEnumerable<ConsoleFormatter> formatters)
+        public ConsoleLoggerProvider(IOptionsMonitor<ConsoleLoggerOptions> options, IEnumerable<ConsoleFormatter>? formatters)
         {
             _options = options;
             _loggers = new ConcurrentDictionary<string, ConsoleLogger>();
@@ -46,18 +47,19 @@ namespace Microsoft.Extensions.Logging.Console
             ReloadLoggerOptions(options.CurrentValue);
             _optionsReloadToken = _options.OnChange(ReloadLoggerOptions);
 
-            _messageQueue = new ConsoleLoggerProcessor();
-
+            IConsole? console;
+            IConsole? errorConsole;
             if (DoesConsoleSupportAnsi())
             {
-                _messageQueue.Console = new AnsiLogConsole();
-                _messageQueue.ErrorConsole = new AnsiLogConsole(stdErr: true);
+                console = new AnsiLogConsole();
+                errorConsole = new AnsiLogConsole(stdErr: true);
             }
             else
             {
-                _messageQueue.Console = new AnsiParsingLogConsole();
-                _messageQueue.ErrorConsole = new AnsiParsingLogConsole(stdErr: true);
+                console = new AnsiParsingLogConsole();
+                errorConsole = new AnsiParsingLogConsole(stdErr: true);
             }
+            _messageQueue = new ConsoleLoggerProcessor(console, errorConsole);
         }
 
         [UnsupportedOSPlatformGuard("windows")]
@@ -78,7 +80,8 @@ namespace Microsoft.Extensions.Logging.Console
             return (consoleMode & Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING) == Interop.Kernel32.ENABLE_VIRTUAL_TERMINAL_PROCESSING;
         }
 
-        private void SetFormatters(IEnumerable<ConsoleFormatter> formatters = null)
+        [MemberNotNull(nameof(_formatters))]
+        private void SetFormatters(IEnumerable<ConsoleFormatter>? formatters = null)
         {
             var cd = new ConcurrentDictionary<string, ConsoleFormatter>(StringComparer.OrdinalIgnoreCase);
 
@@ -105,7 +108,7 @@ namespace Microsoft.Extensions.Logging.Console
         // warning:  ReloadLoggerOptions can be called before the ctor completed,... before registering all of the state used in this method need to be initialized
         private void ReloadLoggerOptions(ConsoleLoggerOptions options)
         {
-            if (options.FormatterName == null || !_formatters.TryGetValue(options.FormatterName, out ConsoleFormatter logFormatter))
+            if (options.FormatterName == null || !_formatters.TryGetValue(options.FormatterName, out ConsoleFormatter? logFormatter))
             {
 #pragma warning disable CS0618
                 logFormatter = options.Format switch
@@ -130,7 +133,7 @@ namespace Microsoft.Extensions.Logging.Console
         /// <inheritdoc />
         public ILogger CreateLogger(string name)
         {
-            if (_options.CurrentValue.FormatterName == null || !_formatters.TryGetValue(_options.CurrentValue.FormatterName, out ConsoleFormatter logFormatter))
+            if (_options.CurrentValue.FormatterName == null || !_formatters.TryGetValue(_options.CurrentValue.FormatterName, out ConsoleFormatter? logFormatter))
             {
 #pragma warning disable CS0618
                 logFormatter = _options.CurrentValue.Format switch
@@ -146,18 +149,13 @@ namespace Microsoft.Extensions.Logging.Console
                 }
             }
 
-            return _loggers.TryGetValue(name, out ConsoleLogger logger) ?
+            return _loggers.TryGetValue(name, out ConsoleLogger? logger) ?
                 logger :
-                _loggers.GetOrAdd(name, new ConsoleLogger(name, _messageQueue)
-                {
-                    Options = _options.CurrentValue,
-                    ScopeProvider = _scopeProvider,
-                    Formatter = logFormatter,
-                });
+                _loggers.GetOrAdd(name, new ConsoleLogger(name, _messageQueue, logFormatter, _scopeProvider, _options.CurrentValue));
         }
 
 #pragma warning disable CS0618
-        private void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
+        private static void UpdateFormatterOptions(ConsoleFormatter formatter, ConsoleLoggerOptions deprecatedFromOptions)
         {
             // kept for deprecated apis:
             if (formatter is SimpleConsoleFormatter defaultFormatter)

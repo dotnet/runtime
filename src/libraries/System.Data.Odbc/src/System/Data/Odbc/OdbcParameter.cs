@@ -1124,17 +1124,17 @@ namespace System.Data.Odbc
             }
         }
 
-        private byte ValuePrecision(object? value)
+        private static byte ValuePrecision(object? value)
         {
             return ValuePrecisionCore(value);
         }
 
-        private byte ValueScale(object? value)
+        private static byte ValueScale(object? value)
         {
             return ValueScaleCore(value);
         }
 
-        private int ValueSize(object? value)
+        private static int ValueSize(object? value)
         {
             return ValueSizeCore(value);
         }

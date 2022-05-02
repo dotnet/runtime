@@ -12,6 +12,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.Http.Functional.Tests
 {
+    [ConditionalClass(typeof(SocketsHttpHandler), nameof(SocketsHttpHandler.IsSupported))]
     public abstract class SocketsHttpHandler_Cancellation_Test : HttpClientHandler_Cancellation_Test
     {
         protected SocketsHttpHandler_Cancellation_Test(ITestOutputHelper output) : base(output) { }
@@ -194,6 +195,70 @@ namespace System.Net.Http.Functional.Tests
                 await server.AcceptConnectionSendResponseAndCloseAsync(content: "Hello world");
             },
             options: new GenericLoopbackOptions() { UseSsl = useSsl });
+        }
+
+        [Fact]
+        public async Task RequestsCanceled_NoConnectionAttemptForCanceledRequests()
+        {
+            if (UseVersion == HttpVersion.Version30)
+            {
+                // HTTP3 does not support ConnectCallback
+                return;
+            }
+
+            bool seenRequest1 = false;
+            bool seenRequest2 = false;
+            bool seenRequest3 = false;
+
+            var uri = new Uri("https://example.com");
+            HttpRequestMessage request1 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+            HttpRequestMessage request2 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+            HttpRequestMessage request3 = CreateRequest(HttpMethod.Get, uri, UseVersion, exactVersion: true);
+
+            TaskCompletionSource connectCallbackEntered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            TaskCompletionSource connectCallbackGate = new(TaskCreationOptions.RunContinuationsAsynchronously);
+
+            using HttpClientHandler handler = CreateHttpClientHandler();
+            handler.MaxConnectionsPerServer = 1;
+            GetUnderlyingSocketsHttpHandler(handler).ConnectCallback = async (context, cancellation) =>
+            {
+                if (context.InitialRequestMessage == request1) seenRequest1 = true;
+                if (context.InitialRequestMessage == request2) seenRequest2 = true;
+                if (context.InitialRequestMessage == request3) seenRequest3 = true;
+
+                connectCallbackEntered.TrySetResult();
+
+                await connectCallbackGate.Task.WaitAsync(TestHelper.PassingTestTimeout);
+
+                throw new Exception("No connection");
+            };
+            using HttpClient client = CreateHttpClient(handler);
+
+            Task request1Task = client.SendAsync(TestAsync, request1);
+            await connectCallbackEntered.Task.WaitAsync(TestHelper.PassingTestTimeout);
+            Assert.True(seenRequest1);
+
+            using var request2Cts = new CancellationTokenSource();
+            Task request2Task = client.SendAsync(TestAsync, request2, request2Cts.Token);
+            Assert.False(seenRequest2);
+
+            Task request3Task = client.SendAsync(TestAsync, request3);
+            Assert.False(seenRequest2);
+            Assert.False(seenRequest3);
+
+            request2Cts.Cancel();
+
+            await Assert.ThrowsAsync<TaskCanceledException>(() => request2Task).WaitAsync(TestHelper.PassingTestTimeout);
+            Assert.False(seenRequest2);
+            Assert.False(seenRequest3);
+
+            connectCallbackGate.SetResult();
+
+            await Assert.ThrowsAsync<HttpRequestException>(() => request1Task).WaitAsync(TestHelper.PassingTestTimeout);
+            await Assert.ThrowsAsync<HttpRequestException>(() => request3Task).WaitAsync(TestHelper.PassingTestTimeout);
+
+            Assert.False(seenRequest2);
+            Assert.True(seenRequest3);
         }
 
         [OuterLoop("Incurs significant delay")]

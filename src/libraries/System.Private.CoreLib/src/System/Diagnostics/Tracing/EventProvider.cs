@@ -454,7 +454,11 @@ namespace System.Diagnostics.Tracing
         /// for the current process ID, calling 'action' for each session, and passing it the
         /// ETW session and the 'AllKeywords' the session enabled for the current provider.
         /// </summary>
-        private unsafe void GetSessionInfo(SessionInfoCallback action, ref List<SessionInfo>? sessionList)
+        private
+#if !TARGET_WINDOWS
+        static
+#endif
+        unsafe void GetSessionInfo(SessionInfoCallback action, ref List<SessionInfo>? sessionList)
         {
             // We wish the EventSource package to be legal for Windows Store applications.
             // Currently EnumerateTraceGuidsEx is not an allowed API, so we avoid its use here

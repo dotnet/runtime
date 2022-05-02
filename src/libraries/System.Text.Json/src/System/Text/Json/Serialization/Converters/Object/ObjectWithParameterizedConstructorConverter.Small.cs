@@ -53,7 +53,7 @@ namespace System.Text.Json.Serialization.Converters
             return success;
         }
 
-        private bool TryRead<TArg>(
+        private static bool TryRead<TArg>(
             ref ReadStack state,
             ref Utf8JsonReader reader,
             JsonParameterInfo jsonParameterInfo,

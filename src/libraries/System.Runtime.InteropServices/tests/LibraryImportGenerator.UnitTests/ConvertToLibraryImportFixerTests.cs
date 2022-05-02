@@ -19,7 +19,7 @@ namespace LibraryImportGenerator.UnitTests
     {
         private const string ConvertToLibraryImportKey = "ConvertToLibraryImport";
 
-        [ConditionalFact]
+        [Fact]
         public async Task Basic()
         {
             string source = @$"
@@ -42,7 +42,7 @@ partial class Test
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task Comments()
         {
             string source = @$"
@@ -77,7 +77,7 @@ partial class Test
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MultipleAttributes()
         {
             string source = @$"
@@ -110,7 +110,7 @@ partial class Test
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task NamedArguments()
         {
             string source = @$"
@@ -139,7 +139,7 @@ partial class Test
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task RemoveableNamedArguments()
         {
             string source = @$"
@@ -186,7 +186,7 @@ partial class Test
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ReplaceableExplicitPlatformDefaultCallingConvention()
         {
             string source = @$"
@@ -209,7 +209,7 @@ partial class Test
                 fixedSource);
         }
 
-        [ConditionalTheory]
+        [Theory]
         [InlineData(CallingConvention.Cdecl, typeof(CallConvCdecl))]
         [InlineData(CallingConvention.StdCall, typeof(CallConvStdcall))]
         [InlineData(CallingConvention.ThisCall, typeof(CallConvThiscall))]
@@ -237,7 +237,7 @@ partial class Test
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task PreferredAttributeOrder()
         {
             string source = @$"
@@ -262,7 +262,7 @@ partial class Test
 
         [InlineData(CharSet.Ansi, 'A')]
         [InlineData(CharSet.Unicode, 'W')]
-        [ConditionalTheory]
+        [Theory]
         public async Task ExactSpelling_False_NoAutoCharSet_Provides_No_Suffix_And_Suffix_Fix(CharSet charSet, char suffix)
         {
             string source = $@"
@@ -290,7 +290,7 @@ partial class Test
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithSuffix, $"{ConvertToLibraryImportKey}{suffix}");
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ExactSpelling_False_AutoCharSet_Provides_No_Suffix_And_Both_Suffix_Fixes()
         {
             string source = $@"
@@ -326,7 +326,7 @@ partial class Test
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithWSuffix, $"{ConvertToLibraryImportKey}W");
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ExactSpelling_False_ImplicitAnsiCharSet_Provides_No_Suffix_And_Suffix_Fix()
         {
             string source = $@"
@@ -354,7 +354,7 @@ partial class Test
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ExactSpelling_False_ConstantNonLiteralEntryPoint()
         {
             string source = $@"
@@ -376,7 +376,7 @@ partial class Test
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task Implicit_ExactSpelling_False_Offers_Suffix_Fix()
         {
             string source = $@"
@@ -396,7 +396,7 @@ partial class Test
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ExactSpelling_False_NameOfEntryPoint()
         {
             string source = $@"
@@ -418,7 +418,7 @@ partial class Test
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task ExactSpelling_False_ImplicitEntryPointName()
         {
             string source = $@"
@@ -438,7 +438,7 @@ partial class Test
             await VerifyCS.VerifyCodeFixAsync(source, fixedSourceWithASuffix, $"{ConvertToLibraryImportKey}A");
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task PreserveSigFalseSignatureModified()
         {
             string source = @"
@@ -481,7 +481,7 @@ partial class Test
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task MakeEnclosingTypesPartial()
         {
             string source = @"
@@ -544,7 +544,7 @@ partial class EnclosingPartial
                 fixedSource);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task BooleanMarshalAsAdded()
         {
             string source = @$"

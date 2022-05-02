@@ -21,10 +21,9 @@
 #include <mono/utils/mono-lazy-init.h>
 #include <mono/utils/w32api.h>
 #include <mono/metadata/assembly.h>
-#include <mono/metadata/w32file.h>
 #include <mono/metadata/w32event.h>
-#include <mono/metadata/environment-internals.h>
 #include <mono/metadata/metadata-internals.h>
+#include "mono/utils/mono-logger-internals.h"
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
@@ -354,6 +353,11 @@ extern mono_lazy_init_t _ep_rt_mono_os_cmd_line_init;
 extern char *_ep_rt_mono_managed_cmd_line;
 extern mono_lazy_init_t _ep_rt_mono_managed_cmd_line_init;
 extern ep_rt_spin_lock_handle_t _ep_rt_mono_config_lock;
+extern char * ep_rt_mono_get_managed_cmd_line (void);
+extern char * ep_rt_mono_get_os_cmd_line (void);
+extern ep_rt_file_handle_t ep_rt_mono_file_open_write (const ep_char8_t *path);
+extern bool ep_rt_mono_file_close (ep_rt_file_handle_t handle);
+extern bool ep_rt_mono_file_write (ep_rt_file_handle_t handle, const uint8_t *buffer, uint32_t numbytes, uint32_t *byteswritten);
 extern void * ep_rt_mono_thread_attach (bool background_thread);
 extern void * ep_rt_mono_thread_attach_2 (bool background_thread, EventPipeThreadType thread_type);
 extern void ep_rt_mono_thread_detach (void);
@@ -382,7 +386,7 @@ inline
 char *
 os_command_line_get (void)
 {
-	return mono_get_os_cmd_line ();
+	return ep_rt_mono_get_os_cmd_line ();
 }
 
 static
@@ -424,7 +428,7 @@ inline
 char *
 managed_command_line_get (void)
 {
-	return mono_runtime_get_managed_cmd_line ();
+	return ep_rt_mono_get_managed_cmd_line ();
 }
 
 static
@@ -509,33 +513,6 @@ gboolean
 ep_rt_mono_native_thread_id_equals (MonoNativeThreadId id1, MonoNativeThreadId id2)
 {
 	return mono_native_thread_id_equals (id1, id2);
-}
-
-static
-inline
-gpointer
-ep_rt_mono_w32file_create (const gunichar2 *name, guint32 fileaccess, guint32 sharemode, guint32 createmode, guint32 attrs)
-{
-	//TODO, replace with low level PAL implementation.
-	return mono_w32file_create (name, fileaccess, sharemode, createmode, attrs);
-}
-
-static
-inline
-gboolean
-ep_rt_mono_w32file_write (gpointer handle, gconstpointer buffer, guint32 numbytes, guint32 *byteswritten, gint32 *win32error)
-{
-	//TODO, replace with low level PAL implementation.
-	return mono_w32file_write (handle, buffer, numbytes, byteswritten, win32error);
-}
-
-static
-inline
-gboolean
-ep_rt_mono_w32file_close (gpointer handle)
-{
-	//TODO, replace with low level PAL implementation.
-	return mono_w32file_close (handle);
 }
 
 static
@@ -1289,7 +1266,7 @@ ep_rt_thread_create (
 	rt_mono_thread_params_internal_t *thread_params = g_new0 (rt_mono_thread_params_internal_t, 1);
 	if (thread_params) {
 		thread_params->thread_params.thread_type = thread_type;
-		thread_params->thread_params.thread_func = thread_func;
+		thread_params->thread_params.thread_func = (ep_rt_thread_start_func)thread_func;
 		thread_params->thread_params.thread_params = params;
 		thread_params->background_thread = true;
 		return (mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
@@ -1407,13 +1384,9 @@ inline
 ep_rt_file_handle_t
 ep_rt_file_open_write (const ep_char8_t *path)
 {
-	ep_char16_t *path_utf16 = ep_rt_utf8_to_utf16_string (path, -1);
-	ep_return_null_if_nok (path_utf16 != NULL);
+	ep_rt_file_handle_t res = ep_rt_mono_file_open_write (path);
 
-	gpointer file_handle = ep_rt_mono_w32file_create ((gunichar2 *)path_utf16, GENERIC_WRITE, FILE_SHARE_READ, CREATE_ALWAYS, FileAttributes_Normal);
-	ep_rt_utf16_string_free (path_utf16);
-
-	return file_handle;
+	return (res != INVALID_HANDLE_VALUE) ? res : NULL;
 }
 
 static
@@ -1422,7 +1395,7 @@ bool
 ep_rt_file_close (ep_rt_file_handle_t file_handle)
 {
 	ep_return_false_if_nok (file_handle != NULL);
-	return ep_rt_mono_w32file_close (file_handle);
+	return ep_rt_mono_file_close (file_handle);
 }
 
 static
@@ -1437,8 +1410,7 @@ ep_rt_file_write (
 	ep_return_false_if_nok (file_handle != NULL);
 	EP_ASSERT (buffer != NULL);
 
-	gint32 win32_error;
-	bool result = ep_rt_mono_w32file_write (file_handle, buffer, bytes_to_write, bytes_written, &win32_error);
+	bool result = ep_rt_mono_file_write (file_handle, buffer, bytes_to_write, bytes_written);
 	if (result)
 		*bytes_written = bytes_to_write;
 
@@ -1555,12 +1527,14 @@ ep_rt_spin_lock_set_owning_thread_id (
 	ep_rt_spin_lock_handle_t *spin_lock,
 	MonoNativeThreadId thread_id)
 {
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof (spin_lock->owning_thread_id) == sizeof (uint32_t))
 		ep_rt_volatile_store_uint32_t ((uint32_t *)&spin_lock->owning_thread_id, MONO_NATIVE_THREAD_ID_TO_UINT (thread_id));
 	else if (sizeof (spin_lock->owning_thread_id) == sizeof (uint64_t))
 		ep_rt_volatile_store_uint64_t ((uint64_t *)&spin_lock->owning_thread_id, MONO_NATIVE_THREAD_ID_TO_UINT (thread_id));
 	else
 		spin_lock->owning_thread_id = thread_id;
+MONO_RESTORE_WARNING
 }
 
 static
@@ -1568,12 +1542,14 @@ inline
 MonoNativeThreadId
 ep_rt_spin_lock_get_owning_thread_id (const ep_rt_spin_lock_handle_t *spin_lock)
 {
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof (spin_lock->owning_thread_id) == sizeof (uint32_t))
 		return MONO_UINT_TO_NATIVE_THREAD_ID (ep_rt_volatile_load_uint32_t ((const uint32_t *)&spin_lock->owning_thread_id));
 	else if (sizeof (spin_lock->owning_thread_id) == sizeof (uint64_t))
 		return MONO_UINT_TO_NATIVE_THREAD_ID (ep_rt_volatile_load_uint64_t ((const uint64_t *)&spin_lock->owning_thread_id));
 	else
 		return spin_lock->owning_thread_id;
+MONO_RESTORE_WARNING
 }
 #endif
 
@@ -1847,6 +1823,7 @@ ep_rt_diagnostics_command_line_get (void)
 {
 	const ep_char8_t * cmd_line = ep_rt_managed_command_line_get ();
 
+	// if the managed command line isn't available yet (e.g. because we're during runtime startup) then fallback to the OS command line.
 	// Checkout https://github.com/dotnet/coreclr/pull/24433 for more information about this fall back.
 	if (cmd_line == NULL)
 		cmd_line = ep_rt_os_command_line_get ();
@@ -2322,6 +2299,12 @@ ep_rt_write_event_threadpool_io_dequeue (
 bool
 ep_rt_write_event_threadpool_working_thread_count (
 	uint16_t count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_io_pack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
 	uint16_t clr_instance_id);
 
 /*
