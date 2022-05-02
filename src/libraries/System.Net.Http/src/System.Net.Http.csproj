@@ -656,6 +656,7 @@
     <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.Channels" />
+    <Reference Include="System.Threading.ThreadPool" />
     <Reference Include="System.IO.Compression.Brotli" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(TargetPlatformIdentifier)' != 'Browser'">
