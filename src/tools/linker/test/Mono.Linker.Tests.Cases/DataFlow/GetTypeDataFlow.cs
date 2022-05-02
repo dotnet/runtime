@@ -34,6 +34,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestStringEmpty ();
 
 			TypeWithWarnings.Test ();
+			OverConstTypeName.Test ();
 
 			// TODO:
 			// Test multi-value returns
@@ -163,7 +164,6 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 
 		class TypeWithWarnings
 		{
-
 			[RequiresUnreferencedCode ("--Method1--")]
 			public void Method1 () { }
 
@@ -176,6 +176,21 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			public static void Test ()
 			{
 				Type.GetType ("Mono.Linker.Tests.Cases.DataFlow." + nameof (GetTypeDataFlow) + "+" + nameof (TypeWithWarnings)).RequiresPublicMethods ();
+			}
+		}
+
+		class OverConstTypeName
+		{
+			private const string s_ConstTypeName = "Mono.Linker.Tests.Cases.DataFlow." + nameof (GetTypeDataFlow) + "+" + nameof (OverConstTypeName);
+
+			[RequiresUnreferencedCode ("--Method1--")]
+			public void Method1 () { }
+
+			// https://github.com/dotnet/linker/issues/2273
+			[ExpectedWarning ("IL2026", "--Method1--", ProducedBy = ProducedBy.Trimmer)]
+			public static void Test ()
+			{
+				Type.GetType (s_ConstTypeName).RequiresPublicMethods ();
 			}
 		}
 
