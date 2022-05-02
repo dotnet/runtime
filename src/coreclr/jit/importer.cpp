@@ -4815,22 +4815,15 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 
             op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
 
-            var_types type      = TYP_UNKNOWN;
-            unsigned  classSize = info.compCompHnd->getClassSize(sig->sigInst.methInst[0]);
+            unsigned classSize = info.compCompHnd->getClassSize(sig->sigInst.methInst[0]);
 
             if (classSize != 1)
             {
-                GenTree* size = gtNewIconNode(classSize, TYP_INT);
-
-#ifdef TARGET_64BIT
-                size = gtNewCastNode(TYP_I_IMPL, size, /* uns */ false, TYP_I_IMPL);
-#endif
-
-                type = impGetByRefResultType(GT_MUL, /* uns */ false, &op2, &size);
-                op2  = new (this, GT_CALL) GenTreeOp(GT_MUL, type, op2, size DEBUGARG(/* largeNode */ true));
+                GenTree* size = gtNewIconNode(classSize, TYP_I_IMPL);
+                op2           = gtNewOperNode(GT_MUL, TYP_I_IMPL, op2, size);
             }
 
-            type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &op2);
+            var_types type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &op2);
             return gtNewOperNode(GT_ADD, type, op1, op2);
         }
 
@@ -4886,16 +4879,10 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // ret
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
-            bool uns = true;
-#else
-            bool uns                    = false;
-#endif
-
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1);
 
-            return gtNewCastNode(TYP_I_IMPL, op1, uns, TYP_U_IMPL);
+            return gtNewCastNode(TYP_I_IMPL, op1, /* uns */ false, TYP_I_IMPL);
         }
 
         case NI_SRCS_UNSAFE_AsRef:
@@ -5012,7 +4999,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* tmp = gtNewOperNode(GT_GT, TYP_INT, op1, op2);
-            tmp->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
+            tmp->gtFlags |= GTF_UNSIGNED;
             return gtFoldExpr(tmp);
         }
 
@@ -5029,7 +5016,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             GenTree* op1 = impPopStack().val;
 
             GenTree* tmp = gtNewOperNode(GT_LT, TYP_INT, op1, op2);
-            tmp->gtFlags |= GTF_RELOP_NAN_UN | GTF_UNSIGNED;
+            tmp->gtFlags |= GTF_UNSIGNED;
             return gtFoldExpr(tmp);
         }
 
@@ -5044,20 +5031,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // ret
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
-            bool uns = true;
-#else
-            bool uns                    = false;
-#endif
-
             GenTree* op1 = impPopStack().val;
-
-            GenTree* cns = gtNewIconNode(0, TYP_INT);
-
-#ifdef TARGET_64BIT
-            cns = gtNewCastNode(TYP_I_IMPL, cns, uns, TYP_U_IMPL);
-#endif
-
+            GenTree* cns = gtNewIconNode(0, TYP_BYREF);
             GenTree* tmp = gtNewOperNode(GT_EQ, TYP_INT, op1, cns);
             return gtFoldExpr(tmp);
         }
@@ -5071,19 +5046,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // ret
             CLANG_FORMAT_COMMENT_ANCHOR;
 
-#ifdef TARGET_64BIT
-            bool uns = true;
-#else
-            bool uns                    = false;
-#endif
-
-            GenTree* cns = gtNewIconNode(0, TYP_INT);
-
-#ifdef TARGET_64BIT
-            cns = gtNewCastNode(TYP_I_IMPL, cns, uns, TYP_U_IMPL);
-#endif
-
-            return cns;
+            return gtNewIconNode(0, TYP_BYREF);
         }
 
         case NI_SRCS_UNSAFE_Read:
