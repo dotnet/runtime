@@ -4834,8 +4834,8 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
                 tmp = op2;
             }
 
-            type = impGetByRefResultType(GT_ADD, /* uns */ false, &tmp, &op1);
-            return gtNewOperNode(GT_ADD, type, tmp, op1);
+            type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &tmp);
+            return gtNewOperNode(GT_ADD, type, op1, tmp);
         }
 
         case NI_SRCS_UNSAFE_AddByteOffset:
