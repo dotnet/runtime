@@ -11,7 +11,7 @@
   <PropertyGroup>
     <UsingToolMicrosoftNetCompilers>true</UsingToolMicrosoftNetCompilers>
     <!-- ilasm -->
-    <MicrosoftNETSdkILPackageVersion>7.0.0-preview.5.22224.3</MicrosoftNETSdkILPackageVersion>
+    <MicrosoftNETSdkILPackageVersion>7.0.0-preview.5.22251.6</MicrosoftNETSdkILPackageVersion>
     <!-- see https://github.com/dotnet/runtime/issues/1338 -->
     <MicrosoftNETCoreILAsmVersion>$(MicrosoftNETSdkILPackageVersion)</MicrosoftNETCoreILAsmVersion>
     <!-- SRM version should match the SDK version at https://github.com/dotnet/sdk/blob/master/eng/Versions.props -->
