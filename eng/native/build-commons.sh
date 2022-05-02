@@ -388,8 +388,8 @@ while :; do
             __TargetArch=s390x
             ;;
 
-		ppc64le|-ppc64le)
-            __BuildArch=ppc64le
+	ppc64le|-ppc64le)
+            __TragetArch=ppc64le
             ;;
 
         wasm|-wasm)

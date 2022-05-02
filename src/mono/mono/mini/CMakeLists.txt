@@ -479,7 +479,7 @@ add_custom_command(
 
 add_custom_command(
   OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/cpu-ppc64.h
-  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_POWERPC ${CMAKE_CURRENT_SOURCE_DIR} cpu-ppc64.h ppc64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-ppc64.md
+  COMMAND ${Python3_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/genmdesc.py TARGET_POWERPC ${CMAKE_CURRENT_SOURCE_DIR} cpu-ppc64.h ppc64_cpu_desc ${CMAKE_CURRENT_SOURCE_DIR}/cpu-ppc64.mdesc
   VERBATIM
 )
 
