@@ -1389,6 +1389,40 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
             break;
         }
 
+        case NI_Vector64_Shuffle:
+        case NI_Vector128_Shuffle:
+        {
+            assert((sig->numArgs == 2) || (sig->numArgs == 3));
+            assert((simdSize == 8) || (simdSize == 16));
+
+            GenTree* indices = impStackTop(0).val;
+
+            if (!indices->IsVectorConst())
+            {
+                // TODO-ARM64-CQ: Handling non-constant indices is a bit more complex
+                break;
+            }
+
+            size_t elementSize  = genTypeSize(simdBaseType);
+            size_t elementCount = simdSize / elementSize;
+
+            if (genTypeSize(indices->AsHWIntrinsic()->GetSimdBaseType()) != elementSize)
+            {
+                // TODO-ARM64-CQ: Handling reinterpreted vector constants is a bit more complex
+                break;
+            }
+
+            if (sig->numArgs == 2)
+            {
+                op2 = impSIMDPopStack(retType);
+                op1 = impSIMDPopStack(retType);
+
+                retNode = gtNewSimdShuffleNode(retType, op1, op2, simdBaseJitType, simdSize,
+                                               /* isSimdAsHWIntrinsic */ false);
+            }
+            break;
+        }
+
         case NI_Vector64_Sqrt:
         case NI_Vector128_Sqrt:
         {

@@ -2522,6 +2522,13 @@ public:
                                  unsigned    simdSize,
                                  bool        isSimdAsHWIntrinsic);
 
+    GenTree* gtNewSimdShuffleNode(var_types   type,
+                                  GenTree*    op1,
+                                  GenTree*    op2,
+                                  CorInfoType simdBaseJitType,
+                                  unsigned    simdSize,
+                                  bool        isSimdAsHWIntrinsic);
+
     GenTree* gtNewSimdSqrtNode(
         var_types type, GenTree* op1, CorInfoType simdBaseJitType, unsigned simdSize, bool isSimdAsHWIntrinsic);
 
@@ -5495,7 +5502,7 @@ private:
     //                  Create a new temporary variable to hold the result of *ppTree,
     //                  and transform the graph accordingly.
     GenTree* fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
-    GenTree* fgMakeMultiUse(GenTree** ppTree);
+    GenTree* fgMakeMultiUse(GenTree** ppTree, CORINFO_CLASS_HANDLE structType = nullptr);
 
 private:
     //                  Recognize a bitwise rotation pattern and convert into a GT_ROL or a GT_ROR node.
@@ -8260,6 +8267,27 @@ private:
         }
         return NO_CLASS_HANDLE;
     }
+
+#if defined(FEATURE_HW_INTRINSICS)
+    CORINFO_CLASS_HANDLE gtGetStructHandleForSimdOrHW(var_types   simdType,
+                                                      CorInfoType simdBaseJitType,
+                                                      bool        isSimdAsHWIntrinsic = false)
+    {
+        CORINFO_CLASS_HANDLE clsHnd = NO_CLASS_HANDLE;
+
+        if (isSimdAsHWIntrinsic)
+        {
+            clsHnd = gtGetStructHandleForSIMD(simdType, simdBaseJitType);
+        }
+        else
+        {
+            clsHnd = gtGetStructHandleForHWSIMD(simdType, simdBaseJitType);
+        }
+
+        assert(clsHnd != NO_CLASS_HANDLE);
+        return clsHnd;
+    }
+#endif // FEATURE_HW_INTRINSICS
 
     // Returns true if this is a SIMD type that should be considered an opaque
     // vector type (i.e. do not analyze or promote its fields).
