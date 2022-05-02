@@ -43,10 +43,10 @@ public:
     BaseAssemblySpec();
     ~BaseAssemblySpec();
 
-    HRESULT Init(LPCSTR pAssemblyName,
-                 const AssemblyMetaDataInternal* pContext,
-                 const BYTE * pbPublicKeyOrToken, DWORD cbPublicKeyOrToken,
-                 DWORD dwFlags);
+    void Init(LPCSTR pAssemblyName,
+              const AssemblyMetaDataInternal* pContext,
+              const BYTE * pbPublicKeyOrToken, DWORD cbPublicKeyOrToken,
+              DWORD dwFlags);
 
     HRESULT Init(mdToken tkAssemblyRef, IMDInternalImport *pImport);
     HRESULT Init(mdAssembly tkAssemblyRef, IMetaDataAssemblyImport* pImport);
@@ -57,7 +57,6 @@ public:
 
     VOID    CloneFields();
     VOID    CloneFieldsToLoaderHeap(LoaderHeap *pHeap, AllocMemTracker *pamTracker);
-    VOID    CloneFieldsToStackingAllocator(StackingAllocator* alloc);
 
     inline void SetBinder(AssemblyBinder *pBinder)
     {

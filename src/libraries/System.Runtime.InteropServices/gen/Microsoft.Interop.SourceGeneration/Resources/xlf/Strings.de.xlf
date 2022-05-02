@@ -104,7 +104,7 @@
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
         <source>Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</source>
-        <target state="needs-review-translation">Marshalling von Zeichenfolgen oder Zeichen ohne explizite Marshallinginformationen wird nicht unterstützt. Geben Sie entweder \"LibraryImportAttribute.CharSet\" oder \"MarshalAsAttribute\" an.</target>
+        <target state="new">Marshalling string or char without explicit marshalling information is not supported. Specify 'LibraryImportAttribute.StringMarshalling', 'LibraryImportAttribute.StringMarshallingCustomType', 'MarshalUsingAttribute' or 'MarshalAsAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">

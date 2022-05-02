@@ -34,7 +34,6 @@
 #include <wincrypt.h>
 #include <specstrings.h>
 
-#include "registrywrapper.h"
 #include "longfilepathwrappers.h"
 
 #if defined(_PREFAST_) || defined(SOURCE_FORMATTING)
@@ -169,12 +168,10 @@
 #define WszCharLower CharLowerW
 #define WszGetClassName GetClassNameW
 #define WszLoadString LoadStringW
-#define WszRegOpenKeyEx ClrRegOpenKeyEx
-#define WszRegOpenKey(hKey, wszSubKey, phkRes) ClrRegOpenKeyEx(hKey, wszSubKey, 0, KEY_ALL_ACCESS, phkRes)
+#define WszRegOpenKeyEx RegOpenKeyExW
+#define WszRegOpenKey(hKey, wszSubKey, phkRes) RegOpenKeyExW(hKey, wszSubKey, 0, KEY_ALL_ACCESS, phkRes)
 #define WszRegQueryValue RegQueryValueW
 #define WszRegQueryValueEx RegQueryValueExW
-#define WszRegQueryValueExTrue RegQueryValueExW
-#define WszRegQueryStringValueEx RegQueryValueExW
 
 #define WszRegQueryInfoKey RegQueryInfoKeyW
 #define WszRegEnumValue RegEnumValueW

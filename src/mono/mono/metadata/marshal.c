@@ -5423,20 +5423,6 @@ ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateIn
 	return mono_delegate_to_ftnptr_impl (delegate, error);
 }
 
-MonoBoolean
-ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoQCallTypeHandle type_handle)
-{
-	MonoClass *klass = mono_class_from_mono_type_internal (type_handle.type);
-
-	if (m_class_get_rank (klass)) {
-		MonoClass *eklass = m_class_get_element_class (klass);
-		if (m_class_is_primitive (eklass))
-			return TRUE;
-		return eklass != mono_defaults.object_class && m_class_is_blittable (eklass);
-	} else
-		return m_class_is_blittable (klass);
-}
-
 /**
  * mono_marshal_is_loading_type_info:
  *

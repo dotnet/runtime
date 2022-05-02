@@ -67,19 +67,12 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
     if (IsCoreLibSatellite())
     {
         StackSString sSystemDirectory(SystemDomain::System()->SystemDirectory());
-        StackSString tmpString;
         StackSString sSimpleName;
-        StackSString sCultureName;
+        SmallStackSString sCultureName;
 
-        tmpString.SetUTF8(m_pAssemblyName);
-        tmpString.ConvertToUnicode(sSimpleName);
-
-        tmpString.Clear();
-        if ((m_context.szLocale != NULL) && (m_context.szLocale[0] != 0))
-        {
-            tmpString.SetUTF8(m_context.szLocale);
-            tmpString.ConvertToUnicode(sCultureName);
-        }
+        SString(SString::Utf8Literal, m_pAssemblyName).ConvertToUnicode(sSimpleName);
+        if (m_context.szLocale != NULL)
+            SString(SString::Utf8Literal, m_context.szLocale).ConvertToUnicode(sCultureName);
 
         hr = BINDER_SPACE::AssemblyBinderCommon::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
     }

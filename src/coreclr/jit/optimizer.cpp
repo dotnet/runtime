@@ -1134,6 +1134,15 @@ bool Compiler::optExtractInitTestIncr(
     // Check if we have the incr stmt before the test stmt, if we don't,
     // check if incr is part of the loop "top".
     Statement* incrStmt = testStmt->GetPrevStmt();
+
+    // If we've added profile instrumentation, we may need to skip past a BB counter update.
+    //
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (incrStmt != nullptr) &&
+        incrStmt->GetRootNode()->IsBlockProfileUpdate())
+    {
+        incrStmt = incrStmt->GetPrevStmt();
+    }
+
     if (incrStmt == nullptr || optIsLoopIncrTree(incrStmt->GetRootNode()) == BAD_VAR_NUM)
     {
         if (top == nullptr || top->bbStmtList == nullptr || top->bbStmtList->GetPrevStmt() == nullptr)
@@ -6515,6 +6524,15 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             if (node->TypeGet() == TYP_STRUCT)
             {
                 return false;
+            }
+            else if (node->OperIs(GT_NULLCHECK))
+            {
+                // If a null-check is for `this` object, it is safe to
+                // hoist it out of the loop. Assrtionprop will get rid
+                // of left over nullchecks present inside the loop. Also,
+                // since NULLCHECK has no value, it will never be CSE,
+                // hence this check is not present in optIsCSEcandidate().
+                return true;
             }
 
             // Tree must be a suitable CSE candidate for us to be able to hoist it.
