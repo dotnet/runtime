@@ -24,8 +24,9 @@ namespace System.Reflection
             // The first element allows the DynamicMethod to be treated as an instance method which is slightly faster than a static.
             Type[] delegateParameters = new Type[3] { typeof(object), typeof(object), typeof(IntPtr*) };
 
+            string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
             var dm = new DynamicMethod(
-                InvokeStubPrefix + method.DeclaringType!.Name + "." + method.Name,
+                InvokeStubPrefix + declaringTypeName + method.Name,
                 returnType: typeof(object),
                 delegateParameters,
                 restrictedSkipVisibility: true);
