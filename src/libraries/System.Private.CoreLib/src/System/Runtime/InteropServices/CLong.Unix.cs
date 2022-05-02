@@ -9,9 +9,9 @@ using System.Runtime.CompilerServices;
 
 #pragma warning disable SA1121 // We use our own aliases since they differ per platform
 #if TARGET_WINDOWS
-using NativeType = System.Int32;
+#error "Unsupported target"
 #else
-using NativeType = System.IntPtr;
+// We don't specify a using directive since IntPtr doesn't expose any operators yet, but nint does
 #endif
 
 namespace System.Runtime.InteropServices
@@ -34,12 +34,7 @@ namespace System.Runtime.InteropServices
           IMinMaxValue<CLong>,
           ISignedNumber<CLong>
     {
-#if TARGET_WINDOWS
-        private readonly NativeType _value;
-#else
-        // Explicitly use nint rather than NativeType to ensure operators are available
         private readonly nint _value;
-#endif
 
         /// <summary>
         /// Constructs an instance from a 32-bit integer.
@@ -47,7 +42,7 @@ namespace System.Runtime.InteropServices
         /// <param name="value">The integer vaule.</param>
         public CLong(int value)
         {
-            _value = (NativeType)value;
+            _value = (nint)value;
         }
 
         /// <summary>
@@ -57,7 +52,7 @@ namespace System.Runtime.InteropServices
         /// <exception cref="OverflowException"><paramref name="value"/> is outside the range of the underlying storage type.</exception>
         public CLong(nint value)
         {
-            _value = checked((NativeType)value);
+            _value = checked((nint)value);
         }
 
         /// <summary>
@@ -125,7 +120,7 @@ namespace System.Runtime.InteropServices
         public static bool TryParse([NotNullWhen(true)] string? s, out CULong result)
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryParse(s, out Unsafe.As<CULong, NativeType>(ref result));
+            return nint.TryParse(s, out Unsafe.As<CULong, nint>(ref result));
         }
 
         /// <summary>Tries to convert a character span containing the string representation of a number to its floating-point number equivalent.</summary>
@@ -135,7 +130,7 @@ namespace System.Runtime.InteropServices
         public static bool TryParse(ReadOnlySpan<char> s, out CULong result)
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryParse(s, out Unsafe.As<CULong, NativeType>(ref result));
+            return nint.TryParse(s, out Unsafe.As<CULong, nint>(ref result));
         }
 
         //
@@ -145,77 +140,77 @@ namespace System.Runtime.InteropServices
         /// <summary>Explicitly converts a <see cref="decimal" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
-        public static explicit operator CLong(decimal value) => new CLong((NativeType)value);
+        public static explicit operator CLong(decimal value) => new CLong((nint)value);
 
         /// <summary>Explicitly converts a <see cref="double" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
-        public static explicit operator CLong(double value) => new CLong((NativeType)value);
+        public static explicit operator CLong(double value) => new CLong((nint)value);
 
         /// <summary>Explicitly converts a <see cref="double" /> value to a c-sized long value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CLong" />.</exception>
-        public static explicit operator checked CLong(double value) => new CLong(checked((NativeType)value));
+        public static explicit operator checked CLong(double value) => new CLong(checked((nint)value));
 
         /// <summary>Explicitly converts a <see cref="long" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
-        public static explicit operator CLong(long value) => new CLong((NativeType)value);
+        public static explicit operator CLong(long value) => new CLong((nint)value);
 
         /// <summary>Explicitly converts a <see cref="long" /> value to a c-sized long value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CLong" />.</exception>
-        public static explicit operator checked CLong(long value) => new CLong(checked((NativeType)value));
+        public static explicit operator checked CLong(long value) => new CLong(checked((nint)value));
 
         /// <summary>Explicitly converts a <see cref="IntPtr" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
-        public static explicit operator CLong(nint value) => new CLong((NativeType)value);
+        public static explicit operator CLong(nint value) => new CLong((nint)value);
 
         /// <summary>Explicitly converts a <see cref="IntPtr" /> value to a c-sized long value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CLong" />.</exception>
-        public static explicit operator checked CLong(nint value) => new CLong(checked((NativeType)value));
+        public static explicit operator checked CLong(nint value) => new CLong(checked((nint)value));
 
         /// <summary>Explicitly converts a <see cref="float" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
-        public static explicit operator CLong(float value) => new CLong((NativeType)value);
+        public static explicit operator CLong(float value) => new CLong((nint)value);
 
         /// <summary>Explicitly converts a <see cref="float" /> value to a c-sized long value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CLong" />.</exception>
-        public static explicit operator checked CLong(float value) => new CLong(checked((NativeType)value));
+        public static explicit operator checked CLong(float value) => new CLong(checked((nint)value));
 
         /// <summary>Explicitly converts a <see cref="uint" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         [CLSCompliant(false)]
-        public static explicit operator CLong(uint value) => new CLong((NativeType)value);
+        public static explicit operator CLong(uint value) => new CLong((nint)value);
 
         /// <summary>Explicitly converts a <see cref="uint" /> value to a c-sized long value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CLong" />.</exception>
         [CLSCompliant(false)]
-        public static explicit operator checked CLong(uint value) => new CLong(checked((NativeType)value));
+        public static explicit operator checked CLong(uint value) => new CLong(checked((nint)value));
 
         /// <summary>Explicitly converts a <see cref="ulong" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         [CLSCompliant(false)]
-        public static explicit operator CLong(ulong value) => new CLong((NativeType)value);
+        public static explicit operator CLong(ulong value) => new CLong((nint)value);
 
         /// <summary>Explicitly converts a <see cref="ulong" /> value to a c-sized long value, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="CLong" />.</exception>
         [CLSCompliant(false)]
-        public static explicit operator checked CLong(ulong value) => new CLong(checked((NativeType)value));
+        public static explicit operator checked CLong(ulong value) => new CLong(checked((nint)value));
 
         /// <summary>Explicitly converts a <see cref="System.UIntPtr" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -223,12 +218,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static explicit operator CLong(nuint value)
         {
-#if TARGET_WINDOWS
-            return new CLong((NativeType)value);
-#else
-            // Explicitly use nint rather than NativeType to ensure operators are available
             return new CLong((nint)value);
-#endif
         }
 
         /// <summary>Explicitly converts a <see cref="System.UIntPtr" /> value to a c-sized long value, throwing an overflow exception for any values that fall outside the representable range.</summary>
@@ -238,12 +228,7 @@ namespace System.Runtime.InteropServices
         [CLSCompliant(false)]
         public static explicit operator checked CLong(nuint value)
         {
-#if TARGET_WINDOWS
-            return new CLong(checked((NativeType)value));
-#else
-            // Explicitly use nint rather than NativeType to ensure operators are available
             return new CLong(checked((nint)value));
-#endif
         }
 
         //
@@ -366,34 +351,34 @@ namespace System.Runtime.InteropServices
         /// <summary>Implicitly converts a <see cref="byte" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
-        public static implicit operator CLong(byte value) => new CLong((NativeType)value);
+        public static implicit operator CLong(byte value) => new CLong((nint)value);
 
         /// <summary>Implicitly converts a <see cref="char" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
-        public static implicit operator CLong(char value) => new CLong((NativeType)value);
+        public static implicit operator CLong(char value) => new CLong((nint)value);
 
         /// <summary>Implicitly converts a <see cref="short" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
-        public static implicit operator CLong(short value) => new CLong((NativeType)value);
+        public static implicit operator CLong(short value) => new CLong((nint)value);
 
         /// <summary>Implicitly converts a <see cref="int" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
-        public static implicit operator CLong(int value) => new CLong((NativeType)value);
+        public static implicit operator CLong(int value) => new CLong((nint)value);
 
         /// <summary>Implicitly converts a <see cref="sbyte" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         [CLSCompliant(false)]
-        public static implicit operator CLong(sbyte value) => new CLong((NativeType)value);
+        public static implicit operator CLong(sbyte value) => new CLong((nint)value);
 
         /// <summary>Implicitly converts a <see cref="ushort" /> value to a c-sized long value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a c-sized long value.</returns>
         [CLSCompliant(false)]
-        public static implicit operator CLong(ushort value) => new CLong((NativeType)value);
+        public static implicit operator CLong(ushort value) => new CLong((nint)value);
 
         //
         // Implicit Convert From CLong
@@ -439,7 +424,7 @@ namespace System.Runtime.InteropServices
         //
 
         /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
-        static CLong IAdditiveIdentity<CLong, CLong>.AdditiveIdentity => new CLong((NativeType)0);
+        static CLong IAdditiveIdentity<CLong, CLong>.AdditiveIdentity => new CLong((nint)0);
 
         //
         // IBinaryInteger
@@ -448,54 +433,49 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
         public static (CLong Quotient, CLong Remainder) DivRem(CLong left, CLong right)
         {
-            (NativeType quotient, NativeType remainder) = NativeType.DivRem(left._value, right._value);
+            (nint quotient, nint remainder) = nint.DivRem(left._value, right._value);
             return (new CLong(quotient), new CLong(remainder));
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
-        public static CLong LeadingZeroCount(CLong value) => new CLong(NativeType.LeadingZeroCount(value._value));
+        public static CLong LeadingZeroCount(CLong value) => new CLong(nint.LeadingZeroCount(value._value));
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
-        public static CLong PopCount(CLong value) => new CLong(NativeType.PopCount(value._value));
+        public static CLong PopCount(CLong value) => new CLong(nint.PopCount(value._value));
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
-        public static CLong RotateLeft(CLong value, int rotateAmount) => new CLong(NativeType.RotateLeft(value._value, rotateAmount));
+        public static CLong RotateLeft(CLong value, int rotateAmount) => new CLong(nint.RotateLeft(value._value, rotateAmount));
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
-        public static CLong RotateRight(CLong value, int rotateAmount) => new CLong(NativeType.RotateRight(value._value, rotateAmount));
+        public static CLong RotateRight(CLong value, int rotateAmount) => new CLong(nint.RotateRight(value._value, rotateAmount));
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
-        public static CLong TrailingZeroCount(CLong value) => new CLong(NativeType.TrailingZeroCount(value._value));
+        public static CLong TrailingZeroCount(CLong value) => new CLong(nint.TrailingZeroCount(value._value));
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
         unsafe long IBinaryInteger<CLong>.GetShortestBitLength()
         {
-#if TARGET_WINDOWS
-            NativeType value = _value;
-#else
-            // Explicitly use nint rather than NativeType to ensure operators are available
             nint value = _value;
-#endif
 
-        if (value >= 0)
+            if (value >= 0)
             {
-                return (sizeof(NativeType) * 8) - NativeType.LeadingZeroCount(value);
+                return (sizeof(nint) * 8) - nint.LeadingZeroCount(value);
             }
             else
             {
-                return (sizeof(NativeType) * 8) + 1 - NativeType.LeadingZeroCount(~value);
+                return (sizeof(nint) * 8) + 1 - nint.LeadingZeroCount(~value);
             }
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
-        unsafe int IBinaryInteger<CLong>.GetByteCount() => sizeof(NativeType);
+        unsafe int IBinaryInteger<CLong>.GetByteCount() => sizeof(nint);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         unsafe bool IBinaryInteger<CLong>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length >= sizeof(CLong))
             {
-                NativeType value = BitConverter.IsLittleEndian ? _value : BinaryPrimitives.ReverseEndianness(_value);
+                nint value = BitConverter.IsLittleEndian ? _value : BinaryPrimitives.ReverseEndianness(_value);
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
 
                 bytesWritten = sizeof(CLong);
@@ -513,10 +493,10 @@ namespace System.Runtime.InteropServices
         //
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
-        public static bool IsPow2(CLong value) => NativeType.IsPow2(value._value);
+        public static bool IsPow2(CLong value) => nint.IsPow2(value._value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
-        public static CLong Log2(CLong value) => new CLong(NativeType.Log2(value._value));
+        public static CLong Log2(CLong value) => new CLong(nint.Log2(value._value));
 
         //
         // IBitwiseOperators
@@ -572,13 +552,7 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         public static CLong operator --(CLong value)
         {
-#if TARGET_WINDOWS
-            NativeType tmp = value._value;
-#else
-            // Explicitly use nint rather than NativeType to ensure operators are available
             nint tmp = value._value;
-#endif
-
             --tmp;
             return new CLong(tmp);
         }
@@ -586,12 +560,7 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         public static CLong operator checked --(CLong value)
         {
-#if TARGET_WINDOWS
-            NativeType tmp = value._value;
-#else
-            // Explicitly use nint rather than NativeType to ensure operators are available
             nint tmp = value._value;
-#endif
 
             checked
             {
@@ -634,13 +603,7 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         public static CLong operator ++(CLong value)
         {
-#if TARGET_WINDOWS
-            NativeType tmp = value._value;
-#else
-            // Explicitly use nint rather than NativeType to ensure operators are available
             nint tmp = value._value;
-#endif
-
             ++tmp;
             return new CLong(tmp);
         }
@@ -648,12 +611,7 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
         public static CLong operator checked ++(CLong value)
         {
-#if TARGET_WINDOWS
-            NativeType tmp = value._value;
-#else
-            // Explicitly use nint rather than NativeType to ensure operators are available
             nint tmp = value._value;
-#endif
 
             checked
             {
@@ -667,10 +625,10 @@ namespace System.Runtime.InteropServices
         //
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
-        public static CLong MinValue => new CLong(NativeType.MinValue);
+        public static CLong MinValue => new CLong(nint.MinValue);
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
-        public static CLong MaxValue => new CLong(NativeType.MaxValue);
+        public static CLong MaxValue => new CLong(nint.MaxValue);
 
         //
         // IModulusOperators
@@ -684,7 +642,7 @@ namespace System.Runtime.InteropServices
         //
 
         /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
-        static CLong IMultiplicativeIdentity<CLong, CLong>.MultiplicativeIdentity => new CLong((NativeType)1);
+        static CLong IMultiplicativeIdentity<CLong, CLong>.MultiplicativeIdentity => new CLong((nint)1);
 
         //
         // IMultiplyOperators
@@ -701,52 +659,52 @@ namespace System.Runtime.InteropServices
         //
 
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static CLong Abs(CLong value) => new CLong(NativeType.Abs(value._value));
+        public static CLong Abs(CLong value) => new CLong(nint.Abs(value._value));
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static CLong Clamp(CLong value, CLong min, CLong max) => new CLong(NativeType.Clamp(value._value, min._value, max._value));
+        public static CLong Clamp(CLong value, CLong min, CLong max) => new CLong(nint.Clamp(value._value, min._value, max._value));
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
-        public static CLong CopySign(CLong value, CLong sign) => new CLong(NativeType.CopySign(value._value, sign._value));
+        public static CLong CopySign(CLong value, CLong sign) => new CLong(nint.CopySign(value._value, sign._value));
 
         /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CLong CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther> => new CLong(NativeType.CreateChecked(value));
+            where TOther : INumber<TOther> => new CLong(nint.CreateChecked(value));
 
         /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CLong CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther> => new CLong(NativeType.CreateSaturating(value));
+            where TOther : INumber<TOther> => new CLong(nint.CreateSaturating(value));
 
         /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static CLong CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther> => new CLong(NativeType.CreateTruncating(value));
+            where TOther : INumber<TOther> => new CLong(nint.CreateTruncating(value));
 
         /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
-        public static bool IsNegative(CLong value) => NativeType.IsNegative(value._value);
+        public static bool IsNegative(CLong value) => nint.IsNegative(value._value);
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static CLong Max(CLong x, CLong y) => new CLong(NativeType.Max(x._value, y._value));
+        public static CLong Max(CLong x, CLong y) => new CLong(nint.Max(x._value, y._value));
 
         /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static CLong MaxMagnitude(CLong x, CLong y) => new CLong(NativeType.MaxMagnitude(x._value, y._value));
+        public static CLong MaxMagnitude(CLong x, CLong y) => new CLong(nint.MaxMagnitude(x._value, y._value));
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static CLong Min(CLong x, CLong y) => new CLong(NativeType.Min(x._value, y._value));
+        public static CLong Min(CLong x, CLong y) => new CLong(nint.Min(x._value, y._value));
 
         /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static CLong MinMagnitude(CLong x, CLong y) => new CLong(NativeType.MinMagnitude(x._value, y._value));
+        public static CLong MinMagnitude(CLong x, CLong y) => new CLong(nint.MinMagnitude(x._value, y._value));
 
         /// <inheritdoc cref="INumber{TSelf}.Parse(string, NumberStyles, IFormatProvider?)" />
-        public static CLong Parse(string s, NumberStyles style, IFormatProvider? provider) => new CLong(NativeType.Parse(s, style, provider));
+        public static CLong Parse(string s, NumberStyles style, IFormatProvider? provider) => new CLong(nint.Parse(s, style, provider));
 
         /// <inheritdoc cref="INumber{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />
-        public static CLong Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => new CLong(NativeType.Parse(s, style, provider));
+        public static CLong Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider) => new CLong(nint.Parse(s, style, provider));
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(CLong value) => NativeType.Sign(value._value);
+        public static int Sign(CLong value) => nint.Sign(value._value);
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -754,14 +712,14 @@ namespace System.Runtime.InteropServices
             where TOther : INumber<TOther>
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryCreate(value, out Unsafe.As<CLong, NativeType>(ref result));
+            return nint.TryCreate(value, out Unsafe.As<CLong, nint>(ref result));
         }
 
         /// <inheritdoc cref="INumber{TSelf}.TryParse(string?, NumberStyles, IFormatProvider?, out TSelf)" />
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out CLong result)
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryParse(s, style, provider, out Unsafe.As<CLong, NativeType>(ref result));
+            return nint.TryParse(s, style, provider, out Unsafe.As<CLong, nint>(ref result));
         }
 
 
@@ -769,7 +727,7 @@ namespace System.Runtime.InteropServices
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out CLong result)
         {
             Unsafe.SkipInit(out result);
-            return NativeType.TryParse(s, style, provider, out Unsafe.As<CLong, NativeType>(ref result));
+            return nint.TryParse(s, style, provider, out Unsafe.As<CLong, nint>(ref result));
         }
 
         //
@@ -777,10 +735,10 @@ namespace System.Runtime.InteropServices
         //
 
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static CLong INumberBase<CLong>.One => new CLong((NativeType)1);
+        static CLong INumberBase<CLong>.One => new CLong((nint)1);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static CLong INumberBase<CLong>.Zero => new CLong((NativeType)0);
+        static CLong INumberBase<CLong>.Zero => new CLong((nint)0);
 
         //
         // IParsable
@@ -810,7 +768,7 @@ namespace System.Runtime.InteropServices
         //
 
         /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
-        static CLong ISignedNumber<CLong>.NegativeOne => new CLong((NativeType)(-1));
+        static CLong ISignedNumber<CLong>.NegativeOne => new CLong((nint)(-1));
 
         //
         // ISpanFormattable
