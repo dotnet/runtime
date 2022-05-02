@@ -277,15 +277,9 @@ namespace System.Net.Quic.Implementations.MsQuic
             return WriteAsync(buffers, endStream: false, cancellationToken);
         }
 
-        internal override async ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
-            ThrowIfDisposed();
-
-            using CancellationTokenRegistration registration = SetupWriteStartState(buffers.IsEmpty, cancellationToken);
-
-            await SendReadOnlySequenceAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
-
-            CleanupWriteCompletedState();
+            return WriteAsync(new WriteSequenceAdapter(buffers), endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE, cancellationToken);
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
@@ -293,26 +287,63 @@ namespace System.Net.Quic.Implementations.MsQuic
             return WriteAsync(buffers, endStream: false, cancellationToken);
         }
 
-        internal override async ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
+        internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
+        {
+            return WriteAsync(new WriteMemoryOfMemoryAdapter(buffers), endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE, cancellationToken);
+        }
+
+        internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
+        {
+            return WriteAsync(new WriteMemoryAdapter(buffer), endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE, cancellationToken);
+        }
+
+        private async ValueTask WriteAsync<TAdapter>(TAdapter adapter, QUIC_SEND_FLAGS flags, CancellationToken cancellationToken) where TAdapter : ISendBufferAdapter
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = SetupWriteStartState(buffers.IsEmpty, cancellationToken);
+            using CancellationTokenRegistration registration = SetupWriteStartState(adapter.IsEmpty, cancellationToken);
 
-            await SendReadOnlyMemoryListAsync(buffers, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
+            await WriteAsyncInternal<TAdapter>(adapter, flags).ConfigureAwait(false);
 
             CleanupWriteCompletedState();
         }
 
-        internal override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
+        private unsafe ValueTask WriteAsyncInternal<TAdapter>(TAdapter adapter, QUIC_SEND_FLAGS flags) where TAdapter : ISendBufferAdapter
         {
-            ThrowIfDisposed();
+            if (adapter.IsEmpty)
+            {
+                if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
+                {
+                    // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
+                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
+                }
+                return default;
+            }
 
-            using CancellationTokenRegistration registration = SetupWriteStartState(buffer.IsEmpty, cancellationToken);
+            adapter.SetupSendState(_state);
 
-            await SendReadOnlyMemoryAsync(buffer, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
+            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
+            uint status = MsQuicApi.Api.StreamSendDelegate(
+                _state.Handle,
+                (QuicBuffer*)_state.SendQuicBuffers,
+                (uint)_state.SendBufferCount,
+                flags,
+                IntPtr.Zero);
 
-            CleanupWriteCompletedState();
+            if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
+            {
+                CleanupWriteFailedState();
+                CleanupSendState(_state);
+
+                if (status == MsQuicStatusCodes.Aborted)
+                {
+                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
+                }
+                QuicExceptionHelpers.ThrowIfFailed(status,
+                    "Could not send data to peer.");
+            }
+
+            return _state.SendResettableCompletionSource.GetTypelessValueTask();
         }
 
         private CancellationTokenRegistration SetupWriteStartState(bool emptyBuffer, CancellationToken cancellationToken)
@@ -1394,187 +1425,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
         }
 
-        // TODO prevent overlapping sends or consider supporting it.
-        private unsafe ValueTask SendReadOnlyMemoryAsync(
-           ReadOnlyMemory<byte> buffer,
-           QUIC_SEND_FLAGS flags)
-        {
-            if (buffer.IsEmpty)
-            {
-                if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
-                {
-                    // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
-                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
-                }
-                return default;
-            }
-
-            MemoryHandle handle = buffer.Pin();
-            if (_state.SendQuicBuffers == IntPtr.Zero)
-            {
-                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QUIC_BUFFER));
-                _state.SendBufferMaxCount = 1;
-            }
-
-            QUIC_BUFFER* quicBuffers = (QUIC_BUFFER*)_state.SendQuicBuffers;
-            quicBuffers->Length = (uint)buffer.Length;
-            quicBuffers->Buffer = (byte*)handle.Pointer;
-
-            _state.BufferArrays[0] = handle;
-            _state.SendBufferCount = 1;
-
-            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            int status = MsQuicApi.Api.ApiTable->StreamSend(
-                _state.Handle.QuicHandle,
-                quicBuffers,
-                1,
-                flags,
-                (void*)IntPtr.Zero);
-
-            if (!StatusSucceeded(status))
-            {
-                CleanupWriteFailedState();
-                CleanupSendState(_state);
-
-                if (status == QUIC_STATUS_ABORTED)
-                {
-                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
-                }
-                ThrowIfFailure(status, "Could not send data to peer");
-            }
-
-            return _state.SendResettableCompletionSource.GetTypelessValueTask();
-        }
-
-        private unsafe ValueTask SendReadOnlySequenceAsync(
-           ReadOnlySequence<byte> buffers,
-           QUIC_SEND_FLAGS flags)
-        {
-            if (buffers.IsEmpty)
-            {
-                if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
-                {
-                    // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
-                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
-                }
-                return default;
-            }
-
-            int count = 0;
-
-            foreach (ReadOnlyMemory<byte> buffer in buffers)
-            {
-                ++count;
-            }
-
-            if (_state.SendBufferMaxCount < count)
-            {
-                Marshal.FreeHGlobal(_state.SendQuicBuffers);
-                _state.SendQuicBuffers = IntPtr.Zero;
-                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QUIC_BUFFER) * count);
-                _state.SendBufferMaxCount = count;
-                _state.BufferArrays = new MemoryHandle[count];
-            }
-
-            _state.SendBufferCount = count;
-            count = 0;
-
-            QUIC_BUFFER* quicBuffers = (QUIC_BUFFER*)_state.SendQuicBuffers;
-            foreach (ReadOnlyMemory<byte> buffer in buffers)
-            {
-                MemoryHandle handle = buffer.Pin();
-                quicBuffers[count].Length = (uint)buffer.Length;
-                quicBuffers[count].Buffer = (byte*)handle.Pointer;
-                _state.BufferArrays[count] = handle;
-                ++count;
-            }
-
-            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            int status = MsQuicApi.Api.ApiTable->StreamSend(
-                _state.Handle.QuicHandle,
-                quicBuffers,
-                (uint)count,
-                flags,
-                (void*)IntPtr.Zero);
-
-            if (!StatusSucceeded(status))
-            {
-                CleanupWriteFailedState();
-                CleanupSendState(_state);
-
-                if (status == QUIC_STATUS_ABORTED)
-                {
-                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
-                }
-                ThrowIfFailure(status, "Could not send data to peer");
-            }
-
-            return _state.SendResettableCompletionSource.GetTypelessValueTask();
-        }
-
-        private unsafe ValueTask SendReadOnlyMemoryListAsync(
-           ReadOnlyMemory<ReadOnlyMemory<byte>> buffers,
-           QUIC_SEND_FLAGS flags)
-        {
-            if (buffers.IsEmpty)
-            {
-                if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
-                {
-                    // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
-                    StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
-                }
-                return default;
-            }
-
-            ReadOnlyMemory<byte>[] array = buffers.ToArray();
-
-            uint length = (uint)array.Length;
-
-            if (_state.SendBufferMaxCount < array.Length)
-            {
-                Marshal.FreeHGlobal(_state.SendQuicBuffers);
-                _state.SendQuicBuffers = IntPtr.Zero;
-                _state.SendQuicBuffers = Marshal.AllocHGlobal(sizeof(QUIC_BUFFER) * array.Length);
-                _state.SendBufferMaxCount = array.Length;
-                _state.BufferArrays = new MemoryHandle[array.Length];
-            }
-
-            _state.SendBufferCount = array.Length;
-            QUIC_BUFFER* quicBuffers = (QUIC_BUFFER*)_state.SendQuicBuffers;
-            for (int i = 0; i < length; i++)
-            {
-                ReadOnlyMemory<byte> buffer = array[i];
-                MemoryHandle handle = buffer.Pin();
-
-                quicBuffers[i].Length = (uint)buffer.Length;
-                quicBuffers[i].Buffer = (byte*)handle.Pointer;
-
-                _state.BufferArrays[i] = handle;
-            }
-
-            Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            int status = MsQuicApi.Api.ApiTable->StreamSend(
-                _state.Handle.QuicHandle,
-                quicBuffers,
-                length,
-                flags,
-                (void*)IntPtr.Zero);
-
-            if (!StatusSucceeded(status))
-            {
-                CleanupWriteFailedState();
-                CleanupSendState(_state);
-
-                if (status == QUIC_STATUS_ABORTED)
-                {
-                    throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
-                }
-                ThrowIfFailure(status, "Could not send data to peer");
-            }
-
-            return _state.SendResettableCompletionSource.GetTypelessValueTask();
-        }
-
         private unsafe void ReceiveComplete(int bufferLength)
         {
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
@@ -1856,6 +1706,102 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// Stream is closed for writing (is receive-only).
             /// </summary>
             Closed
+        }
+
+        private interface ISendBufferAdapter
+        {
+            void SetupSendState(State state);
+
+            bool IsEmpty { get; }
+
+            static unsafe void Reserve(State state, int count)
+            {
+                if (state.SendBufferMaxCount < count)
+                {
+                    NativeMemory.Free((void*)state.SendQuicBuffers);
+                    state.SendQuicBuffers = IntPtr.Zero;
+                    state.SendQuicBuffers = (IntPtr)NativeMemory.Alloc((nuint)count, (nuint)sizeof(QuicBuffer));
+                    state.SendBufferMaxCount = count;
+                    state.BufferArrays = new MemoryHandle[count];
+                }
+            }
+
+            static unsafe void SetBuffer(State state, int index, ReadOnlyMemory<byte> buffer)
+            {
+                MemoryHandle handle = buffer.Pin();
+                QuicBuffer* quicBuffer = (QuicBuffer*)state.SendQuicBuffers + index;
+                quicBuffer->Length = (uint)buffer.Length;
+                quicBuffer->Buffer = (byte*)handle.Pointer;
+                state.BufferArrays[index] = handle;
+            }
+        }
+
+        private struct WriteMemoryAdapter : ISendBufferAdapter
+        {
+            private readonly ReadOnlyMemory<byte> _buffer;
+
+            public WriteMemoryAdapter(ReadOnlyMemory<byte> buffer) => _buffer = buffer;
+
+            public bool IsEmpty => _buffer.IsEmpty;
+
+            public unsafe void SetupSendState(State state)
+            {
+                ISendBufferAdapter.Reserve(state, 1);
+                ISendBufferAdapter.SetBuffer(state, 0, _buffer);
+                state.SendBufferCount = 1;
+            }
+        }
+
+        private struct WriteSequenceAdapter : ISendBufferAdapter
+        {
+            private readonly ReadOnlySequence<byte> _buffers;
+
+            public WriteSequenceAdapter(ReadOnlySequence<byte> buffers) => _buffers = buffers;
+
+            public bool IsEmpty => _buffers.IsEmpty;
+
+            public unsafe void SetupSendState(State state)
+            {
+                int count = 0;
+
+                foreach (ReadOnlyMemory<byte> _ in _buffers)
+                {
+                    ++count;
+                }
+
+                ISendBufferAdapter.Reserve(state, count);
+                state.SendBufferCount = count;
+                count = 0;
+
+                foreach (ReadOnlyMemory<byte> buffer in _buffers)
+                {
+                    ISendBufferAdapter.SetBuffer(state, count, buffer);
+                    ++count;
+                }
+            }
+        }
+
+        private struct WriteMemoryOfMemoryAdapter : ISendBufferAdapter
+        {
+            private readonly ReadOnlyMemory<ReadOnlyMemory<byte>> _buffers;
+
+            public WriteMemoryOfMemoryAdapter(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers) => _buffers = buffers;
+
+            public bool IsEmpty => _buffers.IsEmpty;
+
+            public unsafe void SetupSendState(State state)
+            {
+                int count = _buffers.Length;
+                ISendBufferAdapter.Reserve(state, count);
+                state.SendBufferCount = count;
+                count = 0;
+
+                foreach (ReadOnlyMemory<byte> buffer in _buffers.Span)
+                {
+                    ISendBufferAdapter.SetBuffer(state, count, buffer);
+                    ++count;
+                }
+            }
         }
     }
 }
