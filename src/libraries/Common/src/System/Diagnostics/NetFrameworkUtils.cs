@@ -212,14 +212,9 @@ namespace System.Diagnostics
                                 policyKey.Close();
                             }
 
-                            if (version != null && version != string.Empty)
+                            if (!string.IsNullOrEmpty(version))
                             {
-                                StringBuilder installBuilder = new StringBuilder();
-                                installBuilder.Append(installRoot);
-                                if (!installRoot.EndsWith("\\", StringComparison.Ordinal))
-                                    installBuilder.Append('\\');
-                                installBuilder.Append(version);
-                                dllDir = installBuilder.ToString();
+                                dllDir = Path.Combine(installRoot, version);
                             }
                         }
                     }
