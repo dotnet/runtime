@@ -117,7 +117,11 @@
 	  </CustomCommands>
 	</XHarnessAppBundleToTest>
   </ItemGroup>
-
+  <!--
+    This target is to work around the XHarness command that depend on scripts in ORIGPYPATH
+    being run before we get to run our normal Post commands. AddXHarnessCLI is the XHarness
+    Target so we just make sure we add this after that.
+  -->
   <Target Name="ResetPYTHONPATHBeforeXHarnessCommand" AfterTargets="AddXHarnessCLI">
     <PropertyGroup>
       <HelixPostCommands>export PYTHONPATH=$ORIGPYPATH;$(HelixPostCommands)</HelixPostCommands>
