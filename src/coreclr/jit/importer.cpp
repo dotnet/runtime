@@ -4932,7 +4932,7 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 
             op1 = gtNewLclvNode(temp, type);
 
-            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op2, &op1);
+            type = impGetByRefResultType(GT_SUB, /* uns */ false, &op2, &op1);
             return gtNewOperNode(GT_SUB, type, op2, op1);
         }
 
