@@ -5126,7 +5126,13 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
 
             // ret
 
-            impPopStack();
+            GenTree* op1 = impPopStack().val;
+
+            if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                op1 = gtUnusedValNode(op1);
+            }
+
             return gtNewNothingNode();
         }
 
