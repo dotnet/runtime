@@ -1277,11 +1277,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 var store = await LoadStore(sessionId, token);
                 var assembly_name = eventArgs?["assembly_name"]?.Value<string>();
-                Console.WriteLine($"to no OnAssemblyLoadedJSEvent - {assembly_name}");
                 if (store.GetAssemblyByName(assembly_name) != null)
                 {
                     Log("debug", $"Got AssemblyLoaded event for {assembly_name}, but skipping it as it has already been loaded.");
-                    Console.WriteLine($"to no OnAssemblyLoadedJSEvent to pulando - {assembly_name}");
                     return true;
                 }
 
@@ -1433,8 +1431,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (Interlocked.CompareExchange(ref context.store, new DebugStore(this, logger), null) != null)
                 return await context.Source.Task;
-            Stopwatch stopWatch = new Stopwatch();
-            stopWatch.Start();
             try
             {
                 LoadedFiles[] loaded_files = await GetLoadedFiles(sessionId, context, token);
@@ -1459,8 +1455,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (!context.Source.Task.IsCompleted)
                 context.Source.SetResult(context.store);
 
-            stopWatch.Stop();
-            Console.WriteLine("tempo gasto - " + stopWatch.ElapsedMilliseconds.ToString());
             return context.store;
             async Task<LoadedFiles[]> GetLoadedFiles(SessionId sessionId, ExecutionContext context, CancellationToken token)
             {

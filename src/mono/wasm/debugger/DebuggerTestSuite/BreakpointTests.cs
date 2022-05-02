@@ -128,7 +128,7 @@ namespace DebuggerTests
         }
 
         [Fact]
-        public async Task CreateGoodBreakpointAndHit2()
+        public async Task CreateGoodBreakpointAndHit()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
 
