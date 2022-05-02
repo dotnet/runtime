@@ -37,6 +37,7 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
 
     # Disable implicit fallthrough warning for Brotli
     set(FLAGS -Wno-implicit-fallthrough)
+
     if (CMAKE_C_COMPILER_ID STREQUAL Clang)
         add_compile_options(-Wno-strict-prototypes)
     endif ()
