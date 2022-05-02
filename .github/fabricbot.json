@@ -1814,7 +1814,7 @@
         {
           "name": "addReply",
           "parameters": {
-            "comment": "This issue has been marked `needs-author-action` since it may be missing important information. Please refer to our [contribution guidelines](https://github.com/dotnet/runtime/blob/main/CONTRIBUTING.md#writing-a-good-bug-report) for tips on how to report issues effectively."
+            "comment": "This issue has been marked `needs-author-action` and may be missing some important information."
           }
         }
       ],
