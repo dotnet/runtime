@@ -1214,8 +1214,10 @@ namespace System.Diagnostics.Tests
             Process currentProcess = Process.GetCurrentProcess();
             Process[] processes = Process.GetProcessesByName(name);
 
+            int expectedCount = (PlatformDetection.IsMobile) ? 1 : 2;
+
             Assert.Contains(processes, process => process.ProcessName == currentProcess.ProcessName);
-            Assert.InRange(processes.Length, 2, int.MaxValue); // should contain current process and some number of additional processes
+            Assert.InRange(processes.Length, expectedCount, int.MaxValue); // should contain current process and some number of additional processes
         }
 
         [Fact]
