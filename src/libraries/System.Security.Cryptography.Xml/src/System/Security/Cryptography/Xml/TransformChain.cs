@@ -155,7 +155,7 @@ namespace System.Security.Cryptography.Xml
             return TransformToOctetStream(input, typeof(Stream), resolver, baseUri);
         }
 
-        internal Stream? TransformToOctetStream(XmlDocument document, XmlResolver? resolver, string baseUri)
+        internal Stream? TransformToOctetStream(XmlDocument? document, XmlResolver? resolver, string baseUri)
         {
             return TransformToOctetStream(document, typeof(XmlDocument), resolver, baseUri);
         }

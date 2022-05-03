@@ -204,9 +204,7 @@ namespace System.Security.Cryptography.Xml
                     {
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotSupported);
                     }
-#pragma warning disable CS8604 // the check for _document == null above is never true, but because it's there, the analyzer thinks it can be null here too.
                     decInputStream = tc.TransformToOctetStream(_document, _xmlResolver, baseUri);
-#pragma warning restore CS8604
                 }
                 else if (cipherData.CipherReference.Uri[0] == '#')
                 {

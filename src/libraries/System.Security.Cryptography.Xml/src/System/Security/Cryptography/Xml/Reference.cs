@@ -386,7 +386,7 @@ namespace System.Security.Cryptography.Xml
                             // Normalize the containing document
                             resolver = (SignedXml!.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
                             XmlDocument docWithNoComments = Utils.DiscardComments(Utils.PreProcessDocumentInput(document, resolver!, baseUri));
-                            hashInputStream = TransformChain.TransformToOctetStream(docWithNoComments, resolver!, baseUri);
+                            hashInputStream = TransformChain.TransformToOctetStream(docWithNoComments, resolver, baseUri);
                         }
                         else if (_uri[0] == '#')
                         {
@@ -401,7 +401,7 @@ namespace System.Security.Cryptography.Xml
 
                                 // We should not discard comments here!!!
                                 resolver = (SignedXml!.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
-                                hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessDocumentInput(document, resolver!, baseUri), resolver!, baseUri);
+                                hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessDocumentInput(document, resolver!, baseUri), resolver , baseUri);
                                 break;
                             }
 
@@ -441,12 +441,12 @@ namespace System.Security.Cryptography.Xml
                             {
                                 // We should discard comments before going into the transform chain
                                 XmlDocument docWithNoComments = Utils.DiscardComments(normDocument);
-                                hashInputStream = TransformChain.TransformToOctetStream(docWithNoComments, resolver!, baseUri);
+                                hashInputStream = TransformChain.TransformToOctetStream(docWithNoComments, resolver, baseUri);
                             }
                             else
                             {
                                 // This is an XPointer reference, do not discard comments!!!
-                                hashInputStream = TransformChain.TransformToOctetStream(normDocument, resolver!, baseUri);
+                                hashInputStream = TransformChain.TransformToOctetStream(normDocument, resolver, baseUri);
                             }
                         }
                         else
@@ -457,7 +457,7 @@ namespace System.Security.Cryptography.Xml
                     case ReferenceTargetType.XmlElement:
                         // We need to create a DocumentNavigator out of the XmlElement
                         resolver = (SignedXml!.ResolverSet ? SignedXml._xmlResolver : XmlResolverHelper.GetThrowingResolver());
-                        hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessElementInput((XmlElement)_refTarget!, resolver!, baseUri), resolver!, baseUri);
+                        hashInputStream = TransformChain.TransformToOctetStream(Utils.PreProcessElementInput((XmlElement)_refTarget!, resolver!, baseUri), resolver , baseUri);
                         break;
                     default:
                         throw new CryptographicException(SR.Cryptography_Xml_UriNotResolved, _uri);
