@@ -147,7 +147,7 @@ namespace HostActivation.Tests
         }
 
         [Fact]
-        public void InstallLocationFile_ArchSpecificLocationIsPickedFirst()
+        public void RegisteredInstallLocation_ArchSpecificLocationIsPickedFirst()
         {
             var fixture = sharedTestState.PortableAppFixture
                 .Copy();
@@ -178,7 +178,9 @@ namespace HostActivation.Tests
                         .HaveLookedForArchitectureSpecificInstallLocation(registeredInstallLocationOverride.PathValueOverride, arch2);
                 }
 
-                result.Should().HaveUsedGlobalInstallLocation(path2);
+                result.Should()
+                    .HaveUsedRegisteredInstallLocation(path2)
+                    .And.HaveUsedGlobalInstallLocation(path2);
             }
         }
 
@@ -204,7 +206,7 @@ namespace HostActivation.Tests
                     .DotNetRoot(null)
                     .Execute()
                     .Should().HaveLookedForDefaultInstallLocation(registeredInstallLocationOverride.PathValueOverride)
-                    .And.HaveUsedConfigFileInstallLocation(reallyLongPath);
+                    .And.HaveUsedRegisteredInstallLocation(reallyLongPath);
             }
         }
 
