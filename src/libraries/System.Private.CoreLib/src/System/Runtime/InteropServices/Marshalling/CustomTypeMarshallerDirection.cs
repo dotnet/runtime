@@ -3,7 +3,7 @@
 
 using System.ComponentModel;
 
-namespace System.Runtime.InteropServices
+namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
     /// A direction of marshalling data into or out of the managed environment
