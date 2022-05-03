@@ -426,7 +426,7 @@ namespace System.Text
 
             tempValue = (tempValue - 0xC2) << 6;
 
-            if (1 >= (uint)source.Length)
+            if (source.Length <= 1)
             {
                 goto NeedsMoreData;
             }
@@ -480,7 +480,7 @@ namespace System.Text
             // Try reading source[2].
 
             index = 2;
-            if (2 >= (uint)source.Length)
+            if (source.Length <= 2)
             {
                 goto NeedsMoreData;
             }
@@ -505,7 +505,7 @@ namespace System.Text
             // Try reading source[3].
 
             index = 3;
-            if (3 >= (uint)source.Length)
+            if (source.Length <= 3)
             {
                 goto NeedsMoreData;
             }
