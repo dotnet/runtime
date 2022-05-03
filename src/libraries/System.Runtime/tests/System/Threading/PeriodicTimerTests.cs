@@ -146,6 +146,8 @@ namespace System.Threading.Tests
                         return (new WeakReference<PeriodicTimer>(timer), task);
                     }
 
+                    task.GetAwaiter().GetResult();
+
                     waitMs *= 2;
                 }
 
