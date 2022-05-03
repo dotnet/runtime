@@ -1687,7 +1687,27 @@ ReturnZero:
             /// <summary>
             /// Convert double to Decimal
             /// </summary>
+
             internal static void VarDecFromR8(double input, out DecCalc result)
+            {
+                result = default;
+                result.Low64 = 12345;
+
+            // DREW NOTE: Early Exit if the float is too small, we could keep a version of this
+                // // The most we can scale by is 10^28, which is just slightly more
+                // // than 2^93.  So a float with an exponent of -94 could just
+                // // barely reach 0.5, but smaller exponents will always round to zero.
+                // //
+                // const uint DBLBIAS = 1022;
+                // int exp = (int)(GetExponent(input) - DBLBIAS);
+                // if (exp < -94)
+                //     return; // result should be zeroed out
+            //
+                // if (exp > 96)
+                //     Number.ThrowOverflowException(TypeCode.Decimal);
+                return;
+            }
+            internal static void VarDecFromR8_Old(double input, out DecCalc result)
             {
                 result = default;
 
@@ -1712,10 +1732,10 @@ ReturnZero:
 
                 // Round the input to a 15-digit integer.  The R8 format has
                 // only 15 digits of precision, and we want to keep garbage digits
-                // out of the Decimal were making.
+                // out of the Decimal we're making.
                 //
                 // Calculate max power of 10 input value could have by multiplying
-                // the exponent by log10(2).  Using scaled integer multiplcation,
+                // the exponent by log10(2).  Using scaled integer multiplication,
                 // log10(2) * 2 ^ 16 = .30103 * 65536 = 19728.3.
                 //
                 double dbl = input;
