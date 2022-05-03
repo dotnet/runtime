@@ -344,7 +344,7 @@ profile.
 
 #### 3.2.5 Trigger Implementation
 
-In the current OSRimplementation the transitions are synchronous; there is one local patchpoint counter per frame shared by all patchpoints; patchpoint IDs are IL offsets.
+In the current OSR implementation the transitions are synchronous; there is one local patchpoint counter per frame shared by all patchpoints; patchpoint IDs are IL offsets.
 
 ### 3.3 OSR Methods
 
