@@ -28,9 +28,6 @@ namespace System.Net.Security
             }
             _context = null;
             _exception = null;
-            _internalBuffer = null;
-            _internalBufferCount = 0;
-            _internalOffset = 0;
             _nestedWrite = 0;
             _handshakeCompleted = false;
         }
@@ -40,10 +37,11 @@ namespace System.Net.Security
             _sslAuthenticationOptions = new FakeOptions() { TargetHost = sslAuthenticationOptions.TargetHost };
         }
 
-        private ValueTask WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TWriteAdapter : struct, IReadWriteAdapter => default;
+        private ValueTask WriteAsyncInternal<TWriteAdapter>(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            where TWriteAdapter : IReadWriteAdapter => default;
 
-        private ValueTask<int> ReadAsyncInternal<TReadAdapter>(TReadAdapter adapter, Memory<byte> buffer) => default;
+        private ValueTask<int> ReadAsyncInternal<TReadAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
+            where TReadAdapter : IReadWriteAdapter => default;
 
         private bool RemoteCertRequired => default;
 
@@ -54,12 +52,12 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private Task ProcessAuthenticationAsync(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
+        private Task ProcessAuthenticationAsync(bool isAsync = false, CancellationToken cancellationToken = default)
         {
-            return Task.Run(() => {});
+            return Task.Run(() => { });
         }
 
-        private Task RenegotiateAsync(AsyncReadWriteAdapter adapter) => throw new PlatformNotSupportedException();
+        private Task RenegotiateAsync<AsyncReadWriteAdapter>(CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 
         private void ReturnReadBufferIfEmpty()
         {

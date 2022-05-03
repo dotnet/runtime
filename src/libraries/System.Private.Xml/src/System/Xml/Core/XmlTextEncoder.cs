@@ -109,10 +109,7 @@ namespace System.Xml
 
         internal void Write(char[] array, int offset, int count)
         {
-            if (null == array)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (0 > offset)
             {
@@ -449,10 +446,7 @@ namespace System.Xml
 
         internal void WriteRaw(char[] array, int offset, int count)
         {
-            if (null == array)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (0 > count)
             {

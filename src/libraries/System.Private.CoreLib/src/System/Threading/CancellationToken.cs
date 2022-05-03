@@ -27,7 +27,7 @@ namespace System.Threading
     /// </para>
     /// </remarks>
     [DebuggerDisplay("IsCancellationRequested = {IsCancellationRequested}")]
-    public readonly struct CancellationToken
+    public readonly struct CancellationToken : IEquatable<CancellationToken>
     {
         // The backing TokenSource.
         // if null, it implicitly represents the same thing as new CancellationToken(false).
@@ -154,12 +154,15 @@ namespace System.Threading
         /// <returns>The <see cref="System.Threading.CancellationTokenRegistration"/> instance that can
         /// be used to unregister the callback.</returns>
         /// <exception cref="System.ArgumentNullException"><paramref name="callback"/> is null.</exception>
-        public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext) =>
-            Register(
+        public CancellationTokenRegistration Register(Action callback, bool useSynchronizationContext)
+        {
+            ArgumentNullException.ThrowIfNull(callback);
+            return Register(
                 (Action<object?>)(static obj => ((Action)obj!)()),
-                callback ?? throw new ArgumentNullException(nameof(callback)),
+                callback,
                 useSynchronizationContext,
                 useExecutionContext: true);
+        }
 
         /// <summary>
         /// Registers a delegate that will be called when this
@@ -283,8 +286,7 @@ namespace System.Threading
         /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         private CancellationTokenRegistration Register(Delegate callback, object? state, bool useSynchronizationContext, bool useExecutionContext)
         {
-            if (callback == null)
-                throw new ArgumentNullException(nameof(callback));
+            ArgumentNullException.ThrowIfNull(callback);
 
             CancellationTokenSource? source = _source;
             return source != null ?
@@ -354,8 +356,6 @@ namespace System.Threading
         /// </code>
         /// </remarks>
         /// <exception cref="System.OperationCanceledException">The token has had cancellation requested.</exception>
-        /// <exception cref="System.ObjectDisposedException">The associated <see
-        /// cref="System.Threading.CancellationTokenSource">CancellationTokenSource</see> has been disposed.</exception>
         public void ThrowIfCancellationRequested()
         {
             if (IsCancellationRequested)

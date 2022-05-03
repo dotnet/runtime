@@ -466,8 +466,10 @@ namespace System.Diagnostics.Tracing
                 return;
             }
 
-            if (eventSource == null)
+            if (eventSource is null)
+            {
                 throw new ArgumentNullException(nameof(eventSource));
+            }
 
             // User-defined EventCommands should not conflict with the reserved commands.
             if ((int)command <= (int)EventCommand.Update && (int)command != (int)EventCommand.SendManifest)
@@ -1839,7 +1841,7 @@ namespace System.Diagnostics.Tracing
                         }
                         else if (typeCode == TypeCode.DateTime)
                         {
-                            decoded = *(DateTime*)dataPointer;
+                            decoded = DateTime.FromFileTimeUtc(*(long*)dataPointer);
                         }
                         else if (IntPtr.Size == 8 && dataType == typeof(IntPtr))
                         {
@@ -3280,7 +3282,7 @@ namespace System.Diagnostics.Tracing
                         }
                         else if (eventAttribute.EventId <= 0)
                         {
-                            manifest.ManifestError(SR.Format(SR.EventSource_NeedPositiveId, method.Name), true);
+                            manifest.ManifestError(SR.EventSource_NeedPositiveId, true);
                             continue;   // don't validate anything else for this event
                         }
                         if (method.Name.LastIndexOf('.') >= 0)
@@ -3501,7 +3503,7 @@ namespace System.Diagnostics.Tracing
 #endif
             return;
             Error:
-            manifest.ManifestError(SR.Format(SR.EventSource_EnumKindMismatch, staticField.Name, staticField.FieldType.Name, providerEnumKind));
+            manifest.ManifestError(SR.Format(SR.EventSource_EnumKindMismatch, staticField.FieldType.Name, providerEnumKind));
         }
 
         // Helper used by code:CreateManifestAndDescriptors to add a code:EventData descriptor for a method
@@ -3630,7 +3632,7 @@ namespace System.Diagnostics.Tracing
 
             if (evtId < eventData.Length && eventData[evtId].Descriptor.EventId != 0)
             {
-                manifest.ManifestError(SR.Format(SR.EventSource_EventIdReused, evtName, evtId, eventData[evtId].Name), true);
+                manifest.ManifestError(SR.Format(SR.EventSource_EventIdReused, evtName, evtId), true);
             }
 
             // We give a task to things if they don't have one.
@@ -4175,7 +4177,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void EnableEvents(EventSource eventSource, EventLevel level, EventKeywords matchAnyKeyword, IDictionary<string, string?>? arguments)
         {
-            if (eventSource == null)
+            if (eventSource is null)
             {
                 throw new ArgumentNullException(nameof(eventSource));
             }
@@ -4196,7 +4198,7 @@ namespace System.Diagnostics.Tracing
         /// </summary>
         public void DisableEvents(EventSource eventSource)
         {
-            if (eventSource == null)
+            if (eventSource is null)
             {
                 throw new ArgumentNullException(nameof(eventSource));
             }
@@ -5024,7 +5026,7 @@ namespace System.Diagnostics.Tracing
 #if FEATURE_ADVANCED_MANAGED_ETW_CHANNELS
     public
 #else
-    internal
+    internal sealed
 #endif
     class EventChannelAttribute : Attribute
     {

@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -31,8 +32,7 @@ namespace System
 
         public static object? GetData(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (s_dataStore == null)
                 return null;
@@ -53,8 +53,7 @@ namespace System
         /// <exception cref="ArgumentNullException">If <paramref name="name"/> is <see langword="null"/></exception>
         public static void SetData(string name, object? data)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (s_dataStore == null)
             {
@@ -68,8 +67,10 @@ namespace System
         }
 
 #pragma warning disable CS0067 // events raised by the VM
+        [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(UnhandledExceptionEventArgs))]
         public static event UnhandledExceptionEventHandler? UnhandledException;
 
+        [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(FirstChanceExceptionEventArgs))]
         public static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
@@ -94,10 +95,7 @@ namespace System
         /// <returns>A return value of true represents that the switch was set and <paramref name="isEnabled"/> contains the value of the switch</returns>
         public static bool TryGetSwitch(string switchName, out bool isEnabled)
         {
-            if (switchName == null)
-                throw new ArgumentNullException(nameof(switchName));
-            if (switchName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(switchName));
+            ArgumentException.ThrowIfNullOrEmpty(switchName);
 
             if (s_switches != null)
             {
@@ -124,10 +122,7 @@ namespace System
         /// <param name="isEnabled">The value to assign</param>
         public static void SetSwitch(string switchName, bool isEnabled)
         {
-            if (switchName == null)
-                throw new ArgumentNullException(nameof(switchName));
-            if (switchName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(switchName));
+            ArgumentException.ThrowIfNullOrEmpty(switchName);
 
             if (s_switches == null)
             {

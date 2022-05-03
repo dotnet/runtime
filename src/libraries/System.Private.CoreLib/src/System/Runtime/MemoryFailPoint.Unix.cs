@@ -20,6 +20,7 @@ namespace System.Runtime
             return false;
         }
 
+#pragma warning disable IDE0060
         // Based on the shouldThrow parameter, this will throw an exception, or
         // returns whether there is enough space.  In all cases, we update
         // our last known free address space, hopefully avoiding needing to
@@ -35,5 +36,6 @@ namespace System.Runtime
         {
             // Unreachable until CheckForAvailableMemory is implemented
         }
+#pragma warning restore IDE0060
     }
 }

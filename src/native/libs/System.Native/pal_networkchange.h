@@ -14,10 +14,8 @@ typedef enum
     AvailabilityChanged = 2,
 } NetworkChangeKind;
 
-typedef void (*NetworkChangeEvent)(int32_t sock, NetworkChangeKind notificationKind);
+typedef void (*NetworkChangeEvent)(intptr_t sock, NetworkChangeKind notificationKind);
 
-PALEXPORT void SystemNative_ReadEvents(int32_t sock, NetworkChangeEvent onNetworkChange);
+PALEXPORT Error SystemNative_ReadEvents(intptr_t sock, NetworkChangeEvent onNetworkChange);
 
-PALEXPORT Error SystemNative_CreateNetworkChangeListenerSocket(int32_t* retSocket);
-
-PALEXPORT Error SystemNative_CloseNetworkChangeListenerSocket(int32_t socket);
+PALEXPORT Error SystemNative_CreateNetworkChangeListenerSocket(intptr_t* retSocket);

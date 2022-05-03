@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -37,13 +38,16 @@ namespace System.IO.Pipelines
         /// <param name="options">The options to use.</param>
         public StreamPipeReader(Stream readingStream, StreamPipeReaderOptions options)
         {
-            InnerStream = readingStream ?? throw new ArgumentNullException(nameof(readingStream));
-
-            if (options == null)
+            if (readingStream is null)
             {
-                throw new ArgumentNullException(nameof(options));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.readingStream);
+            }
+            if (options is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.options);
             }
 
+            InnerStream = readingStream;
             _options = options;
             _bufferSegmentPool = new BufferSegmentStack(InitialSegmentPoolSize);
         }
@@ -214,6 +218,9 @@ namespace System.IO.Pipelines
 
             return Core(this, tokenSource, cancellationToken);
 
+#if NETCOREAPP
+            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+#endif
             static async ValueTask<ReadResult> Core(StreamPipeReader reader, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration reg = default;
@@ -299,6 +306,9 @@ namespace System.IO.Pipelines
 
             return Core(this, minimumSize, tokenSource, cancellationToken);
 
+#if NETCOREAPP
+            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+#endif
             static async ValueTask<ReadResult> Core(StreamPipeReader reader, int minimumSize, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration reg = default;

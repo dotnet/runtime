@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Threading;
 
 namespace System.Net.NetworkInformation
@@ -22,7 +23,14 @@ namespace System.Net.NetworkInformation
         private static readonly ContextCallback s_runHandlerNotAvailable = new ContextCallback(RunAvailabilityHandlerNotAvailable!);
         private static readonly ContextCallback s_runAddressChangedHandler = new ContextCallback(RunAddressChangedHandler!);
 
+        [EditorBrowsableAttribute(EditorBrowsableState.Never)]
+        [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
+        public NetworkChange()
+        {
+        }
+
         // Introduced for supporting design-time loading of System.Windows.dll
+        [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public static void RegisterNetworkChange(NetworkChange nc) { }
 

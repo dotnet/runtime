@@ -1380,7 +1380,7 @@ void BulkComLogger::AddCcwHandle(Object **handle)
 
 
 
-#include "domainfile.h"
+#include "domainassembly.h"
 
 BulkStaticsLogger::BulkStaticsLogger(BulkTypeEventLogger *typeLogger)
     : m_buffer(0), m_used(0), m_count(0), m_domain(0), m_typeLogger(typeLogger)
@@ -1524,69 +1524,64 @@ void BulkStaticsLogger::LogAllStatics()
                 continue;
 
             CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
-            DomainModuleIterator modIter = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
+            // Get the domain module from the module/appdomain pair.
+            Module *module = pDomainAssembly->GetModule();
+            if (module == NULL)
+                continue;
 
-            while (modIter.Next())
+            DomainAssembly *domainAssembly = module->GetDomainAssembly();
+            if (domainAssembly == NULL)
+                continue;
+
+            // Ensure the module has fully loaded.
+            if (!domainAssembly->IsActive())
+                continue;
+
+            DomainLocalModule *domainModule = module->GetDomainLocalModule();
+            if (domainModule == NULL)
+                continue;
+
+            // Now iterate all types with
+            LookupMap<PTR_MethodTable>::Iterator mtIter = module->EnumerateTypeDefs();
+            while (mtIter.Next())
             {
-                // Get the domain module from the module/appdomain pair.
-                Module *module = modIter.GetModule();
-                if (module == NULL)
+                // I don't think mt can be null here, but the dac does a null check...
+                // IsFullyLoaded should be equivalent to 'GetLoadLevel() == CLASS_LOADED'
+                MethodTable *mt = mtIter.GetElement();
+                if (mt == NULL || !mt->IsFullyLoaded())
                     continue;
 
-                DomainFile *domainFile = module->GetDomainFile();
-                if (domainFile == NULL)
+                EEClass *cls = mt->GetClass();
+                _ASSERTE(cls != NULL);
+
+                if (cls->GetNumStaticFields() <= 0)
                     continue;
 
-                // Ensure the module has fully loaded.
-                if (!domainFile->IsActive())
-                    continue;
-
-                DomainLocalModule *domainModule = module->GetDomainLocalModule();
-                if (domainModule == NULL)
-                    continue;
-
-                // Now iterate all types with
-                LookupMap<PTR_MethodTable>::Iterator mtIter = module->EnumerateTypeDefs();
-                while (mtIter.Next())
+                ApproxFieldDescIterator fieldIter(mt, ApproxFieldDescIterator::STATIC_FIELDS);
+                for (FieldDesc *field = fieldIter.Next(); field != NULL; field = fieldIter.Next())
                 {
-                    // I don't think mt can be null here, but the dac does a null check...
-                    // IsFullyLoaded should be equivalent to 'GetLoadLevel() == CLASS_LOADED'
-                    MethodTable *mt = mtIter.GetElement();
-                    if (mt == NULL || !mt->IsFullyLoaded())
+                    // Don't want thread local
+                    _ASSERTE(field->IsStatic());
+                    if (field->IsSpecialStatic() || field->IsEnCNew())
                         continue;
 
-                    EEClass *cls = mt->GetClass();
-                    _ASSERTE(cls != NULL);
-
-                    if (cls->GetNumStaticFields() <= 0)
+                    // Static valuetype values are boxed.
+                    CorElementType fieldType = field->GetFieldType();
+                    if (fieldType != ELEMENT_TYPE_CLASS && fieldType != ELEMENT_TYPE_VALUETYPE)
                         continue;
 
-                    ApproxFieldDescIterator fieldIter(mt, ApproxFieldDescIterator::STATIC_FIELDS);
-                    for (FieldDesc *field = fieldIter.Next(); field != NULL; field = fieldIter.Next())
-                    {
-                        // Don't want thread local
-                        _ASSERTE(field->IsStatic());
-                        if (field->IsSpecialStatic() || field->IsEnCNew())
-                            continue;
+                    BYTE *base = field->GetBaseInDomainLocalModule(domainModule);
+                    if (base == NULL)
+                        continue;
 
-                        // Static valuetype values are boxed.
-                        CorElementType fieldType = field->GetFieldType();
-                        if (fieldType != ELEMENT_TYPE_CLASS && fieldType != ELEMENT_TYPE_VALUETYPE)
-                            continue;
+                    Object **address = (Object**)field->GetStaticAddressHandle(base);
+                    Object *obj = NULL;
+                    if (address == NULL || ((obj = *address) == NULL))
+                        continue;
 
-                        BYTE *base = field->GetBaseInDomainLocalModule(domainModule);
-                        if (base == NULL)
-                            continue;
-
-                        Object **address = (Object**)field->GetStaticAddressHandle(base);
-                        Object *obj = NULL;
-                        if (address == NULL || ((obj = *address) == NULL))
-                            continue;
-
-                        WriteEntry(domain, address, *address, field);
-                    } // foreach static field
-                }
-            } // foreach domain module
+                    WriteEntry(domain, address, *address, field);
+                } // foreach static field
+            }
         } // foreach domain assembly
     } // foreach AppDomain
 } // BulkStaticsLogger::LogAllStatics
@@ -6047,7 +6042,7 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
     PCWSTR szDtraceOutput1=W("");
     BOOL bIsDynamicAssembly = pAssembly->IsDynamic();
     BOOL bIsCollectibleAssembly = pAssembly->IsCollectible();
-    BOOL bIsReadyToRun = pAssembly->GetManifestFile()->IsReadyToRun();
+    BOOL bIsReadyToRun = pAssembly->GetPEAssembly()->IsReadyToRun();
 
     ULONGLONG ullAssemblyId = (ULONGLONG)pAssembly;
     ULONGLONG ullDomainId = (ULONGLONG)pAssembly->GetDomain();
@@ -6338,7 +6333,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
 
     if(!bIsDynamicAssembly)
     {
-        ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetManifestFile()->GetPEImage()->GetPath().GetUnicode();
+        ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetPEAssembly()->GetPEImage()->GetPath().GetUnicode();
         ModuleNativePath = (PWCHAR)pEmptyString;
     }
 
@@ -7246,18 +7241,14 @@ VOID ETW::EnumerationLog::IterateDomain(BaseDomain *pDomain, DWORD enumerationOp
         CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
         while (assemblyIterator.Next(pDomainAssembly.This()))
         {
-            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetLoadedAssembly();
+            CollectibleAssemblyHolder<Assembly *> pAssembly = pDomainAssembly->GetAssembly();
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCStart)
             {
                 ETW::EnumerationLog::IterateAssembly(pAssembly, enumerationOptions);
             }
 
-            DomainModuleIterator domainModuleIterator = pDomainAssembly->IterateModules(kModIterIncludeLoaded);
-            while (domainModuleIterator.Next())
-            {
-                Module * pModule = domainModuleIterator.GetModule();
-                ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
-            }
+            Module * pModule = pDomainAssembly->GetModule();
+            ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if((enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleDCEnd) ||
                 (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload))
@@ -7313,12 +7304,8 @@ VOID ETW::EnumerationLog::IterateCollectibleLoaderAllocator(AssemblyLoaderAlloca
         {
             Assembly *pAssembly = domainAssemblyIt->GetAssembly(); // TODO: handle iterator
 
-            DomainModuleIterator domainModuleIterator = domainAssemblyIt->IterateModules(kModIterIncludeLoaded);
-            while (domainModuleIterator.Next())
-            {
-                Module *pModule = domainModuleIterator.GetModule();
-                ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
-            }
+            Module* pModule = domainAssemblyIt->GetModule();
+            ETW::EnumerationLog::IterateModule(pModule, enumerationOptions);
 
             if (enumerationOptions & ETW::EnumerationLog::EnumerationStructs::DomainAssemblyModuleUnload)
             {
@@ -7362,11 +7349,8 @@ VOID ETW::EnumerationLog::IterateAssembly(Assembly *pAssembly, DWORD enumeration
         {
             if(pAssembly->GetDomain()->IsAppDomain())
             {
-                DomainModuleIterator dmIterator = pAssembly->GetDomainAssembly()->IterateModules(kModIterIncludeLoaded);
-                while (dmIterator.Next())
-                {
-                    ETW::LoaderLog::SendModuleEvent(dmIterator.GetModule(), enumerationOptions, TRUE);
-                }
+                Module* pModule = pAssembly->GetDomainAssembly()->GetModule();
+                ETW::LoaderLog::SendModuleEvent(pModule, enumerationOptions, TRUE);
             }
         }
 

@@ -3,8 +3,6 @@
 
 using System.Collections.Generic;
 using System.Globalization;
-using System.Runtime.CompilerServices;
-using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 
 #pragma warning disable xUnit1025 // reporting duplicate test cases due to not distinguishing 0.0 from -0.0, NaN from -NaN
@@ -14,6 +12,20 @@ namespace System.Tests
     public class SingleTests
     {
         // NOTE: Consider duplicating any tests added here in DoubleTests.cs
+
+        // binary32 (float) has a machine epsilon of 2^-23 (approx. 1.19e-07). However, this
+        // is slightly too accurate when writing tests meant to run against libm implementations
+        // for various platforms. 2^-21 (approx. 4.76e-07) seems to be as accurate as we can get.
+        //
+        // The tests themselves will take CrossPlatformMachineEpsilon and adjust it according to the expected result
+        // so that the delta used for comparison will compare the most significant digits and ignore
+        // any digits that are outside the single precision range (6-9 digits).
+        //
+        // For example, a test with an expect result in the format of 0.xxxxxxxxx will use
+        // CrossPlatformMachineEpsilon for the variance, while an expected result in the format of 0.0xxxxxxxxx
+        // will use CrossPlatformMachineEpsilon / 10 and expected result in the format of x.xxxxxx will
+        // use CrossPlatformMachineEpsilon * 10.
+        private const float CrossPlatformMachineEpsilon = 4.76837158e-07f;
 
         [Theory]
         [InlineData("a")]
@@ -747,6 +759,416 @@ namespace System.Tests
         {
             float result = float.Parse(value.ToString("R"));
             Assert.Equal(BitConverter.SingleToInt32Bits(value), BitConverter.SingleToInt32Bits(result));
+        }
+
+        [Theory]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MaxValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, 0.0f)]
+        [InlineData(0.0f, -0.0f, 0.0f)]
+        [InlineData(2.0f, -3.0f, -3.0f)]
+        [InlineData(-3.0f, 2.0f, -3.0f)]
+        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(-2.0f, 3.0f, 3.0f)]
+        public static void MaxMagnitudeNumberTest(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, float.MaxMagnitudeNumber(x, y), 0.0f);
+        }
+
+        [Theory]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.PositiveInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MaxValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MaxValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, 0.0f)]
+        [InlineData(0.0f, -0.0f, 0.0f)]
+        [InlineData(2.0f, -3.0f, 2.0f)]
+        [InlineData(-3.0f, 2.0f, 2.0f)]
+        [InlineData(3.0f, -2.0f, 3.0f)]
+        [InlineData(-2.0f, 3.0f, 3.0f)]
+        public static void MaxNumberTest(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, float.MaxNumber(x, y), 0.0f);
+        }
+
+        [Theory]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MinValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, -0.0f)]
+        [InlineData(0.0f, -0.0f, -0.0f)]
+        [InlineData(2.0f, -3.0f, 2.0f)]
+        [InlineData(-3.0f, 2.0f, 2.0f)]
+        [InlineData(3.0f, -2.0f, -2.0f)]
+        [InlineData(-2.0f, 3.0f, -2.0f)]
+        public static void MinMagnitudeNumberTest(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, float.MinMagnitudeNumber(x, y), 0.0f);
+        }
+
+        [Theory]
+        [InlineData(float.NegativeInfinity, float.PositiveInfinity, float.NegativeInfinity)]
+        [InlineData(float.PositiveInfinity, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(float.MinValue, float.MaxValue, float.MinValue)]
+        [InlineData(float.MaxValue, float.MinValue, float.MinValue)]
+        [InlineData(float.NaN, float.NaN, float.NaN)]
+        [InlineData(float.NaN, 1.0f, 1.0f)]
+        [InlineData(1.0f, float.NaN, 1.0f)]
+        [InlineData(float.PositiveInfinity, float.NaN, float.PositiveInfinity)]
+        [InlineData(float.NegativeInfinity, float.NaN, float.NegativeInfinity)]
+        [InlineData(float.NaN, float.PositiveInfinity, float.PositiveInfinity)]
+        [InlineData(float.NaN, float.NegativeInfinity, float.NegativeInfinity)]
+        [InlineData(-0.0f, 0.0f, -0.0f)]
+        [InlineData(0.0f, -0.0f, -0.0f)]
+        [InlineData(2.0f, -3.0f, -3.0f)]
+        [InlineData(-3.0f, 2.0f, -3.0f)]
+        [InlineData(3.0f, -2.0f, -2.0f)]
+        [InlineData(-2.0f, 3.0f, -2.0f)]
+        public static void MinNumberTest(float x, float y, float expectedResult)
+        {
+            AssertExtensions.Equal(expectedResult, float.MinNumber(x, y), 0.0f);
+        }
+
+        [Theory]
+        [InlineData( float.NegativeInfinity, -1.0f,                   CrossPlatformMachineEpsilon * 10)]
+        [InlineData(-3.14159265f,            -0.956786082f,           CrossPlatformMachineEpsilon)]        // value: -(pi)
+        [InlineData(-2.71828183f,            -0.934011964f,           CrossPlatformMachineEpsilon)]        // value: -(e)
+        [InlineData(-2.30258509f,            -0.9f,                   CrossPlatformMachineEpsilon)]        // value: -(ln(10))
+        [InlineData(-1.57079633f,            -0.792120424f,           CrossPlatformMachineEpsilon)]        // value: -(pi / 2)
+        [InlineData(-1.44269504f,            -0.763709912f,           CrossPlatformMachineEpsilon)]        // value: -(log2(e))
+        [InlineData(-1.41421356f,            -0.756883266f,           CrossPlatformMachineEpsilon)]        // value: -(sqrt(2))
+        [InlineData(-1.12837917f,            -0.676442736f,           CrossPlatformMachineEpsilon)]        // value: -(2 / sqrt(pi))
+        [InlineData(-1.0f,                   -0.632120559f,           CrossPlatformMachineEpsilon)]
+        [InlineData(-0.785398163f,           -0.544061872f,           CrossPlatformMachineEpsilon)]        // value: -(pi / 4)
+        [InlineData(-0.707106781f,           -0.506931309f,           CrossPlatformMachineEpsilon)]        // value: -(1 / sqrt(2))
+        [InlineData(-0.693147181f,           -0.5f,                   CrossPlatformMachineEpsilon)]        // value: -(ln(2))
+        [InlineData(-0.636619772f,           -0.470922192f,           CrossPlatformMachineEpsilon)]        // value: -(2 / pi)
+        [InlineData(-0.434294482f,           -0.352278515f,           CrossPlatformMachineEpsilon)]        // value: -(log10(e))
+        [InlineData(-0.318309886f,           -0.272622651f,           CrossPlatformMachineEpsilon)]        // value: -(1 / pi)
+        [InlineData(-0.0f,                    0.0f,                   0.0f)]
+        [InlineData( float.NaN,               float.NaN,              0.0f)]
+        [InlineData( 0.0f,                    0.0f,                   0.0f)]
+        [InlineData( 0.318309886f,            0.374802227f,           CrossPlatformMachineEpsilon)]        // value:  (1 / pi)
+        [InlineData( 0.434294482f,            0.543873444f,           CrossPlatformMachineEpsilon)]        // value:  (log10(e))
+        [InlineData( 0.636619772f,            0.890081165f,           CrossPlatformMachineEpsilon)]        // value:  (2 / pi)
+        [InlineData( 0.693147181f,            1.0f,                   CrossPlatformMachineEpsilon * 10)]   // value:  (ln(2))
+        [InlineData( 0.707106781f,            1.02811498f,            CrossPlatformMachineEpsilon * 10)]   // value:  (1 / sqrt(2))
+        [InlineData( 0.785398163f,            1.19328005f,            CrossPlatformMachineEpsilon * 10)]   // value:  (pi / 4)
+        [InlineData( 1.0f,                    1.71828183f,            CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 1.12837917f,             2.09064302f,            CrossPlatformMachineEpsilon * 10)]   // value:  (2 / sqrt(pi))
+        [InlineData( 1.41421356f,             3.11325038f,            CrossPlatformMachineEpsilon * 10)]   // value:  (sqrt(2))
+        [InlineData( 1.44269504f,             3.23208611f,            CrossPlatformMachineEpsilon * 10)]   // value:  (log2(e))
+        [InlineData( 1.57079633f,             3.81047738f,            CrossPlatformMachineEpsilon * 10)]   // value:  (pi / 2)
+        [InlineData( 2.30258509f,             9.0f,                   CrossPlatformMachineEpsilon * 10)]   // value:  (ln(10))
+        [InlineData( 2.71828183f,             14.1542622f,            CrossPlatformMachineEpsilon * 100)]  // value:  (e)
+        [InlineData( 3.14159265f,             22.1406926f,            CrossPlatformMachineEpsilon * 100)]  // value:  (pi)
+        [InlineData( float.PositiveInfinity,  float.PositiveInfinity, 0.0)]
+        public static void ExpM1Test(float value, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, float.ExpM1(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( float.NegativeInfinity, 0.0f,                   0.0f)]
+        [InlineData(-3.14159265f,            0.113314732f,           CrossPlatformMachineEpsilon)]        // value: -(pi)
+        [InlineData(-2.71828183f,            0.151955223f,           CrossPlatformMachineEpsilon)]        // value: -(e)
+        [InlineData(-2.30258509f,            0.202699566f,           CrossPlatformMachineEpsilon)]        // value: -(ln(10))
+        [InlineData(-1.57079633f,            0.336622537f,           CrossPlatformMachineEpsilon)]        // value: -(pi / 2)
+        [InlineData(-1.44269504f,            0.367879441f,           CrossPlatformMachineEpsilon)]        // value: -(log2(e))
+        [InlineData(-1.41421356f,            0.375214227f,           CrossPlatformMachineEpsilon)]        // value: -(sqrt(2))
+        [InlineData(-1.12837917f,            0.457429347f,           CrossPlatformMachineEpsilon)]        // value: -(2 / sqrt(pi))
+        [InlineData(-1.0f,                   0.5f,                   CrossPlatformMachineEpsilon)]
+        [InlineData(-0.785398163f,           0.580191810f,           CrossPlatformMachineEpsilon)]        // value: -(pi / 4)
+        [InlineData(-0.707106781f,           0.612547327f,           CrossPlatformMachineEpsilon)]        // value: -(1 / sqrt(2))
+        [InlineData(-0.693147181f,           0.618503138f,           CrossPlatformMachineEpsilon)]        // value: -(ln(2))
+        [InlineData(-0.636619772f,           0.643218242f,           CrossPlatformMachineEpsilon)]        // value: -(2 / pi)
+        [InlineData(-0.434294482f,           0.740055574f,           CrossPlatformMachineEpsilon)]        // value: -(log10(e))
+        [InlineData(-0.318309886f,           0.802008879f,           CrossPlatformMachineEpsilon)]        // value: -(1 / pi)
+        [InlineData(-0.0f,                   1.0f,                   0.0f)]
+        [InlineData( float.NaN,              float.NaN,              0.0f)]
+        [InlineData( 0.0f,                   1.0f,                   0.0f)]
+        [InlineData( 0.318309886f,           1.24686899f,            CrossPlatformMachineEpsilon * 10)]   // value:  (1 / pi)
+        [InlineData( 0.434294482f,           1.35124987f,            CrossPlatformMachineEpsilon * 10)]   // value:  (log10(e))
+        [InlineData( 0.636619772f,           1.55468228f,            CrossPlatformMachineEpsilon * 10)]   // value:  (2 / pi)
+        [InlineData( 0.693147181f,           1.61680667f,            CrossPlatformMachineEpsilon * 10)]   // value:  (ln(2))
+        [InlineData( 0.707106781f,           1.63252692f,            CrossPlatformMachineEpsilon * 10)]   // value:  (1 / sqrt(2))
+        [InlineData( 0.785398163f,           1.72356793f,            CrossPlatformMachineEpsilon * 10)]   // value:  (pi / 4)
+        [InlineData( 1.0f,                   2.0,                    CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 1.12837917f,            2.18612996f,            CrossPlatformMachineEpsilon * 10)]   // value:  (2 / sqrt(pi))
+        [InlineData( 1.41421356f,            2.66514414f,            CrossPlatformMachineEpsilon * 10)]   // value:  (sqrt(2))
+        [InlineData( 1.44269504f,            2.71828183f,            CrossPlatformMachineEpsilon * 10)]   // value:  (log2(e))
+        [InlineData( 1.57079633f,            2.97068642f,            CrossPlatformMachineEpsilon * 10)]   // value:  (pi / 2)
+        [InlineData( 2.30258509f,            4.93340967f,            CrossPlatformMachineEpsilon * 10)]   // value:  (ln(10))
+        [InlineData( 2.71828183f,            6.58088599f,            CrossPlatformMachineEpsilon * 10)]   // value:  (e)
+        [InlineData( 3.14159265f,            8.82497783f,            CrossPlatformMachineEpsilon * 10)]   // value:  (pi)
+        [InlineData( float.PositiveInfinity, float.PositiveInfinity, 0.0f)]
+        public static void Exp2Test(float value, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, float.Exp2(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( float.NegativeInfinity, -1.0f,                   0.0f)]
+        [InlineData(-3.14159265f,            -0.886685268f,           CrossPlatformMachineEpsilon)]        // value: -(pi)
+        [InlineData(-2.71828183f,            -0.848044777f,           CrossPlatformMachineEpsilon)]        // value: -(e)
+        [InlineData(-2.30258509f,            -0.797300434f,           CrossPlatformMachineEpsilon)]        // value: -(ln(10))
+        [InlineData(-1.57079633f,            -0.663377463f,           CrossPlatformMachineEpsilon)]        // value: -(pi / 2)
+        [InlineData(-1.44269504f,            -0.632120559f,           CrossPlatformMachineEpsilon)]        // value: -(log2(e))
+        [InlineData(-1.41421356f,            -0.624785773f,           CrossPlatformMachineEpsilon)]        // value: -(sqrt(2))
+        [InlineData(-1.12837917f,            -0.542570653f,           CrossPlatformMachineEpsilon)]        // value: -(2 / sqrt(pi))
+        [InlineData(-1.0f,                   -0.5f,                   CrossPlatformMachineEpsilon)]
+        [InlineData(-0.785398163f,           -0.419808190f,           CrossPlatformMachineEpsilon)]        // value: -(pi / 4)
+        [InlineData(-0.707106781f,           -0.387452673f,           CrossPlatformMachineEpsilon)]        // value: -(1 / sqrt(2))
+        [InlineData(-0.693147181f,           -0.381496862f,           CrossPlatformMachineEpsilon)]        // value: -(ln(2))
+        [InlineData(-0.636619772f,           -0.356781758f,           CrossPlatformMachineEpsilon)]        // value: -(2 / pi)
+        [InlineData(-0.434294482f,           -0.259944426f,           CrossPlatformMachineEpsilon)]        // value: -(log10(e))
+        [InlineData(-0.318309886f,           -0.197991121f,           CrossPlatformMachineEpsilon)]        // value: -(1 / pi)
+        [InlineData(-0.0f,                    0.0f,                   0.0f)]
+        [InlineData( float.NaN,               float.NaN,              0.0f)]
+        [InlineData( 0.0f,                    0.0f,                   0.0f)]
+        [InlineData( 0.318309886f,            0.246868989f,           CrossPlatformMachineEpsilon)]        // value:  (1 / pi)
+        [InlineData( 0.434294482f,            0.351249873f,           CrossPlatformMachineEpsilon)]        // value:  (log10(e))
+        [InlineData( 0.636619772f,            0.554682275f,           CrossPlatformMachineEpsilon)]        // value:  (2 / pi)
+        [InlineData( 0.693147181f,            0.616806672f,           CrossPlatformMachineEpsilon)]        // value:  (ln(2))
+        [InlineData( 0.707106781f,            0.632526919f,           CrossPlatformMachineEpsilon)]        // value:  (1 / sqrt(2))
+        [InlineData( 0.785398163f,            0.723567934f,           CrossPlatformMachineEpsilon)]        // value:  (pi / 4)
+        [InlineData( 1.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 1.12837917f,             1.18612996f,            CrossPlatformMachineEpsilon * 10)]   // value:  (2 / sqrt(pi))
+        [InlineData( 1.41421356f,             1.66514414f,            CrossPlatformMachineEpsilon * 10)]   // value:  (sqrt(2))
+        [InlineData( 1.44269504f,             1.71828183f,            CrossPlatformMachineEpsilon * 10)]   // value:  (log2(e))
+        [InlineData( 1.57079633f,             1.97068642f,            CrossPlatformMachineEpsilon * 10)]   // value:  (pi / 2)
+        [InlineData( 2.30258509f,             3.93340967f,            CrossPlatformMachineEpsilon * 10)]   // value:  (ln(10))
+        [InlineData( 2.71828183f,             5.58088599f,            CrossPlatformMachineEpsilon * 10)]   // value:  (e)
+        [InlineData( 3.14159265f,             7.82497783f,            CrossPlatformMachineEpsilon * 10)]   // value:  (pi)
+        [InlineData( float.PositiveInfinity,  float.PositiveInfinity, 0.0f)]
+        public static void Exp2M1Test(float value, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, float.Exp2M1(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( float.NegativeInfinity, 0.0f,                   0.0f)]
+        [InlineData(-3.14159265f,            0.000721784159f,        CrossPlatformMachineEpsilon / 1000)]  // value: -(pi)
+        [InlineData(-2.71828183f,            0.00191301410f,         CrossPlatformMachineEpsilon / 100)]   // value: -(e)
+        [InlineData(-2.30258509f,            0.00498212830f,         CrossPlatformMachineEpsilon / 100)]   // value: -(ln(10))
+        [InlineData(-1.57079633f,            0.0268660410f,          CrossPlatformMachineEpsilon / 10)]    // value: -(pi / 2)
+        [InlineData(-1.44269504f,            0.0360831928f,          CrossPlatformMachineEpsilon / 10)]    // value: -(log2(e))
+        [InlineData(-1.41421356f,            0.0385288847f,          CrossPlatformMachineEpsilon / 10)]    // value: -(sqrt(2))
+        [InlineData(-1.12837917f,            0.0744082059f,          CrossPlatformMachineEpsilon / 10)]    // value: -(2 / sqrt(pi))
+        [InlineData(-1.0f,                   0.1f,                   CrossPlatformMachineEpsilon)]
+        [InlineData(-0.785398163f,           0.163908636f,           CrossPlatformMachineEpsilon)]         // value: -(pi / 4)
+        [InlineData(-0.707106781f,           0.196287760f,           CrossPlatformMachineEpsilon)]         // value: -(1 / sqrt(2))
+        [InlineData(-0.693147181f,           0.202699566f,           CrossPlatformMachineEpsilon)]         // value: -(ln(2))
+        [InlineData(-0.636619772f,           0.230876765f,           CrossPlatformMachineEpsilon)]         // value: -(2 / pi)
+        [InlineData(-0.434294482f,           0.367879441f,           CrossPlatformMachineEpsilon)]         // value: -(log10(e))
+        [InlineData(-0.318309886f,           0.480496373f,           CrossPlatformMachineEpsilon)]         // value: -(1 / pi)
+        [InlineData(-0.0f,                   1.0f,                   0.0f)]
+        [InlineData( float.NaN,              float.NaN,              0.0f)]
+        [InlineData( 0.0f,                   1.0f,                   0.0f)]
+        [InlineData( 0.318309886f,           2.08118116f,            CrossPlatformMachineEpsilon * 10)]    // value:  (1 / pi)
+        [InlineData( 0.434294482f,           2.71828183f,            CrossPlatformMachineEpsilon * 10)]    // value:  (log10(e))
+        [InlineData( 0.636619772f,           4.33131503f,            CrossPlatformMachineEpsilon * 10)]    // value:  (2 / pi)
+        [InlineData( 0.693147181f,           4.93340967f,            CrossPlatformMachineEpsilon * 10)]    // value:  (ln(2))
+        [InlineData( 0.707106781f,           5.09456117f,            CrossPlatformMachineEpsilon * 10)]    // value:  (1 / sqrt(2))
+        [InlineData( 0.785398163f,           6.10095980f,            CrossPlatformMachineEpsilon * 10)]    // value:  (pi / 4)
+        [InlineData( 1.0f,                   10.0f,                  CrossPlatformMachineEpsilon * 100)]
+        [InlineData( 1.12837917f,            13.4393779f,            CrossPlatformMachineEpsilon * 100)]   // value:  (2 / sqrt(pi))
+        [InlineData( 1.41421356f,            25.9545535f,            CrossPlatformMachineEpsilon * 100)]   // value:  (sqrt(2))
+        [InlineData( 1.44269504f,            27.7137338f,            CrossPlatformMachineEpsilon * 100)]   // value:  (log2(e))
+        [InlineData( 1.57079633f,            37.2217105f,            CrossPlatformMachineEpsilon * 100)]   // value:  (pi / 2)
+        [InlineData( 2.30258509f,            200.717432f,            CrossPlatformMachineEpsilon * 1000)]  // value:  (ln(10))
+        [InlineData( 2.71828183f,            522.735300f,            CrossPlatformMachineEpsilon * 1000)]  // value:  (e)
+        [InlineData( 3.14159265f,            1385.45573f,            CrossPlatformMachineEpsilon * 10000)] // value:  (pi)
+        [InlineData( float.PositiveInfinity, float.PositiveInfinity, 0.0f)]
+        public static void Exp10Test(float value, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, float.Exp10(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( float.NegativeInfinity, -1.0f,                   0.0f)]
+        [InlineData(-3.14159265f,            -0.999278216f,           CrossPlatformMachineEpsilon)]         // value: -(pi)
+        [InlineData(-2.71828183f,            -0.998086986f,           CrossPlatformMachineEpsilon)]         // value: -(e)
+        [InlineData(-2.30258509f,            -0.995017872f,           CrossPlatformMachineEpsilon)]         // value: -(ln(10))
+        [InlineData(-1.57079633f,            -0.973133959f,           CrossPlatformMachineEpsilon)]         // value: -(pi / 2)
+        [InlineData(-1.44269504f,            -0.963916807f,           CrossPlatformMachineEpsilon)]         // value: -(log2(e))
+        [InlineData(-1.41421356f,            -0.961471115f,           CrossPlatformMachineEpsilon)]         // value: -(sqrt(2))
+        [InlineData(-1.12837917f,            -0.925591794f,           CrossPlatformMachineEpsilon)]         // value: -(2 / sqrt(pi))
+        [InlineData(-1.0f,                   -0.9f,                   CrossPlatformMachineEpsilon)]
+        [InlineData(-0.785398163f,           -0.836091364f,           CrossPlatformMachineEpsilon)]         // value: -(pi / 4)
+        [InlineData(-0.707106781f,           -0.803712240f,           CrossPlatformMachineEpsilon)]         // value: -(1 / sqrt(2))
+        [InlineData(-0.693147181f,           -0.797300434f,           CrossPlatformMachineEpsilon)]         // value: -(ln(2))
+        [InlineData(-0.636619772f,           -0.769123235f,           CrossPlatformMachineEpsilon)]         // value: -(2 / pi)
+        [InlineData(-0.434294482f,           -0.632120559f,           CrossPlatformMachineEpsilon)]         // value: -(log10(e))
+        [InlineData(-0.318309886f,           -0.519503627f,           CrossPlatformMachineEpsilon)]         // value: -(1 / pi)
+        [InlineData(-0.0f,                    0.0f,                   0.0f)]
+        [InlineData( float.NaN,               float.NaN,              0.0f)]
+        [InlineData( 0.0f,                    0.0f,                   0.0f)]
+        [InlineData( 0.318309886f,            1.08118116f,            CrossPlatformMachineEpsilon * 10)]    // value:  (1 / pi)
+        [InlineData( 0.434294482f,            1.71828183f,            CrossPlatformMachineEpsilon * 10)]    // value:  (log10(e))
+        [InlineData( 0.636619772f,            3.33131503f,            CrossPlatformMachineEpsilon * 10)]    // value:  (2 / pi)
+        [InlineData( 0.693147181f,            3.93340967f,            CrossPlatformMachineEpsilon * 10)]    // value:  (ln(2))
+        [InlineData( 0.707106781f,            4.09456117f,            CrossPlatformMachineEpsilon * 10)]    // value:  (1 / sqrt(2))
+        [InlineData( 0.785398163f,            5.10095980f,            CrossPlatformMachineEpsilon * 10)]    // value:  (pi / 4)
+        [InlineData( 1.0f,                    9.0,                    CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 1.12837917f,             12.4393779f,            CrossPlatformMachineEpsilon * 100)]   // value:  (2 / sqrt(pi))
+        [InlineData( 1.41421356f,             24.9545535f,            CrossPlatformMachineEpsilon * 100)]   // value:  (sqrt(2))
+        [InlineData( 1.44269504f,             26.7137338f,            CrossPlatformMachineEpsilon * 100)]   // value:  (log2(e))
+        [InlineData( 1.57079633f,             36.2217105f,            CrossPlatformMachineEpsilon * 100)]   // value:  (pi / 2)
+        [InlineData( 2.30258509f,             199.717432f,            CrossPlatformMachineEpsilon * 1000)]  // value:  (ln(10))
+        [InlineData( 2.71828183f,             521.735300f,            CrossPlatformMachineEpsilon * 1000)]  // value:  (e)
+        [InlineData( 3.14159265f,             1384.45573f,            CrossPlatformMachineEpsilon * 10000)] // value:  (pi)
+        [InlineData( float.PositiveInfinity,  float.PositiveInfinity, 0.0f)]
+        public static void Exp10M1Test(float value, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, float.Exp10M1(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( float.NegativeInfinity,  float.NaN,              0.0f)]
+        [InlineData(-3.14159265f,             float.NaN,              0.0f)]                              //                              value: -(pi)
+        [InlineData(-2.71828183f,             float.NaN,              0.0f)]                              //                              value: -(e)
+        [InlineData(-1.41421356f,             float.NaN,              0.0f)]                              //                              value: -(sqrt(2))
+        [InlineData( float.NaN,               float.NaN,              0.0f)]
+        [InlineData(-1.0f,                    float.NegativeInfinity, 0.0f)]
+        [InlineData(-0.956786082f,           -3.14159265f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(pi)
+        [InlineData(-0.934011964f,           -2.71828183f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(e)
+        [InlineData(-0.9f,                   -2.30258509f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(ln(10))
+        [InlineData(-0.792120424f,           -1.57079633f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(pi / 2)
+        [InlineData(-0.763709912f,           -1.44269504f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(log2(e))
+        [InlineData(-0.756883266f,           -1.41421356f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(sqrt(2))
+        [InlineData(-0.676442736f,           -1.12837917f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(2 / sqrt(pi))
+        [InlineData(-0.632120559f,           -1.0f,                   CrossPlatformMachineEpsilon * 10)]
+        [InlineData(-0.544061872f,           -0.785398163f,           CrossPlatformMachineEpsilon)]       // expected: -(pi / 4)
+        [InlineData(-0.506931309f,           -0.707106781f,           CrossPlatformMachineEpsilon)]       // expected: -(1 / sqrt(2))
+        [InlineData(-0.5f,                   -0.693147181f,           CrossPlatformMachineEpsilon)]       // expected: -(ln(2))
+        [InlineData(-0.470922192f,           -0.636619772f,           CrossPlatformMachineEpsilon)]       // expected: -(2 / pi)
+        [InlineData(-0.0f,                    0.0f,                   0.0f)]
+        [InlineData( 0.0f,                    0.0f,                   0.0f)]
+        [InlineData( 0.374802227f,            0.318309886f,           CrossPlatformMachineEpsilon)]       // expected:  (1 / pi)
+        [InlineData( 0.543873444f,            0.434294482f,           CrossPlatformMachineEpsilon)]       // expected:  (log10(e))
+        [InlineData( 0.890081165f,            0.636619772f,           CrossPlatformMachineEpsilon)]       // expected:  (2 / pi)
+        [InlineData( 1.0f,                    0.693147181f,           CrossPlatformMachineEpsilon)]       // expected:  (ln(2))
+        [InlineData( 1.02811498f,             0.707106781f,           CrossPlatformMachineEpsilon)]       // expected:  (1 / sqrt(2))
+        [InlineData( 1.19328005f,             0.785398163f,           CrossPlatformMachineEpsilon)]       // expected:  (pi / 4)
+        [InlineData( 1.71828183f,             1.0f,                   CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 2.09064302f,             1.12837917f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (2 / sqrt(pi))
+        [InlineData( 3.11325038f,             1.41421356f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (sqrt(2))
+        [InlineData( 3.23208611f,             1.44269504f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (log2(e))
+        [InlineData( 3.81047738f,             1.57079633f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (pi / 2)
+        [InlineData( 9.0f,                    2.30258509f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (ln(10))
+        [InlineData( 14.1542622f,             2.71828183f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (e)
+        [InlineData( 22.1406926f,             3.14159265f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (pi)
+        [InlineData( float.PositiveInfinity,  float.PositiveInfinity, 0.0f)]
+        public static void LogP1Test(float value, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, float.LogP1(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( float.NegativeInfinity,  float.NaN,              0.0f)]
+        [InlineData( float.NaN,               float.NaN,              0.0f)]
+        [InlineData(-1.0f,                    float.NegativeInfinity, 0.0f)]
+        [InlineData(-0.886685268f,           -3.14159265f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(pi)
+        [InlineData(-0.848044777f,           -2.71828183f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(e)
+        [InlineData(-0.797300434f,           -2.30258509f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(ln(10))
+        [InlineData(-0.663377463f,           -1.57079633f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(pi / 2)
+        [InlineData(-0.632120559f,           -1.44269504f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(log2(e))
+        [InlineData(-0.624785773f,           -1.41421356f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(sqrt(2))
+        [InlineData(-0.542570653f,           -1.12837917f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(2 / sqrt(pi))
+        [InlineData(-0.5f,                   -1.0f,                   CrossPlatformMachineEpsilon * 10)]
+        [InlineData(-0.419808190f,           -0.785398163f,           CrossPlatformMachineEpsilon)]       // expected: -(pi / 4)
+        [InlineData(-0.387452673f,           -0.707106781f,           CrossPlatformMachineEpsilon)]       // expected: -(1 / sqrt(2))
+        [InlineData(-0.381496862f,           -0.693147181f,           CrossPlatformMachineEpsilon)]       // expected: -(ln(2))
+        [InlineData(-0.356781758f,           -0.636619772f,           CrossPlatformMachineEpsilon)]       // expected: -(2 / pi)
+        [InlineData(-0.259944426f,           -0.434294482f,           CrossPlatformMachineEpsilon)]       // expected: -(log10(e))
+        [InlineData(-0.197991121f,           -0.318309886f,           CrossPlatformMachineEpsilon)]       // expected: -(1 / pi)
+        [InlineData(-0.0f,                    0.0f,                   0.0f)]
+        [InlineData( 0.0f,                    0.0f,                   0.0f)]
+        [InlineData( 0.246868989f,            0.318309886f,           CrossPlatformMachineEpsilon)]       // expected:  (1 / pi)
+        [InlineData( 0.351249873f,            0.434294482f,           CrossPlatformMachineEpsilon)]       // expected:  (log10(e))
+        [InlineData( 0.554682275f,            0.636619772f,           CrossPlatformMachineEpsilon)]       // expected:  (2 / pi)
+        [InlineData( 0.616806672f,            0.693147181f,           CrossPlatformMachineEpsilon)]       // expected:  (ln(2))
+        [InlineData( 0.632526919f,            0.707106781f,           CrossPlatformMachineEpsilon)]       // expected:  (1 / sqrt(2))
+        [InlineData( 0.723567934f,            0.785398163f,           CrossPlatformMachineEpsilon)]       // expected:  (pi / 4)
+        [InlineData( 1.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 1.18612996f,             1.12837917f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (2 / sqrt(pi))
+        [InlineData( 1.66514414f,             1.41421356f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (sqrt(2))
+        [InlineData( 1.71828183f,             1.44269504f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (log2(e))
+        [InlineData( 1.97068642f,             1.57079633f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (pi / 2)
+        [InlineData( 3.93340967f,             2.30258509f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (ln(10))
+        [InlineData( 5.58088599f,             2.71828183f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (e)
+        [InlineData( 7.82497783f,             3.14159265f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (pi)
+        [InlineData( float.PositiveInfinity,  float.PositiveInfinity, 0.0f)]
+        public static void Log2P1Test(float value, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, float.Log2P1(value), allowedVariance);
+        }
+
+        [Theory]
+        [InlineData( float.NegativeInfinity,  float.NaN,              0.0f)]
+        [InlineData(-3.14159265f,             float.NaN,              0.0f)]                              //                              value: -(pi)
+        [InlineData(-2.71828183f,             float.NaN,              0.0f)]                              //                              value: -(e)
+        [InlineData(-1.41421356f,             float.NaN,              0.0f)]                              //                              value: -(sqrt(2))
+        [InlineData( float.NaN,               float.NaN,              0.0f)]
+        [InlineData(-1.0f,                    float.NegativeInfinity, 0.0f)]
+        [InlineData(-0.998086986f,           -2.71828183f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(e)
+        [InlineData(-0.995017872f,           -2.30258509f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(ln(10))
+        [InlineData(-0.973133959f,           -1.57079633f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(pi / 2)
+        [InlineData(-0.963916807f,           -1.44269504f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(log2(e))
+        [InlineData(-0.961471115f,           -1.41421356f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(sqrt(2))
+        [InlineData(-0.925591794f,           -1.12837917f,            CrossPlatformMachineEpsilon * 10)]  // expected: -(2 / sqrt(pi))
+        [InlineData(-0.9f,                   -1.0f,                   CrossPlatformMachineEpsilon * 10)]
+        [InlineData(-0.836091364f,           -0.785398163f,           CrossPlatformMachineEpsilon)]       // expected: -(pi / 4)
+        [InlineData(-0.803712240f,           -0.707106781f,           CrossPlatformMachineEpsilon)]       // expected: -(1 / sqrt(2))
+        [InlineData(-0.797300434f,           -0.693147181f,           CrossPlatformMachineEpsilon)]       // expected: -(ln(2))
+        [InlineData(-0.769123235f,           -0.636619772f,           CrossPlatformMachineEpsilon)]       // expected: -(2 / pi)
+        [InlineData(-0.632120559f,           -0.434294482f,           CrossPlatformMachineEpsilon)]       // expected: -(log10(e))
+        [InlineData(-0.519503627f,           -0.318309886f,           CrossPlatformMachineEpsilon)]       // expected: -(1 / pi)
+        [InlineData(-0.0f,                    0.0f,                   0.0f)]
+        [InlineData( 0.0f,                    0.0f,                   0.0f)]
+        [InlineData( 1.08118116f,             0.318309886f,           CrossPlatformMachineEpsilon)]       // expected:  (1 / pi)
+        [InlineData( 1.71828183f,             0.434294482f,           CrossPlatformMachineEpsilon)]       // expected:  (log10(e))        value: (e)
+        [InlineData( 3.33131503f,             0.636619772f,           CrossPlatformMachineEpsilon)]       // expected:  (2 / pi)
+        [InlineData( 3.93340967f,             0.693147181f,           CrossPlatformMachineEpsilon)]       // expected:  (ln(2))
+        [InlineData( 4.09456117f,             0.707106781f,           CrossPlatformMachineEpsilon)]       // expected:  (1 / sqrt(2))
+        [InlineData( 5.10095980f,             0.785398163f,           CrossPlatformMachineEpsilon)]       // expected:  (pi / 4)
+        [InlineData( 9.0f,                    1.0f,                   CrossPlatformMachineEpsilon * 10)]
+        [InlineData( 12.4393779f,             1.12837917f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (2 / sqrt(pi))
+        [InlineData( 24.9545535f,             1.41421356f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (sqrt(2))
+        [InlineData( 26.7137338f,             1.44269504f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (log2(e))
+        [InlineData( 36.2217105f,             1.57079633f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (pi / 2)
+        [InlineData( 199.717432f,             2.30258509f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (ln(10))
+        [InlineData( 521.735300f,             2.71828183f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (e)
+        [InlineData( 1384.45573f,             3.14159265f,            CrossPlatformMachineEpsilon * 10)]  // expected:  (pi)
+        [InlineData( float.PositiveInfinity,  float.PositiveInfinity, 0.0f)]
+        public static void Log10P1Test(float value, float expectedResult, float allowedVariance)
+        {
+            AssertExtensions.Equal(expectedResult, float.Log10P1(value), allowedVariance);
         }
     }
 }

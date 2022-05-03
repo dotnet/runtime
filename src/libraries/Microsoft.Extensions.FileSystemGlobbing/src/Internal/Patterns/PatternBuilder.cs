@@ -27,10 +27,7 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.Patterns
 
         public IPattern Build(string pattern)
         {
-            if (pattern == null)
-            {
-                throw new ArgumentNullException(nameof(pattern));
-            }
+            ThrowHelper.ThrowIfNull(pattern);
 
             pattern = pattern.TrimStart(_slashes);
 

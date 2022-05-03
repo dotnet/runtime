@@ -5,8 +5,10 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text;
 using System.Threading;
+using static System.Runtime.CompilerServices.RuntimeHelpers;
 
 namespace System.Reflection.Emit
 {
@@ -21,6 +23,8 @@ namespace System.Reflection.Emit
         private RuntimeModule m_module = null!;
         internal bool m_skipVisibility;
         internal RuntimeType? m_typeOwner; // can be null
+        private DynamicMethodInvoker? _invoker;
+        private Signature? _signature;
 
         // We want the creator of the DynamicMethod to control who has access to the
         // DynamicMethod (just like we do for delegates). However, a user can get to
@@ -41,13 +45,14 @@ namespace System.Reflection.Emit
         // We capture the creation context so that we can do the checks against the same context,
         // irrespective of when the method gets compiled. Note that the DynamicMethod does not know when
         // it is ready for use since there is not API which indictates that IL generation has completed.
-        private static volatile InternalModuleBuilder? s_anonymouslyHostedDynamicMethodsModule;
+        private static volatile RuntimeModule? s_anonymouslyHostedDynamicMethodsModule;
         private static readonly object s_anonymouslyHostedDynamicMethodsModuleLock = new object();
 
         //
         // class initialization (ctor and init)
         //
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes)
@@ -63,6 +68,7 @@ namespace System.Reflection.Emit
                 true);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
@@ -79,13 +85,13 @@ namespace System.Reflection.Emit
                 true);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
                              Module m)
         {
-            if (m == null)
-                throw new ArgumentNullException(nameof(m));
+            ArgumentNullException.ThrowIfNull(m);
 
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
@@ -98,14 +104,14 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
                              Module m,
                              bool skipVisibility)
         {
-            if (m == null)
-                throw new ArgumentNullException(nameof(m));
+            ArgumentNullException.ThrowIfNull(m);
 
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
@@ -118,6 +124,7 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              MethodAttributes attributes,
                              CallingConventions callingConvention,
@@ -126,8 +133,7 @@ namespace System.Reflection.Emit
                              Module m,
                              bool skipVisibility)
         {
-            if (m == null)
-                throw new ArgumentNullException(nameof(m));
+            ArgumentNullException.ThrowIfNull(m);
 
             Init(name,
                 attributes,
@@ -140,13 +146,13 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
                              Type owner)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
+            ArgumentNullException.ThrowIfNull(owner);
 
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
@@ -159,14 +165,14 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              Type? returnType,
                              Type[]? parameterTypes,
                              Type owner,
                              bool skipVisibility)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
+            ArgumentNullException.ThrowIfNull(owner);
 
             Init(name,
                 MethodAttributes.Public | MethodAttributes.Static,
@@ -179,6 +185,7 @@ namespace System.Reflection.Emit
                 false);
         }
 
+        [RequiresDynamicCode("Creating a DynamicMethod requires dynamic code.")]
         public DynamicMethod(string name,
                              MethodAttributes attributes,
                              CallingConventions callingConvention,
@@ -187,8 +194,7 @@ namespace System.Reflection.Emit
                              Type owner,
                              bool skipVisibility)
         {
-            if (owner == null)
-                throw new ArgumentNullException(nameof(owner));
+            ArgumentNullException.ThrowIfNull(owner);
 
             Init(name,
                 attributes,
@@ -234,17 +240,16 @@ namespace System.Reflection.Emit
                     return s_anonymouslyHostedDynamicMethodsModule;
 
                 AssemblyName assemblyName = new AssemblyName("Anonymously Hosted DynamicMethods Assembly");
-                StackCrawlMark stackMark = StackCrawlMark.LookForMe;
 
                 AssemblyBuilder assembly = AssemblyBuilder.InternalDefineDynamicAssembly(
                     assemblyName,
                     AssemblyBuilderAccess.Run,
-                    ref stackMark,
+                    typeof(object).Assembly,
                     null,
                     null);
 
                 // this always gets the internal module.
-                s_anonymouslyHostedDynamicMethodsModule = (InternalModuleBuilder)assembly.ManifestModule!;
+                s_anonymouslyHostedDynamicMethodsModule = (RuntimeModule)assembly.ManifestModule!;
             }
 
             return s_anonymouslyHostedDynamicMethodsModule;
@@ -254,16 +259,18 @@ namespace System.Reflection.Emit
         [MemberNotNull(nameof(m_returnType))]
         [MemberNotNull(nameof(m_dynMethod))]
         private void Init(string name,
-                                 MethodAttributes attributes,
-                                 CallingConventions callingConvention,
-                                 Type? returnType,
-                                 Type[]? signature,
-                                 Type? owner,
-                                 Module? m,
-                                 bool skipVisibility,
-                                 bool transparentMethod)
+                          MethodAttributes attributes,
+                          CallingConventions callingConvention,
+                          Type? returnType,
+                          Type[]? signature,
+                          Type? owner,
+                          Module? m,
+                          bool skipVisibility,
+                          bool transparentMethod)
         {
-            DynamicMethod.CheckConsistency(attributes, callingConvention);
+            ArgumentNullException.ThrowIfNull(name);
+
+            CheckConsistency(attributes, callingConvention);
 
             // check and store the signature
             if (signature != null)
@@ -329,10 +336,6 @@ namespace System.Reflection.Emit
             m_ilGenerator = null;
             m_fInitLocals = true;
             m_methodHandle = null;
-
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
             m_dynMethod = new RTDynamicMethod(this, name, attributes, callingConvention);
         }
 
@@ -431,6 +434,37 @@ namespace System.Reflection.Emit
 
         public override bool IsSecurityTransparent => false;
 
+        private DynamicMethodInvoker Invoker
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                _invoker ??= new DynamicMethodInvoker(this);
+
+                return _invoker;
+            }
+        }
+
+        internal Signature Signature
+        {
+            [MethodImpl(MethodImplOptions.AggressiveInlining)]
+            get
+            {
+                [MethodImpl(MethodImplOptions.NoInlining)] // move lazy sig generation out of the hot path
+                Signature LazyCreateSignature()
+                {
+                    Debug.Assert(m_methodHandle != null);
+                    Debug.Assert(m_parameterTypes != null);
+
+                    Signature newSig = new Signature(m_methodHandle, m_parameterTypes, m_returnType, CallingConvention);
+                    Volatile.Write(ref _signature, newSig);
+                    return newSig;
+                }
+
+                return _signature ?? LazyCreateSignature();
+            }
+        }
+
         public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, CultureInfo? culture)
         {
             if ((CallingConvention & CallingConventions.VarArgs) == CallingConventions.VarArgs)
@@ -445,36 +479,137 @@ namespace System.Reflection.Emit
             _ = GetMethodDescriptor();
             // ignore obj since it's a static method
 
-            // create a signature object
-            Signature sig = new Signature(
-                this.m_methodHandle!, m_parameterTypes, m_returnType, CallingConvention);
-
-
             // verify arguments
-            int formalCount = sig.Arguments.Length;
-            int actualCount = (parameters != null) ? parameters.Length : 0;
-            if (formalCount != actualCount)
+            int argCount = (parameters != null) ? parameters.Length : 0;
+            if (Signature.Arguments.Length != argCount)
                 throw new TargetParameterCountException(SR.Arg_ParmCnt);
 
-            // if we are here we passed all the previous checks. Time to look at the arguments
-            bool wrapExceptions = (invokeAttr & BindingFlags.DoNotWrapExceptions) == 0;
+            object? retValue;
 
-            StackAllocedArguments stackArgs = default;
-            Span<object?> arguments = default;
-            if (actualCount != 0)
+            unsafe
             {
-                arguments = CheckArguments(ref stackArgs, parameters, binder, invokeAttr, culture, sig.Arguments);
+                if (argCount == 0)
+                {
+                    retValue = Invoker.InvokeUnsafe(obj, args: default, invokeAttr);
+                }
+                else if (argCount > MaxStackAllocArgCount)
+                {
+                    Debug.Assert(parameters != null);
+                    retValue = InvokeWithManyArguments(this, argCount, obj, invokeAttr, binder, parameters, culture);
+                }
+                else
+                {
+                    Debug.Assert(parameters != null);
+                    StackAllocedArguments argStorage = default;
+                    Span<object?> copyOfParameters = new Span<object?>(ref argStorage._arg0, argCount);
+                    Span<bool> shouldCopyBackParameters = new Span<bool>(ref argStorage._copyBack0, argCount);
+
+                    StackAllocatedByRefs byrefStorage = default;
+                    IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;
+
+                    CheckArguments(
+                        copyOfParameters,
+                        pByRefStorage,
+                        shouldCopyBackParameters,
+                        parameters,
+                        Signature.Arguments,
+                        binder,
+                        culture,
+                        invokeAttr);
+
+                    retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+
+                    // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+                    for (int i = 0; i < argCount; i++)
+                    {
+                        if (shouldCopyBackParameters[i])
+                        {
+                            parameters[i] = copyOfParameters[i];
+                        }
+                    }
+                }
             }
-
-            object? retValue = RuntimeMethodHandle.InvokeMethod(null, arguments, sig, false, wrapExceptions);
-
-            // copy out. This should be made only if ByRef are present.
-            // n.b. cannot use Span<T>.CopyTo, as parameters.GetType() might not actually be typeof(object[])
-            for (int index = 0; index < arguments.Length; index++)
-                parameters![index] = arguments[index];
 
             GC.KeepAlive(this);
             return retValue;
+        }
+
+        // Slower path that does a heap alloc for copyOfParameters and registers byrefs to those objects.
+        // This is a separate method to support better performance for the faster paths.
+        private static unsafe object? InvokeWithManyArguments(
+            DynamicMethod mi,
+            int argCount,
+            object? obj,
+            BindingFlags invokeAttr,
+            Binder? binder,
+            object?[] parameters,
+            CultureInfo? culture)
+        {
+            object[] objHolder = new object[argCount];
+            Span<object?> copyOfParameters = new Span<object?>(objHolder, 0, argCount);
+
+            // We don't check a max stack size since we are invoking a method which
+            // naturally requires a stack size that is dependent on the arg count\size.
+            IntPtr* pByRefStorage = stackalloc IntPtr[argCount];
+            Buffer.ZeroMemory((byte*)pByRefStorage, (uint)(argCount * sizeof(IntPtr)));
+
+            bool* boolHolder = stackalloc bool[argCount];
+            Span<bool> shouldCopyBackParameters = new Span<bool>(boolHolder, argCount);
+
+            GCFrameRegistration reg = new(pByRefStorage, (uint)argCount, areByRefs: true);
+
+            object? retValue;
+            try
+            {
+                RegisterForGCReporting(&reg);
+                mi.CheckArguments(
+                    copyOfParameters,
+                    pByRefStorage,
+                    shouldCopyBackParameters,
+                    parameters,
+                    mi.Signature.Arguments,
+                    binder,
+                    culture,
+                    invokeAttr);
+
+                retValue = mi.Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+            }
+            finally
+            {
+                UnregisterForGCReporting(&reg);
+            }
+
+            // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
+            for (int i = 0; i < argCount; i++)
+            {
+                if (shouldCopyBackParameters[i])
+                {
+                    parameters[i] = copyOfParameters[i];
+                }
+            }
+
+            return retValue;
+        }
+
+        [DebuggerHidden]
+        [DebuggerStepThrough]
+        internal unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments, BindingFlags invokeAttr)
+        {
+            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
+            {
+                try
+                {
+                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
+                }
+                catch (Exception e)
+                {
+                    throw new TargetInvocationException(e);
+                }
+            }
+            else
+            {
+                return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, Signature, isConstructor: false);
+            }
         }
 
         public override object[] GetCustomAttributes(Type attributeType, bool inherit)
@@ -640,13 +775,18 @@ namespace System.Reflection.Emit
 
             public override object[] GetCustomAttributes(Type attributeType, bool inherit)
             {
-                if (attributeType == null)
-                    throw new ArgumentNullException(nameof(attributeType));
+                ArgumentNullException.ThrowIfNull(attributeType);
 
-                if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
-                    return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
-                else
-                    return Array.Empty<object>();
+                if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
+                    throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
+
+                bool includeMethodImplAttribute = attributeType.IsAssignableFrom(typeof(MethodImplAttribute));
+                object[] result = CustomAttribute.CreateAttributeArrayHelper(attributeRuntimeType, includeMethodImplAttribute ? 1 : 0);
+                if (includeMethodImplAttribute)
+                {
+                    result[0] = new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags());
+                }
+                return result;
             }
 
             public override object[] GetCustomAttributes(bool inherit)
@@ -657,13 +797,9 @@ namespace System.Reflection.Emit
 
             public override bool IsDefined(Type attributeType, bool inherit)
             {
-                if (attributeType == null)
-                    throw new ArgumentNullException(nameof(attributeType));
+                ArgumentNullException.ThrowIfNull(attributeType);
 
-                if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
-                    return true;
-                else
-                    return false;
+                return attributeType.IsAssignableFrom(typeof(MethodImplAttribute));
             }
 
             public override bool IsSecurityCritical => m_owner.IsSecurityCritical;

@@ -4,9 +4,7 @@
 using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -774,11 +772,17 @@ namespace System
             if (valueLength == 0)
                 return searchSpaceLength;  // A zero-length sequence is always treated as "found" at the end of the search space.
 
-            T valueHead = value;
-            ref T valueTail = ref Unsafe.Add(ref value, 1);
             int valueTailLength = valueLength - 1;
+            if (valueTailLength == 0)
+            {
+                return LastIndexOf(ref searchSpace, value, searchSpaceLength);
+            }
 
             int index = 0;
+
+            T valueHead = value;
+            ref T valueTail = ref Unsafe.Add(ref value, 1);
+
             while (true)
             {
                 Debug.Assert(0 <= index && index <= searchSpaceLength); // Ensures no deceptive underflows in the computation of "remainingSearchSpaceLength".

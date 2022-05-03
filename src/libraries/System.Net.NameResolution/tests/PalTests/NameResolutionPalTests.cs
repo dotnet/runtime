@@ -1,7 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Microsoft.Win32;
 using System.IO;
+using System.Linq;
 using System.Net.Sockets;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -14,6 +16,33 @@ namespace System.Net.NameResolution.PalTests
     public class NameResolutionPalTests
     {
         private readonly ITestOutputHelper _output;
+
+        private static Lazy<bool> s_ipv6LocalHostNameLookupBrokenByNrpRule = new Lazy<bool>(() =>
+        {
+            // On some machines using Microsoft corporate VPN, something sometimes installs an DNS Name Resolution Policy rule
+            // that breaks reverse lookup of ipv6 localhost names.
+            if (PlatformDetection.IsWindows)
+            {
+                // Equivalent of `Get-DnsClientNrptRule -Name .ip6.arpa`
+                using RegistryKey? key = Registry.LocalMachine.OpenSubKey(@"SYSTEM\CurrentControlSet\Services\Dnscache\Parameters\DnsPolicyConfig");
+                if (key != null)
+                {
+                    // Also filtering out anything not written by MSFTVPN
+                    foreach (string name in key.GetSubKeyNames().Where(name => name.Contains("MSFTVPN")))
+                    {
+                        using RegistryKey? key2 = key.OpenSubKey(name);
+                        if (key2 != null && key2.GetValue("Name") is string[] values && values.Length == 1 && values[0] == ".ip6.arpa")
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        });
+
+        private static bool Ipv6LocalHostNameLookupNotBrokenByNrpRule => !s_ipv6LocalHostNameLookupBrokenByNrpRule.Value;
 
         public NameResolutionPalTests(ITestOutputHelper output)
         {
@@ -131,7 +160,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(name);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(Ipv6LocalHostNameLookupNotBrokenByNrpRule))]
         public void TryGetNameInfo_LocalHost_IPv6()
         {
             SocketError error;
@@ -230,7 +259,7 @@ namespace System.Net.NameResolution.PalTests
             Assert.NotNull(addresses);
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(Ipv6LocalHostNameLookupNotBrokenByNrpRule))]
         [InlineData(false)]
         [InlineData(true)]
         public void TryGetNameInfo_LocalHost_IPv6_TryGetAddrInfo(bool justAddresses)

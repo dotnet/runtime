@@ -17,15 +17,7 @@ namespace Microsoft.Extensions.Http
 
         public DefaultTypedHttpClientFactory(Cache cache, IServiceProvider services)
         {
-            if (cache == null)
-            {
-                throw new ArgumentNullException(nameof(cache));
-            }
-
-            if (services == null)
-            {
-                throw new ArgumentNullException(nameof(services));
-            }
+            ThrowHelper.ThrowIfNull(cache);
 
             _cache = cache;
             _services = services;
@@ -33,10 +25,7 @@ namespace Microsoft.Extensions.Http
 
         public TClient CreateClient(HttpClient httpClient)
         {
-            if (httpClient == null)
-            {
-                throw new ArgumentNullException(nameof(httpClient));
-            }
+            ThrowHelper.ThrowIfNull(httpClient);
 
             return (TClient)_cache.Activator(_services, new object[] { httpClient });
         }
@@ -44,19 +33,19 @@ namespace Microsoft.Extensions.Http
         // The Cache should be registered as a singleton, so it that it can
         // act as a cache for the Activator. This allows the outer class to be registered
         // as a transient, so that it doesn't close over the application root service provider.
-        public class Cache
+        public sealed class Cache
         {
             private static readonly Func<ObjectFactory> _createActivator = () => ActivatorUtilities.CreateFactory(typeof(TClient), new Type[] { typeof(HttpClient), });
 
-            private ObjectFactory _activator;
+            private ObjectFactory? _activator;
             private bool _initialized;
-            private object _lock;
+            private object? _lock;
 
             public ObjectFactory Activator => LazyInitializer.EnsureInitialized(
                 ref _activator,
                 ref _initialized,
                 ref _lock,
-                _createActivator);
+                _createActivator)!;
         }
     }
 }

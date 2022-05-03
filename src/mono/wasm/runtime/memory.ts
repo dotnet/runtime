@@ -37,7 +37,7 @@ export function _release_temp_frame(): void {
     alloca_offset = <VoidPtr>alloca_stack.pop();
 }
 
-type _MemOffset = number | VoidPtr | NativePointer;
+type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 
 export function setU8(offset: _MemOffset, value: number): void {

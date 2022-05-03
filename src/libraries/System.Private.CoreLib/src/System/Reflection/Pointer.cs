@@ -22,8 +22,8 @@ namespace System.Reflection
 
         public static object Box(void* ptr, Type type)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
+
             if (!type.IsPointer)
                 throw new ArgumentException(SR.Arg_MustBePointer, nameof(ptr));
             if (type is not RuntimeType rtType)

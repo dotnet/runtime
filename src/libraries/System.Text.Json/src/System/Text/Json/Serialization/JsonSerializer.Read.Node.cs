@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -49,9 +49,9 @@ namespace System.Text.Json
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
         public static object? Deserialize(this JsonNode? node, Type returnType, JsonSerializerOptions? options = null)
         {
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
@@ -77,9 +77,9 @@ namespace System.Text.Json
         /// </exception>
         public static TValue? Deserialize<TValue>(this JsonNode? node, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             return ReadNode<TValue>(node, jsonTypeInfo);
@@ -119,14 +119,13 @@ namespace System.Text.Json
         /// </exception>
         public static object? Deserialize(this JsonNode? node, Type returnType, JsonSerializerContext context)
         {
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);

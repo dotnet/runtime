@@ -16,10 +16,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionMemberExportDefinition(LazyMemberInfo member, ExportDefinition exportDefinition, ICompositionElement? origin)
         {
-            if (exportDefinition == null)
-            {
-                throw new ArgumentNullException(nameof(exportDefinition));
-            }
+            ArgumentNullException.ThrowIfNull(exportDefinition);
 
             _member = member;
             _exportDefinition = exportDefinition;

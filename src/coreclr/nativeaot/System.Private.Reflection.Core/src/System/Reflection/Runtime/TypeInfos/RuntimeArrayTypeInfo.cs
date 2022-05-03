@@ -293,7 +293,7 @@ namespace System.Reflection.Runtime.TypeInfos
         //
         // Arrays don't have a true typedef behind them but for the purpose of reporting base classes and interfaces, we can create a pretender.
         //
-        private RuntimeTypeInfo TypeDefInfoProjectionForArrays
+        private static RuntimeTypeInfo TypeDefInfoProjectionForArrays
         {
             get
             {

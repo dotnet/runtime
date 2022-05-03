@@ -58,10 +58,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
         public Claim(BinaryReader reader, ClaimsIdentity? subject)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             _subject = subject;
 
@@ -253,15 +250,8 @@ namespace System.Security.Claims
         /// <param name="propertyValue">The value associated with the property.</param>
         internal Claim(string type, string value, string? valueType, string? issuer, string? originalIssuer, ClaimsIdentity? subject, string? propertyKey, string? propertyValue)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(value);
 
             _type = type;
             _value = value;
@@ -297,8 +287,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'other' is null.</exception>
         protected Claim(Claim other, ClaimsIdentity? subject)
         {
-            if (other == null)
-                throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
 
             _issuer = other._issuer;
             _originalIssuer = other._originalIssuer;
@@ -434,10 +423,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
         protected virtual void WriteTo(BinaryWriter writer, byte[]? userData)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             int numberOfPropertiesWritten = 1;
             SerializationMask mask = SerializationMask.None;

@@ -60,7 +60,7 @@ struct _SgenClientThreadInfo {
 
 #include "metadata/profiler-private.h"
 #include "utils/dtrace.h"
-#include "utils/mono-counters.h"
+#include <mono/utils/mono-counters.h>
 #include "utils/mono-logger-internals.h"
 #include "utils/mono-time.h"
 #include "utils/mono-os-semaphore.h"

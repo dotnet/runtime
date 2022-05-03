@@ -3,8 +3,12 @@
 
 namespace System.Drawing.Imaging
 {
+    using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
 
+#if NET7_0_OR_GREATER
+    [NativeMarshalling(typeof(PinningMarshaller))]
+#endif
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class MetafileHeaderEmf
     {
@@ -22,9 +26,27 @@ namespace System.Drawing.Imaging
         public int Y;
         public int Width;
         public int Height;
-        public SafeNativeMethods.ENHMETAHEADER? EmfHeader;
+        public SafeNativeMethods.ENHMETAHEADER EmfHeader;
         public int EmfPlusHeaderSize;
         public int LogicalDpiX;
         public int LogicalDpiY;
+
+        internal ref byte GetPinnableReference() => ref Unsafe.As<MetafileType, byte>(ref type);
+
+#if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(MetafileHeaderEmf), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+        internal unsafe struct PinningMarshaller
+        {
+            private readonly MetafileHeaderEmf _managed;
+            public PinningMarshaller(MetafileHeaderEmf managed)
+            {
+                _managed = managed;
+            }
+
+            public ref byte GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<byte>() : ref _managed.GetPinnableReference());
+
+            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
+        }
+#endif
     }
 }

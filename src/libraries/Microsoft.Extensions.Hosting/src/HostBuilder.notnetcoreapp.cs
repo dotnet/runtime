@@ -8,7 +8,7 @@ namespace Microsoft.Extensions.Hosting
 {
     public partial class HostBuilder
     {
-        private static void AddLifetime(ServiceCollection services)
+        private static void AddLifetime(IServiceCollection services)
         {
             services.AddSingleton<IHostLifetime, ConsoleLifetime>();
         }

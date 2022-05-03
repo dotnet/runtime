@@ -2,19 +2,17 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
+using System.Runtime.Versioning;
 using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    internal static partial class RSAImplementation
-    {
-#endif
-    public sealed partial class RSACng : RSA
+    public sealed partial class RSACng : RSA, IRuntimeAlgorithm
     {
         /// <summary>
         ///     Create an RSACng algorithm with a random 2048 bit key pair.
         /// </summary>
+        [SupportedOSPlatform("windows")]
         public RSACng()
             : this(2048)
         {
@@ -27,6 +25,7 @@ namespace System.Security.Cryptography
         /// </summary>
         /// <param name="keySize">Size of the key to generate, in bits.</param>
         /// <exception cref="CryptographicException">if <paramref name="keySize" /> is not valid</exception>
+        [SupportedOSPlatform("windows")]
         public RSACng(int keySize)
         {
             // Set the property directly so that it gets validated against LegalKeySizes.
@@ -45,15 +44,6 @@ namespace System.Security.Cryptography
                 };
             }
         }
-
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            CngCommon.HashData(data, offset, count, hashAlgorithm);
-
-        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            CngCommon.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
-
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            CngCommon.HashData(data, hashAlgorithm);
 
         private void ForceSetKeySize(int newKeySize)
         {
@@ -74,7 +64,4 @@ namespace System.Security.Cryptography
             KeySizeValue = newKeySize;
         }
     }
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    }
-#endif
 }

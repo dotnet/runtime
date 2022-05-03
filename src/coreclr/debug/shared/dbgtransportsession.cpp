@@ -2696,11 +2696,6 @@ bool DbgTransportSession::DbgTransportShouldInjectFault(DbgTransportFaultOp eOp,
         if (dwChance < (s_dwFaultInjection & DBG_TRANSPORT_FAULT_RATE_MASK))
         {
             DbgTransportLog(LC_FaultInject, "Injected fault for %s operation", szOpName);
-#if defined(FEATURE_CORESYSTEM)
-        // not supported
-#else
-            WSASetLastError(WSAEFAULT);
-#endif // defined(FEATURE_CORESYSTEM)
             return true;
         }
     }

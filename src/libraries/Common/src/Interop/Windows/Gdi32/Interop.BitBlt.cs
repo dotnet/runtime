@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Gdi32
     {
-        [GeneratedDllImport(Libraries.Gdi32, SetLastError = true)]
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
         public static partial int BitBlt(IntPtr hdc, int x, int y, int cx, int cy,
                                         IntPtr hdcSrc, int x1, int y1, RasterOp rop);
 

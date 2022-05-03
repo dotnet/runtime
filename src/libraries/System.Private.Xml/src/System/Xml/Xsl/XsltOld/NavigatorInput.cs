@@ -206,14 +206,9 @@ namespace System.Xml.Xsl.XsltOld
         //
         internal NavigatorInput(XPathNavigator navigator, string baseUri, InputScope? rootScope)
         {
-            if (navigator == null)
-            {
-                throw new ArgumentNullException(nameof(navigator));
-            }
-            if (baseUri == null)
-            {
-                throw new ArgumentNullException(nameof(baseUri));
-            }
+            ArgumentNullException.ThrowIfNull(navigator);
+            ArgumentNullException.ThrowIfNull(baseUri);
+
             Debug.Assert(navigator.NameTable != null);
             _Next = null;
             _Href = baseUri;

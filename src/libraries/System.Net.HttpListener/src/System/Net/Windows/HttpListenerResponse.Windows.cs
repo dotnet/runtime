@@ -82,10 +82,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Major != 1 || (value.Minor != 0 && value.Minor != 1))
                 {
                     throw new ArgumentException(SR.net_wrongversion, nameof(value));
@@ -121,10 +118,7 @@ namespace System.Net
         public void Close(byte[] responseEntity, bool willBlock)
         {
             CheckDisposed();
-            if (responseEntity == null)
-            {
-                throw new ArgumentNullException(nameof(responseEntity));
-            }
+            ArgumentNullException.ThrowIfNull(responseEntity);
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"ResponseState:{_responseState}, BoundaryType:{_boundaryType}, ContentLength:{_contentLength}");
             if (!SentHeaders && _boundaryType != BoundaryType.Chunked)
             {
@@ -578,7 +572,7 @@ $"flags: {flags} _boundaryType: {_boundaryType} _contentLength: {_contentLength}
             return pinnedHeaders;
         }
 
-        private void FreePinnedHeaders(List<GCHandle>? pinnedHeaders)
+        private static void FreePinnedHeaders(List<GCHandle>? pinnedHeaders)
         {
             if (pinnedHeaders != null)
             {

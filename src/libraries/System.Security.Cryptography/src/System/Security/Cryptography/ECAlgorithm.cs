@@ -125,8 +125,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters is null)
-                throw new ArgumentNullException(nameof(pbeParameters));
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
@@ -198,8 +197,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
-                throw new ArgumentNullException(nameof(pbeParameters));
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,

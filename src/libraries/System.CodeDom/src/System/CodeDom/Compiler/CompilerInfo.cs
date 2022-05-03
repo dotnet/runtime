@@ -65,7 +65,7 @@ namespace System.CodeDom.Compiler
 
         public CodeDomProvider CreateProvider(IDictionary<string, string> providerOptions)
         {
-            if (providerOptions == null)
+            if (providerOptions is null)
             {
                 throw new ArgumentNullException(nameof(providerOptions));
             }

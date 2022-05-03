@@ -7,10 +7,6 @@ namespace System.Runtime.InteropServices
 {
     public abstract partial class CriticalHandle : CriticalFinalizerObject, IDisposable
     {
-        internal void ReleaseHandleFailed()
-        {
-        }
-
         internal void SetHandleInternal(IntPtr handle)
         {
             SetHandle(handle);

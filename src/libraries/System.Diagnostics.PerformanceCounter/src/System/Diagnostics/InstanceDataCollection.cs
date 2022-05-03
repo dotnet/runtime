@@ -17,8 +17,8 @@ namespace System.Diagnostics
         [Obsolete("This constructor has been deprecated. Use System.Diagnostics.InstanceDataCollectionCollection.get_Item to get an instance of this collection instead.")]
         public InstanceDataCollection(string counterName)
         {
-            if (counterName == null)
-                throw new ArgumentNullException(nameof(counterName));
+            ArgumentNullException.ThrowIfNull(counterName);
+
             CounterName = counterName;
         }
 
@@ -60,8 +60,7 @@ namespace System.Diagnostics
 
         public bool Contains(string instanceName)
         {
-            if (instanceName == null)
-                throw new ArgumentNullException(nameof(instanceName));
+            ArgumentNullException.ThrowIfNull(instanceName);
 
             string objectName = instanceName.ToLowerInvariant();
             return Dictionary.Contains(objectName);

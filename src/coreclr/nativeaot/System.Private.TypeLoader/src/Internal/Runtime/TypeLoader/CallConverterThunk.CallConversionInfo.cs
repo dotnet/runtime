@@ -125,7 +125,7 @@ namespace Internal.Runtime.TypeLoader
             return false;
         }
 
-        private bool ArraysAreEqual<T>(T[] array1, T[] array2)
+        private static bool ArraysAreEqual<T>(T[] array1, T[] array2)
         {
             if (array1 == null)
                 return array2 == null;

@@ -90,13 +90,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="/OPT:ICF" />
     </ItemGroup>
 
-    <Exec Command="where /Q $(CppCompiler) &amp;&amp; where /Q $(CppLinker)" IgnoreExitCode="true">
-      <Output TaskParameter="ExitCode" PropertyName="_WhereCppTools" />
-    </Exec>
-
-    <Message Condition="'$(_WhereCppTools)' != '0'" Text="Tools '$(CppCompiler)' and '$(CppLinker)' not found on PATH. Attempting to autodetect." />
-
-    <Exec Condition="'$(_WhereCppTools)' != '0'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; $(TargetArchitecture)"
+    <Exec Condition="'$(IlcUseEnvironmentalTools)' != 'true'" Command="&quot;$(MSBuildThisFileDirectory)findvcvarsall.bat&quot; $(TargetArchitecture)"
       IgnoreExitCode="true" ConsoleToMSBuild="true" StandardOutputImportance="Low">
       <Output TaskParameter="ConsoleOutput" PropertyName="_FindVCVarsallOutput" />
       <Output TaskParameter="ExitCode" PropertyName="_VCVarsAllFound" />
@@ -113,6 +107,6 @@ The .NET Foundation licenses this file to you under the MIT license.
       <CppLibCreator>"$(_CppToolsDirectory)lib.exe"</CppLibCreator>
     </PropertyGroup>
 
-    <Error Condition="'$(_WhereCppTools)' != '0' AND '$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. To fix this problem, download and install Visual Studio 2019 or Visual Studio 2022 from http://visualstudio.com. Make sure to install the Desktop Development for C++ workload. For ARM64 development also install C++ ARM64 build tools." />
+    <Error Condition="'$(_VCVarsAllFound)' == '1'" Text="Platform linker not found. To fix this problem, download and install Visual Studio 2022 from http://visualstudio.com. Make sure to install the Desktop Development for C++ workload. For ARM64 development also install C++ ARM64 build tools." />
   </Target>
 </Project>

@@ -99,6 +99,7 @@ add_library(component_base INTERFACE)
 target_sources(component_base INTERFACE
   ${MONO_COMPONENT_PATH}/component.h
 )
+target_link_libraries(component_base INTERFACE monoapi)
 
 if(DISABLE_COMPONENTS OR DISABLE_LIBS)
   set(DISABLE_COMPONENT_OBJECTS 1)

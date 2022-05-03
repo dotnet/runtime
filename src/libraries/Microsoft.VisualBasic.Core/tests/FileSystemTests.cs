@@ -620,8 +620,7 @@ namespace Microsoft.VisualBasic.Tests
                         }
                     },
                     fileName,
-                    text,
-                    new RemoteInvokeOptions() { ExpectedExitCode = 0 }).Dispose();
+                    text).Dispose();
             }
         }
 

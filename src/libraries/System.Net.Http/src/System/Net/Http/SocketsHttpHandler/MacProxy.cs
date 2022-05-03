@@ -30,7 +30,7 @@ namespace System.Net.Http
             return uriBuilder.Uri;
         }
 
-        public Uri? ExecuteProxyAutoConfiguration(SafeCreateHandle cfurl, CFProxy proxy)
+        private static Uri? ExecuteProxyAutoConfiguration(SafeCreateHandle cfurl, CFProxy proxy)
         {
             Uri? result = null;
             CFRunLoopRef runLoop = CFRunLoopGetCurrent();
@@ -113,8 +113,7 @@ namespace System.Net.Http
 
         public bool IsBypassed(Uri targetUri)
         {
-            if (targetUri == null)
-                throw new ArgumentNullException(nameof(targetUri));
+            ArgumentNullException.ThrowIfNull(targetUri);
 
             Uri? proxyUri = GetProxy(targetUri);
             return Equals(proxyUri, targetUri) || proxyUri == null;

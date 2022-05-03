@@ -83,7 +83,9 @@ namespace System.IO.Hashing
         public void Append(byte[] source)
         {
             if (source is null)
+            {
                 throw new ArgumentNullException(nameof(source));
+            }
 
             Append(new ReadOnlySpan<byte>(source));
         }
@@ -100,7 +102,9 @@ namespace System.IO.Hashing
         public void Append(Stream stream)
         {
             if (stream is null)
+            {
                 throw new ArgumentNullException(nameof(stream));
+            }
 
             byte[] buffer = ArrayPool<byte>.Shared.Rent(4096);
 
@@ -135,7 +139,9 @@ namespace System.IO.Hashing
         public Task AppendAsync(Stream stream, CancellationToken cancellationToken = default)
         {
             if (stream is null)
+            {
                 throw new ArgumentNullException(nameof(stream));
+            }
 
             return AppendAsyncCore(stream, cancellationToken);
         }
@@ -146,7 +152,7 @@ namespace System.IO.Hashing
 
             while (true)
             {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
                 int read = await stream.ReadAsync(buffer.AsMemory(), cancellationToken).ConfigureAwait(false);
 #else
                 int read = await stream.ReadAsync(buffer, 0, buffer.Length, cancellationToken).ConfigureAwait(false);

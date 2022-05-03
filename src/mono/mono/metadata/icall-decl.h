@@ -7,22 +7,20 @@
 #define __MONO_METADATA_ICALL_DECL_H__
 
 #include "appdomain-icalls.h"
-#include "class.h"
-#include "environment.h"
+#include <mono/metadata/class.h>
+#include <mono/metadata/environment.h>
 #include "gc-internals.h"
 #include "handle-decl.h"
 #include "handle.h"
 #include "marshal.h"
 #include "monitor.h"
-#include "mono-perfcounters.h"
-#include "object-forward.h"
+#include <mono/metadata/object-forward.h>
 #include "object-internals.h"
-#include "reflection.h"
+#include <mono/metadata/reflection.h>
 #include "string-icalls.h"
 #include "mono/utils/mono-digest.h"
 #include "mono/utils/mono-forward-internal.h"
 #include "w32event.h"
-#include "w32file.h"
 #include "mono/utils/mono-proclib.h"
 
 /* From MonoProperty.cs */
@@ -60,7 +58,6 @@ typedef enum {
 // This is sorted.
 // grep ICALL_EXPORT | sort | uniq
 ICALL_EXPORT MonoAssemblyName* ves_icall_System_Reflection_AssemblyName_GetNativeName (MonoAssembly*);
-ICALL_EXPORT MonoBoolean ves_icall_System_Reflection_AssemblyName_ParseAssemblyName (const char*, MonoAssemblyName*, MonoBoolean*, MonoBoolean* is_token_defined_arg);
 ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_CompilerServices_RuntimeHelpers_SufficientExecutionStack (void);
 ICALL_EXPORT MonoBoolean ves_icall_System_Threading_Thread_YieldInternal (void);
 ICALL_EXPORT MonoThread *ves_icall_System_Threading_Thread_GetCurrentThread (void);
@@ -168,6 +165,7 @@ ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadStop (uint32_t active_thread_count, uint32_t retired_worker_thread_count, uint16_t clr_instance_id);
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkerThreadWait (uint32_t active_thread_count, uint32_t retired_worker_thread_count, uint16_t clr_instance_id);
 ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolWorkingThreadCount (uint16_t count, uint16_t clr_instance_id);
+ICALL_EXPORT void ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIOPack (intptr_t native_overlapped, intptr_t overlapped, uint16_t clr_instance_id);
 
 ICALL_EXPORT void ves_icall_Mono_RuntimeGPtrArrayHandle_GPtrArrayFree (GPtrArray *ptr_array);
 ICALL_EXPORT void ves_icall_Mono_RuntimeMarshal_FreeAssemblyName (MonoAssemblyName *aname, MonoBoolean free_struct);
@@ -198,7 +196,5 @@ ICALL_EXPORT MonoBoolean ves_icall_RuntimeTypeHandle_IsGenericTypeDefinition (Mo
 ICALL_EXPORT gint32 ves_icall_RuntimeType_GetGenericParameterPosition (MonoQCallTypeHandle type_handle);
 
 ICALL_EXPORT int ves_icall_System_Enum_InternalGetCorElementType (MonoQCallTypeHandle type_handle);
-
-ICALL_EXPORT MonoBoolean ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoQCallTypeHandle type_handle);
 
 #endif // __MONO_METADATA_ICALL_DECL_H__

@@ -93,7 +93,7 @@ namespace System.Security.Cryptography.Tests
             // Check encrypted import with the wrong password.
             // It shouldn't do enough work to realize it was wrong.
             pwBytes = Array.Empty<byte>();
-            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey("", pkcs8EncryptedPrivate, out _));
+            Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"", pkcs8EncryptedPrivate, out _));
             Assert.Throws<ObjectDisposedException>(() => key.ImportEncryptedPkcs8PrivateKey(pwBytes, pkcs8EncryptedPrivate, out _));
         }
 
@@ -411,6 +411,7 @@ u2L/ySSNizmK/j4LXDwCs/43",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteSect163k1Key1ExplicitECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -425,6 +426,7 @@ iv4+C1w8ArP+Nw==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteSect163k1Key1ExplicitPkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -439,6 +441,7 @@ ptwYh1UdB4j+u2L/ySSNizmK/j4LXDwCs/43",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteSect163k1Key1ExplicitEncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -459,6 +462,7 @@ z2NFvWcpK0Fh9fCVGuXV9sjJ5qE=",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteSect163k1Key1ExplicitSubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -578,6 +582,7 @@ BCcIMPehAJrWcKiN6SvVkkjMgTtF",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteC2pnb163v1ExplicitECPrivateKey()
         {
             ReadWriteBase64ECPrivateKey(
@@ -593,6 +598,7 @@ dJQjIkiqBCcIMPehAJrWcKiN6SvVkkjMgTtF",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteC2pnb163v1ExplicitPkcs8()
         {
             ReadWriteBase64Pkcs8(
@@ -608,6 +614,7 @@ BAIRJy8cVYJCaIjpG9aSV3SUIyJIqgQnCDD3oQCa1nCojekr1ZJIzIE7RQ==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteC2pnb163v1ExplicitEncryptedPkcs8()
         {
             ReadWriteBase64EncryptedPkcs8(
@@ -629,6 +636,7 @@ wxcZ+wOsnebIwy4ftKL+klh5EXv/9S5sCjC8g8J2cA6GmcZbiQ==",
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64446", typeof(PlatformSupport), nameof(PlatformSupport.IsAndroidVersionAtLeast31))]
         public void ReadWriteC2pnb163v1ExplicitSubjectPublicKeyInfo()
         {
             ReadWriteBase64SubjectPublicKeyInfo(
@@ -972,7 +980,7 @@ Tj/54rcY3i0gXT6da/r/o+qV");
             using (T key = CreateKey())
             {
                 Assert.ThrowsAny<CryptographicException>(
-                    () => key.ImportEncryptedPkcs8PrivateKey("test", high3DesIterationKey, out _));
+                    () => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"test", high3DesIterationKey, out _));
             }
         }
 
@@ -1073,7 +1081,7 @@ xoMaz20Yx+2TSN5dSm2FcD+0YFI=",
                         () => key.ImportEncryptedPkcs8PrivateKey(wrongPassword, encrypted, out _));
 
                     Assert.ThrowsAny<CryptographicException>(
-                        () => key.ImportEncryptedPkcs8PrivateKey("ThisBetterNotBeThePassword!", encrypted, out _));
+                        () => key.ImportEncryptedPkcs8PrivateKey((ReadOnlySpan<char>)"ThisBetterNotBeThePassword!", encrypted, out _));
 
                     int bytesRead = -1;
 

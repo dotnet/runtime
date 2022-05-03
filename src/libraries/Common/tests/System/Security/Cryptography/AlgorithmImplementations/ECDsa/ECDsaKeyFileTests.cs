@@ -7,6 +7,7 @@ using Xunit;
 namespace System.Security.Cryptography.EcDsa.Tests
 {
     [SkipOnPlatform(TestPlatforms.Browser, "Not supported on Browser")]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/64389", TestPlatforms.Windows)]
     public class ECDsaKeyFileTests : ECKeyFileTests<ECDsa>
     {
         protected override ECDsa CreateKey() => ECDsaFactory.Create();

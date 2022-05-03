@@ -15,6 +15,7 @@ namespace System.Threading.RateLimiting
     {
         private int _permitCount;
         private int _queueCount;
+        private long? _idleSince = Stopwatch.GetTimestamp();
         private bool _disposed;
 
         private readonly ConcurrencyLimiterOptions _options;
@@ -23,9 +24,13 @@ namespace System.Threading.RateLimiting
         private static readonly ConcurrencyLease SuccessfulLease = new ConcurrencyLease(true, null, 0);
         private static readonly ConcurrencyLease FailedLease = new ConcurrencyLease(false, null, 0);
         private static readonly ConcurrencyLease QueueLimitLease = new ConcurrencyLease(false, null, 0, "Queue limit reached");
+        private static readonly double TickFrequency = (double)TimeSpan.TicksPerSecond / Stopwatch.Frequency;
 
         // Use the queue as the lock field so we don't need to allocate another object for a lock and have another field in the object
         private object Lock => _queue;
+
+        /// <inheritdoc />
+        public override TimeSpan? IdleDuration => _idleSince is null ? null : new TimeSpan((long)((Stopwatch.GetTimestamp() - _idleSince) * TickFrequency));
 
         /// <summary>
         /// Initializes the <see cref="ConcurrencyLimiter"/>.
@@ -107,7 +112,11 @@ namespace System.Threading.RateLimiting
                             RequestRegistration oldestRequest = _queue.DequeueHead();
                             _queueCount -= oldestRequest.Count;
                             Debug.Assert(_queueCount >= 0);
-                            oldestRequest.Tcs.TrySetResult(FailedLease);
+                            if (!oldestRequest.Tcs.TrySetResult(FailedLease))
+                            {
+                                // Updating queue count is handled by the cancellation code
+                                _queueCount += oldestRequest.Count;
+                            }
                         }
                         while (_options.QueueLimit - _queueCount < permitCount);
                     }
@@ -118,13 +127,13 @@ namespace System.Threading.RateLimiting
                     }
                 }
 
-                TaskCompletionSource<RateLimitLease> tcs = new TaskCompletionSource<RateLimitLease>(TaskCreationOptions.RunContinuationsAsynchronously);
+                CancelQueueState tcs = new CancelQueueState(permitCount, this, cancellationToken);
                 CancellationTokenRegistration ctr = default;
                 if (cancellationToken.CanBeCanceled)
                 {
                     ctr = cancellationToken.Register(static obj =>
                     {
-                        ((TaskCompletionSource<RateLimitLease>)obj!).TrySetException(new OperationCanceledException());
+                        ((CancelQueueState)obj!).TrySetCanceled();
                     }, tcs);
                 }
 
@@ -155,6 +164,7 @@ namespace System.Threading.RateLimiting
                 // b. if there are items queued but the processing order is newest first, then we can lease the incoming request since it is the newest
                 if (_queueCount == 0 || (_queueCount > 0 && _options.QueueProcessingOrder == QueueProcessingOrder.NewestFirst))
                 {
+                    _idleSince = null;
                     _permitCount -= permitCount;
                     Debug.Assert(_permitCount >= 0);
                     lease = new ConcurrencyLease(true, this, permitCount);
@@ -194,7 +204,6 @@ namespace System.Threading.RateLimiting
 
                         _permitCount -= nextPendingRequest.Count;
                         _queueCount -= nextPendingRequest.Count;
-                        Debug.Assert(_queueCount >= 0);
                         Debug.Assert(_permitCount >= 0);
 
                         ConcurrencyLease lease = nextPendingRequest.Count == 0 ? SuccessfulLease : new ConcurrencyLease(true, this, nextPendingRequest.Count);
@@ -203,13 +212,23 @@ namespace System.Threading.RateLimiting
                         {
                             // Queued item was canceled so add count back
                             _permitCount += nextPendingRequest.Count;
+                            // Updating queue count is handled by the cancellation code
+                            _queueCount += nextPendingRequest.Count;
                         }
                         nextPendingRequest.CancellationTokenRegistration.Dispose();
+                        Debug.Assert(_queueCount >= 0);
                     }
                     else
                     {
                         break;
                     }
+                }
+
+                if (_permitCount == _options.PermitLimit)
+                {
+                    Debug.Assert(_idleSince is null);
+                    Debug.Assert(_queueCount == 0);
+                    _idleSince = Stopwatch.GetTimestamp();
                 }
             }
         }
@@ -234,7 +253,7 @@ namespace System.Threading.RateLimiting
                         ? _queue.DequeueHead()
                         : _queue.DequeueTail();
                     next.CancellationTokenRegistration.Dispose();
-                    next.Tcs.SetResult(FailedLease);
+                    next.Tcs.TrySetResult(FailedLease);
                 }
             }
         }
@@ -318,6 +337,34 @@ namespace System.Threading.RateLimiting
             public TaskCompletionSource<RateLimitLease> Tcs { get; }
 
             public CancellationTokenRegistration CancellationTokenRegistration { get; }
+        }
+
+        private sealed class CancelQueueState : TaskCompletionSource<RateLimitLease>
+        {
+            private readonly int _permitCount;
+            private readonly ConcurrencyLimiter _limiter;
+            private readonly CancellationToken _cancellationToken;
+
+            public CancelQueueState(int permitCount, ConcurrencyLimiter limiter, CancellationToken cancellationToken)
+                : base(TaskCreationOptions.RunContinuationsAsynchronously)
+            {
+                _permitCount = permitCount;
+                _limiter = limiter;
+                _cancellationToken = cancellationToken;
+            }
+
+            public new bool TrySetCanceled()
+            {
+                if (TrySetCanceled(_cancellationToken))
+                {
+                    lock (_limiter.Lock)
+                    {
+                        _limiter._queueCount -= _permitCount;
+                    }
+                    return true;
+                }
+                return false;
+            }
         }
     }
 }

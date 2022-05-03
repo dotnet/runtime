@@ -1234,7 +1234,7 @@ namespace System.Xml.Tests
                     }
                     catch (System.InvalidOperationException e2)
                     {
-                        CheckExpectedError(e2, "system.xml", "Xslt_NoStylesheetLoaded", new string[] { "IDontExist.xsl" });
+                        CheckExpectedError(e2, "system.xml", "Xslt_NoStylesheetLoaded", new string[] { "" });
                         return;
                     }
                 }

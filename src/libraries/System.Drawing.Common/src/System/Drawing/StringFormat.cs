@@ -55,10 +55,7 @@ namespace System.Drawing
         /// </summary>
         public StringFormat(StringFormat format)
         {
-            if (format == null)
-            {
-                throw new ArgumentNullException(nameof(format));
-            }
+            ArgumentNullException.ThrowIfNull(format);
 
             int status = Gdip.GdipCloneStringFormat(new HandleRef(format, format.nativeFormat), out nativeFormat);
 

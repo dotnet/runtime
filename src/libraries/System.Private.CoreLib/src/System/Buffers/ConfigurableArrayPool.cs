@@ -122,11 +122,9 @@ namespace System.Buffers
 
         public override void Return(T[] array, bool clearArray = false)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
-            else if (array.Length == 0)
+            ArgumentNullException.ThrowIfNull(array);
+
+            if (array.Length == 0)
             {
                 // Ignore empty arrays.  When a zero-length array is rented, we return a singleton
                 // rather than actually taking a buffer out of the lowest bucket.

@@ -235,7 +235,7 @@ namespace System.Threading
         public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target, System.Func<T> valueFactory) where T : class { throw null; }
         public static T EnsureInitialized<T>([System.Diagnostics.CodeAnalysis.NotNullAttribute] ref T? target, [System.Diagnostics.CodeAnalysis.NotNullIfNotNullAttribute("syncLock")] ref object? syncLock, System.Func<T> valueFactory) where T : class { throw null; }
     }
-    public partial struct LockCookie
+    public partial struct LockCookie : System.IEquatable<System.Threading.LockCookie>
     {
         private int _dummyPrimitive;
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }

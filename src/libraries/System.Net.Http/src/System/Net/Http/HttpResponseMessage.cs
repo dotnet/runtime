@@ -28,10 +28,7 @@ namespace System.Net.Http
             set
             {
 #if !PHONE
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 #endif
                 CheckDisposed();
 
@@ -210,7 +207,7 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
-        private bool ContainsNewLineCharacter(string value)
+        private static bool ContainsNewLineCharacter(string value)
         {
             foreach (char character in value)
             {

@@ -128,7 +128,7 @@ bool pal::getcwd(pal::string_t* recv)
             return false;
         }
 
-        trace::error(_X("getcwd() failed: %s"), strerror(errno));
+        trace::error(_X("getcwd() failed: %s"), strerror(errno).c_str());
         return false;
     }
 
@@ -401,7 +401,7 @@ bool pal::get_default_bundle_extraction_base_dir(pal::string_t& extraction_dir)
     }
     else if (errno != EEXIST)
     {
-        trace::error(_X("Failed to create default extraction directory [%s]. %s"), extraction_dir.c_str(), pal::strerror(errno));
+        trace::error(_X("Failed to create default extraction directory [%s]. %s"), extraction_dir.c_str(), pal::strerror(errno).c_str());
         return false;
     }
 
@@ -478,7 +478,7 @@ bool get_install_location_from_file(const pal::string_t& file_path, bool& file_f
         }
         else
         {
-            trace::error(_X("The install_location file ['%s'] failed to open: %s."), file_path.c_str(), pal::strerror(errno));
+            trace::error(_X("The install_location file ['%s'] failed to open: %s."), file_path.c_str(), pal::strerror(errno).c_str());
         }
     }
 
@@ -904,7 +904,7 @@ bool pal::realpath(pal::string_t* path, bool skip_error_logging)
 
         if (!skip_error_logging)
         {
-            trace::error(_X("realpath(%s) failed: %s"), path->c_str(), strerror(errno));
+            trace::error(_X("realpath(%s) failed: %s"), path->c_str(), strerror(errno).c_str());
         }
 
         return false;
@@ -1033,7 +1033,7 @@ bool pal::is_emulating_x64()
         trace::info(_X("Could not determine whether the current process is running under Rosetta."));
         if (errno != ENOENT)
         {
-            trace::info(_X("Call to sysctlbyname failed: %s"), strerror(errno));
+            trace::info(_X("Call to sysctlbyname failed: %s"), strerror(errno).c_str());
         }
 
         return false;

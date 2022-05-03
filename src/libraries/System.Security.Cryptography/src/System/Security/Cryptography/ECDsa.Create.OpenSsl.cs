@@ -10,7 +10,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public static new partial ECDsa Create()
         {
-            return new ECDsaImplementation.ECDsaOpenSsl();
+            return new ECDsaWrapper(new ECDsaOpenSsl());
         }
 
         /// <summary>
@@ -21,7 +21,7 @@ namespace System.Security.Cryptography
         /// </param>
         public static partial ECDsa Create(ECCurve curve)
         {
-            return new ECDsaImplementation.ECDsaOpenSsl(curve);
+            return new ECDsaWrapper(new ECDsaOpenSsl(curve));
         }
 
         /// <summary>
@@ -32,9 +32,18 @@ namespace System.Security.Cryptography
         /// </param>
         public static partial ECDsa Create(ECParameters parameters)
         {
-            ECDsa ec = new ECDsaImplementation.ECDsaOpenSsl();
-            ec.ImportParameters(parameters);
-            return ec;
+            ECDsa ec = new ECDsaOpenSsl();
+
+            try
+            {
+                ec.ImportParameters(parameters);
+                return new ECDsaWrapper(ec);
+            }
+            catch
+            {
+                ec.Dispose();
+                throw;
+            }
         }
     }
 }

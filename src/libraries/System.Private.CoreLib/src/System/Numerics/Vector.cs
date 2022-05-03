@@ -6,8 +6,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Numerics
 {
     /// <summary>Provides a collection of static convenience methods for creating, manipulating, combining, and converting generic vectors.</summary>

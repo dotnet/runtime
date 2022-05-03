@@ -120,6 +120,9 @@
   <data name="Argument_InvalidPathChars" xml:space="preserve">
     <value>Argument_InvalidPathChars {0}</value>
   </data>
+  <data name="ArgumentOutOfRange_FileLengthTooBig" xml:space="preserve">
+    <value>Specified file length was too large for the file system.</value>
+  </data>
   <data name="IO_FileNotFound" xml:space="preserve">
     <value>IO_FileNotFound</value>
   </data>
@@ -156,9 +159,6 @@
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>IO_PathTooLong_Path {0}</value>
   </data>
-  <data name="Arg_InvalidSearchPattern" xml:space="preserve">
-    <value>Arg_InvalidSearchPattern {0}</value>
-  </data>
   <data name="Argv_IncludeDoubleQuote" xml:space="preserve">
     <value>The argv[0] argument cannot include a double quote.</value>
   </data>
@@ -167,9 +167,6 @@
   </data>
   <data name="net_http_hpack_bad_integer" xml:space="preserve">
     <value>HPACK integer exceeds limits or has an overlong encoding.</value>
-  </data>
-  <data name="net_http_hpack_encode_failure" xml:space="preserve">
-    <value>Failed to HPACK encode the headers.</value>
   </data>
   <data name="net_http_hpack_huffman_decode_failed" xml:space="preserve">
     <value>Huffman-coded literal string failed to decode.</value>
@@ -200,9 +197,6 @@
   </data>
   <data name="net_quic_connectionaborted" xml:space="preserve">
     <value>Connection aborted by peer ({0}).</value>
-  </data>
-  <data name="net_quic_notsupported" xml:space="preserve">
-    <value>QUIC is not supported on this platform. See https://aka.ms/dotnetquic</value>
   </data>
   <data name="net_quic_operationaborted" xml:space="preserve">
     <value>Operation aborted.</value>

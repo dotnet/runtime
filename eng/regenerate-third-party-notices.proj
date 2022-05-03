@@ -1,0 +1,52 @@
+<Project Sdk="Microsoft.Build.NoTargets">
+
+  <UsingTask TaskName="RegenerateThirdPartyNotices" AssemblyFile="$(InstallerTasksAssemblyPath)" />
+
+  <Target Name="RegenerateThirdPartyNotices" AfterTargets="Build">
+    <PropertyGroup>
+      <TpnFile>$(InstallerProjectRoot)pkg\THIRD-PARTY-NOTICES.TXT</TpnFile>
+    </PropertyGroup>
+
+    <!--
+      Repo configuration. Upstreams, but also more: the TPN in dotnet/runtime serves many repos outside
+      its graph, because dotnet/runtime produces the installer that ends up placing the single TPN file
+      in the dotnet home directory.
+    -->
+    <ItemGroup>
+      <TpnRepo Include="dotnet/runtime" />
+      <TpnRepo Include="dotnet/aspnetcore" />
+      <TpnRepo Include="dotnet/installer" />
+      <TpnRepo Include="dotnet/roslyn-analyzers" />
+      <TpnRepo Include="dotnet/templating" />
+      <TpnRepo Include="dotnet/winforms" />
+      <TpnRepo Include="dotnet/wpf" />
+
+      <!--
+        Additional repos that should be included but don't have any third-party-notices files:
+          dotnet/efcore
+          dotnet/emsdk
+          dotnet/extensions
+          dotnet/icu
+          dotnet/sdk
+          dotnet/windowsdesktop
+          dotnet/linker
+      -->
+
+      <TpnRepo Condition="'%(TpnRepo.Branch)' == ''" Branch="main" />
+
+      <PotentialTpnPath Include="THIRD-PARTY-NOTICES.TXT" />
+      <PotentialTpnPath Include="THIRD-PARTY-NOTICES.txt" />
+      <PotentialTpnPath Include="THIRD-PARTY-NOTICES" />
+      <PotentialTpnPath Include="THIRDPARTYNOTICES.TXT" />
+      <PotentialTpnPath Include="THIRDPARTYNOTICES.txt" />
+    </ItemGroup>
+
+    <RegenerateThirdPartyNotices
+      TpnFile="$(TpnFile)"
+      PotentialTpnPaths="@(PotentialTpnPath)"
+      TpnRepos="@(TpnRepo)" />
+
+    <Message Text="$(MSBuildProjectName) -> $(TpnFile)" Importance="High" />
+  </Target>
+
+</Project>

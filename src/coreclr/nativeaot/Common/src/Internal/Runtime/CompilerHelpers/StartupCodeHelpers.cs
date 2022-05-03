@@ -6,8 +6,6 @@ using System.Runtime;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
-using Internal.Runtime.CompilerServices;
-
 using Debug = Internal.Runtime.CompilerHelpers.StartupDebug;
 
 namespace Internal.Runtime.CompilerHelpers
@@ -90,7 +88,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static void AddModule(TypeManagerHandle newModuleHandle)
         {
-            if (s_modules == null || s_moduleCount >= s_modules.Length)
+            if (s_moduleCount >= s_modules!.Length)
             {
                 // Reallocate logical module array
                 int newModuleLength = 2 * s_moduleCount;
@@ -241,7 +239,7 @@ namespace Internal.Runtime.CompilerHelpers
                         // It actually has all GC fields including non-preinitialized fields and we simply copy over the
                         // entire blob to this object, overwriting everything.
                         IntPtr pPreInitDataAddr = *(pBlock + 1);
-                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawDataSize());
+                        RuntimeImports.RhBulkMoveWithWriteBarrier(ref obj.GetRawData(), ref *(byte *)pPreInitDataAddr, obj.GetRawObjectDataSize());
                     }
 
                     // Call write barrier directly. Assigning object reference does a type check.

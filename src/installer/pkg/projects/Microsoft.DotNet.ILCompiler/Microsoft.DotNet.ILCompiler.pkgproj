@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <GeneratePackage>true</GeneratePackage>
+    <IncludeSymbolsInPackage>true</IncludeSymbolsInPackage>
+    <PackageDescription>Provides a native AOT compiler and runtime for .NET</PackageDescription>
+  </PropertyGroup>
+
+  <Target Name="GetIlcCompilerFiles"
+          DependsOnTargets="ResolveLibrariesFromLocalBuild"
+          BeforeTargets="GetPackageFiles">
+
+    <ItemGroup Condition="'$(PackageTargetRuntime)' != ''">
+      <File Include="@(LibrariesRuntimeFiles)" TargetPath="framework" />
+      <File Include="$(CoreCLRILCompilerDir)*" TargetPath="tools" />
+      <File Include="$(CoreCLRAotSdkDir)*" TargetPath="sdk" />
+      <File Include="$(MibcOptimizationDataDir)/$(TargetOS)/$(TargetArchitecture)/**/*.mibc" TargetPath="mibc" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <File Include="$(CoreCLRBuildIntegrationDir)*" TargetPath="build" />
+      <File Include="$(CoreCLRILCompilerDir)netstandard\*" TargetPath="tools/netstandard" />
+      <File Include="sdk\Sdk.targets" TargetPath="Sdk" />
+    </ItemGroup>
+  </Target>
+
+</Project>

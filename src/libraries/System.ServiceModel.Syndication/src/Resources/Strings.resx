@@ -188,9 +188,6 @@
   <data name="UnsupportedRssVersion" xml:space="preserve">
     <value>The Rss20Serializer does not support RSS version '{0}'.</value>
   </data>
-  <data name="UriGeneratorSchemeMustNotBeEmpty" xml:space="preserve">
-    <value>The scheme parameter must not be empty.</value>
-  </data>
   <data name="ValueMustBeNonNegative" xml:space="preserve">
     <value>The value of this argument must be non-negative.</value>
   </data>

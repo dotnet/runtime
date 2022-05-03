@@ -7,13 +7,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
 using Xunit;
+using Xunit.Sdk;
 
 [assembly: CollectionBehavior(CollectionBehavior.CollectionPerAssembly)]
 
 namespace DebuggerTests
 {
 
-    public class MiscTests : DebuggerTestBase
+    public class MiscTests : DebuggerTests
     {
 
         [Fact]
@@ -24,7 +25,7 @@ namespace DebuggerTests
             Assert.Contains("dotnet://debugger-test.dll/dependency.cs", scripts.Values);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionThrownInJS()
         {
             var eval_req = JObject.FromObject(new
@@ -33,11 +34,11 @@ namespace DebuggerTests
             });
 
             var eval_res = await cli.SendCommand("Runtime.evaluate", eval_req, token);
-            Assert.True(eval_res.IsErr);
+            Assert.False(eval_res.IsOk);
             Assert.Equal("Uncaught", eval_res.Error["exceptionDetails"]?["text"]?.Value<string>());
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task ExceptionThrownInJSOutOfBand()
         {
             await SetBreakpoint("/debugger-driver.html", 27, 2);
@@ -76,15 +77,15 @@ namespace DebuggerTests
                 }
             );
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InspectPrimitiveTypeLocalsAtBreakpointSite() =>
             await CheckInspectLocalsAtBreakpointSite(
                 "dotnet://debugger-test.dll/debugger-test.cs", 154, 8, "PrimitiveTypesTest",
                 "window.setTimeout(function() { invoke_static_method ('[debugger-test] Math:PrimitiveTypesTest'); }, 1);",
                 test_fn: async (locals) =>
                 {
-                    await CheckSymbol(locals, "c0", "8364 '€'");
-                    await CheckSymbol(locals, "c1", "65 'A'");
+                    await CheckSymbol(locals, "c0", '€');
+                    await CheckSymbol(locals, "c1", 'A');
                     await Task.CompletedTask;
                 }
             );
@@ -156,7 +157,7 @@ namespace DebuggerTests
                 }
             );
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("TestNullableLocal", false)]
         [InlineData("TestNullableLocalAsync", true)]
         public async Task InspectNullableLocals(string method_name, bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -219,7 +220,7 @@ namespace DebuggerTests
                 }
             );
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task RuntimeGetPropertiesWithInvalidScopeIdTest()
         {
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 49, 8);
@@ -244,12 +245,12 @@ namespace DebuggerTests
                    });
 
                    var frame_props = await cli.SendCommand("Runtime.getProperties", get_prop_req, token);
-                   Assert.True(frame_props.IsErr);
+                   Assert.False(frame_props.IsOk);
                }
             );
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsWithStructs(bool use_cfo)
@@ -432,7 +433,6 @@ namespace DebuggerTests
             {
                 var locals = await GetProperties(pause_location["callFrames"][0]["callFrameId"].Value<string>());
                 var dt = new DateTime(2310, 1, 2, 3, 4, 5);
-                Console.WriteLine(locals);
 
                 await CheckProps(locals, new
                 {
@@ -443,7 +443,7 @@ namespace DebuggerTests
                 }, "locals");
             });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsWithStructsStaticAsync(bool use_cfo)
@@ -509,9 +509,9 @@ namespace DebuggerTests
 
         [Theory]
         [InlineData(137, 12, "MethodWithLocalsForToStringTest", false, false)]
-        [InlineData(147, 12, "MethodWithArgumentsForToStringTest", true, false)]
+        /*[InlineData(147, 12, "MethodWithArgumentsForToStringTest", true, false)]
         [InlineData(192, 12, "MethodWithArgumentsForToStringTestAsync", true, true)]
-        [InlineData(182, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]
+        [InlineData(182, 12, "MethodWithArgumentsForToStringTestAsync", false, true)]*/
         public async Task InspectLocalsForToStringDescriptions(int line, int col, string method_name, bool call_other, bool invoke_async)
         {
             string entry_method_name = $"[debugger-test] DebuggerTests.ValueTypesTest:MethodWithLocalsForToStringTest{(invoke_async ? "Async" : String.Empty)}";
@@ -562,7 +562,7 @@ namespace DebuggerTests
                     Days = TNumber(3530),
                     Minutes = TNumber(2),
                     Seconds = TNumber(4),
-                }, "ts_props", num_fields: 12);
+                }, "ts_props", skip_num_fields_check: true);
 
             // DateTimeOffset
             await CompareObjectPropertiesFor(frame_locals, "dto",
@@ -571,7 +571,7 @@ namespace DebuggerTests
                     Day = TNumber(2),
                     Year = TNumber(2020),
                     DayOfWeek = TEnum("System.DayOfWeek", "Thursday")
-                }, "dto_props", num_fields: 20);
+                }, "dto_props", skip_num_fields_check: true);
 
             var DT = new DateTime(2004, 10, 15, 1, 2, 3);
             var DTO = new DateTimeOffset(dt0, new TimeSpan(2, 14, 0));
@@ -605,7 +605,7 @@ namespace DebuggerTests
             var locals = await GetProperties(wait_res["callFrames"][1]["callFrameId"].Value<string>());
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task InspectLocalsForStructInstanceMethod(bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
@@ -675,7 +675,7 @@ namespace DebuggerTests
                 AssertEqual(0, frame_locals.Values<JToken>().Count(), "locals");
             });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData(false)]
         [InlineData(true)]
         public async Task StaticMethodWithLocalEmptyStructThatWillGetExpanded(bool is_async) => await CheckInspectLocalsAtBreakpointSite(
@@ -733,9 +733,10 @@ namespace DebuggerTests
                     ?.Where(f => f["functionName"]?.Value<string>() == function_name)
                     ?.FirstOrDefault();
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugLazyLoadedAssemblyWithPdb()
         {
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
@@ -744,7 +745,9 @@ namespace DebuggerTests
 
             var source_location = "dotnet://lazy-debugger-test.dll/lazy-debugger-test.cs";
             Assert.Contains(source_location, scripts.Values);
-            System.Threading.Thread.Sleep(1000);
+
+            await bpResolved;
+
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test] LazyMath:IntAdd', 5, 10); }, 1);",
                source_location, line, 8,
@@ -754,10 +757,10 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [Fact]
-        [Trait("Category", "linux-failing")] // https://github.com/dotnet/runtime/issues/62667
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdb()
         {
+            Task<JObject> bpResolved = WaitForBreakpointResolvedEvent();
             int line = 9;
             await SetBreakpoint(".*/lazy-debugger-test-embedded.cs$", line, 0, use_regex: true);
             await LoadAssemblyDynamically(
@@ -766,6 +769,8 @@ namespace DebuggerTests
 
             var source_location = "dotnet://lazy-debugger-test-embedded.dll/lazy-debugger-test-embedded.cs";
             Assert.Contains(source_location, scripts.Values);
+
+            await bpResolved;
 
             var pause_location = await EvaluateAndCheck(
                "window.setTimeout(function () { invoke_static_method('[lazy-debugger-test-embedded] LazyMath:IntAdd', 5, 10); }, 1);",
@@ -776,7 +781,7 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task DebugLazyLoadedAssemblyWithEmbeddedPdbALC()
         {
             int line = 9;
@@ -793,7 +798,7 @@ namespace DebuggerTests
             CheckNumber(locals, "b", 10);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task CannotDebugLazyLoadedAssemblyWithoutPdb()
         {
             int line = 9;
@@ -809,7 +814,7 @@ namespace DebuggerTests
             Assert.DoesNotContain(source_location, scripts.Values);
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task GetSourceUsingSourceLink()
         {
             var bp = await SetBreakpointInMethod("debugger-test-with-source-link.dll", "DebuggerTests.ClassToBreak", "TestBreakpoint", 0);
@@ -829,7 +834,27 @@ namespace DebuggerTests
             Assert.True(source.IsOk, $"Failed to getScriptSource: {source}");
         }
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task GetSourceEmbeddedSource()
+        {
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp = await SetBreakpoint(".*/MethodBody1.cs$", 48, 12, use_regex: true);
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody5", "StaticMethod1");
+
+            var sourceToGet = JObject.FromObject(new
+            {
+                scriptId = pause_location["callFrames"][0]["functionLocation"]["scriptId"].Value<string>()
+            });
+
+            var source = await cli.SendCommand("Debugger.getScriptSource", sourceToGet, token);
+            Assert.False(source.Value["scriptSource"].Value<string>().Contains("// Unable to read document"));
+        }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task InspectTaskAtLocals() => await CheckInspectLocalsAtBreakpointSite(
             "InspectTask",
             "RunInspectTask",
@@ -869,7 +894,7 @@ namespace DebuggerTests
         {
             string eval_expr = "window.setTimeout(function() { malloc_to_reallocate_test (); }, 1)";
 
-            var result = await cli.SendCommand("Runtime.evaluate", JObject.FromObject(new { expression = eval_expr }), token);
+            var result = await Evaluate(eval_expr);
 
             var bp = await SetBreakpoint("dotnet://debugger-test.dll/debugger-test.cs", 10, 8);
 
@@ -913,7 +938,7 @@ namespace DebuggerTests
 
             await EvaluateAndCheck(
                 "window.setTimeout(function() {" + expression + "; }, 1);",
-                "dotnet://debugger-test.dll/debugger-test.cs", 924, 8,
+                "dotnet://debugger-test.dll/debugger-test.cs", 965, 8,
                 "CallToEvaluateLocal",
                 wait_for_event_fn: async (pause_location) =>
                 {
@@ -928,5 +953,24 @@ namespace DebuggerTests
             );
         }
         //TODO add tests covering basic stepping behavior as step in/out/over
+
+        [Theory]
+        [InlineData(
+            "DebuggerTests.CheckSpecialCharactersInPath",
+            "dotnet://debugger-test-special-char-in-path.dll/test#.cs")]
+        [InlineData(
+            "DebuggerTests.CheckSNonAsciiCharactersInPath",
+            "dotnet://debugger-test-special-char-in-path.dll/non-ascii-test-ął.cs")]
+        public async Task SetBreakpointInProjectWithSpecialCharactersInPath(
+            string classWithNamespace, string expectedFileLocation)
+        {
+            var bp = await SetBreakpointInMethod("debugger-test-special-char-in-path.dll", classWithNamespace, "Evaluate", 1);
+            await EvaluateAndCheck(
+                $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test-special-char-in-path] {classWithNamespace}:Evaluate'); }}, 1);",
+                expectedFileLocation,
+                bp.Value["locations"][0]["lineNumber"].Value<int>(),
+                bp.Value["locations"][0]["columnNumber"].Value<int>(),
+                "Evaluate");
+        }
     }
 }

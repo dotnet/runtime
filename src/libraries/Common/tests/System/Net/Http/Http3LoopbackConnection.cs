@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Net.Http.Functional.Tests;
 using Xunit;
+using System.Threading;
 
 namespace System.Net.Test.Common
 {
@@ -58,9 +59,9 @@ namespace System.Net.Test.Common
                 stream.Dispose();
             }
 
-// We don't dispose the connection currently, because this causes races when the server connection is closed before
-// the client has received and handled all response data.
-// See discussion in https://github.com/dotnet/runtime/pull/57223#discussion_r687447832
+            // We don't dispose the connection currently, because this causes races when the server connection is closed before
+            // the client has received and handled all response data.
+            // See discussion in https://github.com/dotnet/runtime/pull/57223#discussion_r687447832
 #if false
             // Dispose the connection
             // If we already waited for graceful shutdown from the client, then the connection is already closed and this will simply release the handle.
@@ -78,14 +79,14 @@ namespace System.Net.Test.Common
             await _connection.CloseAsync(errorCode).ConfigureAwait(false);
         }
 
-        public Http3LoopbackStream OpenUnidirectionalStream()
+        public async ValueTask<Http3LoopbackStream> OpenUnidirectionalStreamAsync()
         {
-            return new Http3LoopbackStream(_connection.OpenUnidirectionalStream());
+            return new Http3LoopbackStream(await _connection.OpenUnidirectionalStreamAsync());
         }
 
-        public Http3LoopbackStream OpenBidirectionalStream()
+        public async ValueTask<Http3LoopbackStream> OpenBidirectionalStreamAsync()
         {
-            return new Http3LoopbackStream(_connection.OpenBidirectionalStream());
+            return new Http3LoopbackStream(await _connection.OpenBidirectionalStreamAsync());
         }
 
         public static int GetRequestId(QuicStream stream)
@@ -184,10 +185,10 @@ namespace System.Net.Test.Common
 
         public async Task EstablishControlStreamAsync()
         {
-            _outboundControlStream = OpenUnidirectionalStream();
+            _outboundControlStream = await OpenUnidirectionalStreamAsync();
             await _outboundControlStream.SendUnidirectionalStreamTypeAsync(Http3LoopbackStream.ControlStream);
             await _outboundControlStream.SendSettingsFrameAsync();
-       }
+        }
 
         public override async Task<byte[]> ReadRequestBodyAsync()
         {
@@ -304,6 +305,11 @@ namespace System.Net.Test.Common
         public override async Task WaitForCancellationAsync(bool ignoreIncomingData = true)
         {
             await GetOpenRequest().WaitForCancellationAsync(ignoreIncomingData).ConfigureAwait(false);
+        }
+
+        public override Task WaitForCloseAsync(CancellationToken cancellationToken)
+        {
+            throw new NotImplementedException();
         }
     }
 

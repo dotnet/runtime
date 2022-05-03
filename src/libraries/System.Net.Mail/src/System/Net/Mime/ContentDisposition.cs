@@ -56,10 +56,8 @@ namespace System.Net.Mime
 
         public ContentDisposition(string disposition)
         {
-            if (disposition == null)
-            {
-                throw new ArgumentNullException(nameof(disposition));
-            }
+            ArgumentNullException.ThrowIfNull(disposition);
+
             _isChanged = true;
             _disposition = disposition;
             ParseValue();
@@ -79,14 +77,7 @@ namespace System.Net.Mime
             get { return _dispositionType; }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-                if (value.Length == 0)
-                {
-                    throw new ArgumentException(SR.net_emptystringset, nameof(value));
-                }
+                ArgumentException.ThrowIfNullOrEmpty(value);
 
                 _isChanged = true;
                 _dispositionType = value;

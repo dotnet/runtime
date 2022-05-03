@@ -236,7 +236,7 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        internal struct MibIfRow2 // MIB_IF_ROW2
+        internal unsafe struct MibIfRow2 // MIB_IF_ROW2
         {
             private const int GuidLength = 16;
             private const int IfMaxStringSize = 256;
@@ -244,17 +244,12 @@ internal static partial class Interop
 
             internal ulong interfaceLuid;
             internal uint interfaceIndex;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = GuidLength)]
-            internal byte[] interfaceGuid;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = IfMaxStringSize + 1)]
-            internal char[] alias; // Null terminated string.
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = IfMaxStringSize + 1)]
-            internal char[] description; // Null terminated string.
+            internal Guid interfaceGuid;
+            internal fixed char alias[IfMaxStringSize + 1]; // Null terminated string.
+            internal fixed char description[IfMaxStringSize + 1]; // Null terminated string.
             internal uint physicalAddressLength;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = IfMaxPhysAddressLength)]
-            internal byte[] physicalAddress; // ANSI
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = IfMaxPhysAddressLength)]
-            internal byte[] permanentPhysicalAddress; // ANSI
+            internal fixed byte physicalAddress[IfMaxPhysAddressLength]; // ANSI
+            internal fixed byte permanentPhysicalAddress[IfMaxPhysAddressLength]; // ANSI
             internal uint mtu;
             internal NetworkInterfaceType type;
             internal InterfaceTunnelType tunnelType;
@@ -266,8 +261,7 @@ internal static partial class Interop
             internal OperationalStatus operStatus;
             internal uint adminStatus; // Enum
             internal uint mediaConnectState; // Enum
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = GuidLength)]
-            internal byte[] networkGuid;
+            internal Guid networkGuid;
             internal InterfaceConnectionType connectionType;
             internal ulong transmitLinkSpeed;
             internal ulong receiveLinkSpeed;
@@ -382,12 +376,11 @@ internal static partial class Interop
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        internal struct MibIcmpStatsEx
+        internal unsafe struct MibIcmpStatsEx
         {
             internal uint dwMsgs;
             internal uint dwErrors;
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)]
-            internal uint[] rgdwTypeCount;
+            internal fixed uint rgdwTypeCount[256];
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -508,7 +501,7 @@ internal static partial class Interop
             internal ReadOnlySpan<byte> localAddrAsSpan => MemoryMarshal.CreateSpan(ref localAddr[0], 16);
         }
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetAdaptersAddresses(
             AddressFamily family,
             uint flags,
@@ -516,57 +509,51 @@ internal static partial class Interop
             IntPtr adapterAddresses,
             uint* outBufLen);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetBestInterfaceEx(byte* ipAddress, int* index);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        [DllImport(Interop.Libraries.IpHlpApi)]
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
-        internal static extern uint GetIfEntry2(ref MibIfRow2 pIfRow);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
+        internal static partial uint GetIfEntry2(ref MibIfRow2 pIfRow);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetIpStatisticsEx(MibIpStats* statistics, AddressFamily family);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetTcpStatisticsEx(MibTcpStats* statistics, AddressFamily family);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetUdpStatisticsEx(MibUdpStats* statistics, AddressFamily family);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetIcmpStatistics(MibIcmpInfo* statistics);
 
-#pragma warning disable DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
-        [DllImport(Interop.Libraries.IpHlpApi)]
-        // TODO: [DllImportGenerator] Switch to use GeneratedDllImport once we support non-blittable types.
-        internal static extern uint GetIcmpStatisticsEx(out MibIcmpInfoEx statistics, AddressFamily family);
-#pragma warning restore DLLIMPORTGENANALYZER015 // Use 'GeneratedDllImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
+        internal static partial uint GetIcmpStatisticsEx(out MibIcmpInfoEx statistics, AddressFamily family);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, bool order);
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
+        internal static unsafe partial uint GetTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetExtendedTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, bool order,
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
+        internal static unsafe partial uint GetExtendedTcpTable(IntPtr pTcpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order,
                                                         uint IPVersion, TcpTableClass tableClass, uint reserved);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, bool order);
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
+        internal static unsafe partial uint GetUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
-        internal static unsafe partial uint GetExtendedUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, bool order,
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
+        internal static unsafe partial uint GetExtendedUdpTable(IntPtr pUdpTable, uint* dwOutBufLen, [MarshalAs(UnmanagedType.Bool)] bool order,
                                                         uint IPVersion, UdpTableClass tableClass, uint reserved);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint GetPerAdapterInfo(uint IfIndex, IntPtr pPerAdapterInfo, uint* pOutBufLen);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial void FreeMibTable(IntPtr handle);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static partial uint CancelMibChangeNotify2(IntPtr notificationHandle);
 
-        [GeneratedDllImport(Interop.Libraries.IpHlpApi)]
+        [LibraryImport(Interop.Libraries.IpHlpApi)]
         internal static unsafe partial uint NotifyStableUnicastIpAddressTable(
             AddressFamily addressFamily,
             out SafeFreeMibTable table,

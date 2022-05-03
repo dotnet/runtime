@@ -13,9 +13,24 @@ using Xunit;
 
 namespace Microsoft.Extensions.Logging.Generators.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/32743", TestRuntimes.Mono)]
+    [ActiveIssue("https://github.com/dotnet/runtime/issues/52062", TestPlatforms.Browser)]
     public class LoggerMessageGeneratorParserTests
     {
+        [Fact]
+        public async Task Valid_AdditionalAttributes()
+        {
+            Assert.Empty(await RunGenerator($@"
+                using System.Diagnostics.CodeAnalysis;
+                partial class C
+                {{
+                    [SuppressMessage(""CATEGORY1"", ""SOMEID1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    [SuppressMessage(""CATEGORY2"", ""SOMEID2"")]
+                    static partial void M1(ILogger logger);
+                }}
+            "));
+        }
+
         [Fact]
         public async Task InvalidMethodName()
         {
@@ -204,11 +219,15 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 {
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {ex} {ex2}"")]
                     static partial void M1(ILogger logger, System.Exception ex, System.Exception ex2);
+
+                    [LoggerMessage(EventId = 2, Level = LogLevel.Debug, Message = ""M2 {arg1}: {ex}"")]
+                    static partial void M2(ILogger logger, string arg1, System.Exception ex);
                 }
             ");
 
-            Assert.Single(diagnostics);
+            Assert.Equal(2, diagnostics.Count);
             Assert.Equal(DiagnosticDescriptors.ShouldntMentionExceptionInMessage.Id, diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.ShouldntMentionExceptionInMessage.Id, diagnostics[1].Id);
         }
 
         [Fact]
@@ -234,11 +253,15 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
                 {
                     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1 {logger}"")]
                     static partial void M1(ILogger logger);
+
+                    [LoggerMessage(EventId = 2, Message = ""M2 {logger}"")]
+                    static partial void M2(ILogger logger, LogLevel level);
                 }
             ");
 
-            Assert.Single(diagnostics);
+            Assert.Equal(2, diagnostics.Count);
             Assert.Equal(DiagnosticDescriptors.ShouldntMentionLoggerInMessage.Id, diagnostics[0].Id);
+            Assert.Equal(DiagnosticDescriptors.ShouldntMentionLoggerInMessage.Id, diagnostics[1].Id);
         }
 
         [Fact]
@@ -606,6 +629,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.LoggingMethodIsGeneric.Id, diagnostics[0].Id);
+        }
+
+        [Theory]
+        [InlineData("ref")]
+        [InlineData("in")]
+        public async Task SupportsRefKindsInAndRef(string modifier)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@$"
+                partial class C
+                {{
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {{P1}}"")]
+                    static partial void M(ILogger logger, {modifier} int p1);
+                }}");
+
+            Assert.Empty(diagnostics);
         }
 
         [Fact]

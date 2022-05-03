@@ -1,12 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-tvOS</TargetFrameworks>
-    <Nullable>enable</Nullable>
-    <DefineConstants Condition="'$(TargetstvOS)' == 'true'">$(DefineConstants);NO_NTAUTHENTICATION</DefineConstants>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
-  <ItemGroup>
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_NetMail</GeneratePlatformNotSupportedAssemblyMessage>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'tvOS'">$(DefineConstants);NO_NTAUTHENTICATION</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\Base64Stream.cs" />
     <Compile Include="System\Net\Mime\MimePart.cs" />
     <Compile Include="System\Net\Mime\Base64WriteStateInfo.cs" />
@@ -62,6 +65,8 @@
     <Compile Include="System\Net\Mail\SmtpFailedRecipientsException.cs" />
     <Compile Include="System\Net\Mail\SmtpStatusCode.cs" />
     <Compile Include="System\Net\DelegatedStream.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\Net\LazyAsyncResult.cs"
              Link="Common\System\Net\LazyAsyncResult.cs" />
     <Compile Include="$(CommonPath)System\Net\Logging\NetEventSource.Common.cs"
@@ -72,12 +77,12 @@
              Link="Common\System\HexConverter.cs" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\Net\Mail\SmtpClient.Browser.cs" />
   </ItemGroup>
 
   <!-- Non Browser specific files - internal and security -->
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'Browser'">
     <Compile Include="System\Net\Mail\SmtpClient.cs" />
     <Compile Include="System\Net\Mail\ISmtpAuthenticationModule.cs" />
     <Compile Include="System\Net\Mail\SmtpAuthenticationManager.cs" />
@@ -92,10 +97,8 @@
     <Compile Include="System\Net\Mail\NetEventSource.Mail.cs" />
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.cs"
              Link="Common\System\Net\ContextAwareResult.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugCriticalHandleMinusOneIsInvalid.cs" />
-    <Compile Include="$(CommonPath)System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs"
-             Link="Common\System\Net\DebugCriticalHandleZeroOrMinusOneIsInvalid.cs" />
+    <Compile Include="$(CommonPath)System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs"
+             Link="Common\System\Net\DebugSafeHandleZeroOrMinusOneIsInvalid.cs" />
     <Compile Include="$(CommonPath)System\Net\DebugSafeHandle.cs"
              Link="Common\System\Net\DebugSafeHandle.cs" />
     <Compile Include="$(CommonPath)System\Net\TlsStream.cs"
@@ -115,7 +118,7 @@
   </ItemGroup>
 
   <!-- NT authentication specific files -->
-  <ItemGroup Condition="'$(TargetsBrowser)' != 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'Browser' and '$(TargetPlatformIdentifier)' != 'tvOS'">
     <Compile Include="$(CommonPath)System\Net\ContextFlagsPal.cs"
              Link="Common\System\Net\ContextFlagsPal.cs" />
     <Compile Include="$(CommonPath)System\Net\NegotiationInfoClass.cs"
@@ -133,13 +136,13 @@
   </ItemGroup>
 
   <!-- Unix specific files -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'tvOS'">
     <Compile Include="$(CommonPath)System\Net\ContextAwareResult.Unix.cs"
              Link="Common\System\Net\ContextAwareResult.Unix.cs" />
   </ItemGroup>
 
   <!-- Unix specific files (NT Authentication) -->
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' and '$(TargetstvOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\System.Net.Security.Native\Interop.GssBuffer.cs"
@@ -173,7 +176,7 @@
   </ItemGroup>
 
   <!-- Windows specific files -->
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBuffer.Windows.cs"
              Link="Common\System\Net\Security\SecurityBuffer.Windows.cs" />
     <Compile Include="$(CommonPath)System\Net\Security\SecurityBufferType.Windows.cs"
@@ -252,14 +255,12 @@
              Link="Common\Interop\Windows\SspiCli\SSPIWrapper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
     <Reference Include="Microsoft.Win32.Primitives" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.ComponentModel.EventBasedAsync" />
     <Reference Include="System.Diagnostics.Tracing" />
-    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Net.NetworkInformation" />
     <Reference Include="System.Net.Primitives" />
@@ -268,11 +269,10 @@
     <Reference Include="System.Net.ServicePoint" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Security.Claims" />
-    <Reference Include="System.Security.Cryptography.X509Certificates" />
+    <Reference Include="System.Security.Cryptography" />
+    <Reference Include="System.Security.Principal.Windows" />
     <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

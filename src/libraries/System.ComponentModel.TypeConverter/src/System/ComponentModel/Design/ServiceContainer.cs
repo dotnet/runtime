@@ -233,10 +233,7 @@ namespace System.ComponentModel.Design
             }
 
             // We're going to remove this from our local list.
-            if (serviceType == null)
-            {
-                throw new ArgumentNullException(nameof(serviceType));
-            }
+            ArgumentNullException.ThrowIfNull(serviceType);
 
             Services.Remove(serviceType);
         }

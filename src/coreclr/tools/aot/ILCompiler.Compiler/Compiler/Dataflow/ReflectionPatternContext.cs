@@ -7,6 +7,8 @@ using System.Diagnostics;
 using Internal.IL;
 using Internal.TypeSystem;
 
+using ILLink.Shared;
+
 namespace ILCompiler.Dataflow
 {
     /// <summary>

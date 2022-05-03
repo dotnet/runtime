@@ -21,19 +21,18 @@ namespace Microsoft.Extensions.Options
         /// </summary>
         /// <param name="config">The configuration instance.</param>
         public ConfigurationChangeTokenSource(IConfiguration config) : this(Options.DefaultName, config)
-        { }
+        {
+        }
 
         /// <summary>
         /// Constructor taking the <see cref="IConfiguration"/> instance to watch.
         /// </summary>
         /// <param name="name">The name of the options instance being watched.</param>
         /// <param name="config">The configuration instance.</param>
-        public ConfigurationChangeTokenSource(string name, IConfiguration config)
+        public ConfigurationChangeTokenSource(string? name, IConfiguration config)
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ThrowHelper.ThrowIfNull(config);
+
             _config = config;
             Name = name ?? Options.DefaultName;
         }

@@ -78,8 +78,10 @@ namespace System.Xml
                 return true;
             }
 
-            return other is XmlQualifiedName qName && Name == qName.Name && Namespace == qName.Namespace;
+            return other is XmlQualifiedName qName && Equals(qName.Name, qName.Namespace);
         }
+
+        internal bool Equals(string name, string ns) => Name == name && Namespace == ns;
 
         /// <devdoc>
         ///    <para>[To be supplied.]</para>

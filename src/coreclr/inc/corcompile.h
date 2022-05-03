@@ -33,8 +33,6 @@ typedef DPTR(struct CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY)
    PTR_CORCOMPILE_EXCEPTION_LOOKUP_TABLE_ENTRY;
 typedef DPTR(struct CORCOMPILE_EXCEPTION_CLAUSE)
    PTR_CORCOMPILE_EXCEPTION_CLAUSE;
-typedef DPTR(struct CORCOMPILE_EXTERNAL_METHOD_THUNK)
-    PTR_CORCOMPILE_EXTERNAL_METHOD_THUNK;
 typedef DPTR(struct CORCOMPILE_EXTERNAL_METHOD_DATA_ENTRY)
     PTR_CORCOMPILE_EXTERNAL_METHOD_DATA_ENTRY;
 typedef DPTR(struct CORCOMPILE_IMPORT_SECTION)
@@ -138,54 +136,6 @@ inline BOOL CORCOMPILE_IS_FIXUP_TAGGED(SIZE_T fixup, PTR_CORCOMPILE_IMPORT_SECTI
 
     return ((((SIZE_T)(fixup)) & CORCOMPILE_TOKEN_TAG) == CORCOMPILE_TOKEN_TAG);
 }
-
-/*********************************************************************************/
-
-#if defined(TARGET_X86) || defined(TARGET_AMD64)
-
-#define _PRECODE_EXTERNAL_METHOD_THUNK      0x41
-    struct  CORCOMPILE_EXTERNAL_METHOD_THUNK
-    {
-        BYTE                callJmp[5];     // Call/Jmp Pc-Rel32
-        BYTE                precodeType;    // 0x41 _PRECODE_EXTERNAL_METHOD_THUNK
-        WORD                padding;
-    };
-
-#elif defined(TARGET_ARM)
-
-    struct  CORCOMPILE_EXTERNAL_METHOD_THUNK
-    {
-        // Array of words to do the following:
-        //
-        // mov r12, pc       ; Save the current address relative to which we will get GCRef bitmap and address to patch.
-        // ldr pc, [pc, #4]  ; Load the target address. Initially it will point to the helper stub that will patch it
-        //                   ; to point to the actual target on the first run.
-        WORD                m_rgCode[3];
-
-        WORD                m_padding;
-
-        // The target address - initially, this will point to ExternalMethodFixupStub.
-        // Post patchup by the stub, it will point to the actual method body.
-        PCODE               m_pTarget;
-    };
-
-#elif defined(TARGET_ARM64)
-    struct  CORCOMPILE_EXTERNAL_METHOD_THUNK
-    {
-        // Array of words to do the following:
-        // adr         x12, #0            ; Save the current address relative to which we will get slot ID and address to patch.
-        // ldr         x10, [x12, #16]    ; Load the target address.
-        // br          x10                ; Jump to the target
-        DWORD                m_rgCode[3];
-
-        DWORD                m_padding; //aligning stack to 16 bytes
-
-        // The target address - initially, this will point to ExternalMethodFixupStub.
-        // Post patchup by the stub, it will point to the actual method body.
-        PCODE                m_pTarget;
-    };
-
-#endif
 
 //
 // GCRefMap blob starts with DWORDs lookup index of relative offsets into the blob. This lookup index is used to limit amount

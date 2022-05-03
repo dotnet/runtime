@@ -66,9 +66,6 @@
   <data name="Argument_PropertyTypeFromDifferentContext" xml:space="preserve">
     <value>The property type needs to be mapped to the current ReflectionContext.</value>
   </data>
-  <data name="Argument_SetMethNotFnd" xml:space="preserve">
-    <value>The set accessor of the property was not found.</value>
-  </data>
   <data name="Format_AttributeUsage" xml:space="preserve">
     <value>Duplicate AttributeUsageAttribute records found on attribute type {0}.</value>
   </data>

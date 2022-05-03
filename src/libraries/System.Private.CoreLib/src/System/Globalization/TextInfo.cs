@@ -8,7 +8,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 using System.Text;
 using System.Text.Unicode;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Globalization
 {
@@ -92,10 +91,7 @@ namespace System.Globalization
         /// </summary>
         public static TextInfo ReadOnly(TextInfo textInfo)
         {
-            if (textInfo == null)
-            {
-                throw new ArgumentNullException(nameof(textInfo));
-            }
+            ArgumentNullException.ThrowIfNull(textInfo);
 
             if (textInfo.IsReadOnly)
             {
@@ -128,10 +124,7 @@ namespace System.Globalization
             get => _listSeparator ??= _cultureData.ListSeparator;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _listSeparator = value;
@@ -174,10 +167,7 @@ namespace System.Globalization
 
         public string ToLower(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (GlobalizationMode.Invariant)
             {
@@ -588,10 +578,7 @@ namespace System.Globalization
 
         public string ToUpper(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (GlobalizationMode.Invariant)
             {
@@ -666,10 +653,7 @@ namespace System.Globalization
         /// </summary>
         public unsafe string ToTitleCase(string str)
         {
-            if (str == null)
-            {
-                throw new ArgumentNullException(nameof(str));
-            }
+            ArgumentNullException.ThrowIfNull(str);
 
             if (str.Length == 0)
             {

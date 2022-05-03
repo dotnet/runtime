@@ -169,7 +169,7 @@ namespace System.Data.Common
             {
             }
 
-            public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+            public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
             {
                 if (typeof(InstanceDescriptor) == destinationType)
                 {

@@ -42,14 +42,13 @@ namespace System.IO.Tests
         }
 
         [ConditionalFact(nameof(AreAllLongPathsAvailable))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/51371", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void EnumerateFilesOverLegacyMaxPath()
         {
             // We want to test that directories under the legacy MAX_PATH (260 characters, including the null) can iterate files
             // even if the full path is over 260.
-
-            string directory = IOServices.GetPath(GetTestFilePath(), 250);
-            Assert.Equal(250, directory.Length);
+            var length = OperatingSystem.IsWindows() ? 250 : 258;
+            string directory = IOServices.GetPath(GetTestFilePath(), length);
+            Assert.Equal(length, directory.Length);
             Assert.True(Directory.CreateDirectory(directory).Exists);
 
             for (int i = 0; i < 6; i++)

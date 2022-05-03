@@ -181,7 +181,7 @@ namespace System.Text.Json.Serialization.Tests
         [Theory]
         [MemberData(nameof(TestData), /* enumeratePayloadTweaks: */ false)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/42677", platforms: TestPlatforms.Windows, runtimes: TestRuntimes.Mono)]
-        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("https://github.com/dotnet/runtime/issues/45464", ~RuntimeConfiguration.Release)]
         public static void ShouldWorkAtAnyPosition_Sequence(
             string json,
             int bufferSize,
@@ -390,7 +390,7 @@ namespace System.Text.Json.Serialization.Tests
             void ITestObject.Initialize(INestedObject nested)
             {
                 nested.Initialize();
-                A = new() { { "a", (TNested)nested }, { "b", (TNested)nested } };
+                A = new Dictionary<string, TNested>() { { "a", (TNested)nested }, { "b", (TNested)nested } };
             }
 
             void ITestObject.Verify()

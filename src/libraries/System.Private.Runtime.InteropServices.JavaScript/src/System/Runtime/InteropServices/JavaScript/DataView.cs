@@ -1,15 +1,13 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
     /// The DataView view provides a low-level interface for reading and writing multiple number types in a
     /// binary ArrayBuffer, without having to care about the platform's endianness.
     /// </summary>
-    public class DataView : CoreObject
+    public class DataView : JSObject
     {
         /// <summary>
         /// Initializes a new instance of the DataView class.
@@ -33,30 +31,6 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="byteOffset">The offset, in bytes, to the first byte in the above buffer for the new view to reference. If unspecified, the buffer view starts with the first byte.</param>
         /// <param name="byteLength">The number of elements in the byte array. If unspecified, the view's length will match the buffer's length.</param>
         public DataView(ArrayBuffer buffer, int byteOffset, int byteLength) : base(nameof(DataView), buffer, byteOffset, byteLength)
-        { }
-
-        /// <summary>
-        /// Initializes a new instance of the DataView class.
-        /// </summary>
-        /// <param name="buffer">SharedArrayBuffer to use as the storage backing the new DataView object.</param>
-        public DataView(SharedArrayBuffer buffer) : base(nameof(DataView), buffer)
-        { }
-
-        /// <summary>
-        /// Initializes a new instance of the DataView class.
-        /// </summary>
-        /// <param name="buffer">SharedArrayBuffer to use as the storage backing the new DataView object.</param>
-        /// <param name="byteOffset">The offset, in bytes, to the first byte in the above buffer for the new view to reference. If unspecified, the buffer view starts with the first byte.</param>
-        public DataView(SharedArrayBuffer buffer, int byteOffset) : base(nameof(DataView), buffer, byteOffset)
-        { }
-
-        /// <summary>
-        /// Initializes a new instance of the DataView class.
-        /// </summary>
-        /// <param name="buffer">SharedArrayBuffer to use as the storage backing the new DataView object.</param>
-        /// <param name="byteOffset">The offset, in bytes, to the first byte in the above buffer for the new view to reference. If unspecified, the buffer view starts with the first byte.</param>
-        /// <param name="byteLength">The number of elements in the byte array. If unspecified, the view's length will match the buffer's length.</param>
-        public DataView(SharedArrayBuffer buffer, int byteOffset, int byteLength) : base(nameof(DataView), buffer, byteOffset, byteLength)
         { }
 
         /// <summary>
@@ -218,7 +192,7 @@ namespace System.Runtime.InteropServices.JavaScript
         /// <param name="littleEndian">Indicates whether the 32-bit float is stored in little- or big-endian format. If <c>false</c>, a big-endian value is read.</param>
         public void SetUint8(int byteOffset, byte value, bool littleEndian = false) => Invoke("setUint8", byteOffset, value, littleEndian);
 
-        private U UnBoxValue<U>(object jsValue) where U : struct
+        private static U UnBoxValue<U>(object jsValue) where U : struct
         {
             if (jsValue == null)
             {

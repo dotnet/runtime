@@ -32,13 +32,13 @@ namespace System.ComponentModel
         /// Gets a value indicating whether this converter can convert an object to the given
         /// destination type using the context.
         /// </summary>
-        public bool CanConvertTo(Type destinationType) => CanConvertTo(null, destinationType);
+        public bool CanConvertTo([NotNullWhen(true)] Type? destinationType) => CanConvertTo(null, destinationType);
 
         /// <summary>
         /// Gets a value indicating whether this converter can convert an object to the given
         /// destination type using the context.
         /// </summary>
-        public virtual bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public virtual bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(string);
         }
@@ -112,10 +112,7 @@ namespace System.ComponentModel
         /// </summary>
         public virtual object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (destinationType == typeof(string))
             {
@@ -194,7 +191,7 @@ namespace System.ComponentModel
         /// </summary>
         protected Exception GetConvertFromException(object? value)
         {
-            string? valueTypeName = value == null ? SR.Null : value.GetType().FullName;
+            string? valueTypeName = value == null ? SR.GetResourceString(nameof(SR.Null), "(null)") : value.GetType().FullName;
             throw new NotSupportedException(SR.Format(SR.ConvertFromException, GetType().Name, valueTypeName));
         }
 
@@ -204,7 +201,7 @@ namespace System.ComponentModel
         /// </summary>
         protected Exception GetConvertToException(object? value, Type destinationType)
         {
-            string? valueTypeName = value == null ? SR.Null : value.GetType().FullName;
+            string? valueTypeName = value == null ? SR.GetResourceString(nameof(SR.Null), "(null)") : value.GetType().FullName;
             throw new NotSupportedException(SR.Format(SR.ConvertToException, GetType().Name, valueTypeName, destinationType.FullName));
         }
 

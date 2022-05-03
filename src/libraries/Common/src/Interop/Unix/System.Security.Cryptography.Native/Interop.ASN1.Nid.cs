@@ -15,7 +15,7 @@ internal static partial class Interop
 
         internal const int NID_undef = 0;
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjTxt2Nid", CharSet = CharSet.Ansi)]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_ObjTxt2Nid", StringMarshalling = StringMarshalling.Utf8)]
         private static partial int ObjTxt2Nid(string oid);
 
         internal static int ResolveRequiredNid(string oid)

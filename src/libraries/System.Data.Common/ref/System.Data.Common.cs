@@ -1577,6 +1577,7 @@ namespace System.Data
     public enum SerializationFormat
     {
         Xml = 0,
+        [System.ObsoleteAttribute("SerializationFormat.Binary is obsolete and should not be used. See https://aka.ms/serializationformat-binary-obsolete for more information.", DiagnosticId = "SYSLIB0038")]
         Binary = 1,
     }
     public enum SqlDbType
@@ -2737,7 +2738,7 @@ namespace System.Data.SqlTypes
         public SqlAlreadyFilledException(string? message, System.Exception? e) { }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlBinary : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlBinary : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlBinary>
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -2752,6 +2753,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBinary Concat(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlBinary x, System.Data.SqlTypes.SqlBinary y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlBinary other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -2777,7 +2779,7 @@ namespace System.Data.SqlTypes
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlBoolean : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlBoolean : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlBoolean>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlBoolean False;
@@ -2796,6 +2798,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(System.Data.SqlTypes.SqlBoolean value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlBoolean other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -2847,7 +2850,7 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlBoolean Xor(System.Data.SqlTypes.SqlBoolean x, System.Data.SqlTypes.SqlBoolean y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlByte : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlByte : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlByte>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlByte MaxValue;
@@ -2864,6 +2867,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlByte Divide(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlByte x, System.Data.SqlTypes.SqlByte y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlByte other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -2987,7 +2991,7 @@ namespace System.Data.SqlTypes
         BinarySort = 32768,
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlDateTime : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlDateTime : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlDateTime>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlDateTime MaxValue;
@@ -3010,6 +3014,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(System.Data.SqlTypes.SqlDateTime value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlDateTime x, System.Data.SqlTypes.SqlDateTime y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlDateTime other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -3038,7 +3043,7 @@ namespace System.Data.SqlTypes
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlDecimal : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlDecimal : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlDecimal>
     {
         private int _dummyPrimitive;
         public static readonly byte MaxPrecision;
@@ -3068,6 +3073,7 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlDecimal ConvertToPrecScale(System.Data.SqlTypes.SqlDecimal n, int precision, int scale) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Divide(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlDecimal x, System.Data.SqlTypes.SqlDecimal y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlDecimal other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public static System.Data.SqlTypes.SqlDecimal Floor(System.Data.SqlTypes.SqlDecimal n) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -3124,7 +3130,7 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlDecimal Truncate(System.Data.SqlTypes.SqlDecimal n, int position) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlDouble : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlDouble : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlDouble>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlDouble MaxValue;
@@ -3139,6 +3145,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlDouble Divide(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlDouble x, System.Data.SqlTypes.SqlDouble y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlDouble other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -3187,7 +3194,7 @@ namespace System.Data.SqlTypes
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlGuid : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlGuid : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlGuid>
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -3201,6 +3208,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(System.Data.SqlTypes.SqlGuid value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlGuid x, System.Data.SqlTypes.SqlGuid y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlGuid other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -3229,7 +3237,7 @@ namespace System.Data.SqlTypes
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlInt16 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlInt16 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlInt16>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlInt16 MaxValue;
@@ -3246,6 +3254,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlInt16 Divide(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlInt16 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -3303,7 +3312,7 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt16 Xor(System.Data.SqlTypes.SqlInt16 x, System.Data.SqlTypes.SqlInt16 y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlInt32 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlInt32 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlInt32>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlInt32 MaxValue;
@@ -3320,6 +3329,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlInt32 Divide(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlInt32 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -3377,7 +3387,7 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt32 Xor(System.Data.SqlTypes.SqlInt32 x, System.Data.SqlTypes.SqlInt32 y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlInt64 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlInt64 : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlInt64>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlInt64 MaxValue;
@@ -3394,6 +3404,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlInt64 Divide(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlInt64 other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -3451,7 +3462,7 @@ namespace System.Data.SqlTypes
         public static System.Data.SqlTypes.SqlInt64 Xor(System.Data.SqlTypes.SqlInt64 x, System.Data.SqlTypes.SqlInt64 y) { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlMoney : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlMoney : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlMoney>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlMoney MaxValue;
@@ -3469,6 +3480,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlMoney Divide(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlMoney x, System.Data.SqlTypes.SqlMoney y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlMoney other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -3535,7 +3547,7 @@ namespace System.Data.SqlTypes
         public SqlNullValueException(string? message, System.Exception? e) { }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlSingle : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlSingle : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlSingle>
     {
         private int _dummyPrimitive;
         public static readonly System.Data.SqlTypes.SqlSingle MaxValue;
@@ -3551,6 +3563,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlSingle Divide(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlSingle x, System.Data.SqlTypes.SqlSingle y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlSingle other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Xml.XmlQualifiedName GetXsdType(System.Xml.Schema.XmlSchemaSet schemaSet) { throw null; }
@@ -3599,7 +3612,7 @@ namespace System.Data.SqlTypes
         public override string ToString() { throw null; }
     }
     [System.Xml.Serialization.XmlSchemaProviderAttribute("GetXsdType")]
-    public partial struct SqlString : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable
+    public partial struct SqlString : System.Data.SqlTypes.INullable, System.IComparable, System.Xml.Serialization.IXmlSerializable, System.IEquatable<System.Data.SqlTypes.SqlString>
     {
         private object _dummy;
         private int _dummyPrimitive;
@@ -3630,6 +3643,7 @@ namespace System.Data.SqlTypes
         public int CompareTo(object? value) { throw null; }
         public static System.Data.SqlTypes.SqlString Concat(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
         public static System.Data.SqlTypes.SqlBoolean Equals(System.Data.SqlTypes.SqlString x, System.Data.SqlTypes.SqlString y) { throw null; }
+        public bool Equals(System.Data.SqlTypes.SqlString other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? value) { throw null; }
         public override int GetHashCode() { throw null; }
         public byte[]? GetNonUnicodeBytes() { throw null; }

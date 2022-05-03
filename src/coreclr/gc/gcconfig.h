@@ -87,8 +87,8 @@ public:
     INT_CONFIG   (SegmentSize,            "GCSegmentSize",          NULL,                             0,                 "Specifies the managed heap segment size")                                                \
     INT_CONFIG   (LatencyMode,            "GCLatencyMode",          NULL,                             -1,                "Specifies the GC latency mode - batch, interactive or low latency (note that the same "  \
                                                                                                                          "thing can be specified via API which is the supported way")                              \
-    INT_CONFIG   (LatencyLevel,           "GCLatencyLevel",         NULL,                             1,                 "Specifies the GC latency level that you want to optimize for. Must be a number from 0"   \
-                                                                                                                         "3. See documentation for more details on each level.")                                   \
+    INT_CONFIG   (LatencyLevel,           "GCLatencyLevel",         NULL,                             1,                 "Specifies the GC latency level that you want to optimize for. Must be a number from 0 "  \
+                                                                                                                         "to 3. See documentation for more details on each level.")                                \
     INT_CONFIG   (LogFileSize,            "GCLogFileSize",          NULL,                             0,                 "Specifies the GC log file size")                                                         \
     INT_CONFIG   (CompactRatio,           "GCCompactRatio",         NULL,                             0,                 "Specifies the ratio compacting GCs vs sweeping")                                         \
     INT_CONFIG   (GCHeapAffinitizeMask,   "GCHeapAffinitizeMask",   "System.GC.HeapAffinitizeMask",   0,                 "Specifies processor mask for Server GC threads")                                         \
@@ -103,8 +103,8 @@ public:
     INT_CONFIG   (GCHeapHardLimit,        "GCHeapHardLimit",        "System.GC.HeapHardLimit",        0,                 "Specifies a hard limit for the GC heap")                                                 \
     INT_CONFIG   (GCHeapHardLimitPercent, "GCHeapHardLimitPercent", "System.GC.HeapHardLimitPercent", 0,                 "Specifies the GC heap usage as a percentage of the total memory")                        \
     INT_CONFIG   (GCTotalPhysicalMemory,  "GCTotalPhysicalMemory",  NULL,                             0,                 "Specifies what the GC should consider to be total physical memory")                      \
-    INT_CONFIG   (GCRegionsRange,         "GCRegionsRange",         NULL,                             274877906944L,     "Specifies the range for the GC heap")                                                    \
-    INT_CONFIG   (GCRegionsSize,          "GCRegionsSize",          NULL,                             4194304,           "Specifies the size for a basic GC region")                                               \
+    INT_CONFIG   (GCRegionRange,          "GCRegionRange",          NULL,                             274877906944L,     "Specifies the range for the GC heap")                                                    \
+    INT_CONFIG   (GCRegionSize,           "GCRegionSize",           NULL,                             4194304,           "Specifies the size for a basic GC region")                                               \
     STRING_CONFIG(LogFile,                "GCLogFile",              NULL,                                                "Specifies the name of the GC log file")                                                  \
     STRING_CONFIG(ConfigLogFile,          "GCConfigLogFile",        NULL,                                                "Specifies the name of the GC config log file")                                           \
     INT_CONFIG   (BGCFLTuningEnabled,     "BGCFLTuningEnabled",     NULL,                             0,                 "Enables FL tuning")                                                                      \
@@ -117,7 +117,7 @@ public:
     INT_CONFIG   (BGCFLkd,                "BGCFLkd",                NULL,                             11,                "Specifies kd for above goal tuning")                                                     \
     INT_CONFIG   (BGCFLff,                "BGCFLff",                NULL,                             100,               "Specifies ff ratio")                                                                     \
     INT_CONFIG   (BGCFLSmoothFactor,      "BGCFLSmoothFactor",      NULL,                             150,               "Smoothing over these")                                                                   \
-    INT_CONFIG   (BGCFLGradualD,          "BGCFLGradualD",          NULL,                             0,                 "Enable gradual D instead of cutting of at the value")                                    \
+    INT_CONFIG   (BGCFLGradualD,          "BGCFLGradualD",          NULL,                             0,                 "Enable gradual D instead of cutting off at the value")                                   \
     INT_CONFIG   (BGCMLkp,                "BGCMLkp",                NULL,                             1000,              "Specifies kp for ML tuning")                                                             \
     INT_CONFIG   (BGCMLki,                "BGCMLki",                NULL,                             16,                "Specifies ki for ML tuning")                                                             \
     INT_CONFIG   (BGCFLEnableKi,          "BGCFLEnableKi",          NULL,                             1,                 "Enables ki for above goal tuning")                                                       \
@@ -179,6 +179,6 @@ static void Initialize();
 
 };
 
-bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* config_affinity_set);
+bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* config_affinity_set, uintptr_t& config_affinity_mask);
 
 #endif // __GCCONFIG_H__

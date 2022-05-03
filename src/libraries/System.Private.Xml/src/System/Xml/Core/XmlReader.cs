@@ -81,7 +81,9 @@ namespace System.Xml
         internal const int BiggerBufferSize = 8192;
         internal const int MaxStreamLengthForDefaultBufferSize = 64 * 1024; // 64kB
 
-        internal const int AsyncBufferSize = 64 * 1024; //64KB
+        // Chosen to be small enough that the character buffer in XmlTextReader when using Async = true
+        // is not allocated on the Large Object Heap (LOH)
+        internal const int AsyncBufferSize = 32 * 1024;
 
         // Settings
         public virtual XmlReaderSettings? Settings => null;
@@ -911,10 +913,8 @@ namespace System.Xml
         // Reads to the following element with the given Name.
         public virtual bool ReadToFollowing(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
             // atomize name
             name = NameTable.Add(name);
 
@@ -932,11 +932,7 @@ namespace System.Xml
         // Reads to the following element with the given LocalName and NamespaceURI.
         public virtual bool ReadToFollowing(string localName, string namespaceURI)
         {
-            if (string.IsNullOrEmpty(localName))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
-            }
-
+            ArgumentException.ThrowIfNullOrEmpty(localName);
             ArgumentNullException.ThrowIfNull(namespaceURI);
 
             // atomize local name and namespace
@@ -957,10 +953,8 @@ namespace System.Xml
         // Reads to the first descendant of the current element with the given Name.
         public virtual bool ReadToDescendant(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
             // save the element or root depth
             int parentDepth = Depth;
             if (NodeType != XmlNodeType.Element)
@@ -999,12 +993,9 @@ namespace System.Xml
         // Reads to the first descendant of the current element with the given LocalName and NamespaceURI.
         public virtual bool ReadToDescendant(string localName, string namespaceURI)
         {
-            if (string.IsNullOrEmpty(localName))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
-            }
-
+            ArgumentException.ThrowIfNullOrEmpty(localName);
             ArgumentNullException.ThrowIfNull(namespaceURI);
+
             // save the element or root depth
             int parentDepth = Depth;
             if (NodeType != XmlNodeType.Element)
@@ -1044,10 +1035,7 @@ namespace System.Xml
         // Reads to the next sibling of the current element with the given Name.
         public virtual bool ReadToNextSibling(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             // atomize name
             name = NameTable.Add(name);
@@ -1072,11 +1060,7 @@ namespace System.Xml
         // Reads to the next sibling of the current element with the given LocalName and NamespaceURI.
         public virtual bool ReadToNextSibling(string localName, string namespaceURI)
         {
-            if (string.IsNullOrEmpty(localName))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
-            }
-
+            ArgumentException.ThrowIfNullOrEmpty(localName);
             ArgumentNullException.ThrowIfNull(namespaceURI);
 
             // atomize local name and namespace
@@ -1426,11 +1410,7 @@ namespace System.Xml
 
         internal void CheckElement(string localName, string namespaceURI)
         {
-            if (string.IsNullOrEmpty(localName))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
-            }
-
+            ArgumentException.ThrowIfNullOrEmpty(localName);
             ArgumentNullException.ThrowIfNull(namespaceURI);
 
             if (NodeType != XmlNodeType.Element)
@@ -1633,12 +1613,7 @@ namespace System.Xml
         // Creates an XmlReader for parsing XML from the given Uri.
         public static XmlReader Create(string inputUri)
         {
-            ArgumentNullException.ThrowIfNull(inputUri);
-
-            if (inputUri.Length == 0)
-            {
-                throw new ArgumentException(SR.XmlConvert_BadUri, nameof(inputUri));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(inputUri);
 
             // Avoid using XmlReader.Create(string, XmlReaderSettings), as it references a lot of types
             // that then can't be trimmed away.

@@ -7,7 +7,7 @@ namespace System.IO
 {
     internal partial struct FileStatus
     {
-        internal void SetCreationTime(string path, DateTimeOffset time)
+        internal void SetCreationTime(string path, DateTimeOffset time, bool asDirectory)
         {
             // Try to set the attribute on the file system entry using setattrlist,
             // if we get ENOTSUP then it means that "The volume does not support
@@ -27,15 +27,15 @@ namespace System.IO
             }
             else if (error == Interop.Error.ENOTSUP)
             {
-                SetAccessOrWriteTimeCore(path, time, isAccessTime: false, checkCreationTime: false);
+                SetAccessOrWriteTimeCore(path, time, isAccessTime: false, checkCreationTime: false, asDirectory);
             }
             else
             {
-                Interop.CheckIo(error, path, InitiallyDirectory);
+                Interop.CheckIo(error, path, asDirectory);
             }
         }
 
-        private unsafe Interop.Error SetCreationTimeCore(string path, long seconds, long nanoseconds)
+        private static unsafe Interop.Error SetCreationTimeCore(string path, long seconds, long nanoseconds)
         {
             Interop.Sys.TimeSpec timeSpec = default;
 
@@ -54,7 +54,7 @@ namespace System.IO
             return error;
         }
 
-        private void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime) =>
-            SetAccessOrWriteTimeCore(path, time, isAccessTime, checkCreationTime: true);
+        private void SetAccessOrWriteTime(string path, DateTimeOffset time, bool isAccessTime, bool asDirectory) =>
+            SetAccessOrWriteTimeCore(path, time, isAccessTime, checkCreationTime: true, asDirectory);
     }
 }

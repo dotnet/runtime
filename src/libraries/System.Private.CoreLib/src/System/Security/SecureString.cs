@@ -24,10 +24,8 @@ namespace System.Security
         [CLSCompliant(false)]
         public unsafe SecureString(char* value, int length)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
+
             if (length < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);

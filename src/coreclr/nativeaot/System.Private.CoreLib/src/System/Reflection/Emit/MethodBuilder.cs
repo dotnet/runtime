@@ -200,7 +200,7 @@ namespace System.Reflection.Emit
             return default;
         }
 
-        public override object Invoke(object obj, BindingFlags invokeAttr, Binder binder, object[] parameters, Globalization.CultureInfo culture)
+        public override object? Invoke(object? obj, BindingFlags invokeAttr, Binder? binder, object?[]? parameters, Globalization.CultureInfo? culture)
         {
             return default;
         }

@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDomainSocketSizes")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetDomainSocketSizes")]
         [SuppressGCTransition]
         internal static unsafe partial void GetDomainSocketSizes(int* pathOffset, int* pathSize, int* addressSize);
     }

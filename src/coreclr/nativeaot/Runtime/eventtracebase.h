@@ -147,13 +147,6 @@ struct ProfilingScanContext;
 
 #ifndef FEATURE_REDHAWK
 
-#if defined(FEATURE_CORECLR) && !defined(FEATURE_CORESYSTEM)
-// For Silverlight non-CoreSys builds we still use an older toolset,
-// headers/libs, and a different value for WINVER. We use this symbol
-// to distinguish between whether we built the ETW header files from
-// the ETW manifest using the -mof command line or not.
-#define WINXP_AND_WIN2K3_BUILD_SUPPORT
-#endif
 #include "corprof.h"
 
 // g_nClrInstanceId is defined in Utilcode\Util.cpp. The definition goes into Utilcode.lib.

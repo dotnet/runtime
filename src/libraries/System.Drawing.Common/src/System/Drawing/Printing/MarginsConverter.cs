@@ -32,7 +32,7 @@ namespace System.Drawing.Printing
         /// Gets a value indicating whether this converter can
         /// convert an object to the given destination type using the context.
         /// </summary>
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             if (destinationType == typeof(InstanceDescriptor))
             {
@@ -93,10 +93,8 @@ namespace System.Drawing.Printing
         /// </summary>
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (value is Margins margins)
             {
                 if (destinationType == typeof(string))
@@ -146,10 +144,7 @@ namespace System.Drawing.Printing
         /// </summary>
         public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
-            if (propertyValues == null)
-            {
-                throw new ArgumentNullException(nameof(propertyValues));
-            }
+            ArgumentNullException.ThrowIfNull(propertyValues);
 
             object? left = propertyValues["Left"];
             object? right = propertyValues["Right"];

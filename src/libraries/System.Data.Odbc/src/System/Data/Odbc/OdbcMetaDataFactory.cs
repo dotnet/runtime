@@ -134,7 +134,7 @@ namespace System.Data.Odbc
             }
         }
 
-        private object BooleanFromODBC(object odbcSource)
+        private static object BooleanFromODBC(object odbcSource)
         {
             if (odbcSource != DBNull.Value)
             {
@@ -154,7 +154,7 @@ namespace System.Data.Odbc
             return DBNull.Value;
         }
 
-        private OdbcCommand GetCommand(OdbcConnection connection)
+        private static OdbcCommand GetCommand(OdbcConnection connection)
         {
             OdbcCommand command = connection.CreateCommand();
 
@@ -164,7 +164,7 @@ namespace System.Data.Odbc
             return command;
         }
 
-        private DataTable DataTableFromDataReader(IDataReader reader, string tableName)
+        private static DataTable DataTableFromDataReader(IDataReader reader, string tableName)
         {
             // set up the column structure of the data table from the reader
             object[] values;
@@ -179,7 +179,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private void DataTableFromDataReaderDataTypes(DataTable dataTypesTable, OdbcDataReader dataReader, OdbcConnection connection)
+        private static void DataTableFromDataReaderDataTypes(DataTable dataTypesTable, OdbcDataReader dataReader, OdbcConnection connection)
         {
             DataTable? schemaTable;
             //
@@ -425,7 +425,7 @@ namespace System.Data.Odbc
             }
         }
 
-        private DataTable DataTableFromDataReaderIndex(IDataReader reader,
+        private static DataTable DataTableFromDataReaderIndex(IDataReader reader,
                                                        string tableName,
                                                        string? restrictionIndexName)
         {
@@ -449,7 +449,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable DataTableFromDataReaderProcedureColumns(IDataReader reader, string tableName, bool isColumn)
+        private static DataTable DataTableFromDataReaderProcedureColumns(IDataReader reader, string tableName, bool isColumn)
         {
             // set up the column structure of the data table from the reader
             object[] values;
@@ -473,7 +473,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable DataTableFromDataReaderProcedures(IDataReader reader, string tableName, short procedureType)
+        private static DataTable DataTableFromDataReaderProcedures(IDataReader reader, string tableName, short procedureType)
         {
             // Build a DataTable from the reader
 
@@ -498,7 +498,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private void FillOutRestrictions(int restrictionsCount, string?[]? restrictions, object?[] allRestrictions, string collectionName)
+        private static void FillOutRestrictions(int restrictionsCount, string?[]? restrictions, object?[] allRestrictions, string collectionName)
         {
             Debug.Assert(allRestrictions.Length >= restrictionsCount);
 
@@ -529,7 +529,7 @@ namespace System.Data.Odbc
         }
 
 
-        private DataTable GetColumnsCollection(string?[]? restrictions, OdbcConnection connection)
+        private static DataTable GetColumnsCollection(string?[]? restrictions, OdbcConnection connection)
         {
             OdbcCommand? command = null;
             OdbcDataReader? dataReader = null;
@@ -830,7 +830,7 @@ namespace System.Data.Odbc
             return dataTypesTable;
         }
 
-        private DataTable GetIndexCollection(string?[]? restrictions, OdbcConnection connection)
+        private static DataTable GetIndexCollection(string?[]? restrictions, OdbcConnection connection)
         {
             OdbcCommand? command = null;
             OdbcDataReader? dataReader = null;
@@ -884,7 +884,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable GetProcedureColumnsCollection(string?[]? restrictions, OdbcConnection connection, bool isColumns)
+        private static DataTable GetProcedureColumnsCollection(string?[]? restrictions, OdbcConnection connection, bool isColumns)
         {
             OdbcCommand? command = null;
             OdbcDataReader? dataReader = null;
@@ -927,7 +927,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private DataTable GetProceduresCollection(string?[]? restrictions, OdbcConnection connection)
+        private static DataTable GetProceduresCollection(string?[]? restrictions, OdbcConnection connection)
         {
             OdbcCommand? command = null;
             OdbcDataReader? dataReader = null;
@@ -1030,7 +1030,7 @@ namespace System.Data.Odbc
             return reservedWordsTable;
         }
 
-        private DataTable GetTablesCollection(string?[]? restrictions, OdbcConnection connection, bool isTables)
+        private static DataTable GetTablesCollection(string?[]? restrictions, OdbcConnection connection, bool isTables)
         {
             OdbcCommand? command = null;
             OdbcDataReader? dataReader = null;
@@ -1079,7 +1079,7 @@ namespace System.Data.Odbc
             return resultTable;
         }
 
-        private bool IncludeIndexRow(object rowIndexName,
+        private static bool IncludeIndexRow(object rowIndexName,
                                         string? restrictionIndexName,
                                         short rowIndexType)
         {
@@ -1097,7 +1097,7 @@ namespace System.Data.Odbc
             return true;
         }
 
-        private DataTable NewDataTableFromReader(IDataReader reader, out object[] values, string tableName)
+        private static DataTable NewDataTableFromReader(IDataReader reader, out object[] values, string tableName)
         {
             DataTable resultTable = new DataTable(tableName);
             resultTable.Locale = System.Globalization.CultureInfo.InvariantCulture;

@@ -64,7 +64,7 @@ namespace System.ComponentModel
         private void PostCore(SendOrPostCallback d, object? arg, bool markCompleted)
         {
             VerifyNotCompleted();
-            VerifyDelegateNotNull(d);
+            ArgumentNullException.ThrowIfNull(d);
             if (markCompleted)
             {
                 // This call is in response to a PostOperationCompleted.  As such, we need to mark
@@ -93,14 +93,6 @@ namespace System.ComponentModel
             if (_alreadyCompleted)
             {
                 throw new InvalidOperationException(SR.Async_OperationAlreadyCompleted);
-            }
-        }
-
-        private void VerifyDelegateNotNull(SendOrPostCallback d)
-        {
-            if (d == null)
-            {
-                throw new ArgumentNullException(nameof(d), SR.Async_NullDelegate);
             }
         }
 

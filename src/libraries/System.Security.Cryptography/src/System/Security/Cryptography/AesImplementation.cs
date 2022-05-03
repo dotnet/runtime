@@ -180,10 +180,9 @@ namespace System.Security.Cryptography
 
         private ICryptoTransform CreateTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting)
         {
-            // note: rbgIV is guaranteed to be cloned before this method, so no need to clone it again
+            ArgumentNullException.ThrowIfNull(rgbKey);
 
-            if (rgbKey == null)
-                throw new ArgumentNullException(nameof(rgbKey));
+            // note: rbgIV is guaranteed to be cloned before this method, so no need to clone it again
 
             long keySize = rgbKey.Length * (long)BitsPerByte;
             if (keySize > int.MaxValue || !((int)keySize).IsLegalSize(this.LegalKeySizes))

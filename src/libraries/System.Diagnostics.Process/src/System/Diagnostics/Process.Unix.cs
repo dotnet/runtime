@@ -142,10 +142,7 @@ namespace System.Diagnostics
         }
 
         /// <summary>Discards any information about the associated process.</summary>
-        private void RefreshCore()
-        {
-            // Nop.  No additional state to reset.
-        }
+        partial void RefreshCore();
 
         /// <summary>Additional logic invoked when the Process is closed.</summary>
         private void CloseCore()
@@ -249,7 +246,7 @@ namespace System.Diagnostics
         /// should be temporarily boosted by the operating system when the main window
         /// has focus.
         /// </summary>
-        private bool PriorityBoostEnabledCore
+        private static bool PriorityBoostEnabledCore
         {
             get { return false; } //Nop
             set { } // Nop
@@ -1055,13 +1052,13 @@ namespace System.Diagnostics
 
         public IntPtr MainWindowHandle => IntPtr.Zero;
 
-        private bool CloseMainWindowCore() => false;
+        private static bool CloseMainWindowCore() => false;
 
         public string MainWindowTitle => string.Empty;
 
         public bool Responding => true;
 
-        private bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnkownError);
+        private static bool WaitForInputIdleCore(int milliseconds) => throw new InvalidOperationException(SR.InputIdleUnkownError);
 
         private static unsafe void EnsureInitialized()
         {

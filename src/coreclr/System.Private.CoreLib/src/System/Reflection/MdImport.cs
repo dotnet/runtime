@@ -194,7 +194,9 @@ namespace System.Reflection
         }
     }
 
+#pragma warning disable CA1066 // IEquatable<MetadataImport> interface implementation isn't used
     internal readonly struct MetadataImport
+#pragma warning restore CA1067
     {
         private readonly IntPtr m_metadataImport2;
         private readonly object? m_keepalive;

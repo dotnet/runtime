@@ -110,13 +110,11 @@ namespace System.Security.AccessControl
 
         internal void MarshalHeader(byte[] binaryForm, int offset)
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             int Length = BinaryLength; // Invokes the most derived property
 
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
-            else if (offset < 0)
+            if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(offset),
@@ -243,11 +241,9 @@ namespace System.Security.AccessControl
 
         internal static void VerifyHeader(byte[] binaryForm, int offset)
         {
-            if (binaryForm == null)
-            {
-                throw new ArgumentNullException(nameof(binaryForm));
-            }
-            else if (offset < 0)
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
+            if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(
                     nameof(offset),
@@ -663,10 +659,7 @@ namespace System.Security.AccessControl
         internal KnownAce(AceType type, AceFlags flags, int accessMask, SecurityIdentifier securityIdentifier)
             : base(type, flags)
         {
-            if (securityIdentifier == null)
-            {
-                throw new ArgumentNullException(nameof(securityIdentifier));
-            }
+            ArgumentNullException.ThrowIfNull(securityIdentifier);
 
             //
             // The values are set by invoking the properties.
@@ -1101,7 +1094,7 @@ namespace System.Security.AccessControl
 
         #region Private Methods
 
-        private AceQualifier QualifierFromType(AceType type, out bool isCallback)
+        private static AceQualifier QualifierFromType(AceType type, out bool isCallback)
         {
             //
             // Better performance might be achieved by using a hard-coded table

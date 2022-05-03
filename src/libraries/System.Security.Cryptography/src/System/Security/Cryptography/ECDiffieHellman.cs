@@ -34,10 +34,7 @@ namespace System.Security.Cryptography
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new ECDiffieHellman? Create(string algorithm)
         {
-            if (algorithm == null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             return CryptoConfig.CreateFromName(algorithm) as ECDiffieHellman;
         }

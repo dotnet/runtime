@@ -61,24 +61,18 @@ namespace System.Reflection.Emit
             Type[]? parameterTypes, Type[][]? parameterTypeRequiredCustomModifiers, Type[][]? parameterTypeOptionalCustomModifiers,
             ModuleBuilder mod, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] TypeBuilder type)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-
-            if (name.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(name));
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             if (name[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(name));
 
-            if (mod == null)
-                throw new ArgumentNullException(nameof(mod));
+            ArgumentNullException.ThrowIfNull(mod);
 
             if (parameterTypes != null)
             {
                 foreach (Type t in parameterTypes)
                 {
-                    if (t == null)
-                        throw new ArgumentNullException(nameof(parameterTypes));
+                    ArgumentNullException.ThrowIfNull(t, nameof(parameterTypes));
                 }
             }
 
@@ -138,12 +132,10 @@ namespace System.Reflection.Emit
 
         internal void CreateMethodBodyHelper(ILGenerator il)
         {
+            ArgumentNullException.ThrowIfNull(il);
+
             // Sets the IL of the method.  An ILGenerator is passed as an argument and the method
             // queries this instance to get all of the information which it needs.
-            if (il == null)
-            {
-                throw new ArgumentNullException(nameof(il));
-            }
 
             __ExceptionInfo[] excp;
             int counter = 0;
@@ -517,6 +509,7 @@ namespace System.Reflection.Emit
 
         public override Type[] GetGenericArguments() => m_inst ?? Type.EmptyTypes;
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
@@ -525,8 +518,7 @@ namespace System.Reflection.Emit
 
         public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
+            ArgumentNullException.ThrowIfNull(names);
 
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
@@ -535,8 +527,7 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_GenericParametersAlreadySet);
 
             for (int i = 0; i < names.Length; i++)
-                if (names[i] == null)
-                    throw new ArgumentNullException(nameof(names));
+                ArgumentNullException.ThrowIfNull(names[i], nameof(names));
 
             if (m_token != 0)
                 throw new InvalidOperationException(SR.InvalidOperation_MethodBuilderBaked);
@@ -625,15 +616,11 @@ namespace System.Reflection.Emit
 
         public void SetParameters(params Type[] parameterTypes)
         {
-            AssemblyBuilder.CheckContext(parameterTypes);
-
             SetSignature(null, null, null, parameterTypes, null, null);
         }
 
         public void SetReturnType(Type? returnType)
         {
-            AssemblyBuilder.CheckContext(returnType);
-
             SetSignature(returnType, null, null, null, null, null);
         }
 
@@ -645,11 +632,6 @@ namespace System.Reflection.Emit
             // But we cannot because that would be a breaking change from V2.
             if (m_token != 0)
                 return;
-
-            AssemblyBuilder.CheckContext(returnType);
-            AssemblyBuilder.CheckContext(returnTypeRequiredCustomModifiers, returnTypeOptionalCustomModifiers, parameterTypes);
-            AssemblyBuilder.CheckContext(parameterTypeRequiredCustomModifiers);
-            AssemblyBuilder.CheckContext(parameterTypeOptionalCustomModifiers);
 
             ThrowIfGeneric();
 
@@ -742,10 +724,8 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con is null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute is null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             ThrowIfGeneric();
 
@@ -759,8 +739,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             ThrowIfGeneric();
 

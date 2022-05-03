@@ -11,7 +11,9 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     {
         public PatternContextRagged(IRaggedPattern pattern)
         {
-            Pattern = pattern ?? throw new ArgumentNullException(nameof(pattern));
+            ThrowHelper.ThrowIfNull(pattern);
+
+            Pattern = pattern;
         }
 
         public override PatternTestResult Test(FileInfoBase file)

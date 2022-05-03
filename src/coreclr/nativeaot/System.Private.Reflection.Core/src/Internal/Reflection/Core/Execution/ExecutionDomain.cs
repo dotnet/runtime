@@ -89,7 +89,7 @@ namespace Internal.Reflection.Core.Execution
                     {
                         foreach (string defaultAssemblyName in defaultAssemblyNames)
                         {
-                            RuntimeAssemblyName runtimeAssemblyName = AssemblyNameParser.Parse(defaultAssemblyName);
+                            RuntimeAssemblyName runtimeAssemblyName = RuntimeAssemblyName.Parse(defaultAssemblyName);
                             RuntimeAssemblyInfo defaultAssembly = RuntimeAssemblyInfo.GetRuntimeAssemblyIfExists(runtimeAssemblyName);
                             if (defaultAssembly == null)
                                 continue;
@@ -357,7 +357,7 @@ namespace Internal.Reflection.Core.Execution
 
         internal ReflectionDomainSetup ReflectionDomainSetup { get; }
 
-        internal IEnumerable<Type> PrimitiveTypes => s_primitiveTypes;
+        internal static IEnumerable<Type> PrimitiveTypes => s_primitiveTypes;
 
         private static readonly Type[] s_primitiveTypes =
         {

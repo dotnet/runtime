@@ -141,9 +141,6 @@
   <data name="EndPositionNotReached" xml:space="preserve">
     <value>End position was not reached during enumeration.</value>
   </data>
-  <data name="UnexpectedSegmentType" xml:space="preserve">
-    <value>Unexpected segment type.</value>
-  </data>
   <data name="BufferWriterAdvancedTooFar" xml:space="preserve">
     <value>Cannot advance past the end of the buffer, which has a size of {0}.</value>
   </data>

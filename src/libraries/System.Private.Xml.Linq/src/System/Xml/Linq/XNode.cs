@@ -440,7 +440,8 @@ namespace System.Xml.Linq
         /// </exception>
         public static XNode ReadFrom(XmlReader reader)
         {
-            if (reader == null) throw new ArgumentNullException(nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (reader.ReadState != ReadState.Interactive) throw new InvalidOperationException(SR.InvalidOperation_ExpectedInteractive);
             switch (reader.NodeType)
             {
@@ -477,8 +478,8 @@ namespace System.Xml.Linq
         /// </exception>
         public static Task<XNode> ReadFromAsync(XmlReader reader, CancellationToken cancellationToken)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
+
             if (cancellationToken.IsCancellationRequested)
                 return Task.FromCanceled<XNode>(cancellationToken);
             return ReadFromAsyncInternal(reader, cancellationToken);

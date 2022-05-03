@@ -21,10 +21,7 @@ namespace Microsoft.Extensions.Logging
         /// <returns>The <see cref="ILoggingBuilder"/> so that additional calls can be chained.</returns>
         public static ILoggingBuilder AddEventSourceLogger(this ILoggingBuilder builder)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ThrowHelper.ThrowIfNull(builder);
 
             builder.Services.TryAddSingleton(LoggingEventSource.Instance);
             builder.Services.TryAddEnumerable(ServiceDescriptor.Singleton<ILoggerProvider, EventSourceLoggerProvider>());

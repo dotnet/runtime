@@ -16,7 +16,8 @@ namespace System.Runtime.Serialization
 
         public XmlWriterDelegator(XmlWriter writer)
         {
-            XmlObjectSerializer.CheckNull(writer, nameof(writer));
+            ArgumentNullException.ThrowIfNull(writer);
+
             this.writer = writer;
             this.dictionaryWriter = writer as XmlDictionaryWriter;
         }
@@ -267,7 +268,7 @@ namespace System.Runtime.Serialization
             WriteXmlnsAttribute(ns);
         }
 
-        private Exception CreateInvalidPrimitiveTypeException(Type type)
+        private static Exception CreateInvalidPrimitiveTypeException(Type type)
         {
             return new InvalidDataContractException(SR.Format(SR.InvalidPrimitiveType_Serialization, DataContract.GetClrTypeFullName(type)));
         }

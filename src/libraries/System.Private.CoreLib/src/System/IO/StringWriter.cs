@@ -37,10 +37,7 @@ namespace System.IO
 
         public StringWriter(StringBuilder sb, IFormatProvider? formatProvider) : base(formatProvider)
         {
-            if (sb == null)
-            {
-                throw new ArgumentNullException(nameof(sb), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(sb);
 
             _sb = sb;
             _isOpen = true;
@@ -100,10 +97,8 @@ namespace System.IO
         //
         public override void Write(char[] buffer, int index, int count)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);

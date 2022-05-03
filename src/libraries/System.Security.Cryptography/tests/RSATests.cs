@@ -18,8 +18,6 @@ namespace System.Security.Cryptography.Tests
             Assert.Throws<NotImplementedException>(() => rsa.Encrypt(null, null));
             Assert.Throws<NotImplementedException>(() => rsa.SignHash(null, HashAlgorithmName.SHA256, null));
             Assert.Throws<NotImplementedException>(() => rsa.VerifyHash(null, null, HashAlgorithmName.SHA256, null));
-            Assert.Throws<NotImplementedException>(() => rsa.HashData(null, 0, 0, HashAlgorithmName.SHA256));
-            Assert.Throws<NotImplementedException>(() => rsa.HashData(null, HashAlgorithmName.SHA256));
         }
 
         [Fact]
@@ -145,7 +143,7 @@ namespace System.Security.Cryptography.Tests
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => rsa.SignData(new byte[1], 0, -1, HashAlgorithmName.SHA256, null));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("count", () => rsa.SignData(new byte[1], 0, 2, HashAlgorithmName.SHA256, null));
 
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.SignData(new byte[1], 0, 1, new HashAlgorithmName(null), null));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => rsa.SignData(new byte[1], 0, 1, new HashAlgorithmName(null), null));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.SignData(new byte[1], 0, 1, new HashAlgorithmName(""), null));
 
             AssertExtensions.Throws<ArgumentNullException>("padding", () => rsa.SignData(new byte[1], 0, 1, new HashAlgorithmName("abc"), null));
@@ -163,7 +161,7 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("data", () => rsa.SignData((Stream)null, HashAlgorithmName.SHA256, null));
 
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.SignData(Stream.Null, new HashAlgorithmName(null), null));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => rsa.SignData(Stream.Null, new HashAlgorithmName(null), null));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.SignData(Stream.Null, new HashAlgorithmName(""), null));
 
             AssertExtensions.Throws<ArgumentNullException>("padding", () => rsa.SignData(Stream.Null, new HashAlgorithmName("abc"), null));
@@ -182,7 +180,7 @@ namespace System.Security.Cryptography.Tests
 
             AssertExtensions.Throws<ArgumentNullException>("signature", () => rsa.VerifyData(Stream.Null, null, HashAlgorithmName.SHA256, null));
 
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.VerifyData(Stream.Null, new byte[1], new HashAlgorithmName(null), null));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => rsa.VerifyData(Stream.Null, new byte[1], new HashAlgorithmName(null), null));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => rsa.VerifyData(Stream.Null, new byte[1], new HashAlgorithmName(""), null));
 
             AssertExtensions.Throws<ArgumentNullException>("padding", () => rsa.VerifyData(Stream.Null, new byte[1], new HashAlgorithmName("abc"), null));

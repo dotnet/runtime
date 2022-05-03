@@ -17,15 +17,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ExportingMember(ExportDefinition definition, ReflectionMember member)
         {
-            if (definition == null)
-            {
-                throw new ArgumentNullException(nameof(definition));
-            }
-
-            if (member == null)
-            {
-                throw new ArgumentNullException(nameof(member));
-            }
+            ArgumentNullException.ThrowIfNull(definition);
+            ArgumentNullException.ThrowIfNull(member);
 
             _definition = definition;
             _member = member;

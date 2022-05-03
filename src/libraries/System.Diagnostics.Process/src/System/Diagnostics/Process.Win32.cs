@@ -109,7 +109,7 @@ namespace System.Diagnostics
             return false;
         }
 
-        private int GetShellError(IntPtr error)
+        private static int GetShellError(IntPtr error)
         {
             switch ((long)error)
             {

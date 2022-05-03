@@ -7,8 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.Arm;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Runtime.Intrinsics
 {
     public static class Vector64
@@ -455,7 +453,7 @@ namespace System.Runtime.Intrinsics
 
             if ((uint)startIndex >= (uint)destination.Length)
             {
-                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_Index();
+                ThrowHelper.ThrowStartIndexArgumentOutOfRange_ArgumentOutOfRange_IndexMustBeLess();
             }
 
             if ((destination.Length - startIndex) < Vector64<T>.Count)
@@ -871,7 +869,7 @@ namespace System.Runtime.Intrinsics
 
             if ((index < 0) || ((values.Length - index) < Vector64<T>.Count))
             {
-                ThrowHelper.ThrowArgumentOutOfRange_IndexException();
+                ThrowHelper.ThrowArgumentOutOfRange_IndexMustBeLessOrEqualException();
             }
 
             return Unsafe.ReadUnaligned<Vector64<T>>(ref Unsafe.As<T, byte>(ref values[index]));

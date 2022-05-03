@@ -117,9 +117,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             Assert.Null(anotherClass.ColorNull);
             Assert.Equal(12, anotherClass.Integer);
             Assert.Null(anotherClass.IntegerNull);
-            // re-enable once https://github.com/dotnet/csharplang/issues/99 is implemented
-            // see https://github.com/dotnet/runtime/issues/49069
-            // Assert.Equal(ExpectStructWithPublicDefaultConstructorInvoked, anotherClass.StructWithConstructor.ConstructorInvoked);
+            Assert.Equal(ExpectStructWithPublicDefaultConstructorInvoked, anotherClass.StructWithConstructor.ConstructorInvoked);
         }
 
         [Theory]
@@ -393,7 +391,7 @@ namespace Microsoft.Extensions.DependencyInjection.Specification
             }
         }
 
-        private class Bar
+        private sealed class Bar
         {
             public Bar()
             {

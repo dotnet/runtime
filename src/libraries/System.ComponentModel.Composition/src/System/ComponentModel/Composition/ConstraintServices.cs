@@ -55,10 +55,7 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateContractConstraintBody(string contractName, ParameterExpression parameter)
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(parameter);
 
             // export.ContractName=<contract>;
             return Expression.Equal(
@@ -68,15 +65,8 @@ namespace System.ComponentModel.Composition
 
         private static Expression? CreateMetadataConstraintBody(IEnumerable<KeyValuePair<string, Type>> requiredMetadata, ParameterExpression parameter)
         {
-            if (requiredMetadata == null)
-            {
-                throw new ArgumentNullException(nameof(requiredMetadata));
-            }
-
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(requiredMetadata);
+            ArgumentNullException.ThrowIfNull(parameter);
 
             Expression? body = null;
             foreach (KeyValuePair<string, Type> requiredMetadataItem in requiredMetadata)
@@ -93,14 +83,11 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateCreationPolicyContraint(CreationPolicy policy, ParameterExpression parameter)
         {
+            ArgumentNullException.ThrowIfNull(parameter);
+
             if (policy == CreationPolicy.Any)
             {
                 throw new Exception(SR.Diagnostic_InternalExceptionMessage);
-            }
-
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
             }
 
             //    !definition.Metadata.ContainsKey(CompositionConstants.PartCreationPolicyMetadataName) ||
@@ -116,15 +103,8 @@ namespace System.ComponentModel.Composition
 
         private static Expression CreateTypeIdentityContraint(string requiredTypeIdentity, ParameterExpression parameter)
         {
-            if (requiredTypeIdentity == null)
-            {
-                throw new ArgumentNullException(requiredTypeIdentity);
-            }
-
-            if (parameter == null)
-            {
-                throw new ArgumentException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(requiredTypeIdentity);
+            ArgumentNullException.ThrowIfNull(parameter);
 
             //    definition.Metadata.ContainsKey(CompositionServices.ExportTypeIdentity) &&
             //        requiredTypeIdentity.Equals(definition.Metadata[CompositionConstants.ExportTypeIdentityMetadataName]);

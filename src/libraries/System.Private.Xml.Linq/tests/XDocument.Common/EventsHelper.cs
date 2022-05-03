@@ -204,7 +204,8 @@ namespace CoreXml.Test.XLinq
 
         public UndoManager(XObject root)
         {
-            if (root == null) throw new ArgumentNullException();
+            ArgumentNullException.ThrowIfNull(root);
+
             _root = root;
             _root.Changing += new EventHandler<XObjectChangeEventArgs>(Changing);
             _root.Changed += new EventHandler<XObjectChangeEventArgs>(Changed);

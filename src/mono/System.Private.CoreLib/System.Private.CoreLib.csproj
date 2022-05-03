@@ -10,7 +10,7 @@
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
     <OutputPath>$(RuntimeBinDir)IL/</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
-    <Platforms>x64;x86;arm;arm64;s390x;wasm</Platforms>
+    <Platforms>x64;x86;arm;armv6;arm64;s390x;wasm</Platforms>
 
     <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
   </PropertyGroup>
@@ -41,7 +41,6 @@
     <DefineConstants>MONO;NETCOREAPP;SYSTEM_PRIVATE_CORELIB</DefineConstants>
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 
-    <SkipCommonResourcesIncludes>true</SkipCommonResourcesIncludes>
     <DocumentationFile>$(OutputPath)$(MSBuildProjectName).xml</DocumentationFile>
     <SlnGenSolutionFolder>src</SlnGenSolutionFolder>
   </PropertyGroup>
@@ -55,6 +54,10 @@
   <PropertyGroup Condition="'$(Platform)' == 'x86'">
     <PlatformTarget>x86</PlatformTarget>
     <DefineConstants>$(DefineConstants);TARGET_X86</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Platform)' == 'armv6'">
+    <PlatformTarget>arm</PlatformTarget>
+    <DefineConstants>$(DefineConstants);TARGET_ARMV6</DefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Platform)' == 'arm'">
     <PlatformTarget>arm</PlatformTarget>
@@ -110,21 +113,23 @@
     <DefineConstants>$(DefineConstants);MONO_FEATURE_SRE</DefineConstants>
 
     <FeatureMono>true</FeatureMono>
+    <FeatureWasmThreads Condition="'$(TargetsBrowser)' == 'true' and '$(WasmEnableThreads)' == 'true'">true</FeatureWasmThreads>
+    <FeatureWasmPerfTracing Condition="'$(TargetsBrowser)' == 'true' and ('$(WasmEnableThreads)' == 'true' or '$(WasmEnablePerfTracing)' == 'true')">true</FeatureWasmPerfTracing>
     <FeatureManagedEtwChannels>true</FeatureManagedEtwChannels>
     <FeatureManagedEtw>true</FeatureManagedEtw>
-    <FeatureGenericMath>true</FeatureGenericMath>
     <FeaturePortableTimer Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableTimer>
-    <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePortableThreadPool>
-    <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true'">true</FeaturePerfTracing>
+    <FeaturePortableThreadPool Condition="'$(TargetsBrowser)' != true or '$(FeatureWasmThreads)' == 'true'">true</FeaturePortableThreadPool>
+    <FeaturePerfTracing Condition="'$(TargetsBrowser)' != 'true' or '$(FeatureWasmPerftracing)' == 'true'">true</FeaturePerfTracing>
     <FeatureObjCMarshal Condition="'$(TargetsOSX)' == 'true' or '$(TargetsMacCatalyst)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</FeatureObjCMarshal>
   </PropertyGroup>
 
   <PropertyGroup>
-    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
     <DefineConstants Condition="'$(FeatureManagedEtw)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW</DefineConstants>
     <DefineConstants Condition="'$(FeatureManagedEtwChannels)' == 'true'">$(DefineConstants);FEATURE_MANAGED_ETW_CHANNELS</DefineConstants>
     <DefineConstants Condition="'$(FeaturePerfTracing)' == 'true'">$(DefineConstants);FEATURE_PERFTRACING</DefineConstants>
     <DefineConstants Condition="'$(FeatureObjCMarshal)' == 'true'">$(DefineConstants);FEATURE_OBJCMARSHAL</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'" >$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
+    <DefineConstants Condition="'$(FeatureWasmPerfTracing)' == 'true'">$(DefineConstants);FEATURE_WASM_PERFTRACING</DefineConstants>
   </PropertyGroup>
 
   <!-- ILLinker settings -->
@@ -260,7 +265,6 @@
       <Compile Include="$(BclSourcesRoot)\System\Threading\Interlocked.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Monitor.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Overlapped.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Mono.cs" />
   </ItemGroup>
@@ -285,9 +289,14 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetsBrowser)' == 'true'">
       <Compile Include="$(BclSourcesRoot)\System\Threading\TimerQueue.Browser.Mono.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmThreads)' == 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Threads.Mono.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' and '$(FeatureWasmThreads)' != 'true'">
+      <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPoolBoundHandle.Browser.Mono.cs" />
+      <Compile Include="$(BclSourcesRoot)\System\Threading\PreAllocatedOverlapped.Browser.Mono.cs" />
       <Compile Include="$(BclSourcesRoot)\System\Threading\ThreadPool.Browser.Mono.cs" />
-      <Compile Include="$(BclSourcesRoot)\System\Threading\Thread.Browser.Mono.cs" />
-      <Compile Include="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System\Threading\ThreadPoolBoundHandle.PlatformNotSupported.cs" />
   </ItemGroup>
   <ItemGroup>
       <Compile Include="$(BclSourcesRoot)\Mono\HotReload.cs" />
@@ -306,7 +315,7 @@
   <Import Project="$(LibrariesProjectRoot)\System.Private.CoreLib\src\System.Private.CoreLib.Shared.projitems" Label="Shared" />
 
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\generators\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
+    <ProjectReference Include="$(LibrariesProjectRoot)\System.Private.CoreLib\gen\System.Private.CoreLib.Generators.csproj" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <Target Name="CopyCoreLibToBinDir" AfterTargets="Build">

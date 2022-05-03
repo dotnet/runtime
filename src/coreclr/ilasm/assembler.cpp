@@ -1161,7 +1161,7 @@ void Assembler::EmitLocals(BinStr* sig)
             ARG_NAME_LIST   *pAN, *pList= getArgNameList();
             if(pList)
             {
-                VarDescr*       pVD;
+                VarDescr* pVD = NULL;
                 for(pAN=pList; pAN; pAN = pAN->pNext)
                 {
                     if(pAN->dwAttr == 0) pAN->dwAttr = m_pCurMethod->m_Locals.COUNT() +1;

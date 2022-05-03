@@ -72,9 +72,9 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
         public PEHeaders(Stream peStream, int size, bool isLoadedImage)
         {
-            if (peStream == null)
+            if (peStream is null)
             {
-                throw new ArgumentNullException(nameof(peStream));
+                Throw.ArgumentNull(nameof(peStream));
             }
 
             if (!peStream.CanRead || !peStream.CanSeek)
@@ -246,7 +246,7 @@ namespace System.Reflection.PortableExecutable
             return true;
         }
 
-        private void SkipDosHeader(ref PEBinaryReader reader, out bool isCOFFOnly)
+        private static void SkipDosHeader(ref PEBinaryReader reader, out bool isCOFFOnly)
         {
             // Look for DOS Signature "MZ"
             ushort dosSig = reader.ReadUInt16();

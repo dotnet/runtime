@@ -102,7 +102,7 @@ namespace System.Reflection.TypeLoading
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public sealed override MethodInfo MakeGenericMethod(params Type[] typeArguments)
         {
-            if (typeArguments == null)
+            if (typeArguments is null)
                 throw new ArgumentNullException(nameof(typeArguments));
 
             if (!IsGenericMethodDefinition)

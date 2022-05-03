@@ -26,6 +26,9 @@
     <OfficialBuildRID Include="linux-arm">
       <Platform>arm</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-armv6">
+      <Platform>armv6</Platform>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="linux-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>

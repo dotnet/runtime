@@ -115,46 +115,6 @@ enum
     ASSIGN_REG(R13)        \
     ASSIGN_REG(R14)        \
     ASSIGN_REG(R15)
-#elif (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
-#define ASSIGN_UNWIND_REGS \
-    ASSIGN_REG(Pc)         \
-    ASSIGN_REG(Sp)         \
-    ASSIGN_REG(Fp)         \
-    ASSIGN_REG(Lr)         \
-    ASSIGN_REG(X19)        \
-    ASSIGN_REG(X20)        \
-    ASSIGN_REG(X21)        \
-    ASSIGN_REG(X22)        \
-    ASSIGN_REG(X23)        \
-    ASSIGN_REG(X24)        \
-    ASSIGN_REG(X25)        \
-    ASSIGN_REG(X26)        \
-    ASSIGN_REG(X27)        \
-    ASSIGN_REG(X28)        \
-    ASSIGN_FP_REG(8)       \
-    ASSIGN_FP_REG(9)       \
-    ASSIGN_FP_REG(10)       \
-    ASSIGN_FP_REG(11)       \
-    ASSIGN_FP_REG(12)       \
-    ASSIGN_FP_REG(13)       \
-    ASSIGN_FP_REG(14)       \
-    ASSIGN_FP_REG(15)       \
-    ASSIGN_FP_REG(16)       \
-    ASSIGN_FP_REG(17)       \
-    ASSIGN_FP_REG(18)       \
-    ASSIGN_FP_REG(19)       \
-    ASSIGN_FP_REG(20)       \
-    ASSIGN_FP_REG(21)       \
-    ASSIGN_FP_REG(22)       \
-    ASSIGN_FP_REG(23)       \
-    ASSIGN_FP_REG(24)       \
-    ASSIGN_FP_REG(25)       \
-    ASSIGN_FP_REG(26)       \
-    ASSIGN_FP_REG(27)       \
-    ASSIGN_FP_REG(28)       \
-    ASSIGN_FP_REG(29)       \
-    ASSIGN_FP_REG(30)       \
-    ASSIGN_FP_REG(31)
 #elif (defined(HOST_UNIX) && defined(HOST_X86)) || (defined(HOST_WINDOWS) && defined(TARGET_X86))
 #define ASSIGN_UNWIND_REGS \
     ASSIGN_REG(Eip)        \
@@ -176,20 +136,31 @@ enum
     ASSIGN_REG(R13)        \
     ASSIGN_REG(R14)        \
     ASSIGN_REG(R15)
+#elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
+#define ASSIGN_UNWIND_REGS \
+    ASSIGN_REG(Pc)         \
+    ASSIGN_REG(Tp)         \
+    ASSIGN_REG(Sp)         \
+    ASSIGN_REG(Fp)         \
+    ASSIGN_REG(Ra)         \
+    ASSIGN_REG(S0)         \
+    ASSIGN_REG(S1)         \
+    ASSIGN_REG(S2)         \
+    ASSIGN_REG(S3)         \
+    ASSIGN_REG(S4)         \
+    ASSIGN_REG(S5)         \
+    ASSIGN_REG(S6)         \
+    ASSIGN_REG(S7)         \
+    ASSIGN_REG(S8)
 #else
 #error unsupported architecture
 #endif
 
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
 {
-#if (defined(HOST_UNIX) && defined(HOST_ARM64)) || (defined(HOST_WINDOWS) && defined(TARGET_ARM64))
-    fpsimd_context* fp = GetNativeSigSimdContext(unwContext);
-#define ASSIGN_FP_REG(fp, reg) if (fp) *(NEON128*) &fp->vregs[reg] = winContext->V[reg];
-#endif
 #define ASSIGN_REG(reg) MCREG_##reg(unwContext->uc_mcontext) = winContext->reg;
     ASSIGN_UNWIND_REGS
 #undef ASSIGN_REG
-#undef ASSIGN_FP_REG
 }
 #else // UNWIND_CONTEXT_IS_UCONTEXT_T
 static void WinContextToUnwindContext(CONTEXT *winContext, unw_context_t *unwContext)
@@ -404,6 +375,21 @@ void UnwindContextToWinContext(unw_cursor_t *cursor, CONTEXT *winContext)
     unw_get_reg(cursor, UNW_S390X_R12, (unw_word_t *) &winContext->R12);
     unw_get_reg(cursor, UNW_S390X_R13, (unw_word_t *) &winContext->R13);
     unw_get_reg(cursor, UNW_S390X_R14, (unw_word_t *) &winContext->R14);
+#elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R1, (unw_word_t *) &winContext->Ra);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R2, (unw_word_t *) &winContext->Tp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R22, (unw_word_t *) &winContext->Fp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R23, (unw_word_t *) &winContext->S0);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R24, (unw_word_t *) &winContext->S1);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R25, (unw_word_t *) &winContext->S2);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R26, (unw_word_t *) &winContext->S3);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R27, (unw_word_t *) &winContext->S4);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R28, (unw_word_t *) &winContext->S5);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R29, (unw_word_t *) &winContext->S6);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R30, (unw_word_t *) &winContext->S7);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R31, (unw_word_t *) &winContext->S8);
 #else
 #error unsupported architecture
 #endif
@@ -489,6 +475,19 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
     GetContextPointer(cursor, unwContext, UNW_S390X_R13, &contextPointers->R13);
     GetContextPointer(cursor, unwContext, UNW_S390X_R14, &contextPointers->R14);
     GetContextPointer(cursor, unwContext, UNW_S390X_R15, &contextPointers->R15);
+#elif (defined(HOST_UNIX) && defined(HOST_LOONGARCH64))
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, &contextPointers->Ra);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R2, &contextPointers->Tp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, &contextPointers->Fp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, &contextPointers->S0);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, &contextPointers->S1);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R25, &contextPointers->S2);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R26, &contextPointers->S3);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R27, &contextPointers->S4);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R28, &contextPointers->S5);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R29, &contextPointers->S6);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R30, &contextPointers->S7);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R31, &contextPointers->S8);
 #else
 #error unsupported architecture
 #endif

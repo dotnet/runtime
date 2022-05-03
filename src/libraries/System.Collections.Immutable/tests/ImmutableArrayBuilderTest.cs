@@ -12,6 +12,13 @@ namespace System.Collections.Immutable.Tests
 {
     public class ImmutableArrayBuilderTest : SimpleElementImmutablesTestBase
     {
+        public static IEnumerable<object[]> BuilderAddRangeData()
+        {
+            yield return new object[] { new[] { "a", "b" }, Array.Empty<string>(), new[] { "a", "b" } };
+            yield return new object[] { Array.Empty<string>(), new[] { "a", "b" }, new[] { "a", "b" } };
+            yield return new object[] { new[] { "a", "b" }, new[] { "c", "d" }, new[] { "a", "b", "c", "d" } };
+        }
+
         [Fact]
         public void CreateBuilderDefaultCapacity()
         {
@@ -151,31 +158,83 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentNullException>("items", () => builder2.AddRange((ImmutableArray<string>.Builder)null));
         }
 
-        [Fact]
-        public void AddRangeDerivedArray()
+        [Theory]
+        [MemberData(nameof(BuilderAddRangeData))]
+        public void AddRangeDerivedArray(string[] builderElements, string[] rangeElements, string[] expectedResult)
         {
+            // Initialize builder
             var builder = new ImmutableArray<object>.Builder();
-            builder.AddRange(new[] { "a", "b" });
-            Assert.Equal(new[] { "a", "b" }, builder);
+            builder.AddRange(builderElements);
+
+            // AddRange
+            builder.AddRange(rangeElements);
+
+            // Assert
+            Assert.Equal(expectedResult, builder);
         }
 
-        [Fact]
-        public void AddRangeDerivedImmutableArray()
+        [Theory]
+        [MemberData(nameof(BuilderAddRangeData))]
+        public void AddRangeSpan(string[] builderElements, string[] rangeElements, string[] expectedResult)
         {
-            var builder = new ImmutableArray<object>.Builder();
-            builder.AddRange(new[] { "a", "b" }.ToImmutableArray());
-            Assert.Equal(new[] { "a", "b" }, builder);
-        }
-
-        [Fact]
-        public void AddRangeDerivedBuilder()
-        {
+            // Initialize builder
             var builder = new ImmutableArray<string>.Builder();
-            builder.AddRange(new[] { "a", "b" });
+            builder.AddRange(builderElements);
 
+            // AddRange
+            builder.AddRange(new ReadOnlySpan<string>(rangeElements));
+
+            // Assert
+            Assert.Equal(expectedResult, builder);
+        }
+
+        [Theory]
+        [MemberData(nameof(BuilderAddRangeData))]
+        public void AddRangeDerivedSpan(string[] builderElements, string[] rangeElements, string[] expectedResult)
+        {
+            // Initialize builder
+            var builder = new ImmutableArray<object>.Builder();
+            builder.AddRange(builderElements);
+
+            // AddRange
+            builder.AddRange(new ReadOnlySpan<string>(rangeElements));
+            
+            // Assert
+            Assert.Equal(expectedResult, builder);
+        }
+
+        [Theory]
+        [MemberData(nameof(BuilderAddRangeData))]
+        public void AddRangeDerivedImmutableArray(string[] builderElements, string[] rangeElements, string[] expectedResult)
+        {
+            // Initialize builder
+            var builder = new ImmutableArray<object>.Builder();
+            builder.AddRange(builderElements);
+
+            // AddRange
+            builder.AddRange(rangeElements.ToImmutableArray());
+            
+            // Assert
+            Assert.Equal(expectedResult, builder);
+        }
+
+        [Theory]
+        [MemberData(nameof(BuilderAddRangeData))]
+        public void AddRangeDerivedBuilder(string[] builderElements, string[] rangeElements, string[] expectedResult)
+        {
+            // Initialize builder
             var builderBase = new ImmutableArray<object>.Builder();
+            builderBase.AddRange(builderElements);
+            
+            // Prepare another builder to add
+            var builder = new ImmutableArray<string>.Builder();
+            builder.AddRange(rangeElements);
+
+            // AddRange
             builderBase.AddRange(builder);
-            Assert.Equal(new[] { "a", "b" }, builderBase);
+
+            // Assert
+            Assert.Equal(expectedResult, builderBase);
         }
 
         [Fact]
@@ -478,7 +537,7 @@ namespace System.Collections.Immutable.Tests
         }
 
         [Fact]
-        public void CopyTo()
+        public void CopyToArray()
         {
             var builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
             var target = new int[4];
@@ -489,6 +548,30 @@ namespace System.Collections.Immutable.Tests
             AssertExtensions.Throws<ArgumentNullException>("array", () => builder.CopyTo(null, 0));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.CopyTo(target, -1));
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => builder.CopyTo(target, 2));
+        }
+
+        [Fact]
+        public void CopyToSpan()
+        {
+            var builder = ImmutableArray.Create(1, 2, 3).ToBuilder();
+            Span<int> span;
+            int[] target = new int[4];
+
+            // Span is longer than immutableArray
+            span = new Span<int>(target);
+            builder.CopyTo(span);
+            Assert.Equal(new[] { 1, 2, 3, 0 }, target);
+            span.Fill(0);
+
+            // Span has same length as immutableArray
+            span = new Span<int>(target, 0, 3);
+            builder.CopyTo(span);
+            Assert.Equal(new[] { 1, 2, 3, 0 }, target);
+            span.Fill(0);
+
+            // Span is shorter than immutableArray
+            span = new Span<int>(target, 0, 2);
+            AssertExtensions.Throws<ArgumentOutOfRangeException, int>("destination", span, s => builder.CopyTo(s));
         }
 
         [Fact]

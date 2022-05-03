@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);TESTING_CNG_IMPLEMENTATION</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="CreateTests.cs" />
@@ -14,7 +14,9 @@
     <Compile Include="SymmetricCngTestHelpers.cs" />
     <Compile Include="TestData.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
+    <Compile Include="$(CommonTestPath)System\Security\Cryptography\SignatureSupport.cs"
+             Link="CommonTest\System\Security\Cryptography\SignatureSupport.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.Data.cs"
              Link="CommonTest\AlgorithmImplementations\AES\AesCipherTests.Data.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCornerTests.cs"
@@ -140,8 +142,8 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\RSAXml.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\RSA\SignVerify.netcoreapp.cs" />
-    <Compile Condition="'$(TargetsWindows)' == 'true'" Include="AesCngTests.cs" />
-    <Compile Condition="'$(TargetsWindows)' == 'true'" Include="TripleDESCngTests.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'windows'" Include="AesCngTests.cs" />
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'windows'" Include="TripleDESCngTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESContractTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesContractTests.cs"
@@ -152,11 +154,11 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESCipherOneShotTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesModeTests.cs"
              Link="CommonTest\AlgorithmImplementations\AES\AesModeTests.cs" />
-    <Compile Condition="'$(TargetsWindows)' == 'true'" Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs"
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'windows'" Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs"
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\TripleDES\TripleDESReusabilityTests.cs" />
-    <Compile Condition="'$(TargetsWindows)' == 'true'" Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs"
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'windows'" Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherTests.cs"
              Link="CommonTest\AlgorithmImplementations\AES\AesCipherTests.cs" />
-    <Compile Condition="'$(TargetsWindows)' == 'true'" Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherOneShotTests.cs"
+    <Compile Condition="'$(TargetPlatformIdentifier)' == 'windows'" Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\AES\AesCipherOneShotTests.cs"
              Link="CommonTest\AlgorithmImplementations\AES\AesCipherTests.OneShot" />
     <Compile Include="ECDiffieHellmanCngTests.cs" />
     <Compile Include="$(CommonTestPath)System\Security\Cryptography\AlgorithmImplementations\ECDiffieHellman\ECDiffieHellmanTests.cs"
@@ -177,7 +179,6 @@
              Link="CommonTest\System\Security\Cryptography\AlgorithmImplementations\Symmetric\SymmetricOneShotBase.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\src\System.Security.Principal.Windows.csproj" />
   </ItemGroup>
 </Project>

@@ -116,10 +116,7 @@ namespace System.Net.Http
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (IsNativeHandlerEnabled)
                 {

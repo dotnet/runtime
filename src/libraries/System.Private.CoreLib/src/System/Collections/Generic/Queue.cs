@@ -51,8 +51,7 @@ namespace System.Collections.Generic
         // to get each of the elements.
         public Queue(IEnumerable<T> collection)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
+            ArgumentNullException.ThrowIfNull(collection);
 
             _array = EnumerableHelpers.ToArray(collection, out _size);
             if (_size != _array.Length) _tail = _size;
@@ -100,14 +99,11 @@ namespace System.Collections.Generic
         // index into the array.
         public void CopyTo(T[] array, int arrayIndex)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - arrayIndex < _size)
@@ -129,10 +125,7 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -147,7 +140,7 @@ namespace System.Collections.Generic
             int arrayLen = array.Length;
             if (index < 0 || index > arrayLen)
             {
-                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (arrayLen - index < _size)

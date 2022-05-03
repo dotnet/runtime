@@ -13,9 +13,9 @@
 .assembly 'tryfinallywith2endfinally' {}
 .assembly extern xunit.core {}
 
-.namespace hello
+.namespace hello_tryfinallywith2endfinally_basics_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .field private static class [eh_common]TestUtil.TestLog testLog
@@ -33,12 +33,12 @@
       callvirt   instance void [mscorlib]System.IO.TextWriter::WriteLine(string)
       ldloc.s    expectedOut
       newobj     instance void [eh_common]TestUtil.TestLog::.ctor(object)
-      stsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      stsfld     class [eh_common]TestUtil.TestLog hello_tryfinallywith2endfinally_basics_il.Class1::testLog
       ret
     } 
 
     .method public hidebysig static int32 
-            Main(string[] args) cil managed
+            Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -46,7 +46,7 @@
       .entrypoint
       .maxstack  1
 
-      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      ldsfld     class [eh_common]TestUtil.TestLog hello_tryfinallywith2endfinally_basics_il.Class1::testLog
       callvirt   instance void [eh_common]TestUtil.TestLog::StartRecording()
 
       .try
@@ -67,10 +67,10 @@
       }  
 
       IL_0017:  
-      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      ldsfld     class [eh_common]TestUtil.TestLog hello_tryfinallywith2endfinally_basics_il.Class1::testLog
       callvirt   instance void [eh_common]TestUtil.TestLog::StopRecording()
       
-      ldsfld     class [eh_common]TestUtil.TestLog hello.Class1::testLog
+      ldsfld     class [eh_common]TestUtil.TestLog hello_tryfinallywith2endfinally_basics_il.Class1::testLog
       callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
 
       ret

@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
@@ -12,10 +13,12 @@ namespace System.Text.Json.Reflection
     {
         public CustomAttributeDataWrapper(AttributeData a, MetadataLoadContextInternal metadataLoadContext)
         {
+            Debug.Assert(a.AttributeConstructor != null);
+
             var namedArguments = new List<CustomAttributeNamedArgument>();
             foreach (KeyValuePair<string, TypedConstant> na in a.NamedArguments)
             {
-                var member = a.AttributeClass!.GetMembers(na.Key).First();
+                var member = a.AttributeClass.BaseTypes().SelectMany(t => t.GetMembers(na.Key)).First();
 
                 MemberInfo memberInfo = member is IPropertySymbol
                     ? new PropertyInfoWrapper((IPropertySymbol)member, metadataLoadContext)
@@ -37,7 +40,7 @@ namespace System.Text.Json.Reflection
                 constructorArguments.Add(new CustomAttributeTypedArgument(ca.Type.AsType(metadataLoadContext), value));
             }
 
-            Constructor = new ConstructorInfoWrapper(a.AttributeConstructor!, metadataLoadContext);
+            Constructor = new ConstructorInfoWrapper(a.AttributeConstructor, metadataLoadContext);
             NamedArguments = namedArguments;
             ConstructorArguments = constructorArguments;
         }

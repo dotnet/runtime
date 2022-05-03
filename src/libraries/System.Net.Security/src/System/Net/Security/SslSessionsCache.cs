@@ -134,9 +134,9 @@ namespace System.Net.Security
 
             //SafeCredentialReference? cached;
             SafeFreeCredentials? credentials = GetCachedCredential(key);
-            if (credentials == null || credentials.IsClosed || credentials.IsInvalid)
+            if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < DateTime.UtcNow)
             {
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Not found or invalid, Current Cache Coun = {s_cachedCreds.Count}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(null, $"Not found or invalid, Current Cache Count = {s_cachedCreds.Count}");
                 return null;
             }
 
@@ -169,12 +169,13 @@ namespace System.Net.Security
 
             SafeFreeCredentials? credentials = GetCachedCredential(key);
 
-            if (credentials == null || credentials.IsClosed || credentials.IsInvalid)
+            DateTime utcNow = DateTime.UtcNow;
+            if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < utcNow)
             {
                 lock (s_cachedCreds)
                 {
                     credentials = GetCachedCredential(key);
-                    if (credentials == null || credentials.IsClosed || credentials.IsInvalid)
+                    if (credentials == null || credentials.IsClosed || credentials.IsInvalid || credentials.Expiry < utcNow)
                     {
                         SafeCredentialReference? cached = SafeCredentialReference.CreateReference(creds);
 

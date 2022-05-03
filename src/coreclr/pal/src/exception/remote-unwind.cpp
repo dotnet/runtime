@@ -124,7 +124,7 @@ typedef BOOL(*UnwindReadMemoryCallback)(PVOID address, PVOID buffer, SIZE_T size
 #define PRId PRId32
 #define PRIA "08"
 #define PRIxA PRIA PRIx
-#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X)
+#elif defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_S390X) || defined(TARGET_LOONGARCH64)
 #define PRIx PRIx64
 #define PRIu PRIu64
 #define PRId PRId64
@@ -1310,6 +1310,14 @@ GetProcInfo(unw_word_t ip, unw_proc_info_t *pip, libunwindInfo* info, bool* step
     return false;
 }
 
+//===-- CompactUnwindInfo.cpp ---------------------------------------------===//
+//
+// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+// See https://llvm.org/LICENSE.txt for license information.
+// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+//
+//===----------------------------------------------------------------------===//
+
 #if defined(TARGET_AMD64)
 
 static bool
@@ -1377,6 +1385,163 @@ StepWithCompactEncodingRBPFrame(const libunwindInfo* info, compact_unwind_encodi
     }
 
     TRACE("SUCCESS: compact step encoding %08x rip %p rsp %p rbp %p\n",
+        compactEncoding, (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
+    return true;
+}
+
+static bool
+StepWithCompactEncodingFrameless(const libunwindInfo* info, compact_unwind_encoding_t compactEncoding, unw_word_t functionStart)
+{
+    int mode = compactEncoding & UNWIND_X86_64_MODE_MASK;
+    CONTEXT* context = info->Context;
+
+    uint32_t stack_size = EXTRACT_BITS(compactEncoding, UNWIND_X86_64_FRAMELESS_STACK_SIZE);
+    uint32_t register_count = EXTRACT_BITS(compactEncoding, UNWIND_X86_64_FRAMELESS_STACK_REG_COUNT);
+    uint32_t permutation = EXTRACT_BITS(compactEncoding, UNWIND_X86_64_FRAMELESS_STACK_REG_PERMUTATION);
+
+    if (mode == UNWIND_X86_64_MODE_STACK_IND)
+    {
+        _ASSERTE(functionStart != 0);
+        unw_word_t addr = functionStart + stack_size;
+        if (!ReadValue32(info, &addr, &stack_size)) {
+            return false;
+        }
+        uint32_t stack_adjust = EXTRACT_BITS(compactEncoding, UNWIND_X86_64_FRAMELESS_STACK_ADJUST);
+        stack_size += stack_adjust * 8;
+    }
+    else
+    {
+        stack_size *= 8;
+    }
+
+    TRACE("Frameless function: encoding %08x stack size %d register count %d\n", compactEncoding, stack_size, register_count);
+
+    // We need to include (up to) 6 registers in 10 bits.
+    // That would be 18 bits if we just used 3 bits per reg to indicate
+    // the order they're saved on the stack.
+    //
+    // This is done with Lehmer code permutation, e.g. see
+    // http://stackoverflow.com/questions/1506078/fast-permutation-number-permutation-mapping-algorithms
+    int permunreg[6];
+
+    // This decodes the variable-base number in the 10 bits
+    // and gives us the Lehmer code sequence which can then
+    // be decoded.
+    switch (register_count) {
+        case 6:
+            permunreg[0] = permutation / 120; // 120 == 5!
+            permutation -= (permunreg[0] * 120);
+            permunreg[1] = permutation / 24; // 24 == 4!
+            permutation -= (permunreg[1] * 24);
+            permunreg[2] = permutation / 6; // 6 == 3!
+            permutation -= (permunreg[2] * 6);
+            permunreg[3] = permutation / 2; // 2 == 2!
+            permutation -= (permunreg[3] * 2);
+            permunreg[4] = permutation; // 1 == 1!
+            permunreg[5] = 0;
+            break;
+        case 5:
+            permunreg[0] = permutation / 120;
+            permutation -= (permunreg[0] * 120);
+            permunreg[1] = permutation / 24;
+            permutation -= (permunreg[1] * 24);
+            permunreg[2] = permutation / 6;
+            permutation -= (permunreg[2] * 6);
+            permunreg[3] = permutation / 2;
+            permutation -= (permunreg[3] * 2);
+            permunreg[4] = permutation;
+            break;
+        case 4:
+            permunreg[0] = permutation / 60;
+            permutation -= (permunreg[0] * 60);
+            permunreg[1] = permutation / 12;
+            permutation -= (permunreg[1] * 12);
+            permunreg[2] = permutation / 3;
+            permutation -= (permunreg[2] * 3);
+            permunreg[3] = permutation;
+            break;
+        case 3:
+            permunreg[0] = permutation / 20;
+            permutation -= (permunreg[0] * 20);
+            permunreg[1] = permutation / 4;
+            permutation -= (permunreg[1] * 4);
+            permunreg[2] = permutation;
+            break;
+        case 2:
+            permunreg[0] = permutation / 5;
+            permutation -= (permunreg[0] * 5);
+            permunreg[1] = permutation;
+            break;
+        case 1:
+            permunreg[0] = permutation;
+            break;
+    }
+
+    // Decode the Lehmer code for this permutation of
+    // the registers v. http://en.wikipedia.org/wiki/Lehmer_code
+    int registers[6] = {UNWIND_X86_64_REG_NONE, UNWIND_X86_64_REG_NONE,
+                        UNWIND_X86_64_REG_NONE, UNWIND_X86_64_REG_NONE,
+                        UNWIND_X86_64_REG_NONE, UNWIND_X86_64_REG_NONE};
+    bool used[7] = {false, false, false, false, false, false, false};
+    for (int i = 0; i < register_count; i++)
+    {
+        int renum = 0;
+        for (int j = 1; j < 7; j++)
+        {
+            if (!used[j])
+            {
+                if (renum == permunreg[i])
+                {
+                    registers[i] = j;
+                    used[j] = true;
+                    break;
+                }
+                renum++;
+            }
+        }
+    }
+
+    uint64_t savedRegisters = context->Rsp + stack_size - 8 - (8 * register_count);
+    for (int i = 0; i < register_count; i++)
+    {
+        uint64_t reg;
+        if (!ReadValue64(info, &savedRegisters, &reg)) {
+            return false;
+        }
+        switch (registers[i]) {
+            case UNWIND_X86_64_REG_RBX:
+                context->Rbx = reg;
+                break;
+            case UNWIND_X86_64_REG_R12:
+                context->R12 = reg;
+                break;
+            case UNWIND_X86_64_REG_R13:
+                context->R13 = reg;
+                break;
+            case UNWIND_X86_64_REG_R14:
+                context->R14 = reg;
+                break;
+            case UNWIND_X86_64_REG_R15:
+                context->R15 = reg;
+                break;
+            case UNWIND_X86_64_REG_RBP:
+                context->Rbp = reg;
+                break;
+            default:
+                ERROR("Bad register for frameless\n");
+                break;
+        }
+    }
+
+    // Now unwind the frame
+    uint64_t ip;
+    if (!ReadValue64(info, &savedRegisters, &ip)) {
+        return false;
+    }
+    context->Rip = ip;
+    context->Rsp = savedRegisters;
+
+    TRACE("SUCCESS: frameless encoding %08x rip %p rsp %p rbp %p\n",
         compactEncoding, (void*)context->Rip, (void*)context->Rsp, (void*)context->Rbp);
     return true;
 }
@@ -1602,7 +1767,7 @@ StepWithCompactEncoding(const libunwindInfo* info, compact_unwind_encoding_t com
 
         case UNWIND_X86_64_MODE_STACK_IMMD:
         case UNWIND_X86_64_MODE_STACK_IND:
-            break;
+            return StepWithCompactEncodingFrameless(info, compactEncoding, functionStart);
 
         case UNWIND_X86_64_MODE_DWARF:
             return false;
@@ -1683,6 +1848,19 @@ static void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, 
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X27, &contextPointers->X27);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X28, &contextPointers->X28);
     GetContextPointer(cursor, unwContext, UNW_AARCH64_X29, &contextPointers->Fp);
+#elif defined(TARGET_LOONGARCH64)
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R1, &contextPointers->Ra);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R2, &contextPointers->Tp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R22, &contextPointers->Fp);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R23, &contextPointers->S0);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R24, &contextPointers->S1);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R25, &contextPointers->S2);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R26, &contextPointers->S3);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R27, &contextPointers->S4);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R28, &contextPointers->S5);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R29, &contextPointers->S6);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R30, &contextPointers->S7);
+    GetContextPointer(cursor, unwContext, UNW_LOONGARCH64_R31, &contextPointers->S8);
 #elif defined(TARGET_S390X)
     GetContextPointer(cursor, unwContext, UNW_S390X_R6, &contextPointers->R6);
     GetContextPointer(cursor, unwContext, UNW_S390X_R7, &contextPointers->R7);
@@ -1752,6 +1930,22 @@ static void UnwindContextToContext(unw_cursor_t *cursor, CONTEXT *winContext)
     winContext->Pc = winContext->Pc & MACOS_ARM64_POINTER_AUTH_MASK;
 #endif // __APPLE__
     TRACE("sp %p pc %p lr %p fp %p\n", winContext->Sp, winContext->Pc, winContext->Lr, winContext->Fp);
+#elif defined(TARGET_LOONGARCH64)
+    unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->Pc);
+    unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->Sp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R1, (unw_word_t *) &winContext->Ra);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R2, (unw_word_t *) &winContext->Tp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R22, (unw_word_t *) &winContext->Fp);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R23, (unw_word_t *) &winContext->S0);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R24, (unw_word_t *) &winContext->S1);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R25, (unw_word_t *) &winContext->S2);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R26, (unw_word_t *) &winContext->S3);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R27, (unw_word_t *) &winContext->S4);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R28, (unw_word_t *) &winContext->S5);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R29, (unw_word_t *) &winContext->S6);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R30, (unw_word_t *) &winContext->S7);
+    unw_get_reg(cursor, UNW_LOONGARCH64_R31, (unw_word_t *) &winContext->S8);
+    TRACE("sp %p pc %p fp %p tp %p ra %p\n", winContext->Sp, winContext->Pc, winContext->Fp, winContext->Tp, winContext->Ra);
 #elif defined(TARGET_S390X)
     unw_get_reg(cursor, UNW_REG_IP, (unw_word_t *) &winContext->PSWAddr);
     unw_get_reg(cursor, UNW_REG_SP, (unw_word_t *) &winContext->R15);
@@ -1853,6 +2047,20 @@ access_reg(unw_addr_space_t as, unw_regnum_t regnum, unw_word_t *valp, int write
     case UNW_AARCH64_X30:  *valp = (unw_word_t)winContext->Lr; break;
     case UNW_AARCH64_SP:   *valp = (unw_word_t)winContext->Sp; break;
     case UNW_AARCH64_PC:   *valp = (unw_word_t)winContext->Pc; break;
+#elif defined(TARGET_LOONGARCH64)
+    case UNW_LOONGARCH64_R1:    *valp = (unw_word_t)winContext->Ra; break;
+    case UNW_LOONGARCH64_R2:    *valp = (unw_word_t)winContext->Tp; break;
+    case UNW_LOONGARCH64_R22:   *valp = (unw_word_t)winContext->Fp; break;
+    case UNW_LOONGARCH64_R23:   *valp = (unw_word_t)winContext->S0; break;
+    case UNW_LOONGARCH64_R24:   *valp = (unw_word_t)winContext->S1; break;
+    case UNW_LOONGARCH64_R25:   *valp = (unw_word_t)winContext->S2; break;
+    case UNW_LOONGARCH64_R26:   *valp = (unw_word_t)winContext->S3; break;
+    case UNW_LOONGARCH64_R27:   *valp = (unw_word_t)winContext->S4; break;
+    case UNW_LOONGARCH64_R28:   *valp = (unw_word_t)winContext->S5; break;
+    case UNW_LOONGARCH64_R29:   *valp = (unw_word_t)winContext->S6; break;
+    case UNW_LOONGARCH64_R30:   *valp = (unw_word_t)winContext->S7; break;
+    case UNW_LOONGARCH64_R31:   *valp = (unw_word_t)winContext->S8; break;
+    case UNW_LOONGARCH64_PC:    *valp = (unw_word_t)winContext->Pc; break;
 #elif defined(TARGET_S390X)
     case UNW_S390X_R6:     *valp = (unw_word_t)winContext->R6; break;
     case UNW_S390X_R7:     *valp = (unw_word_t)winContext->R7; break;

@@ -405,7 +405,4 @@
   <data name="UnexpectedValueUnknownType" xml:space="preserve">
     <value>Unexpected value '{0}' of unknown type.</value>
   </data>
-  <data name="UnreachableLocation" xml:space="preserve">
-    <value>This program location is thought to be unreachable.</value>
-  </data>
 </root>

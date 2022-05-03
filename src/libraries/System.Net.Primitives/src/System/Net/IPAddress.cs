@@ -233,10 +233,7 @@ namespace System.Net
 
         public static IPAddress Parse(string ipString)
         {
-            if (ipString == null)
-            {
-                throw new ArgumentNullException(nameof(ipString));
-            }
+            ArgumentNullException.ThrowIfNull(ipString);
 
             return IPAddressParser.Parse(ipString.AsSpan(), tryParse: false)!;
         }
@@ -416,10 +413,7 @@ namespace System.Net
 
         public static bool IsLoopback(IPAddress address)
         {
-            if (address == null)
-            {
-                ThrowAddressNullException();
-            }
+            ArgumentNullException.ThrowIfNull(address);
 
             if (address.IsIPv6)
             {

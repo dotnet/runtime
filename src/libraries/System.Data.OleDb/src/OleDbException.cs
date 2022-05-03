@@ -37,10 +37,8 @@ namespace System.Data.OleDb
 
         public override void GetObjectData(SerializationInfo si, StreamingContext context)
         {
-            if (null == si)
-            {
-                throw new ArgumentNullException(nameof(si));
-            }
+            ArgumentNullException.ThrowIfNull(si);
+
             si.AddValue("oledbErrors", oledbErrors, typeof(OleDbErrorCollection));
             base.GetObjectData(si, context);
         }

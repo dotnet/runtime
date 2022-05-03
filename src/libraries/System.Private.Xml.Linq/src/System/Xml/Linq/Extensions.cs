@@ -23,7 +23,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XAttribute> Attributes(this IEnumerable<XElement?> source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return GetAttributes(source, null);
         }
 
@@ -39,7 +40,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XAttribute> Attributes(this IEnumerable<XElement?> source, XName? name)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return name != null ? GetAttributes(source, name) : XAttribute.EmptySequence;
         }
 
@@ -55,7 +57,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XElement> Ancestors<T>(this IEnumerable<T?> source) where T : XNode
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return GetAncestors(source, null, false);
         }
 
@@ -71,7 +74,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XElement> Ancestors<T>(this IEnumerable<T?> source, XName? name) where T : XNode
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return name != null ? GetAncestors(source, name, false) : XElement.EmptySequence;
         }
 
@@ -89,7 +93,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XElement> AncestorsAndSelf(this IEnumerable<XElement?> source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return GetAncestors(source, null, true);
         }
 
@@ -107,7 +112,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XElement> AncestorsAndSelf(this IEnumerable<XElement?> source, XName? name)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return name != null ? GetAncestors(source, name, true) : XElement.EmptySequence;
         }
 
@@ -116,7 +122,8 @@ namespace System.Xml.Linq
         /// </summary>
         public static IEnumerable<XNode> Nodes<T>(this IEnumerable<T?> source) where T : XContainer
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return NodesIterator(source);
         }
 
@@ -144,7 +151,8 @@ namespace System.Xml.Linq
         /// </summary>
         public static IEnumerable<XNode> DescendantNodes<T>(this IEnumerable<T?> source) where T : XContainer
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return GetDescendantNodes(source, false);
         }
 
@@ -160,7 +168,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XElement> Descendants<T>(this IEnumerable<T?> source) where T : XContainer
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return GetDescendants(source, null, false);
         }
 
@@ -176,7 +185,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XElement> Descendants<T>(this IEnumerable<T?> source, XName? name) where T : XContainer
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return name != null ? GetDescendants(source, name, false) : XElement.EmptySequence;
         }
 
@@ -194,7 +204,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XNode> DescendantNodesAndSelf(this IEnumerable<XElement?> source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return GetDescendantNodes(source, true);
         }
 
@@ -212,7 +223,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XElement> DescendantsAndSelf(this IEnumerable<XElement?> source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return GetDescendants(source, null, true);
         }
 
@@ -230,7 +242,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XElement> DescendantsAndSelf(this IEnumerable<XElement?> source, XName? name)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return name != null ? GetDescendants(source, name, true) : XElement.EmptySequence;
         }
 
@@ -244,7 +257,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XElement> Elements<T>(this IEnumerable<T?> source) where T : XContainer
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return GetElements(source, null);
         }
 
@@ -258,7 +272,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<XElement> Elements<T>(this IEnumerable<T?> source, XName? name) where T : XContainer
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return name != null ? GetElements(source, name) : XElement.EmptySequence;
         }
 
@@ -273,7 +288,8 @@ namespace System.Xml.Linq
         /// </returns>
         public static IEnumerable<T> InDocumentOrder<T>(this IEnumerable<T> source) where T : XNode?
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
+
             return DocumentOrderIterator<T>(source);
         }
 
@@ -295,7 +311,7 @@ namespace System.Xml.Linq
         /// </summary>
         public static void Remove(this IEnumerable<XAttribute?> source)
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
 
             int count;
             XAttribute?[] attributes = EnumerableHelpers.ToArray(source, out count);
@@ -313,7 +329,7 @@ namespace System.Xml.Linq
         /// </summary>
         public static void Remove<T>(this IEnumerable<T?> source) where T : XNode
         {
-            if (source == null) throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
 
             int count;
             T?[] nodes = EnumerableHelpers.ToArray(source, out count);

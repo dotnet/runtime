@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
@@ -52,6 +53,26 @@ namespace System.IO.Tests
 
                 Assert.Equal(5000, result.Length);
             }
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task ReadToEndAsync_WithCancellationToken()
+        {
+            using var tr = new CharArrayTextReader(TestDataProvider.LargeData);
+            var result = await tr.ReadToEndAsync(default);
+            Assert.Equal(5000, result.Length);
+        }
+
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        public async Task ReadToEndAsync_WithCanceledCancellationToken()
+        {
+            using var tr = new CharArrayTextReader(TestDataProvider.LargeData);
+            using var cts = new CancellationTokenSource();
+            cts.Cancel();
+            var token = cts.Token;
+
+            var ex = await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await tr.ReadToEndAsync(token));
+            Assert.Equal(token, ex.CancellationToken);
         }
 
         [Fact]

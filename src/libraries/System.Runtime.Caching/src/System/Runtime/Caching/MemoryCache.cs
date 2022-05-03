@@ -40,7 +40,7 @@ namespace System.Runtime.Caching
         private bool _throwOnDisposed;
         private EventHandler _onAppDomainUnload;
         private UnhandledExceptionEventHandler _onUnhandledException;
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
         [UnsupportedOSPlatformGuard("browser")]
         private static bool _countersSupported => !OperatingSystem.IsBrowser();
 #else
@@ -251,7 +251,7 @@ namespace System.Runtime.Caching
             }
         }
 
-        private void ValidatePolicy(CacheItemPolicy policy)
+        private static void ValidatePolicy(CacheItemPolicy policy)
         {
             if (policy.AbsoluteExpiration != ObjectCache.InfiniteAbsoluteExpiration
                 && policy.SlidingExpiration != ObjectCache.NoSlidingExpiration)
@@ -350,10 +350,11 @@ namespace System.Runtime.Caching
 
         public MemoryCache(string name, NameValueCollection config = null)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
@@ -370,10 +371,11 @@ namespace System.Runtime.Caching
         // due to the fact that the (ASP.NET) config system uses the cache, and the cache uses the config system.
         public MemoryCache(string name, NameValueCollection config, bool ignoreConfigSection)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Empty_string_invalid, nameof(name));
@@ -401,10 +403,11 @@ namespace System.Runtime.Caching
 
         private object AddOrGetExistingInternal(string key, object value, CacheItemPolicy policy)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
+
             DateTimeOffset absExp = ObjectCache.InfiniteAbsoluteExpiration;
             TimeSpan slidingExp = ObjectCache.NoSlidingExpiration;
             CacheItemPriority priority = CacheItemPriority.Default;
@@ -634,10 +637,11 @@ namespace System.Runtime.Caching
 
         public override CacheItem AddOrGetExisting(CacheItem item, CacheItemPolicy policy)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
+
             return new CacheItem(item.Key, AddOrGetExistingInternal(item.Key, item.Value, policy));
         }
 
@@ -674,10 +678,11 @@ namespace System.Runtime.Caching
 
         public override void Set(CacheItem item, CacheItemPolicy policy)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
+
             Set(item.Key, item.Value, policy);
         }
 
@@ -739,10 +744,11 @@ namespace System.Runtime.Caching
                           TimeSpan slidingExpiration,
                           CacheEntryUpdateCallback onUpdateCallback)
         {
-            if (key == null)
+            if (key is null)
             {
                 throw new ArgumentNullException(nameof(key));
             }
+
             if (changeMonitors == null
                 && absoluteExpiration == ObjectCache.InfiniteAbsoluteExpiration
                 && slidingExpiration == ObjectCache.NoSlidingExpiration)
@@ -899,10 +905,11 @@ namespace System.Runtime.Caching
         // config system.
         internal void UpdateConfig(NameValueCollection config)
         {
-            if (config == null)
+            if (config is null)
             {
                 throw new ArgumentNullException(nameof(config));
             }
+
             if (!IsDisposed)
             {
                 _stats.UpdateConfig(config);

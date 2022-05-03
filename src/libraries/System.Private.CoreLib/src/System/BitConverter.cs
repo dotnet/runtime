@@ -6,8 +6,6 @@ using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System
 {
     /// <summary>
@@ -368,7 +366,7 @@ namespace System
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if (unchecked((uint)startIndex) >= unchecked((uint)value.Length))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
             if (startIndex > value.Length - sizeof(short))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall, ExceptionArgument.value);
 
@@ -406,7 +404,7 @@ namespace System
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if (unchecked((uint)startIndex) >= unchecked((uint)value.Length))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
             if (startIndex > value.Length - sizeof(int))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall, ExceptionArgument.value);
 
@@ -444,7 +442,7 @@ namespace System
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if (unchecked((uint)startIndex) >= unchecked((uint)value.Length))
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
             if (startIndex > value.Length - sizeof(long))
                 ThrowHelper.ThrowArgumentException(ExceptionResource.Arg_ArrayPlusOffTooSmall, ExceptionArgument.value);
 
@@ -658,7 +656,7 @@ namespace System
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if (startIndex < 0 || startIndex >= value.Length && startIndex > 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_GenericPositive);
             if (startIndex > value.Length - length)
@@ -743,9 +741,9 @@ namespace System
             if (value == null)
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.value);
             if (startIndex < 0)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index);
-            if (startIndex > value.Length - 1)
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_Index); // differs from other overloads, which throw base ArgumentException
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess);
+            if (startIndex >= value.Length)
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.startIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLess); // differs from other overloads, which throw base ArgumentException
 
             return value[startIndex] != 0;
         }

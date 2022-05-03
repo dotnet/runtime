@@ -52,10 +52,7 @@ namespace System.DirectoryServices.Protocols
 
         public AddRequest(string distinguishedName, string objectClass) : this()
         {
-            if (objectClass == null)
-            {
-                throw new ArgumentNullException(nameof(objectClass));
-            }
+            ArgumentNullException.ThrowIfNull(objectClass);
 
             DistinguishedName = distinguishedName;
 
@@ -84,10 +81,7 @@ namespace System.DirectoryServices.Protocols
 
         public ModifyRequest(string distinguishedName, DirectoryAttributeOperation operation, string attributeName, params object[] values) : this()
         {
-            if (attributeName == null)
-            {
-                throw new ArgumentNullException(nameof(attributeName));
-            }
+            ArgumentNullException.ThrowIfNull(attributeName);
 
             DistinguishedName = distinguishedName;
             var mod = new DirectoryAttributeModification()
@@ -132,10 +126,8 @@ namespace System.DirectoryServices.Protocols
 
         public CompareRequest(string distinguishedName, DirectoryAttribute assertion)
         {
-            if (assertion == null)
-            {
-                throw new ArgumentNullException(nameof(assertion));
-            }
+            ArgumentNullException.ThrowIfNull(assertion);
+
             if (assertion.Count != 1)
             {
                 throw new ArgumentException(SR.WrongNumValuesCompare);
@@ -146,14 +138,8 @@ namespace System.DirectoryServices.Protocols
 
         private void CompareRequestHelper(string distinguishedName, string attributeName, object value)
         {
-            if (attributeName == null)
-            {
-                throw new ArgumentNullException(nameof(attributeName));
-            }
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(attributeName);
+            ArgumentNullException.ThrowIfNull(value);
 
             DistinguishedName = distinguishedName;
             Assertion.Name = attributeName;

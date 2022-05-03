@@ -4,7 +4,7 @@ function(clr_unknown_arch)
     elseif(CLR_CROSS_COMPONENTS_BUILD)
         message(FATAL_ERROR "Only AMD64, I386 host are supported for linux cross-architecture component. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     else()
-        message(FATAL_ERROR "Only AMD64, ARM64, LOONGARCH64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
+        message(FATAL_ERROR "Only AMD64, ARMV6, ARM64, LOONGARCH64 and ARM are supported. Found: ${CMAKE_SYSTEM_PROCESSOR}")
     endif()
 endfunction()
 
@@ -15,7 +15,7 @@ function(h2inc filename output)
     get_filename_component(path "${filename}" DIRECTORY)
     file(RELATIVE_PATH relative_filename "${CLR_REPO_ROOT_DIR}" "${filename}")
 
-    file(APPEND "${output}" "// File start: ${relative_filename}\n")
+    file(WRITE "${output}" "// File start: ${relative_filename}\n")
 
     # Use of NEWLINE_CONSUME is needed for lines with trailing backslash
     file(STRINGS ${filename} contents NEWLINE_CONSUME)
@@ -152,6 +152,10 @@ endfunction()
 # Finds and returns unwind libs
 function(find_unwind_libs UnwindLibs)
     if(CLR_CMAKE_HOST_ARCH_ARM)
+      find_library(UNWIND_ARCH NAMES unwind-arm)
+    endif()
+
+    if(CLR_CMAKE_HOST_ARCH_ARMV6)
       find_library(UNWIND_ARCH NAMES unwind-arm)
     endif()
 
@@ -393,11 +397,21 @@ function(strip_symbols targetName outputFilename)
         set(strip_command)
       endif ()
 
+      execute_process(
+        COMMAND ${DSYMUTIL} --help
+        OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
+      )
+
+      set(DSYMUTIL_OPTS "--flat")
+      if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
+        list(APPEND DSYMUTIL_OPTS "--minimize")
+      endif ()
+
       add_custom_command(
         TARGET ${targetName}
         POST_BUILD
         VERBATIM
-        COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
+        COMMAND ${DSYMUTIL} ${DSYMUTIL_OPTS} ${strip_source_file}
         COMMAND ${strip_command}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )

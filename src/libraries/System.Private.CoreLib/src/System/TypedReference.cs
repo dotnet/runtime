@@ -6,7 +6,6 @@
 
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System
 {
@@ -16,10 +15,9 @@ namespace System
 
         public static TypedReference MakeTypedReference(object target, FieldInfo[] flds)
         {
-            if (target == null)
-                throw new ArgumentNullException(nameof(target));
-            if (flds == null)
-                throw new ArgumentNullException(nameof(flds));
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(flds);
+
             if (flds.Length == 0)
                 throw new ArgumentException(SR.Arg_ArrayZeroError, nameof(flds));
 

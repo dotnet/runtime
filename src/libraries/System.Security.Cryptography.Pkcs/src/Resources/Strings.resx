@@ -79,35 +79,17 @@
   <data name="Argument_InvalidRsaSignaturePadding" xml:space="preserve">
     <value>The RSA padding must be Pkcs1 or Pss.</value>
   </data>
-  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+  <data name="ArgumentOutOfRange_IndexMustBeLess" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedPosNum" xml:space="preserve">
     <value>Positive number required.</value>
   </data>
   <data name="Cryptography_AlgKdfRequiresChars" xml:space="preserve">
     <value>The KDF for algorithm '{0}' requires a char-based password input.</value>
-  </data>
-  <data name="Cryptography_Asn_EnumeratedValueRequiresNonFlagsEnum" xml:space="preserve">
-    <value>ASN.1 Enumerated values only apply to enum types without the [Flags] attribute.</value>
-  </data>
-  <data name="Cryptography_Asn_NamedBitListRequiresFlagsEnum" xml:space="preserve">
-    <value>Named bit list operations require an enum with the [Flags] attribute.</value>
-  </data>
-  <data name="Cryptography_Asn_NamedBitListValueTooBig" xml:space="preserve">
-    <value>The encoded named bit list value is larger than the value size of the '{0}' enum.</value>
-  </data>
-  <data name="Cryptography_Asn_UniversalValueIsFixed" xml:space="preserve">
-    <value>Tags with TagClass Universal must have the appropriate TagValue value for the data type being read or written.</value>
-  </data>
-  <data name="Cryptography_Asn_UnusedBitCountRange" xml:space="preserve">
-    <value>Unused bit count must be between 0 and 7, inclusive.</value>
-  </data>
-  <data name="Cryptography_AsnWriter_EncodeUnbalancedStack" xml:space="preserve">
-    <value>Encode cannot be called while a Sequence or SetOf is still open.</value>
-  </data>
-  <data name="Cryptography_AsnWriter_PopWrongTag" xml:space="preserve">
-    <value>Cannot pop the requested tag as it is not currently in progress.</value>
   </data>
   <data name="Cryptography_BadHashValue" xml:space="preserve">
     <value>The hash value is not correct.</value>
@@ -288,9 +270,6 @@
   </data>
   <data name="Cryptography_UnknownHashAlgorithm" xml:space="preserve">
     <value>'{0}' is not a known hash algorithm.</value>
-  </data>
-  <data name="Cryptography_WriteEncodedValue_OneValueAtATime" xml:space="preserve">
-    <value>The input to WriteEncodedValue must represent a single encoded value with no trailing data.</value>
   </data>
   <data name="Cryptography_Cms_NoAttributeFound" xml:space="preserve">
     <value>Attribute not found.</value>

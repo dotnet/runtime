@@ -1093,7 +1093,7 @@ namespace System.Data.OleDb
             return builder.ToString();
         }
 
-        private string ExpandOdbcMinimumToText(string sproctext, int parameterCount)
+        private static string ExpandOdbcMinimumToText(string sproctext, int parameterCount)
         {
             //if ((0 < parameterCount) && (ParameterDirection.ReturnValue == Parameters[0].Direction)) {
             //    Debug.Assert("doesn't support ReturnValue parameters");

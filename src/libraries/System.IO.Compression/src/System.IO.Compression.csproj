@@ -1,10 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
-  <ItemGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
+  <PropertyGroup>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.PlatformNotSupported_Compression</GeneratePlatformNotSupportedAssemblyMessage>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="$(CommonPath)Interop\Interop.zlib.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchive.cs" />
     <Compile Include="$(SharedOpenSourcePath)System\IO\Compression\ZipArchiveEntry.cs" />
@@ -39,13 +43,13 @@
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
   </ItemGroup>
   <!-- Windows specific files -->
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
   </ItemGroup>
   <!-- Unix specific files -->
-  <ItemGroup Condition=" '$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true' ">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="System\IO\Compression\ZipArchiveEntry.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
@@ -56,8 +60,6 @@
     <Reference Include="System.Collections" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
   </ItemGroup>

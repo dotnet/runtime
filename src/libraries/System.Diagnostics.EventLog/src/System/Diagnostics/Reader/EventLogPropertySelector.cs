@@ -15,8 +15,7 @@ namespace System.Diagnostics.Eventing.Reader
     {
         public EventLogPropertySelector(IEnumerable<string> propertyQueries)
         {
-            if (propertyQueries == null)
-                throw new ArgumentNullException(nameof(propertyQueries));
+            ArgumentNullException.ThrowIfNull(propertyQueries);
 
             string[] paths;
 

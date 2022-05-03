@@ -20,29 +20,22 @@ namespace Microsoft.Interop
             return info.ManagedType.Syntax;
         }
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            TypeSyntax type = info.IsByRef
-                ? PointerType(AsNativeType(info))
-                : AsNativeType(info);
-            return Parameter(Identifier(info.InstanceIdentifier))
-                .WithType(type);
+            return info.IsByRef ? SignatureBehavior.PointerToNativeType : SignatureBehavior.NativeType;
         }
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
             if (!info.IsByRef)
             {
-                return Argument(IdentifierName(info.InstanceIdentifier));
+                return ValueBoundaryBehavior.ManagedIdentifier;
             }
             else if (context.SingleFrameSpansNativeContext && !info.IsManagedReturnPosition)
             {
-                return Argument(IdentifierName(context.GetIdentifiers(info).native));
+                return ValueBoundaryBehavior.NativeIdentifier;
             }
-            return Argument(
-                    PrefixUnaryExpression(
-                        SyntaxKind.AddressOfExpression,
-                        IdentifierName(context.GetIdentifiers(info).native)));
+            return ValueBoundaryBehavior.AddressOfNativeIdentifier;
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)

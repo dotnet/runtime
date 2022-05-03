@@ -1,7 +1,6 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.ComponentModel;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -9,7 +8,6 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Provides metadata about a set of types that is relevant to JSON serialization.
     /// </summary>
-    [EditorBrowsable(EditorBrowsableState.Never)]
     public abstract partial class JsonSerializerContext
     {
         private bool? _canUseSerializationLogic;
@@ -23,19 +21,7 @@ namespace System.Text.Json.Serialization
         /// <remarks>
         /// The instance cannot be mutated once it is bound with the context instance.
         /// </remarks>
-        public JsonSerializerOptions Options
-        {
-            get
-            {
-                if (_options == null)
-                {
-                    _options = new JsonSerializerOptions();
-                    _options._context = this;
-                }
-
-                return _options;
-            }
-        }
+        public JsonSerializerOptions Options => _options ??= new JsonSerializerOptions { JsonSerializerContext = this };
 
         /// <summary>
         /// Indicates whether pre-generated serialization logic for types in the context
@@ -97,13 +83,8 @@ namespace System.Text.Json.Serialization
         {
             if (options != null)
             {
-                if (options._context != null)
-                {
-                    ThrowHelper.ThrowInvalidOperationException_JsonSerializerOptionsAlreadyBoundToContext();
-                }
-
+                options.JsonSerializerContext = this;
                 _options = options;
-                options._context = this;
             }
         }
 

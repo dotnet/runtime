@@ -81,6 +81,11 @@ jobs:
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
+  - bash: |
+      sudo chown -R $(id -u):$(id -g) $(Build.ArtifactStagingDirectory)/dumps
+    displayName: Own shared dumps and files
+    condition: failed()
+
   - publish: $(Build.ArtifactStagingDirectory)/dumps
     artifact: DumpsLinux
     condition: failed()

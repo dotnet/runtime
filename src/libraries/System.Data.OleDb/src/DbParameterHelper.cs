@@ -88,13 +88,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal int Offset
-        {
-            get
-            {
-                return 0;
-            }
-        }
+        internal const int Offset = 0;
 
         public override int Size
         { // V1.2.3300, XXXParameter V1.0.3300
@@ -226,7 +220,7 @@ namespace System.Data.OleDb
             return ParameterName;
         }
 
-        private byte ValuePrecisionCore(object? value)
+        private static byte ValuePrecisionCore(object? value)
         { // V1.2.3300
             if (value is decimal)
             {
@@ -235,7 +229,7 @@ namespace System.Data.OleDb
             return 0;
         }
 
-        private byte ValueScaleCore(object? value)
+        private static byte ValueScaleCore(object? value)
         { // V1.2.3300
             if (value is decimal)
             {
@@ -244,7 +238,7 @@ namespace System.Data.OleDb
             return 0;
         }
 
-        private int ValueSizeCore(object? value)
+        private static int ValueSizeCore(object? value)
         { // V1.2.3300
             if (!ADP.IsNull(value))
             {

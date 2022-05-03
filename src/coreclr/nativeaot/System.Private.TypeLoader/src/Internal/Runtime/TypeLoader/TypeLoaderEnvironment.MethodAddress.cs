@@ -229,7 +229,7 @@ namespace Internal.Runtime.TypeLoader
         /// <summary>
         /// Resolve a dispatch on an interface MethodTable/slot index pair to a function pointer
         /// </summary>
-        private unsafe bool TryResolveTypeSlotDispatch_Inner(MethodTable* pTargetType, MethodTable* pInterfaceType, ushort slot, out IntPtr methodAddress)
+        private static unsafe bool TryResolveTypeSlotDispatch_Inner(MethodTable* pTargetType, MethodTable* pInterfaceType, ushort slot, out IntPtr methodAddress)
         {
             methodAddress = IntPtr.Zero;
 

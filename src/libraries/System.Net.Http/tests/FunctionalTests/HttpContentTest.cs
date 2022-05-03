@@ -661,7 +661,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await server.AcceptConnectionSendResponseAndCloseAsync();
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 });
         }
 
@@ -694,7 +697,10 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await connection.SendResponseAsync(new string('a', 100));
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                        }
                     });
                 });
         }
@@ -749,7 +755,10 @@ namespace System.Net.Http.Functional.Tests
                     {
                         await server.AcceptConnectionSendResponseAndCloseAsync();
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 });
         }
 
@@ -782,7 +791,10 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await connection.SendResponseAsync(new string('a', 100));
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                        }
                     });
                 });
         }

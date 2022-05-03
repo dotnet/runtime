@@ -202,12 +202,13 @@ namespace System.Transactions
         public TransactionManagerCommunicationException(string? message) { }
         public TransactionManagerCommunicationException(string? message, System.Exception? innerException) { }
     }
-    public partial struct TransactionOptions
+    public partial struct TransactionOptions : System.IEquatable<System.Transactions.TransactionOptions>
     {
-        private int _dummyPrimitive;
+        private readonly int _dummyPrimitive;
         public System.Transactions.IsolationLevel IsolationLevel { get { throw null; } set { } }
         public System.TimeSpan Timeout { get { throw null; } set { } }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
+        public bool Equals(System.Transactions.TransactionOptions other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool operator ==(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }
         public static bool operator !=(System.Transactions.TransactionOptions x, System.Transactions.TransactionOptions y) { throw null; }

@@ -621,6 +621,11 @@ public:
     {
         LIMITED_METHOD_CONTRACT;
         ZeroMemory(this, sizeof(InteropSyncBlockInfo));
+
+#if defined(FEATURE_COMWRAPPERS)
+        // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.
+        m_managedObjectComWrapperLock.Init(CrstManagedObjectWrapperMap, CRST_UNSAFE_COOPGC);
+#endif // FEATURE_COMWRAPPERS
     }
 #ifndef DACCESS_COMPILE
     ~InteropSyncBlockInfo();
@@ -799,8 +804,6 @@ public:
             if (FastInterlockCompareExchangePointer((ManagedObjectComWrapperByIdMap**)&m_managedObjectComWrapperMap, (ManagedObjectComWrapperByIdMap *)map, NULL) == NULL)
             {
                 map.SuppressRelease();
-                // The GC thread does enumerate these objects so add CRST_UNSAFE_COOPGC.
-                m_managedObjectComWrapperLock.Init(CrstManagedObjectWrapperMap, CRST_UNSAFE_COOPGC);
             }
 
             _ASSERTE(m_managedObjectComWrapperMap != NULL);

@@ -20,9 +20,6 @@ namespace System.Diagnostics.Tracing
     /// function to collect metrics on its own rather than the user having to call WriteMetric()
     /// every time.
     /// </summary>
-#if NETCOREAPP
-    [UnsupportedOSPlatform("browser")]
-#endif
     public partial class PollingCounter : DiagnosticCounter
     {
         /// <summary>
@@ -35,8 +32,10 @@ namespace System.Diagnostics.Tracing
         /// <param name="metricProvider">The delegate to invoke to get the current metric value.</param>
         public PollingCounter(string name, EventSource eventSource, Func<double> metricProvider) : base(name, eventSource)
         {
-            if (metricProvider == null)
+            if (metricProvider is null)
+            {
                 throw new ArgumentNullException(nameof(metricProvider));
+            }
 
             _metricProvider = metricProvider;
             Publish();

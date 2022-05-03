@@ -54,10 +54,7 @@ namespace System.Security.Claims
         /// </summary>
         private static ClaimsIdentity? SelectPrimaryIdentity(IEnumerable<ClaimsIdentity> identities)
         {
-            if (identities == null)
-            {
-                throw new ArgumentNullException(nameof(identities));
-            }
+            ArgumentNullException.ThrowIfNull(identities);
 
             foreach (ClaimsIdentity identity in identities)
             {
@@ -108,10 +105,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'identities' is null.</exception>
         public ClaimsPrincipal(IEnumerable<ClaimsIdentity> identities)
         {
-            if (identities == null)
-            {
-                throw new ArgumentNullException(nameof(identities));
-            }
+            ArgumentNullException.ThrowIfNull(identities);
 
             _identities.AddRange(identities);
         }
@@ -123,10 +117,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'identity' is null.</exception>
         public ClaimsPrincipal(IIdentity identity)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
             if (identity is ClaimsIdentity ci)
             {
@@ -145,10 +136,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'principal' is null.</exception>
         public ClaimsPrincipal(IPrincipal principal)
         {
-            if (null == principal)
-            {
-                throw new ArgumentNullException(nameof(principal));
-            }
+            ArgumentNullException.ThrowIfNull(principal);
 
             //
             // If IPrincipal is a ClaimsPrincipal add all of the identities
@@ -176,10 +164,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'reader' is null.</exception>
         public ClaimsPrincipal(BinaryReader reader)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             SerializationMask mask = (SerializationMask)reader.ReadInt32();
             int numPropertiesToRead = reader.ReadInt32();
@@ -215,10 +200,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'identity' is null.</exception>
         public virtual void AddIdentity(ClaimsIdentity identity)
         {
-            if (identity == null)
-            {
-                throw new ArgumentNullException(nameof(identity));
-            }
+            ArgumentNullException.ThrowIfNull(identity);
 
             _identities.Add(identity);
         }
@@ -230,10 +212,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'identities' is null.</exception>
         public virtual void AddIdentities(IEnumerable<ClaimsIdentity> identities)
         {
-            if (identities == null)
-            {
-                throw new ArgumentNullException(nameof(identities));
-            }
+            ArgumentNullException.ThrowIfNull(identities);
 
             _identities.AddRange(identities);
         }
@@ -282,10 +261,7 @@ namespace System.Security.Claims
         /// <returns>a new <see cref="ClaimsIdentity"/>.</returns>
         protected virtual ClaimsIdentity CreateClaimsIdentity(BinaryReader reader)
         {
-            if (reader == null)
-            {
-                throw new ArgumentNullException(nameof(reader));
-            }
+            ArgumentNullException.ThrowIfNull(reader);
 
             return new ClaimsIdentity(reader);
         }
@@ -311,18 +287,19 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
         public virtual IEnumerable<Claim> FindAll(Predicate<Claim> match)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
+            return Core(match);
 
-            foreach (ClaimsIdentity identity in Identities)
+            IEnumerable<Claim> Core(Predicate<Claim> match)
             {
-                if (identity != null)
+                foreach (ClaimsIdentity identity in Identities)
                 {
-                    foreach (Claim claim in identity.FindAll(match))
+                    if (identity != null)
                     {
-                        yield return claim;
+                        foreach (Claim claim in identity.FindAll(match))
+                        {
+                            yield return claim;
+                        }
                     }
                 }
             }
@@ -337,18 +314,19 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual IEnumerable<Claim> FindAll(string type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            return Core(type);
 
-            foreach (ClaimsIdentity identity in Identities)
+            IEnumerable<Claim> Core(string type)
             {
-                if (identity != null)
+                foreach (ClaimsIdentity identity in Identities)
                 {
-                    foreach (Claim claim in identity.FindAll(type))
+                    if (identity != null)
                     {
-                        yield return claim;
+                        foreach (Claim claim in identity.FindAll(type))
+                        {
+                            yield return claim;
+                        }
                     }
                 }
             }
@@ -363,10 +341,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
         public virtual Claim? FindFirst(Predicate<Claim> match)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
 
             Claim? claim = null;
 
@@ -394,10 +369,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'type' is null.</exception>
         public virtual Claim? FindFirst(string type)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             Claim? claim = null;
 
@@ -425,10 +397,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'match' is null.</exception>
         public virtual bool HasClaim(Predicate<Claim> match)
         {
-            if (match == null)
-            {
-                throw new ArgumentNullException(nameof(match));
-            }
+            ArgumentNullException.ThrowIfNull(match);
 
             for (int i = 0; i < _identities.Count; i++)
             {
@@ -455,15 +424,8 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'value' is null.</exception>
         public virtual bool HasClaim(string type, string value)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(value);
 
             for (int i = 0; i < _identities.Count; i++)
             {
@@ -548,10 +510,7 @@ namespace System.Security.Claims
         /// <exception cref="ArgumentNullException">if 'writer' is null.</exception>
         protected virtual void WriteTo(BinaryWriter writer, byte[]? userData)
         {
-            if (writer == null)
-            {
-                throw new ArgumentNullException(nameof(writer));
-            }
+            ArgumentNullException.ThrowIfNull(writer);
 
             int numberOfPropertiesWritten = 0;
             var mask = SerializationMask.None;

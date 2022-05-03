@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(MSBuildProjectName).cs" />
+    <Compile Include="..\Common\*.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <CMakeProjectReference Include="..\Native\mono-embedding-api-test\CMakeLists.txt" />
+  </ItemGroup>
+</Project>

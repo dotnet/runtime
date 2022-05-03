@@ -361,11 +361,7 @@ namespace System.Net.Http
         public void CopyTo(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
+            ArgumentNullException.ThrowIfNull(stream);
             try
             {
                 if (TryGetBuffer(out ArraySegment<byte> buffer))
@@ -395,11 +391,7 @@ namespace System.Net.Http
         public Task CopyToAsync(Stream stream, TransportContext? context, CancellationToken cancellationToken)
         {
             CheckDisposed();
-            if (stream == null)
-            {
-                throw new ArgumentNullException(nameof(stream));
-            }
-
+            ArgumentNullException.ThrowIfNull(stream);
             try
             {
                 return WaitAsync(InternalCopyToAsync(stream, context, cancellationToken));

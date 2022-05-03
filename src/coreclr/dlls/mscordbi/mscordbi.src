@@ -20,6 +20,7 @@ EXPORTS
 
     CoreCLRCreateCordbObject private
     CoreCLRCreateCordbObjectEx private
+    CoreCLRCreateCordbObject3 private
 
 #if defined(FEATURE_DBGIPC_TRANSPORT_DI)
     DllGetClassObject private

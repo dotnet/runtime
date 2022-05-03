@@ -66,19 +66,13 @@ namespace System.Collections.Specialized
         {
             get
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key));
-                }
+                ArgumentNullException.ThrowIfNull(key);
 
                 return (string?)contents[key.ToLowerInvariant()];
             }
             set
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key));
-                }
+                ArgumentNullException.ThrowIfNull(key);
 
                 contents[key.ToLowerInvariant()] = value;
             }
@@ -123,10 +117,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public virtual void Add(string key, string? value)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             contents.Add(key.ToLowerInvariant(), value);
         }
@@ -144,10 +135,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public virtual bool ContainsKey(string key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             return contents.ContainsKey(key.ToLowerInvariant());
         }
@@ -182,10 +170,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public virtual void Remove(string key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             contents.Remove(key.ToLowerInvariant());
         }

@@ -85,10 +85,8 @@ namespace System.Diagnostics
         /// </devdoc>
         public void AddRange(TraceListener[] value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
+
             for (int i = 0; ((i) < (value.Length)); i = ((i) + (1)))
             {
                 this.Add(value[i]);
@@ -100,10 +98,8 @@ namespace System.Diagnostics
         /// </devdoc>
         public void AddRange(TraceListenerCollection value)
         {
-            if (value == null)
-            {
-                throw new ArgumentNullException(nameof(value));
-            }
+            ArgumentNullException.ThrowIfNull(value);
+
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i = ((i) + (1)))
             {
@@ -150,10 +146,9 @@ namespace System.Diagnostics
             return _list.GetEnumerator();
         }
 
-        internal void InitializeListener(TraceListener listener)
+        internal static void InitializeListener(TraceListener listener)
         {
-            if (listener == null)
-                throw new ArgumentNullException(nameof(listener));
+            ArgumentNullException.ThrowIfNull(listener);
 
             listener.IndentSize = TraceInternal.IndentSize;
             listener.IndentLevel = TraceInternal.IndentLevel;

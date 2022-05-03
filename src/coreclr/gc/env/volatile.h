@@ -66,14 +66,16 @@
 #error The Volatile type is currently only defined for Visual C++ and GNU C++
 #endif
 
-#if defined(__GNUC__) && !defined(HOST_X86) && !defined(HOST_AMD64) && !defined(HOST_ARM) && !defined(HOST_ARM64) && !defined(HOST_WASM)
-#error The Volatile type is currently only defined for GCC when targeting x86, AMD64, ARM, ARM64 or Wasm
+#if defined(__GNUC__) && !defined(HOST_X86) && !defined(HOST_AMD64) && !defined(HOST_ARM) && !defined(HOST_ARM64) && !defined(HOST_LOONGARCH64) && !defined(HOST_WASM)
+#error The Volatile type is currently only defined for GCC when targeting x86, AMD64, ARM, ARM64, LOONGARCH64 or Wasm
 #endif
 
 #if defined(__GNUC__)
 #if defined(HOST_ARM) || defined(HOST_ARM64)
 // This is functionally equivalent to the MemoryBarrier() macro used on ARM on Windows.
 #define VOLATILE_MEMORY_BARRIER() asm volatile ("dmb ish" : : : "memory")
+#elif defined(HOST_LOONGARCH64)
+#define VOLATILE_MEMORY_BARRIER() asm volatile ("dbar 0 " : : : "memory")
 #else
 //
 // For GCC, we prevent reordering by the compiler by inserting the following after a volatile
@@ -150,7 +152,6 @@ T VolatileLoad(T const * pt)
 #elif defined(HOST_ARM64) && defined(_MSC_VER)
 // silence warnings on casts in branches that are not taken.
 #pragma warning(push)
-#pragma warning(disable : 4302)
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4312)
     T val;
@@ -231,7 +232,6 @@ void VolatileStore(T* pt, T val)
 #elif defined(HOST_ARM64) && defined(_MSC_VER)
 // silence warnings on casts in branches that are not taken.
 #pragma warning(push)
-#pragma warning(disable : 4302)
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4312)
     T* pv = &val;

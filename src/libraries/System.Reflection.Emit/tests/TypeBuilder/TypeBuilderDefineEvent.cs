@@ -106,11 +106,11 @@ namespace System.Reflection.Emit.Tests
         }
 
         [Fact]
-        public void DefineEvent_ByRefEventType_ThrowsArgumentException()
+        public void DefineEvent_ByRefEventType()
         {
             TypeBuilder type = Helpers.DynamicType(TypeAttributes.Class | TypeAttributes.Public);
-
-            AssertExtensions.Throws<ArgumentException>(null, () => type.DefineEvent("Name", EventAttributes.None, typeof(int).MakeByRefType()));
+            type.DefineEvent("Name", EventAttributes.None, typeof(int).MakeByRefType());
+            type.CreateTypeInfo().AsType();
         }
 
         [Fact]

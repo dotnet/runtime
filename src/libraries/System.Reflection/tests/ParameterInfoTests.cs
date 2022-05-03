@@ -246,6 +246,14 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        public static void GetCustomAttributesOnParameterWithNullMetadataTokenReturnsArrayOfCorrectType()
+        {
+            var parameterWithNullMetadataToken = typeof(int[]).GetProperty(nameof(Array.Length)).GetMethod.ReturnParameter;
+            Assert.Equal(typeof(Attribute[]), Attribute.GetCustomAttributes(parameterWithNullMetadataToken).GetType());
+            Assert.Equal(typeof(MyAttribute[]), Attribute.GetCustomAttributes(parameterWithNullMetadataToken, typeof(MyAttribute)).GetType());
+        }
+
+        [Fact]
         public void VerifyGetCustomAttributesData()
         {
             ParameterInfo p = GetParameterInfo(typeof(ParameterInfoMetadata), "MethodWithCustomAttribute", 0);

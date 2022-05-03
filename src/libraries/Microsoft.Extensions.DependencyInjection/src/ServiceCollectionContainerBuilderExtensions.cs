@@ -48,12 +48,11 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <returns>The <see cref="ServiceProvider"/>.</returns>
         public static ServiceProvider BuildServiceProvider(this IServiceCollection services, ServiceProviderOptions options)
         {
-            if (services == null)
+            if (services is null)
             {
                 throw new ArgumentNullException(nameof(services));
             }
-
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }

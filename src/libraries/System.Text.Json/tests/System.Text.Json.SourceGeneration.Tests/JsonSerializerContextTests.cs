@@ -21,10 +21,11 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/63802", TargetFrameworkMonikers.NetFramework)]
         public static void Converters_AndTypeInfoCreator_NotRooted_WhenMetadataNotPresent()
         {
             RemoteExecutor.Invoke(
-                new Action(() =>
+                static () =>
                 {
                     object[] objArr = new object[] { new MyStruct() };
 
@@ -38,7 +39,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                     // This test uses reflection to:
                     // - Access JsonSerializerOptions.s_defaultSimpleConverters
                     // - Access JsonSerializerOptions.s_defaultFactoryConverters
-                    // - Access JsonSerializerOptions._typeInfoCreationFunc
+                    // - Access JsonSerializerOptions.s_typeInfoCreationFunc
                     //
                     // If any of them changes, this test will need to be kept in sync.
 
@@ -47,7 +48,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                     AssertFieldNull("s_defaultFactoryConverters", optionsInstance: null);
 
                     // Confirm type info dynamic creator not set.
-                    AssertFieldNull("_typeInfoCreationFunc", MetadataContext.Default.Options);
+                    AssertFieldNull("s_typeInfoCreationFunc", optionsInstance: null);
 
                     static void AssertFieldNull(string fieldName, JsonSerializerOptions? optionsInstance)
                     {
@@ -56,8 +57,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                         Assert.NotNull(fieldInfo);
                         Assert.Null(fieldInfo.GetValue(optionsInstance));
                     }
-                }),
-                new RemoteInvokeOptions() { ExpectedExitCode = 0 }).Dispose();
+                }).Dispose();
         }
 
         [Fact]

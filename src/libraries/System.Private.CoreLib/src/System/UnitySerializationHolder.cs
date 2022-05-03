@@ -34,10 +34,7 @@ namespace System
         public UnitySerializationHolder(SerializationInfo info, StreamingContext context)
 #pragma warning restore CA2229
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             // We are ignoring any other serialization input as we are only concerned about DBNull.
             // We also store data and use it for erorr logging.

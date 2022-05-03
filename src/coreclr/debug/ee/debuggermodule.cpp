@@ -253,7 +253,7 @@ void DebuggerModuleTable::RemoveModule(Module* pModule, AppDomain *pAppDomain)
         if ((pRuntimeModule == pModule) && (pDM->GetAppDomain() == pAppDomain))
         {
             LOG((LF_CORDB, LL_INFO1000, "DMT::RM Removing DebuggerMod:0x%x - Module:0x%x DF:0x%x AD:0x%x\n",
-                pDM, pModule, pDM->GetDomainFile(), pAppDomain));
+                pDM, pModule, pDM->GetDomainAssembly(), pAppDomain));
             TRACE_FREE(pDM);
             DeleteInteropSafe(pDM);
             Delete(HASH(pRuntimeModule), (HASHENTRY *) pDME);

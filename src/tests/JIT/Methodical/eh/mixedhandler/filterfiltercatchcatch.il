@@ -26,9 +26,9 @@
 .subsystem 0x00000003
 .file alignment 512
 .corflags 0x00000001
-.namespace hello
+.namespace hello_filterfiltercatchcatch_mixedhandler_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .method public hidebysig static void 
@@ -54,7 +54,7 @@
     } 
 
     .method public hidebysig static int32
-            Main(string[] args) cil managed
+            Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00

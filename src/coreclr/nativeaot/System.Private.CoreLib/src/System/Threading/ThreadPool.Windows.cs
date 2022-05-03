@@ -13,7 +13,6 @@ namespace System.Threading
     //
     // Windows-specific implementation of ThreadPool
     //
-    [UnsupportedOSPlatform("browser")]
     public sealed class RegisteredWaitHandle : MarshalByRefObject
     {
         private readonly Lock _lock;
@@ -59,7 +58,7 @@ namespace System.Threading
         {
             var wrapper = ThreadPoolCallbackWrapper.Enter();
             GCHandle handle = (GCHandle)context;
-            RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target;
+            RegisteredWaitHandle registeredWaitHandle = (RegisteredWaitHandle)handle.Target!;
             Debug.Assert((handle == registeredWaitHandle._gcHandle) && (wait == registeredWaitHandle._tpWait));
 
             bool timedOut = (waitResult == (uint)Interop.Kernel32.WAIT_TIMEOUT);
@@ -138,7 +137,7 @@ namespace System.Threading
                     Interop.Kernel32.SetThreadpoolWait(_tpWait, IntPtr.Zero, IntPtr.Zero);
 
                     // Should we wait for callbacks synchronously? Note that we treat the zero handle as the asynchronous case.
-                    SafeWaitHandle safeWaitHandle = waitObject?.SafeWaitHandle;
+                    SafeWaitHandle? safeWaitHandle = waitObject?.SafeWaitHandle;
                     bool blocking = ((safeWaitHandle != null) && (safeWaitHandle.DangerousGetHandle() == new IntPtr(-1)));
 
                     if (blocking)
@@ -235,7 +234,13 @@ namespace System.Threading
     {
         internal const bool IsWorkerTrackingEnabledInConfig = false;
 
-        internal const bool SupportsTimeSensitiveWorkItems = false; // the timer currently doesn't queue time-sensitive work
+        // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
+        // the runtime may use the thread for processing other work.
+        //
+        // Windows thread pool threads need to yield back to the thread pool periodically, otherwise those threads may be
+        // considered to be doing long-running work and change thread pool heuristics, such as slowing or halting thread
+        // injection.
+        internal static bool YieldFromDispatchLoop => true;
 
         /// <summary>
         /// The maximum number of threads in the default thread pool on Windows 10 as computed by
@@ -404,6 +409,37 @@ namespace System.Threading
 
             registeredWaitHandle.RestartWait();
             return registeredWaitHandle;
+        }
+
+        private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
+            _IOCompletionCallback.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
+
+        [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
+        public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
+        {
+            if (overlapped == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
+            }
+
+            // OS doesn't signal handle, so do it here (CoreCLR does this assignment in ThreadPoolNative::CorPostQueuedCompletionStatus)
+            overlapped->InternalLow = (IntPtr)0;
+            // Both types of callbacks are executed on the same thread pool
+            return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (nint)overlapped, preferLocal: false);
+        }
+
+        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
+        [SupportedOSPlatform("windows")]
+        public static bool BindHandle(IntPtr osHandle)
+        {
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
+        }
+
+        [SupportedOSPlatform("windows")]
+        public static bool BindHandle(SafeHandle osHandle)
+        {
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
     }
 }

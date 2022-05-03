@@ -606,4 +606,8 @@
 
 #include "palclr_win.h"
 
+#ifndef IMAGE_FILE_MACHINE_LOONGARCH64
+#define IMAGE_FILE_MACHINE_LOONGARCH64       0x6264  // LOONGARCH64.
+#endif
+
 #endif // defined(HOST_WINDOWS)

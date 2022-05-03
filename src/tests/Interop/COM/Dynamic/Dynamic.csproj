@@ -25,7 +25,7 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="Server/CMakeLists.txt" />
+    <CMakeProjectReference Include="Server/CMakeLists.txt" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="../NETServer/NETServer.csproj">
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>

@@ -46,10 +46,8 @@ namespace System.Net
         /// </summary>
         public IPEndPoint(IPAddress address, int port)
         {
-            if (address == null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
+            ArgumentNullException.ThrowIfNull(address);
+
             if (!TcpValidationHelpers.ValidatePortNumber(port))
             {
                 throw new ArgumentOutOfRangeException(nameof(port));
@@ -65,7 +63,11 @@ namespace System.Net
         public IPAddress Address
         {
             get => _address;
-            set => _address = value ?? throw new ArgumentNullException(nameof(value));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value);
+                _address = value;
+            }
         }
 
         /// <summary>
@@ -127,10 +129,7 @@ namespace System.Net
 
         public static IPEndPoint Parse(string s)
         {
-            if (s == null)
-            {
-                throw new ArgumentNullException(nameof(s));
-            }
+            ArgumentNullException.ThrowIfNull(s);
 
             return Parse(s.AsSpan());
         }
@@ -155,10 +154,8 @@ namespace System.Net
 
         public override EndPoint Create(SocketAddress socketAddress)
         {
-            if (socketAddress == null)
-            {
-                throw new ArgumentNullException(nameof(socketAddress));
-            }
+            ArgumentNullException.ThrowIfNull(socketAddress);
+
             if (socketAddress.Family != AddressFamily)
             {
                 throw new ArgumentException(SR.Format(SR.net_InvalidAddressFamily, socketAddress.Family.ToString(), GetType().FullName, AddressFamily.ToString()), nameof(socketAddress));

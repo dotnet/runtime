@@ -269,10 +269,7 @@ namespace System.Xml
         {
             Initialize(adapter);
 
-            if (docTypeName == null || docTypeName.Length == 0)
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(docTypeName, nameof(docTypeName));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(docTypeName);
 
             // check doctype name
             XmlConvert.VerifyName(docTypeName);
@@ -3433,7 +3430,7 @@ namespace System.Xml
             }
         }
 
-        private bool IsAttributeValueType(Token token)
+        private static bool IsAttributeValueType(Token token)
         {
             return (int)token >= (int)Token.CDATA && (int)token <= (int)Token.NOTATION;
         }

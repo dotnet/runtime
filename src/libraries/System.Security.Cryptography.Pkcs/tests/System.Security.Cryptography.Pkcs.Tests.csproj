@@ -39,7 +39,7 @@
     <Compile Include="EnvelopedCms\DecryptTestsRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\DecryptTestsUsingExplicitPrivateKey.cs" />
     <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaOaepCertTests.cs" />
-    <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" Condition="'$(TargetsWindows)' == 'true'" />
+    <Compile Include="EnvelopedCms\DecryptTests.KeyPersistence.cs" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Compile Include="EnvelopedCms\KeyTransRecipientInfoRsaPaddingModeTests.cs" />
     <Compile Include="EnvelopedCms\SubjectIdentifierTests.cs" />
     <Compile Include="Pkcs12\CertBagTests.cs" />
@@ -68,9 +68,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\src\System.Security.Cryptography.Pkcs.csproj" />
-  </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Reference Include="System.Security" />

@@ -324,9 +324,8 @@ namespace System.IO
                     // against the handle, so we'd deadlock if we relied on that approach.  Instead, we want to follow
                     // the approach of removing all watches when we're done, which means we also don't want to
                     // add any new watches once the count hits zero.
-                    if (parent == null || _wdToPathMap.Count > 0)
+                    if (_wdToPathMap.Count > 0)
                     {
-                        Debug.Assert(parent != null || _wdToPathMap.Count == 0);
                         AddDirectoryWatchUnlocked(parent, directoryName);
                     }
                 }
@@ -361,6 +360,15 @@ namespace System.IO
                     // raise the Error event with the exception and let the user decide how to handle it.
 
                     Interop.ErrorInfo error = Interop.Sys.GetLastErrorInfo();
+
+                    // Don't report an error when we can't add a watch because the child directory
+                    // was removed or replaced by a file.
+                    if (hasParent && (error.Error == Interop.Error.ENOENT ||
+                                      error.Error == Interop.Error.ENOTDIR))
+                    {
+                        return;
+                    }
+
                     Exception exc;
                     if (error.Error == Interop.Error.ENOSPC)
                     {
@@ -432,16 +440,30 @@ namespace System.IO
                 // asked for subdirectories to be included.
                 if (isNewDirectory && _includeSubdirectories)
                 {
-                    // This method is recursive.  If we expect to see hierarchies
-                    // so deep that it would cause us to overflow the stack, we could
-                    // consider using an explicit stack object rather than recursion.
-                    // This is unlikely, however, given typical directory names
-                    // and max path limits.
-                    foreach (string subDir in Directory.EnumerateDirectories(fullPath))
+                    try
                     {
-                        AddDirectoryWatchUnlocked(directoryEntry, System.IO.Path.GetFileName(subDir));
-                        // AddDirectoryWatchUnlocked will add the new directory to
-                        // this.Children, so we don't have to / shouldn't also do it here.
+                        // This method is recursive.  If we expect to see hierarchies
+                        // so deep that it would cause us to overflow the stack, we could
+                        // consider using an explicit stack object rather than recursion.
+                        // This is unlikely, however, given typical directory names
+                        // and max path limits.
+                        foreach (string subDir in Directory.EnumerateDirectories(fullPath))
+                        {
+                            AddDirectoryWatchUnlocked(directoryEntry, System.IO.Path.GetFileName(subDir));
+                            // AddDirectoryWatchUnlocked will add the new directory to
+                            // this.Children, so we don't have to / shouldn't also do it here.
+                        }
+                    }
+                    catch (DirectoryNotFoundException)
+                    { } // The child directory was removed.
+                    catch (IOException ex) when (ex.HResult == Interop.Error.ENOTDIR.Info().RawErrno)
+                    { } // The child directory was replaced by a file.
+                    catch (Exception ex)
+                    {
+                        if (_weakWatcher.TryGetTarget(out FileSystemWatcher? watcher))
+                        {
+                            watcher.OnError(new ErrorEventArgs(ex));
+                        }
                     }
                 }
             }

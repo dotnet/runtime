@@ -23,10 +23,8 @@ namespace System.Security.Cryptography
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                    throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
                 ThrowIfDisposed();
 
@@ -45,10 +43,8 @@ namespace System.Security.Cryptography
                 byte[]? secretPrepend,
                 byte[]? secretAppend)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                    throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
                 ThrowIfDisposed();
 
@@ -63,12 +59,9 @@ namespace System.Security.Cryptography
 
             public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (prfLabel == null)
-                    throw new ArgumentNullException(nameof(prfLabel));
-                if (prfSeed == null)
-                    throw new ArgumentNullException(nameof(prfSeed));
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ArgumentNullException.ThrowIfNull(prfLabel);
+                ArgumentNullException.ThrowIfNull(prfSeed);
 
                 ThrowIfDisposed();
 

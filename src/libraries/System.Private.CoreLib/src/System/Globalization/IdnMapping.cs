@@ -58,19 +58,19 @@ namespace System.Globalization
 
         public string GetAscii(string unicode, int index)
         {
-            if (unicode == null)
-                throw new ArgumentNullException(nameof(unicode));
+            ArgumentNullException.ThrowIfNull(unicode);
+
             return GetAscii(unicode, index, unicode.Length - index);
         }
 
         public string GetAscii(string unicode, int index, int count)
         {
-            if (unicode == null)
-                throw new ArgumentNullException(nameof(unicode));
+            ArgumentNullException.ThrowIfNull(unicode);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > unicode.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (index > unicode.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(unicode), SR.ArgumentOutOfRange_IndexCountBuffer);
 
@@ -105,19 +105,19 @@ namespace System.Globalization
 
         public string GetUnicode(string ascii, int index)
         {
-            if (ascii == null)
-                throw new ArgumentNullException(nameof(ascii));
+            ArgumentNullException.ThrowIfNull(ascii);
+
             return GetUnicode(ascii, index, ascii.Length - index);
         }
 
         public string GetUnicode(string ascii, int index, int count)
         {
-            if (ascii == null)
-                throw new ArgumentNullException(nameof(ascii));
+            ArgumentNullException.ThrowIfNull(ascii);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException((index < 0) ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (index > ascii.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             if (index > ascii.Length - count)
                 throw new ArgumentOutOfRangeException(nameof(ascii), SR.ArgumentOutOfRange_IndexCountBuffer);
 
@@ -438,7 +438,7 @@ namespace System.Globalization
                         /* handled already.  Find the next larger one: */
                         int j;
                         int m;
-                        int test = 0;
+                        int test;
                         for (m = c_maxint, j = iAfterLastDot;
                              j < iNextDot;
                              j += IsSupplementary(test) ? 2 : 1)

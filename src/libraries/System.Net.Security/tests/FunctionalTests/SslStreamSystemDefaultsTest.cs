@@ -47,11 +47,13 @@ namespace System.Net.Security.Tests
             }
 
 #pragma warning restore 0618
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
             if (PlatformDetection.SupportsTls11)
             {
                 yield return new object[] { SslProtocolSupport.NonTls13Protocols, SslProtocols.Tls11 };
                 yield return new object[] { SslProtocols.Tls11, SslProtocolSupport.NonTls13Protocols };
             }
+#pragma warning restore SYSLIB0039
 
             if (PlatformDetection.SupportsTls12)
             {
@@ -74,14 +76,9 @@ namespace System.Net.Security.Tests
 
         [ConditionalTheory]
         [MemberData(nameof(OneOrBothUseDefaulData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAndServer_OneOrBothUseDefault_Ok(SslProtocols? clientProtocols, SslProtocols? serverProtocols)
         {
-            if (PlatformDetection.IsWindows10Version22000OrGreater)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58927")]
-                throw new SkipTestException("Unstable on Windows 11");
-            }
-
             using (X509Certificate2 serverCertificate = Configuration.Certificates.GetServerCertificate())
             using (X509Certificate2 clientCertificate = Configuration.Certificates.GetClientCertificate())
             {
@@ -99,7 +96,9 @@ namespace System.Net.Security.Tests
 #pragma warning restore 0618
                 {
                     Assert.True(
+#pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                         (_clientStream.SslProtocol == SslProtocols.Tls11 && _clientStream.HashAlgorithm == HashAlgorithmType.Sha1) ||
+#pragma warning restore SYSLIB0039
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha256 ||
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha384 ||
                         _clientStream.HashAlgorithm == HashAlgorithmType.Sha512,

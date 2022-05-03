@@ -1,16 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ==++==
-//
-
-//
-//
-
-//
-// ==--==
-
-
 #ifndef __eexcp_h__
 #define __eexcp_h__
 
@@ -127,7 +117,7 @@ inline BOOL IsDuplicateClause(EE_ILEXCEPTION_CLAUSE* pEHClause)
     return pEHClause->Flags & COR_ILEXCEPTION_CLAUSE_DUPLICATED;
 }
 
-#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 // Finally is the only EH construct that can be part of the execution as being fall-through.
 //
 // "Cloned" finally is a contruct that represents a finally block that is used as
@@ -149,7 +139,7 @@ inline BOOL IsClonedFinally(EE_ILEXCEPTION_CLAUSE* pEHClause)
             (pEHClause->TryStartPC == pEHClause->HandlerStartPC) &&
             IsFinally(pEHClause) && IsDuplicateClause(pEHClause));
 }
-#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
+#endif // defined(TARGET_AMD64) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
 #endif // __eexcp_h__
 

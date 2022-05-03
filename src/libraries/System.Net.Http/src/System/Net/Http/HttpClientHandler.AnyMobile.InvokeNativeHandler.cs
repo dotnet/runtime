@@ -21,16 +21,16 @@ namespace System.Net.Http
         private const string GetHttpMessageHandlerType = "Android.Runtime.AndroidEnvironment, Mono.Android";
 #elif TARGET_IOS
         private const string NativeHandlerType = "System.Net.Http.NSUrlSessionHandler";
-        private const string AssemblyName = "Xamarin.iOS";
-        private const string GetHttpMessageHandlerType = "ObjCRuntime.RuntimeOptions, Xamarin.iOS";
+        private const string AssemblyName = "Microsoft.iOS";
+        private const string GetHttpMessageHandlerType = "ObjCRuntime.RuntimeOptions, Microsoft.iOS";
 #elif TARGET_MACCATALYST
         private const string NativeHandlerType = "System.Net.Http.NSUrlSessionHandler";
-        private const string AssemblyName = "Xamarin.MacCatalyst";
-        private const string GetHttpMessageHandlerType = "ObjCRuntime.RuntimeOptions, Xamarin.MacCatalyst";
+        private const string AssemblyName = "Microsoft.MacCatalyst";
+        private const string GetHttpMessageHandlerType = "ObjCRuntime.RuntimeOptions, Microsoft.MacCatalyst";
 #elif TARGET_TVOS
         private const string NativeHandlerType = "System.Net.Http.NSUrlSessionHandler";
-        private const string AssemblyName = "Xamarin.TVOS";
-        private const string GetHttpMessageHandlerType = "ObjCRuntime.RuntimeOptions, Xamarin.TVOS";
+        private const string AssemblyName = "Microsoft.tvOS";
+        private const string GetHttpMessageHandlerType = "ObjCRuntime.RuntimeOptions, Microsoft.tvOS";
 #else
 #error Unknown target
 #endif
@@ -146,7 +146,7 @@ namespace System.Net.Http
         [DynamicDependency("set_Credentials", NativeHandlerType, AssemblyName)]
         private void SetCredentials(ICredentials? value) => InvokeNativeHandlerMethod("set_Credentials", value);
 
-        private HttpMessageHandler CreateNativeHandler()
+        private static HttpMessageHandler CreateNativeHandler()
         {
             if (_nativeHandlerMethod == null)
             {

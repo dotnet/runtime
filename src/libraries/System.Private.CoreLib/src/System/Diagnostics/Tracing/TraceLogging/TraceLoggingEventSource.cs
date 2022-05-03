@@ -25,7 +25,7 @@ using System.Text;
 using System.Runtime.CompilerServices;
 namespace Microsoft.Diagnostics.Tracing
 #else
-using Internal.Runtime.CompilerServices;
+using System.Runtime.CompilerServices;
 namespace System.Diagnostics.Tracing
 #endif
 {
@@ -90,14 +90,10 @@ namespace System.Diagnostics.Tracing
             EventSourceSettings config,
             params string[]? traits)
             : this(
-                eventSourceName == null ? default : GenerateGuidFromName(eventSourceName.ToUpperInvariant()),
-                eventSourceName!,
+                GenerateGuidFromName((eventSourceName ?? throw new ArgumentNullException(nameof(eventSourceName))).ToUpperInvariant()),
+                eventSourceName,
                 config, traits)
         {
-            if (eventSourceName == null)
-            {
-                throw new ArgumentNullException(nameof(eventSourceName));
-            }
         }
 
         /// <summary>

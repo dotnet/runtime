@@ -175,7 +175,7 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
                 nextBlock = leaveBlock->bbNext;
 
                 leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
-                fgRemoveBlock(leaveBlock, true);
+                fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                 // Cleanup the postTryFinallyBlock
                 fgCleanupContinuation(postTryFinallyBlock);
@@ -194,8 +194,8 @@ PhaseStatus Compiler::fgRemoveEmptyFinally()
         firstBlock->bbRefs = 0;
 
         // Remove the handler block.
-        const bool unreachable = true;
         firstBlock->bbFlags &= ~BBF_DONT_REMOVE;
+        constexpr bool unreachable = true;
         fgRemoveBlock(firstBlock, unreachable);
 
         // Find enclosing try region for the try, if any, and update
@@ -443,7 +443,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
                 if (block != callFinally)
                 {
-                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n");
+                    JITDUMP("EH#%u found unexpected callfinally " FMT_BB "; skipping.\n", XTnum, block->bbNum);
                     verifiedSingleCallfinally = false;
                     break;
                 }
@@ -454,7 +454,7 @@ PhaseStatus Compiler::fgRemoveEmptyTry()
 
         if (!verifiedSingleCallfinally)
         {
-            JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n");
+            JITDUMP("EH#%u -- unexpectedly -- has multiple callfinallys; skipping.\n", XTnum);
             XTnum++;
             assert(verifiedSingleCallfinally);
             continue;
@@ -1181,7 +1181,7 @@ PhaseStatus Compiler::fgCloneFinally()
                         nextBlock = leaveBlock->bbNext;
 
                         leaveBlock->bbFlags &= ~BBF_KEEP_BBJ_ALWAYS;
-                        fgRemoveBlock(leaveBlock, true);
+                        fgRemoveBlock(leaveBlock, /* unreachable */ true);
 
                         // Make sure iteration isn't going off the deep end.
                         assert(leaveBlock != endCallFinallyRangeBlock);

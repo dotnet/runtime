@@ -61,7 +61,7 @@ namespace System
                 value = (short)-value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -75,7 +75,7 @@ namespace System
                 value = -value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -89,7 +89,7 @@ namespace System
                 value = -value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -106,7 +106,7 @@ namespace System
                 value = -value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -121,7 +121,7 @@ namespace System
                 value = (sbyte)-value;
                 if (value < 0)
                 {
-                    ThrowAbsOverflow();
+                    ThrowNegateTwosCompOverflow();
                 }
             }
             return value;
@@ -155,7 +155,7 @@ namespace System
 
         [DoesNotReturn]
         [StackTraceHidden]
-        private static void ThrowAbsOverflow()
+        internal static void ThrowNegateTwosCompOverflow()
         {
             throw new OverflowException(SR.Overflow_NegateTwosCompNum);
         }
@@ -881,6 +881,7 @@ namespace System
             return decimal.Max(val1, val2);
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Max(double val1, double val2)
         {
@@ -938,6 +939,7 @@ namespace System
             return (val1 >= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Max(float val1, float val2)
         {
@@ -1028,6 +1030,7 @@ namespace System
             return decimal.Min(val1, val2);
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Min(double val1, double val2)
         {
@@ -1080,6 +1083,7 @@ namespace System
             return (val1 <= val2) ? val1 : val2;
         }
 
+        [Intrinsic]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static float Min(float val1, float val2)
         {
@@ -1232,9 +1236,9 @@ namespace System
             // This is based on the 'Berkeley SoftFloat Release 3e' algorithm
 
             ulong bits = BitConverter.DoubleToUInt64Bits(a);
-            int exponent = double.ExtractExponentFromBits(bits);
+            ushort biasedExponent = double.ExtractBiasedExponentFromBits(bits);
 
-            if (exponent <= 0x03FE)
+            if (biasedExponent <= 0x03FE)
             {
                 if ((bits << 1) == 0)
                 {
@@ -1246,11 +1250,11 @@ namespace System
                 // and any value greater than 0.5 will always round to exactly one. However,
                 // we need to preserve the original sign for IEEE compliance.
 
-                double result = ((exponent == 0x03FE) && (double.ExtractSignificandFromBits(bits) != 0)) ? 1.0 : 0.0;
+                double result = ((biasedExponent == 0x03FE) && (double.ExtractTrailingSignificandFromBits(bits) != 0)) ? 1.0 : 0.0;
                 return CopySign(result, a);
             }
 
-            if (exponent >= 0x0433)
+            if (biasedExponent >= 0x0433)
             {
                 // Any value greater than or equal to 2^52 cannot have a fractional part,
                 // So it will always round to exactly itself.
@@ -1259,12 +1263,12 @@ namespace System
             }
 
             // The absolute value should be greater than or equal to 1.0 and less than 2^52
-            Debug.Assert((0x03FF <= exponent) && (exponent <= 0x0432));
+            Debug.Assert((0x03FF <= biasedExponent) && (biasedExponent <= 0x0432));
 
             // Determine the last bit that represents the integral portion of the value
             // and the bits representing the fractional portion
 
-            ulong lastBitMask = 1UL << (0x0433 - exponent);
+            ulong lastBitMask = 1UL << (0x0433 - biasedExponent);
             ulong roundBitsMask = lastBitMask - 1;
 
             // Increment the first fractional bit, which represents the midpoint between
@@ -1299,6 +1303,18 @@ namespace System
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static double Round(double value, MidpointRounding mode)
         {
+            // Inline single-instruction modes
+            if (RuntimeHelpers.IsKnownConstant((int)mode))
+            {
+                if (mode == MidpointRounding.ToEven)
+                    return Round(value);
+
+                // For ARM/ARM64 we can lower it down to a single instruction FRINTA
+                // For XARCH we have to use the common path
+                if (AdvSimd.IsSupported && mode == MidpointRounding.AwayFromZero)
+                    return AdvSimd.RoundAwayFromZeroScalar(Vector64.CreateScalar(value)).ToScalar();
+            }
+
             return Round(value, 0, mode);
         }
 
@@ -1452,6 +1468,7 @@ namespace System
             return decimal.Truncate(d);
         }
 
+        [Intrinsic]
         public static unsafe double Truncate(double d)
         {
             ModF(d, &d);

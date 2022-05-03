@@ -46,7 +46,7 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 
 #ifndef HOST_WIN32
 
-#ifdef HAVE_WORKING_SIGALTSTACK
+#ifdef ENABLE_SIGALTSTACK
 /*
  * solaris doesn't have pthread_getattr_np () needed by the sigaltstack setup
  * code.
@@ -59,10 +59,8 @@ LONG CALLBACK seh_handler(EXCEPTION_POINTERS* ep);
 #define MONO_ARCH_USE_SIGACTION
 #endif /* __HAIKU__ */
 
-#endif /* HAVE_WORKING_SIGALTSTACK */
+#endif /* ENABLE_SIGALTSTACK */
 #endif /* !HOST_WIN32 */
-
-#define MONO_ARCH_SUPPORT_TASKLETS 1
 
 /* we should lower this size and make sure we don't call heavy stack users in the segv handler */
 #if defined(__APPLE__)

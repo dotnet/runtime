@@ -5710,7 +5710,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
     // Find the module the manifest lives in.
     if (pModuleId)
     {
-        *pModuleId = (ModuleID) pAssembly->GetManifestModule();
+        *pModuleId = (ModuleID) pAssembly->GetModule();
 
         // This is the case where the profiler has called GetAssemblyInfo
         // on an assembly that has been completely created yet.

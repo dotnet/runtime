@@ -2,7 +2,7 @@
   <PropertyGroup>
     <AssemblyName>XDocument.Common</AssemblyName>
     <RootNamespace>CoreXml.Test.XLinq</RootNamespace>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BridgeHelpers.cs" />

@@ -226,7 +226,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void CreateReadStreamSucceedsOnEmptyFile()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -324,7 +323,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokenIsSameForSamePath()
         {
@@ -348,7 +346,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredOnFileChange()
         {
@@ -379,7 +376,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenCallbackInvokedOnFileChange()
         {
@@ -416,7 +412,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task WatcherWithPolling_ReturnsTrueForFileChangedWhenFileSystemWatcherDoesNotRaiseEvents()
         {
@@ -447,7 +442,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task WatcherWithPolling_ReturnsTrueForFileRemovedWhenFileSystemWatcherDoesNotRaiseEvents()
         {
@@ -480,7 +474,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredOnFileDeleted()
         {
@@ -792,7 +785,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task FileChangeTokenNotNotifiedAfterExpiry()
         {
@@ -825,7 +817,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokenIsSameForSamePathCaseInsensitive()
         {
@@ -842,7 +833,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task CorrectTokensFiredForMultipleFiles()
         {
@@ -876,7 +866,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenNotAffectedByExceptions()
         {
@@ -935,7 +924,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58584", TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
         public void TokenForEmptyFilter()
         {
@@ -952,7 +940,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         public void TokenForWhitespaceFilters()
         {
             using (var root = new TempDirectory(GetTestFilePath()))
@@ -985,7 +972,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenFiredOnCreation()
         {
@@ -1011,7 +997,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenFiredOnDeletion()
         {
@@ -1037,7 +1022,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenFiredForFilesUnderPathEndingWithSlash()
         {
@@ -1076,7 +1060,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Theory]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [InlineData("/")]
         [InlineData("///")]
         [InlineData("/\\/")]
@@ -1167,7 +1150,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenFiredForGlobbingPatternsPointingToSubDirectory()
         {
@@ -1201,7 +1183,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "Browser/iOS/tvOS always uses Active Polling which doesn't return the same instance between multiple calls to Watch(string)")]
         public void TokensWithForwardAndBackwardSlashesAreSame()
         {
@@ -1218,7 +1199,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredForOldAndNewNamesOnRename()
         {
@@ -1248,7 +1228,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredForNewDirectoryContentsOnRename()
         {
@@ -1322,7 +1301,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokenNotFiredForFileNameStartingWithPeriod()
         {
@@ -1348,7 +1326,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         // Hidden and system files only make sense on Windows.
         [PlatformSpecific(TestPlatforms.Windows)]
         public async Task TokensNotFiredForHiddenAndSystemFiles()
@@ -1390,7 +1367,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task TokensFiredForAllEntriesOnError()
         {
@@ -1419,7 +1395,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task WildCardToken_RaisesEventsForNewFilesAdded()
         {
@@ -1446,7 +1421,6 @@ namespace Microsoft.Extensions.FileProviders
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task WildCardToken_RaisesEventsWhenFileSystemWatcherDoesNotFire()
         {
@@ -1618,7 +1592,6 @@ namespace Microsoft.Extensions.FileProviders
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.Browser | TestPlatforms.iOS | TestPlatforms.tvOS, "System.IO.FileSystem.Watcher is not supported on Browser/iOS/tvOS")]
         public async Task CanDeleteWatchedDirectory(bool useActivePolling)
         {

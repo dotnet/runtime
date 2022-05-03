@@ -20,7 +20,7 @@
 #include <mono/metadata/loader-internals.h>
 #include <mono/metadata/mempool-internals.h>
 #include <mono/metadata/handle-decl.h>
-#include <mono/mini/mono-private-unstable.h>
+#include <mono/jit/mono-private-unstable.h>
 
 G_BEGIN_DECLS
 

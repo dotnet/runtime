@@ -131,12 +131,6 @@
   <data name="StoreNotSupportMethod" xml:space="preserve">
     <value>This store does not support this method.</value>
   </data>
-  <data name="PrincipalCantSetContext" xml:space="preserve">
-    <value>The PrincipalContext can only be set on an unpersisted Principal.</value>
-  </data>
-  <data name="PrincipalUnsupportedProperty" xml:space="preserve">
-    <value>Principals in this type of store do not support the property '{0}'.</value>
-  </data>
   <data name="PrincipalUnsupportPropertyForPlatform" xml:space="preserve">
     <value>Principals in this version of the store do not support the property '{0}'.</value>
   </data>
@@ -164,29 +158,11 @@
   <data name="PrincipalMustPersistFirst" xml:space="preserve">
     <value>The Principal object must be persisted before this method can be called.</value>
   </data>
-  <data name="PrincipalIdentityTypeNotAllowed" xml:space="preserve">
-    <value>This type of identity information is not supported on principals in this type of store.</value>
-  </data>
-  <data name="PrincipalIdentityTypeNotRemovable" xml:space="preserve">
-    <value>This type of identity information can not be cleared on principals in this type of store.</value>
-  </data>
-  <data name="PrincipalCantChangeSamNameOnPersistedSAM" xml:space="preserve">
-    <value>This type of store does not permit changing the SAM account name after the principal has been persisted.</value>
-  </data>
-  <data name="EmptyIdentityType" xml:space="preserve">
-    <value>The identityType parameter cannot be empty.</value>
-  </data>
   <data name="PrincipalSearcherPersistedPrincipal" xml:space="preserve">
     <value>Persisted Principal objects cannot be used as query filters.</value>
   </data>
-  <data name="PrincipalSearcherMustSetContext" xml:space="preserve">
-    <value>A PrincipalContext must first be assigned to the PrincipalSearcher before the query can be performed.</value>
-  </data>
   <data name="PrincipalSearcherMustSetFilter" xml:space="preserve">
     <value>A QueryFilter must first be assigned to the PrincipalSearcher before the query can be performed.</value>
-  </data>
-  <data name="PrincipalSearcherMustSetContextForUnderlying" xml:space="preserve">
-    <value>A PrincipalContext must first be assigned to the PrincipalSearcher before the underlying searcher can be retrieved.</value>
   </data>
   <data name="PrincipalSearcherNoUnderlying" xml:space="preserve">
     <value>There is no underlying searcher for the type of store associated with the PrincipalContext.</value>
@@ -211,9 +187,6 @@
   </data>
   <data name="TrackedCollectionEnumInvalidPos" xml:space="preserve">
     <value>The enumerator is positioned before the first element of the collection or after the last element.</value>
-  </data>
-  <data name="MultipleMatchesExceptionText" xml:space="preserve">
-    <value>More than one matching identity was found.</value>
   </data>
   <data name="MultipleMatchingPrincipals" xml:space="preserve">
     <value>Multiple principals contain a matching Identity.</value>
@@ -242,9 +215,6 @@
   <data name="PrincipalCollectionEnumInvalidPos" xml:space="preserve">
     <value>The enumerator is positioned before the first element of the collection or after the last element.</value>
   </data>
-  <data name="PrincipalCollectionAlreadyMember" xml:space="preserve">
-    <value>The Principal object already exists in the collection.</value>
-  </data>
   <data name="AuthenticablePrincipalMustBeSubtypeOfAuthPrinc" xml:space="preserve">
     <value>The subtype parameter must be either AuthenticablePrincipal or a subtype of AuthenticablePrincipal.</value>
   </data>
@@ -253,12 +223,6 @@
   </data>
   <data name="UserMustSetContextForMethod" xml:space="preserve">
     <value>A PrincipalContext must first be assigned to the unpersisted User object before this method can be called.</value>
-  </data>
-  <data name="UserDomainNotSupportedOnPlatform" xml:space="preserve">
-    <value>Domain users are not supported on this platform.</value>
-  </data>
-  <data name="UserLocalNotSupportedOnPlatform" xml:space="preserve">
-    <value>Local machine users not supported on this platform.</value>
   </data>
   <data name="UserCouldNotFindCurrent" xml:space="preserve">
     <value>The User object for the current user could not be found.  You may not have access to it.</value>
@@ -305,20 +269,11 @@
   <data name="StoreCtxNT4IdentityClaimWrongForm" xml:space="preserve">
     <value>The samAccountName IdentityType must be in the form "domainname\\userName", "machinename\\userName", or "userName".</value>
   </data>
-  <data name="StoreCtxCantSetTimeLimitOnIdentityClaim" xml:space="preserve">
-    <value>This store does not support setting IdentityClaims with a restricted range of times for which the IdentityClaim is valid.</value>
-  </data>
   <data name="StoreCtxGroupHasUnpersistedInsertedPrincipal" xml:space="preserve">
     <value>The Group object can not be saved until the unpersisted Principal object in its Members property is either saved or removed from the collection.</value>
   </data>
   <data name="StoreCtxNeedValueSecurityIdentityClaimToQuery" xml:space="preserve">
     <value>The Principal object must have a valid SID IdentityType in order to perform this operation.</value>
-  </data>
-  <data name="StoreCtxExceptionUpdatingGroup" xml:space="preserve">
-    <value>An exception occurred while updating the group membership on the store.</value>
-  </data>
-  <data name="StoreCtxExceptionCommittingChanges" xml:space="preserve">
-    <value>An exception occurred while saving the changes to the store.</value>
   </data>
   <data name="ADStoreCtxUnsupportedPrincipalContextForGroupInsert" xml:space="preserve">
     <value>Only domain Principal objects can be inserted into groups in this store.</value>
@@ -371,9 +326,6 @@
   <data name="SAMStoreCtxNoComputerPasswordExpire" xml:space="preserve">
     <value>Computer accounts in this store can not have their passwords expired.</value>
   </data>
-  <data name="SAMStoreCtxIdentityClaimsImmutable" xml:space="preserve">
-    <value>This store does not permit changing the IdentityClaims on a principal once the principal has been persisted.</value>
-  </data>
   <data name="SAMStoreCtxCouldntGetSIDForGroupMember" xml:space="preserve">
     <value>One of the Principal objects to be inserted into or removed from the group's membership does not contain a SID.</value>
   </data>
@@ -407,33 +359,6 @@
   <data name="AuthZCantFindGroup" xml:space="preserve">
     <value>An error occurred while enumerating the groups.  The group could not be found.</value>
   </data>
-  <data name="ConfigHandlerConfigSectionsUnique" xml:space="preserve">
-    <value>The '{0}' element can only appear once in the configuration file.</value>
-  </data>
-  <data name="ConfigHandlerInvalidBoolAttribute" xml:space="preserve">
-    <value>The '{0}' attribute for element '{1}' of the configuration file must be set to 'true' or 'false'.</value>
-  </data>
-  <data name="ConfigHandlerInvalidEnumAttribute" xml:space="preserve">
-    <value>The '{0}' attribute for element '{1}' of the configuration file is set to an unknown value.</value>
-  </data>
-  <data name="ConfigHandlerInvalidStringAttribute" xml:space="preserve">
-    <value>The '{0}' attribute for element '{1}' of the configuration file must be set to a string.</value>
-  </data>
-  <data name="ConfigHandlerUnknownConfigSection" xml:space="preserve">
-    <value>Unknown element '{0}' was found in the configuration file.</value>
-  </data>
-  <data name="PrincipalPermWrongType" xml:space="preserve">
-    <value>The target parameter is not a PrincipalPermission.</value>
-  </data>
-  <data name="PrincipalPermXmlNotPermission" xml:space="preserve">
-    <value>The SecurityElement is not a permission.</value>
-  </data>
-  <data name="PrincipalPermXmlBadVersion" xml:space="preserve">
-    <value>The SecurityElement does not have a valid version.  Version '1' was expected.</value>
-  </data>
-  <data name="PrincipalPermXmlBadContents" xml:space="preserve">
-    <value>The SecurityElement does not contain a valid value for the 'Unrestricted' attribute.</value>
-  </data>
   <data name="ContextOptionsNotValidForMachineStore" xml:space="preserve">
     <value>The options value is invalid.  The Machine store only supports Negotiate.</value>
   </data>
@@ -451,9 +376,6 @@
   </data>
   <data name="InvalidPropertyForStore" xml:space="preserve">
     <value>Property is not valid for this store type.</value>
-  </data>
-  <data name="InvalidOperationForStore" xml:space="preserve">
-    <value>{0} is not supported by the {1} ContextType.</value>
   </data>
   <data name="NameMustBeSetToPersistPrincipal" xml:space="preserve">
     <value>SamAccountName or Name must be assigned to a newly-created Principal object in this store prior to saving.</value>

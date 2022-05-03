@@ -74,6 +74,7 @@ namespace System.Threading
             Debug.Assert((_state & LockedMask) != 0);
         }
 
+#pragma warning disable CA1822
         [Conditional("DEBUG")]
         public void VerifyIsNotLocked()
         {
@@ -89,6 +90,7 @@ namespace System.Threading
             Debug.Assert(_ownerThread == null);
 #endif
         }
+#pragma warning restore CA1822
 
         [Conditional("DEBUG")]
         private void ResetOwnerThread()

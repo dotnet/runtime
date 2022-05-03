@@ -49,7 +49,7 @@ namespace System.IO.Pipelines
         {
             if (buffer is null)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
             }
 
             return ReadInternal(new Span<byte>(buffer, offset, count));
@@ -84,7 +84,7 @@ namespace System.IO.Pipelines
         {
             if (buffer is null)
             {
-                throw new ArgumentNullException(nameof(buffer));
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.buffer);
             }
 
             return ReadAsyncInternal(new Memory<byte>(buffer, offset, count), cancellationToken).AsTask();

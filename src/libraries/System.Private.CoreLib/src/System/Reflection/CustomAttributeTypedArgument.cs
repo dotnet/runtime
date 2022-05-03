@@ -2,11 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 
 namespace System.Reflection
 {
-    public readonly partial struct CustomAttributeTypedArgument
+    public readonly partial struct CustomAttributeTypedArgument : IEquatable<CustomAttributeTypedArgument>
     {
         public static bool operator ==(CustomAttributeTypedArgument left, CustomAttributeTypedArgument right) => left.Equals(right);
         public static bool operator !=(CustomAttributeTypedArgument left, CustomAttributeTypedArgument right) => !left.Equals(right);
@@ -16,8 +17,7 @@ namespace System.Reflection
 
         public CustomAttributeTypedArgument(Type argumentType, object? value)
         {
-            if (argumentType is null)
-                throw new ArgumentNullException(nameof(argumentType));
+            ArgumentNullException.ThrowIfNull(argumentType);
 
             _value = CanonicalizeValue(value);
             _argumentType = argumentType;
@@ -25,8 +25,7 @@ namespace System.Reflection
 
         public CustomAttributeTypedArgument(object value)
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             _value = CanonicalizeValue(value);
             _argumentType = value.GetType();
@@ -86,7 +85,13 @@ namespace System.Reflection
         }
 
         public override int GetHashCode() => base.GetHashCode();
-        public override bool Equals(object? obj) => obj == (object)this;
+
+        public override bool Equals([NotNullWhen(true)] object? obj) => obj is CustomAttributeTypedArgument cata && Equals(cata);
+
+        /// <summary>Indicates whether the current instance is equal to another instance of the same type.</summary>
+        /// <param name="other">An instance to compare with this instance.</param>
+        /// <returns>true if the current instance is equal to the other instance; otherwise, false.</returns>
+        public bool Equals(CustomAttributeTypedArgument other) => _value == other._value && _argumentType == other._argumentType;
 
         public Type ArgumentType => _argumentType;
         public object? Value => _value;

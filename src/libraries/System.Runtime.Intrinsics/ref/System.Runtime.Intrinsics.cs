@@ -2663,6 +2663,52 @@ namespace System.Runtime.Intrinsics.Arm
             public unsafe static System.Runtime.Intrinsics.Vector128<double> LoadAndReplicateToVector128(double* address) { throw null; }
             public unsafe static System.Runtime.Intrinsics.Vector128<long> LoadAndReplicateToVector128(long* address) { throw null; }
             public unsafe static System.Runtime.Intrinsics.Vector128<ulong> LoadAndReplicateToVector128(ulong* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadPairScalarVector64(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadPairScalarVector64(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadPairScalarVector64(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadPairScalarVector64NonTemporal(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadPairScalarVector64NonTemporal(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadPairScalarVector64NonTemporal(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) LoadPairVector128(byte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2) LoadPairVector128(double* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) LoadPairVector128(short* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2) LoadPairVector128(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2) LoadPairVector128(long* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) LoadPairVector128(sbyte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2) LoadPairVector128(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2) LoadPairVector128(ushort* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2) LoadPairVector128(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2) LoadPairVector128(ulong* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) LoadPairVector128NonTemporal(byte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2) LoadPairVector128NonTemporal(double* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) LoadPairVector128NonTemporal(short* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2) LoadPairVector128NonTemporal(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2) LoadPairVector128NonTemporal(long* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) LoadPairVector128NonTemporal(sbyte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2) LoadPairVector128NonTemporal(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2) LoadPairVector128NonTemporal(ushort* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2) LoadPairVector128NonTemporal(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2) LoadPairVector128NonTemporal(ulong* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) LoadPairVector64(byte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<double> Value1, System.Runtime.Intrinsics.Vector64<double> Value2) LoadPairVector64(double* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) LoadPairVector64(short* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadPairVector64(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<long> Value1, System.Runtime.Intrinsics.Vector64<long> Value2) LoadPairVector64(long* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) LoadPairVector64(sbyte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadPairVector64(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2) LoadPairVector64(ushort* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadPairVector64(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<ulong> Value1, System.Runtime.Intrinsics.Vector64<ulong> Value2) LoadPairVector64(ulong* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) LoadPairVector64NonTemporal(byte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<double> Value1, System.Runtime.Intrinsics.Vector64<double> Value2) LoadPairVector64NonTemporal(double* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) LoadPairVector64NonTemporal(short* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadPairVector64NonTemporal(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<long> Value1, System.Runtime.Intrinsics.Vector64<long> Value2) LoadPairVector64NonTemporal(long* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) LoadPairVector64NonTemporal(sbyte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadPairVector64NonTemporal(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2) LoadPairVector64NonTemporal(ushort* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadPairVector64NonTemporal(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<ulong> Value1, System.Runtime.Intrinsics.Vector64<ulong> Value2) LoadPairVector64NonTemporal(ulong* address) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Max(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<byte> MaxAcross(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<short> MaxAcross(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }

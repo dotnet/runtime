@@ -15,16 +15,16 @@ namespace System.Drawing
 {
     public class ImageConverter : TypeConverter
     {
-        private static ReadOnlySpan<byte> PBrush => new byte[] { (byte)'P', (byte)'B', (byte)'r', (byte)'u', (byte)'s', (byte)'h' };
+        private static ReadOnlySpan<byte> PBrush => "PBrush"u8;
 
-        private static ReadOnlySpan<byte> BMBytes => new byte[] { (byte)'B', (byte)'M' };
+        private static ReadOnlySpan<byte> BMBytes => "BM"u8;
 
         public override bool CanConvertFrom(ITypeDescriptorContext? context, Type? sourceType)
         {
             return sourceType == typeof(byte[]) || sourceType == typeof(Icon);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(byte[]) || destinationType == typeof(string);
         }
@@ -111,7 +111,7 @@ namespace System.Drawing
 
         public override bool GetPropertiesSupported(ITypeDescriptorContext? context) => true;
 
-        private unsafe Stream? GetBitmapStream(ReadOnlySpan<byte> rawData)
+        private static unsafe Stream? GetBitmapStream(ReadOnlySpan<byte> rawData)
         {
             try
             {

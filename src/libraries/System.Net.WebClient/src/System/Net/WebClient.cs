@@ -393,10 +393,8 @@ namespace System.Net
         public Stream OpenWrite(Uri address, string? method)
         {
             ArgumentNullException.ThrowIfNull(address);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             WebRequest? request = null;
             StartOperation();
@@ -434,10 +432,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             StartOperation();
             try
@@ -555,10 +551,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(fileName);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             FileStream? fs = null;
             WebRequest? request = null;
@@ -628,10 +622,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             WebRequest? request = null;
             StartOperation();
@@ -667,10 +659,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             StartOperation();
             try
@@ -1336,10 +1326,8 @@ namespace System.Net
         public void OpenWriteAsync(Uri address, string? method, object? userToken)
         {
             ArgumentNullException.ThrowIfNull(address);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
@@ -1476,10 +1464,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
@@ -1527,10 +1513,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
@@ -1568,10 +1552,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(fileName);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             FileStream? fs = null;
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
@@ -1607,10 +1589,8 @@ namespace System.Net
         {
             ArgumentNullException.ThrowIfNull(address);
             ArgumentNullException.ThrowIfNull(data);
-            if (method == null)
-            {
-                method = MapToDefaultMethod(address);
-            }
+
+            method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try

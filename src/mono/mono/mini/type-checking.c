@@ -557,7 +557,7 @@ handle_isinst (MonoCompile *cfg, MonoClass *klass, MonoInst *src, int context_us
 
 				MONO_START_BB (cfg, pointer_check_bb);
 				// Check if the parent class of the element is non-null, else manually check the type
-				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, parent_reg, NULL);
+				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, parent_reg, 0);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBNE_UN, is_null_bb);
 				MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, class_kind_reg, MONO_CLASS_POINTER);
 				MONO_EMIT_NEW_BRANCH_BLOCK (cfg, OP_PBEQ, false_bb);

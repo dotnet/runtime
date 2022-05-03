@@ -20,7 +20,7 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <ProjectReference Include="$(LibrariesProjectRoot)System.Drawing.Common\src\System.Drawing.Common.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Windows.Extensions\src\System.Windows.Extensions.csproj" Condition="'$(TargetsWindows)' == 'true'" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Windows.Extensions\src\System.Windows.Extensions.csproj" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <PackageReference Include="System.ValueTuple" Version="$(SystemValueTupleVersion)" />

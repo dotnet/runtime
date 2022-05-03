@@ -55,10 +55,8 @@ namespace System.Web.Util
             {
                 return;
             }
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
+
+            ArgumentNullException.ThrowIfNull(output);
 
             HtmlAttributeEncodeInternal(value, output);
         }
@@ -112,10 +110,7 @@ namespace System.Web.Util
 
         internal static void HtmlDecode(string? value, TextWriter output)
         {
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
+            ArgumentNullException.ThrowIfNull(output);
 
             output.Write(WebUtility.HtmlDecode(value));
         }
@@ -125,10 +120,7 @@ namespace System.Web.Util
 
         internal static void HtmlEncode(string? value, TextWriter output)
         {
-            if (output == null)
-            {
-                throw new ArgumentNullException(nameof(output));
-            }
+            ArgumentNullException.ThrowIfNull(output);
 
             output.Write(WebUtility.HtmlEncode(value));
         }
@@ -647,10 +639,7 @@ namespace System.Web.Util
                 return false;
             }
 
-            if (bytes == null)
-            {
-                throw new ArgumentNullException(nameof(bytes));
-            }
+            ArgumentNullException.ThrowIfNull(bytes);
             if (offset < 0 || offset > bytes.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));

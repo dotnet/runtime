@@ -50,7 +50,13 @@ namespace System.Text.Json
         /// The property name is escaped before writing.
         /// </remarks>
         public void WriteNumber(string propertyName, decimal value)
-            => WriteNumber((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan(), value);
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteNumber(propertyName.AsSpan(), value);
+        }
 
         /// <summary>
         /// Writes the property name and <see cref="decimal"/> value (as a JSON number) as part of a name/value pair of a JSON object.

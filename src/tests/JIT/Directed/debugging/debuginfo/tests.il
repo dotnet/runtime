@@ -53,11 +53,13 @@
     IL_000c:  ret
   }
 
+  // fwdSub moves second call under the return tree
+  //
   .method public hidebysig static int32 TestLateFailingInlineCandidate() cil managed
   {
     .custom instance void [attribute]ExpectedILMappings::.ctor() = {
       property int32[] Debug = int32[2]( 0 6 )
-      property int32[] Opts = int32[2]( 0 6 )
+      property int32[] Opts = int32[2]( 0 0xE )
     }
     .maxstack  2
     .locals init (int32 V_0)

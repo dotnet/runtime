@@ -135,7 +135,7 @@ bool json_parser_t::parse_file(const pal::string_t& path)
     pal::ifstream_t file{ path };
     if (!file.good())
     {
-        trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno));
+        trace::error(_X("Cannot use file stream for [%s]: %s"), path.c_str(), pal::strerror(errno).c_str());
         return false;
     }
 

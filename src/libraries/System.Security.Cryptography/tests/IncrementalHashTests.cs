@@ -42,13 +42,13 @@ namespace System.Security.Cryptography.Tests
         [Fact]
         public static void InvalidArguments_Throw()
         {
-            AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => IncrementalHash.CreateHash(new HashAlgorithmName(null)));
+            AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => IncrementalHash.CreateHash(new HashAlgorithmName(null)));
             AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => IncrementalHash.CreateHash(new HashAlgorithmName("")));
 
             if (PlatformDetection.IsNotBrowser)
             {
                 // HMAC is not supported on Browser
-                AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => IncrementalHash.CreateHMAC(new HashAlgorithmName(null), new byte[1]));
+                AssertExtensions.Throws<ArgumentNullException>("hashAlgorithm", () => IncrementalHash.CreateHMAC(new HashAlgorithmName(null), new byte[1]));
                 AssertExtensions.Throws<ArgumentException>("hashAlgorithm", () => IncrementalHash.CreateHMAC(new HashAlgorithmName(""), new byte[1]));
 
                 AssertExtensions.Throws<ArgumentNullException>("key", () => IncrementalHash.CreateHMAC(HashAlgorithmName.SHA512, null));

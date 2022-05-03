@@ -86,8 +86,8 @@ namespace System.Xml
 
         public virtual bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
-            if (value == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(value)));
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.Dictionary != this)
             {
                 result = null;

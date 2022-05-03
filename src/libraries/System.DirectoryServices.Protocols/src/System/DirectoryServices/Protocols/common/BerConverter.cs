@@ -12,8 +12,7 @@ namespace System.DirectoryServices.Protocols
     {
         public static byte[] Encode(string format, params object[] value)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
+            ArgumentNullException.ThrowIfNull(format);
 
             // no need to turn on invalid encoding detection as we just do string->byte[] conversion.
             UTF8Encoding utf8Encoder = new UTF8Encoding();
@@ -303,8 +302,7 @@ namespace System.DirectoryServices.Protocols
 
         internal static object[] TryDecode(string format, byte[] value, out bool decodeSucceeded)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
+            ArgumentNullException.ThrowIfNull(format);
 
             Debug.WriteLine("Begin decoding");
 

@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <CLRTestKind>BuildAndRun</CLRTestKind>
+    <CLRTestPriority>0</CLRTestPriority>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <!-- This test always runs as multimodule. It's not supported if we don't have framework object files. -->
+    <CLRTestTargetUnsupported Condition="'$(BuildNativeAotFrameworkObjects)' != 'true'">true</CLRTestTargetUnsupported>
+    <IlcMultiModule>true</IlcMultiModule>
+
+    <!-- https://github.com/dotnet/runtime/issues/66191 -->
+    <CLRTestTargetUnsupported>true</CLRTestTargetUnsupported>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="MultiModule.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="Library.csproj" />
+  </ItemGroup>
+
+  <!--
+    When building a library as a reference, the returned build outputs include both the 
+    IL assembly produced by CSC and the native obj produced by Ilc. Separate the native
+    object file here so it isn't passed to CSC, and instead redirect it to be picked up
+    by the LinkNative target.
+  -->
+  <Target Name="RemoveObjFiles" AfterTargets="ResolveProjectReferences">
+    <ItemGroup>
+        <ObjFiles Include="@(_ResolvedProjectReferencePaths)" Condition="'%(Extension)' == '.obj' or '%(Extension)' == '.bc'" />
+        <LinkerArg Include="@(_ResolvedProjectReferencePaths)" Condition="'%(Extension)' == '.obj'" />
+        <IlcReference Include="@(_ResolvedProjectReferencePaths)" Condition="'%(Extension)' == '.dll'" />
+        <_ResolvedProjectReferencePaths Remove="@(ObjFiles)" />
+    </ItemGroup>
+  </Target>
+</Project>

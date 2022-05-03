@@ -8,6 +8,7 @@
       "description": ".NET WebAssembly build tools",
       "packs": [
         "Microsoft.NET.Runtime.WebAssembly.Sdk",
+        "Microsoft.NET.Runtime.WebAssembly.Templates",
         "Microsoft.NETCore.App.Runtime.Mono.browser-wasm",
         "Microsoft.NETCore.App.Runtime.AOT.Cross.browser-wasm"
       ],
@@ -138,6 +139,10 @@
     },
     "Microsoft.NET.Runtime.WebAssembly.Sdk": {
       "kind": "Sdk",
+      "version": "${PackageVersion}"
+    },
+    "Microsoft.NET.Runtime.WebAssembly.Templates": {
+      "kind": "template",
       "version": "${PackageVersion}"
     },
     "Microsoft.NETCore.App.Runtime.Mono.android-arm": {

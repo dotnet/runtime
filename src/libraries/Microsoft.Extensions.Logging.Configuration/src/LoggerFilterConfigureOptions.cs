@@ -57,13 +57,13 @@ namespace Microsoft.Extensions.Logging
             bool GetCaptureScopesValue(LoggerFilterOptions options) => _configuration.GetValue(nameof(options.CaptureScopes), options.CaptureScopes);
         }
 
-        private void LoadRules(LoggerFilterOptions options, IConfigurationSection configurationSection, string logger)
+        private static void LoadRules(LoggerFilterOptions options, IConfigurationSection configurationSection, string? logger)
         {
-            foreach (System.Collections.Generic.KeyValuePair<string, string> section in configurationSection.AsEnumerable(true))
+            foreach (System.Collections.Generic.KeyValuePair<string, string?> section in configurationSection.AsEnumerable(true))
             {
                 if (TryGetSwitch(section.Value, out LogLevel level))
                 {
-                    string category = section.Key;
+                    string? category = section.Key;
                     if (category.Equals(DefaultCategory, StringComparison.OrdinalIgnoreCase))
                     {
                         category = null;
@@ -74,7 +74,7 @@ namespace Microsoft.Extensions.Logging
             }
         }
 
-        private static bool TryGetSwitch(string value, out LogLevel level)
+        private static bool TryGetSwitch(string? value, out LogLevel level)
         {
             if (string.IsNullOrEmpty(value))
             {

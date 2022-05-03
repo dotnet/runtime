@@ -215,9 +215,6 @@
   <data name="PendingAsyncOperation" xml:space="preserve">
     <value>An async read operation has already been started on the stream.</value>
   </data>
-  <data name="InvalidParameter" xml:space="preserve">
-    <value>Invalid value '{1}' for parameter '{0}'.</value>
-  </data>
   <data name="CategoryHelpCorrupt" xml:space="preserve">
     <value>Cannot load Category Help data because an invalid index '{0}' was read from the registry.</value>
   </data>
@@ -272,17 +269,17 @@
   <data name="CantSetDuplicatePassword" xml:space="preserve">
     <value>ProcessStartInfo.Password and ProcessStartInfo.PasswordInClearText cannot both be set. Use only one of them.</value>
   </data>
-  <data name="ArgumentNull_Array" xml:space="preserve">
-    <value>Array cannot be null.</value>
-  </data>
   <data name="ArgumentOutOfRange_IndexCountBuffer" xml:space="preserve">
     <value>Index and count must refer to a location within the buffer.</value>
   </data>
   <data name="ArgumentOutOfRange_IndexCount" xml:space="preserve">
     <value>Index and count must refer to a location within the string.</value>
   </data>
-  <data name="ArgumentOutOfRange_Index" xml:space="preserve">
+  <data name="ArgumentOutOfRange_IndexMustBeLess" xml:space="preserve">
     <value>Index was out of range. Must be non-negative and less than the size of the collection.</value>
+  </data>
+  <data name="ArgumentOutOfRange_IndexMustBeLessOrEqual" xml:space="preserve">
+    <value>Index was out of range. Must be non-negative and less than or equal to the size of the collection.</value>
   </data>
   <data name="Argument_EncodingConversionOverflowBytes" xml:space="preserve">
     <value>The output byte buffer is too small to contain the encoded data, encoding '{0}' fallback '{1}'.</value>
@@ -310,9 +307,6 @@
   </data>
   <data name="UseShellExecuteNotSupported" xml:space="preserve">
     <value>UseShellExecute is not supported on this platform.</value>
-  </data>
-  <data name="GetProcessInfoNotSupported" xml:space="preserve">
-    <value>Retrieving information about local processes is not supported on this platform.</value>
   </data>
   <data name="StandardInputEncodingNotAllowed" xml:space="preserve">
     <value>StandardInputEncoding is only supported when standard input is redirected.</value>

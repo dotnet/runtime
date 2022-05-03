@@ -1,11 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <DefineConstants>$(DefineConstants);REGISTRY_ASSEMBLY</DefineConstants>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Advapi32\Interop.RegSetValueEx.cs"

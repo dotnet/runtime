@@ -1,0 +1,3 @@
+// ObsoleteAttribute applied on IApplicationResourceStreamResolver doesn't match 
+
+T:System.ObsoleteAttribute

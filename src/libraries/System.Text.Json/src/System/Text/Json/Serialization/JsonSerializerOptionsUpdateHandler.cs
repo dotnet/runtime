@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Text.Json;
+using System.Text.Json.Serialization.Metadata;
 
 [assembly: MetadataUpdateHandler(typeof(JsonSerializerOptionsUpdateHandler))]
 
@@ -17,8 +18,14 @@ namespace System.Text.Json
             // Ignore the types, and just clear out all reflection caches from serializer options.
             foreach (KeyValuePair<JsonSerializerOptions, object?> options in JsonSerializerOptions.TrackedOptionsInstances.All)
             {
-                options.Key.ClearClasses();
+                options.Key.ClearCaches();
             }
+
+            // Flush the shared caching contexts
+            JsonSerializerOptions.TrackedCachingContexts.Clear();
+
+            // Flush the dynamic method cache
+            ReflectionEmitCachingMemberAccessor.Clear();
         }
     }
 }

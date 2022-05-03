@@ -20,17 +20,12 @@ namespace System.Reflection.Emit
         internal FieldBuilder(TypeBuilder typeBuilder, string fieldName, Type type,
             Type[]? requiredCustomModifiers, Type[]? optionalCustomModifiers, FieldAttributes attributes)
         {
-            if (fieldName == null)
-                throw new ArgumentNullException(nameof(fieldName));
-
-            if (fieldName.Length == 0)
-                throw new ArgumentException(SR.Argument_EmptyName, nameof(fieldName));
+            ArgumentException.ThrowIfNullOrEmpty(fieldName);
 
             if (fieldName[0] == '\0')
                 throw new ArgumentException(SR.Argument_IllegalName, nameof(fieldName));
 
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             if (type == typeof(void))
                 throw new ArgumentException(SR.Argument_BadFieldType);
@@ -161,11 +156,8 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             ModuleBuilder module = (m_typeBuilder.Module as ModuleBuilder)!;
 
@@ -177,8 +169,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             m_typeBuilder.ThrowIfCreated();
 

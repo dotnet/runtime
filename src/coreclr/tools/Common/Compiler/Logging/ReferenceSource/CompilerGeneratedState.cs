@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using ILLink.Shared;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -41,15 +42,11 @@ namespace Mono.Linker
 					case "AsyncIteratorStateMachineAttribute":
 					case "AsyncStateMachineAttribute":
 					case "IteratorStateMachineAttribute":
-						TypeDefinition stateMachineType = GetFirstConstructorArgumentAsType (attribute);
+						TypeDefinition? stateMachineType = GetFirstConstructorArgumentAsType (attribute);
 						if (stateMachineType != null) {
 							if (!_compilerGeneratedTypeToUserCodeMethod.TryAdd (stateMachineType, method)) {
 								var alreadyAssociatedMethod = _compilerGeneratedTypeToUserCodeMethod[stateMachineType];
-								_context.LogWarning (
-									$"Methods '{method.GetDisplayName ()}' and '{alreadyAssociatedMethod.GetDisplayName ()}' are both associated with state machine type '{stateMachineType.GetDisplayName ()}'. This is currently unsupported and may lead to incorrectly reported warnings.",
-									2107,
-									new MessageOrigin (method),
-									MessageSubCategory.TrimAnalysis);
+								_context.LogWarning (new MessageOrigin (method), DiagnosticId.MethodsAreAssociatedWithStateMachine, method.GetDisplayName (), alreadyAssociatedMethod.GetDisplayName (), stateMachineType.GetDisplayName ());
 							}
 						}
 
@@ -59,7 +56,7 @@ namespace Mono.Linker
 			}
 		}
 
-		static TypeDefinition GetFirstConstructorArgumentAsType (CustomAttribute attribute)
+		static TypeDefinition? GetFirstConstructorArgumentAsType (CustomAttribute attribute)
 		{
 			if (!attribute.HasConstructorArguments)
 				return null;
@@ -67,13 +64,13 @@ namespace Mono.Linker
 			return attribute.ConstructorArguments[0].Value as TypeDefinition;
 		}
 
-		public MethodDefinition GetUserDefinedMethodForCompilerGeneratedMember (IMemberDefinition sourceMember)
+		public MethodDefinition? GetUserDefinedMethodForCompilerGeneratedMember (IMemberDefinition sourceMember)
 		{
 			if (sourceMember == null)
 				return null;
 
 			TypeDefinition compilerGeneratedType = (sourceMember as TypeDefinition) ?? sourceMember.DeclaringType;
-			if (_compilerGeneratedTypeToUserCodeMethod.TryGetValue (compilerGeneratedType, out MethodDefinition userDefinedMethod))
+			if (_compilerGeneratedTypeToUserCodeMethod.TryGetValue (compilerGeneratedType, out MethodDefinition? userDefinedMethod))
 				return userDefinedMethod;
 
 			// Only handle async or iterator state machine

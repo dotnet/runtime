@@ -113,17 +113,6 @@ DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_OFFSET,               m_offset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_COUNT,                m_count)
 
-
-DEFINE_CLASS(ASSEMBLY_BUILDER,      ReflectionEmit,         AssemblyBuilder)
-DEFINE_CLASS(INTERNAL_ASSEMBLY_BUILDER,      ReflectionEmit,         InternalAssemblyBuilder)
-#if FOR_ILLINK
-DEFINE_METHOD(INTERNAL_ASSEMBLY_BUILDER,     CTOR,          .ctor,                      IM_RetVoid)
-#endif
-
-DEFINE_CLASS(ASSEMBLY_HASH_ALGORITHM,   Assemblies,         AssemblyHashAlgorithm)
-DEFINE_CLASS(PORTABLE_EXECUTABLE_KINDS, Reflection,         PortableExecutableKinds)
-DEFINE_CLASS(IMAGE_FILE_MACHINE,        Reflection,         ImageFileMachine)
-
 DEFINE_CLASS_U(Reflection,             AssemblyName,           AssemblyNameBaseObject)
 DEFINE_FIELD_U(_name,                      AssemblyNameBaseObject, _name)
 DEFINE_FIELD_U(_publicKey,                 AssemblyNameBaseObject, _publicKey)
@@ -135,8 +124,7 @@ DEFINE_FIELD_U(_hashAlgorithm,             AssemblyNameBaseObject, _hashAlgorith
 DEFINE_FIELD_U(_versionCompatibility,      AssemblyNameBaseObject, _versionCompatibility)
 DEFINE_FIELD_U(_flags,                     AssemblyNameBaseObject, _flags)
 DEFINE_CLASS(ASSEMBLY_NAME,         Reflection,             AssemblyName)
-DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_RetV)
-DEFINE_METHOD(ASSEMBLY_NAME,        SET_PROC_ARCH_INDEX,    SetProcArchIndex,          IM_PEK_IFM_RetV)
+DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_Str_ArrB_ArrB_Ver_CI_ANF_RetV)
 
 DEFINE_CLASS_U(System,                 Version,                    VersionBaseObject)
 DEFINE_FIELD_U(_Major,                     VersionBaseObject,    m_Major)
@@ -147,8 +135,6 @@ DEFINE_CLASS(VERSION,               System,                 Version)
 DEFINE_METHOD(VERSION,              CTOR_Ix2,               .ctor,                      IM_Int_Int_RetVoid)
 DEFINE_METHOD(VERSION,              CTOR_Ix3,               .ctor,                      IM_Int_Int_Int_RetVoid)
 DEFINE_METHOD(VERSION,              CTOR_Ix4,               .ctor,                      IM_Int_Int_Int_Int_RetVoid)
-
-DEFINE_CLASS(ASSEMBLY_VERSION_COMPATIBILITY, Assemblies,    AssemblyVersionCompatibility)
 
 DEFINE_CLASS(ASSEMBLY_NAME_FLAGS,   Reflection,             AssemblyNameFlags)
 
@@ -519,6 +505,9 @@ DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
 
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
+DEFINE_CLASS(METHOD_INVOKER,        Reflection,             MethodInvoker)
+DEFINE_CLASS(CONSTRUCTOR_INVOKER,   Reflection,             ConstructorInvoker)
+DEFINE_CLASS(DYNAMIC_METHOD_INVOKER,ReflectionEmit,         DynamicMethodInvoker)
 
 DEFINE_CLASS_U(Reflection,             RuntimeMethodInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)
@@ -582,10 +571,6 @@ DEFINE_FIELD_U(m_pFields,                   ReflectModuleBaseObject,    m_pGloba
 DEFINE_CLASS(MODULE,                Reflection,             RuntimeModule)
 DEFINE_FIELD(MODULE,                DATA,                   m_pData)
 
-DEFINE_CLASS(MODULE_BUILDER,        ReflectionEmit,         InternalModuleBuilder)
-#if FOR_ILLINK
-DEFINE_METHOD(MODULE_BUILDER,       CTOR,                   .ctor,                      IM_RetVoid)
-#endif
 DEFINE_CLASS(TYPE_BUILDER,          ReflectionEmit,         TypeBuilder)
 DEFINE_CLASS(ENUM_BUILDER,          ReflectionEmit,         EnumBuilder)
 
@@ -733,7 +718,7 @@ DEFINE_METHOD(RUNTIME_HELPERS,      ALLOC_TAILCALL_ARG_BUFFER, AllocTailCallArgB
 DEFINE_METHOD(RUNTIME_HELPERS,      GET_TAILCALL_INFO,      GetTailCallInfo, NoSig)
 DEFINE_METHOD(RUNTIME_HELPERS,      DISPATCH_TAILCALLS,     DispatchTailCalls,          NoSig)
 
-DEFINE_CLASS(UNSAFE,                InternalCompilerServices,       Unsafe)
+DEFINE_CLASS(UNSAFE,                CompilerServices,       Unsafe)
 DEFINE_METHOD(UNSAFE,               AS_POINTER,             AsPointer, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_IS_NULL,          IsNullRef, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_NULLREF,          NullRef, NoSig)
@@ -744,18 +729,38 @@ DEFINE_METHOD(UNSAFE,               BYREF_AS,               As, GM_RefTFrom_RetR
 DEFINE_METHOD(UNSAFE,               OBJECT_AS,              As, GM_Obj_RetT)
 DEFINE_METHOD(UNSAFE,               BYREF_ADD,              Add, GM_RefT_Int_RetRefT)
 DEFINE_METHOD(UNSAFE,               BYREF_INTPTR_ADD,       Add, GM_RefT_IntPtr_RetRefT)
+DEFINE_METHOD(UNSAFE,               BYREF_UINTPTR_ADD,      Add, GM_RefT_UIntPtr_RetRefT)
 DEFINE_METHOD(UNSAFE,               PTR_ADD,                Add, GM_PtrVoid_Int_RetPtrVoid)
 DEFINE_METHOD(UNSAFE,               BYREF_BYTE_OFFSET,      ByteOffset, NoSig)
-DEFINE_METHOD(UNSAFE,               BYREF_ADD_BYTE_OFFSET,  AddByteOffset, GM_RefT_IntPtr_RetRefT)
+DEFINE_METHOD(UNSAFE,               BYREF_INTPTR_ADD_BYTE_OFFSET,  AddByteOffset, GM_RefT_IntPtr_RetRefT)
+DEFINE_METHOD(UNSAFE,               BYREF_UINTPTR_ADD_BYTE_OFFSET, AddByteOffset, GM_RefT_UIntPtr_RetRefT)
 DEFINE_METHOD(UNSAFE,               BYREF_ARE_SAME,         AreSame, NoSig)
+DEFINE_METHOD(UNSAFE,               PTR_BYREF_COPY,         Copy, GM_PtrVoid_RefT_RetVoid)
+DEFINE_METHOD(UNSAFE,               BYREF_PTR_COPY,         Copy, GM_RefT_PtrVoid_RetVoid)
+DEFINE_METHOD(UNSAFE,               PTR_COPY_BLOCK,          CopyBlock, SM_PtrVoid_PtrVoid_UInt_RetVoid)
+DEFINE_METHOD(UNSAFE,               BYREF_COPY_BLOCK,       CopyBlock, SM_RefByte_RefByte_UInt_RetVoid)
+DEFINE_METHOD(UNSAFE,               PTR_COPY_BLOCK_UNALIGNED, CopyBlockUnaligned, SM_PtrVoid_PtrVoid_UInt_RetVoid)
+DEFINE_METHOD(UNSAFE,               BYREF_COPY_BLOCK_UNALIGNED, CopyBlockUnaligned, SM_RefByte_RefByte_UInt_RetVoid)
 DEFINE_METHOD(UNSAFE,               BYREF_IS_ADDRESS_GREATER_THAN, IsAddressGreaterThan, NoSig)
 DEFINE_METHOD(UNSAFE,               BYREF_IS_ADDRESS_LESS_THAN, IsAddressLessThan, NoSig)
-DEFINE_METHOD(UNSAFE,               BYREF_INIT_BLOCK_UNALIGNED, InitBlockUnaligned, NoSig)
+DEFINE_METHOD(UNSAFE,               BYREF_INIT_BLOCK, InitBlockUnaligned, SM_RefByte_Byte_UInt_RetVoid)
+DEFINE_METHOD(UNSAFE,               PTR_INIT_BLOCK, InitBlock, SM_PtrVoid_Byte_UInt_RetVoid)
+DEFINE_METHOD(UNSAFE,               BYREF_INIT_BLOCK_UNALIGNED, InitBlock, SM_RefByte_Byte_UInt_RetVoid)
+DEFINE_METHOD(UNSAFE,               PTR_INIT_BLOCK_UNALIGNED, InitBlockUnaligned, SM_PtrVoid_Byte_UInt_RetVoid)
 DEFINE_METHOD(UNSAFE,               BYREF_READ_UNALIGNED,   ReadUnaligned, GM_RefByte_RetT)
 DEFINE_METHOD(UNSAFE,               BYREF_WRITE_UNALIGNED,  WriteUnaligned, GM_RefByte_T_RetVoid)
 DEFINE_METHOD(UNSAFE,               PTR_READ_UNALIGNED,     ReadUnaligned, GM_PtrVoid_RetT)
 DEFINE_METHOD(UNSAFE,               PTR_WRITE_UNALIGNED,    WriteUnaligned, GM_PtrVoid_T_RetVoid)
+DEFINE_METHOD(UNSAFE,               READ,                   Read, NoSig)
 DEFINE_METHOD(UNSAFE,               SKIPINIT,               SkipInit, GM_RefT_RetVoid)
+DEFINE_METHOD(UNSAFE,               BYREF_INT_SUBTRACT,     Subtract, GM_RefT_Int_RetRefT)
+DEFINE_METHOD(UNSAFE,               BYREF_INTPTR_SUBTRACT,  Subtract, GM_RefT_IntPtr_RetRefT)
+DEFINE_METHOD(UNSAFE,               BYREF_UINTPTR_SUBTRACT, Subtract, GM_RefT_UIntPtr_RetRefT)
+DEFINE_METHOD(UNSAFE,               PTR_INT_SUBTRACT,       Subtract, GM_PtrVoid_Int_RetPtrVoid)
+DEFINE_METHOD(UNSAFE,               BYREF_INTPTR_SUBTRACT_BYTE_OFFSET,  SubtractByteOffset, GM_RefT_IntPtr_RetRefT)
+DEFINE_METHOD(UNSAFE,               BYREF_UINTPTR_SUBTRACT_BYTE_OFFSET, SubtractByteOffset, GM_RefT_UIntPtr_RetRefT)
+DEFINE_METHOD(UNSAFE,               UNBOX,                  Unbox, NoSig)
+DEFINE_METHOD(UNSAFE,               WRITE,                  Write, NoSig)
 
 DEFINE_CLASS(MEMORY_MARSHAL,        Interop,                MemoryMarshal)
 DEFINE_METHOD(MEMORY_MARSHAL,       GET_ARRAY_DATA_REFERENCE_SZARRAY, GetArrayDataReference, GM_ArrT_RetRefT)
@@ -925,9 +930,6 @@ DEFINE_METHOD(TIMER_QUEUE,          APPDOMAIN_TIMER_CALLBACK, AppDomainTimerCall
 DEFINE_CLASS(THREAD_POOL,           Threading,                          ThreadPool)
 DEFINE_METHOD(THREAD_POOL,          ENSURE_GATE_THREAD_RUNNING,         EnsureGateThreadRunning,        SM_RetVoid)
 DEFINE_METHOD(THREAD_POOL,          UNSAFE_QUEUE_UNMANAGED_WORK_ITEM,   UnsafeQueueUnmanagedWorkItem,   SM_IntPtr_IntPtr_RetVoid)
-
-DEFINE_CLASS(COMPLETE_WAIT_THREAD_POOL_WORK_ITEM,   Threading,      CompleteWaitThreadPoolWorkItem)
-DEFINE_METHOD(COMPLETE_WAIT_THREAD_POOL_WORK_ITEM,  COMPLETE_WAIT,  CompleteWait,                   IM_RetVoid)
 
 DEFINE_CLASS(TIMESPAN,              System,                 TimeSpan)
 
@@ -1230,13 +1232,6 @@ DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
 
 DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 
-DEFINE_CLASS_U(CompilerServices,           GCHeapHash,                      GCHeapHashObject)
-DEFINE_FIELD_U(_data,                      GCHeapHashObject,                _data)
-DEFINE_FIELD_U(_count,                     GCHeapHashObject,                _count)
-DEFINE_FIELD_U(_deletedCount,              GCHeapHashObject,                _deletedCount)
-
-DEFINE_CLASS(GCHEAPHASH, CompilerServices, GCHeapHash)
-
 DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)
 DEFINE_FIELD(CASTHELPERS, TABLE, s_table)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFANY,  IsInstanceOfAny,             SM_PtrVoid_Obj_RetObj)
@@ -1249,21 +1244,6 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_Ptr
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_Int_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_Int_PtrVoid_RetRefObj)
-
-DEFINE_CLASS_U(CompilerServices,           LAHashDependentHashTracker,      LAHashDependentHashTrackerObject)
-DEFINE_FIELD_U(_dependentHandle,           LAHashDependentHashTrackerObject,_dependentHandle)
-DEFINE_FIELD_U(_loaderAllocator,           LAHashDependentHashTrackerObject,_loaderAllocator)
-
-DEFINE_CLASS(LAHASHDEPENDENTHASHTRACKER, CompilerServices, LAHashDependentHashTracker)
-#if FOR_ILLINK
-DEFINE_METHOD(LAHASHDEPENDENTHASHTRACKER,  CTOR,                            .ctor,        IM_RetVoid)
-#endif
-
-DEFINE_CLASS_U(CompilerServices,           LAHashKeyToTrackers,             LAHashKeyToTrackersObject)
-DEFINE_FIELD_U(_trackerOrTrackerSet,       LAHashKeyToTrackersObject,       _trackerOrTrackerSet)
-DEFINE_FIELD_U(_laLocalKeyValueStore,      LAHashKeyToTrackersObject,       _laLocalKeyValueStore)
-
-DEFINE_CLASS(LAHASHKEYTOTRACKERS, CompilerServices, LAHashKeyToTrackers)
 
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)

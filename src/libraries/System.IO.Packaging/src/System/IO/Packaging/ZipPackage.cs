@@ -442,7 +442,7 @@ namespace System.IO.Packaging
         //returns a boolean indicating if the underlying zip item is a valid metro part or piece
         // This mainly excludes the content type item, as well as entries with leading or trailing
         // slashes.
-        private bool IsZipItemValidOpcPartOrPiece(string zipItemName)
+        private static bool IsZipItemValidOpcPartOrPiece(string zipItemName)
         {
             Debug.Assert(zipItemName != null, "The parameter zipItemName should not be null");
 
@@ -671,7 +671,6 @@ namespace System.IO.Packaging
                         // if the XML is shorter than the existing content part.
                         var contentTypefullName = _contentTypeZipArchiveEntry!.FullName;
                         var thisArchive = _contentTypeZipArchiveEntry.Archive;
-                        _zipStreamManager.Close(_contentTypeZipArchiveEntry);
                         _contentTypeZipArchiveEntry.Delete();
                         _contentTypeZipArchiveEntry = thisArchive.CreateEntry(contentTypefullName);
                     }
@@ -899,7 +898,7 @@ namespace System.IO.Packaging
             }
 
             //If End element is present for Relationship then we process it
-            private void ProcessEndElement(XmlReader reader, string elementName)
+            private static void ProcessEndElement(XmlReader reader, string elementName)
             {
                 Debug.Assert(!reader.IsEmptyElement, "This method should only be called it the Relationship Element is not empty");
 
@@ -939,7 +938,7 @@ namespace System.IO.Packaging
                 _dirty = true;
             }
 
-            private void WriteOverrideElement(XmlWriter xmlWriter, PackUriHelper.ValidatedPartUri partUri, ContentType contentType)
+            private static void WriteOverrideElement(XmlWriter xmlWriter, PackUriHelper.ValidatedPartUri partUri, ContentType contentType)
             {
                 xmlWriter.WriteStartElement(OverrideTagName);
                 xmlWriter.WriteAttributeString(PartNameAttributeName,
@@ -948,7 +947,7 @@ namespace System.IO.Packaging
                 xmlWriter.WriteEndElement();
             }
 
-            private void WriteDefaultElement(XmlWriter xmlWriter, string extension, ContentType contentType)
+            private static void WriteDefaultElement(XmlWriter xmlWriter, string extension, ContentType contentType)
             {
                 xmlWriter.WriteStartElement(DefaultTagName);
                 xmlWriter.WriteAttributeString(ExtensionAttributeName, extension);
@@ -957,7 +956,7 @@ namespace System.IO.Packaging
             }
 
             //Validate if the required XML attribute is present and not an empty string
-            private void ValidateXmlAttribute(string attributeName, string? attributeValue, string tagName, XmlReader reader)
+            private static void ValidateXmlAttribute(string attributeName, string? attributeValue, string tagName, XmlReader reader)
             {
                 ThrowIfXmlAttributeMissing(attributeName, attributeValue, tagName, reader);
 
@@ -969,7 +968,7 @@ namespace System.IO.Packaging
 
             //Validate if the required Content type XML attribute is present
             //Content type of a part can be empty
-            private void ThrowIfXmlAttributeMissing(string attributeName, string? attributeValue, string tagName, XmlReader reader)
+            private static void ThrowIfXmlAttributeMissing(string attributeName, string? attributeValue, string tagName, XmlReader reader)
             {
                 if (attributeValue == null)
                     throw new XmlException(SR.Format(SR.RequiredAttributeMissing, tagName, attributeName), null, ((IXmlLineInfo)reader).LineNumber, ((IXmlLineInfo)reader).LinePosition);

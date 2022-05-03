@@ -31,7 +31,6 @@ void Compiler::fgInit()
     fgHaveValidEdgeWeights   = false;
     fgSlopUsedInEdgeWeights  = false;
     fgRangeUsedInEdgeWeights = true;
-    fgNeedsUpdateFlowGraph   = false;
     fgCalledCount            = BB_ZERO_WEIGHT;
 
     /* We haven't yet computed the dominator sets */
@@ -1048,7 +1047,8 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
             {
                 if (makeInlineObservations)
                 {
-                    int toSkip = impBoxPatternMatch(nullptr, codeAddr + sz, codeEndp, true);
+                    int toSkip =
+                        impBoxPatternMatch(nullptr, codeAddr + sz, codeEndp, BoxPatterns::MakeInlineObservation);
                     if (toSkip > 0)
                     {
                         // toSkip > 0 means we most likely will hit a pattern (e.g. box+isinst+brtrue) that
@@ -1161,6 +1161,7 @@ void Compiler::fgFindJumpTargets(const BYTE* codeAddr, IL_OFFSET codeSize, Fixed
 
                             // These are foldable if the first argument is a constant
                             case NI_System_Type_get_IsValueType:
+                            case NI_System_Type_get_IsByRefLike:
                             case NI_System_Type_GetTypeFromHandle:
                             case NI_System_String_get_Length:
                             case NI_System_Buffers_Binary_BinaryPrimitives_ReverseEndianness:
@@ -2229,7 +2230,7 @@ void Compiler::fgAdjustForAddressExposedOrWrittenThis()
     LclVarDsc* thisVarDsc = lvaGetDesc(info.compThisArg);
 
     // Optionally enable adjustment during stress.
-    if (!tiVerificationNeeded && compStressCompile(STRESS_GENERIC_VARN, 15))
+    if (compStressCompile(STRESS_GENERIC_VARN, 15))
     {
         thisVarDsc->lvHasILStoreOp = true;
     }
@@ -2385,6 +2386,7 @@ void Compiler::fgMarkBackwardJump(BasicBlock* targetBlock, BasicBlock* sourceBlo
         }
     }
 
+    sourceBlock->bbFlags |= BBF_BACKWARD_JUMP_SOURCE;
     targetBlock->bbFlags |= BBF_BACKWARD_JUMP_TARGET;
 }
 
@@ -3516,9 +3518,6 @@ void Compiler::fgFindBasicBlocks()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-#ifndef DEBUG
-    if (tiVerificationNeeded)
-#endif
     {
         // always run these checks for a debug build
         verCheckNestingLevel(initRoot);
@@ -3527,7 +3526,7 @@ void Compiler::fgFindBasicBlocks()
 #ifndef DEBUG
     // fgNormalizeEH assumes that this test has been passed.  And Ssa assumes that fgNormalizeEHTable
     // has been run.  So do this unless we're in minOpts mode (and always in debug).
-    if (tiVerificationNeeded || !opts.MinOpts())
+    if (!opts.MinOpts())
 #endif
     {
         fgCheckBasicBlockControlFlow();
@@ -3591,7 +3590,8 @@ void Compiler::fgCheckForLoopsInHandlers()
         {
             if (blk->bbFlags & BBF_BACKWARD_JUMP_TARGET)
             {
-                JITDUMP("\nHander block " FMT_BB "is backward jump target; can't have patchpoints in this method\n");
+                JITDUMP("\nHander block " FMT_BB "is backward jump target; can't have patchpoints in this method\n",
+                        blk->bbNum);
                 compHasBackwardJumpInHandler = true;
                 break;
             }
@@ -4552,7 +4552,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
 
     BasicBlock* bPrev = block->bbPrev;
 
-    JITDUMP("fgRemoveBlock " FMT_BB "\n", block->bbNum);
+    JITDUMP("fgRemoveBlock " FMT_BB ", unreachable=%s\n", block->bbNum, dspBool(unreachable));
 
     // If we've cached any mappings from switch blocks to SwitchDesc's (which contain only the
     // *unique* successors of the switch block), invalidate that cache, since an entry in one of
@@ -4575,12 +4575,6 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
         PREFIX_ASSUME(bPrev != nullptr);
 
         fgUnreachableBlock(block);
-
-        /* If this is the last basic block update fgLastBB */
-        if (block == fgLastBB)
-        {
-            fgLastBB = bPrev;
-        }
 
 #if defined(FEATURE_EH_FUNCLETS)
         // If block was the fgFirstFuncletBB then set fgFirstFuncletBB to block->bbNext
@@ -4634,7 +4628,7 @@ void Compiler::fgRemoveBlock(BasicBlock* block, bool unreachable)
             leaveBlk->bbRefs  = 0;
             leaveBlk->bbPreds = nullptr;
 
-            fgRemoveBlock(leaveBlk, true);
+            fgRemoveBlock(leaveBlk, /* unreachable */ true);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
             fgClearFinallyTargetBit(leaveBlk->bbJumpDest);

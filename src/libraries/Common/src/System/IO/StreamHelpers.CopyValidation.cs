@@ -9,7 +9,7 @@ namespace System.IO
         /// <summary>Validate the arguments to CopyTo, as would Stream.CopyTo.</summary>
         public static void ValidateCopyToArgs(Stream source, Stream destination, int bufferSize)
         {
-            if (destination == null)
+            if (destination is null)
             {
                 throw new ArgumentNullException(nameof(destination));
             }

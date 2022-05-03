@@ -295,10 +295,7 @@ namespace System.Runtime.Loader
         // Helper to return AssemblyName corresponding to the path of an IL assembly
         public static AssemblyName GetAssemblyName(string assemblyPath)
         {
-            if (assemblyPath == null)
-            {
-                throw new ArgumentNullException(nameof(assemblyPath));
-            }
+            ArgumentNullException.ThrowIfNull(assemblyPath);
 
             return AssemblyName.GetAssemblyName(assemblyPath);
         }
@@ -315,8 +312,7 @@ namespace System.Runtime.Loader
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
-            if (assemblyName == null)
-                throw new ArgumentNullException(nameof(assemblyName));
+            ArgumentNullException.ThrowIfNull(assemblyName);
 
             // Attempt to load the assembly, using the same ordering as static load, in the current load context.
             StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
@@ -329,10 +325,7 @@ namespace System.Runtime.Loader
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromAssemblyPath(string assemblyPath)
         {
-            if (assemblyPath == null)
-            {
-                throw new ArgumentNullException(nameof(assemblyPath));
-            }
+            ArgumentNullException.ThrowIfNull(assemblyPath);
 
             if (PathInternal.IsPartiallyQualified(assemblyPath))
             {
@@ -350,10 +343,7 @@ namespace System.Runtime.Loader
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromNativeImagePath(string nativeImagePath, string? assemblyPath)
         {
-            if (nativeImagePath == null)
-            {
-                throw new ArgumentNullException(nameof(nativeImagePath));
-            }
+            ArgumentNullException.ThrowIfNull(nativeImagePath);
 
             if (PathInternal.IsPartiallyQualified(nativeImagePath))
             {
@@ -382,10 +372,7 @@ namespace System.Runtime.Loader
         [RequiresUnreferencedCode("Types and members the loaded assembly depends on might be removed")]
         public Assembly LoadFromStream(Stream assembly, Stream? assemblySymbols)
         {
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
+            ArgumentNullException.ThrowIfNull(assembly);
 
             int iAssemblyStreamLength = (int)assembly.Length;
 
@@ -422,15 +409,7 @@ namespace System.Runtime.Loader
         // platform-independent way. The DLL is loaded with default load flags.
         protected IntPtr LoadUnmanagedDllFromPath(string unmanagedDllPath)
         {
-            if (unmanagedDllPath == null)
-            {
-                throw new ArgumentNullException(nameof(unmanagedDllPath));
-            }
-
-            if (unmanagedDllPath.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_EmptyPath, nameof(unmanagedDllPath));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(unmanagedDllPath);
 
             if (PathInternal.IsPartiallyQualified(unmanagedDllPath))
             {

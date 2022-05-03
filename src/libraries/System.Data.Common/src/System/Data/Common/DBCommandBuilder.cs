@@ -1366,7 +1366,7 @@ namespace System.Data.Common
         }
 
         [return: NotNullIfNotNull("column")]
-        private object? GetColumnValue(DataRow row, DataColumn? column, DataRowVersion version)
+        private static object? GetColumnValue(DataRow row, DataColumn? column, DataRowVersion version)
         {
             object? value = null;
             if (null != column)
@@ -1404,13 +1404,13 @@ namespace System.Data.Common
             return p;
         }
 
-        private bool IncludeInInsertValues(DbSchemaRow row)
+        private static bool IncludeInInsertValues(DbSchemaRow row)
         {
             // NOTE: Include ignore condition - i.e. ignore if 'row' is IsReadOnly else include
             return (!row.IsAutoIncrement && !row.IsHidden && !row.IsExpression && !row.IsRowVersion && !row.IsReadOnly);
         }
 
-        private bool IncludeInUpdateSet(DbSchemaRow row)
+        private static bool IncludeInUpdateSet(DbSchemaRow row)
         {
             // NOTE: Include ignore condition - i.e. ignore if 'row' is IsReadOnly else include
             return (!row.IsAutoIncrement && !row.IsRowVersion && !row.IsHidden && !row.IsReadOnly);

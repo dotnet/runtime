@@ -31,21 +31,6 @@ namespace System.IO.Strategies
             _bufferSize = bufferSize;
         }
 
-        ~BufferedFileStreamStrategy()
-        {
-            try
-            {
-                // the finalizer must at least try to flush the write buffer
-                // so we enforce it by passing always true
-                Dispose(true);
-            }
-            catch (Exception e) when (FileStreamHelpers.IsIoRelatedException(e))
-            {
-                // On finalization, ignore failures from trying to flush the write buffer,
-                // e.g. if this stream is wrapping a pipe and the pipe is now broken.
-            }
-        }
-
         public override bool CanRead => _strategy.CanRead;
 
         public override bool CanWrite => _strategy.CanWrite;
@@ -137,23 +122,21 @@ namespace System.IO.Strategies
             }
         }
 
-        internal override void DisposeInternal(bool disposing) => Dispose(disposing);
-
-        protected override void Dispose(bool disposing)
+        protected sealed override void Dispose(bool disposing)
         {
+            if (_strategy.IsClosed)
+            {
+                return;
+            }
+
             try
             {
-                if (disposing && !_strategy.IsClosed)
-                {
-                    try
-                    {
-                        Flush();
-                    }
-                    finally
-                    {
-                        _strategy.Dispose();
-                    }
-                }
+                Flush();
+            }
+            catch (Exception e) when (!disposing && FileStreamHelpers.IsIoRelatedException(e))
+            {
+                // On finalization, ignore failures from trying to flush the write buffer,
+                // e.g. if this stream is wrapping a pipe and the pipe is now broken.
             }
             finally
             {
@@ -161,10 +144,10 @@ namespace System.IO.Strategies
                 // when users have a race condition in their code (i.e. they call
                 // FileStream.Close when calling another method on FileStream like Read).
 
-                // Call base.Dispose(bool) to cleanup async IO resources
-                base.Dispose(disposing);
-
+                // There is no need to call base.Dispose as it's empty
                 _writePos = 0;
+
+                _strategy.DisposeInternal(disposing);
             }
         }
 

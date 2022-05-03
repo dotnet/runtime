@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
     <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
     <xsd:element name="root" msdata:IsDataSet="true">
@@ -92,9 +93,6 @@
   </data>
   <data name="IsolatedStorage_NotValidOnDesktop" xml:space="preserve">
     <value>The Site scope is currently not supported.</value>
-  </data>
-  <data name="Argument_EmptyPath" xml:space="preserve">
-    <value>Empty path name is not legal.</value>
   </data>
   <data name="ArgumentOutOfRange_NeedNonNegNum" xml:space="preserve">
     <value>Non-negative number required.</value>

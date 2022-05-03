@@ -80,14 +80,9 @@ namespace System.IO.Compression
         internal static ZipArchiveEntry DoCreateEntryFromFile(this ZipArchive destination,
                                                               string sourceFileName, string entryName, CompressionLevel? compressionLevel)
         {
-            if (destination == null)
-                throw new ArgumentNullException(nameof(destination));
-
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName));
-
-            if (entryName == null)
-                throw new ArgumentNullException(nameof(entryName));
+            ArgumentNullException.ThrowIfNull(destination);
+            ArgumentNullException.ThrowIfNull(sourceFileName);
+            ArgumentNullException.ThrowIfNull(entryName);
 
             // Checking of compressionLevel is passed down to DeflateStream and the IDeflater implementation
             // as it is a pluggable component that completely encapsulates the meaning of compressionLevel.

@@ -254,7 +254,7 @@ void TreeLifeUpdater<ForCodeGen>::UpdateLifeVar(GenTree* tree)
             VarSetOps::AddElemD(compiler, varDeltaSet, varDsc->lvVarIndex);
             if (ForCodeGen)
             {
-                if (isBorn && varDsc->lvIsRegCandidate() && tree->gtHasReg())
+                if (isBorn && varDsc->lvIsRegCandidate() && tree->gtHasReg(compiler))
                 {
                     compiler->codeGen->genUpdateVarReg(varDsc, tree);
                 }

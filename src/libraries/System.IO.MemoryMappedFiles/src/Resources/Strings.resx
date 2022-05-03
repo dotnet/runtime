@@ -1,4 +1,5 @@
-﻿<root>
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
   <!-- 
     Microsoft ResX Schema 
     
@@ -170,12 +171,6 @@
   <data name="Argument_NewMMFTruncateModeNotAllowed" xml:space="preserve">
     <value>FileMode.Truncate is not permitted when creating new memory mapped files.</value>
   </data>
-  <data name="ArgumentNull_MapName" xml:space="preserve">
-    <value>Map name cannot be null.</value>
-  </data>
-  <data name="ArgumentNull_FileStream" xml:space="preserve">
-    <value>fileStream cannot be null.</value>
-  </data>
   <data name="ArgumentOutOfRange_CapacityLargerThanLogicalAddressSpaceNotAllowed" xml:space="preserve">
     <value>The capacity cannot be greater than the size of the system's logical address space.</value>
   </data>
@@ -220,5 +215,8 @@
   </data>
   <data name="IO_PathTooLong_Path" xml:space="preserve">
     <value>The path '{0}' is too long, or a component of the specified path is too long.</value>
+  </data>
+  <data name="PlatformNotSupported_MemoryMappedFiles" xml:space="preserve">
+    <value>System.IO.MemoryMappedFiles is not supported on this platform.</value>
   </data>
 </root>

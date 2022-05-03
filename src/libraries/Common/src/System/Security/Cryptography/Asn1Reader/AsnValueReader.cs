@@ -34,6 +34,18 @@ namespace System.Formats.Asn1
             return Asn1Tag.Decode(_span, out _);
         }
 
+        internal ReadOnlySpan<byte> PeekContentBytes()
+        {
+            AsnDecoder.ReadEncodedValue(
+                _span,
+                _ruleSet,
+                out int contentOffset,
+                out int contentLength,
+                out _);
+
+            return _span.Slice(contentOffset, contentLength);
+        }
+
         internal ReadOnlySpan<byte> PeekEncodedValue()
         {
             AsnDecoder.ReadEncodedValue(_span, _ruleSet, out _, out _, out int consumed);

@@ -18,10 +18,7 @@ namespace System.Speech.Internal.ObjectTokens
         protected ObjectToken(ISpObjectToken sapiObjectToken, bool disposeSapiToken)
             : base(sapiObjectToken)
         {
-            if (sapiObjectToken == null)
-            {
-                throw new ArgumentNullException(nameof(sapiObjectToken));
-            }
+            ArgumentNullException.ThrowIfNull(sapiObjectToken);
 
             _sapiObjectToken = sapiObjectToken;
             _disposeSapiObjectToken = disposeSapiToken;

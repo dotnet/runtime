@@ -99,7 +99,7 @@ namespace System.Xml.Xsl.Xslt
             return invoke;
         }
 
-        private QilNode? FindActualArg(QilParameter formalArg, IList<XslNode> actualArgs)
+        private static QilNode? FindActualArg(QilParameter formalArg, IList<XslNode> actualArgs)
         {
             QilName? argName = formalArg.Name;
             Debug.Assert(argName != null);

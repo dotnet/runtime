@@ -59,6 +59,7 @@ NativeImage::NativeImage(AssemblyBinder *pAssemblyBinder, PEImageLayout *pImageL
     m_pImageLayout = pImageLayout;
     m_fileName = imageFileName;
     m_eagerFixupsHaveRun = false;
+    m_readyToRunCodeDisabled = false;
 }
 
 void NativeImage::Initialize(READYTORUN_HEADER *pHeader, LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker)
@@ -123,7 +124,14 @@ NativeImage *NativeImage::Open(
     if (pExistingImage != nullptr)
     {
         *isNewNativeImage = false;
-        return pExistingImage->GetAssemblyBinder() == pAssemblyBinder ? pExistingImage : nullptr;
+        if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
+        {
+            return pExistingImage;
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
     SString path = componentModule->GetPath();
@@ -241,7 +249,14 @@ NativeImage *NativeImage::Open(
     }
     // Return pre-existing image if it was loaded into the same ALC, null otherwise
     *isNewNativeImage = false;
-    return (pExistingImage->GetAssemblyBinder() == pAssemblyBinder ? pExistingImage : nullptr);
+    if (pExistingImage->GetAssemblyBinder() == pAssemblyBinder)
+    {
+        return pExistingImage;
+    }
+    else
+    {
+        return nullptr;
+    }
 }
 #endif
 
@@ -289,7 +304,7 @@ void NativeImage::CheckAssemblyMvid(Assembly *assembly) const
     }
 
     GUID assemblyMvid;
-    assembly->GetManifestImport()->GetScopeProps(NULL, &assemblyMvid);
+    assembly->GetMDImport()->GetScopeProps(NULL, &assemblyMvid);
 
     const byte *pImageBase = (const BYTE *)m_pImageLayout->GetBase();
     const GUID *componentMvid = (const GUID *)&pImageBase[m_pComponentAssemblyMvids->VirtualAddress] + assemblyNameIndex->Index;

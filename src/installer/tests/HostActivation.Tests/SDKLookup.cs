@@ -1,214 +1,121 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.DotNet.Cli.Build;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using Microsoft.DotNet.Cli.Build;
+using Microsoft.DotNet.Cli.Build.Framework;
 using Xunit;
 
 namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 {
-    public class SDKLookup : IDisposable
+    public class SDKLookup : IClassFixture<SDKLookup.SharedTestState>
     {
-        private static readonly IDictionary<string, string> s_DefaultEnvironment = new Dictionary<string, string>()
+        private SharedTestState SharedState { get; }
+
+        readonly DotNetCli ExecutableDotNet;
+        readonly DotNetBuilder ExecutableDotNetBuilder;
+        string ExecutableSelectedMessage { get; }
+
+        public SDKLookup(SharedTestState sharedState)
         {
-            {"COREHOST_TRACE", "1" },
-            // The SDK being used may be crossgen'd for a different architecture than we are building for.
-            // Turn off ready to run, so an x64 crossgen'd SDK can be loaded in an x86 process.
-            {"COMPlus_ReadyToRun", "0" },
-        };
+            SharedState = sharedState;
 
-        private readonly RepoDirectoriesProvider RepoDirectories;
-        private readonly DotNetCli DotNet;
-
-        private readonly string _baseDir;
-        private readonly string _currentWorkingDir;
-        private readonly string _userDir;
-        private readonly string _executableDir;
-        private readonly string _cwdSdkBaseDir;
-        private readonly string _userSdkBaseDir;
-        private readonly string _exeSdkBaseDir;
-        private readonly string _exeSelectedMessage;
-
-        private const string _dotnetSdkDllMessageTerminator = "dotnet.dll]";
-
-        public SDKLookup()
-        {
-            // The dotnetSDKLookup dir will contain some folders and files that will be
-            // necessary to perform the tests
-            string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetSDKLookup");
-            _baseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
-
-            // The three tested locations will be the cwd, the user folder and the exe dir. cwd and user are no longer supported.
-            //     All dirs will be placed inside the base folder
-            _currentWorkingDir = Path.Combine(_baseDir, "cwd");
-            _userDir = Path.Combine(_baseDir, "user");
-            _executableDir = Path.Combine(_baseDir, "exe");
-
-            DotNet = new DotNetBuilder(_baseDir, Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"), "exe")
+            string exeDotNetPath = SharedFramework.CalculateUniqueTestDirectory(sharedState.BaseDir);
+            ExecutableDotNetBuilder = new DotNetBuilder(exeDotNetPath, sharedState.BuiltDotNet.BinPath, "exe");
+            ExecutableDotNet = ExecutableDotNetBuilder
                 .AddMicrosoftNETCoreAppFrameworkMockHostPolicy("9999.0.0")
                 .Build();
 
-            RepoDirectories = new RepoDirectoriesProvider(builtDotnet: DotNet.BinPath);
-
-            // SdkBaseDirs contain all available version folders
-            _cwdSdkBaseDir = Path.Combine(_currentWorkingDir, "sdk");
-            _userSdkBaseDir = Path.Combine(_userDir, ".dotnet", RepoDirectories.BuildArchitecture, "sdk");
-            _exeSdkBaseDir = Path.Combine(_executableDir, "sdk");
-
-            // Create directories
-            Directory.CreateDirectory(_cwdSdkBaseDir);
-            Directory.CreateDirectory(_userSdkBaseDir);
-            Directory.CreateDirectory(_exeSdkBaseDir);
-
             // Trace messages used to identify from which folder the SDK was picked
-            _exeSelectedMessage = $"Using .NET SDK dll=[{_exeSdkBaseDir}";
-        }
+            ExecutableSelectedMessage = $"Using .NET SDK dll=[{Path.Combine(ExecutableDotNet.BinPath, "sdk")}";
 
-        public void Dispose()
-        {
-            if (!TestArtifact.PreserveTestRuns())
-            {
-                Directory.Delete(_baseDir, true);
-            }
+            // Note: no need to delete the directory, it will be removed once the entire class is done
+            //       since everything is under the BaseDir from the shared state
         }
 
         [Fact]
         public void SdkLookup_Global_Json_Single_Digit_Patch_Rollup()
         {
             // Set specified SDK version = 9999.3.4-global-dummy
-            CopyGlobalJson("SingleDigit-global.json");
+            string globalJsonPath = CopyGlobalJson("SingleDigit-global.json");
+            string requestedVersion = "9999.3.4-global-dummy";
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: empty
-            // Expected: no compatible version and a specific error messages
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+            // Expected: no compatible version, no SDKs found
+            RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.HaveStdErrContaining("It was not possible to find any installed .NET SDKs")
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(false)
                 .And.HaveStdErrContaining("aka.ms/dotnet-download")
                 .And.NotHaveStdErrContaining("Checking if resolved SDK dir");
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.4.1", "9999.3.4-dummy");
+            AddAvailableSdkVersions("9999.4.1", "9999.3.4-dummy");
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: 9999.4.1, 9999.3.4-dummy
-            // Expected: no compatible version and a specific error message
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+            // Expected: no compatible version
+            RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(true);
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.3");
+            AddAvailableSdkVersions("9999.3.3");
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.3
-            // Expected: no compatible version and a specific error message
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+            // Expected: no compatible version
+            RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(true);
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.4");
+            AddAvailableSdkVersions("9999.3.4");
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.3, 9999.3.4
             // Expected: 9999.3.4 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.4", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.3.4"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.5-dummy");
+            AddAvailableSdkVersions("9999.3.5-dummy");
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.3, 9999.3.4, 9999.3.5-dummy
             // Expected: 9999.3.5-dummy from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.5-dummy", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.3.5-dummy"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.600");
+            AddAvailableSdkVersions("9999.3.600");
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.3, 9999.3.4, 9999.3.5-dummy, 9999.3.600
             // Expected: 9999.3.5-dummy from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.5-dummy", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.3.5-dummy"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.4-global-dummy");
+            AddAvailableSdkVersions("9999.3.4-global-dummy");
 
             // Specified SDK version: 9999.3.4-global-dummy
             // Exe: 9999.4.1, 9999.3.4-dummy, 9999.3.3, 9999.3.4, 9999.3.5-dummy, 9999.3.600, 9999.3.4-global-dummy
             // Expected: 9999.3.4-global-dummy from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.4-global-dummy", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.3.4-global-dummy"));
 
             // Verify we have the expected SDK versions
-            DotNet.Exec("--list-sdks")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .Execute()
+            RunTest("--list-sdks")
                 .Should().Pass()
                 .And.HaveStdOutContaining("9999.3.4-dummy")
                 .And.HaveStdOutContaining("9999.3.4-global-dummy")
@@ -223,135 +130,81 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void SdkLookup_Global_Json_Two_Part_Patch_Rollup()
         {
             // Set specified SDK version = 9999.3.304-global-dummy
-            CopyGlobalJson("TwoPart-global.json");
+            string globalJsonPath = CopyGlobalJson("TwoPart-global.json");
+            string requestedVersion = "9999.3.304-global-dummy";
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: empty
-            // Expected: no compatible version and a specific error messages
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+            // Expected: no compatible version, no SDKs found
+            RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.HaveStdErrContaining("It was not possible to find any installed .NET SDKs");
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(false);
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.57", "9999.3.4-dummy");
+            AddAvailableSdkVersions("9999.3.57", "9999.3.4-dummy");
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: 9999.3.57, 9999.3.4-dummy
-            // Expected: no compatible version and a specific error message
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+            // Expected: no compatible version
+            RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(true);
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.300", "9999.7.304-global-dummy");
+            AddAvailableSdkVersions("9999.3.300", "9999.7.304-global-dummy");
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: 9999.3.57, 9999.3.4-dummy, 9999.3.300, 9999.7.304-global-dummy
-            // Expected: no compatible version and a specific error message
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+            // Expected: no compatible version
+            RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("A compatible installed .NET SDK for global.json version")
-                .And.NotHaveStdErrContaining("It was not possible to find any installed .NET SDKs");
+                .And.NotFindCompatibleSdk(globalJsonPath, requestedVersion)
+                .And.FindAnySdk(true);
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.304");
+            AddAvailableSdkVersions("9999.3.304");
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: 99999.3.57, 9999.3.4-dummy, 9999.3.300, 9999.7.304-global-dummy, 9999.3.304
             // Expected: 9999.3.304 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.304", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.3.304"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.399", "9999.3.399-dummy", "9999.3.400");
+            AddAvailableSdkVersions("9999.3.399", "9999.3.399-dummy", "9999.3.400");
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: 9999.3.57, 9999.3.4-dummy, 9999.3.300, 9999.7.304-global-dummy, 9999.3.304, 9999.3.399, 9999.3.399-dummy, 9999.3.400
             // Expected: 9999.3.399 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.399", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.3.399"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.2400", "9999.3.3004");
+            AddAvailableSdkVersions("9999.3.2400", "9999.3.3004");
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: 9999.3.57, 9999.3.4-dummy, 9999.3.300, 9999.7.304-global-dummy, 9999.3.304, 9999.3.399, 9999.3.399-dummy, 9999.3.400, 9999.3.2400, 9999.3.3004
             // Expected: 9999.3.399 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.399", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.3.399"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.3.304-global-dummy");
+            AddAvailableSdkVersions("9999.3.304-global-dummy");
 
             // Specified SDK version: 9999.3.304-global-dummy
             // Exe: 9999.3.57, 9999.3.4-dummy, 9999.3.300, 9999.7.304-global-dummy, 9999.3.304, 9999.3.399, 9999.3.399-dummy, 9999.3.400, 9999.3.2400, 9999.3.3004, 9999.3.304-global-dummy
             // Expected: 9999.3.304-global-dummy from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.3.304-global-dummy", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.3.304-global-dummy"));
 
             // Verify we have the expected SDK versions
-            DotNet.Exec("--list-sdks")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .Execute()
+            RunTest("--list-sdks")
                 .Should().Pass()
                 .And.HaveStdOutContaining("9999.3.57")
                 .And.HaveStdOutContaining("9999.3.4-dummy")
@@ -372,48 +225,27 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             WriteEmptyGlobalJson();
 
             // Add a negative SDK version
-            AddAvailableSdkVersions(_exeSdkBaseDir, "-1.-1.-1");
+            AddAvailableSdkVersions("-1.-1.-1");
 
             // Specified SDK version: none
             // Exe: -1.-1.-1
-            // Expected: no compatible version and a specific error messages
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute(fExpectedToFail: true)
+            // Expected: no compatible version, no SDKs found
+            RunTest()
                 .Should().Fail()
-                .And.HaveStdErrContaining("It was not possible to find any installed .NET SDKs")
-                .And.HaveStdErrContaining("Install a .NET SDK from");
+                .And.FindAnySdk(false);
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.4");
+            AddAvailableSdkVersions("9999.0.4");
 
             // Specified SDK version: none
             // Exe: -1.-1.-1, 9999.0.4
             // Expected: 9999.0.4 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.4", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.4"));
 
             // Verify we have the expected SDK versions
-            DotNet.Exec("--list-sdks")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .Execute()
+            RunTest("--list-sdks")
                 .Should().Pass()
                 .And.HaveStdOutContaining("9999.0.4");
         }
@@ -424,129 +256,73 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
             WriteEmptyGlobalJson();
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.0", "9999.0.3-dummy.9", "9999.0.3-dummy.10");
+            AddAvailableSdkVersions("9999.0.0", "9999.0.3-dummy.9", "9999.0.3-dummy.10");
 
             // Specified SDK version: none
-            // Cwd: empty
-            // User: empty
+            // Cwd: 10000.0.0                 --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10
             // Expected: 9999.0.3-dummy.10 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.3-dummy.10", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.3-dummy.10"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.3");
+            AddAvailableSdkVersions("9999.0.3");
 
             // Specified SDK version: none
-            // Cwd: empty
-            // User: empty
+            // Cwd: 10000.0.0                 --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3
             // Expected: 9999.0.3 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.3", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.3"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_userSdkBaseDir, "9999.0.200");
-            AddAvailableSdkVersions(_cwdSdkBaseDir, "10000.0.0");
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.100");
+            AddAvailableSdkVersions("9999.0.100");
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3, 9999.0.100
             // Expected: 9999.0.100 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.100", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.100"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.80");
+            AddAvailableSdkVersions("9999.0.80");
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3, 9999.0.100, 9999.0.80
             // Expected: 9999.0.100 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.100", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.100"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.5500000");
+            AddAvailableSdkVersions("9999.0.5500000");
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3, 9999.0.100, 9999.0.80, 9999.0.5500000
             // Expected: 9999.0.5500000 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.5500000", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.5500000"));
 
             // Add SDK versions
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.52000000");
+            AddAvailableSdkVersions("9999.0.52000000");
 
             // Specified SDK version: none
             // Cwd: 10000.0.0                 --> should not be picked
-            // User: 9999.0.200               --> should not be picked
             // Exe: 9999.0.0, 9999.0.3-dummy.9, 9999.0.3-dummy.10, 9999.0.3, 9999.0.100, 9999.0.80, 9999.0.5500000, 9999.0.52000000
             // Expected: 9999.0.52000000 from exe dir
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
+            RunTest()
                 .Should().Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.0.52000000", _dotnetSdkDllMessageTerminator));
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.0.52000000"));
 
             // Verify we have the expected SDK versions
-            DotNet.Exec("--list-sdks")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .Execute()
+            RunTest("--list-sdks")
                 .Should().Pass()
                 .And.HaveStdOutContaining("9999.0.0")
                 .And.HaveStdOutContaining("9999.0.3-dummy.9")
@@ -574,42 +350,26 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             WriteEmptyGlobalJson();
 
-            AddAvailableSdkVersions(_exeSdkBaseDir, Requested);
+            AddAvailableSdkVersions(Requested);
 
             WriteGlobalJson(FormatGlobalJson(policy: rollForward, version: Requested));
 
-            DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, Requested, _dotnetSdkDllMessageTerminator));
+            RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput(Requested));
         }
 
         [Theory]
         [MemberData(nameof(InvalidGlobalJsonData))]
         public void It_falls_back_to_latest_sdk_for_invalid_global_json(string globalJsonContents, string[] messages)
         {
-            AddAvailableSdkVersions(_exeSdkBaseDir, "9999.0.100", "9999.0.300-dummy.9", "9999.1.402");
+            AddAvailableSdkVersions("9999.0.100", "9999.0.300-dummy.9", "9999.1.402");
 
             WriteGlobalJson(globalJsonContents);
 
-            var expectation = DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Pass()
-                .And.HaveStdErrContaining(Path.Combine(_exeSelectedMessage, "9999.1.402", _dotnetSdkDllMessageTerminator));
+            var expectation = RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining(ExpectedResolvedSdkOutput("9999.1.402"));
 
             foreach (var message in messages)
             {
@@ -621,35 +381,25 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [MemberData(nameof(SdkRollForwardData))]
         public void It_rolls_forward_as_expected(string policy, string requested, bool allowPrerelease, string expected, string[] installed)
         {
-            AddAvailableSdkVersions(_exeSdkBaseDir, installed);
+            AddAvailableSdkVersions(installed);
 
             WriteGlobalJson(FormatGlobalJson(policy: policy, version: requested, allowPrerelease: allowPrerelease));
 
-            var result = DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute();
+            var result = RunTest();
 
-            var globalJson = Path.Combine(_currentWorkingDir, "global.json");
+            var globalJson = Path.Combine(SharedState.CurrentWorkingDir, "global.json");
 
             if (expected == null)
             {
                 result
-                    .Should()
-                    .Fail()
-                    .And.HaveStdErrContaining($"A compatible installed .NET SDK for global.json version [{requested}] from [{globalJson}] was not found")
-                    .And.HaveStdErrContaining($"Install the [{requested}] .NET SDK or update [{globalJson}] with an installed .NET SDK:");
+                    .Should().Fail()
+                    .And.NotFindCompatibleSdk(globalJson, requested);
             }
             else
             {
                 result
-                    .Should()
-                    .Pass()
-                    .And.HaveStdErrContaining($"SDK path resolved to [{Path.Combine(_exeSdkBaseDir, expected)}]");
+                    .Should().Pass()
+                    .And.HaveStdErrContaining($"SDK path resolved to [{Path.Combine(ExecutableDotNet.BinPath, "sdk", expected)}]");
             }
         }
 
@@ -673,21 +423,13 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
             const string ExpectedVersion = "10000.1.106";
 
-            AddAvailableSdkVersions(_exeSdkBaseDir, installed);
+            AddAvailableSdkVersions(installed);
 
             WriteGlobalJson(FormatGlobalJson(allowPrerelease: false));
 
-            var result = DotNet.Exec("help")
-                .WorkingDirectory(_currentWorkingDir)
-                .WithUserProfile(_userDir)
-                .Environment(s_DefaultEnvironment)
-                .EnvironmentVariable("DOTNET_MULTILEVEL_LOOKUP", "0")
-                .CaptureStdOut()
-                .CaptureStdErr()
-                .Execute()
-                .Should()
-                .Pass()
-                .And.HaveStdErrContaining($"SDK path resolved to [{Path.Combine(_exeSdkBaseDir, ExpectedVersion)}]");
+            var result = RunTest()
+                .Should().Pass()
+                .And.HaveStdErrContaining($"SDK path resolved to [{Path.Combine(ExecutableDotNet.BinPath, "sdk", ExpectedVersion)}]");
         }
 
         public static IEnumerable<object[]> InvalidGlobalJsonData
@@ -1248,33 +990,22 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         // This method adds a list of new sdk version folders in the specified directory.
         // The actual contents are 'fake' and the mininum required for SDK discovery.
         // The dotnet.runtimeconfig.json created uses a dummy framework version (9999.0.0)
-        private void AddAvailableSdkVersions(string sdkBaseDir, params string[] availableVersions)
+        private void AddAvailableSdkVersions(params string[] availableVersions)
         {
-            string dummyRuntimeConfig = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils",
-                "SDKLookup", "dotnet.runtimeconfig.json");
-
             foreach (string version in availableVersions)
             {
-                string newSdkDir = Path.Combine(sdkBaseDir, version);
-                Directory.CreateDirectory(newSdkDir);
-
-                // ./dotnet.dll
-                File.WriteAllText(Path.Combine(newSdkDir, "dotnet.dll"), string.Empty);
-
-                // ./dotnet.runtimeconfig.json
-                string runtimeConfig = Path.Combine(newSdkDir, "dotnet.runtimeconfig.json");
-                File.Copy(dummyRuntimeConfig, runtimeConfig, true);
+                ExecutableDotNetBuilder.AddMockSDK(version, "9999.0.0");
             }
         }
 
         // Put a global.json file in the cwd in order to specify a CLI
-        private void CopyGlobalJson(string globalJsonFileName)
+        private string CopyGlobalJson(string globalJsonFileName)
         {
-            string destFile = Path.Combine(_currentWorkingDir, "global.json");
-            string srcFile = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils",
-                "SDKLookup", globalJsonFileName);
+            string destFile = Path.Combine(SharedState.CurrentWorkingDir, "global.json");
+            string srcFile = Path.Combine(SharedState.TestAssetsPath, globalJsonFileName);
 
             File.Copy(srcFile, destFile, true);
+            return destFile;
         }
 
         private static string FormatGlobalJson(string version = null, string policy = null, bool? allowPrerelease = null)
@@ -1288,9 +1019,77 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
         private void WriteGlobalJson(string contents)
         {
-            File.WriteAllText(Path.Combine(_currentWorkingDir, "global.json"), contents);
+            File.WriteAllText(Path.Combine(SharedState.CurrentWorkingDir, "global.json"), contents);
         }
 
         private void WriteEmptyGlobalJson() => WriteGlobalJson("{}");
+
+        private string ExpectedResolvedSdkOutput(string expectedVersion)
+            => Path.Combine("Using .NET SDK dll=[", ExecutableDotNet.BinPath, "sdk", expectedVersion, "dotnet.dll]");
+
+        private CommandResult RunTest() => RunTest("help");
+
+        private CommandResult RunTest(string command)
+        {
+            return ExecutableDotNet.Exec(command)
+                .WorkingDirectory(SharedState.CurrentWorkingDir)
+                .EnableTracingAndCaptureOutputs()
+                .MultilevelLookup(false)
+                .Execute();
+        }
+
+        public class SharedTestState : IDisposable
+        {
+            private readonly RepoDirectoriesProvider RepoDirectories;
+
+            public DotNetCli BuiltDotNet { get; }
+
+            public string BaseDir { get; }
+
+            public string CurrentWorkingDir { get; }
+
+            public string TestAssetsPath { get; }
+
+            public SharedTestState()
+            {
+                // The dotnetSDKLookup dir will contain some folders and files that will be
+                // necessary to perform the tests
+                string baseDir = Path.Combine(TestArtifact.TestArtifactsPath, "dotnetSDKLookup");
+                BaseDir = SharedFramework.CalculateUniqueTestDirectory(baseDir);
+
+                // The three tested locations will be the cwd and the exe dir. cwd is no longer supported.
+                //     All dirs will be placed inside the base folder
+
+                BuiltDotNet = new DotNetCli(Path.Combine(TestArtifact.TestArtifactsPath, "sharedFrameworkPublish"));
+
+                RepoDirectories = new RepoDirectoriesProvider();
+
+                // Executable location is created per test as each test adds a different set of SDK versions
+
+                var currentWorkingSdk = new DotNetBuilder(BaseDir, BuiltDotNet.BinPath, "current")
+                    .AddMockSDK("10000.0.0", "9999.0.0")
+                    .Build();
+                CurrentWorkingDir = currentWorkingSdk.BinPath;
+
+                TestAssetsPath = Path.Combine(RepoDirectories.TestAssetsFolder, "TestUtils", "SDKLookup");
+            }
+
+            public void Dispose()
+            {
+                Dispose(true);
+                GC.SuppressFinalize(this);
+            }
+
+            protected virtual void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    if (!TestArtifact.PreserveTestRuns() && Directory.Exists(BaseDir))
+                    {
+                        Directory.Delete(BaseDir, true);
+                    }
+                }
+            }
+        }
     }
 }

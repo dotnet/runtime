@@ -26,10 +26,7 @@ namespace Microsoft.Extensions.Options
         public ConfigureFromConfigurationOptions(IConfiguration config)
             : base(options => BindFromOptions(options, config))
         {
-            if (config == null)
-            {
-                throw new ArgumentNullException(nameof(config));
-            }
+            ThrowHelper.ThrowIfNull(config);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",

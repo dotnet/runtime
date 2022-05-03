@@ -40,7 +40,12 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AsContractType(Type type)
         {
-            _contractType = type ?? throw new ArgumentNullException(nameof(type));
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            _contractType = type;
             return this;
         }
 
@@ -51,10 +56,11 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AsContractName(string contractName)
         {
-            if (contractName == null)
+            if (contractName is null)
             {
                 throw new ArgumentNullException(nameof(contractName));
             }
+
             if (contractName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(contractName)), nameof(contractName));
@@ -70,7 +76,12 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType)
         {
-            _getContractNameFromPartType = getContractNameFromPartType ?? throw new ArgumentNullException(nameof(getContractNameFromPartType));
+            if (getContractNameFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getContractNameFromPartType));
+            }
+
+            _getContractNameFromPartType = getContractNameFromPartType;
             return this;
         }
 
@@ -82,7 +93,7 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AddMetadata(string name, object value)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
@@ -107,18 +118,18 @@ namespace System.Composition.Convention
         /// <returns>An export builder allowing further configuration.</returns>
         public ExportConventionBuilder AddMetadata(string name, Func<Type, object> getValueFromPartType)
         {
-            if (name == null)
+            if (name is null)
             {
                 throw new ArgumentNullException(nameof(name));
             }
+            if (getValueFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getValueFromPartType));
+            }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
-            }
-
-            if (getValueFromPartType == null)
-            {
-                throw new ArgumentNullException(nameof(getValueFromPartType));
             }
 
             if (_metadataItemFuncs == null)

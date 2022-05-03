@@ -11,7 +11,7 @@ using Xunit;
 namespace DebuggerTests
 {
 
-    public class PointerTests : DebuggerTestBase
+    public class PointerTests : DebuggerTests
     {
 
         public static TheoryData<string, string, string, int, string, bool> PointersTestData =>
@@ -22,7 +22,7 @@ namespace DebuggerTests
                 { $"invoke_static_method_async ('[debugger-test] DebuggerTests.PointerTests:LocalPointersAsync');", "DebuggerTests.PointerTests", "LocalPointersAsync", 32, "LocalPointersAsync", true }
             };
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberDataAttribute(nameof(PointersTestData))]
         public async Task InspectLocalPointersToPrimitiveTypes(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(
             type, method, line_offset, bp_function_name,
@@ -40,7 +40,7 @@ namespace DebuggerTests
                    ipp = TPointer("int**"),
                    ipp_null = TPointer("int**"),
 
-                   cvalue0 = TSymbol("113 'q'"),
+                   cvalue0 = TChar('q'),
                    cp = TPointer("char*"),
 
                    vp = TPointer("void*"),
@@ -65,7 +65,7 @@ namespace DebuggerTests
 
                // *cp
                props = await GetObjectOnLocals(locals, "cp");
-               await CheckPointerValue(props, "*cp", TSymbol("113 'q'"));
+               await CheckPointerValue(props, "*cp", TChar('q'));
            });
 
         [Theory]
@@ -517,7 +517,7 @@ namespace DebuggerTests
                await CheckArrayElements(dtppa_elems, exp_elems);
            });
 
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [InlineData("invoke_static_method ('[debugger-test] Math:UseComplex', 0, 0);", "Math", "UseComplex", 3, "UseComplex", false)]
         [InlineData("invoke_static_method ('[debugger-test] Math:UseComplex', 0, 0);", "Math", "UseComplex", 3, "UseComplex", true)]
         public async Task DerefNonPointerObject(string eval_fn, string type, string method, int line_offset, string bp_function_name, bool use_cfo) => await CheckInspectLocalsAtBreakpointSite(

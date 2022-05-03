@@ -45,11 +45,11 @@ namespace System.Diagnostics
         private const string LanguageKeyword = "language";
         private const string DllName = "netfxperf.dll";
 
-        private const int EnglishLCID = 0x009;
-
         private static volatile string s_computerName;
         private static volatile string s_iniFilePath;
         private static volatile string s_symbolFilePath;
+
+        private static CultureInfo? s_englishCulture;
 
         private PerformanceMonitor _performanceMonitor;
         private readonly string _machineName;
@@ -76,6 +76,25 @@ namespace System.Diagnostics
                     Interlocked.CompareExchange(ref s_internalSyncObject, o, null);
                 }
                 return s_internalSyncObject;
+            }
+        }
+
+        private static CultureInfo EnglishCulture
+        {
+            get
+            {
+                if (s_englishCulture is null)
+                {
+                    try
+                    {
+                        s_englishCulture = CultureInfo.GetCultureInfo("en");
+                    }
+                    catch
+                    {
+                        s_englishCulture = CultureInfo.InvariantCulture;
+                    }
+                }
+                return s_englishCulture;
             }
         }
 
@@ -275,11 +294,11 @@ namespace System.Diagnostics
 
         internal static bool CategoryExists(string machine, string category)
         {
-            PerformanceCounterLib library = GetPerformanceCounterLib(machine, new CultureInfo(EnglishLCID));
+            PerformanceCounterLib library = GetPerformanceCounterLib(machine, EnglishCulture);
             if (library.CategoryExists(category))
                 return true;
 
-            if (CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
+            if (CultureInfo.CurrentCulture.Parent.Name != EnglishCulture.Name)
             {
                 CultureInfo culture = CultureInfo.CurrentCulture;
                 while (culture != CultureInfo.InvariantCulture)
@@ -347,11 +366,11 @@ namespace System.Diagnostics
 
         internal static bool CounterExists(string machine, string category, string counter)
         {
-            PerformanceCounterLib library = GetPerformanceCounterLib(machine, new CultureInfo(EnglishLCID));
+            PerformanceCounterLib library = GetPerformanceCounterLib(machine, EnglishCulture);
             bool categoryExists = false;
             bool counterExists = library.CounterExists(category, counter, ref categoryExists);
 
-            if (!categoryExists && CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
+            if (!categoryExists && CultureInfo.CurrentCulture.Parent.Name != EnglishCulture.Name)
             {
                 CultureInfo culture = CultureInfo.CurrentCulture;
                 while (culture != CultureInfo.InvariantCulture)
@@ -755,7 +774,7 @@ namespace System.Diagnostics
                 culture = culture.Parent;
             }
 
-            library = GetPerformanceCounterLib(machineName, new CultureInfo(EnglishLCID));
+            library = GetPerformanceCounterLib(machineName, EnglishCulture);
             return library.GetCategories();
         }
 
@@ -774,7 +793,7 @@ namespace System.Diagnostics
 
             //First check the current culture for the category. This will allow
             //PerformanceCounterCategory.CategoryHelp to return localized strings.
-            if (CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
+            if (CultureInfo.CurrentCulture.Parent.Name != EnglishCulture.Name)
             {
                 CultureInfo culture = CultureInfo.CurrentCulture;
 
@@ -790,7 +809,7 @@ namespace System.Diagnostics
 
             //We did not find the category walking up the culture hierarchy. Try looking
             // for the category in the default culture English.
-            library = GetPerformanceCounterLib(machine, new CultureInfo(EnglishLCID));
+            library = GetPerformanceCounterLib(machine, EnglishCulture);
             help = library.GetCategoryHelp(category);
 
             if (help == null)
@@ -810,9 +829,9 @@ namespace System.Diagnostics
 
         internal static CategorySample GetCategorySample(string machine, string category)
         {
-            PerformanceCounterLib library = GetPerformanceCounterLib(machine, new CultureInfo(EnglishLCID));
+            PerformanceCounterLib library = GetPerformanceCounterLib(machine, EnglishCulture);
             CategorySample sample = library.GetCategorySample(category);
-            if (sample == null && CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
+            if (sample == null && CultureInfo.CurrentCulture.Parent.Name != EnglishCulture.Name)
             {
                 CultureInfo culture = CultureInfo.CurrentCulture;
                 while (culture != CultureInfo.InvariantCulture)
@@ -845,11 +864,11 @@ namespace System.Diagnostics
 
         internal static string[] GetCounters(string machine, string category)
         {
-            PerformanceCounterLib library = GetPerformanceCounterLib(machine, new CultureInfo(EnglishLCID));
+            PerformanceCounterLib library = GetPerformanceCounterLib(machine, EnglishCulture);
             bool categoryExists = false;
             string[] counters = library.GetCounters(category, ref categoryExists);
 
-            if (!categoryExists && CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
+            if (!categoryExists && CultureInfo.CurrentCulture.Parent.Name != EnglishCulture.Name)
             {
                 CultureInfo culture = CultureInfo.CurrentCulture;
                 while (culture != CultureInfo.InvariantCulture)
@@ -910,7 +929,7 @@ namespace System.Diagnostics
 
             //First check the current culture for the counter. This will allow
             //PerformanceCounter.CounterHelp to return localized strings.
-            if (CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
+            if (CultureInfo.CurrentCulture.Parent.Name != EnglishCulture.Name)
             {
                 CultureInfo culture = CultureInfo.CurrentCulture;
                 while (culture != CultureInfo.InvariantCulture)
@@ -925,7 +944,7 @@ namespace System.Diagnostics
 
             //We did not find the counter walking up the culture hierarchy. Try looking
             // for the counter in the default culture English.
-            library = GetPerformanceCounterLib(machine, new CultureInfo(EnglishLCID));
+            library = GetPerformanceCounterLib(machine, EnglishCulture);
             help = library.GetCounterHelp(category, counter, ref categoryExists);
 
             if (!categoryExists)
@@ -990,7 +1009,8 @@ namespace System.Diagnostics
 
         internal static PerformanceCounterLib GetPerformanceCounterLib(string machineName, CultureInfo culture)
         {
-            string lcidString = culture.LCID.ToString("X3", CultureInfo.InvariantCulture);
+            // EnglishCulture.LCID == 9 will be false only if running with Globalization Invariant Mode. Use "009" at that time as default English language identifier.
+            string lcidString = EnglishCulture.LCID == 9 ? culture.LCID.ToString("X3", CultureInfo.InvariantCulture) : "009";
 
             machineName = (machineName == "." ? ComputerName : machineName).ToLowerInvariant();
 
@@ -1026,9 +1046,9 @@ namespace System.Diagnostics
             return _performanceMonitor.GetData(item, usePool);
         }
 
-        internal void ReleasePerformanceData(byte[] data)
+        internal static void ReleasePerformanceData(byte[] data)
         {
-            _performanceMonitor.ReleaseData(data);
+            PerformanceMonitor.ReleaseData(data);
         }
 
         private Hashtable GetStringTable(bool isHelp)
@@ -1135,11 +1155,11 @@ namespace System.Diagnostics
 
         internal static bool IsCustomCategory(string machine, string category)
         {
-            PerformanceCounterLib library = GetPerformanceCounterLib(machine, new CultureInfo(EnglishLCID));
+            PerformanceCounterLib library = GetPerformanceCounterLib(machine, EnglishCulture);
             if (library.IsCustomCategory(category))
                 return true;
 
-            if (CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
+            if (CultureInfo.CurrentCulture.Parent.Name != EnglishCulture.Name)
             {
                 CultureInfo culture = CultureInfo.CurrentCulture;
                 while (culture != CultureInfo.InvariantCulture)
@@ -1170,10 +1190,10 @@ namespace System.Diagnostics
 
         internal static PerformanceCounterCategoryType GetCategoryType(string machine, string category)
         {
-            PerformanceCounterLib library = GetPerformanceCounterLib(machine, new CultureInfo(EnglishLCID));
+            PerformanceCounterLib library = GetPerformanceCounterLib(machine, EnglishCulture);
             if (!library.FindCustomCategory(category, out PerformanceCounterCategoryType categoryType))
             {
-                if (CultureInfo.CurrentCulture.Parent.LCID != EnglishLCID)
+                if (CultureInfo.CurrentCulture.Parent.Name != EnglishCulture.Name)
                 {
                     CultureInfo culture = CultureInfo.CurrentCulture;
                     while (culture != CultureInfo.InvariantCulture)
@@ -1365,9 +1385,9 @@ namespace System.Diagnostics
             throw new Win32Exception(error);
         }
 
-        internal void ReleaseData(byte[] data)
+        internal static void ReleaseData(byte[] data)
         {
-            perfDataKey.ReleaseData(data);
+            PerformanceDataRegistryKey.ReleaseData(data);
         }
 
     }
@@ -1658,7 +1678,7 @@ namespace System.Diagnostics
 
             _disposed = true;
 
-            _library.ReleasePerformanceData(_data);
+            PerformanceCounterLib.ReleasePerformanceData(_data);
         }
 
         private void CheckDisposed()

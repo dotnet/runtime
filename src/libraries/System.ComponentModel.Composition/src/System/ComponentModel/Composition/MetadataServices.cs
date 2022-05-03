@@ -28,10 +28,7 @@ namespace System.ComponentModel.Composition
 
         public static T? GetValue<T>(this IDictionary<string, object?> metadata, string key)
         {
-            if (metadata == null)
-            {
-                throw new ArgumentNullException(nameof(metadata));
-            }
+            ArgumentNullException.ThrowIfNull(metadata);
 
             if (metadata.TryGetValue(key, out object? untypedValue) && untypedValue is T t)
             {

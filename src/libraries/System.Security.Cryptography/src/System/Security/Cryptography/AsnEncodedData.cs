@@ -34,8 +34,8 @@ namespace System.Security.Cryptography
 
         public AsnEncodedData(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
+            ArgumentNullException.ThrowIfNull(asnEncodedData);
+
             Reset(asnEncodedData._oid, asnEncodedData._rawData);
         }
 
@@ -96,16 +96,15 @@ namespace System.Security.Cryptography
             [MemberNotNull(nameof(_rawData))]
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _rawData = value.CloneByteArray();
             }
         }
 
         public virtual void CopyFrom(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
+            ArgumentNullException.ThrowIfNull(asnEncodedData);
+
             Reset(asnEncodedData._oid, asnEncodedData._rawData);
         }
 

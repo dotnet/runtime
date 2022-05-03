@@ -64,10 +64,7 @@ namespace System.Net
             set
             {
                 CheckDisposed();
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
                 if (value.Major != 1 || (value.Minor != 0 && value.Minor != 1))
                 {
                     throw new ArgumentException(SR.net_wrongversion, nameof(value));
@@ -119,10 +116,7 @@ namespace System.Net
         {
             CheckDisposed();
 
-            if (responseEntity == null)
-            {
-                throw new ArgumentNullException(nameof(responseEntity));
-            }
+            ArgumentNullException.ThrowIfNull(responseEntity);
 
             if (!SentHeaders && _boundaryType != BoundaryType.Chunked)
             {

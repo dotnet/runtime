@@ -19,7 +19,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="tableIndex"/> is not a valid table index.</exception>
         public static int GetTableRowCount(this MetadataReader reader, TableIndex tableIndex)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 Throw.ArgumentNull(nameof(reader));
             }
@@ -39,9 +39,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="tableIndex"/> is not a valid table index.</exception>
         public static int GetTableRowSize(this MetadataReader reader, TableIndex tableIndex)
         {
-            if (reader == null)
+            if (reader is null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
             return tableIndex switch
@@ -113,7 +113,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="tableIndex"/> is not a valid table index.</exception>
         public static unsafe int GetTableMetadataOffset(this MetadataReader reader, TableIndex tableIndex)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 Throw.ArgumentNull(nameof(reader));
             }
@@ -194,7 +194,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="heapIndex"/> is not a valid heap index.</exception>
         public static int GetHeapSize(this MetadataReader reader, HeapIndex heapIndex)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 Throw.ArgumentNull(nameof(reader));
             }
@@ -209,7 +209,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentOutOfRangeException"><paramref name="heapIndex"/> is not a valid heap index.</exception>
         public static unsafe int GetHeapMetadataOffset(this MetadataReader reader, HeapIndex heapIndex)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 Throw.ArgumentNull(nameof(reader));
             }
@@ -242,7 +242,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         public static UserStringHandle GetNextHandle(this MetadataReader reader, UserStringHandle handle)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 Throw.ArgumentNull(nameof(reader));
             }
@@ -256,7 +256,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         public static BlobHandle GetNextHandle(this MetadataReader reader, BlobHandle handle)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 Throw.ArgumentNull(nameof(reader));
             }
@@ -270,7 +270,7 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         public static StringHandle GetNextHandle(this MetadataReader reader, StringHandle handle)
         {
-            if (reader == null)
+            if (reader is null)
             {
                 Throw.ArgumentNull(nameof(reader));
             }
@@ -284,16 +284,21 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         public static IEnumerable<EditAndContinueLogEntry> GetEditAndContinueLogEntries(this MetadataReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
-            for (int rid = 1; rid <= reader.EncLogTable.NumberOfRows; rid++)
+            return Core(reader);
+
+            static IEnumerable<EditAndContinueLogEntry> Core(MetadataReader reader)
             {
-                yield return new EditAndContinueLogEntry(
-                    new EntityHandle(reader.EncLogTable.GetToken(rid)),
-                    reader.EncLogTable.GetFuncCode(rid));
+                for (int rid = 1; rid <= reader.EncLogTable.NumberOfRows; rid++)
+                {
+                    yield return new EditAndContinueLogEntry(
+                        new EntityHandle(reader.EncLogTable.GetToken(rid)),
+                        reader.EncLogTable.GetFuncCode(rid));
+                }
             }
         }
 
@@ -303,14 +308,19 @@ namespace System.Reflection.Metadata.Ecma335
         /// <exception cref="ArgumentNullException"><paramref name="reader"/> is null.</exception>
         public static IEnumerable<EntityHandle> GetEditAndContinueMapEntries(this MetadataReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
-            for (int rid = 1; rid <= reader.EncMapTable.NumberOfRows; rid++)
+            return Core(reader);
+
+            static IEnumerable<EntityHandle> Core(MetadataReader reader)
             {
-                yield return new EntityHandle(reader.EncMapTable.GetToken(rid));
+                for (int rid = 1; rid <= reader.EncMapTable.NumberOfRows; rid++)
+                {
+                    yield return new EntityHandle(reader.EncMapTable.GetToken(rid));
+                }
             }
         }
 
@@ -323,14 +333,19 @@ namespace System.Reflection.Metadata.Ecma335
         /// </returns>
         public static IEnumerable<TypeDefinitionHandle> GetTypesWithProperties(this MetadataReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
-            for (int rid = 1; rid <= reader.PropertyMapTable.NumberOfRows; rid++)
+            return Core(reader);
+
+            static IEnumerable<TypeDefinitionHandle> Core(MetadataReader reader)
             {
-                yield return reader.PropertyMapTable.GetParentType(rid);
+                for (int rid = 1; rid <= reader.PropertyMapTable.NumberOfRows; rid++)
+                {
+                    yield return reader.PropertyMapTable.GetParentType(rid);
+                }
             }
         }
 
@@ -343,14 +358,19 @@ namespace System.Reflection.Metadata.Ecma335
         /// </returns>
         public static IEnumerable<TypeDefinitionHandle> GetTypesWithEvents(this MetadataReader reader)
         {
-            if (reader == null)
+            if (reader is null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
-            for (int rid = 1; rid <= reader.EventMapTable.NumberOfRows; rid++)
+            return Core(reader);
+
+            static IEnumerable<TypeDefinitionHandle> Core(MetadataReader reader)
             {
-                yield return reader.EventMapTable.GetParentType(rid);
+                for (int rid = 1; rid <= reader.EventMapTable.NumberOfRows; rid++)
+                {
+                    yield return reader.EventMapTable.GetParentType(rid);
+                }
             }
         }
 
@@ -359,9 +379,9 @@ namespace System.Reflection.Metadata.Ecma335
         /// </summary>
         public static SignatureTypeKind ResolveSignatureTypeKind(this MetadataReader reader, EntityHandle typeHandle, byte rawTypeKind)
         {
-            if (reader == null)
+            if (reader is null)
             {
-                throw new ArgumentNullException(nameof(reader));
+                Throw.ArgumentNull(nameof(reader));
             }
 
             var typeKind = (SignatureTypeKind)rawTypeKind;

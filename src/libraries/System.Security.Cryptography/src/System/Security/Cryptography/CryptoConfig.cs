@@ -14,10 +14,7 @@ namespace System.Security.Cryptography
     public partial class CryptoConfig
     {
 #if !BROWSER
-        private const string AssemblyName_Cng = "System.Security.Cryptography.Cng";
-        private const string AssemblyName_Csp = "System.Security.Cryptography.Csp";
         private const string AssemblyName_Pkcs = "System.Security.Cryptography.Pkcs";
-        private const string AssemblyName_X509Certificates = "System.Security.Cryptography.X509Certificates";
 
         private const BindingFlags ConstructorDefault = BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
 
@@ -128,19 +125,20 @@ namespace System.Security.Cryptography
                 Type SHA256DefaultType = typeof(System.Security.Cryptography.SHA256Managed);
                 Type SHA384DefaultType = typeof(System.Security.Cryptography.SHA384Managed);
                 Type SHA512DefaultType = typeof(System.Security.Cryptography.SHA512Managed);
+                Type SHA1CryptoServiceProviderType = typeof(SHA1CryptoServiceProvider);
+                Type MD5CryptoServiceProviderType = typeof(MD5CryptoServiceProvider);
+                Type RSACryptoServiceProviderType = typeof(RSACryptoServiceProvider);
+                Type DSACryptoServiceProviderType = typeof(DSACryptoServiceProvider);
+                Type DESCryptoServiceProviderType = typeof(DESCryptoServiceProvider);
+                Type TripleDESCryptoServiceProviderType = typeof(TripleDESCryptoServiceProvider);
+                Type RC2CryptoServiceProviderType = typeof(RC2CryptoServiceProvider);
+                Type AesCryptoServiceProviderType = typeof(AesCryptoServiceProvider);
 #pragma warning restore SYSLIB0021
+#pragma warning disable SYSLIB0023 // RNGCryptoServiceProvider is obsolete
+                Type RNGCryptoServiceProviderType = typeof(RNGCryptoServiceProvider);
+#pragma warning restore SYSLIB0023
 
-                string SHA1CryptoServiceProviderType = "System.Security.Cryptography.SHA1CryptoServiceProvider, " + AssemblyName_Csp;
-                string MD5CryptoServiceProviderType = "System.Security.Cryptography.MD5CryptoServiceProvider," + AssemblyName_Csp;
-                string RSACryptoServiceProviderType = "System.Security.Cryptography.RSACryptoServiceProvider, " + AssemblyName_Csp;
-                string DSACryptoServiceProviderType = "System.Security.Cryptography.DSACryptoServiceProvider, " + AssemblyName_Csp;
-                string DESCryptoServiceProviderType = "System.Security.Cryptography.DESCryptoServiceProvider, " + AssemblyName_Csp;
-                string TripleDESCryptoServiceProviderType = "System.Security.Cryptography.TripleDESCryptoServiceProvider, " + AssemblyName_Csp;
-                string RC2CryptoServiceProviderType = "System.Security.Cryptography.RC2CryptoServiceProvider, " + AssemblyName_Csp;
-                string RNGCryptoServiceProviderType = "System.Security.Cryptography.RNGCryptoServiceProvider, " + AssemblyName_Csp;
-                string AesCryptoServiceProviderType = "System.Security.Cryptography.AesCryptoServiceProvider, " + AssemblyName_Csp;
-
-                string ECDsaCngType = "System.Security.Cryptography.ECDsaCng, " + AssemblyName_Cng;
+                Type ECDsaCngType = typeof(ECDsaCng);
 
                 // Random number generator
                 ht.Add("RandomNumberGenerator", RNGCryptoServiceProviderType);
@@ -255,17 +253,17 @@ namespace System.Security.Cryptography
                 ht.Add("http://www.w3.org/2001/04/xmldsig-more#hmac-sha512", HMACSHA512Type);
                 // X509 Extensions (custom decoders)
                 // Basic Constraints OID value
-                ht.Add("2.5.29.10", "System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension, " + AssemblyName_X509Certificates);
-                ht.Add("2.5.29.19", "System.Security.Cryptography.X509Certificates.X509BasicConstraintsExtension, " + AssemblyName_X509Certificates);
+                ht.Add("2.5.29.10", typeof(X509Certificates.X509BasicConstraintsExtension));
+                ht.Add("2.5.29.19", typeof(X509Certificates.X509BasicConstraintsExtension));
                 // Subject Key Identifier OID value
-                ht.Add("2.5.29.14", "System.Security.Cryptography.X509Certificates.X509SubjectKeyIdentifierExtension, " + AssemblyName_X509Certificates);
+                ht.Add("2.5.29.14", typeof(X509Certificates.X509SubjectKeyIdentifierExtension));
                 // Key Usage OID value
-                ht.Add("2.5.29.15", "System.Security.Cryptography.X509Certificates.X509KeyUsageExtension, " + AssemblyName_X509Certificates);
+                ht.Add("2.5.29.15", typeof(X509Certificates.X509KeyUsageExtension));
                 // Enhanced Key Usage OID value
-                ht.Add("2.5.29.37", "System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension, " + AssemblyName_X509Certificates);
+                ht.Add("2.5.29.37", typeof(X509Certificates.X509EnhancedKeyUsageExtension));
 
                 // X509Chain class can be overridden to use a different chain engine.
-                ht.Add("X509Chain", "System.Security.Cryptography.X509Certificates.X509Chain, " + AssemblyName_X509Certificates);
+                ht.Add("X509Chain", typeof(X509Certificates.X509Chain));
 
                 // PKCS9 attributes
                 ht.Add("1.2.840.113549.1.9.3", "System.Security.Cryptography.Pkcs.Pkcs9ContentType, " + AssemblyName_Pkcs);
@@ -308,12 +306,10 @@ namespace System.Security.Cryptography
 #if BROWSER
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
-            if (algorithm == null)
-                throw new ArgumentNullException(nameof(algorithm));
+            ArgumentNullException.ThrowIfNull(algorithm);
             if (!algorithm.IsVisible)
                 throw new ArgumentException(SR.Cryptography_AlgorithmTypesMustBeVisible, nameof(algorithm));
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
+            ArgumentNullException.ThrowIfNull(names);
 
             string[] algorithmNames = new string[names.Length];
             Array.Copy(names, algorithmNames, algorithmNames.Length);
@@ -339,8 +335,7 @@ namespace System.Security.Cryptography
         [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name, params object?[]? args)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
 #if BROWSER
             switch (name)
@@ -496,10 +491,8 @@ namespace System.Security.Cryptography
 #if BROWSER
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
-            if (oid == null)
-                throw new ArgumentNullException(nameof(oid));
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
+            ArgumentNullException.ThrowIfNull(oid);
+            ArgumentNullException.ThrowIfNull(names);
 
             string[] oidNames = new string[names.Length];
             Array.Copy(names, oidNames, oidNames.Length);
@@ -528,8 +521,7 @@ namespace System.Security.Cryptography
 #if BROWSER
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             appOidHT.TryGetValue(name, out string? oidName);
 
@@ -554,8 +546,7 @@ namespace System.Security.Cryptography
 #if BROWSER
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             string[] oidString = str.Split('.'); // valid ASN.1 separator
             uint[] oidNums = new uint[oidString.Length];

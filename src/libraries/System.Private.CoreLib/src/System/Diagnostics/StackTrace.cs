@@ -78,8 +78,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
+            ArgumentNullException.ThrowIfNull(e);
 
             InitializeForException(e, METHODS_TO_SKIP, false);
         }
@@ -89,8 +88,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e, bool fNeedFileInfo)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
+            ArgumentNullException.ThrowIfNull(e);
 
             InitializeForException(e, METHODS_TO_SKIP, fNeedFileInfo);
         }
@@ -101,8 +99,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e, int skipFrames)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
+            ArgumentNullException.ThrowIfNull(e);
 
             if (skipFrames < 0)
                 throw new ArgumentOutOfRangeException(nameof(skipFrames),
@@ -117,8 +114,7 @@ namespace System.Diagnostics
         /// </summary>
         public StackTrace(Exception e, int skipFrames, bool fNeedFileInfo)
         {
-            if (e == null)
-                throw new ArgumentNullException(nameof(e));
+            ArgumentNullException.ThrowIfNull(e);
 
             if (skipFrames < 0)
                 throw new ArgumentOutOfRangeException(nameof(skipFrames),
@@ -430,7 +426,7 @@ namespace System.Diagnostics
 
             foreach (MethodInfo candidateMethod in methods)
             {
-                IEnumerable<StateMachineAttribute>? attributes = candidateMethod.GetCustomAttributes<StateMachineAttribute>(inherit: false);
+                StateMachineAttribute[]? attributes = (StateMachineAttribute[])Attribute.GetCustomAttributes(candidateMethod, typeof(StateMachineAttribute), inherit: false);
                 if (attributes == null)
                 {
                     continue;

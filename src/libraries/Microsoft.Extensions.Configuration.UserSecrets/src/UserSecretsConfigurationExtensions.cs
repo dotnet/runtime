@@ -118,15 +118,8 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The configuration builder.</returns>
         public static IConfigurationBuilder AddUserSecrets(this IConfigurationBuilder configuration, Assembly assembly, bool optional, bool reloadOnChange)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
-
-            if (assembly == null)
-            {
-                throw new ArgumentNullException(nameof(assembly));
-            }
+            ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(assembly);
 
             UserSecretsIdAttribute? attribute = assembly.GetCustomAttribute<UserSecretsIdAttribute>();
             if (attribute != null)
@@ -173,21 +166,19 @@ namespace Microsoft.Extensions.Configuration
 
         private static IConfigurationBuilder AddUserSecretsInternal(IConfigurationBuilder configuration, string userSecretsId, bool optional, bool reloadOnChange)
         {
-            if (configuration == null)
-            {
-                throw new ArgumentNullException(nameof(configuration));
-            }
+            ThrowHelper.ThrowIfNull(configuration);
+            ThrowHelper.ThrowIfNull(userSecretsId);
 
-            if (userSecretsId == null)
-            {
-                throw new ArgumentNullException(nameof(userSecretsId));
-            }
-
-            return AddSecretsFile(configuration, PathHelper.GetSecretsPathFromSecretsId(userSecretsId), optional, reloadOnChange);
+            return AddSecretsFile(configuration, PathHelper.InternalGetSecretsPathFromSecretsId(userSecretsId, throwIfNoRoot: !optional), optional, reloadOnChange);
         }
 
         private static IConfigurationBuilder AddSecretsFile(IConfigurationBuilder configuration, string secretPath, bool optional, bool reloadOnChange)
         {
+            if (string.IsNullOrEmpty(secretPath))
+            {
+                return configuration;
+            }
+
             string? directoryPath = Path.GetDirectoryName(secretPath);
             PhysicalFileProvider? fileProvider = Directory.Exists(directoryPath)
                 ? new PhysicalFileProvider(directoryPath)

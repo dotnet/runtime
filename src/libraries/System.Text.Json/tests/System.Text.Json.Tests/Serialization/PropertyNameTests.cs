@@ -8,7 +8,7 @@ namespace System.Text.Json.Serialization.Tests
 {
     public sealed partial class PropertyNameTestsDynamic : PropertyNameTests
     {
-        public PropertyNameTestsDynamic() : base(JsonSerializerWrapperForString.StringSerializer) { }
+        public PropertyNameTestsDynamic() : base(JsonSerializerWrapper.StringSerializer) { }
 
         [Fact]
         public async Task JsonNullNameAttribute()
@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Tests
             options.PropertyNameCaseInsensitive = true;
 
             // A null name in JsonPropertyNameAttribute is not allowed.
-            await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new NullPropertyName_TestClass(), options));
+            await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new NullPropertyName_TestClass(), options));
         }
 
         [Fact]
@@ -30,8 +30,8 @@ namespace System.Text.Json.Serialization.Tests
                 var options = new JsonSerializerOptions();
                 options.PropertyNameCaseInsensitive = true;
 
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.DeserializeWrapper<IntPropertyNamesDifferentByCaseOnly_TestClass>(json, options));
-                await Assert.ThrowsAsync<InvalidOperationException>(async () => await JsonSerializerWrapperForString.SerializeWrapper(new IntPropertyNamesDifferentByCaseOnly_TestClass(), options));
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.DeserializeWrapper<IntPropertyNamesDifferentByCaseOnly_TestClass>(json, options));
+                await Assert.ThrowsAsync<InvalidOperationException>(async () => await Serializer.SerializeWrapper(new IntPropertyNamesDifferentByCaseOnly_TestClass(), options));
             }
         }
     }

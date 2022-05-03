@@ -6,200 +6,186 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
-    internal static partial class ECDiffieHellmanImplementation
+    public sealed partial class ECDiffieHellmanOpenSsl : ECDiffieHellman
     {
-#endif
-        public sealed partial class ECDiffieHellmanOpenSsl : ECDiffieHellman
+        /// <summary>
+        /// Given a second party's public key, derive shared key material
+        /// </summary>
+        public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey) =>
+            DeriveKeyFromHash(otherPartyPublicKey, HashAlgorithmName.SHA256, null, null);
+
+        public override byte[] DeriveKeyFromHash(
+            ECDiffieHellmanPublicKey otherPartyPublicKey,
+            HashAlgorithmName hashAlgorithm,
+            byte[]? secretPrepend,
+            byte[]? secretAppend)
         {
-            /// <summary>
-            /// Given a second party's public key, derive shared key material
-            /// </summary>
-            public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey) =>
-                DeriveKeyFromHash(otherPartyPublicKey, HashAlgorithmName.SHA256, null, null);
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
-            public override byte[] DeriveKeyFromHash(
-                ECDiffieHellmanPublicKey otherPartyPublicKey,
-                HashAlgorithmName hashAlgorithm,
-                byte[]? secretPrepend,
-                byte[]? secretAppend)
+            ThrowIfDisposed();
+
+            return ECDiffieHellmanDerivation.DeriveKeyFromHash(
+                otherPartyPublicKey,
+                hashAlgorithm,
+                secretPrepend,
+                secretAppend,
+                (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+        }
+
+        public override byte[] DeriveKeyFromHmac(
+            ECDiffieHellmanPublicKey otherPartyPublicKey,
+            HashAlgorithmName hashAlgorithm,
+            byte[]? hmacKey,
+            byte[]? secretPrepend,
+            byte[]? secretAppend)
+        {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+
+            ThrowIfDisposed();
+
+            return ECDiffieHellmanDerivation.DeriveKeyFromHmac(
+                otherPartyPublicKey,
+                hashAlgorithm,
+                hmacKey,
+                secretPrepend,
+                secretAppend,
+                (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+        }
+
+        public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
+        {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+            ArgumentNullException.ThrowIfNull(prfLabel);
+            ArgumentNullException.ThrowIfNull(prfSeed);
+
+            ThrowIfDisposed();
+
+            return ECDiffieHellmanDerivation.DeriveKeyTls(
+                otherPartyPublicKey,
+                prfLabel,
+                prfSeed,
+                (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+        }
+
+        /// <summary>
+        /// Get the secret agreement generated between two parties
+        /// </summary>
+        private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
+        {
+            Debug.Assert(otherPartyPublicKey != null);
+
+            // Ensure that this ECDH object contains a private key by attempting a parameter export
+            // which will throw an OpenSslCryptoException if no private key is available
+            ECParameters thisKeyExplicit = ExportExplicitParameters(true);
+            bool thisIsNamed = Interop.Crypto.EcKeyHasCurveName(_key.Value);
+            ECDiffieHellmanOpenSslPublicKey? otherKey = otherPartyPublicKey as ECDiffieHellmanOpenSslPublicKey;
+            bool disposeOtherKey = false;
+
+            if (otherKey == null)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                    throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+                disposeOtherKey = true;
 
-                ThrowIfDisposed();
+                ECParameters otherParameters =
+                    thisIsNamed
+                        ? otherPartyPublicKey.ExportParameters()
+                        : otherPartyPublicKey.ExportExplicitParameters();
 
-                return ECDiffieHellmanDerivation.DeriveKeyFromHash(
-                    otherPartyPublicKey,
-                    hashAlgorithm,
-                    secretPrepend,
-                    secretAppend,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
+                otherKey = new ECDiffieHellmanOpenSslPublicKey(otherParameters);
             }
 
-            public override byte[] DeriveKeyFromHmac(
-                ECDiffieHellmanPublicKey otherPartyPublicKey,
-                HashAlgorithmName hashAlgorithm,
-                byte[]? hmacKey,
-                byte[]? secretPrepend,
-                byte[]? secretAppend)
+            bool otherIsNamed = otherKey.HasCurveName;
+
+            SafeEvpPKeyHandle? ourKey = null;
+            SafeEvpPKeyHandle? theirKey = null;
+            byte[]? rented = null;
+            int secretLength = 0;
+
+            try
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                    throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
-
-                ThrowIfDisposed();
-
-                return ECDiffieHellmanDerivation.DeriveKeyFromHmac(
-                    otherPartyPublicKey,
-                    hashAlgorithm,
-                    hmacKey,
-                    secretPrepend,
-                    secretAppend,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
-            }
-
-            public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
-            {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (prfLabel == null)
-                    throw new ArgumentNullException(nameof(prfLabel));
-                if (prfSeed == null)
-                    throw new ArgumentNullException(nameof(prfSeed));
-
-                ThrowIfDisposed();
-
-                return ECDiffieHellmanDerivation.DeriveKeyTls(
-                    otherPartyPublicKey,
-                    prfLabel,
-                    prfSeed,
-                    (pubKey, hasher) => DeriveSecretAgreement(pubKey, hasher));
-            }
-
-            /// <summary>
-            /// Get the secret agreement generated between two parties
-            /// </summary>
-            private byte[]? DeriveSecretAgreement(ECDiffieHellmanPublicKey otherPartyPublicKey, IncrementalHash? hasher)
-            {
-                Debug.Assert(otherPartyPublicKey != null);
-
-                // Ensure that this ECDH object contains a private key by attempting a parameter export
-                // which will throw an OpenSslCryptoException if no private key is available
-                ECParameters thisKeyExplicit = ExportExplicitParameters(true);
-                bool thisIsNamed = Interop.Crypto.EcKeyHasCurveName(_key.Value);
-                ECDiffieHellmanOpenSslPublicKey? otherKey = otherPartyPublicKey as ECDiffieHellmanOpenSslPublicKey;
-                bool disposeOtherKey = false;
-
-                if (otherKey == null)
+                if (otherKey.KeySize != KeySize)
                 {
-                    disposeOtherKey = true;
-
-                    ECParameters otherParameters =
-                        thisIsNamed
-                            ? otherPartyPublicKey.ExportParameters()
-                            : otherPartyPublicKey.ExportExplicitParameters();
-
-                    otherKey = new ECDiffieHellmanOpenSslPublicKey(otherParameters);
+                    throw new ArgumentException(SR.Cryptography_ArgECDHKeySizeMismatch, nameof(otherPartyPublicKey));
                 }
 
-                bool otherIsNamed = otherKey.HasCurveName;
-
-                SafeEvpPKeyHandle? ourKey = null;
-                SafeEvpPKeyHandle? theirKey = null;
-                byte[]? rented = null;
-                int secretLength = 0;
-
-                try
+                if (otherIsNamed == thisIsNamed)
                 {
-                    if (otherKey.KeySize != KeySize)
+                    ourKey = _key.UpRefKeyHandle();
+                    theirKey = otherKey.DuplicateKeyHandle();
+                }
+                else if (otherIsNamed)
+                {
+                    ourKey = _key.UpRefKeyHandle();
+
+                    using (ECOpenSsl tmp = new ECOpenSsl(otherKey.ExportExplicitParameters()))
                     {
-                        throw new ArgumentException(SR.Cryptography_ArgECDHKeySizeMismatch, nameof(otherPartyPublicKey));
+                        theirKey = tmp.UpRefKeyHandle();
+                    }
+                }
+                else
+                {
+                    using (ECOpenSsl tmp = new ECOpenSsl(thisKeyExplicit))
+                    {
+                        ourKey = tmp.UpRefKeyHandle();
                     }
 
-                    if (otherIsNamed == thisIsNamed)
-                    {
-                        ourKey = _key.UpRefKeyHandle();
-                        theirKey = otherKey.DuplicateKeyHandle();
-                    }
-                    else if (otherIsNamed)
-                    {
-                        ourKey = _key.UpRefKeyHandle();
+                    theirKey = otherKey.DuplicateKeyHandle();
+                }
 
-                        using (ECOpenSsl tmp = new ECOpenSsl(otherKey.ExportExplicitParameters()))
-                        {
-                            theirKey = tmp.UpRefKeyHandle();
-                        }
+                using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(ourKey, theirKey, out uint secretLengthU))
+                {
+                    if (ctx == null || ctx.IsInvalid || secretLengthU == 0 || secretLengthU > int.MaxValue)
+                    {
+                        throw Interop.Crypto.CreateOpenSslCryptographicException();
+                    }
+
+                    secretLength = (int)secretLengthU;
+
+                    // Indicate that secret can hold stackallocs from nested scopes
+                    Span<byte> secret = stackalloc byte[0];
+
+                    // Arbitrary limit. But it covers secp521r1, which is the biggest common case.
+                    const int StackAllocMax = 66;
+
+                    if (secretLength > StackAllocMax)
+                    {
+                        rented = CryptoPool.Rent(secretLength);
+                        secret = new Span<byte>(rented, 0, secretLength);
                     }
                     else
                     {
-                        using (ECOpenSsl tmp = new ECOpenSsl(thisKeyExplicit))
-                        {
-                            ourKey = tmp.UpRefKeyHandle();
-                        }
-
-                        theirKey = otherKey.DuplicateKeyHandle();
+                        secret = stackalloc byte[secretLength];
                     }
 
-                    using (SafeEvpPKeyCtxHandle ctx = Interop.Crypto.EvpPKeyCtxCreate(ourKey, theirKey, out uint secretLengthU))
+                    Interop.Crypto.EvpPKeyDeriveSecretAgreement(ctx, secret);
+
+                    if (hasher == null)
                     {
-                        if (ctx == null || ctx.IsInvalid || secretLengthU == 0 || secretLengthU > int.MaxValue)
-                        {
-                            throw Interop.Crypto.CreateOpenSslCryptographicException();
-                        }
-
-                        secretLength = (int)secretLengthU;
-
-                        // Indicate that secret can hold stackallocs from nested scopes
-                        Span<byte> secret = stackalloc byte[0];
-
-                        // Arbitrary limit. But it covers secp521r1, which is the biggest common case.
-                        const int StackAllocMax = 66;
-
-                        if (secretLength > StackAllocMax)
-                        {
-                            rented = CryptoPool.Rent(secretLength);
-                            secret = new Span<byte>(rented, 0, secretLength);
-                        }
-                        else
-                        {
-                            secret = stackalloc byte[secretLength];
-                        }
-
-                        Interop.Crypto.EvpPKeyDeriveSecretAgreement(ctx, secret);
-
-                        if (hasher == null)
-                        {
-                            return secret.ToArray();
-                        }
-                        else
-                        {
-                            hasher.AppendData(secret);
-                            return null;
-                        }
+                        return secret.ToArray();
                     }
-                }
-                finally
-                {
-                    theirKey?.Dispose();
-                    ourKey?.Dispose();
-
-                    if (disposeOtherKey)
+                    else
                     {
-                        otherKey.Dispose();
-                    }
-
-                    if (rented != null)
-                    {
-                        CryptoPool.Return(rented, secretLength);
+                        hasher.AppendData(secret);
+                        return null;
                     }
                 }
             }
+            finally
+            {
+                theirKey?.Dispose();
+                ourKey?.Dispose();
+
+                if (disposeOtherKey)
+                {
+                    otherKey.Dispose();
+                }
+
+                if (rented != null)
+                {
+                    CryptoPool.Return(rented, secretLength);
+                }
+            }
         }
-#if INTERNAL_ASYMMETRIC_IMPLEMENTATIONS
     }
-#endif
 }

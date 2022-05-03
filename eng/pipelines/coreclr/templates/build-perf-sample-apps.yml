@@ -35,19 +35,6 @@ steps:
     - script: rm -r -f $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp
       workingDirectory: $(Build.SourcesDirectory)/artifacts/bin
       displayName: clean bindir
-    - script: make run MONO_ARCH=arm64 DEPLOY_AND_RUN=false RUNTIME_COMPONENTS=diagnostics_tracing
-      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/Android
-      displayName: Build HelloAndroid sample app
-    - script: mv $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/publish/apk/bin/HelloAndroid.apk $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/publish/apk/bin/HelloAndroidWithDiag.apk
-    - template: /eng/pipelines/common/upload-artifact-step.yml
-      parameters:
-        rootFolder: $(Build.SourcesDirectory)/artifacts/bin/AndroidSampleApp/arm64/Release/android-arm64/publish/apk/bin/HelloAndroidWithDiag.apk
-        includeRootFolder: true
-        displayName: Android Mono Artifacts With Diag
-        artifactName: AndroidMonoWithDiagarm64
-        archiveExtension: '.tar.gz'
-        archiveType: tar
-        tarCompression: gz
     
   - ${{ if eq(parameters.osGroup, 'iOS') }}:
     - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false

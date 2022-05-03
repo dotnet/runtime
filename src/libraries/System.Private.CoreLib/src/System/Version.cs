@@ -265,10 +265,7 @@ namespace System
 
         public static Version Parse(string input)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             return ParseVersion(input.AsSpan(), throwOnFailure: true)!;
         }

@@ -4,18 +4,10 @@
     <CLRTestKind>BuildAndRun</CLRTestKind>
     <CLRTestPriority>0</CLRTestPriority>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <NativeAotProjectLines>
-      <![CDATA[
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
     <NativeLib>Shared</NativeLib>
   </PropertyGroup>
-      ]]>
-    </NativeAotProjectLines>
 
+  <PropertyGroup>
     <CLRTestBatchPreCommands><![CDATA[
 $(CLRTestBatchPreCommands)
 mkdir native 2>nul
@@ -33,6 +25,6 @@ cp SharedLibraryDriver native/SharedLibrary
     <Compile Include="SharedLibrary.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

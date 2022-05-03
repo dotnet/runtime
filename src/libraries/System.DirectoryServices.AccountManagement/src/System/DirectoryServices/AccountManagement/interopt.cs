@@ -25,7 +25,9 @@ namespace System.DirectoryServices.AccountManagement
         {
             try
             {
-                return Interop.Activeds.ADsOpenObject(path, userName, password, flags, ref iid, out ppObject);
+                int hr = Interop.Activeds.ADsOpenObject(path, userName, password, flags, ref iid, out IntPtr ppObjPtr);
+                ppObject = Marshal.GetObjectForIUnknown(ppObjPtr);
+                return hr;
             }
             catch (EntryPointNotFoundException)
             {

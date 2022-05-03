@@ -12,7 +12,7 @@ namespace Microsoft.NET.HostModel.ComHost
     /// We do the reading ourselves instead of calling into the OS so we don't have to worry about the type library's
     /// dependencies being discoverable on disk.
     /// </summary>
-    internal class TypeLibReader
+    internal sealed class TypeLibReader
     {
         private byte[] tlbBytes;
 
@@ -36,7 +36,7 @@ namespace Microsoft.NET.HostModel.ComHost
         private const int NumTablesToSkip = 5;
         private const int SizeOfTableHeader = sizeof(int) * 4;
 
-        private Guid FindGuid(ReadOnlySpan<byte> fileContents)
+        private static Guid FindGuid(ReadOnlySpan<byte> fileContents)
         {
             checked
             {

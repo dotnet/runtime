@@ -5,7 +5,6 @@
     <CLRTestPriority>0</CLRTestPriority>
     <CLRTestTargetUnsupported Condition="'$(TargetArchitecture)' != 'x64'">true</CLRTestTargetUnsupported>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <IlcDisableReflection>true</IlcDisableReflection>
     <DefineConstants>$(DefineConstants);BASELINE_INTRINSICS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>

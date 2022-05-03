@@ -11,8 +11,10 @@ DebuggerTests.EvaluateOnCallFrameTests
 DebuggerTests.ExceptionTests
 DebuggerTests.GetPropertiesTests
 DebuggerTests.HarnessTests
+DebuggerTests.HotReloadTests
 DebuggerTests.MonoJsTests
 DebuggerTests.PointerTests
 DebuggerTests.SetVariableValueTests
 DebuggerTests.MiscTests
 DebuggerTests.SteppingTests
+DebuggerTests.SetNextIpTests

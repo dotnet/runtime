@@ -209,15 +209,8 @@ GetFullMethodNameFromMetadata(IMDInternalImport* mdImport,
 
     LPCUTF8 methodName;
     IfFailRet(mdImport->GetNameOfMethodDef(methodToken, &methodName));
-// Review conversion of size_t to ULONG32.
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable:4267)
-#endif
+
     len = strlen(methodName);
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
     if (len >= bufferChars)
     {
         return E_OUTOFMEMORY;
@@ -3290,6 +3283,10 @@ ClrDataAccess::QueryInterface(THIS_
     {
         ifaceRet = static_cast<ISOSDacInterface11*>(this);
     }
+    else if (IsEqualIID(interfaceId, __uuidof(ISOSDacInterface12)))
+    {
+        ifaceRet = static_cast<ISOSDacInterface12*>(this);
+    }
     else
     {
         *iface = NULL;
@@ -4384,7 +4381,7 @@ ClrDataAccess::TranslateExceptionRecordToNotification(
     ClrDataModule* pubModule = NULL;
     ClrDataMethodInstance* pubMethodInst = NULL;
     ClrDataExceptionState* pubExState = NULL;
-    GcEvtArgs pubGcEvtArgs;
+    GcEvtArgs pubGcEvtArgs = {};
     ULONG32 notifyType = 0;
     DWORD catcherNativeOffset = 0;
     TADDR nativeCodeLocation = NULL;
@@ -5498,7 +5495,7 @@ HRESULT
 ClrDataAccess::Initialize(void)
 {
     HRESULT hr;
-    CLRDATA_ADDRESS base;
+    CLRDATA_ADDRESS base = { 0 };
 
     //
     // We do not currently support cross-platform
@@ -5517,6 +5514,8 @@ ClrDataAccess::Initialize(void)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM;
     #elif defined(TARGET_ARM64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM64;
+    #elif defined(TARGET_LOONGARCH64)
+        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64;
     #else
         #error Unknown Processor.
     #endif
@@ -6465,7 +6464,7 @@ ClrDataAccess::GetMetaDataFileInfoFromPEFile(PEAssembly *pPEAssembly,
 {
     SUPPORTS_DAC_HOST_ONLY;
     PEImage *mdImage = NULL;
-    PEImageLayout   *layout;
+    PEImageLayout   *layout = NULL;
     IMAGE_DATA_DIRECTORY *pDir = NULL;
     COUNT_T uniPathChars = 0;
 
@@ -6541,61 +6540,6 @@ bool ClrDataAccess::GetILImageInfoFromNgenPEFile(PEAssembly *pPEAssembly,
 
     return true;
 }
-
-#if defined(FEATURE_CORESYSTEM)
-/* static */
-// We extract "ni.dll from the NGEN image name to obtain the IL image name.
-// In the end we add given ilExtension.
-// This dependecy is based on Apollo installer behavior.
-bool ClrDataAccess::GetILImageNameFromNgenImage( LPCWSTR ilExtension,
-                                                 _Out_writes_(cchFilePath) LPWSTR wszFilePath,
-                                                 const DWORD cchFilePath)
-{
-    if (wszFilePath == NULL || cchFilePath == 0)
-    {
-        return false;
-    }
-
-    _wcslwr_s(wszFilePath, cchFilePath);
-    // Find the "ni.dll" extension.
-    // If none exists use NGEN image name.
-    //
-    const WCHAR* ngenExtension = W("ni.dll");
-
-    if (wcslen(ilExtension) <= wcslen(ngenExtension))
-    {
-        LPWSTR  wszFileExtension = wcsstr(wszFilePath, ngenExtension);
-        if (wszFileExtension != 0)
-        {
-            LPWSTR  wszNextFileExtension = wszFileExtension;
-            // Find last occurrence
-            do
-            {
-                wszFileExtension = wszNextFileExtension;
-                wszNextFileExtension = wcsstr(wszFileExtension + 1, ngenExtension);
-            } while (wszNextFileExtension != 0);
-
-            // Overwrite ni.dll with ilExtension
-            if (!memcpy_s(wszFileExtension,
-                            wcslen(ngenExtension)*sizeof(WCHAR),
-                            ilExtension,
-                            wcslen(ilExtension)*sizeof(WCHAR)))
-            {
-                wszFileExtension[wcslen(ilExtension)] = '\0';
-                return true;
-            }
-        }
-    }
-
-    //Use ngen filename if there is no ".ni"
-    if (wcsstr(wszFilePath, W(".ni")) == 0)
-    {
-        return true;
-    }
-
-    return false;
-}
-#endif // FEATURE_CORESYSTEM
 
 void *
 ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
@@ -6705,7 +6649,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
             goto ErrExit;
         }
 
-#if defined(FEATURE_CORESYSTEM)
         const WCHAR* ilExtension = W("dll");
         WCHAR ngenImageName[MAX_LONGPATH] = {0};
         if (wcscpy_s(ngenImageName, ARRAY_SIZE(ngenImageName), uniPath) != 0)
@@ -6716,12 +6659,6 @@ ClrDataAccess::GetMetaDataFromHost(PEAssembly* pPEAssembly,
         {
             goto ErrExit;
         }
-        // Transform NGEN image name into IL Image name
-        if (!GetILImageNameFromNgenImage(ilExtension, uniPath, ARRAY_SIZE(uniPath)))
-        {
-            goto ErrExit;
-        }
-#endif//FEATURE_CORESYSTEM
 
         // RVA size in ngen image and IL image is the same. Because the only
         // different is in RVA. That is 4 bytes column fixed.
@@ -6942,11 +6879,6 @@ bool ClrDataAccess::TargetConsistencyAssertsEnabled()
     LIMITED_METHOD_DAC_CONTRACT;
     return m_fEnableTargetConsistencyAsserts;
 }
-
-#ifdef FEATURE_CORESYSTEM
-#define ctime_s _ctime32_s
-#define time_t __time32_t
-#endif
 
 //
 // VerifyDlls - Validate that the mscorwks in the target matches this version of mscordacwks
@@ -7503,34 +7435,8 @@ BOOL OutOfProcessExceptionEventGetProcessIdAndThreadId(HANDLE hProcess, HANDLE h
     *pPId = (DWORD)(SIZE_T)hProcess;
     *pThreadId = (DWORD)(SIZE_T)hThread;
 #else
-#if !defined(FEATURE_CORESYSTEM)
-    HMODULE hKernel32 = WszGetModuleHandle(W("kernel32.dll"));
-#else
-	HMODULE hKernel32 = WszGetModuleHandle(W("api-ms-win-core-processthreads-l1-1-1.dll"));
-#endif
-    if (hKernel32 == NULL)
-    {
-        return FALSE;
-    }
-
-    typedef WINBASEAPI DWORD (WINAPI GET_PROCESSID_OF_THREAD)(HANDLE);
-    GET_PROCESSID_OF_THREAD * pGetProcessIdOfThread;
-
-    typedef WINBASEAPI DWORD (WINAPI GET_THREADID)(HANDLE);
-    GET_THREADID * pGetThreadId;
-
-    pGetProcessIdOfThread = (GET_PROCESSID_OF_THREAD *)GetProcAddress(hKernel32, "GetProcessIdOfThread");
-    pGetThreadId = (GET_THREADID *)GetProcAddress(hKernel32, "GetThreadId");
-
-    // OOP callbacks are used on Win7 or later.   We should have having below two APIs available.
-    _ASSERTE((pGetProcessIdOfThread != NULL) && (pGetThreadId != NULL));
-    if ((pGetProcessIdOfThread == NULL) || (pGetThreadId == NULL))
-    {
-        return FALSE;
-    }
-
-    *pPId = (*pGetProcessIdOfThread)(hThread);
-    *pThreadId = (*pGetThreadId)(hThread);
+    *pPId = GetProcessIdOfThread(hThread);
+    *pThreadId = GetThreadId(hThread);
 #endif // TARGET_UNIX
     return TRUE;
 }

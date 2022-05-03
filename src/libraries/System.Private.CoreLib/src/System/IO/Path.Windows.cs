@@ -27,11 +27,20 @@ namespace System.IO
             (char)31
         };
 
+        private static bool ExistsCore(string fullPath, out bool isDirectory)
+        {
+            Interop.Kernel32.WIN32_FILE_ATTRIBUTE_DATA data = default;
+            int errorCode = FileSystem.FillAttributeInfo(fullPath, ref data, returnErrorOnNotFound: true);
+            bool result = (errorCode == Interop.Errors.ERROR_SUCCESS) && (data.dwFileAttributes != -1);
+            isDirectory = result && (data.dwFileAttributes & Interop.Kernel32.FileAttributes.FILE_ATTRIBUTE_DIRECTORY) != 0;
+
+            return result;
+        }
+
         // Expands the given path to a fully qualified path.
         public static string GetFullPath(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            ArgumentNullException.ThrowIfNull(path);
 
             // If the path would normalize to string empty, we'll consider it empty
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
@@ -48,11 +57,8 @@ namespace System.IO
 
         public static string GetFullPath(string path, string basePath)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
-            if (basePath == null)
-                throw new ArgumentNullException(nameof(basePath));
+            ArgumentNullException.ThrowIfNull(path);
+            ArgumentNullException.ThrowIfNull(basePath);
 
             if (!IsPathFullyQualified(basePath))
                 throw new ArgumentException(SR.Arg_BasePathNotFullyQualified, nameof(basePath));

@@ -242,10 +242,14 @@ namespace System.Data.Tests.SqlTypes
             SqlBoolean sqlFalse2 = new SqlBoolean(false);
 
             Assert.True(_sqlTrue.Equals(sqlTrue2));
+            Assert.True(_sqlTrue.Equals((object)sqlTrue2));
             Assert.True(_sqlFalse.Equals(sqlFalse2));
+            Assert.True(_sqlFalse.Equals((object)sqlFalse2));
 
             Assert.False(_sqlTrue.Equals(_sqlFalse));
+            Assert.False(_sqlTrue.Equals((object)_sqlFalse));
             Assert.False(_sqlFalse.Equals(_sqlTrue));
+            Assert.False(_sqlFalse.Equals((object)_sqlTrue));
 
             Assert.False(_sqlTrue.Equals(SqlBoolean.Null));
             Assert.False(_sqlFalse.Equals(SqlBoolean.Null));

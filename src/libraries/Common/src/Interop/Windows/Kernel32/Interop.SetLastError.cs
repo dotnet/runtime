@@ -7,7 +7,7 @@ internal partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32)]
+        [LibraryImport(Libraries.Kernel32)]
         [SuppressGCTransition]
         internal static partial void SetLastError(int errorCode);
     }

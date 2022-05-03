@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace System.Drawing.Imaging
@@ -391,5 +392,23 @@ namespace System.Drawing.Imaging
                 SetMatrix(tempMatrix);
             }
         }
+
+        internal ref float GetPinnableReference() => ref _matrix00;
+
+#if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(ColorMatrix), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+        internal unsafe struct PinningMarshaller
+        {
+            private readonly ColorMatrix _managed;
+            public PinningMarshaller(ColorMatrix managed)
+            {
+                _managed = managed;
+            }
+
+            public ref float GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<float>() : ref _managed.GetPinnableReference());
+
+            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
+        }
+#endif
     }
 }

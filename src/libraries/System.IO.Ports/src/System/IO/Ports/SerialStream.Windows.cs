@@ -558,10 +558,7 @@ namespace System.IO.Ports
         internal SerialStream(string portName, int baudRate, Parity parity, int dataBits, StopBits stopBits, int readTimeout, int writeTimeout, Handshake handshake,
             bool dtrEnable, bool rtsEnable, bool discardNull, byte parityReplace)
         {
-            if (portName == null)
-            {
-                throw new ArgumentNullException(nameof(portName));
-            }
+            ArgumentNullException.ThrowIfNull(portName);
 
             if (!portName.StartsWith("COM", StringComparison.OrdinalIgnoreCase) ||
                 !uint.TryParse(
@@ -1808,7 +1805,7 @@ namespace System.IO.Ports
         // This is an internal object implementing IAsyncResult with fields
         // for all of the relevant data necessary to complete the IO operation.
         // This is used by AsyncFSCallback and all async methods.
-        internal unsafe sealed class SerialStreamAsyncResult : IAsyncResult
+        internal sealed unsafe class SerialStreamAsyncResult : IAsyncResult
         {
             // User code callback
             internal AsyncCallback _userCallback;

@@ -45,14 +45,17 @@ static bool DetectCPUFeatures();
 
 extern RhConfig * g_pRhConfig;
 
-EXTERN_C bool g_fHasFastFxsave = false;
+EXTERN_C bool g_fHasFastFxsave;
+bool g_fHasFastFxsave = false;
 
 CrstStatic g_CastCacheLock;
 CrstStatic g_ThunkPoolLock;
 
 #if defined(HOST_X86) || defined(HOST_AMD64) || defined(HOST_ARM64)
 // This field is inspected from the generated code to determine what intrinsics are available.
-EXTERN_C int g_cpuFeatures = 0;
+EXTERN_C int g_cpuFeatures;
+int g_cpuFeatures = 0;
+
 // This field is defined in the generated code and sets the ISA expectations.
 EXTERN_C int g_requiredCpuFeatures;
 #endif
@@ -258,9 +261,10 @@ bool DetectCPUFeatures()
 
     if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
     {
-        return false;
+        PalPrintFatalError("\nThe required instruction sets are not supported by the current CPU.\n");
+        RhFailFast();
     }
-#endif // HOST_X86 || HOST_AMD64
+#endif // HOST_X86|| HOST_AMD64 || HOST_ARM64
 
     return true;
 }

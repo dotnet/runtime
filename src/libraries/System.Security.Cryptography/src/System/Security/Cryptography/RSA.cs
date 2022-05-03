@@ -64,8 +64,11 @@ namespace System.Security.Cryptography
         public virtual byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) => throw DerivedClassMustOverride();
         public virtual bool VerifyHash(byte[] hash, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding) => throw DerivedClassMustOverride();
 
-        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) => throw DerivedClassMustOverride();
-        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) => throw DerivedClassMustOverride();
+        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
+
+        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
+            HashOneShotHelpers.HashData(hashAlgorithm, data);
 
         public virtual bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
@@ -99,6 +102,14 @@ namespace System.Security.Cryptography
 
         protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
+            // If this is an algorithm that we ship, then we can use the hash one-shot.
+            if (this is IRuntimeAlgorithm)
+            {
+                return HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
+            }
+
+            // If this is not our algorithm implementation, for compatibility purposes we need to
+            // call out to the HashData virtual.
             byte[] result;
             // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
@@ -153,10 +164,7 @@ namespace System.Security.Cryptography
 
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
+            ArgumentNullException.ThrowIfNull(data);
 
             return SignData(data, 0, data.Length, hashAlgorithm, padding);
         }
@@ -168,16 +176,13 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             byte[] hash = HashData(data, offset, count, hashAlgorithm);
             return SignHash(hash, hashAlgorithm, padding);
@@ -185,12 +190,9 @@ namespace System.Security.Cryptography
 
         public virtual byte[] SignData(Stream data, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             byte[] hash = HashData(data, hashAlgorithm);
             return SignHash(hash, hashAlgorithm, padding);
@@ -198,14 +200,8 @@ namespace System.Security.Cryptography
 
         public virtual bool TrySignData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding, out int bytesWritten)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-            {
-                throw HashAlgorithmNameNullOrEmpty();
-            }
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             if (TryHashData(data, destination, hashAlgorithm, out int hashLength) &&
                 TrySignHash(destination.Slice(0, hashLength), destination, hashAlgorithm, padding, out bytesWritten))
@@ -219,8 +215,7 @@ namespace System.Security.Cryptography
 
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
 
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm, padding);
         }
@@ -233,18 +228,14 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
                 throw new ArgumentOutOfRangeException(nameof(count));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(signature);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             byte[] hash = HashData(data, offset, count, hashAlgorithm);
             return VerifyHash(hash, signature, hashAlgorithm, padding);
@@ -252,14 +243,10 @@ namespace System.Security.Cryptography
 
         public bool VerifyData(Stream data, byte[] signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw HashAlgorithmNameNullOrEmpty();
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(signature);
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             byte[] hash = HashData(data, hashAlgorithm);
             return VerifyHash(hash, signature, hashAlgorithm, padding);
@@ -267,14 +254,8 @@ namespace System.Security.Cryptography
 
         public virtual bool VerifyData(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-            {
-                throw HashAlgorithmNameNullOrEmpty();
-            }
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
+            ArgumentNullException.ThrowIfNull(padding);
 
             for (int i = 256; ; i = checked(i * 2))
             {
@@ -402,8 +383,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
-                throw new ArgumentNullException(nameof(pbeParameters));
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
@@ -426,8 +406,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
-                throw new ArgumentNullException(nameof(pbeParameters));
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
@@ -1015,8 +994,5 @@ namespace System.Security.Cryptography
 
         public override string? KeyExchangeAlgorithm => "RSA";
         public override string SignatureAlgorithm => "RSA";
-
-        private static Exception HashAlgorithmNameNullOrEmpty() =>
-            new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, "hashAlgorithm");
     }
 }

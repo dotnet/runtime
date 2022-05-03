@@ -210,6 +210,12 @@ namespace System.Data
                 }
             }
 
+            if (remotingFormat == SerializationFormat.Binary &&
+                !LocalAppContextSwitches.AllowUnsafeSerializationFormatBinary)
+            {
+                throw ExceptionBuilder.SerializationFormatBinaryNotSupported();
+            }
+
             DeserializeDataTable(info, context, isSingleTable, remotingFormat);
         }
 
@@ -273,7 +279,7 @@ namespace System.Data
                 }
 
                 info.AddValue(KEY_XMLSCHEMA, _dataSet!.GetXmlSchemaForRemoting(this));
-                info.AddValue(KEY_XMLDIFFGRAM, _dataSet.GetRemotingDiffGram(this));
+                info.AddValue(KEY_XMLDIFFGRAM, DataSet.GetRemotingDiffGram(this));
 
                 if (fCreatedDataSet)
                 {
@@ -848,7 +854,7 @@ namespace System.Data
         }
 
         // Constructs the RowState from the two bits in the bitarray.
-        private DataRowState ConvertToRowState(BitArray bitStates, int bitIndex)
+        private static DataRowState ConvertToRowState(BitArray bitStates, int bitIndex)
         {
             Debug.Assert(bitStates != null);
             Debug.Assert(bitStates.Length > bitIndex);
@@ -1127,10 +1133,22 @@ namespace System.Data
             get { return _remotingFormat; }
             set
             {
-                if (value != SerializationFormat.Binary && value != SerializationFormat.Xml)
+                switch (value)
                 {
-                    throw ExceptionBuilder.InvalidRemotingFormat(value);
+                    case SerializationFormat.Xml:
+                        break;
+
+                    case SerializationFormat.Binary:
+                        if (LocalAppContextSwitches.AllowUnsafeSerializationFormatBinary)
+                        {
+                            break;
+                        }
+                        throw ExceptionBuilder.SerializationFormatBinaryNotSupported();
+
+                    default:
+                        throw ExceptionBuilder.InvalidRemotingFormat(value);
                 }
+
                 // table can not have different format than its dataset, unless it is stand alone datatable
                 if (DataSet != null && value != DataSet.RemotingFormat)
                 {
@@ -1195,13 +1213,6 @@ namespace System.Data
             if (_dataSet != dataSet)
             {
                 _dataSet = dataSet;
-
-                // Inform all the columns of the dataset being set.
-                DataColumnCollection cols = Columns;
-                for (int i = 0; i < cols.Count; i++)
-                {
-                    cols[i].OnSetDataSet();
-                }
 
                 if (DataSet != null)
                 {
@@ -2106,7 +2117,7 @@ namespace System.Data
             set { _minOccurs = value; }
         }
 
-        internal void SetKeyValues(DataKey key, object[] keyValues, int record)
+        internal static void SetKeyValues(DataKey key, object[] keyValues, int record)
         {
             for (int i = 0; i < keyValues.Length; i++)
             {
@@ -2331,7 +2342,7 @@ namespace System.Data
             }
         }
 
-        private DataTable IncrementalCloneTo(DataTable sourceTable, DataTable targetTable)
+        private static DataTable IncrementalCloneTo(DataTable sourceTable, DataTable targetTable)
         {
             foreach (DataColumn dc in sourceTable.Columns)
             {
@@ -2811,7 +2822,7 @@ namespace System.Data
             }
         }
 
-        internal void CheckNotModifying(DataRow row)
+        internal static void CheckNotModifying(DataRow row)
         {
             if (row._tempRecord != -1)
             {
@@ -2966,7 +2977,7 @@ namespace System.Data
 
         bool IListSource.ContainsListCollection => false;
 
-        internal void CopyRow(DataTable table, DataRow row)
+        internal static void CopyRow(DataTable table, DataRow row)
         {
             int oldRecord = -1, newRecord = -1;
 
@@ -3057,7 +3068,7 @@ namespace System.Data
             return _recordManager[index.GetRecord(range.Min)];
         }
 
-        internal string FormatSortString(IndexField[] indexDesc)
+        internal static string FormatSortString(IndexField[] indexDesc)
         {
             var builder = new StringBuilder();
             foreach (IndexField field in indexDesc)
@@ -3359,7 +3370,7 @@ namespace System.Data
             }
         }
 
-        private IndexField[] NewIndexDesc(DataKey key)
+        private static IndexField[] NewIndexDesc(DataKey key)
         {
             Debug.Assert(key.HasValue);
             IndexField[] indexDesc = key.GetIndexDesc();
@@ -3915,7 +3926,7 @@ namespace System.Data
             return positionIndexes;
         }
 
-        internal void SilentlySetValue(DataRow dr, DataColumn dc, DataRowVersion version, object newValue)
+        internal static void SilentlySetValue(DataRow dr, DataColumn dc, DataRowVersion version, object newValue)
         {
             // get record for version
             int record = dr.GetRecordFromVersion(version);
@@ -4827,7 +4838,7 @@ namespace System.Data
             return Rows.Add(values);
         }
 
-        internal bool UpdatingCurrent(DataRow row, DataRowAction action)
+        internal static bool UpdatingCurrent(DataRow row, DataRowAction action)
         {
             return (action == DataRowAction.Add || action == DataRowAction.Change ||
                    action == DataRowAction.Rollback || action == DataRowAction.ChangeOriginal ||
@@ -5519,7 +5530,7 @@ namespace System.Data
             return CheckForClosureOnExpressionTables(tableList);
         }
 
-        private bool CheckForClosureOnExpressionTables(List<DataTable> tableList)
+        private static bool CheckForClosureOnExpressionTables(List<DataTable> tableList)
         {
             Debug.Assert(tableList != null, "tableList shouldnot be null");
 
@@ -6254,7 +6265,7 @@ namespace System.Data
             }
         }
 
-        internal void ReadEndElement(XmlReader reader)
+        internal static void ReadEndElement(XmlReader reader)
         {
             while (reader.NodeType == XmlNodeType.Whitespace)
             {
@@ -6269,14 +6280,14 @@ namespace System.Data
                 reader.ReadEndElement();
             }
         }
-        internal void ReadXDRSchema(XmlReader reader)
+        internal static void ReadXDRSchema(XmlReader reader)
         {
             XmlDocument xdoc = new XmlDocument(); // we may need this to infer the schema
             xdoc.ReadNode(reader);
             //consume and ignore it - No support
         }
 
-        internal bool MoveToElement(XmlReader reader, int depth)
+        internal static bool MoveToElement(XmlReader reader, int depth)
         {
             while (!reader.EOF && reader.NodeType != XmlNodeType.EndElement && reader.NodeType != XmlNodeType.Element && reader.Depth > depth)
             {
@@ -6650,7 +6661,7 @@ namespace System.Data
                 }
             }
         }
-        private void CreateRelationList(List<DataTable> tableList, List<DataRelation> relationList)
+        private static void CreateRelationList(List<DataTable> tableList, List<DataRelation> relationList)
         {
             foreach (DataTable table in tableList)
             {
@@ -6686,7 +6697,9 @@ namespace System.Data
             return type;
         }
 
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
         XmlSchema? IXmlSerializable.GetSchema() => GetXmlSchema();
+#pragma warning restore IL2026
 
         [RequiresUnreferencedCode(DataSet.RequiresUnreferencedCodeMessage)]
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2046:UnrecognizedReflectionPattern",
@@ -6723,7 +6736,9 @@ namespace System.Data
                 fNormalization = textReader.Normalized;
                 textReader.Normalized = false;
             }
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             ReadXmlSerializableInternal(reader);
+#pragma warning restore IL2026
 
             if (textReader != null)
             {
@@ -6739,7 +6754,9 @@ namespace System.Data
 
         void IXmlSerializable.WriteXml(XmlWriter writer)
         {
+#pragma warning disable IL2026 // suppressed in ILLink.Suppressions.LibraryBuild.xml
             WriteXmlInternal(writer);
+#pragma warning restore IL2026
         }
 
         [RequiresUnreferencedCode("DataTable.WriteXml uses XmlSerialization underneath which is not trimming safe. Members from serialized types may be trimmed if not referenced directly.")]

@@ -63,10 +63,7 @@ namespace System.Runtime.Serialization
         // is set to true if this is the first time that we have seen this object.
         public virtual long GetId(object obj, out bool firstTime)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             bool found;
             int pos = FindElement(obj, out found);
@@ -98,10 +95,7 @@ namespace System.Runtime.Serialization
         // we return that id, otherwise we return 0.
         public virtual long HasId(object obj, out bool firstTime)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             bool found;
             int pos = FindElement(obj, out found);

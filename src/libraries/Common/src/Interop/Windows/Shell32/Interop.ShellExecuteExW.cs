@@ -50,7 +50,8 @@ internal static partial class Interop
         internal const uint SEE_MASK_NOCLOSEPROCESS = 0x00000040;
         internal const uint SEE_MASK_FLAG_NO_UI = 0x00000400;
 
-        [GeneratedDllImport(Libraries.Shell32, CharSet = CharSet.Unicode, ExactSpelling = true, SetLastError = true)]
+        [LibraryImport(Libraries.Shell32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static unsafe partial bool ShellExecuteExW(
             SHELLEXECUTEINFO* pExecInfo);
     }

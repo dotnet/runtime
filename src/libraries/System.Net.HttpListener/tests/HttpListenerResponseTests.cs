@@ -56,7 +56,7 @@ namespace System.Net.Tests
         }
     }
 
-    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", RuntimeConfiguration.Checked)]
+    [SkipOnCoreClr("System.Net.Tests may timeout in stress configurations", ~RuntimeConfiguration.Release)]
     [ActiveIssue("https://github.com/dotnet/runtime/issues/2391", TestRuntimes.Mono)]
     [ConditionalClass(typeof(PlatformDetection), nameof(PlatformDetection.IsNotWindowsNanoServer))] // httpsys component missing in Nano.
     public class HttpListenerResponseTests : HttpListenerResponseTestBase
@@ -436,6 +436,7 @@ namespace System.Net.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.FreeBSD, "unreliable on FreeBSD")]
         public async Task AddLongHeader_DoesNotThrow()
         {
             string longString = new string('a', 65536);

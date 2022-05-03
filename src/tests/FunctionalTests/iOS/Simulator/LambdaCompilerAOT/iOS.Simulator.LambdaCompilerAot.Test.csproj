@@ -5,7 +5,7 @@
     <MonoForceInterpreter>false</MonoForceInterpreter>
     <RunAOTCompilation>true</RunAOTCompilation>
     <TestRuntime>true</TestRuntime>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <TargetOS Condition="'$(TargetOS)' == ''">iOSSimulator</TargetOS>
     <MainLibraryFileName>iOS.Simulator.LambdaCompilerAot.Test.dll</MainLibraryFileName>
     <IncludesTestRunner>false</IncludesTestRunner>

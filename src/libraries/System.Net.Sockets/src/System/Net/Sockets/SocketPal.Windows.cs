@@ -667,7 +667,7 @@ namespace System.Net.Sockets
                 handle,
                 SocketOptionLevel.IPv6,
                 optionName,
-                ref ipmr,
+                ipmr,
                 Interop.Winsock.IPv6MulticastRequest.Size);
             return errorCode == SocketError.SocketError ? GetLastSocketError() : SocketError.Success;
         }

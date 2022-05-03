@@ -57,11 +57,12 @@ struct _MonoClass {
 	guint packing_size    : 4;
 	guint ghcimpl         : 1; /* class has its own GetHashCode impl */
 	guint has_finalize    : 1; /* class has its own Finalize impl */
-	/* next byte */
 	guint delegate        : 1; /* class is a Delegate */
+	/* next byte */
 	guint gc_descr_inited : 1; /* gc_descr is initialized */
 	guint has_cctor       : 1; /* class has a cctor */
 	guint has_references  : 1; /* it has GC-tracked references in the instance */
+	guint has_ref_fields  : 1; /* it has byref fields */
 	guint has_static_refs : 1; /* it has static fields that are GC-tracked */
 	guint no_special_static_fields : 1; /* has no thread/context static fields */
 	/* directly or indirectly derives from ComImport attributed class.

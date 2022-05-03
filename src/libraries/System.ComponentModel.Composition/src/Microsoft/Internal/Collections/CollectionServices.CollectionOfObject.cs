@@ -11,15 +11,8 @@ namespace Microsoft.Internal.Collections
     {
         public static ICollection<object> GetCollectionWrapper(Type itemType, object collectionObject)
         {
-            if (itemType == null)
-            {
-                throw new ArgumentNullException(nameof(itemType));
-            }
-
-            if (collectionObject == null)
-            {
-                throw new ArgumentNullException(nameof(collectionObject));
-            }
+            ArgumentNullException.ThrowIfNull(itemType);
+            ArgumentNullException.ThrowIfNull(collectionObject);
 
             var underlyingItemType = itemType.UnderlyingSystemType;
 

@@ -2,13 +2,14 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-OSX;$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)</TargetFrameworks>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
+  <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetsAnyOS)' == 'true'">SR.SystemNetPing_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
-    <TargetsApple Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">true</TargetsApple>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <GeneratePlatformNotSupportedAssemblyMessage Condition="'$(TargetPlatformIdentifier)' == ''">SR.SystemNetPing_PlatformNotSupported</GeneratePlatformNotSupportedAssemblyMessage>
+    <IsApplePlatform Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">true</IsApplePlatform>
   </PropertyGroup>
-  <ItemGroup Condition="'$(TargetsAnyOS)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != ''">
     <Compile Include="System\Net\NetworkInformation\IPStatus.cs" />
     <Compile Include="System\Net\NetworkInformation\NetEventSource.Ping.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.cs" />
@@ -16,6 +17,9 @@
     <Compile Include="System\Net\NetworkInformation\PingException.cs" />
     <Compile Include="System\Net\NetworkInformation\PingOptions.cs" />
     <Compile Include="System\Net\NetworkInformation\PingReply.cs" />
+    <!-- Common -->
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)System\Net\IPAddressParserStatics.cs"
              Link="Common\System\Net\IPAddressParserStatics.cs" />
@@ -34,7 +38,7 @@
     <Compile Include="$(CommonPath)System\Net\Internals\IPEndPointExtensions.cs"
              Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="('$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows')">
     <Compile Include="System\Net\NetworkInformation\IcmpV4MessageConstants.cs" />
     <Compile Include="System\Net\NetworkInformation\IcmpV6MessageConstants.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.RawSocket.cs" />
@@ -65,14 +69,14 @@
     <Compile Include="$(CommonPath)System\Text\ValueUtf8Converter.cs"
              Link="Common\System\Text\ValueUtf8Converter.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetsApple)' != 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsApplePlatform)' != 'true'">
     <Compile Include="System\Net\NetworkInformation\Ping.Unix.cs" />
     <Compile Include="System\Net\NetworkInformation\Ping.PingUtility.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' AND '$(TargetsApple)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows' and '$(IsApplePlatform)' == 'true'">
     <Compile Include="System\Net\NetworkInformation\Ping.OSX.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\Net\NetworkInformation\Ping.Windows.cs" />
     <!-- System.Net Common -->
     <Compile Include="$(CommonPath)System\Net\SocketAddressPal.Windows.cs"
@@ -110,15 +114,12 @@
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Net.Sockets" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
     <Reference Include="System.Runtime.InteropServices" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Reference Include="System.Collections.Specialized" />
     <Reference Include="System.Diagnostics.Process" />
-    <Reference Include="System.IO.FileSystem" />
   </ItemGroup>
 </Project>

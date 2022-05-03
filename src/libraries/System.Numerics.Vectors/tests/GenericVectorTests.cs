@@ -6,6 +6,7 @@ using System.Globalization;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using Xunit;
 using Xunit.Sdk;
 
@@ -14,6 +15,7 @@ namespace System.Numerics.Tests
     /// <summary>
     ///  Vector{T} tests that use random number generation and a unified generic test structure
     /// </summary>
+    [RequiresPreviewFeatures]
     public class GenericVectorTests
     {
         // Static constructor in top-level class\
@@ -515,7 +517,7 @@ namespace System.Numerics.Tests
         public void StaticOneVectorSingle() { TestStaticOneVector<float>(); }
         [Fact]
         public void StaticOneVectorDouble() { TestStaticOneVector<double>(); }
-        private void TestStaticOneVector<T>() where T : struct
+        private void TestStaticOneVector<T>() where T : struct, INumber<T>
         {
             Vector<T> vector = Vector<T>.One;
             T oneValue = Util.One<T>();
@@ -546,7 +548,7 @@ namespace System.Numerics.Tests
         public void StaticZeroVectorSingle() { TestStaticZeroVector<float>(); }
         [Fact]
         public void StaticZeroVectorDouble() { TestStaticZeroVector<double>(); }
-        private void TestStaticZeroVector<T>() where T : struct
+        private void TestStaticZeroVector<T>() where T : struct, INumber<T>
         {
             Vector<T> vector = Vector<T>.Zero;
             T zeroValue = Util.Zero<T>();
@@ -812,7 +814,7 @@ namespace System.Numerics.Tests
         public void EqualsVectorSingle() { TestEqualsVector<float>(); }
         [Fact]
         public void EqualsVectorDouble() { TestEqualsVector<double>(); }
-        private void TestEqualsVector<T>() where T : struct
+        private void TestEqualsVector<T>() where T : struct, INumber<T>
         {
             T[] values = GenerateRandomValuesForVector<T>();
             Vector<T> vector1 = new Vector<T>(values);
@@ -829,6 +831,20 @@ namespace System.Numerics.Tests
 
             Assert.False(Vector<T>.Zero.Equals(Vector<T>.One));
             Assert.False(Vector<T>.Zero.Equals(new Vector<T>(Util.One<T>())));
+        }
+
+        [Fact]
+        public void VectorDoubleEqualsNaNTest()
+        {
+            var nan = new Vector<double>(double.NaN);
+            Assert.True(nan.Equals(nan));
+        }
+
+        [Fact]
+        public void VectorSingleEqualsNaNTest()
+        {
+            var nan = new Vector<float>(float.NaN);
+            Assert.True(nan.Equals(nan));
         }
         #endregion
 
@@ -963,7 +979,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionDouble() { TestAddition<double>(); }
-        private void TestAddition<T>() where T : struct
+        private void TestAddition<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -993,7 +1009,7 @@ namespace System.Numerics.Tests
         public void AdditionOverflowUInt64() { TestAdditionOverflow<ulong>(); }
         [Fact]
         public void AdditionOverflowInt64() { TestAdditionOverflow<long>(); }
-        private void TestAdditionOverflow<T>() where T : struct
+        private void TestAdditionOverflow<T>() where T : struct, INumber<T>
         {
             T maxValue = GetMaxValueExact<T>();
             Vector<T> maxValueVector = new Vector<T>(maxValue);
@@ -1030,7 +1046,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SubtractionDouble() { TestSubtraction<double>(); }
-        private void TestSubtraction<T>() where T : struct
+        private void TestSubtraction<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1060,7 +1076,7 @@ namespace System.Numerics.Tests
         public void SubtractionOverflowUInt64() { TestSubtractionOverflow<ulong>(); }
         [Fact]
         public void SubtractionOverflowInt64() { TestSubtractionOverflow<long>(); }
-        private void TestSubtractionOverflow<T>() where T : struct
+        private void TestSubtractionOverflow<T>() where T : struct, INumber<T>
         {
             T minValue = GetMinValueExact<T>();
             Vector<T> minValueVector = new Vector<T>(minValue);
@@ -1097,7 +1113,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationDouble() { TestMultiplication<double>(); }
-        private void TestMultiplication<T>() where T : struct
+        private void TestMultiplication<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1112,28 +1128,38 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarByte() { TestMultiplicationWithScalar<byte>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarSByte() { TestMultiplicationWithScalar<sbyte>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarUInt16() { TestMultiplicationWithScalar<ushort>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt16() { TestMultiplicationWithScalar<short>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarUInt32() { TestMultiplicationWithScalar<uint>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt32() { TestMultiplicationWithScalar<int>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarUInt64() { TestMultiplicationWithScalar<ulong>(); }
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarInt64() { TestMultiplicationWithScalar<long>(); }
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarSingle() { TestMultiplicationWithScalar<float>(); }
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67893", TestPlatforms.tvOS)]
         public void MultiplicationWithScalarDouble() { TestMultiplicationWithScalar<double>(); }
-        private void TestMultiplicationWithScalar<T>() where T : struct
+        private void TestMultiplicationWithScalar<T>() where T : struct, INumber<T>
         {
             T[] values = GenerateRandomValuesForVector<T>();
             T factor = Util.GenerateSingleValue<T>(GetMinValue<T>(), GetMaxValue<T>());
@@ -1177,7 +1203,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionDouble() { TestDivision<double>(); }
-        private void TestDivision<T>() where T : struct
+        private void TestDivision<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             values1 = values1.Select(val => val.Equals(Util.Zero<T>()) ? Util.One<T>() : val).ToArray(); // Avoid divide-by-zero
@@ -1239,7 +1265,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void UnaryMinusDouble() { TestUnaryMinus<double>(); }
-        private void TestUnaryMinus<T>() where T : struct
+        private void TestUnaryMinus<T>() where T : struct, INumber<T>
         {
             T[] values = GenerateRandomValuesForVector<T>();
             Vector<T> vector = new Vector<T>(values);
@@ -1336,7 +1362,7 @@ namespace System.Numerics.Tests
         public void BitwiseXorOperatorUInt64() { TestBitwiseXorOperator<ulong>(); }
         [Fact]
         public void BitwiseXorOperatorInt64() { TestBitwiseXorOperator<long>(); }
-        private void TestBitwiseXorOperator<T>() where T : struct
+        private void TestBitwiseXorOperator<T>() where T : struct, IBitwiseOperators<T,T,T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1368,7 +1394,7 @@ namespace System.Numerics.Tests
         public void BitwiseOnesComplementOperatorUInt64() { TestBitwiseOnesComplementOperator<ulong>(); }
         [Fact]
         public void BitwiseOnesComplementOperatorInt64() { TestBitwiseOnesComplementOperator<long>(); }
-        private void TestBitwiseOnesComplementOperator<T>() where T : struct
+        private void TestBitwiseOnesComplementOperator<T>() where T : struct, IBitwiseOperators<T,T,T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             Vector<T> randomVector1 = new Vector<T>(values1);
@@ -1398,7 +1424,7 @@ namespace System.Numerics.Tests
         public void BitwiseAndNotUInt64() { TestBitwiseAndNot<ulong>(); }
         [Fact]
         public void BitwiseAndNotInt64() { TestBitwiseAndNot<long>(); }
-        private void TestBitwiseAndNot<T>() where T : struct
+        private void TestBitwiseAndNot<T>() where T : struct, IBitwiseOperators<T,T,T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1441,7 +1467,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void VectorGreaterThanDouble() { TestVectorGreaterThan<double>(); }
-        private void TestVectorGreaterThan<T>() where T : struct
+        private void TestVectorGreaterThan<T>() where T : struct, INumber<T>
         {
             var values1 = GenerateRandomValuesForVector<T>();
             var values2 = GenerateRandomValuesForVector<T>();
@@ -1480,7 +1506,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void GreaterThanOrEqualDouble() { TestVectorGreaterThanOrEqual<double>(); }
-        private void TestVectorGreaterThanOrEqual<T>() where T : struct
+        private void TestVectorGreaterThanOrEqual<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1735,7 +1761,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanDouble() { TestVectorLessThan<double>(); }
-        private void TestVectorLessThan<T>() where T : struct
+        private void TestVectorLessThan<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1774,7 +1800,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanOrEqualDouble() { TestVectorLessThanOrEqual<double>(); }
-        private void TestVectorLessThanOrEqual<T>() where T : struct
+        private void TestVectorLessThanOrEqual<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -1813,7 +1839,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void LessThanAnyDouble() { TestVectorLessThanAny<double>(); }
-        private void TestVectorLessThanAny<T>() where T : struct
+        private void TestVectorLessThanAny<T>() where T : struct, INumber<T>
         {
             T[] values1 = new T[Vector<T>.Count];
             for (int g = 0; g < Vector<T>.Count; g++)
@@ -1848,7 +1874,7 @@ namespace System.Numerics.Tests
         public void LessThanAllSingle() { TestVectorLessThanAll<float>(); }
         [Fact]
         public void LessThanAllDouble() { TestVectorLessThanAll<double>(); }
-        private void TestVectorLessThanAll<T>() where T : struct
+        private void TestVectorLessThanAll<T>() where T : struct, INumber<T>
         {
             T[] values1 = new T[Vector<T>.Count];
             for (int g = 0; g < Vector<T>.Count; g++)
@@ -2003,7 +2029,7 @@ namespace System.Numerics.Tests
         public void VectorEqualsSingle() { TestVectorEquals<float>(); }
         [Fact]
         public void VectorEqualsDouble() { TestVectorEquals<double>(); }
-        private void TestVectorEquals<T>() where T : struct
+        private void TestVectorEquals<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2;
@@ -2048,7 +2074,7 @@ namespace System.Numerics.Tests
         public void VectorEqualsAnySingle() { TestVectorEqualsAny<float>(); }
         [Fact]
         public void VectorEqualsAnyDouble() { TestVectorEqualsAny<double>(); }
-        private void TestVectorEqualsAny<T>() where T : struct
+        private void TestVectorEqualsAny<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2;
@@ -2096,7 +2122,7 @@ namespace System.Numerics.Tests
         public void VectorEqualsAllSingle() { TestVectorEqualsAll<float>(); }
         [Fact]
         public void VectorEqualsAllDouble() { TestVectorEqualsAll<double>(); }
-        private void TestVectorEqualsAll<T>() where T : struct
+        private void TestVectorEqualsAll<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2;
@@ -2141,7 +2167,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void ConditionalSelectDouble() { TestConditionalSelect<double>(); }
-        private void TestConditionalSelect<T>() where T : struct
+        private void TestConditionalSelect<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -2195,7 +2221,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DotProductDouble() { TestDotProduct<double>(); }
-        private void TestDotProduct<T>() where T : struct
+        private void TestDotProduct<T>() where T : struct, INumber<T>
         {
             T[] values1 = Util.GenerateRandomValues<T>(Vector<T>.Count);
             T[] values2 = Util.GenerateRandomValues<T>(Vector<T>.Count);
@@ -2233,7 +2259,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MaxDouble() { TestMax<double>(); }
-        private void TestMax<T>() where T : struct
+        private void TestMax<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -2271,7 +2297,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MinDouble() { TestMin<double>(); }
-        private void TestMin<T>() where T : struct
+        private void TestMin<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -2309,7 +2335,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void SquareRootDouble() { TestSquareRoot<double>(15); }
-        private void TestSquareRoot<T>(int precision = -1) where T : struct, IEquatable<T>
+        private void TestSquareRoot<T>(int precision = -1) where T : struct, INumber<T>, IEquatable<T>
         {
             T[] values = GenerateRandomValuesForVector<T>();
             Vector<T> vector = new Vector<T>(values);
@@ -2405,7 +2431,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AbsDouble() { TestAbs<double>(); }
-        private void TestAbs<T>() where T : struct
+        private void TestAbs<T>() where T : struct, INumber<T>
         {
             T[] values = Util.GenerateRandomValues<T>(Vector<T>.Count, GetMinValue<T>() + 1, GetMaxValue<T>());
             Vector<T> vector = new Vector<T>(values);
@@ -2445,7 +2471,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void MultiplicationReflectionDouble() { TestMultiplicationReflection<double>(); }
-        private void TestMultiplicationReflection<T>() where T : struct
+        private void TestMultiplicationReflection<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -2484,7 +2510,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void AdditionReflectionDouble() { TestAdditionReflection<double>(); }
-        private void TestAdditionReflection<T>() where T : struct
+        private void TestAdditionReflection<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             T[] values2 = GenerateRandomValuesForVector<T>();
@@ -2523,7 +2549,7 @@ namespace System.Numerics.Tests
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60347", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsX86Process))]
         public void DivisionReflectionDouble() { TestDivisionReflection<double>(); }
-        private void TestDivisionReflection<T>() where T : struct
+        private void TestDivisionReflection<T>() where T : struct, INumber<T>
         {
             T[] values1 = GenerateRandomValuesForVector<T>();
             values1 = values1.Select(val => val.Equals(Util.Zero<T>()) ? Util.One<T>() : val).ToArray(); // Avoid divide-by-zero

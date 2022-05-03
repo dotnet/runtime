@@ -5,7 +5,7 @@ using System.Collections;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime;
-using System.Runtime.Serialization;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using MethodBase = System.Reflection.MethodBase;
@@ -26,11 +26,9 @@ namespace System
             }
         }
 
-        private IDictionary CreateDataContainer() => new ListDictionaryInternal();
+        private static IDictionary CreateDataContainer() => new ListDictionaryInternal();
 
-        private string? SerializationWatsonBuckets => null;
-
-        private string? CreateSourceName() => HasBeenThrown ? "<unknown>" : null;
+        private static string? SerializationWatsonBuckets => null;
 
         // WARNING: We allow diagnostic tools to directly inspect these three members (_message, _innerException and _HResult)
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
@@ -180,7 +178,7 @@ namespace System
 
         internal void RestoreDispatchState(DispatchState DispatchState)
         {
-            IntPtr[] stackTrace = DispatchState.StackTrace;
+            IntPtr[]? stackTrace = DispatchState.StackTrace;
             int idxFirstFreeStackTraceEntry = 0;
             if (stackTrace != null)
             {
@@ -250,7 +248,7 @@ namespace System
                 {
                     SERIALIZED_EXCEPTION_HEADER* pHeader = (SERIALIZED_EXCEPTION_HEADER*)pBuffer;
                     pHeader->HResult = _HResult;
-                    pHeader->ExceptionEEType = (IntPtr)MethodTable;
+                    pHeader->ExceptionEEType = (IntPtr)this.GetMethodTable();
                     pHeader->StackTraceElementCount = nStackTraceElements;
                     IntPtr* pStackTraceElements = (IntPtr*)(pBuffer + sizeof(SERIALIZED_EXCEPTION_HEADER));
                     for (int i = 0; i < nStackTraceElements; i++)

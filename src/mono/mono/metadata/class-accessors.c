@@ -396,7 +396,7 @@ mono_class_get_field_def_values_with_swizzle (MonoClass *klass, int swizzle)
 		dataKind = PROP_FIELD_DEF_VALUES_2BYTESWIZZLE;
 	else if (swizzle == 4)
 		dataKind = PROP_FIELD_DEF_VALUES_4BYTESWIZZLE;
-	else
+	else if (swizzle == 8)
 		dataKind = PROP_FIELD_DEF_VALUES_8BYTESWIZZLE;
 	return (MonoFieldDefaultValue*)get_pointer_property (klass, dataKind);
 }
@@ -416,7 +416,7 @@ mono_class_set_field_def_values_with_swizzle (MonoClass *klass, MonoFieldDefault
 		dataKind = PROP_FIELD_DEF_VALUES_2BYTESWIZZLE;
 	else if (swizzle == 4)
 		dataKind = PROP_FIELD_DEF_VALUES_4BYTESWIZZLE;
-	else
+	else if (swizzle == 8)
 		dataKind = PROP_FIELD_DEF_VALUES_8BYTESWIZZLE;
 	set_pointer_property (klass, dataKind, values);
 }
@@ -445,6 +445,12 @@ mono_class_set_is_com_object (MonoClass *klass)
 	klass->is_com_object = 1;
 	mono_loader_unlock ();
 #endif
+}
+
+void
+mono_class_set_is_simd_type (MonoClass *klass, gboolean is_simd)
+{
+	klass->simd_type = is_simd;
 }
 
 MonoType*
@@ -602,6 +608,7 @@ mono_class_get_metadata_update_info (MonoClass *klass)
 		return (MonoClassMetadataUpdateInfo *)get_pointer_property (klass, PROP_METADATA_UPDATE_INFO);
 	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
+	case MONO_CLASS_ARRAY:
 	case MONO_CLASS_POINTER:
 	case MONO_CLASS_GC_FILLER:
 		return NULL;

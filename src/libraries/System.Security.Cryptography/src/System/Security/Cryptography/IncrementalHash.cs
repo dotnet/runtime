@@ -58,8 +58,7 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void AppendData(byte[] data)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
 
             AppendData(new ReadOnlySpan<byte>(data));
         }
@@ -86,8 +85,8 @@ namespace System.Security.Cryptography
         /// <exception cref="ObjectDisposedException">The object has already been disposed.</exception>
         public void AppendData(byte[] data, int offset, int count)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
+
             if (offset < 0)
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0 || (count > data.Length))
@@ -319,8 +318,7 @@ namespace System.Security.Cryptography
         /// <exception cref="CryptographicException"><paramref name="hashAlgorithm"/> is not a known hash algorithm.</exception>
         public static IncrementalHash CreateHash(HashAlgorithmName hashAlgorithm)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             return new IncrementalHash(hashAlgorithm, HashProviderDispenser.CreateHashProvider(hashAlgorithm.Name));
         }
@@ -350,8 +348,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, byte[] key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             return CreateHMAC(hashAlgorithm, (ReadOnlySpan<byte>)key);
         }
@@ -381,8 +378,7 @@ namespace System.Security.Cryptography
         [UnsupportedOSPlatform("browser")]
         public static IncrementalHash CreateHMAC(HashAlgorithmName hashAlgorithm, ReadOnlySpan<byte> key)
         {
-            if (string.IsNullOrEmpty(hashAlgorithm.Name))
-                throw new ArgumentException(SR.Cryptography_HashAlgorithmNameNullOrEmpty, nameof(hashAlgorithm));
+            ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
 
             return new IncrementalHash(hashAlgorithm, new HMACCommon(hashAlgorithm.Name, key, -1));
         }

@@ -1,0 +1,263 @@
+// Licensed to the .NET Foundation under one or more agreements.
+// The .NET Foundation licenses this file to you under the MIT license.
+
+/******************************************************************************
+ * This file is auto-generated from a template file by the GenerateTests.csx  *
+ * script in tests\src\JIT\HardwareIntrinsics\Arm\Shared. In order to make    *
+ * changes, please update the corresponding template and run according to the *
+ * directions listed in the file.                                             *
+ ******************************************************************************/
+
+using System;
+using System.Reflection;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.Arm;
+
+namespace JIT.HardwareIntrinsics.Arm
+{
+    public static partial class Program
+    {
+        private static void {TestName}()
+        {
+            var test = new {TestName}();
+
+            if (test.IsSupported)
+            {
+                // Validates basic functionality works
+                test.RunBasicScenario();
+
+                // Validates calling via reflection works
+                test.RunReflectionScenario();
+
+                // Validates loading to a static member works
+                test.RunClsVarScenario();
+
+                // Validates loading to the field of a local class works
+                test.RunClassLclFldScenario();
+
+                // Validates loading to the field of a local struct works
+                test.RunStructLclFldScenario();
+
+                // Validates loading to an instance member of a struct works
+                test.RunStructFldScenario();
+            }
+            else
+            {
+                // Validates we throw on unsupported hardware
+                test.RunUnsupportedScenario();
+            }
+
+            if (!test.Succeeded)
+            {
+                throw new Exception("One or more scenarios did not complete as expected.");
+            }
+        }
+    }
+
+    public sealed unsafe class {TestName}
+    {
+        private struct DataTable
+        {
+            private byte[] inArray;
+            private byte[] outArray;
+
+            private GCHandle inHandle;
+            private GCHandle outHandle;
+
+            private ulong alignment;
+
+            public DataTable({Op1BaseType}[] inArray, {RetBaseType}[] outArray, int alignment)
+            {
+                int sizeOfinArray  = inArray.Length * Unsafe.SizeOf<{Op1BaseType}>();
+                int sizeOfoutArray = outArray.Length * Unsafe.SizeOf<{RetBaseType}>();
+
+                if ((alignment != 16 && alignment != 32) || (alignment * 2) < sizeOfinArray || (alignment * 2) < sizeOfoutArray)
+                {
+                    throw new ArgumentException("Invalid value of alignment");
+                }
+
+                this.inArray  = new byte[alignment * 2];
+                this.outArray = new byte[alignment * 2];
+
+                this.inHandle  = GCHandle.Alloc(this.inArray, GCHandleType.Pinned);
+                this.outHandle = GCHandle.Alloc(this.outArray, GCHandleType.Pinned);
+
+                this.alignment = (ulong)alignment;
+
+                Unsafe.CopyBlockUnaligned(ref Unsafe.AsRef<byte>(inArrayPtr), ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), (uint)sizeOfinArray);
+            }
+
+            public void* inArrayPtr  => Align((byte*)(inHandle.AddrOfPinnedObject().ToPointer()), alignment);
+            public void* outArrayPtr => Align((byte*)(outHandle.AddrOfPinnedObject().ToPointer()), alignment);
+
+            public void Dispose()
+            {
+                inHandle.Free();
+                outHandle.Free();
+            }
+
+            private static unsafe void* Align(byte* buffer, ulong expectedAlignment)
+            {
+                return (void*)(((ulong)buffer + expectedAlignment - 1) & ~(expectedAlignment - 1));
+            }
+        }
+
+        private struct TestStruct
+        {
+            public ({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>) _fld;
+
+            public static TestStruct Create()
+            {
+                return new TestStruct();
+            }
+
+            public void RunStructFldScenario({TestName} testClass)
+            {
+                _fld = {Isa}.{Method}(({Op1BaseType}*)(testClass._dataTable.inArrayPtr));
+
+                Unsafe.Write(testClass._dataTable.outArrayPtr, _fld);
+                testClass.ValidateResult(testClass._dataTable.inArrayPtr, testClass._dataTable.outArrayPtr);
+            }
+        }
+
+
+        private static readonly int LargestVectorSize = {LargestVectorSize};
+        private static readonly int RetElementCount = Unsafe.SizeOf<({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>)>() / sizeof({RetBaseType});
+        private static readonly int Op1ElementCount = RetElementCount;
+
+        private static {Op1BaseType}[] _data = new {Op1BaseType}[Op1ElementCount];
+
+        private static ({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>) _clsVar;
+
+        private ({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>) _fld;
+
+        private DataTable _dataTable;
+
+        public {TestName}()
+        {
+            Succeeded = true;
+
+            for (var i = 0; i < Op1ElementCount; i++) { _data[i] = {NextValueOp1}; }
+            _dataTable = new DataTable(_data, new {RetBaseType}[RetElementCount], LargestVectorSize);
+        }
+
+        public bool IsSupported => {Isa}.IsSupported;
+
+        public bool Succeeded { get; set; }
+
+        public void RunBasicScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunBasicScenario));
+
+            var result = {Isa}.{Method}(({Op1BaseType}*)(_dataTable.inArrayPtr));
+            Unsafe.Write(_dataTable.outArrayPtr, result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunReflectionScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunReflectionScenario));
+
+            var result = typeof({Isa}).GetMethod(nameof({Isa}.{Method}), new Type[] { typeof({Op1BaseType}*) })
+                                     .Invoke(null, new object[] {
+                                        Pointer.Box(_dataTable.inArrayPtr, typeof({Op1BaseType}*))
+                                     });
+
+            Unsafe.Write(_dataTable.outArrayPtr, (({RetVectorType}<{RetBaseType}>,{RetVectorType}<{RetBaseType}>))result);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunClsVarScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClsVarScenario));
+
+            _clsVar = {Isa}.{Method}(({Op1BaseType}*)(_dataTable.inArrayPtr));
+
+            Unsafe.Write(_dataTable.outArrayPtr, _clsVar);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunClassLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunClassLclFldScenario));
+
+            var test = new {TestName}();
+            test._fld = {Isa}.{Method}(({Op1BaseType}*)(_dataTable.inArrayPtr));
+
+            Unsafe.Write(_dataTable.outArrayPtr, test._fld);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructLclFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructLclFldScenario));
+
+            var test = TestStruct.Create();
+            test._fld = {Isa}.{Method}(({Op1BaseType}*)(_dataTable.inArrayPtr));
+
+            Unsafe.Write(_dataTable.outArrayPtr, test._fld);
+            ValidateResult(_dataTable.inArrayPtr, _dataTable.outArrayPtr);
+        }
+
+        public void RunStructFldScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunStructFldScenario));
+
+            var test = TestStruct.Create();
+            test.RunStructFldScenario(this);
+        }
+
+        public void RunUnsupportedScenario()
+        {
+            TestLibrary.TestFramework.BeginScenario(nameof(RunUnsupportedScenario));
+
+            Succeeded = false;
+
+            try
+            {
+                RunBasicScenario();
+            }
+            catch (PlatformNotSupportedException)
+            {
+                Succeeded = true;
+            }
+        }
+
+        private void ValidateResult(void* firstOp, void* result, [CallerMemberName] string method = "")
+        {
+            {Op1BaseType}[] inArray = new {Op1BaseType}[Op1ElementCount];
+            {RetBaseType}[] outArray = new {RetBaseType}[RetElementCount];
+
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{Op1BaseType}, byte>(ref inArray[0]), ref Unsafe.AsRef<byte>(firstOp), (uint)(Unsafe.SizeOf<{Op1BaseType}>() * Op1ElementCount));
+            Unsafe.CopyBlockUnaligned(ref Unsafe.As<{RetBaseType}, byte>(ref outArray[0]), ref Unsafe.AsRef<byte>(result), (uint)(Unsafe.SizeOf<{RetBaseType}>() * RetElementCount));
+
+            ValidateResult(inArray, outArray, method);
+        }
+
+        private void ValidateResult({Op1BaseType}[] firstOp, {RetBaseType}[] result, [CallerMemberName] string method = "")
+        {
+            bool succeeded = true;
+
+            for (int i = 0; i < Op1ElementCount; i++)
+            {
+                if ({ValidateIterResult})
+                {
+                    succeeded = false;
+                    break;
+                }
+            }
+
+            if (!succeeded)
+            {
+                TestLibrary.TestFramework.LogInformation($"{nameof({Isa})}.{nameof({Isa}.{Method})}<{RetBaseType}>({Op1VectorType}<{Op1BaseType}>): {method} failed:");
+                TestLibrary.TestFramework.LogInformation($"  firstOp: ({string.Join(", ", firstOp)})");
+                TestLibrary.TestFramework.LogInformation($" result: ({string.Join(", ", result)})");
+                TestLibrary.TestFramework.LogInformation(string.Empty);
+
+                Succeeded = false;
+            }
+        }
+    }
+}

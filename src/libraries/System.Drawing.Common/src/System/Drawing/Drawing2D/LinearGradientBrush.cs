@@ -478,8 +478,7 @@ namespace System.Drawing.Drawing2D
 
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
-            if (matrix == null)
-                throw new ArgumentNullException(nameof(matrix));
+            ArgumentNullException.ThrowIfNull(matrix);
 
             // Multiplying the transform by a disposed matrix is a nop in GDI+, but throws
             // with the libgdiplus backend. Simulate a nop for compatability with GDI+.

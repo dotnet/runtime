@@ -662,7 +662,7 @@ namespace System.Xml
             return charCount;
         }
 
-        private bool IsAttrChar(int ch)
+        private static bool IsAttrChar(int ch)
         {
             switch (ch)
             {

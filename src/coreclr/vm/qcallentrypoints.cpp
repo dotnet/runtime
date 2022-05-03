@@ -27,7 +27,6 @@
 #include "comdatetime.h"
 #include "compatibilityswitch.h"
 #include "debugdebugger.h"
-#include "assemblyname.hpp"
 #include "assemblynative.hpp"
 #include "comthreadpool.h"
 #include "comwaithandle.h"
@@ -279,6 +278,7 @@ static const Entry s_QCall[] =
     DllImportEntry(LogThreadPoolWorkerThreadAdjustmentStats)
     DllImportEntry(LogThreadPoolIOEnqueue)
     DllImportEntry(LogThreadPoolIODequeue)
+    DllImportEntry(LogThreadPoolIOPack)
     DllImportEntry(LogThreadPoolWorkingThreadCount)
     DllImportEntry(EventPipeInternal_Enable)
     DllImportEntry(EventPipeInternal_Disable)

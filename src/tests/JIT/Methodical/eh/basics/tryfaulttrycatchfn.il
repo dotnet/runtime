@@ -8,10 +8,10 @@
   .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A )
   .ver 4:0:0:0
 }
+.assembly extern xunit.core {}
 .assembly extern mscorlib {}
 .assembly extern eh_common {}
-.assembly test {}
-.module test.exe
+.assembly 'tryfaulttrycatchfn' {}
 
 .method public static void middle() {
     .maxstack  1
@@ -38,7 +38,11 @@ done:
 }
 
 
+.class public auto ansi Test_tryfaulttrycatchfn extends [mscorlib] System.Object {
 .method public static int32 main() {
+    .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
+        01 00 00 00
+    )
     .entrypoint
     .maxstack  2
     .locals init (
@@ -88,4 +92,5 @@ done:
     callvirt   instance int32 [eh_common]TestUtil.TestLog::VerifyOutput()
     
     ret
+}
 }

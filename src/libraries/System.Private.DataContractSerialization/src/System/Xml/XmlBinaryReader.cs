@@ -40,8 +40,8 @@ namespace System.Xml
                             XmlBinaryReaderSession? session,
                             OnXmlDictionaryReaderClose? onClose)
         {
-            if (buffer == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(buffer));
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > buffer.Length)
@@ -61,8 +61,8 @@ namespace System.Xml
                             XmlBinaryReaderSession? session,
                             OnXmlDictionaryReaderClose? onClose)
         {
-            if (stream == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperArgumentNull(nameof(stream));
+            ArgumentNullException.ThrowIfNull(stream);
+
             MoveToInitial(quotas, session, null);
             BufferReader.SetBuffer(stream, dictionary, session);
             _buffered = false;
@@ -1086,7 +1086,7 @@ namespace System.Xml
             return BufferReader.ReadUInt31();
         }
 
-        private bool IsValidArrayType(XmlBinaryNodeType nodeType)
+        private static bool IsValidArrayType(XmlBinaryNodeType nodeType)
         {
             switch (nodeType)
             {
@@ -1213,10 +1213,10 @@ namespace System.Xml
             return IsStartElement(localName, namespaceUri) && _arrayState == ArrayState.Element && _arrayNodeType == nodeType && !Signing;
         }
 
-        private void CheckArray(Array array, int offset, int count)
+        private static void CheckArray(Array array, int offset, int count)
         {
-            if (array == null)
-                throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentNullException(nameof(array)));
+            ArgumentNullException.ThrowIfNull(array);
+
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > array.Length)

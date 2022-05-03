@@ -15,11 +15,12 @@ internal static partial class Interop
             None = 0,
         }
 
-        [GeneratedDllImport(Libraries.Advapi32, CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Libraries.Advapi32, SetLastError = true)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool CryptCreateHash(
             SafeProvHandle hProv,
             int Algid,
-            SafeKeyHandle hKey,
+            SafeCapiKeyHandle hKey,
             CryptCreateHashFlags dwFlags,
             out SafeHashHandle phHash);
     }

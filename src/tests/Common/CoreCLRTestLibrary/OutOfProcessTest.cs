@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -42,12 +42,19 @@ namespace TestLibrary
             }
         }
 
+        public static bool OutOfProcessTestsSupported =>
+            !OperatingSystem.IsIOS()
+            && !OperatingSystem.IsTvOS()
+            && !OperatingSystem.IsAndroid()
+            && !OperatingSystem.IsBrowser();
+
         public static void RunOutOfProcessTest(string basePath, string assemblyPath)
         {
             int ret = -100;
-            string outputFile = System.IO.Path.GetFullPath(reportBase + assemblyPath + "output.txt");
-            string errorFile = System.IO.Path.GetFullPath(reportBase + assemblyPath + "error.txt");
-            string outputDir = System.IO.Path.GetDirectoryName(outputFile)!;
+            string baseDir = Path.GetDirectoryName(basePath);
+            string outputDir = System.IO.Path.GetFullPath(Path.Combine(reportBase, Path.GetDirectoryName(assemblyPath)));
+            string outputFile = Path.Combine(outputDir, "output.txt");
+            string errorFile = Path.Combine(outputDir, "error.txt");
             string testExecutable = null;
             Exception infraEx = null;
 
@@ -57,14 +64,20 @@ namespace TestLibrary
 
                 if (OperatingSystem.IsWindows())
                 {
-                    testExecutable = Path.Combine(basePath, Path.ChangeExtension(assemblyPath, ".cmd"));
+                    testExecutable = Path.Combine(baseDir, Path.ChangeExtension(assemblyPath, ".cmd"));
                 }
                 else
                 {
-                    testExecutable = Path.Combine(basePath, Path.ChangeExtension(assemblyPath.Replace("\\", "/"), ".sh"));
+                    testExecutable = Path.Combine(baseDir, Path.ChangeExtension(assemblyPath.Replace("\\", "/"), ".sh"));
                 }
 
-                System.IO.Directory.CreateDirectory(reportBase + Path.GetDirectoryName(assemblyPath));
+                if (!File.Exists(testExecutable))
+                {
+                    // Skip platform-specific test when running on the excluded platform
+                    return;
+                }
+
+                System.IO.Directory.CreateDirectory(outputDir);
 
                 ret = wrapper.RunTest(testExecutable, outputFile, errorFile, Assembly.GetEntryAssembly()!.FullName!, testBinaryBase, outputDir);
             }

@@ -784,7 +784,7 @@ namespace XDocumentTests.SDMSample
             XElement e = new XElement(ns + "foo");
 
             Assert.Throws<ArgumentNullException>(() => e.GetNamespaceOfPrefix(null));
-            AssertExtensions.Throws<ArgumentException>(null, () => e.GetNamespaceOfPrefix(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("prefix", () => e.GetNamespaceOfPrefix(string.Empty));
 
             XNamespace n = e.GetNamespaceOfPrefix("xmlns");
             Assert.Equal("http://www.w3.org/2000/xmlns/", n.NamespaceName);

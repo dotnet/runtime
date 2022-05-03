@@ -24,6 +24,7 @@ namespace ILCompiler
         protected bool _methodBodyFolding;
         protected InstructionSetSupport _instructionSetSupport;
         protected SecurityMitigationOptions _mitigationOptions;
+        protected bool _useDwarf5;
 
         partial void InitializePartial()
         {
@@ -100,6 +101,12 @@ namespace ILCompiler
         public CompilationBuilder UseMethodImportationErrorProvider(MethodImportationErrorProvider errorProvider)
         {
             _methodImportationErrorProvider = errorProvider;
+            return this;
+        }
+
+        public CompilationBuilder UseDwarf5(bool value)
+        {
+            _useDwarf5 = value;
             return this;
         }
 

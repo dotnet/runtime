@@ -44,20 +44,14 @@ namespace System
 
         public static StringComparer Create(CultureInfo culture, bool ignoreCase)
         {
-            if (culture == null)
-            {
-                throw new ArgumentNullException(nameof(culture));
-            }
+            ArgumentNullException.ThrowIfNull(culture);
 
             return new CultureAwareComparer(culture, ignoreCase ? CompareOptions.IgnoreCase : CompareOptions.None);
         }
 
         public static StringComparer Create(CultureInfo culture, CompareOptions options)
         {
-            if (culture == null)
-            {
-                throw new ArgumentNullException(nameof(culture));
-            }
+            ArgumentNullException.ThrowIfNull(culture);
 
             return new CultureAwareComparer(culture, options);
         }
@@ -197,10 +191,7 @@ namespace System
 
         public int GetHashCode(object obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
 
             if (obj is string s)
             {
@@ -271,10 +262,8 @@ namespace System
 
         public override int GetHashCode(string obj)
         {
-            if (obj == null)
-            {
-                throw new ArgumentNullException(nameof(obj));
-            }
+            ArgumentNullException.ThrowIfNull(obj);
+
             return _compareInfo.GetHashCode(obj, _options);
         }
 

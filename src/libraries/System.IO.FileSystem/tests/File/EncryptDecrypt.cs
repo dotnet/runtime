@@ -3,15 +3,12 @@
 
 using Microsoft.DotNet.XUnitExtensions;
 using System.Diagnostics;
-using System.Diagnostics.Eventing.Reader;
 using System.Security;
-using System.ServiceProcess;
 using Xunit;
 using Xunit.Abstractions;
 
 namespace System.IO.Tests
 {
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/34582", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
     public partial class EncryptDecrypt : FileSystemTest
     {
         private readonly ITestOutputHelper _output;

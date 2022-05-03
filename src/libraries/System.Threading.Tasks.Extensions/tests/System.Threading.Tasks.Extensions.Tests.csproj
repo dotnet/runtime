@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
     <TestRuntime>true</TestRuntime>
   </PropertyGroup>

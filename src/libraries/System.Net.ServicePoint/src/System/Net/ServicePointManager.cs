@@ -115,10 +115,7 @@ namespace System.Net
         [Obsolete(Obsoletions.WebRequestMessage, DiagnosticId = Obsoletions.WebRequestDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public static ServicePoint FindServicePoint(Uri address, IWebProxy? proxy)
         {
-            if (address == null)
-            {
-                throw new ArgumentNullException(nameof(address));
-            }
+            ArgumentNullException.ThrowIfNull(address);
 
             // If there's a proxy for this address, get the "real" address.
             bool isProxyServicePoint = ProxyAddressIfNecessary(ref address, proxy);

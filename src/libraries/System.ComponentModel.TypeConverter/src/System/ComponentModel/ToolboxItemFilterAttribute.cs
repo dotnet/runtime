@@ -104,6 +104,6 @@ namespace System.ComponentModel
                 && other.FilterString.Equals(FilterString);
         }
 
-        public override string ToString() => FilterString + "," + Enum.GetName(typeof(ToolboxItemFilterType), FilterType);
+        public override string ToString() => FilterString + "," + Enum.GetName<ToolboxItemFilterType>(FilterType);
     }
 }

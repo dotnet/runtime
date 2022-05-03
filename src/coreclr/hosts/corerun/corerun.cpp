@@ -291,9 +291,9 @@ static int run(const configuration& config)
     }
 
     // Construct CoreCLR properties.
-    pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(std::move(tpa_list));
-    pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(std::move(app_path));
-    pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str());
+    pal::string_utf8_t tpa_list_utf8 = pal::convert_to_utf8(tpa_list.c_str());
+    pal::string_utf8_t app_path_utf8 = pal::convert_to_utf8(app_path.c_str());
+    pal::string_utf8_t native_search_dirs_utf8 = pal::convert_to_utf8(native_search_dirs.str().c_str());
 
     std::vector<pal::string_utf8_t> user_defined_keys_utf8;
     std::vector<pal::string_utf8_t> user_defined_values_utf8;
@@ -334,7 +334,7 @@ static int run(const configuration& config)
     int propertyCount = (int)propertyKeys.size();
 
     // Construct arguments
-    pal::string_utf8_t exe_path_utf8 = pal::convert_to_utf8(std::move(exe_path));
+    pal::string_utf8_t exe_path_utf8 = pal::convert_to_utf8(exe_path.c_str());
     std::vector<pal::string_utf8_t> argv_lifetime;
     pal::malloc_ptr<const char*> argv_utf8{ pal::convert_argv_to_utf8(config.entry_assembly_argc, config.entry_assembly_argv, argv_lifetime) };
     pal::string_utf8_t entry_assembly_utf8 = pal::convert_to_utf8(config.entry_assembly_fullpath.c_str());
@@ -564,16 +564,13 @@ int MAIN(const int argc, const char_t* argv[])
     return exit_code;
 }
 
-#ifdef TARGET_WINDOWS
-// Used by CoreShim to determine running CoreCLR details.
-extern "C" __declspec(dllexport) HRESULT __cdecl GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
+extern "C" DLL_EXPORT HRESULT CDECL GetCurrentClrDetails(void** clrInstance, unsigned int* appDomainId)
 {
     assert(clrInstance != nullptr && appDomainId != nullptr);
     *clrInstance = CurrentClrInstance;
     *appDomainId = CurrentAppDomainId;
     return S_OK;
 }
-#endif // TARGET_WINDOWS
 
 //
 // Self testing for corerun.

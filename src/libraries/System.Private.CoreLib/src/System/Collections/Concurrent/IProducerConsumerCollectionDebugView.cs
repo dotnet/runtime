@@ -20,7 +20,9 @@ namespace System.Collections.Concurrent
         /// <param name="collection">A collection to browse in the debugger.</param>
         public IProducerConsumerCollectionDebugView(IProducerConsumerCollection<T> collection)
         {
-            _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+            ArgumentNullException.ThrowIfNull(collection);
+
+            _collection = collection;
         }
 
         /// <summary>

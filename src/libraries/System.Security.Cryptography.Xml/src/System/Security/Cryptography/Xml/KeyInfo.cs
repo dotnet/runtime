@@ -60,8 +60,10 @@ namespace System.Security.Cryptography.Xml
 
         public void LoadXml(XmlElement value)
         {
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             XmlElement keyInfoElement = value;
             _id = Utils.GetAttribute(keyInfoElement, "Id", SignedXml.XmlDsigNamespaceUrl);

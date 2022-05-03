@@ -9,10 +9,8 @@ namespace System.Xml
 
         internal static void Encode(byte[] buffer, int index, int count, XmlWriter writer)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));

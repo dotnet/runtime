@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Globalization
     {
-        [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetTimeZoneDisplayName", CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_GetTimeZoneDisplayName", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial ResultCode GetTimeZoneDisplayName(
             string localeName,
             string timeZoneId,
@@ -16,10 +16,10 @@ internal static partial class Interop
             char* result,
             int resultLength);
 
-        [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_WindowsIdToIanaId", CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_WindowsIdToIanaId", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int WindowsIdToIanaId(string windowsId, IntPtr region, char* ianaId, int ianaIdLength);
 
-        [GeneratedDllImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_IanaIdToWindowsId", CharSet = CharSet.Unicode)]
+        [LibraryImport(Libraries.GlobalizationNative, EntryPoint = "GlobalizationNative_IanaIdToWindowsId", StringMarshalling = StringMarshalling.Utf16)]
         internal static unsafe partial int IanaIdToWindowsId(string ianaId, char* windowsId, int windowsIdLength);
     }
 }

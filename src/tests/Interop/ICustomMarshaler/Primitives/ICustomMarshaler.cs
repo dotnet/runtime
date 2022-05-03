@@ -4,6 +4,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using static TestLibrary.Utilities;
 
 namespace System.Runtime.InteropServices.Tests
 {
@@ -167,11 +168,10 @@ namespace System.Runtime.InteropServices.Tests
 
             // GetInstance is only called once.
             string val3 = "7488";
-            Assert.Equal(val3, OrderTrackingMethodRef(ref val3));
+            Assert.Equal(7488, OrderTrackingMethodRef(ref val3));
             IEnumerable<string> expectedOrderingThirdCall = expectedOrderingSecondCall.Concat(new string[]
             {
                 "Called MarshalManagedToNative",
-                "Called MarshalNativeToManaged",
                 "Called CleanUpManagedData",
                 "Called MarshalNativeToManaged",
                 "Called CleanUpNativeData",
@@ -184,7 +184,7 @@ namespace System.Runtime.InteropServices.Tests
             {
                 "Called MarshalNativeToManaged",
             });
-            Assert.Equal(expectedOrderingForthCall.Skip(12), OrderTrackingCustomMarshaler.Events.Skip(12));
+            Assert.Equal(expectedOrderingForthCall.Skip(11), OrderTrackingCustomMarshaler.Events.Skip(11));
 
             var val5 = OrderTrackingMethodDelegate(439, (x) => x.ToString());
             Assert.Equal("439", val5);
@@ -194,7 +194,15 @@ namespace System.Runtime.InteropServices.Tests
                 "Called CleanUpManagedData",
                 "Called MarshalNativeToManaged",
             });
-            Assert.Equal(expectedOrderingFifthCall.Skip(13), OrderTrackingCustomMarshaler.Events.Skip(13));
+            Assert.Equal(expectedOrderingFifthCall.Skip(12), OrderTrackingCustomMarshaler.Events.Skip(12));
+
+            var val6 = OrderTrackingMethodReturn("726");
+            Assert.Equal("726", val6);
+            IEnumerable<string> expectedOrderingSixthCall = expectedOrderingFifthCall.Concat(new string[]
+            {
+                "Called MarshalNativeToManaged",
+            });
+            Assert.Equal(expectedOrderingSixthCall.Skip(15), OrderTrackingCustomMarshaler.Events.Skip(15));
         }
 
         // This should only be used *once*, as it uses static state.
@@ -248,8 +256,7 @@ namespace System.Runtime.InteropServices.Tests
         public static extern string OrderTrackingMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] string str);
 
         [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntRef")]
-        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
-        public static extern string OrderTrackingMethodRef([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] ref string str);
+        public static extern int OrderTrackingMethodRef([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] ref string str);
 
         [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntOut")]
         public static extern void OrderTrackingMethodOut([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))] out string str);
@@ -260,6 +267,10 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntDelegate")]
         [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
         public static extern string OrderTrackingMethodDelegate(int val, TestDelegate dlg);
+
+        [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseInt")]
+        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OrderTrackingCustomMarshaler))]
+        public static extern string OrderTrackingMethodReturn([MarshalAs(UnmanagedType.LPStr)] string str);
 
         public static void CustomMarshaler_BothMarshalTypeRefAndMarshalTypeProvided_PicksMarshalType()
         {
@@ -391,6 +402,14 @@ namespace System.Runtime.InteropServices.Tests
 
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int NullCustomMarshalerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = null)] string str);
+
+        public static void Parameter_InvalidTypeICustomMarshaler_TypeLoadException()
+        {
+            Assert.Throws<TypeLoadException>(() => InvalidTypeCustomMarshalerMethod(""));
+        }
+
+        [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
+        public static extern int InvalidTypeCustomMarshalerMethod([MarshalAs(UnmanagedType.CustomMarshaler, MarshalType = "junk_type")] string str);
 
         public static void Parameter_NotICustomMarshaler_ThrowsApplicationException()
         {
@@ -658,11 +677,9 @@ namespace System.Runtime.InteropServices.Tests
         [DllImport(LibcLibrary, EntryPoint = "atoi", CallingConvention = CallingConvention.Cdecl)]
         public static extern int DifferentCustomMarshalerType([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(OuterCustomMarshaler))] string str);
 
-        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))]
         public delegate string TestDelegateRef([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))] ref int val);
 
         [DllImport("CustomMarshalersPrimitives", EntryPoint = "NativeParseIntDelegateRef")]
-        [return: MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(BoxedValueTypeCustomMarshaler))]
         public static extern string CustomMarshallerWithDelegateRef(int val, TestDelegateRef dlg);
 
         public static void DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException()
@@ -686,6 +703,7 @@ namespace System.Runtime.InteropServices.Tests
                 Parameter_MarshalerOnValueType_ThrowsMarshalDirectiveException();
                 Parameter_MarshalerOnPointer_ThrowsMarshalDirectiveException();
                 Parameter_NullICustomMarshaler_ThrowsTypeLoadException();
+                Parameter_InvalidTypeICustomMarshaler_TypeLoadException();
                 Parameter_NotICustomMarshaler_ThrowsApplicationException();
                 Parameter_OpenGenericICustomMarshaler_ThrowsTypeLoadException();
                 Parameter_GetInstanceMethodDoesntExist_ThrowsApplicationException();
@@ -699,7 +717,11 @@ namespace System.Runtime.InteropServices.Tests
                 Parameter_CleanUpNativeDataMethodThrows_ThrowsActualException();
                 Field_ParentIsStruct_ThrowsTypeLoadException();
                 Parameter_DifferentCustomMarshalerType_MarshalsCorrectly();
-                DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException();
+                if (SupportsExceptionInterop)
+                {
+                    // EH interop is not supported for NativeAOT.
+                    DelegateParameter_MarshalerOnRefInt_ThrowsMarshalDirectiveException();
+                }
             }
             catch (Exception e)
             {

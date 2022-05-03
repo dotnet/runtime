@@ -4,7 +4,6 @@
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Buffers.Text
 {
@@ -58,7 +57,7 @@ namespace System.Buffers.Text
         //
         [DoesNotReturn]
         [StackTraceHidden]
-        public static bool TryParseThrowFormatException<T>(ReadOnlySpan<byte> source, out T value, out int bytesConsumed) where T : struct
+        public static bool TryParseThrowFormatException<T>(ReadOnlySpan<byte> _, out T value, out int bytesConsumed) where T : struct
         {
             // The parameters to this method are ordered the same as our callers' parameters
             // allowing the JIT to avoid unnecessary register swapping or spilling.

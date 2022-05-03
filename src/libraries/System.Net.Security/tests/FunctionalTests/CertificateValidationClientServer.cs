@@ -40,6 +40,7 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(false, false)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task CertificateSelectionCallback_DelayedCertificate_OK(bool delayCertificate, bool sendClientCertificate)
         {
             X509Certificate? remoteCertificate = null;
@@ -99,12 +100,7 @@ namespace System.Net.Security.Tests
                 if (delayCertificate)
                 {
                     // LocalCertificateSelectionCallback should be called with real remote certificate.
-                    if (!OperatingSystem.IsWindows())
-                    {
-                        // remote certificate does not work on windows.
-                        // https://github.com/dotnet/runtime/issues/63321
-                        Assert.NotNull(remoteCertificate);
-                    }
+                    Assert.NotNull(remoteCertificate);
                 }
             }
         }
@@ -112,6 +108,7 @@ namespace System.Net.Security.Tests
         [Theory]
         [InlineData(false)]
         [InlineData(true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task CertificateValidationClientServer_EndToEnd_Ok(bool useClientSelectionCallback)
         {
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Loopback, 0);

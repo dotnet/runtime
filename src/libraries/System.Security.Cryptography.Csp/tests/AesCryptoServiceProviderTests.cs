@@ -79,9 +79,9 @@ namespace System.Security.Cryptography.Encryption.Aes.Tests
         }
 
         [Fact]
-        public static void TestShimOverloads()
+        public static void TestShimOverrides()
         {
-            ShimHelpers.VerifyAllBaseMembersOverloaded(typeof(AesCryptoServiceProvider));
+            ShimHelpers.VerifyAllBaseMembersOverridden(typeof(AesCryptoServiceProvider));
         }
     }
 }

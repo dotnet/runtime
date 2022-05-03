@@ -46,9 +46,9 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
@@ -80,9 +80,9 @@ namespace System.Text.Json
             Stream utf8Json,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             return ReadAllUsingOptions<TValue>(utf8Json, typeof(TValue), options);
@@ -118,14 +118,13 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
-
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
@@ -158,14 +157,13 @@ namespace System.Text.Json
             Type returnType,
             JsonSerializerOptions? options = null)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
-
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
 
             return ReadAllUsingOptions<object>(utf8Json, returnType, options);
@@ -199,14 +197,13 @@ namespace System.Text.Json
             JsonTypeInfo<TValue> jsonTypeInfo,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
-
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             return ReadAllAsync<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
@@ -236,14 +233,13 @@ namespace System.Text.Json
             Stream utf8Json,
             JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
-
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             return ReadAll<TValue>(utf8Json, jsonTypeInfo);
@@ -282,19 +278,17 @@ namespace System.Text.Json
             JsonSerializerContext context,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
-
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             return ReadAllAsync<object>(utf8Json, GetTypeInfo(context, returnType), cancellationToken);
@@ -329,19 +323,17 @@ namespace System.Text.Json
             Type returnType,
             JsonSerializerContext context)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
-
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             return ReadAll<object>(utf8Json, GetTypeInfo(context, returnType));
@@ -366,9 +358,9 @@ namespace System.Text.Json
             JsonSerializerOptions? options = null,
             CancellationToken cancellationToken = default)
         {
-            if (utf8Json == null)
+            if (utf8Json is null)
             {
-                throw new ArgumentNullException(nameof(utf8Json));
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
             }
 
             options ??= JsonSerializerOptions.Default;
@@ -390,6 +382,7 @@ namespace System.Text.Json
                 JsonConverter converter = QueueOfTConverter<Queue<TValue>, TValue>.Instance;
                 JsonTypeInfo jsonTypeInfo = CreateQueueJsonTypeInfo<TValue>(converter, options);
                 ReadStack readStack = default;
+                jsonTypeInfo.EnsureConfigured();
                 readStack.Initialize(jsonTypeInfo, supportContinuation: true);
                 var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
 
@@ -419,7 +412,7 @@ namespace System.Text.Json
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
                 Justification = "Workaround for https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
         private static JsonTypeInfo CreateQueueJsonTypeInfo<TValue>(JsonConverter queueConverter, JsonSerializerOptions queueOptions) =>
-                new JsonTypeInfo(typeof(Queue<TValue>), queueConverter, typeof(Queue<TValue>), queueOptions);
+                new ReflectionJsonTypeInfo<Queue<TValue>>(queueConverter, queueOptions);
 
         internal static async ValueTask<TValue?> ReadAllAsync<TValue>(
             Stream utf8Json,
@@ -429,6 +422,7 @@ namespace System.Text.Json
             JsonSerializerOptions options = jsonTypeInfo.Options;
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
             ReadStack readStack = default;
+            jsonTypeInfo.EnsureConfigured();
             readStack.Initialize(jsonTypeInfo, supportContinuation: true);
             JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
@@ -459,6 +453,7 @@ namespace System.Text.Json
             JsonSerializerOptions options = jsonTypeInfo.Options;
             var bufferState = new ReadBufferState(options.DefaultBufferSize);
             ReadStack readStack = default;
+            jsonTypeInfo.EnsureConfigured();
             readStack.Initialize(jsonTypeInfo, supportContinuation: true);
             JsonConverter converter = readStack.Current.JsonPropertyInfo!.ConverterBase;
             var jsonReaderState = new JsonReaderState(options.GetReaderOptions());

@@ -94,14 +94,7 @@ namespace System.IO.Pipes
             int outBufferSize,
             HandleInheritability inheritability)
         {
-            if (pipeName == null)
-            {
-                throw new ArgumentNullException(nameof(pipeName));
-            }
-            if (pipeName.Length == 0)
-            {
-                throw new ArgumentException(SR.Argument_NeedNonemptyPipeName);
-            }
+            ArgumentException.ThrowIfNullOrEmpty(pipeName);
             if (direction < PipeDirection.In || direction > PipeDirection.InOut)
             {
                 throw new ArgumentOutOfRangeException(nameof(direction), SR.ArgumentOutOfRange_DirectionModeInOutOrInOut);
@@ -148,10 +141,8 @@ namespace System.IO.Pipes
         public NamedPipeServerStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, PipeTransmissionMode.Byte, 0)
         {
-            if (safePipeHandle == null)
-            {
-                throw new ArgumentNullException(nameof(safePipeHandle));
-            }
+            ArgumentNullException.ThrowIfNull(safePipeHandle);
+
             if (safePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));

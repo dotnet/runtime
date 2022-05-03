@@ -5,7 +5,9 @@
 #include "asmconstants.h"
 
 .syntax unified
+#ifndef __armv6__
 .thumb
+#endif
 
 // EXTERN_C void ThrowExceptionFromContextInternal(CONTEXT* context, PAL_SEHException* ex);
 LEAF_ENTRY ThrowExceptionFromContextInternal, _TEXT

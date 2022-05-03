@@ -12,7 +12,7 @@ internal static partial class Interop
         /// <summary>
         /// Version used for a buffer containing a scalar integer (not an IntPtr)
         /// </summary>
-        [GeneratedDllImport(Libraries.Crypt32)]
+        [LibraryImport(Libraries.Crypt32)]
         private static unsafe partial IntPtr CryptFindOIDInfo(CryptOidInfoKeyType dwKeyType, int* pvKey, OidGroup group);
 
         public static CRYPT_OID_INFO FindAlgIdOidInfo(Interop.BCrypt.ECC_CURVE_ALG_ID_ENUM algId)

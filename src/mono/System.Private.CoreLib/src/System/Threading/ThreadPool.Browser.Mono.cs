@@ -4,6 +4,7 @@
 using System.Diagnostics;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using System.Diagnostics.CodeAnalysis;
 using Microsoft.Win32.SafeHandles;
@@ -25,12 +26,9 @@ namespace System.Threading
 
     public static partial class ThreadPool
     {
-        // Time-sensitive work items are those that may need to run ahead of normal work items at least periodically. For a
-        // runtime that does not support time-sensitive work items on the managed side, the thread pool yields the thread to the
-        // runtime periodically (by exiting the dispatch loop) so that the runtime may use that thread for processing
-        // any time-sensitive work. For a runtime that supports time-sensitive work items on the managed side, the thread pool
-        // does not yield the thread and instead processes time-sensitive work items queued by specific APIs periodically.
-        internal const bool SupportsTimeSensitiveWorkItems = false; // the timer currently doesn't queue time-sensitive work
+        // Indicates whether the thread pool should yield the thread from the dispatch loop to the runtime periodically so that
+        // the runtime may use the thread for processing other work
+        internal static bool YieldFromDispatchLoop => true;
 
         private const bool IsWorkerTrackingEnabledInConfig = false;
 
@@ -117,6 +115,37 @@ namespace System.Threading
         {
             _callbackQueued = false;
             ThreadPoolWorkQueue.Dispatch();
+        }
+
+        private static unsafe void NativeOverlappedCallback(nint overlappedPtr) =>
+            _IOCompletionCallback.PerformSingleIOCompletionCallback(0, 0, (NativeOverlapped*)overlappedPtr);
+
+        [CLSCompliant(false)]
+        [SupportedOSPlatform("windows")]
+        public static unsafe bool UnsafeQueueNativeOverlapped(NativeOverlapped* overlapped)
+        {
+            if (overlapped == null)
+            {
+                ThrowHelper.ThrowArgumentNullException(ExceptionArgument.overlapped);
+            }
+
+            // OS doesn't signal handle, so do it here (CoreCLR does this assignment in ThreadPoolNative::CorPostQueuedCompletionStatus)
+            overlapped->InternalLow = (IntPtr)0;
+            // Both types of callbacks are executed on the same thread pool
+            return UnsafeQueueUserWorkItem(NativeOverlappedCallback, (nint)overlapped, preferLocal: false);
+        }
+
+        [Obsolete("ThreadPool.BindHandle(IntPtr) has been deprecated. Use ThreadPool.BindHandle(SafeHandle) instead.")]
+        [SupportedOSPlatform("windows")]
+        public static bool BindHandle(IntPtr osHandle)
+        {
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
+        }
+
+        [SupportedOSPlatform("windows")]
+        public static bool BindHandle(SafeHandle osHandle)
+        {
+            throw new PlatformNotSupportedException(SR.Arg_PlatformNotSupported); // Replaced by ThreadPoolBoundHandle.BindHandle
         }
     }
 }

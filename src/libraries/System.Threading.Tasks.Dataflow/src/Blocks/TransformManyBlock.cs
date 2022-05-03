@@ -569,7 +569,10 @@ namespace System.Threading.Tasks.Dataflow
         /// <include file='XmlDocs/CommonXmlDocComments.xml' path='CommonXmlDocComments/Blocks/Member[@name="Fault"]/*' />
         void IDataflowBlock.Fault(Exception exception)
         {
-            if (exception == null) throw new ArgumentNullException(nameof(exception));
+            if (exception is null)
+            {
+                throw new ArgumentNullException(nameof(exception));
+            }
 
             _target.Complete(exception, dropPendingMessages: true);
         }

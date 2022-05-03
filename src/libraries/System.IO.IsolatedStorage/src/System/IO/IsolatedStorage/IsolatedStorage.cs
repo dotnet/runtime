@@ -55,7 +55,7 @@ namespace System.IO.IsolatedStorage
         {
             get
             {
-                throw new InvalidOperationException(SR.Format(SR.IsolatedStorage_CurrentSizeUndefined, nameof(CurrentSize)));
+                throw new InvalidOperationException(SR.IsolatedStorage_CurrentSizeUndefined);
             }
         }
 

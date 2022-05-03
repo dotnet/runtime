@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Content Include="$(LibrariesProjectRoot)System.Private.Xml\src\Utils\DTDs\XHTML10\no_comments\xhtml1-frameset.dtd">

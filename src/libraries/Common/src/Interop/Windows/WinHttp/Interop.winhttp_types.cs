@@ -244,6 +244,9 @@ internal static partial class Interop
             IntPtr statusInformation,
             uint statusInformationLength);
 
+#if NET7_0_OR_GREATER
+        [NativeMarshalling(typeof(Native))]
+#endif
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
         public struct WINHTTP_AUTOPROXY_OPTIONS
         {
@@ -255,6 +258,46 @@ internal static partial class Interop
             public uint Reserved2;
             [MarshalAs(UnmanagedType.Bool)]
             public bool AutoLoginIfChallenged;
+#if NET7_0_OR_GREATER
+            [CustomTypeMarshaller(typeof(WINHTTP_AUTOPROXY_OPTIONS), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
+            public struct Native
+            {
+                private uint Flags;
+                private uint AutoDetectFlags;
+                private IntPtr AutoConfigUrl;
+                private IntPtr Reserved1;
+                private uint Reserved2;
+                private int AutoLoginIfChallenged;
+
+                public Native(WINHTTP_AUTOPROXY_OPTIONS managed)
+                {
+                    Flags = managed.Flags;
+                    AutoDetectFlags = managed.AutoDetectFlags;
+                    AutoConfigUrl = managed.AutoConfigUrl is not null ? Marshal.StringToCoTaskMemUni(managed.AutoConfigUrl) : IntPtr.Zero;
+                    Reserved1 = managed.Reserved1;
+                    Reserved2 = managed.Reserved2;
+                    AutoLoginIfChallenged = managed.AutoLoginIfChallenged ? 1 : 0;
+                }
+
+                public WINHTTP_AUTOPROXY_OPTIONS ToManaged()
+                {
+                    return new WINHTTP_AUTOPROXY_OPTIONS
+                    {
+                        Flags = Flags,
+                        AutoDetectFlags = AutoDetectFlags,
+                        AutoConfigUrl = AutoConfigUrl != IntPtr.Zero ? Marshal.PtrToStringUni(AutoConfigUrl) : null,
+                        Reserved1 = Reserved1,
+                        Reserved2 = Reserved2,
+                        AutoLoginIfChallenged = AutoLoginIfChallenged != 0
+                    };
+                }
+
+                public void FreeNative()
+                {
+                    Marshal.FreeCoTaskMem(AutoConfigUrl);
+                }
+            }
+#endif
         }
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]

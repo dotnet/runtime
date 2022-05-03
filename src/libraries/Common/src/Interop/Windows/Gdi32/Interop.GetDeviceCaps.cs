@@ -30,7 +30,7 @@ internal static partial class Interop
             public const int DT_RASPRINTER = 2;
         }
 
-        [GeneratedDllImport(Libraries.Gdi32)]
+        [LibraryImport(Libraries.Gdi32)]
         public static partial int GetDeviceCaps(IntPtr hdc, DeviceCapability index);
 
         public static int GetDeviceCaps(HandleRef hdc, DeviceCapability index)

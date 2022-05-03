@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Gdi32
     {
-        [GeneratedDllImport(Libraries.Gdi32, CharSet = CharSet.Unicode, ExactSpelling = true)]
+        [LibraryImport(Libraries.Gdi32)]
         public static partial IntPtr CreateFontIndirectW(ref User32.LOGFONT lplf);
     }
 }

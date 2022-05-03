@@ -8,10 +8,6 @@ using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.Arm;
 using System.Runtime.Intrinsics.X86;
 
-#if SYSTEM_PRIVATE_CORELIB
-using Internal.Runtime.CompilerServices;
-#endif
-
 namespace System.Text
 {
     internal static partial class ASCIIUtility
@@ -89,7 +85,7 @@ namespace System.Text
             // pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            return (Sse2.IsSupported || AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian)
+            return (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
                 ? GetIndexOfFirstNonAsciiByte_Intrinsified(pBuffer, bufferLength)
                 : GetIndexOfFirstNonAsciiByte_Default(pBuffer, bufferLength);
         }
@@ -1614,7 +1610,7 @@ namespace System.Text
             // pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            if (BitConverter.IsLittleEndian && (Sse2.IsSupported || AdvSimd.Arm64.IsSupported))
+            if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
                 {

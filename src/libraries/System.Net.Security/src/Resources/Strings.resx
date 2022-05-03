@@ -135,7 +135,7 @@
     <value>The connection was closed</value>
   </data>
   <data name="net_io_invalidnestedcall" xml:space="preserve">
-    <value> The {0} method cannot be called when another {1} operation is pending.</value>
+    <value> This method may not be called when another {0} operation is pending.</value>
   </data>
   <data name="net_io_invalidendcall" xml:space="preserve">
     <value>{0} can only be called once for each asynchronous operation.</value>
@@ -221,9 +221,6 @@
   <data name="net_auth_alert" xml:space="preserve">
     <value>Authentication failed on the remote side (the stream might still be available for additional authentication attempts).</value>
   </data>
-  <data name="net_auth_ignored_reauth" xml:space="preserve">
-    <value>Re-authentication failed because the remote party continued to encrypt more than {0} bytes before answering re-authentication.</value>
-  </data>
   <data name="net_auth_message_not_encrypted" xml:space="preserve">
     <value>Protocol error: A received message contains a valid signature but it was not encrypted as required by the effective Protection Level.</value>
   </data>
@@ -232,9 +229,6 @@
   </data>
   <data name="net_frame_size" xml:space="preserve">
     <value>Received an invalid authentication frame. The message size is limited to {0} bytes, attempted to read {1} bytes.</value>
-  </data>
-  <data name="net_frame_read_io" xml:space="preserve">
-    <value>Received incomplete authentication message. Remote party has probably closed the connection.</value>
   </data>
   <data name="net_frame_read_size" xml:space="preserve">
     <value>Cannot determine the frame size or a corrupted frame was received.</value>
@@ -245,77 +239,8 @@
   <data name="net_invalid_enum" xml:space="preserve">
     <value>The specified value is not valid in the '{0}' enumeration.</value>
   </data>
-  <data name="event_EnumerateSecurityPackages" xml:space="preserve">
-    <value>Enumerating security packages:</value>
-  </data>
-  <data name="event_SspiPackageNotFound" xml:space="preserve">
-    <value>Security package '{0}' was not found.</value>
-  </data>
-  <data name="event_SecurityContextInputBuffer" xml:space="preserve">
-    <value>{0}(In-Buffer length={1}, Out-Buffer length={2}, returned code={3}).</value>
-  </data>
-  <data name="event_SecurityContextInputBuffers" xml:space="preserve">
-    <value>{0}(In-Buffers count={1}, Out-Buffer length={2}, returned code={3}).</value>
-  </data>
-  <data name="event_SspiSelectedCipherSuite" xml:space="preserve">
-    <value>{0}(Protocol={1}, Cipher={2} {3} bit strength, Hash={4} {5} bit strength, Key Exchange={6} {7} bit strength).</value>
-  </data>
-  <data name="event_RemoteCertificate" xml:space="preserve">
-    <value>Remote certificate: {0}.</value>
-  </data>
-  <data name="event_LocatingPrivateKey" xml:space="preserve">
-    <value>Locating the private key for the certificate: {0}.</value>
-  </data>
-  <data name="event_CertIsType2" xml:space="preserve">
-    <value>Certificate is of type X509Certificate2 and contains the private key.</value>
-  </data>
-  <data name="event_FoundCertInStore" xml:space="preserve">
-    <value>Found the certificate in the {0} store.</value>
-  </data>
-  <data name="event_NotFoundCertInStore" xml:space="preserve">
-    <value>Cannot find the certificate in either the LocalMachine store or the CurrentUser store.</value>
-  </data>
   <data name="net_log_open_store_failed" xml:space="preserve">
     <value>Opening Certificate store {0} failed, exception: {1}.</value>
-  </data>
-  <data name="event_CertificateFromDelegate" xml:space="preserve">
-    <value>Got a certificate from the client delegate.</value>
-  </data>
-  <data name="event_NoDelegateNoClientCert" xml:space="preserve">
-    <value>Client delegate did not provide a certificate; and there are not other user-provided certificates. Need to attempt a session restart.</value>
-  </data>
-  <data name="event_NoDelegateButClientCert" xml:space="preserve">
-    <value>Client delegate did not provide a certificate; but there are other user-provided certificates.</value>
-  </data>
-  <data name="event_AttemptingRestartUsingCert" xml:space="preserve">
-    <value>Attempting to restart the session using the user-provided certificate: {0}.</value>
-  </data>
-  <data name="event_NoIssuersTryAllCerts" xml:space="preserve">
-    <value>We have user-provided certificates. The server has not specified any issuers, so try all the certificates.</value>
-  </data>
-  <data name="event_LookForMatchingCerts" xml:space="preserve">
-    <value>We have user-provided certificates. The server has specified {0} issuer(s). Looking for certificates that match any of the issuers.</value>
-  </data>
-  <data name="event_SelectedCert" xml:space="preserve">
-    <value>Selected certificate: {0}.</value>
-  </data>
-  <data name="event_CertsAfterFiltering" xml:space="preserve">
-    <value>Left with {0} client certificates to choose from.</value>
-  </data>
-  <data name="event_FindingMatchingCerts" xml:space="preserve">
-    <value>Trying to find a matching certificate in the certificate store.</value>
-  </data>
-  <data name="event_UsingCachedCredential" xml:space="preserve">
-    <value>Using the cached credential handle.</value>
-  </data>
-  <data name="event_RemoteCertDeclaredValid" xml:space="preserve">
-    <value>Remote certificate was verified as valid by the user.</value>
-  </data>
-  <data name="event_RemoteCertUserDeclaredInvalid" xml:space="preserve">
-    <value>Remote certificate was verified as invalid by the user.</value>
-  </data>
-  <data name="event_RemoteCertHasNoErrors" xml:space="preserve">
-    <value>Remote certificate has no errors.</value>
   </data>
   <data name="net_log_remote_cert_has_errors" xml:space="preserve">
     <value>Remote certificate has errors:</value>
@@ -340,9 +265,6 @@
   </data>
   <data name="security_ExtendedProtectionPolicy_NoEmptyServiceNameCollection" xml:space="preserve">
     <value>The ServiceNameCollection must contain at least one service name.</value>
-  </data>
-  <data name="security_ServiceNameCollection_EmptyServiceName" xml:space="preserve">
-    <value>A service name must not be null or empty.</value>
   </data>
   <data name="net_allocate_ssl_context_failed" xml:space="preserve">
     <value>Failed to allocate SSL/TLS context, OpenSSL error - {0}.</value>
@@ -373,9 +295,6 @@
   </data>
   <data name="net_ssl_write_bio_failed_error" xml:space="preserve">
     <value>SSL Write BIO failed with OpenSSL error - {0}.</value>
-  </data>
-  <data name="net_ssl_x509Name_push_failed_error" xml:space="preserve">
-    <value>Failed to push X509_NAME into stack.</value>
   </data>
   <data name="net_ssl_get_connection_info_failed" xml:space="preserve">
     <value>Getting SSL connection info failed with OpenSSL error - {0}.</value>
@@ -457,7 +376,7 @@
   </data>
   <data name="net_ssl_renegotiate_buffer" xml:space="preserve">
     <value>Client stream needs to be drained before renegotiation.</value>
-  </data>  
+  </data>
   <data name="net_android_ssl_api_level_unsupported" xml:space="preserve">
     <value>Setting an SNI hostname is not supported on this API level.</value>
   </data>
@@ -466,5 +385,8 @@
   </data>
   <data name="net_ssl_trust_collection" xml:space="preserve">
     <value>Sending trust from collection is not supported on Windows.</value>
+  </data>
+  <data name="net_ssl_trust_handshake" xml:space="preserve">
+    <value>Sending trust in handshake is not supported on this platform.</value>
   </data>
 </root>

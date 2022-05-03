@@ -425,7 +425,7 @@ namespace System.Data
             {
                 if (_sort.Length == 0 && _applyDefaultSort && _table != null && _table._primaryIndex.Length > 0)
                 {
-                    return _table.FormatSortString(_table._primaryIndex);
+                    return DataTable.FormatSortString(_table._primaryIndex);
                 }
                 else
                 {
@@ -1110,7 +1110,7 @@ namespace System.Data
             Sort = sortString.ToString(); // what if we dont have any valid sort criteira? we would reset the sort
         }
 
-        private string CreateSortString(PropertyDescriptor property, ListSortDirection direction)
+        private static string CreateSortString(PropertyDescriptor property, ListSortDirection direction)
         {
             Debug.Assert(property != null, "property is null");
             StringBuilder resultString = new StringBuilder();
@@ -1754,7 +1754,7 @@ namespace System.Data
             return dt;
         }
 
-        private bool RowExist(List<object[]> arraylist, object[] objectArray)
+        private static bool RowExist(List<object[]> arraylist, object[] objectArray)
         {
             for (int i = 0; i < arraylist.Count; i++)
             {

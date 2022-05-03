@@ -44,7 +44,7 @@ namespace System.Net.WebSockets.Tests
             stream.Enqueue(0xc1, 0x07, 0xf2, 0x48, 0xcd, 0xc9, 0xc9, 0x07, 0x00);
             using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
 
             Memory<byte> buffer = new byte[5];
@@ -74,7 +74,7 @@ namespace System.Net.WebSockets.Tests
             using WebSocket websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
                 IsServer = true,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
 
             await websocket.SendAsync(Encoding.UTF8.GetBytes("Hello"), WebSocketMessageType.Text, true, CancellationToken);
@@ -95,7 +95,7 @@ namespace System.Net.WebSockets.Tests
             using WebSocket websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
                 IsServer = true,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
 
             byte[] bytes = Encoding.UTF8.GetBytes("Hello");
@@ -113,7 +113,7 @@ namespace System.Net.WebSockets.Tests
             using WebSocket websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
                 IsServer = true,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
 
             byte[] bytes = Encoding.UTF8.GetBytes("Hello");
@@ -123,7 +123,7 @@ namespace System.Net.WebSockets.Tests
             using WebSocket client = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 IsServer = false,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
 
             ValueWebSocketReceiveResult result = await client.ReceiveAsync(bytes.AsMemory(), CancellationToken);
@@ -141,7 +141,7 @@ namespace System.Net.WebSockets.Tests
             WebSocketTestStream stream = new();
             using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
                 {
                     ClientContextTakeover = false
                 }
@@ -171,7 +171,7 @@ namespace System.Net.WebSockets.Tests
             using WebSocket websocket = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
                 IsServer = true,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
                 {
                     ServerContextTakeover = false
                 }
@@ -196,7 +196,7 @@ namespace System.Net.WebSockets.Tests
             WebSocketTestStream stream = new();
             using WebSocket websocket = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
             // The first 3 octets(0xf2 0x48 0x05) and the least significant two
             // bits of the 4th octet(0x00) constitute one DEFLATE block with
@@ -285,14 +285,14 @@ namespace System.Net.WebSockets.Tests
             using WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 IsServer = true,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
                 {
                     ClientMaxWindowBits = windowBits
                 }
             });
             using WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
                 {
                     ClientMaxWindowBits = windowBits
                 }
@@ -466,7 +466,7 @@ namespace System.Net.WebSockets.Tests
             using WebSocket server = WebSocket.CreateFromStream(stream, new WebSocketCreationOptions
             {
                 IsServer = true,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
                 {
                     ClientContextTakeover = false,
                     ClientMaxWindowBits = clientWindowBits,
@@ -476,7 +476,7 @@ namespace System.Net.WebSockets.Tests
             });
             using WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
                 {
                     ClientContextTakeover = false,
                     ClientMaxWindowBits = clientWindowBits,
@@ -568,7 +568,7 @@ namespace System.Net.WebSockets.Tests
             {
                 IsServer = true,
                 KeepAliveInterval = TimeSpan.Zero,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
                 {
                     ClientMaxWindowBits = 9,
                     ServerMaxWindowBits = 9
@@ -577,7 +577,7 @@ namespace System.Net.WebSockets.Tests
             using WebSocket client = WebSocket.CreateFromStream(stream.Remote, new WebSocketCreationOptions
             {
                 KeepAliveInterval = TimeSpan.Zero,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
                 {
                     ClientMaxWindowBits = 9,
                     ServerMaxWindowBits = 9
@@ -609,7 +609,7 @@ namespace System.Net.WebSockets.Tests
             {
                 IsServer = true,
                 KeepAliveInterval = TimeSpan.Zero,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
 
             byte[] frame1 = new byte[1024];
@@ -626,7 +626,7 @@ namespace System.Net.WebSockets.Tests
             {
                 IsServer = false,
                 KeepAliveInterval = TimeSpan.Zero,
-                DangerousDeflateOptions = new()
+                DangerousDeflateOptions = new WebSocketDeflateOptions()
             });
 
             int messageSize = 0;

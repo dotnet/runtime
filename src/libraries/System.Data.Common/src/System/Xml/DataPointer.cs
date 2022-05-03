@@ -54,7 +54,7 @@ namespace System.Xml
                 return rowElem;
             }
 
-            _doc.Mapper.GetRegion(_node, out rowElem);
+            DataSetMapper.GetRegion(_node, out rowElem);
             return rowElem;
         }
 
@@ -499,7 +499,7 @@ namespace System.Xml
             }
         }
 
-        private bool IsLocalNameEmpty(XmlNodeType nt)
+        private static bool IsLocalNameEmpty(XmlNodeType nt)
         {
             switch (nt)
             {

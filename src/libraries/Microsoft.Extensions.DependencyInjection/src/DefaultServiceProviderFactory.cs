@@ -28,12 +28,7 @@ namespace Microsoft.Extensions.DependencyInjection
         /// <param name="options">The options to use for this instance.</param>
         public DefaultServiceProviderFactory(ServiceProviderOptions options)
         {
-            if (options == null)
-            {
-                throw new ArgumentNullException(nameof(options));
-            }
-
-            _options = options;
+            _options = options ?? throw new ArgumentNullException(nameof(options));
         }
 
         /// <inheritdoc />

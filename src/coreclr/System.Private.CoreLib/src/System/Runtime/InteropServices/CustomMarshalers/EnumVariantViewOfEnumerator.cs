@@ -10,10 +10,7 @@ namespace System.Runtime.InteropServices.CustomMarshalers
     {
         public EnumVariantViewOfEnumerator(IEnumerator enumerator)
         {
-            if (enumerator is null)
-            {
-                throw new ArgumentNullException(nameof(enumerator));
-            }
+            ArgumentNullException.ThrowIfNull(enumerator);
 
             Enumerator = enumerator;
         }
