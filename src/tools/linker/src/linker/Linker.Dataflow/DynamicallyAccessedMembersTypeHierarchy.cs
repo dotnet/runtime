@@ -47,26 +47,19 @@ namespace Mono.Linker.Dataflow
 
 		public (DynamicallyAccessedMemberTypes annotation, bool applied) ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (TypeDefinition type)
 		{
-			// Non-interfaces must be marked already
-			Debug.Assert (type.IsInterface || _context.Annotations.IsMarked (type));
+			// We'll use the cache also as a way to detect and avoid recursion for interfaces and annotated base types
+			if (_typesInDynamicallyAccessedMembersHierarchy.TryGetValue (type, out var existingValue))
+				return existingValue;
 
 			DynamicallyAccessedMemberTypes annotation = _context.Annotations.FlowAnnotations.GetTypeAnnotation (type);
 			bool apply = false;
 
-			// We'll use the cache also as a way to detect and avoid recursion
-			// There's no possiblity to have recursion among base types, so only do this for interfaces
-			if (type.IsInterface) {
-				if (_typesInDynamicallyAccessedMembersHierarchy.TryGetValue (type, out var existingValue))
-					return existingValue;
-
+			if (type.IsInterface)
 				_typesInDynamicallyAccessedMembersHierarchy.Add (type, (annotation, false));
-			}
 
-			// Base should already be marked (since we're marking its derived type now)
-			// so we should already have its cached values filled.
 			TypeDefinition? baseType = _context.TryResolve (type.BaseType);
-			Debug.Assert (baseType == null || _context.Annotations.IsMarked (baseType));
-			if (baseType != null && _typesInDynamicallyAccessedMembersHierarchy.TryGetValue (baseType, out var baseValue)) {
+			if (baseType != null) {
+				var baseValue = ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (baseType);
 				annotation |= baseValue.annotation;
 				apply |= baseValue.applied;
 			}
@@ -117,7 +110,7 @@ namespace Mono.Linker.Dataflow
 				var origin = new MessageOrigin (type);
 				var reflectionMarker = new ReflectionMarker (_context, _markStep);
 				// Report warnings on access to annotated members, with the annotated type as the origin.
-				ApplyDynamicallyAccessedMembersToType (ref reflectionMarker, origin, type, annotation);
+				ApplyDynamicallyAccessedMembersToType (reflectionMarker, origin, type, annotation);
 			}
 
 			return (annotation, apply);
@@ -127,10 +120,7 @@ namespace Mono.Linker.Dataflow
 			ReflectionMarker reflectionMarker,
 			TypeDefinition type)
 		{
-			Debug.Assert (_context.Annotations.IsMarked (type));
-
-			// The type should be in our cache already
-			(var annotation, var applied) = GetCachedInfoForTypeInHierarchy (type);
+			(var annotation, var applied) = ProcessMarkedTypeForDynamicallyAccessedMembersHierarchy (type);
 
 			// If the annotation was already applied to this type, there's no reason to repeat the operation, the result will
 			// be no change.
@@ -140,7 +130,7 @@ namespace Mono.Linker.Dataflow
 			// Apply the effective annotation for the type
 			var origin = new MessageOrigin (type);
 			// Report warnings on access to annotated members, with the annotated type as the origin.
-			ApplyDynamicallyAccessedMembersToType (ref reflectionMarker, origin, type, annotation);
+			ApplyDynamicallyAccessedMembersToType (reflectionMarker, origin, type, annotation);
 
 			// Mark it as applied in the cache
 			_typesInDynamicallyAccessedMembersHierarchy[type] = (annotation, true);
@@ -180,7 +170,7 @@ namespace Mono.Linker.Dataflow
 		}
 
 		bool ApplyDynamicallyAccessedMembersToTypeHierarchyInner (
-			ReflectionMarker reflectionMarker,
+			in ReflectionMarker reflectionMarker,
 			TypeDefinition type)
 		{
 			(var annotation, var applied) = GetCachedInfoForTypeInHierarchy (type);
@@ -210,14 +200,14 @@ namespace Mono.Linker.Dataflow
 			if (applied) {
 				var origin = new MessageOrigin (type);
 				// Report warnings on access to annotated members, with the annotated type as the origin.
-				ApplyDynamicallyAccessedMembersToType (ref reflectionMarker, origin, type, annotation);
+				ApplyDynamicallyAccessedMembersToType (reflectionMarker, origin, type, annotation);
 				_typesInDynamicallyAccessedMembersHierarchy[type] = (annotation, true);
 			}
 
 			return applied;
 		}
 
-		void ApplyDynamicallyAccessedMembersToType (ref ReflectionMarker reflectionMarker, in MessageOrigin origin, TypeDefinition type, DynamicallyAccessedMemberTypes annotation)
+		void ApplyDynamicallyAccessedMembersToType (in ReflectionMarker reflectionMarker, in MessageOrigin origin, TypeDefinition type, DynamicallyAccessedMemberTypes annotation)
 		{
 			Debug.Assert (annotation != DynamicallyAccessedMemberTypes.None);
 
@@ -262,8 +252,6 @@ namespace Mono.Linker.Dataflow
 
 		(DynamicallyAccessedMemberTypes annotation, bool applied) GetCachedInfoForTypeInHierarchy (TypeDefinition type)
 		{
-			Debug.Assert (type.IsInterface || _context.Annotations.IsMarked (type));
-
 			// The type should be in our cache already
 			if (!_typesInDynamicallyAccessedMembersHierarchy.TryGetValue (type, out var existingValue)) {
 				// If it's not in the cache it should be a non-interface type in which case it means there were no annotations
