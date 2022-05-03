@@ -97,8 +97,8 @@ monoLttngDataTypeMapping ={
         "win:Struct"        :"const uint8_t *",
         #actual spec
         "win:GUID"          :"const int32_t",
-        "win:AnsiString"    :"const uint8_t*",
-        "win:UnicodeString" :"const uint8_t*",
+        "win:AnsiString"    :"const char*",
+        "win:UnicodeString" :"const ep_char8_t*",
         "win:Double"        :"const double",
         "win:Int32"         :"const int32_t",
         "win:Boolean"       :"const bool",
@@ -106,8 +106,8 @@ monoLttngDataTypeMapping ={
         "win:UInt32"        :"const uint32_t",
         "win:UInt16"        :"const uint16_t",
         "win:UInt8"         :"const uint8_t",
-        "win:Pointer"       :"const size_t",
-        "win:Binary"        :"const BYTE"
+        "win:Pointer"       :"const void*",
+        "win:Binary"        :"const uint8_t"
         }
 
 def getLttngDataTypeMapping(runtimeFlavor):

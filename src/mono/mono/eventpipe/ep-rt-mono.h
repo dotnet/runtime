@@ -2184,7 +2184,7 @@ typedef struct _BulkTypeEventLogger BulkTypeEventLogger;
 void
 ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger);
 
-uint32_t
+int
 ep_rt_mono_log_single_type (BulkTypeEventLogger *p_type_logger, MonoType *mono_type, intptr_t type_id);
 
 void
@@ -2194,7 +2194,7 @@ void
 ep_rt_mono_log_type_and_parameters_if_necessary (BulkTypeEventLogger *p_type_logger, MonoType *mono_type, intptr_t type_id);
 
 void
-ep_rt_mono_send_method_details_events (MonoMethod *method);
+ep_rt_mono_send_method_details_event (MonoMethod *method);
 
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method);
