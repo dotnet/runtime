@@ -30,6 +30,12 @@
     <Compile Include="X86\Avx2Tests.GatherVector128.cs" />
     <Compile Include="X86\Avx2Tests.GatherVector256.cs" />
     <Compile Include="X86\Avx2Tests.InsertVector128.cs" />
+    <Compile Include="X86\Avx2Tests.LoadAlignedVector256NonTemporal.cs" />
+    <Compile Include="X86\Avx2Tests.MaskLoad.cs" />
+    <Compile Include="X86\Avx2Tests.MaskStore.cs" />
+    <Compile Include="X86\Avx2Tests.Or.cs" />
+    <Compile Include="X86\Avx2Tests.Permute2x128.cs" />
+    <Compile Include="X86\Avx2Tests.Permute4x64.cs" />
     <Compile Include="X86\AvxTests.cs" />
     <Compile Include="X86\AvxTests.ExtractVector128.cs" />
     <Compile Include="X86\AvxTests.InsertVector128.cs" />
