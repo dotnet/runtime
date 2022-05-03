@@ -3561,7 +3561,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
 	mono_marshal_set_callconv_from_modopt (method, csig, FALSE);
 
-	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
+	mspecs = g_new0 (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
 	if (mono_class_try_get_suppress_gc_transition_attribute_class ()) {

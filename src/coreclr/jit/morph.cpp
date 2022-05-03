@@ -1769,16 +1769,18 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         if (setupArg != nullptr)
         {
             arg.SetEarlyNode(setupArg);
+
+            // Make sure we do not break recognition of retbuf-as-local
+            // optimization here. If this is hit it indicates that we are
+            // unnecessarily creating temps for some ret buf addresses, and
+            // gtCallGetDefinedRetBufLclAddr relies on this not to happen.
+            noway_assert((arg.GetWellKnownArg() != WellKnownArg::RetBuffer) || !call->IsOptimizingRetBufAsLocal());
         }
 
         arg.SetLateNode(defArg);
         *lateTail = &arg;
         lateTail  = &arg.LateNextRef();
     }
-
-    // Make sure we did not do anything here that stops us from being able to
-    // find the local ret buf if we are optimizing it.
-    noway_assert(!call->IsOptimizingRetBufAsLocal() || (comp->gtCallGetDefinedRetBufLclAddr(call) != nullptr));
 
 #ifdef DEBUG
     if (comp->verbose)
@@ -11171,10 +11173,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
         }
 
-        /* Morphing along with folding and inlining may have changed the
-         * side effect flags, so we have to reset them
-         *
-         * NOTE: Don't reset the exception flags on nodes that may throw */
+        // Morphing along with folding and inlining may have changed the
+        // side effect flags, so we have to reset them
+        //
+        // NOTE: Don't reset the exception flags on nodes that may throw
 
         assert(tree->gtOper != GT_CALL);
 
@@ -11183,11 +11185,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             tree->gtFlags &= ~GTF_CALL;
         }
 
-        /* Propagate the new flags */
+        // Propagate the new flags
         tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
 
-        // &aliasedVar doesn't need GTF_GLOB_REF, though alisasedVar does
-        if (oper == GT_ADDR && (op1->gtOper == GT_LCL_VAR))
+        // addresses of locals do not need GTF_GLOB_REF, even if the child has
+        // it (is address exposed). Note that general addressing may still need
+        // GTF_GLOB_REF, for example if the subtree has a comma that involves a
+        // global reference.
+        if (tree->OperIs(GT_ADDR) && ((tree->gtFlags & GTF_GLOB_REF) != 0) && tree->IsLocalAddrExpr())
         {
             tree->gtFlags &= ~GTF_GLOB_REF;
         }
