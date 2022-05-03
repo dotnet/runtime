@@ -1442,7 +1442,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     foreach (SourceFile source in context.store.Load(sessionId, loaded_files, token))
                     {
-                        Console.WriteLine(context.Id + "-" + source.Url);
                         await OnSourceFileAdded(sessionId, source, context, token);
                     }
                 }

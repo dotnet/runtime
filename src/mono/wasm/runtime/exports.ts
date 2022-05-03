@@ -33,7 +33,7 @@ import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
     mono_wasm_load_data_archive, mono_wasm_asm_loaded,
-    mono_wasm_get_loaded_files,    
+    mono_wasm_get_loaded_files,
     configure_emscripten_startup
 } from "./startup";
 import { mono_set_timeout, schedule_background_exec } from "./scheduling";
