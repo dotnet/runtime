@@ -1477,6 +1477,15 @@ void Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     GenTree* op2 = node->Op(2);
     GenTree* op3 = node->Op(3);
 
+    if (op1->OperIsHWIntrinsic()) 
+    {
+        GenTreeHWIntrinsic* hwintrinsic = op1->AsHWIntrinsic();
+        hwintrinsic->GetHWIntrinsicId();
+        // compare to a list of known ids in a helper function
+        // we want to see if this is any of the compare intrinsics
+        // If it is one of those, we can generate the blend 
+    }
+
     // We will be constructing the following parts:
     //          /--*  op1 simd16
     //          *  STORE_LCL_VAR simd16
