@@ -88,7 +88,17 @@ namespace System.Reflection
             }
             else
             {
-                RuntimeType returnType = (RuntimeType)((RuntimeMethodInfo)method).ReturnType;
+                RuntimeType returnType;
+                if (method is RuntimeMethodInfo rmi)
+                {
+                    returnType = (RuntimeType)rmi.ReturnType;
+                }
+                else
+                {
+                    Debug.Assert(method is DynamicMethod);
+                    returnType = (RuntimeType)((DynamicMethod)method).ReturnType;
+                }
+
                 if (returnType == typeof(void))
                 {
                     il.Emit(OpCodes.Ldnull);
