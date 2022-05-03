@@ -9582,22 +9582,21 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 
     assert(loopNum < optLoopCount);
     LoopDsc& loop = optLoopTable[loopNum];
+
+    for (BasicBlock* const auxBlock : loop.LoopBlocks())
+    {
+        assert(auxBlock->bbNatLoopNum == loopNum);
+        JITDUMP("Resetting loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", auxBlock->bbNum, loopNum,
+                loop.lpParent);
+        auxBlock->bbNatLoopNum = loop.lpParent;
+    }
+
     loop.lpFlags |= LPFLG_REMOVED;
 
 #ifdef DEBUG
     if (optAnyChildNotRemoved(loopNum))
     {
         JITDUMP("Removed loop " FMT_LP " has one or more live children\n", loopNum);
-    }
-
-    for (BasicBlock* const auxBlock : Blocks())
-    {
-        if (auxBlock->bbNatLoopNum == loopNum)
-        {
-            JITDUMP("Resetting loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", auxBlock->bbNum, loopNum,
-                    loop.lpParent);
-            auxBlock->bbNatLoopNum = loop.lpParent;
-        }
     }
 
 // Note: we can't call `fgDebugCheckLoopTable()` here because if there are live children, it will assert.
