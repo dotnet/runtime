@@ -8,6 +8,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using Microsoft.Diagnostics.Tools.RuntimeClient;
 using Tracing.Tests.Common;
 using System.Threading;
@@ -297,6 +298,133 @@ namespace Tracing.Tests.PauseOnStartValidation
                     Logger.logger.Log($"Sent: {message.ToString()}");
                     response = IpcClient.SendMessage(stream, message);
                     Logger.logger.Log($"received: {response.ToString()}");
+                }
+            );
+
+            fSuccess &= await subprocessTask;
+
+            return fSuccess;
+        }
+
+        public static async Task<bool> TEST_ProcessInfoBeforeAndAfterSuspension()
+        {
+            // This test only applies to platforms where the PAL is used
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                return true;
+
+            // This test only applies to CoreCLR (this checks if we're running on Mono)
+            if (Type.GetType("Mono.RuntimeStructs") != null)
+                return true;
+
+            bool fSuccess = true;
+            string serverName = ReverseServer.MakeServerAddress();
+            Logger.logger.Log($"Server name is '{serverName}'");
+            var server = new ReverseServer(serverName);
+            using var memoryStream1 = new MemoryStream();
+            using var memoryStream2 = new MemoryStream();
+            using var memoryStream3 = new MemoryStream();
+            Task<bool> subprocessTask = Utils.RunSubprocess(
+                currentAssembly: Assembly.GetExecutingAssembly(),
+                environment: new Dictionary<string,string> { { Utils.DiagnosticPortsEnvKey, $"{serverName}" } },
+                duringExecution: async (pid) =>
+                {
+                    Process currentProcess = Process.GetCurrentProcess();
+
+                    Stream stream = await server.AcceptAsync();
+                    IpcAdvertise advertise = IpcAdvertise.Parse(stream);
+                    Logger.logger.Log(advertise.ToString());
+
+                    Logger.logger.Log($"Get ProcessInfo while process is suspended");
+                    // 0x04 = ProcessCommandSet, 0x04 = ProcessInfo2
+                    var message = new IpcMessage(0x04, 0x04);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    IpcMessage response = IpcClient.SendMessage(stream, message);
+                    Logger.logger.Log($"received: {response.ToString()}");
+
+                    ProcessInfo2 pi2Before = ProcessInfo2.TryParse(response.Payload);
+                    Utils.Assert(pi2Before.Commandline.Equals(currentProcess.MainModule.FileName), $"Before resuming, the commandline should be the mock value of the host executable path '{currentProcess.MainModule.FileName}'. Observed: '{pi2Before.Commandline}'");
+
+                    // recycle
+                    stream = await server.AcceptAsync();
+                    advertise = IpcAdvertise.Parse(stream);
+                    Logger.logger.Log(advertise.ToString());
+
+                    // Start EP session to know when runtime is resumed
+                    var config = new SessionConfiguration(
+                        circularBufferSizeMB: 1000,
+                        format: EventPipeSerializationFormat.NetTrace,
+                        providers: new List<Provider> { 
+                            new Provider("Microsoft-Windows-DotNETRuntimePrivate", 0x80000000, EventLevel.Verbose),
+                            new Provider("Microsoft-DotNETCore-SampleProfiler")
+                        });
+                    Logger.logger.Log("Starting EventPipeSession over standard connection");
+                    using Stream eventStream = EventPipeClient.CollectTracing(pid, config, out var sessionId);
+                    Logger.logger.Log($"Started EventPipeSession over standard connection with session id: 0x{sessionId:x}");
+
+                    TaskCompletionSource<bool> runtimeResumed = new(false, TaskCreationOptions.RunContinuationsAsynchronously);
+
+                    var eventPipeTask = Task.Run(() =>
+                    {
+                        Logger.logger.Log("Creating source");
+                        using var source = new EventPipeEventSource(eventStream);
+                        var parser = new ClrPrivateTraceEventParser(source);
+                        parser.StartupEEStartupStart += (_) => runtimeResumed.SetResult(true);
+                        source.Process();
+                        Logger.logger.Log("stopping processing");
+                    });
+
+                    Logger.logger.Log($"Send ResumeRuntime Diagnostics IPC Command");
+                    // send ResumeRuntime command (0x04=ProcessCommandSet, 0x01=ResumeRuntime commandid)
+                    message = new IpcMessage(0x04,0x01);
+                    Logger.logger.Log($"Sent: {message.ToString()}");
+                    response = IpcClient.SendMessage(stream, message);
+                    Logger.logger.Log($"received: {response.ToString()}");
+
+                    // recycle
+                    stream = await server.AcceptAsync();
+                    advertise = IpcAdvertise.Parse(stream);
+                    Logger.logger.Log(advertise.ToString());
+
+                    // wait a little bit to make sure the runtime of the target is fully up, i.e., g_EEStarted == true
+                    // on resource constrained CI machines this may not be instantaneous
+                    Logger.logger.Log($"awaiting resume");
+                    await Utils.WaitTillTimeout(runtimeResumed.Task, TimeSpan.FromSeconds(10));
+                    Logger.logger.Log($"resumed");
+
+                    // await Task.Delay(TimeSpan.FromSeconds(1));
+                    Logger.logger.Log("Stopping EventPipeSession over standard connection");
+                    EventPipeClient.StopTracing(pid, sessionId);
+                    Logger.logger.Log($"Await reader task");
+                    await eventPipeTask;
+                    Logger.logger.Log("Stopped EventPipeSession over standard connection");
+
+                    ProcessInfo2 pi2After = default;
+
+                    // The timing is not exact. There is a small window after resuming where the mock
+                    // value is still present. Retry several times to catch it.
+                    var retryTask = Task.Run(async () =>
+                    {
+                        int i = 0;
+                        do {
+                            Logger.logger.Log($"Get ProcessInfo after resumption: attempt {i++}");
+                            // 0x04 = ProcessCommandSet, 0x04 = ProcessInfo2
+                            message = new IpcMessage(0x04, 0x04);
+                            Logger.logger.Log($"Sent: {message.ToString()}");
+                            response = IpcClient.SendMessage(stream, message);
+                            Logger.logger.Log($"received: {response.ToString()}");
+
+                            pi2After = ProcessInfo2.TryParse(response.Payload);
+
+                            // recycle
+                            stream = await server.AcceptAsync();
+                            advertise = IpcAdvertise.Parse(stream);
+                            Logger.logger.Log(advertise.ToString());
+                        } while (pi2After.Commandline.Equals(pi2Before.Commandline));
+                    });
+
+                    await Utils.WaitTillTimeout(retryTask, TimeSpan.FromSeconds(10));
+
+                    Utils.Assert(!pi2After.Commandline.Equals(pi2Before.Commandline), $"After resuming, the commandline should be the correct value. Observed: Before='{pi2Before.Commandline}' After='{pi2After.Commandline}'");
                 }
             );
 

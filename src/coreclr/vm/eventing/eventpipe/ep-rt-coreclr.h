@@ -1109,50 +1109,6 @@ _rt_coreclr_hash_map_iterator_value (CONST_ITERATOR_TYPE *iterator)
 
 static
 inline
-char *
-diagnostics_command_line_get (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-	return ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
-}
-
-static
-inline
-ep_char8_t **
-diagnostics_command_line_get_ref (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	extern ep_char8_t *_ep_rt_coreclr_diagnostics_cmd_line;
-	return &_ep_rt_coreclr_diagnostics_cmd_line;
-}
-
-static
-inline
-void
-diagnostics_command_line_lazy_init (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	//TODO: Real lazy init implementation.
-	if (!*diagnostics_command_line_get_ref ())
-		*diagnostics_command_line_get_ref () = diagnostics_command_line_get ();
-}
-
-static
-inline
-void
-diagnostics_command_line_lazy_clean (void)
-{
-	STATIC_CONTRACT_NOTHROW;
-
-	//TODO: Real lazy clean up implementation.
-	ep_rt_utf8_string_free (*diagnostics_command_line_get_ref ());
-	*diagnostics_command_line_get_ref () = NULL;
-}
-
-static
-inline
 ep_rt_lock_handle_t *
 ep_rt_coreclr_config_lock_get (void)
 {
@@ -1263,6 +1219,15 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 	return static_cast<size_t>(InterlockedCompareExchangeT<size_t> (target, value, expected));
 }
 
+static
+inline
+ep_char8_t *
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<ep_char8_t *>(InterlockedCompareExchangeT<ep_char8_t *> (target, value, expected));
+}
+
 /*
  * EventPipe.
  */
@@ -1316,7 +1281,6 @@ void
 ep_rt_shutdown (void)
 {
 	STATIC_CONTRACT_NOTHROW;
-	diagnostics_command_line_lazy_clean ();
 }
 
 static
@@ -2711,8 +2675,32 @@ ep_rt_diagnostics_command_line_get (void)
 {
 	STATIC_CONTRACT_NOTHROW;
 
-	diagnostics_command_line_lazy_init ();
-	return *diagnostics_command_line_get_ref ();
+	// In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
+	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
+	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
+	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
+	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested. 
+	// As a result, we cannot actually cache this value. We need to return the _current_ value.
+	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
+	// There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value
+	// and conservatively leak the old value if it changed. This is extremely rare and should only leak 1 string.
+	extern ep_char8_t *volatile _ep_rt_coreclr_diagnostics_cmd_line;
+
+	ep_char8_t *old_cmd_line = _ep_rt_coreclr_diagnostics_cmd_line;
+	ep_char8_t *new_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
+	if (old_cmd_line && ep_rt_utf8_string_compare (old_cmd_line, new_cmd_line) == 0) {
+		// same as old, so free the new one
+		ep_rt_utf8_string_free (new_cmd_line);
+	} else {
+		// attempt an update, and give up if you lose the race
+		if (ep_rt_atomic_compare_exchange_utf8_string (&_ep_rt_coreclr_diagnostics_cmd_line, old_cmd_line, new_cmd_line) != old_cmd_line) {
+			ep_rt_utf8_string_free (new_cmd_line);
+		}
+		// NOTE: If there was a value we purposefully leak it since it may still be in use.
+		// This leak is *small* (length of the command line) and bounded (should only happen once)
+	}
+
+	return _ep_rt_coreclr_diagnostics_cmd_line;
 }
 
 /*
