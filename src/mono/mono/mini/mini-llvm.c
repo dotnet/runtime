@@ -1542,6 +1542,9 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	gboolean vretaddr = FALSE;
 	MonoType *rtype;
 
+	if (strstr(ctx->method_name, "test") != NULL)
+		printf("~~~Reached sig_to_llvm_sig_full for Min\n");
+
 	if (!cinfo)
 		return sig_to_llvm_sig_no_cinfo (ctx, sig);
 
@@ -1696,6 +1699,11 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 				}
 			}
 			break;
+		case LLVMArgVtypeInSIMDReg: {
+			MonoClass *klass = mono_class_from_mono_type_internal (sig->params [i]);
+			param_types [pindex ++] = simd_class_to_llvm_type (ctx, klass);;
+			break;
+		}
 		case LLVMArgVtypeByVal:
 			param_types [pindex] = type_to_llvm_arg_type (ctx, ainfo->type);
 			if (!ctx_ok (ctx))
@@ -3866,6 +3874,7 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 			ctx->addresses [reg] = build_alloca (ctx, ainfo->type);
 			LLVMBuildStore (builder, arg, convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMTypeOf (arg), 0)));
+			break;
 		}
 		case LLVMArgVtypeByVal: {
 			ctx->addresses [reg] = LLVMGetParam (ctx->lmethod, pindex);
