@@ -44,7 +44,7 @@ namespace Microsoft.Quic
 
         public static bool StatusSucceeded(int status)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return status >= 0;
             }
@@ -56,7 +56,7 @@ namespace Microsoft.Quic
 
         public static bool StatusFailed(int status)
         {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            if (OperatingSystem.IsWindows())
             {
                 return status < 0;
             }
@@ -66,41 +66,41 @@ namespace Microsoft.Quic
             }
         }
 
-        public static readonly int QUIC_STATUS_SUCCESS = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_SUCCESS : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_SUCCESS : MsQuic_Linux.QUIC_STATUS_SUCCESS;
-        public static readonly int QUIC_STATUS_PENDING = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_PENDING : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_PENDING : MsQuic_Linux.QUIC_STATUS_PENDING;
-        public static readonly int QUIC_STATUS_CONTINUE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_CONTINUE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_CONTINUE : MsQuic_Linux.QUIC_STATUS_CONTINUE;
-        public static readonly int QUIC_STATUS_OUT_OF_MEMORY = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_OUT_OF_MEMORY : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_OUT_OF_MEMORY : MsQuic_Linux.QUIC_STATUS_OUT_OF_MEMORY;
-        public static readonly int QUIC_STATUS_INVALID_PARAMETER = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_INVALID_PARAMETER : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_INVALID_PARAMETER : MsQuic_Linux.QUIC_STATUS_INVALID_PARAMETER;
-        public static readonly int QUIC_STATUS_INVALID_STATE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_INVALID_STATE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_INVALID_STATE : MsQuic_Linux.QUIC_STATUS_INVALID_STATE;
-        public static readonly int QUIC_STATUS_NOT_SUPPORTED = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_NOT_SUPPORTED : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_NOT_SUPPORTED : MsQuic_Linux.QUIC_STATUS_NOT_SUPPORTED;
-        public static readonly int QUIC_STATUS_NOT_FOUND = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_NOT_FOUND : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_NOT_FOUND : MsQuic_Linux.QUIC_STATUS_NOT_FOUND;
-        public static readonly int QUIC_STATUS_BUFFER_TOO_SMALL = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_BUFFER_TOO_SMALL : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_BUFFER_TOO_SMALL : MsQuic_Linux.QUIC_STATUS_BUFFER_TOO_SMALL;
-        public static readonly int QUIC_STATUS_HANDSHAKE_FAILURE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_HANDSHAKE_FAILURE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_HANDSHAKE_FAILURE : MsQuic_Linux.QUIC_STATUS_HANDSHAKE_FAILURE;
-        public static readonly int QUIC_STATUS_ABORTED = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_ABORTED : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_ABORTED : MsQuic_Linux.QUIC_STATUS_ABORTED;
-        public static readonly int QUIC_STATUS_ADDRESS_IN_USE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_ADDRESS_IN_USE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_ADDRESS_IN_USE : MsQuic_Linux.QUIC_STATUS_ADDRESS_IN_USE;
-        public static readonly int QUIC_STATUS_CONNECTION_TIMEOUT = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_CONNECTION_TIMEOUT : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_CONNECTION_TIMEOUT : MsQuic_Linux.QUIC_STATUS_CONNECTION_TIMEOUT;
-        public static readonly int QUIC_STATUS_CONNECTION_IDLE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_CONNECTION_IDLE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_CONNECTION_IDLE : MsQuic_Linux.QUIC_STATUS_CONNECTION_IDLE;
-        public static readonly int QUIC_STATUS_UNREACHABLE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_UNREACHABLE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_UNREACHABLE : MsQuic_Linux.QUIC_STATUS_UNREACHABLE;
-        public static readonly int QUIC_STATUS_INTERNAL_ERROR = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_INTERNAL_ERROR : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_INTERNAL_ERROR : MsQuic_Linux.QUIC_STATUS_INTERNAL_ERROR;
-        public static readonly int QUIC_STATUS_CONNECTION_REFUSED = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_CONNECTION_REFUSED : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_CONNECTION_REFUSED : MsQuic_Linux.QUIC_STATUS_CONNECTION_REFUSED;
-        public static readonly int QUIC_STATUS_PROTOCOL_ERROR = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_PROTOCOL_ERROR : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_PROTOCOL_ERROR : MsQuic_Linux.QUIC_STATUS_PROTOCOL_ERROR;
-        public static readonly int QUIC_STATUS_VER_NEG_ERROR = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_VER_NEG_ERROR : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_VER_NEG_ERROR : MsQuic_Linux.QUIC_STATUS_VER_NEG_ERROR;
-        public static readonly int QUIC_STATUS_TLS_ERROR = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_TLS_ERROR : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_TLS_ERROR : MsQuic_Linux.QUIC_STATUS_TLS_ERROR;
-        public static readonly int QUIC_STATUS_USER_CANCELED = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_USER_CANCELED : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_USER_CANCELED : MsQuic_Linux.QUIC_STATUS_USER_CANCELED;
-        public static readonly int QUIC_STATUS_ALPN_NEG_FAILURE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_ALPN_NEG_FAILURE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_ALPN_NEG_FAILURE : MsQuic_Linux.QUIC_STATUS_ALPN_NEG_FAILURE;
-        public static readonly int QUIC_STATUS_STREAM_LIMIT_REACHED = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_STREAM_LIMIT_REACHED : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_STREAM_LIMIT_REACHED : MsQuic_Linux.QUIC_STATUS_STREAM_LIMIT_REACHED;
-        public static readonly int QUIC_STATUS_CLOSE_NOTIFY = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_CLOSE_NOTIFY : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_CLOSE_NOTIFY : MsQuic_Linux.QUIC_STATUS_CLOSE_NOTIFY;
-        public static readonly int QUIC_STATUS_BAD_CERTIFICATE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_BAD_CERTIFICATE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_BAD_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_BAD_CERTIFICATE;
-        public static readonly int QUIC_STATUS_UNSUPPORTED_CERTIFICATE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_UNSUPPORTED_CERTIFICATE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_UNSUPPORTED_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_UNSUPPORTED_CERTIFICATE;
-        public static readonly int QUIC_STATUS_REVOKED_CERTIFICATE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_REVOKED_CERTIFICATE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_REVOKED_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_REVOKED_CERTIFICATE;
-        public static readonly int QUIC_STATUS_EXPIRED_CERTIFICATE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_EXPIRED_CERTIFICATE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_EXPIRED_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_EXPIRED_CERTIFICATE;
-        public static readonly int QUIC_STATUS_UNKNOWN_CERTIFICATE = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_UNKNOWN_CERTIFICATE : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_UNKNOWN_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_UNKNOWN_CERTIFICATE;
-        public static readonly int QUIC_STATUS_CERT_EXPIRED = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_CERT_EXPIRED : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_CERT_EXPIRED : MsQuic_Linux.QUIC_STATUS_CERT_EXPIRED;
-        public static readonly int QUIC_STATUS_CERT_UNTRUSTED_ROOT = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_STATUS_CERT_UNTRUSTED_ROOT : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_STATUS_CERT_UNTRUSTED_ROOT : MsQuic_Linux.QUIC_STATUS_CERT_UNTRUSTED_ROOT;
+        public static int QUIC_STATUS_SUCCESS => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_SUCCESS : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_SUCCESS : MsQuic_MacOS.QUIC_STATUS_SUCCESS;
+        public static int QUIC_STATUS_PENDING => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_PENDING : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_PENDING : MsQuic_Linux.QUIC_STATUS_PENDING;
+        public static int QUIC_STATUS_CONTINUE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CONTINUE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CONTINUE : MsQuic_Linux.QUIC_STATUS_CONTINUE;
+        public static int QUIC_STATUS_OUT_OF_MEMORY => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_OUT_OF_MEMORY : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_OUT_OF_MEMORY : MsQuic_Linux.QUIC_STATUS_OUT_OF_MEMORY;
+        public static int QUIC_STATUS_INVALID_PARAMETER => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_INVALID_PARAMETER : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_INVALID_PARAMETER : MsQuic_Linux.QUIC_STATUS_INVALID_PARAMETER;
+        public static int QUIC_STATUS_INVALID_STATE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_INVALID_STATE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_INVALID_STATE : MsQuic_Linux.QUIC_STATUS_INVALID_STATE;
+        public static int QUIC_STATUS_NOT_SUPPORTED => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_NOT_SUPPORTED : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_NOT_SUPPORTED : MsQuic_Linux.QUIC_STATUS_NOT_SUPPORTED;
+        public static int QUIC_STATUS_NOT_FOUND => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_NOT_FOUND : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_NOT_FOUND : MsQuic_Linux.QUIC_STATUS_NOT_FOUND;
+        public static int QUIC_STATUS_BUFFER_TOO_SMALL => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_BUFFER_TOO_SMALL : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_BUFFER_TOO_SMALL : MsQuic_Linux.QUIC_STATUS_BUFFER_TOO_SMALL;
+        public static int QUIC_STATUS_HANDSHAKE_FAILURE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_HANDSHAKE_FAILURE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_HANDSHAKE_FAILURE : MsQuic_Linux.QUIC_STATUS_HANDSHAKE_FAILURE;
+        public static int QUIC_STATUS_ABORTED => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_ABORTED : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_ABORTED : MsQuic_Linux.QUIC_STATUS_ABORTED;
+        public static int QUIC_STATUS_ADDRESS_IN_USE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_ADDRESS_IN_USE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_ADDRESS_IN_USE : MsQuic_Linux.QUIC_STATUS_ADDRESS_IN_USE;
+        public static int QUIC_STATUS_CONNECTION_TIMEOUT => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CONNECTION_TIMEOUT : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CONNECTION_TIMEOUT : MsQuic_Linux.QUIC_STATUS_CONNECTION_TIMEOUT;
+        public static int QUIC_STATUS_CONNECTION_IDLE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CONNECTION_IDLE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CONNECTION_IDLE : MsQuic_Linux.QUIC_STATUS_CONNECTION_IDLE;
+        public static int QUIC_STATUS_UNREACHABLE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_UNREACHABLE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_UNREACHABLE : MsQuic_Linux.QUIC_STATUS_UNREACHABLE;
+        public static int QUIC_STATUS_INTERNAL_ERROR => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_INTERNAL_ERROR : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_INTERNAL_ERROR : MsQuic_Linux.QUIC_STATUS_INTERNAL_ERROR;
+        public static int QUIC_STATUS_CONNECTION_REFUSED => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CONNECTION_REFUSED : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CONNECTION_REFUSED : MsQuic_Linux.QUIC_STATUS_CONNECTION_REFUSED;
+        public static int QUIC_STATUS_PROTOCOL_ERROR => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_PROTOCOL_ERROR : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_PROTOCOL_ERROR : MsQuic_Linux.QUIC_STATUS_PROTOCOL_ERROR;
+        public static int QUIC_STATUS_VER_NEG_ERROR => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_VER_NEG_ERROR : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_VER_NEG_ERROR : MsQuic_Linux.QUIC_STATUS_VER_NEG_ERROR;
+        public static int QUIC_STATUS_TLS_ERROR => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_TLS_ERROR : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_TLS_ERROR : MsQuic_Linux.QUIC_STATUS_TLS_ERROR;
+        public static int QUIC_STATUS_USER_CANCELED => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_USER_CANCELED : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_USER_CANCELED : MsQuic_Linux.QUIC_STATUS_USER_CANCELED;
+        public static int QUIC_STATUS_ALPN_NEG_FAILURE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_ALPN_NEG_FAILURE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_ALPN_NEG_FAILURE : MsQuic_Linux.QUIC_STATUS_ALPN_NEG_FAILURE;
+        public static int QUIC_STATUS_STREAM_LIMIT_REACHED => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_STREAM_LIMIT_REACHED : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_STREAM_LIMIT_REACHED : MsQuic_Linux.QUIC_STATUS_STREAM_LIMIT_REACHED;
+        public static int QUIC_STATUS_CLOSE_NOTIFY => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CLOSE_NOTIFY : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CLOSE_NOTIFY : MsQuic_Linux.QUIC_STATUS_CLOSE_NOTIFY;
+        public static int QUIC_STATUS_BAD_CERTIFICATE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_BAD_CERTIFICATE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_BAD_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_BAD_CERTIFICATE;
+        public static int QUIC_STATUS_UNSUPPORTED_CERTIFICATE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_UNSUPPORTED_CERTIFICATE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_UNSUPPORTED_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_UNSUPPORTED_CERTIFICATE;
+        public static int QUIC_STATUS_REVOKED_CERTIFICATE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_REVOKED_CERTIFICATE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_REVOKED_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_REVOKED_CERTIFICATE;
+        public static int QUIC_STATUS_EXPIRED_CERTIFICATE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_EXPIRED_CERTIFICATE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_EXPIRED_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_EXPIRED_CERTIFICATE;
+        public static int QUIC_STATUS_UNKNOWN_CERTIFICATE => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_UNKNOWN_CERTIFICATE : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_UNKNOWN_CERTIFICATE : MsQuic_Linux.QUIC_STATUS_UNKNOWN_CERTIFICATE;
+        public static int QUIC_STATUS_CERT_EXPIRED => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CERT_EXPIRED : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CERT_EXPIRED : MsQuic_Linux.QUIC_STATUS_CERT_EXPIRED;
+        public static int QUIC_STATUS_CERT_UNTRUSTED_ROOT => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_STATUS_CERT_UNTRUSTED_ROOT : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_STATUS_CERT_UNTRUSTED_ROOT : MsQuic_Linux.QUIC_STATUS_CERT_UNTRUSTED_ROOT;
 
-        public static readonly int QUIC_ADDRESS_FAMILY_UNSPEC = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_UNSPEC : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_ADDRESS_FAMILY_UNSPEC : MsQuic_Linux.QUIC_ADDRESS_FAMILY_UNSPEC;
-        public static readonly int QUIC_ADDRESS_FAMILY_INET = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_INET : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_ADDRESS_FAMILY_INET : MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET;
-        public static readonly int QUIC_ADDRESS_FAMILY_INET6 = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_INET6 : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MsQuic_MacOS.QUIC_ADDRESS_FAMILY_INET6 : MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET6;
+        public static int QUIC_ADDRESS_FAMILY_UNSPEC => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_UNSPEC : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_ADDRESS_FAMILY_UNSPEC : MsQuic_Linux.QUIC_ADDRESS_FAMILY_UNSPEC;
+        public static int QUIC_ADDRESS_FAMILY_INET => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_INET : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET : MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET;
+        public static int QUIC_ADDRESS_FAMILY_INET6 => OperatingSystem.IsWindows() ? MsQuic_Windows.QUIC_ADDRESS_FAMILY_INET6 : (OperatingSystem.IsLinux() || OperatingSystem.IsAndroid()) ? MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET6 : MsQuic_Linux.QUIC_ADDRESS_FAMILY_INET6;
     }
 
     /// <summary>Defines the type of a member as it was used in the native signature.</summary>
@@ -140,7 +140,6 @@ namespace Microsoft.Quic
         public fixed byte sin_addr[4];
     }
 
-    // TODO: rename to C#-like
     [StructLayout(LayoutKind.Sequential)]
     internal unsafe struct QuicAddrIn6
     {
@@ -161,11 +160,13 @@ namespace Microsoft.Quic
         [FieldOffset(0)]
         public QuicAddrFamilyAndLen FamilyLen;
 
+        public static bool SockaddrHasLength => OperatingSystem.IsFreeBSD() || OperatingSystem.IsIOS() || OperatingSystem.IsMacOS() || OperatingSystem.IsMacCatalyst() || OperatingSystem.IsTvOS() || OperatingSystem.IsWatchOS();
+
         public int Family
         {
             get
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (SockaddrHasLength)
                 {
                     return FamilyLen.sin_family_bsd;
                 }
@@ -176,7 +177,7 @@ namespace Microsoft.Quic
             }
             set
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.FreeBSD) || RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                if (SockaddrHasLength)
                 {
                     FamilyLen.sin_family_bsd = (byte)value;
                 }

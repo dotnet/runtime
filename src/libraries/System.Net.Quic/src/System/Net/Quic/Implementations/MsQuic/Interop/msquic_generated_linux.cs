@@ -5,9 +5,6 @@
 //
 #pragma warning restore IDE0073
 
-
-using System.Runtime.InteropServices;
-
 namespace Microsoft.Quic
 {
     internal static unsafe partial class MsQuic_Linux
