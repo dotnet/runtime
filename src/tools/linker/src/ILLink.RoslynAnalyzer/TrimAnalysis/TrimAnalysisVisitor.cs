@@ -297,18 +297,36 @@ namespace ILLink.RoslynAnalyzer.TrimAnalysis
 				if (constantValue == null) {
 					constValue = NullValue.Instance;
 					return true;
-				} else if (operation.Type?.SpecialType == SpecialType.System_String && constantValue is string stringConstantValue) {
-					constValue = new KnownStringValue (stringConstantValue);
-					return true;
 				} else if (operation.Type?.TypeKind == TypeKind.Enum && constantValue is int enumConstantValue) {
 					constValue = new ConstIntValue (enumConstantValue);
 					return true;
-				} else if (operation.Type?.SpecialType == SpecialType.System_Int32 && constantValue is int intConstantValue) {
-					constValue = new ConstIntValue (intConstantValue);
-					return true;
-				} else if (operation.Type?.SpecialType == SpecialType.System_Boolean && constantValue is bool boolConstantValue) {
-					constValue = new ConstIntValue (boolConstantValue ? 1 : 0);
-					return true;
+				} else {
+					switch (operation.Type?.SpecialType) {
+					case SpecialType.System_String when constantValue is string stringConstantValue:
+						constValue = new KnownStringValue (stringConstantValue);
+						return true;
+					case SpecialType.System_Boolean when constantValue is bool boolConstantValue:
+						constValue = new ConstIntValue (boolConstantValue ? 1 : 0);
+						return true;
+					case SpecialType.System_SByte when constantValue is sbyte sbyteConstantValue:
+						constValue = new ConstIntValue (sbyteConstantValue);
+						return true;
+					case SpecialType.System_Byte when constantValue is byte byteConstantValue:
+						constValue = new ConstIntValue (byteConstantValue);
+						return true;
+					case SpecialType.System_Int16 when constantValue is Int16 int16ConstantValue:
+						constValue = new ConstIntValue (int16ConstantValue);
+						return true;
+					case SpecialType.System_UInt16 when constantValue is UInt16 uint16ConstantValue:
+						constValue = new ConstIntValue (uint16ConstantValue);
+						return true;
+					case SpecialType.System_Int32 when constantValue is Int32 int32ConstantValue:
+						constValue = new ConstIntValue (int32ConstantValue);
+						return true;
+					case SpecialType.System_UInt32 when constantValue is UInt32 uint32ConstantValue:
+						constValue = new ConstIntValue ((int) uint32ConstantValue);
+						return true;
+					}
 				}
 			}
 

@@ -43,6 +43,8 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 			TestMultiDimensionalArray.Test ();
 
 			WriteCapturedArrayElement.Test ();
+
+			ConstantFieldValuesAsIndex.Test ();
 		}
 
 		[ExpectedWarning ("IL2062", nameof (DataFlowTypeExtensions.RequiresPublicMethods))]
@@ -582,6 +584,32 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				TestNullCoalescingAssignmentToEmpty ();
 				TestNullCoalescingAssignmentComplex ();
 				TestNullCoalescingAssignmentToEmptyComplex ();
+			}
+		}
+
+		class ConstantFieldValuesAsIndex
+		{
+			private const sbyte ConstSByte = 1;
+			private const byte ConstByte = 1;
+			private const short ConstShort = 1;
+			private const ushort ConstUShort = 1;
+			private const int ConstInt = 1;
+			private const uint ConstUInt = 1;
+			// Longs and ULongs would need support for conversion logic, which is not implement yet
+
+			public static void Test ()
+			{
+				var types = new Type[2];
+				types[0] = GetUnknownType ();
+				types[1] = typeof (TestType);
+
+				// All the consts are 1, so there should be no warnings
+				types[ConstSByte].RequiresPublicMethods ();
+				types[ConstByte].RequiresPublicMethods ();
+				types[ConstShort].RequiresPublicMethods ();
+				types[ConstUShort].RequiresPublicMethods ();
+				types[ConstInt].RequiresPublicMethods ();
+				types[ConstUInt].RequiresPublicMethods ();
 			}
 		}
 
