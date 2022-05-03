@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Concurrent;
-using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using Microsoft.DotNet.RemoteExecutor;
 using Microsoft.DotNet.XUnitExtensions;
@@ -25,27 +24,27 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.tvOS, "X509 certificate store is not supported on iOS or tvOS.")] // Match SslStream_StreamToStream_Authentication_Success
         public void EventSource_EventsRaisedAsExpected()
         {
-            if (PlatformDetection.IsWindows10Version22000OrGreater)
+          RemoteExecutor.Invoke(async () =>
             {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/58927")]
-                throw new SkipTestException("Unstable on Windows 11");
-            }
-
-            RemoteExecutor.Invoke(() =>
-            {
-                using (var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Security", EventLevel.Verbose))
+                try
                 {
+                    using var listener = new TestEventListener("Private.InternalDiagnostics.System.Net.Security", EventLevel.Verbose);
                     var events = new ConcurrentQueue<EventWrittenEventArgs>();
-                    listener.RunWithCallback(events.Enqueue, () =>
+                    await listener.RunWithCallbackAsync(events.Enqueue, async () =>
                     {
                         // Invoke tests that'll cause some events to be generated
                         var test = new SslStreamStreamToStreamTest_Async();
-                        test.SslStream_StreamToStream_Authentication_Success().GetAwaiter().GetResult();
+                        await test.SslStream_StreamToStream_Authentication_Success();
                     });
                     Assert.DoesNotContain(events, ev => ev.EventId == 0); // errors from the EventSource itself
                     Assert.InRange(events.Count, 1, int.MaxValue);
+                }
+                catch (SkipTestException)
+                {
+                    // Don't throw inside RemoteExecutor if SslStream_StreamToStream_Authentication_Success chose to skip the test
                 }
             }).Dispose();
         }
