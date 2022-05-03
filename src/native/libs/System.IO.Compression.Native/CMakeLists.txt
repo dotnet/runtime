@@ -7,11 +7,20 @@ set(NATIVECOMPRESSION_SOURCES
 )
 
 if (NOT CLR_CMAKE_TARGET_BROWSER)
-    include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
+
+    if (CLR_CMAKE_USE_SYSTEM_BROTLI)
+        add_definitions(-DFEATURE_USE_SYSTEM_BROTLI)
+    else ()
+        include(${CLR_SRC_NATIVE_DIR}/external/brotli.cmake)
+
+        set (NATIVECOMPRESSION_SOURCES
+            ${NATIVECOMPRESSION_SOURCES}
+            ${BROTLI_SOURCES}
+        )
+    endif ()
 
     set (NATIVECOMPRESSION_SOURCES
         ${NATIVECOMPRESSION_SOURCES}
-        ${BROTLI_SOURCES}
         entrypoints.c
     )
 endif ()
@@ -60,14 +69,16 @@ if (CLR_CMAKE_TARGET_UNIX OR CLR_CMAKE_TARGET_BROWSER)
             set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_FLAGS ${EXPORTS_LINKER_OPTION})
             set_property(TARGET System.IO.Compression.Native APPEND_STRING PROPERTY LINK_DEPENDS ${EXPORTS_FILE})
 
-            add_custom_command(TARGET System.IO.Compression.Native POST_BUILD
-                COMMENT "Verifying System.IO.Compression.Native entry points against entrypoints.c "
-                COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
-                    $<TARGET_FILE:System.IO.Compression.Native>
-                    ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
-                    ${CMAKE_NM}
-                VERBATIM
-            )
+            if (NOT CLR_CMAKE_USE_SYSTEM_BROTLI)
+                add_custom_command(TARGET System.IO.Compression.Native POST_BUILD
+                    COMMENT "Verifying System.IO.Compression.Native entry points against entrypoints.c "
+                    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/../verify-entrypoints.sh
+                        $<TARGET_FILE:System.IO.Compression.Native>
+                        ${CMAKE_CURRENT_SOURCE_DIR}/entrypoints.c
+                        ${CMAKE_NM}
+                    VERBATIM
+                )
+            endif ()
         endif ()
 
         install_with_stripped_symbols (System.IO.Compression.Native PROGRAMS .)

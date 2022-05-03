@@ -242,7 +242,7 @@ namespace System.IO.Pipes
 
         /// <summary>Throws an exception if the supplied handle does not represent a valid pipe.</summary>
         /// <param name="safePipeHandle">The handle to validate.</param>
-        internal void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
+        private protected static void ValidateHandleIsPipe(SafePipeHandle safePipeHandle)
         {
             // Check that this handle is infact a handle to a pipe.
             if (Interop.Kernel32.GetFileType(safePipeHandle) != Interop.Kernel32.FileTypes.FILE_TYPE_PIPE)

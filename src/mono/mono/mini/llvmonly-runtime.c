@@ -805,7 +805,6 @@ mini_llvmonly_init_delegate (MonoDelegate *del, MonoDelegateTrampInfo *info)
 
 	ftndesc = info->invoke_impl;
 	if (G_UNLIKELY (!ftndesc) || subtype != WRAPPER_SUBTYPE_NONE) {
-		ERROR_DECL (error);
 		MonoMethod *invoke_impl = mono_marshal_get_delegate_invoke (info->invoke, del);
 		gpointer arg = NULL;
 		gpointer addr = mini_llvmonly_load_method (invoke_impl, FALSE, FALSE, &arg, error);
@@ -973,18 +972,6 @@ mini_llvmonly_throw_aot_failed_exception (const char *name)
 	MonoException *ex = mono_get_exception_execution_engine (msg);
 	g_free (msg);
 	mini_llvmonly_throw_exception ((MonoObject*)ex);
-}
-
-/*
- * mini_llvmonly_pop_lmf:
- *
- *   Pop LMF off the LMF stack.
- */
-void
-mini_llvmonly_pop_lmf (MonoLMF *lmf)
-{
-	if (lmf->previous_lmf)
-		mono_set_lmf ((MonoLMF*)lmf->previous_lmf);
 }
 
 void

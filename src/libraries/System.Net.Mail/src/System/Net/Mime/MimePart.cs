@@ -101,8 +101,10 @@ namespace System.Net.Mime
             }
         }
 
-        internal void SetContent(Stream stream!!)
+        internal void SetContent(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             if (_streamSet)
             {
                 _stream!.Close();
@@ -114,8 +116,10 @@ namespace System.Net.Mime
             TransferEncoding = TransferEncoding.Base64;
         }
 
-        internal void SetContent(Stream stream!!, string? name, string? mimeType)
+        internal void SetContent(Stream stream, string? name, string? mimeType)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             if (mimeType != null && mimeType != string.Empty)
             {
                 _contentType = new ContentType(mimeType);
@@ -127,13 +131,15 @@ namespace System.Net.Mime
             SetContent(stream);
         }
 
-        internal void SetContent(Stream stream!!, ContentType? contentType)
+        internal void SetContent(Stream stream, ContentType? contentType)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             _contentType = contentType;
             SetContent(stream);
         }
 
-        internal void Complete(IAsyncResult result, Exception? e)
+        internal static void Complete(IAsyncResult result, Exception? e)
         {
             //if we already completed and we got called again,
             //it mean's that there was an exception in the callback and we
@@ -254,7 +260,7 @@ namespace System.Net.Mime
         internal void ContentStreamCallbackHandler(IAsyncResult result)
         {
             MimePartContext context = (MimePartContext)result.AsyncState!;
-            Stream outputStream = context._writer.EndGetContentStream(result);
+            Stream outputStream = BaseWriter.EndGetContentStream(result);
             context._outputStream = GetEncodedStream(outputStream);
 
             _readCallback = new AsyncCallback(ReadCallback);

@@ -162,5 +162,36 @@ namespace System.IO.Pipelines.Tests
             Assert.True(result.IsCanceled);
             PipeReader.AdvanceTo(buffer.End);
         }
+
+        [Fact]
+        public Task ReadAtLeastAsyncCancelableWhenWaitingForMoreData()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(1, cts.Token);
+            cts.Cancel();
+            return Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+        }
+
+        [Fact]
+        public async Task ReadAtLeastAsyncCancelableAfterReadingSome()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            await Pipe.WriteAsync(new byte[10], default);
+            ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(11, cts.Token);
+            cts.Cancel();
+            await Assert.ThrowsAsync<OperationCanceledException>(async () => await task);
+        }
+
+        [Fact]
+        public async Task ReadAtLeastAsyncCancelableAfterReadingSomeAndWritingAfterStartingRead()
+        {
+            CancellationTokenSource cts = new CancellationTokenSource();
+            await Pipe.WriteAsync(new byte[10], default);
+            ValueTask<ReadResult> task = PipeReader.ReadAtLeastAsync(12, cts.Token);
+            // Write, but not enough to unblock ReadAtLeastAsync
+            await Pipe.WriteAsync(new byte[1], default);
+            cts.Cancel();
+            await Assert.ThrowsAnyAsync<OperationCanceledException>(async () => await task);
+        }
     }
 }

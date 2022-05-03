@@ -55,7 +55,7 @@ namespace System.Security
 
         public HostProtectionResource ProtectedResources { get; }
 
-        private void AppendResourceString(string resourceString, object attr, StringBuilder sb)
+        private static void AppendResourceString(string resourceString, object attr, StringBuilder sb)
         {
             if (attr == null)
                 return;

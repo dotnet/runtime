@@ -10,7 +10,6 @@ using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Internal;
 
 namespace System.Net.Security
 {
@@ -180,7 +179,7 @@ namespace System.Net.Security
         private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, CancellationToken cancellationToken)
         {
             NetSecurityTelemetry.Log.HandshakeStart(_context!.IsServer, _sslAuthenticationOptions!.TargetHost);
-            ValueStopwatch stopwatch = ValueStopwatch.StartNew();
+            long startingTimestamp = Stopwatch.GetTimestamp();
 
             try
             {
@@ -194,11 +193,11 @@ namespace System.Net.Security
                 // Make sure that we increment the open connection counter only if it is guaranteed to be decremented in dispose/finalize
                 bool connectionOpen = Interlocked.CompareExchange(ref _connectionOpenedStatus, 1, 0) == 0;
 
-                NetSecurityTelemetry.Log.HandshakeCompleted(GetSslProtocolInternal(), stopwatch, connectionOpen);
+                NetSecurityTelemetry.Log.HandshakeCompleted(GetSslProtocolInternal(), startingTimestamp, connectionOpen);
             }
             catch (Exception ex)
             {
-                NetSecurityTelemetry.Log.HandshakeFailed(_context.IsServer, stopwatch, ex.Message);
+                NetSecurityTelemetry.Log.HandshakeFailed(_context.IsServer, startingTimestamp, ex.Message);
                 throw;
             }
         }

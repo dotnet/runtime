@@ -29,7 +29,9 @@ namespace System.Net.Security
     public enum EncryptionPolicy
     {
         RequireEncryption = 0,
+        [System.ObsoleteAttribute("EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.", DiagnosticId = "SYSLIB0040", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         AllowNoEncryption = 1,
+        [System.ObsoleteAttribute("EncryptionPolicy.NoEncryption and AllowEncryption significantly reduce security and should not be used in production code.", DiagnosticId = "SYSLIB0040", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
         NoEncryption = 2,
     }
     public delegate System.Security.Cryptography.X509Certificates.X509Certificate LocalCertificateSelectionCallback(object sender, string targetHost, System.Security.Cryptography.X509Certificates.X509CertificateCollection localCertificates, System.Security.Cryptography.X509Certificates.X509Certificate? remoteCertificate, string[] acceptableIssuers);
@@ -137,7 +139,6 @@ namespace System.Net.Security
         public static SslCertificateTrust CreateForX509Store(
                                                 System.Security.Cryptography.X509Certificates.X509Store store,
                                                 bool sendTrustInHandshake = false) { throw null;  }
-        [System.Runtime.Versioning.UnsupportedOSPlatform("windows")]
         public static SslCertificateTrust CreateForX509Collection(
                                                 System.Security.Cryptography.X509Certificates.X509Certificate2Collection trustList,
                                                 bool sendTrustInHandshake = false) { throw null; }

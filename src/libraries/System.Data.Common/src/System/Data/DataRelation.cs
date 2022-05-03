@@ -291,15 +291,15 @@ namespace System.Data
             object[] parentKeyValues = parentRow.GetKeyValues(ParentKey);
             if (childRow._tempRecord != -1)
             {
-                ChildTable._recordManager.SetKeyValues(childRow._tempRecord, ChildKey, parentKeyValues);
+                RecordManager.SetKeyValues(childRow._tempRecord, ChildKey, parentKeyValues);
             }
             if (childRow._newRecord != -1)
             {
-                ChildTable._recordManager.SetKeyValues(childRow._newRecord, ChildKey, parentKeyValues);
+                RecordManager.SetKeyValues(childRow._newRecord, ChildKey, parentKeyValues);
             }
             if (childRow._oldRecord != -1)
             {
-                ChildTable._recordManager.SetKeyValues(childRow._oldRecord, ChildKey, parentKeyValues);
+                RecordManager.SetKeyValues(childRow._oldRecord, ChildKey, parentKeyValues);
             }
         }
 

@@ -99,7 +99,7 @@ namespace System.Text.Json.Serialization.Converters
             return converter;
         }
 
-        private JsonConverter CreateKeyValuePairConverter(Type type)
+        private static JsonConverter CreateKeyValuePairConverter(Type type)
         {
             Debug.Assert(type.IsKeyValuePair());
 

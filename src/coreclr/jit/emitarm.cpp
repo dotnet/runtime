@@ -4031,7 +4031,7 @@ void emitter::emitIns_R_C(instruction ins, emitAttr attr, regNumber reg, CORINFO
         return;
     }
 
-    // Load address of CLS_VAR into a register
+    // Load address into a register
     codeGen->instGen_Set_Reg_To_Imm(EA_HANDLE_CNS_RELOC, regTmp, addr);
 
     if ((ins != INS_add) || (offs != 0) || (reg != regTmp))
@@ -7120,9 +7120,17 @@ void emitter::emitDispInsHelp(
 
     emitDispInsOffs(offset, doffs);
 
-    /* Display the instruction hex code */
+    BYTE* codeRW = nullptr;
+    if (code != nullptr)
+    {
+        /* Display the instruction hex code */
+        assert(((code >= emitCodeBlock) && (code < emitCodeBlock + emitTotalHotCodeSize)) ||
+               ((code >= emitColdCodeBlock) && (code < emitColdCodeBlock + emitTotalColdCodeSize)));
 
-    emitDispInsHex(id, code, sz);
+        codeRW = code + writeableOffset;
+    }
+
+    emitDispInsHex(id, codeRW, sz);
 
     printf("      ");
 

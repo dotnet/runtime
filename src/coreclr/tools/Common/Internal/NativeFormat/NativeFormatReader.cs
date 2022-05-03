@@ -254,7 +254,7 @@ namespace Internal.NativeFormat
             return new IntPtr(_base + offset);
         }
 
-        public void ThrowBadImageFormatException()
+        public static void ThrowBadImageFormatException()
         {
             Debug.Assert(false);
             throw new BadImageFormatException();
@@ -395,9 +395,9 @@ namespace Internal.NativeFormat
             }
         }
 
-        public void ThrowBadImageFormatException()
+        public static void ThrowBadImageFormatException()
         {
-            _reader.ThrowBadImageFormatException();
+            NativeReader.ThrowBadImageFormatException();
         }
 
         public byte GetUInt8()
@@ -470,12 +470,12 @@ namespace Internal.NativeFormat
 
             int numberOfBucketsShift = (int)(header >> 2);
             if (numberOfBucketsShift > 31)
-                _reader.ThrowBadImageFormatException();
+                NativeReader.ThrowBadImageFormatException();
             _bucketMask = (uint)((1 << numberOfBucketsShift) - 1);
 
             byte entryIndexSize = (byte)(header & 3);
             if (entryIndexSize > 2)
-                _reader.ThrowBadImageFormatException();
+                NativeReader.ThrowBadImageFormatException();
             _entryIndexSize = entryIndexSize;
         }
 

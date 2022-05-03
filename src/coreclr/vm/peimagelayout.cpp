@@ -24,7 +24,7 @@ extern "C"
 PEImageLayout* PEImageLayout::CreateFromByteArray(PEImage* pOwner, const BYTE* array, COUNT_T size)
 {
     STANDARD_VM_CONTRACT;
-    return new FlatImageLayout(pOwner, array, size); 
+    return new FlatImageLayout(pOwner, array, size);
 }
 
 #ifndef TARGET_UNIX
@@ -229,10 +229,18 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
             // Restore the protection
             if (dwOldProtection != 0)
             {
+#if defined(__APPLE__) && defined(HOST_ARM64)
+                BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
+                    PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
+
+                // Disable writing on Apple Silicon
+                if (bExecRegion)
+                    PAL_JitWriteProtect(false);
+#else
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwOldProtection, &dwOldProtection))
                     ThrowLastError();
-
+#endif // __APPLE__ && HOST_ARM64
                 dwOldProtection = 0;
             }
 
@@ -251,8 +259,9 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #if defined(TARGET_UNIX)
                 if (((pSection->Characteristics & VAL32(IMAGE_SCN_MEM_EXECUTE)) != 0))
                 {
-#ifdef __APPLE__
-                    dwNewProtection = PAGE_READWRITE;
+#if defined(__APPLE__) && defined(HOST_ARM64)
+                    // Enable writing on Apple Silicon
+                    PAL_JitWriteProtect(true);
 #else
                     // On SELinux, we cannot change protection that doesn't have execute access rights
                     // to one that has it, so we need to set the protection to RWX instead of RW
@@ -260,9 +269,11 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 #endif
                 }
 #endif // TARGET_UNIX
+#if !(defined(__APPLE__) && defined(HOST_ARM64))
                 if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                        dwNewProtection, &dwOldProtection))
                     ThrowLastError();
+#endif // __APPLE__ && HOST_ARM64
 #ifdef TARGET_UNIX
                 dwOldProtection = SectionCharacteristicsToPageProtection(pSection->Characteristics);
 #endif // TARGET_UNIX
@@ -323,13 +334,19 @@ void PEImageLayout::ApplyBaseRelocations(bool relocationMustWriteCopy)
 
     if (dwOldProtection != 0)
     {
+#if defined(__APPLE__) && defined(HOST_ARM64)
         BOOL bExecRegion = (dwOldProtection & (PAGE_EXECUTE | PAGE_EXECUTE_READ |
             PAGE_EXECUTE_READWRITE | PAGE_EXECUTE_WRITECOPY)) != 0;
 
+        // Disable writing on Apple Silicon
+        if (bExecRegion)
+            PAL_JitWriteProtect(false);
+#else
         // Restore the protection
         if (!ClrVirtualProtect(pWriteableRegion, cbWriteableRegion,
                                dwOldProtection, &dwOldProtection))
             ThrowLastError();
+#endif // __APPLE__ && HOST_ARM64
     }
 #ifdef TARGET_UNIX
     PAL_LOADMarkSectionAsNotNeeded((void*)dir);
@@ -954,6 +971,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     SIZE_T offset = (SIZE_T)m_pOwner->GetOffset();
     int imagePartIndex = 0;
     PVOID pReserved = NULL;
+    PVOID reservedEnd = NULL;
     IMAGE_NT_HEADERS* ntHeader = FindNTHeaders();
 
     if  ((ntHeader->OptionalHeader.FileAlignment < GetOsPageSize()) &&
@@ -983,7 +1001,7 @@ void* FlatImageLayout::LoadImageByMappingParts(SIZE_T* m_imageParts) const
     if (pReserved == NULL)
         goto FAILED;
 
-    PVOID reservedEnd = (char*)pReserved + reserveSize;
+    reservedEnd = (char*)pReserved + reserveSize;
     IMAGE_DOS_HEADER* loadedHeader = (IMAGE_DOS_HEADER*)((SIZE_T)pReserved + OffsetWithinPage(offset));
     _ASSERTE(OffsetWithinPage(offset) == OffsetWithinPage((SIZE_T)loadedHeader));
 

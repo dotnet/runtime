@@ -37,10 +37,6 @@
     <FeatureHardwareIntrinsics>true</FeatureHardwareIntrinsics>
     <FeatureSharedLowLevelLock>true</FeatureSharedLowLevelLock>
   </PropertyGroup>
-  <PropertyGroup>
-    <FeatureGenericMath>true</FeatureGenericMath>
-    <DefineConstants Condition="'$(FeatureGenericMath)' == 'true'">$(DefineConstants);FEATURE_GENERIC_MATH</DefineConstants>
-  </PropertyGroup>
 
   <!-- Sources -->
   <ItemGroup>
@@ -173,7 +169,7 @@
     <Compile Include="System\Diagnostics\StackTrace.CoreRT.cs" />
     <Compile Include="System\Enum.CoreRT.cs" />
     <Compile Include="System\Environment.CoreRT.cs" />
-    <Compile Include="System\GC.cs" />
+    <Compile Include="System\GC.CoreRT.cs" />
     <Compile Include="System\Helpers.cs" />
     <Compile Include="System\Math.CoreRT.cs" />
     <Compile Include="System\MathF.CoreRT.cs" />
@@ -326,9 +322,6 @@
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.SchedGetCpu.cs">
       <Link>Interop\Unix\System.Native\Interop.SchedGetCpu.cs</Link>
-    </Compile>
-    <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.DynamicLoad.cs">
-      <Link>Interop\Unix\System.Native\Interop.DynamicLoad.cs</Link>
     </Compile>
     <Compile Include="$(CommonPath)\Interop\Unix\System.Native\Interop.Threading.cs">
       <Link>Interop\Unix\System.Native\Interop.Threading.cs</Link>

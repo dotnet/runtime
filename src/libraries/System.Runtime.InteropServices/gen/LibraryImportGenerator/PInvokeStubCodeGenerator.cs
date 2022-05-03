@@ -19,7 +19,7 @@ namespace Microsoft.Interop
     /// This type enables multiple code generators for P/Invoke-style marshalling
     /// to reuse the same basic method body, but with different designs of how to emit the target native method.
     /// This enables users to write code generators that work with slightly different semantics.
-    /// For example, the source generator for [GeneratedDllImport] emits the target P/Invoke as
+    /// For example, the source generator for [LibraryImport] emits the target P/Invoke as
     /// a local function inside the generated stub body.
     /// However, other managed-to-native code generators using a P/Invoke style might want to define
     /// the target DllImport outside of the stub as a static non-local function or as a function pointer field.
@@ -95,8 +95,9 @@ namespace Microsoft.Interop
             {
                 BoundGenerator generator = CreateGenerator(argType);
 
-                // Check each marshaler if the current target framework is supported or not.
-                SupportsTargetFramework &= generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
+                // Check if marshalling info and generator support the current target framework.
+                SupportsTargetFramework &= argType.MarshallingAttributeInfo is not MissingSupportMarshallingInfo
+                    && generator.Generator.IsSupported(environment.TargetFramework, environment.TargetFrameworkVersion);
 
                 // Check if generator is either blittable or just a forwarder.
                 noMarshallingNeeded &= generator is { Generator: BlittableMarshaller, TypeInfo: { IsByRef: false } }
@@ -143,9 +144,9 @@ namespace Microsoft.Interop
             // for our lengths.
             // Here's an example signature where the dependency shows up:
             //
-            // [GeneratedDllImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
+            // [LibraryImport(NativeExportsNE_Binary, EntryPoint = "transpose_matrix")]
             // [return: MarshalUsing(CountElementName = "numColumns")]
-            // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionLevel = 1)]
+            // [return: MarshalUsing(CountElementName = "numRows", ElementIndirectionDepth = 1)]
             // public static partial int[][] TransposeMatrix(
             //  int[][] matrix,
             //  [MarshalUsing(CountElementName="numColumns")] ref int[] numRows,
@@ -197,15 +198,6 @@ namespace Microsoft.Interop
             {
                 try
                 {
-                    // TODO: Remove once helper types (like ArrayMarshaller) are part of the runtime
-                    // This check is to help with enabling the source generator for runtime libraries without making each
-                    // library directly reference System.Memory and System.Runtime.CompilerServices.Unsafe unless it needs to
-                    if (p.MarshallingAttributeInfo is MissingSupportMarshallingInfo
-                        && (environment.TargetFramework == TargetFramework.Net && environment.TargetFrameworkVersion.Major >= 7))
-                    {
-                        throw new MarshallingNotSupportedException(p, this);
-                    }
-
                     return new BoundGenerator(p, generatorFactory.Create(p, this));
                 }
                 catch (MarshallingNotSupportedException e)
@@ -512,10 +504,8 @@ namespace Microsoft.Interop
                 ParameterList(
                     SeparatedList(
                         _paramMarshallers.Select(marshaler => marshaler.Generator.AsParameter(marshaler.TypeInfo)))),
-                _retMarshaller.Generator.AsNativeType(_retMarshaller.TypeInfo),
-                _retMarshaller.Generator is IAttributedReturnTypeMarshallingGenerator attributedReturn
-                ? attributedReturn.GenerateAttributesForReturnType(_retMarshaller.TypeInfo)
-                : null
+                _retMarshaller.Generator.AsReturnType(_retMarshaller.TypeInfo),
+                _retMarshaller.Generator.GenerateAttributesForReturnType(_retMarshaller.TypeInfo)
             );
         }
 

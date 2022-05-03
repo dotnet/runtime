@@ -152,7 +152,6 @@ T VolatileLoad(T const * pt)
 #elif defined(HOST_ARM64) && defined(_MSC_VER)
 // silence warnings on casts in branches that are not taken.
 #pragma warning(push)
-#pragma warning(disable : 4302)
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4312)
     T val;
@@ -233,7 +232,6 @@ void VolatileStore(T* pt, T val)
 #elif defined(HOST_ARM64) && defined(_MSC_VER)
 // silence warnings on casts in branches that are not taken.
 #pragma warning(push)
-#pragma warning(disable : 4302)
 #pragma warning(disable : 4311)
 #pragma warning(disable : 4312)
     T* pv = &val;

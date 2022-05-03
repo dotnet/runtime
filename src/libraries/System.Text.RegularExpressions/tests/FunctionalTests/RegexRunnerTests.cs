@@ -13,7 +13,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task EnginesThrowNotImplementedForGoAndFFC(RegexEngine engine)
         {
-            Regex re = await RegexHelpers.GetRegexAsync(engine, /*lang=regex*/@"abc");
+            Regex re = await RegexHelpers.GetRegexAsync(engine, @"abc");
 
             // Use reflection to ensure the runner is created so it can be fetched.
             MethodInfo createRunnerMethod = typeof(Regex).GetMethod("CreateRunner", BindingFlags.Instance | BindingFlags.NonPublic);
@@ -34,7 +34,7 @@ namespace System.Text.RegularExpressions.Tests
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task EnsureRunmatchValueIsNulledAfterIsMatch(RegexEngine engine)
         {
-            Regex re = await RegexHelpers.GetRegexAsync(engine, /*lang=regex*/@"abc");
+            Regex re = await RegexHelpers.GetRegexAsync(engine, @"abc");
 
             // First call IsMatch which should initialize runmatch on the runner.
             Assert.True(re.IsMatch("abcabcabc"));

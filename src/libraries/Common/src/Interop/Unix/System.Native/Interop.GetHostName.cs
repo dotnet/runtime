@@ -9,7 +9,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostName", SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetHostName", SetLastError = true)]
         private static unsafe partial int GetHostName(byte* name, int nameLength);
 
         internal static unsafe string GetHostName()

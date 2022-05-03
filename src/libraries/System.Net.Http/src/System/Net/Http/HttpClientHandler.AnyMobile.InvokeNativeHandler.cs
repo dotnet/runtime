@@ -146,7 +146,7 @@ namespace System.Net.Http
         [DynamicDependency("set_Credentials", NativeHandlerType, AssemblyName)]
         private void SetCredentials(ICredentials? value) => InvokeNativeHandlerMethod("set_Credentials", value);
 
-        private HttpMessageHandler CreateNativeHandler()
+        private static HttpMessageHandler CreateNativeHandler()
         {
             if (_nativeHandlerMethod == null)
             {

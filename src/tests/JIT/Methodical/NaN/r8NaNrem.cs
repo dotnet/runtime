@@ -3,7 +3,8 @@
 //
 
 using System;
-class r8NaNrem
+using Xunit;
+public class r8NaNrem
 {
 
     //user-defined class that overloads operator %
@@ -78,7 +79,8 @@ class r8NaNrem
         public double d_vt_test3_op2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
         //initialize class

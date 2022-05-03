@@ -26,11 +26,6 @@ PALTEST(file_io_GetSystemTime_test1_paltest_getsystemtime_test1, "file_io/GetSys
     SYSTEMTIME firstTime;
     SYSTEMTIME secondTime;
 
-    WORD avgDeltaFileTime = 0;
-
-    int i=0; 
-
-
     if (0 != PAL_Initialize(argc,argv))
     {
         return FAIL;
@@ -100,24 +95,24 @@ PALTEST(file_io_GetSystemTime_test1_paltest_getsystemtime_test1, "file_io/GetSys
             "and it is currently showing %d.",TheTime.wMilliseconds);
     }
 
-    /* check if two consecutive calls to system time return */
-    /* correct time in ms after sleep() call. */
-    for (i = 0; i<5 ;i++)
-    { 
+    /* verify that two consecutive calls to system time return */
+    /* different values of seconds across sleep() call. */
+    /* do this 5 times in case we are super unlucky. */
+    float avgDeltaFileTime = 0;
+    for (int i = 0; i < 5; i++)
+    {
         GetSystemTime(&firstTime);
         Sleep(1000);
-        GetSystemTime(&secondTime);    
-        avgDeltaFileTime +=  abs(firstTime.wSecond - secondTime.wSecond );
-
-    }     
-
-    if( (avgDeltaFileTime/5) < 1.0)
-    {
-        Fail("ERROR: 2 calls for GetSystemTime interrupted"
-                " by a 1000 ms sleep failed Value[%f]", avgDeltaFileTime/5  );
+        GetSystemTime(&secondTime);
+        avgDeltaFileTime += abs(firstTime.wSecond - secondTime.wSecond);
     }
 
-    PAL_Terminate();  
+    if( (avgDeltaFileTime / 5) == 0)
+    {
+        Fail("ERROR: GetSystemTime always returning same value of seconds Value[%f]", avgDeltaFileTime / 5);
+    }
+
+    PAL_Terminate();
     return PASS;
 }
 

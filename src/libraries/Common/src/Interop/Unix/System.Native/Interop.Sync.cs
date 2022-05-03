@@ -11,7 +11,7 @@ internal static partial class Interop
         /// <summary>
         /// Forces a write of all modified I/O buffers to their storage mediums.
         /// </summary>
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_Sync")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_Sync")]
         internal static partial void Sync();
     }
 }

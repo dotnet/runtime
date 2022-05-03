@@ -120,6 +120,11 @@ namespace System.Text.Json.SourceGeneration
                         GenerateTypeInfo(typeGenerationSpec);
                     }
 
+                    foreach (TypeGenerationSpec typeGenerationSpec in _currentContext.ImplicitlyRegisteredTypes)
+                    {
+                        GenerateTypeInfo(typeGenerationSpec);
+                    }
+
                     string contextName = _currentContext.ContextType.Name;
 
                     // Add root context implementation.

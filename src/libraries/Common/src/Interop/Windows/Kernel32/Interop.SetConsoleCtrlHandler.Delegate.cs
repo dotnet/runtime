@@ -11,7 +11,7 @@ internal static partial class Interop
     {
         internal delegate bool ConsoleCtrlHandlerRoutine(int controlType);
 
-        [GeneratedDllImport(Libraries.Kernel32, SetLastError = true)]
+        [LibraryImport(Libraries.Kernel32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool SetConsoleCtrlHandler(ConsoleCtrlHandlerRoutine handler, [MarshalAs(UnmanagedType.Bool)] bool addOrRemove);
     }

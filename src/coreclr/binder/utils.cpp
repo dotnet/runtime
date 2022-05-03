@@ -32,48 +32,6 @@ namespace BINDER_SPACE
         }
     }
 
-    void MutateUrlToPath(SString &urlOrPath)
-    {
-        const SString fileUrlPrefix(SString::Literal, W("file://"));
-        SString::Iterator i = urlOrPath.Begin();
-
-        if (urlOrPath.MatchCaseInsensitive(i, fileUrlPrefix))
-        {
-            urlOrPath.Delete(i, fileUrlPrefix.GetCount());
-
-            i = urlOrPath.Begin() + 1;
-            if (i[0] ==  W(':'))
-            {
-                // CLR erroneously passes in file:// prepended to file paths,
-                // so we can't tell the difference between UNC and local file.
-                goto Exit;
-            }
-
-            i = urlOrPath.Begin();
-#if !defined(TARGET_UNIX)
-            if (i[0] == W('/'))
-            {
-                // Disk path file:///
-                urlOrPath.Delete(i, 1);
-            }
-            else if (i[0] != W('\\'))
-            {
-                // UNC Path, re-insert "//" if not the wrong file://\\...
-                urlOrPath.Insert(i, W("//"));
-            }
-#else
-            // Unix doesn't have a distinction between local and network path
-            _ASSERTE(i[0] == W('\\') || i[0] == W('/'));
-#endif
-        }
-
-    Exit:
-        while (urlOrPath.Find(i, W('/')))
-        {
-            urlOrPath.Replace(i, W('\\'));
-        }
-    }
-
     void CombinePath(const SString &pathA,
                      const SString &pathB,
                      SString &combinedPath)

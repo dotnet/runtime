@@ -1122,23 +1122,18 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
 
 #ifdef TARGET_X86
 extern "C" void *JIT_WriteBarrierEAX_Loc;
+#elif TARGET_AMD64
+extern "C" void *JIT_WriteBarrier_Loc;
 #else
 extern "C" void *JIT_WriteBarrier_Loc;
+void *JIT_WriteBarrier_Loc = 0;
 #endif
 
 #ifdef TARGET_ARM64
 extern "C" void (*JIT_WriteBarrier_Table)();
-
-extern "C" void *JIT_WriteBarrier_Loc;
-void *JIT_WriteBarrier_Loc = 0;
-
 extern "C" void *JIT_WriteBarrier_Table_Loc;
 void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
-
-#ifdef TARGET_ARM
-extern "C" void *JIT_WriteBarrier_Loc = 0;
-#endif // TARGET_ARM
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -2195,7 +2190,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
 
     default:
         _ASSERTE(!"Bad stack size bucket");
-        break;
+        FALLTHROUGH;
     case StackSize_Large:
         stackSize = 1024 * 1024;
         break;
@@ -2207,7 +2202,6 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
     SetThreadName(hThread, pName);
-
 
     if (pThreadId)
         *pThreadId = threadId;

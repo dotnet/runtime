@@ -7,7 +7,7 @@ namespace System.Net
 {
     public partial class WebProxy : IWebProxy, ISerializable
     {
-        private bool IsLocal(Uri host)
+        private static bool IsLocal(Uri host)
         {
             if (host.IsLoopback)
             {

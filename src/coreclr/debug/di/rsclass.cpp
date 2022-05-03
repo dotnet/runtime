@@ -335,7 +335,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
                      !pFieldData->m_fFldIsTLS);
 
     TargetBuffer remoteValue(pRmtStaticValue, CordbValue::GetSizeForType(pType, fIsBoxed ? kBoxed : kUnboxed));
-    ICorDebugValue * pValue;
+    ICorDebugValue * pValue = NULL;
 
     EX_TRY
     {

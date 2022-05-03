@@ -65,6 +65,7 @@ namespace Microsoft.Extensions.DependencyInjection
         public System.Collections.Generic.IEnumerator<Microsoft.Extensions.DependencyInjection.ServiceDescriptor> GetEnumerator() { throw null; }
         public int IndexOf(Microsoft.Extensions.DependencyInjection.ServiceDescriptor item) { throw null; }
         public void Insert(int index, Microsoft.Extensions.DependencyInjection.ServiceDescriptor item) { }
+        public void MakeReadOnly() { }
         public bool Remove(Microsoft.Extensions.DependencyInjection.ServiceDescriptor item) { throw null; }
         public void RemoveAt(int index) { }
         void System.Collections.Generic.ICollection<Microsoft.Extensions.DependencyInjection.ServiceDescriptor>.Add(Microsoft.Extensions.DependencyInjection.ServiceDescriptor item) { }

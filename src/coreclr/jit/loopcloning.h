@@ -138,45 +138,37 @@ exception occurs.
     1. Loop detection has completed and the loop table is populated.
 
     2. The loops that will be considered are the ones with the LPFLG_ITER flag:
-       "for (i = icon or lclVar; test_condition(); i++)"
+       "for ( ; test_condition(); i++)"
 
     Limitations
 
-    1. For array based optimizations the loop choice condition is checked
-       before the loop body. This implies that the loop initializer statement
-       has not executed at the time of the check. So any loop cloning condition
-       involving the initial value of the loop counter cannot be condition checked
-       as it hasn't been assigned yet at the time of condition checking. Therefore
-       the initial value has to be statically known. This can be fixed with further
-       effort.
-
-    2. Loops containing nested exception handling regions are not cloned. (Cloning them
+    1. Loops containing nested exception handling regions are not cloned. (Cloning them
        would require creating new exception handling regions for the cloned loop, which
        is "hard".) There are a few other EH-related edge conditions that also cause us to
        reject cloning.
 
-    3. If the loop contains RETURN blocks, and cloning those would push us over the maximum
+    2. If the loop contains RETURN blocks, and cloning those would push us over the maximum
        number of allowed RETURN blocks in the function (either due to GC info encoding limitations
        or otherwise), we reject cloning.
 
-    4. Loop increment must be `i += 1`
+    3. Loop increment must be `i += 1`
 
-    5. Loop test must be `i < x` where `x` is a constant, a variable, or `a.Length` for array `a`
+    4. Loop test must be `i < x` or `i <= x` where `x` is a constant, a variable, or `a.Length` for array `a`
 
-    (There is some implementation support for decrementing loops, but it is incomplete.
-    There is some implementation support for `i <= x` conditions, but it is incomplete
-    (Compiler::optDeriveLoopCloningConditions() only handles GT_LT conditions))
+    (There is some implementation support for decrementing loops, but it is incomplete.)
 
-    6. Loop must have been converted to a do-while form.
+    5. Loop must have been converted to a do-while form.
 
-    7. There are a few other loop well-formedness conditions.
+    6. There are a few other loop well-formedness conditions.
 
-    8. Multi-dimensional (non-jagged) loop index checking is only partially implemented.
+    7. Multi-dimensional (non-jagged) loop index checking is only partially implemented.
 
-    9. Constant initializations and constant limits must be non-negative (REVIEW: why? The
-       implementation does use `unsigned` to represent them.)
+    8. Constant initializations and constant limits must be non-negative. This is because the
+       iterator variable will be used as an array index, and array indices must be non-negative.
+       For non-constant (or not found) iterator variable `i` initialization, we add a dynamic check that
+       `i >= 0`. Constant initializations can be checked statically.
 
-    10. The cloned loop (the slow path) is not added to the loop table, meaning certain
+    9. The cloned loop (the slow path) is not added to the loop table, meaning certain
        downstream optimization passes do not see them. See
        https://github.com/dotnet/runtime/issues/43713.
 

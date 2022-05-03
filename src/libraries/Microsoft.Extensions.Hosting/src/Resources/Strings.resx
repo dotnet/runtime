@@ -144,7 +144,4 @@
   <data name="ResolverReturnedNull" xml:space="preserve">
     <value>The resolver returned a null IServiceProviderFactory</value>
   </data>
-  <data name="ServiceCollectionModificationInvalidAfterBuild" xml:space="preserve">
-    <value>The service collection cannot be modified after the application is built.</value>
-  </data>
 </root>

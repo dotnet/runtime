@@ -830,7 +830,7 @@ HRESULT ClrDataAccess::EnumMemWalkStackHelper(CLRDataEnumMemoryFlags flags,
                                     // MethodTable
                                     ReleaseHolder<IXCLRDataValue> pDV(NULL);
                                     ReleaseHolder<IXCLRDataValue> pAssociatedValue(NULL);
-                                    CLRDATA_ADDRESS address;
+                                    CLRDATA_ADDRESS address = 0;
                                     PTR_Object pObjThis = NULL;
 
                                     if (SUCCEEDED(pFrame->GetArgumentByIndex(0, &pDV, 0, NULL, NULL)) &&

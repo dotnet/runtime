@@ -601,13 +601,11 @@ DebuggerJitInfo * FrameInfo::GetJitInfoFromFrame() const
 
     DebuggerJitInfo *ji = NULL;
 
-    // @todo - we shouldn't need both a MD and an IP here.
     EX_TRY
     {
         _ASSERTE(this->md != NULL);
         ji = g_pDebugger->GetJitInfo(this->md, (const BYTE*)GetControlPC(&(this->registers)));
-        _ASSERTE(ji != NULL);
-        _ASSERTE(ji->m_nativeCodeVersion.GetMethodDesc() == this->md);
+        _ASSERTE(ji == NULL || ji->m_nativeCodeVersion.GetMethodDesc() == this->md);
     }
     EX_CATCH
     {

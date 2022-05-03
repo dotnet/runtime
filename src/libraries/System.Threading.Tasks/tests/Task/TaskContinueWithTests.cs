@@ -256,8 +256,10 @@ namespace System.Threading.Tasks.Tests
         }
 
         // Test what happens when you cancel a task in the middle of a continuation chain.
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
-        public static void RunContinuationCancelTest()
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public static void RunContinuationCancelTest(bool useTimeSpan)
         {
             bool t1Ran = false;
             bool t3Ran = false;
@@ -266,9 +268,9 @@ namespace System.Threading.Tasks.Tests
 
             CancellationTokenSource ctsForT2 = new CancellationTokenSource();
             Task t2 = t1.ContinueWith((ContinuedTask) =>
-                        {
-                            Assert.True(false, string.Format("RunContinuationCancelTest: > Failed!  t2 should not have run."));
-                        }, ctsForT2.Token);
+            {
+                Assert.True(false, string.Format("RunContinuationCancelTest: > Failed!  t2 should not have run."));
+            }, ctsForT2.Token);
 
             Task t3 = t2.ContinueWith((ContinuedTask) =>
             {
@@ -281,8 +283,17 @@ namespace System.Threading.Tasks.Tests
             // Start the first task in the chain.  Should hold off from kicking off (canceled) t2.
             t1.Start();
 
-            t1.Wait(5000); // should be more than enough time for either of these
-            t3.Wait(5000);
+            if (useTimeSpan)
+            {
+                TimeSpan timeout = TimeSpan.FromMilliseconds(5000);
+                t1.Wait(timeout);
+                t3.Wait(timeout);
+            }
+            else
+            {
+                t1.Wait(5000); // should be more than enough time for either of these
+                t3.Wait(5000);
+            }
 
             if (!t1Ran)
             {

@@ -41,9 +41,9 @@ namespace System.IO.Compression
         /// Writes a byte to the current position in the stream and advances the position within the stream by one byte.
         /// </summary>
         /// <param name="value">The byte to write to the stream.</param>
-        /// <exception cref="InvalidOperationException">Cannot perform write operations on a <see cref="BrotliStream" /> constructed with <see cref="CompressionMode.Decompress" />.
-        /// -or-
-        /// The encoder ran into invalid data.</exception>
+        /// <exception cref="InvalidOperationException"><para>Cannot perform write operations on a <see cref="BrotliStream" /> constructed with <see cref="CompressionMode.Decompress" />.</para>
+        /// <para>-or-</para>
+        /// <para>The encoder ran into invalid data.</para></exception>
         public override void WriteByte(byte value)
         {
             WriteCore(MemoryMarshal.CreateReadOnlySpan(ref value, 1));
@@ -51,8 +51,8 @@ namespace System.IO.Compression
 
         /// <summary>Writes a sequence of bytes to the current Brotli stream from a read-only byte span and advances the current position within this Brotli stream by the number of bytes written.</summary>
         /// <param name="buffer">A region of memory. This method copies the contents of this region to the current Brotli stream.</param>
-        /// <remarks>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing. Use the <see langword="System.IO.Compression.BrotliStream.WriteAsync" /> method to write asynchronously to the current stream.
-        /// If the write operation is successful, the position within the Brotli stream advances by the number of bytes written. If an exception occurs, the position within the Brotli stream remains unchanged.</remarks>
+        /// <remarks><para>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing. Use the <see langword="System.IO.Compression.BrotliStream.WriteAsync" /> method to write asynchronously to the current stream.</para>
+        /// <para>If the write operation is successful, the position within the Brotli stream advances by the number of bytes written. If an exception occurs, the position within the Brotli stream remains unchanged.</para></remarks>
         public override void Write(ReadOnlySpan<byte> buffer)
         {
             WriteCore(buffer);
@@ -107,9 +107,9 @@ namespace System.IO.Compression
         /// <param name="count">The maximum number of bytes to write.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        /// <remarks>The `WriteAsync` method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in a Windows 8.x Store app or desktop app where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.
-        /// Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.
-        /// If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</remarks>
+        /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
+        /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.</para>
+        /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -120,9 +120,9 @@ namespace System.IO.Compression
         /// <param name="buffer">The memory region to write data from.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="System.Threading.CancellationToken.None" />.</param>
         /// <returns>A task that represents the asynchronous write operation.</returns>
-        /// <remarks>The `WriteAsync` method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in a Windows 8.x Store app or desktop app where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.
-        /// Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.
-        /// If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</remarks>
+        /// <remarks><para>This method enables you to perform resource-intensive I/O operations without blocking the main thread. This performance consideration is particularly important in apps where a time-consuming stream operation can block the UI thread and make your app appear as if it is not working. The async methods are used in conjunction with the <see langword="async" /> and <see langword="await" /> keywords in Visual Basic and C#.</para>
+        /// <para>Use the <see cref="System.IO.Compression.BrotliStream.CanWrite" /> property to determine whether the current instance supports writing.</para>
+        /// <para>If the operation is canceled before it completes, the returned task contains the <see cref="System.Threading.Tasks.TaskStatus.Canceled" /> value for the <see cref="System.Threading.Tasks.Task.Status" /> property.</para></remarks>
         public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default(CancellationToken))
         {
             if (_mode != CompressionMode.Compress)

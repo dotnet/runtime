@@ -125,6 +125,7 @@ jobs:
       include:
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
+      - src/mono/wasm/BrowsersForTesting.props
       - src/mono/mono/*
     - subset: allwasm
       include:

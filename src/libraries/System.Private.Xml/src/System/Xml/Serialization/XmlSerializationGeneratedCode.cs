@@ -16,14 +16,6 @@ namespace System.Xml.Serialization
     ///<internalonly/>
     public abstract class XmlSerializationGeneratedCode
     {
-        internal void Init(TempAssembly? tempAssembly)
-        {
-        }
-
-        // this method must be called at the end of serialization
-        internal void Dispose()
-        {
-        }
     }
     internal class XmlSerializationCodeGen
     {
@@ -92,7 +84,7 @@ namespace System.Xml.Serialization
             return (string?)_methodNames[mapping];
         }
 
-        private TypeMapping[] EnsureArrayIndex(TypeMapping[] a, int index)
+        private static TypeMapping[] EnsureArrayIndex(TypeMapping[] a, int index)
         {
             if (a == null) return new TypeMapping[32];
             if (index < a.Length) return a;

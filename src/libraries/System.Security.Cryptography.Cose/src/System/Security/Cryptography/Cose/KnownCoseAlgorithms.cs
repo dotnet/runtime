@@ -1,6 +1,8 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Numerics;
+
 namespace System.Security.Cryptography.Cose
 {
     // https://www.iana.org/assignments/cose/cose.xhtml#algorithms
@@ -15,13 +17,19 @@ namespace System.Security.Cryptography.Cose
         internal const int PS384 = -38;
         internal const int PS512 = -39;
 
-        internal static void ThrowIfNotSupported(int alg)
+        internal static void ThrowIfNotSupported(long alg)
         {
             if (alg != ES256 && alg > ES384 && alg < PS512)
             {
                 throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, alg));
             }
         }
+
+        internal static void ThrowUnsignedIntegerNotSupported(ulong alg) // All algorithm valid values are negatives.
+            => throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, alg));
+
+        internal static void ThrowCborNegativeIntegerNotSupported(ulong alg) // Cbor Negative Integer Representation is too big.
+            => throw new CryptographicException(SR.Format(SR.Sign1UnknownCoseAlgorithm, BigInteger.MinusOne - new BigInteger(alg)));
 
         internal static int FromString(string algString)
         {

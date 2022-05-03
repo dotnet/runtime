@@ -12,6 +12,7 @@ MembersMustExist : Member 'public System.Diagnostics.DebugProvider System.Diagno
 MembersMustExist : Member 'protected System.ModuleHandle System.Reflection.Module.GetModuleHandleImpl()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'protected System.String System.String System.Resources.ResourceManager.BaseNameField' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'protected System.Resources.IResourceReader System.Resources.IResourceReader System.Resources.ResourceSet.Reader' does not exist in the reference but it does exist in the implementation.
+MembersMustExist : Member 'public System.Boolean System.Runtime.CompilerServices.ConditionalWeakTable<TKey, TValue>.TryAdd(TKey, TValue)' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Boolean System.Runtime.Serialization.SerializationInfo.DeserializationInProgress.get()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public System.Runtime.Serialization.DeserializationToken System.Runtime.Serialization.SerializationInfo.StartDeserialization()' does not exist in the reference but it does exist in the implementation.
 MembersMustExist : Member 'public void System.Runtime.Serialization.SerializationInfo.ThrowIfDeserializationInProgress()' does not exist in the reference but it does exist in the implementation.

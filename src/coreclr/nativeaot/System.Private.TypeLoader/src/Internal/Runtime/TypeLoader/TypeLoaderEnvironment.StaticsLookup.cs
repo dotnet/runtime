@@ -264,7 +264,7 @@ namespace Internal.Runtime.TypeLoader
         #region Privates
         // get the statics hash table, external references, and static info table for a module
         // TODO multi-file: consider whether we want to cache this info
-        private unsafe bool GetStaticsInfoHashtable(NativeFormatModuleInfo module, out NativeHashtable staticsInfoHashtable, out ExternalReferencesTable externalReferencesLookup, out ExternalReferencesTable staticInfoLookup)
+        private static unsafe bool GetStaticsInfoHashtable(NativeFormatModuleInfo module, out NativeHashtable staticsInfoHashtable, out ExternalReferencesTable externalReferencesLookup, out ExternalReferencesTable staticInfoLookup)
         {
             byte* pBlob;
             uint cbBlob;
@@ -290,7 +290,7 @@ namespace Internal.Runtime.TypeLoader
             return true;
         }
 
-        private NativeParser GetStaticInfo(RuntimeTypeHandle instantiatedType, out ExternalReferencesTable staticsInfoLookup)
+        private static NativeParser GetStaticInfo(RuntimeTypeHandle instantiatedType, out ExternalReferencesTable staticsInfoLookup)
         {
             TypeManagerHandle moduleHandle = RuntimeAugments.GetModuleFromTypeHandle(instantiatedType);
             NativeFormatModuleInfo module = ModuleList.Instance.GetModuleInfoByHandle(moduleHandle);
@@ -316,7 +316,7 @@ namespace Internal.Runtime.TypeLoader
             return new NativeParser();
         }
 
-        private unsafe IntPtr TryCreateDictionaryCellWithValue(uint value)
+        private static unsafe IntPtr TryCreateDictionaryCellWithValue(uint value)
         {
             return PermanentAllocatedMemoryBlobs.GetPointerToUInt(value);
         }

@@ -16,10 +16,6 @@ namespace System.IO.Compression
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
         internal struct ZStream
         {
-            internal void Init()
-            {
-            }
-
             internal IntPtr nextIn;  //Bytef    *next_in;  /* next input byte */
             internal IntPtr nextOut; //Bytef    *next_out; /* next output byte should be put there */
 

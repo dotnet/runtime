@@ -33,7 +33,7 @@ CrashReportWriter::WriteCrashReport(const std::string& dumpFileName)
 {
     std::string crashReportFile(dumpFileName);
     crashReportFile.append(".crashreport.json");
-    printf("Writing crash report to file %s\n", crashReportFile.c_str());
+    printf_status("Writing crash report to file %s\n", crashReportFile.c_str());
     try
     {
         if (!OpenWriter(crashReportFile.c_str())) {
@@ -44,7 +44,7 @@ CrashReportWriter::WriteCrashReport(const std::string& dumpFileName)
     }
     catch (const std::exception& e)
     {
-        fprintf(stderr, "Writing the crash report file FAILED\n");
+        printf_error("Writing the crash report file FAILED\n");
 
         // Delete the partial json file on error
         remove(crashReportFile.c_str());
@@ -271,7 +271,7 @@ CrashReportWriter::OpenWriter(const char* fileName)
     m_fd = open(fileName, O_WRONLY|O_CREAT|O_TRUNC, S_IWUSR | S_IRUSR);
     if (m_fd == -1)
     {
-        fprintf(stderr, "Could not create json file %s: %d %s\n", fileName, errno, strerror(errno));
+        printf_error("Could not create json file %s: %d %s\n", fileName, errno, strerror(errno));
         return false;
     }
     Write("{\n");

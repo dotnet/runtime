@@ -128,7 +128,7 @@ namespace System.Threading.Channels
             public override bool TryPeek([MaybeNullWhen(false)] out T item) =>
                 _parent._items.TryPeek(out item);
 
-            private void CompleteIfDone(UnboundedChannel<T> parent)
+            private static void CompleteIfDone(UnboundedChannel<T> parent)
             {
                 if (parent._doneWriting != null && parent._items.IsEmpty)
                 {

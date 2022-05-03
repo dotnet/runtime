@@ -24,7 +24,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.NestedTypes };
             yield return new[] { CodeSnippets.UnsafeContext };
             yield return new[] { CodeSnippets.UserDefinedEntryPoint };
-            yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { CodeSnippets.DefaultParameters };
             yield return new[] { CodeSnippets.UseCSharpFeaturesForConstants };
 
@@ -55,6 +55,18 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<double>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<IntPtr>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<UIntPtr>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("byte*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("sbyte*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("short*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("ushort*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("int*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("uint*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("long*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("ulong*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("float*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("double*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("System.IntPtr*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("System.UIntPtr*", "unsafe") };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<byte>(isByRef: false) };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<sbyte>(isByRef: false) };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<short>(isByRef: false) };
@@ -231,7 +243,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CollectionsOfCollectionsStress };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompile))]
         public async Task ValidateSnippets(string source)
         {
@@ -257,7 +269,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.PreprocessorIfAfterAttributeAroundFunctionAdditionalFunctionAfter("Foo"), Array.Empty<string>() };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompileWithPreprocessorSymbols))]
         public async Task ValidateSnippetsWithPreprocessorDefintions(string source, IEnumerable<string> preprocessorSymbols)
         {
@@ -277,25 +289,34 @@ namespace LibraryImportGenerator.UnitTests
 
             // Confirm that all unsupported target frameworks can be generated.
             {
-                string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiers<byte>(CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, false };
                 yield return new object[] { code, TestTargetFramework.Core, false };
                 yield return new object[] { code, TestTargetFramework.Standard, false };
                 yield return new object[] { code, TestTargetFramework.Framework, false };
             }
 
-            // Confirm that all unsupported target frameworks fallback to a forwarder.
+            // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
-                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };
                 yield return new object[] { code, TestTargetFramework.Standard, true };
                 yield return new object[] { code, TestTargetFramework.Framework, true };
             }
 
-            // Confirm that all unsupported target frameworks fallback to a forwarder.
+            // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
-                string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.GeneratedDllImportAttributeDeclaration);
+                string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { code, TestTargetFramework.Net5, true };
+                yield return new object[] { code, TestTargetFramework.Core, true };
+                yield return new object[] { code, TestTargetFramework.Standard, true };
+                yield return new object[] { code, TestTargetFramework.Framework, true };
+            }
+
+            // Confirm that if support is missing for any type (like arrays), we fall back to a forwarder even if other types are supported.
+            {
+                string code = CodeSnippets.BasicReturnAndParameterByValue("System.Runtime.InteropServices.SafeHandle", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };
                 yield return new object[] { code, TestTargetFramework.Standard, true };
@@ -303,8 +324,9 @@ namespace LibraryImportGenerator.UnitTests
             }
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToValidateFallbackForwarder))]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task ValidateSnippetsFallbackForwarder(string source, TestTargetFramework targetFramework, bool expectFallbackForwarder)
         {
             Compilation comp = await TestUtils.CreateCompilation(source, targetFramework);
@@ -340,7 +362,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.BasicParameterByValue("int") };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(FullyBlittableSnippetsToCompile))]
         public async Task ValidateSnippetsWithBlittableAutoForwarding(string source)
         {
@@ -369,12 +391,12 @@ namespace LibraryImportGenerator.UnitTests
 
         public static IEnumerable<object[]> SnippetsWithBlittableTypesButNonBlittableDataToCompile()
         {
-            yield return new[] { CodeSnippets.AllGeneratedDllImportNamedArguments };
+            yield return new[] { CodeSnippets.AllLibraryImportNamedArguments };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<int>() };
             yield return new[] { CodeSnippets.SetLastErrorTrue<int>() };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(SnippetsWithBlittableTypesButNonBlittableDataToCompile))]
         public async Task ValidateSnippetsWithBlittableTypesButNonBlittableMetadataDoNotAutoForward(string source)
         {
@@ -412,7 +434,7 @@ namespace LibraryImportGenerator.UnitTests
 #pragma warning disable xUnit1004 // Test methods should not be skipped.
                                   // If we have any new experimental APIs that we are implementing that have not been approved,
                                   // we will add new scenarios for this test.
-        [ConditionalTheory(Skip = "No current scenarios to test.")]
+        [Theory(Skip = "No current scenarios to test.")]
 #pragma warning restore
         [MemberData(nameof(CodeSnippetsToCompileWithMarshalType))]
         public async Task ValidateSnippetsWithMarshalType(string source)
@@ -444,7 +466,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { new[] { CodeSnippets.BasicParameterByValue("int[]", CodeSnippets.DisableRuntimeMarshalling), CodeSnippets.BasicParameterWithByRefModifier("ref", "int") } };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(CodeSnippetsToCompileMultipleSources))]
         public async Task ValidateSnippetsWithMultipleSources(string[] sources)
         {

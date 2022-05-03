@@ -253,7 +253,7 @@ namespace Internal.Metadata.NativeFormat
         public void Decode(NativeReader reader)
         {
             if (reader.ReadUInt32(0) != Signature)
-                reader.ThrowBadImageFormatException();
+                NativeReader.ThrowBadImageFormatException();
             reader.Read(4, out ScopeDefinitions);
         }
     }

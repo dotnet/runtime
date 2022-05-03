@@ -408,14 +408,14 @@ MONO_RESTORE_WARNING
 		return NULL;
 	}
 	case MONO_TYPE_CLASS: {
-		MonoType *type = load_cattr_type (image, t, TRUE, p, boundp, end, error, &slen);
+		MonoType *cattr_type  = load_cattr_type (image, t, TRUE, p, boundp, end, error, &slen);
 		if (out_obj) {
-			if (!type)
+			if (!cattr_type )
 				return NULL;
-			*out_obj = (MonoObject*)mono_type_get_object_checked (type, error);
+			*out_obj = (MonoObject*)mono_type_get_object_checked (cattr_type , error);
 			return NULL;
 		} else {
-			return type;
+			return cattr_type;
 		}
 	}
 	case MONO_TYPE_OBJECT: {
@@ -427,14 +427,14 @@ MONO_RESTORE_WARNING
 		void *val;
 
 		if (subt == CATTR_TYPE_SYSTEM_TYPE) {
-			MonoType *type = load_cattr_type (image, t, FALSE, p, boundp, end, error, &slen);
+			MonoType *cattr_type = load_cattr_type (image, t, FALSE, p, boundp, end, error, &slen);
 			if (out_obj) {
-				if (!type)
+				if (!cattr_type)
 					return NULL;
-				*out_obj = (MonoObject*)mono_type_get_object_checked (type, error);
+				*out_obj = (MonoObject*)mono_type_get_object_checked (cattr_type, error);
 				return NULL;
 			} else {
-				return type;
+				return cattr_type;
 			}
 		} else if (subt == 0x0E) {
 			type = MONO_TYPE_STRING;
@@ -463,18 +463,18 @@ MONO_RESTORE_WARNING
 			goto handle_enum;
 		} else if (subt == MONO_TYPE_ENUM) {
 			char *n;
-			MonoType *t;
+			MonoType *enum_type;
 			if (!decode_blob_value_checked (p, boundp, &slen, &p, error))
 				return NULL;
 			if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
 				return NULL;
 			n = (char *)g_memdup (p, slen + 1);
 			n [slen] = 0;
-			t = cattr_type_from_name (n, image, FALSE, error);
+			enum_type = cattr_type_from_name (n, image, FALSE, error);
 			g_free (n);
 			return_val_if_nok (error, NULL);
 			p += slen;
-			subc = mono_class_from_mono_type_internal (t);
+			subc = mono_class_from_mono_type_internal (enum_type);
 		} else if (subt >= MONO_TYPE_BOOLEAN && subt <= MONO_TYPE_R8) {
 			MonoType simple_type = {{0}};
 			simple_type.type = (MonoTypeEnum)subt;
@@ -2416,17 +2416,17 @@ custom_attr_class_name_from_method_token (MonoImage *image, guint32 method_token
 			guint32 type_token = MONO_TOKEN_TYPE_REF | nindex;
 			/* mono_class_from_typeref_checked () */
 			{
-				guint32 cols [MONO_TYPEREF_SIZE];
+				guint32 typeref_cols [MONO_TYPEREF_SIZE];
 				MonoTableInfo  *t = &image->tables [MONO_TABLE_TYPEREF];
 
-				mono_metadata_decode_row (t, (type_token&0xffffff)-1, cols, MONO_TYPEREF_SIZE);
+				mono_metadata_decode_row (t, (type_token&0xffffff)-1, typeref_cols, MONO_TYPEREF_SIZE);
 
 				if (class_name)
-					*class_name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
+					*class_name = mono_metadata_string_heap (image, typeref_cols [MONO_TYPEREF_NAME]);
 				if (nspace)
-					*nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+					*nspace = mono_metadata_string_heap (image, typeref_cols [MONO_TYPEREF_NAMESPACE]);
 				if (assembly_token)
-					*assembly_token = cols [MONO_TYPEREF_SCOPE];
+					*assembly_token = typeref_cols [MONO_TYPEREF_SCOPE];
 				return TRUE;
 			}
 		} else if (class_index == MONO_MEMBERREF_PARENT_METHODDEF) {
@@ -2592,6 +2592,7 @@ mono_method_metadata_foreach_custom_attr (MonoMethod *method, MonoAssemblyMetada
 	metadata_foreach_custom_attr_from_index (image, idx, func, user_data);
 }
 
+#ifdef ENABLE_WEAK_ATTR
 static void
 init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 {
@@ -2658,28 +2659,28 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 		tdef = &image->tables [MONO_TABLE_MEMBERREF];
 		rows = table_info_get_rows (tdef);
 		for (int i = 0; i < rows; ++i) {
-			guint32 cols [MONO_MEMBERREF_SIZE];
+			guint32 memberref_cols [MONO_MEMBERREF_SIZE];
 			const char *sig;
 
-			mono_metadata_decode_row (tdef, i, cols, MONO_MEMBERREF_SIZE);
-			sig = mono_metadata_blob_heap (image, cols [MONO_MEMBERREF_SIGNATURE]);
+			mono_metadata_decode_row (tdef, i, memberref_cols, MONO_MEMBERREF_SIZE);
+			sig = mono_metadata_blob_heap (image, memberref_cols [MONO_MEMBERREF_SIGNATURE]);
 			mono_metadata_decode_blob_size (sig, &sig);
 
-			guint32 nindex = cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
-			guint32 class_index = cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
-			const char *fname = mono_metadata_string_heap (image, cols [MONO_MEMBERREF_NAME]);
+			guint32 nindex = memberref_cols [MONO_MEMBERREF_CLASS] >> MONO_MEMBERREF_PARENT_BITS;
+			guint32 class_index = memberref_cols [MONO_MEMBERREF_CLASS] & MONO_MEMBERREF_PARENT_MASK;
+			const char *fname = mono_metadata_string_heap (image, memberref_cols [MONO_MEMBERREF_NAME]);
 
 			if (!strcmp (fname, ".ctor") && class_index == MONO_MEMBERREF_PARENT_TYPEREF) {
 				MonoTableInfo *typeref_table = &image->tables [MONO_TABLE_TYPEREF];
-				guint32 cols [MONO_TYPEREF_SIZE];
+				guint32 typeref_cols [MONO_TYPEREF_SIZE];
 
-				mono_metadata_decode_row (typeref_table, nindex - 1, cols, MONO_TYPEREF_SIZE);
+				mono_metadata_decode_row (typeref_table, nindex - 1, typeref_cols, MONO_TYPEREF_SIZE);
 
-				const char *name = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAME]);
-				const char *nspace = mono_metadata_string_heap (image, cols [MONO_TYPEREF_NAMESPACE]);
+				const char *name = mono_metadata_string_heap (image, typeref_cols [MONO_TYPEREF_NAME]);
+				const char *nspace = mono_metadata_string_heap (image, typeref_cols [MONO_TYPEREF_NAMESPACE]);
 
 				if (!strcmp (nspace, "System") && !strcmp (name, "WeakAttribute")) {
-					MonoClass *klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, error);
+					klass = mono_class_from_typeref_checked (image, MONO_TOKEN_TYPE_REF | nindex, error);
 					if (!is_ok (error)) {
 						mono_error_cleanup (error);
 						return;
@@ -2725,6 +2726,7 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 		}
 	}
 }
+#endif
 
 /*
  * mono_assembly_init_weak_fields:
@@ -2734,6 +2736,7 @@ init_weak_fields_inner (MonoImage *image, GHashTable *indexes)
 void
 mono_assembly_init_weak_fields (MonoImage *image)
 {
+#ifdef ENABLE_WEAK_ATTR
 	if (image->weak_fields_inited)
 		return;
 
@@ -2760,6 +2763,7 @@ mono_assembly_init_weak_fields (MonoImage *image)
 		g_hash_table_destroy (indexes);
 	}
 	mono_image_unlock (image);
+#endif
 }
 
 /*
@@ -2771,6 +2775,7 @@ mono_assembly_init_weak_fields (MonoImage *image)
 gboolean
 mono_assembly_is_weak_field (MonoImage *image, guint32 field_idx)
 {
+#ifdef ENABLE_WEAK_ATTR
 	if (image->dynamic)
 		return FALSE;
 
@@ -2778,4 +2783,7 @@ mono_assembly_is_weak_field (MonoImage *image, guint32 field_idx)
 
 	/* The hash is not mutated, no need to lock */
 	return g_hash_table_lookup (image->weak_field_indexes, GINT_TO_POINTER (field_idx)) != NULL;
+#else
+	g_assert_not_reached ();
+#endif
 }

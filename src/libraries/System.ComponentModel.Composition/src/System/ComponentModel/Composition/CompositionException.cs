@@ -159,11 +159,11 @@ namespace System.ComponentModel.Composition
 
         private string BuildDefaultMessage()
         {
-            IEnumerable<IEnumerable<CompositionError>> paths = CalculatePaths(this);
+            List<Stack<CompositionError>> paths = CalculatePaths(this);
 
             StringBuilder writer = new StringBuilder();
 
-            WriteHeader(writer, Errors.Count, paths.Count());
+            WriteHeader(writer, Errors.Count, paths.Count);
             WritePaths(writer, paths);
 
             return writer.ToString();
@@ -205,30 +205,32 @@ namespace System.ComponentModel.Composition
             writer.AppendLine(SR.CompositionException_ReviewErrorProperty);
         }
 
-        private static void WritePaths(StringBuilder writer, IEnumerable<IEnumerable<CompositionError>> paths)
+        private static void WritePaths(StringBuilder writer, List<Stack<CompositionError>> paths)
         {
             int ordinal = 0;
-            foreach (IEnumerable<CompositionError> path in paths)
+            foreach (Stack<CompositionError> path in paths)
             {
                 ordinal++;
                 WritePath(writer, path, ordinal);
             }
         }
 
-        private static void WritePath(StringBuilder writer, IEnumerable<CompositionError> path, int ordinal)
+        private static void WritePath(StringBuilder writer, Stack<CompositionError> path, int ordinal)
         {
             writer.AppendLine();
             writer.Append(ordinal.ToString(CultureInfo.CurrentCulture));
             writer.Append(SR.CompositionException_PathsCountSeparator);
             writer.Append(' ');
 
-            WriteError(writer, path.First());
-
-            foreach (CompositionError error in path.Skip(1))
+            bool needsSeparator = false;
+            foreach (CompositionError error in path)
             {
-                writer.AppendLine();
-                writer.Append(SR.CompositionException_ErrorPrefix);
-                writer.Append(' ');
+                if (needsSeparator)
+                {
+                    writer.AppendLine().Append(SR.CompositionException_ErrorPrefix).Append(' ');
+                }
+                needsSeparator = true;
+
                 WriteError(writer, error);
             }
         }
@@ -258,9 +260,9 @@ namespace System.ComponentModel.Composition
             writer.AppendLine();
         }
 
-        private static IEnumerable<IEnumerable<CompositionError>> CalculatePaths(CompositionException exception)
+        private static List<Stack<CompositionError>> CalculatePaths(CompositionException exception)
         {
-            List<IEnumerable<CompositionError>> paths = new List<IEnumerable<CompositionError>>();
+            List<Stack<CompositionError>> paths = new List<Stack<CompositionError>>();
 
             VisitContext context = default;
             context.Path = new Stack<CompositionError>();

@@ -383,7 +383,7 @@ namespace System.Threading
             }
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_GetCompletedWorkItemCount")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_GetCompletedWorkItemCount")]
         private static partial long GetCompletedWorkItemCount();
 
         private static long PendingUnmanagedWorkItemCount => UsePortableThreadPool ? 0 : GetPendingUnmanagedWorkItemCount();
@@ -392,13 +392,16 @@ namespace System.Threading
         private static extern long GetPendingUnmanagedWorkItemCount();
 
         private static RegisteredWaitHandle RegisterWaitForSingleObject(
-             WaitHandle waitObject!!,
-             WaitOrTimerCallback callBack!!,
+             WaitHandle waitObject,
+             WaitOrTimerCallback callBack,
              object? state,
              uint millisecondsTimeOutInterval,
              bool executeOnlyOnce,
              bool flowExecutionContext)
         {
+            ArgumentNullException.ThrowIfNull(waitObject);
+            ArgumentNullException.ThrowIfNull(callBack);
+
             RegisteredWaitHandle registeredWaitHandle = new RegisteredWaitHandle(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),
@@ -437,7 +440,7 @@ namespace System.Threading
             RequestWorkerThreadNative();
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_RequestWorkerThread")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_RequestWorkerThread")]
         private static partial Interop.BOOL RequestWorkerThreadNative();
 
         // Entry point from unmanaged code
@@ -466,7 +469,7 @@ namespace System.Threading
             return PerformRuntimeSpecificGateActivitiesNative(cpuUtilization) != Interop.BOOL.FALSE;
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_PerformGateActivities")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "ThreadPool_PerformGateActivities")]
         private static partial Interop.BOOL PerformRuntimeSpecificGateActivitiesNative(int cpuUtilization);
 
         // Entry point from unmanaged code

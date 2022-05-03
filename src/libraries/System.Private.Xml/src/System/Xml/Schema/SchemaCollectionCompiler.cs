@@ -1417,7 +1417,7 @@ namespace System.Xml.Schema
             return false;
         }
 
-        private bool IsElementFromElement(XmlSchemaElement derivedElement, XmlSchemaElement baseElement)
+        private static bool IsElementFromElement(XmlSchemaElement derivedElement, XmlSchemaElement baseElement)
         {
             return (derivedElement.QualifiedName == baseElement.QualifiedName) &&
                     (derivedElement.IsNillable == baseElement.IsNillable) &&
@@ -1428,13 +1428,13 @@ namespace System.Xml.Schema
                     XmlSchemaType.IsDerivedFrom(derivedElement.ElementSchemaType, baseElement.ElementSchemaType, ~XmlSchemaDerivationMethod.Restriction);
         }
 
-        private bool IsElementFromAny(XmlSchemaElement derivedElement, XmlSchemaAny baseAny)
+        private static bool IsElementFromAny(XmlSchemaElement derivedElement, XmlSchemaAny baseAny)
         {
             return baseAny.Allows(derivedElement.QualifiedName) &&
                 IsValidOccurrenceRangeRestriction(derivedElement, baseAny);
         }
 
-        private bool IsAnyFromAny(XmlSchemaAny derivedAny, XmlSchemaAny baseAny)
+        private static bool IsAnyFromAny(XmlSchemaAny derivedAny, XmlSchemaAny baseAny)
         {
             return IsValidOccurrenceRangeRestriction(derivedAny, baseAny) &&
                 NamespaceList.IsSubset(derivedAny.NamespaceList!, baseAny.NamespaceList!);
@@ -1572,7 +1572,7 @@ namespace System.Xml.Schema
             return true;
         }
 
-        private void CalculateSequenceRange(XmlSchemaSequence sequence, out decimal minOccurs, out decimal maxOccurs)
+        private static void CalculateSequenceRange(XmlSchemaSequence sequence, out decimal minOccurs, out decimal maxOccurs)
         {
             minOccurs = decimal.Zero; maxOccurs = decimal.Zero;
             for (int i = 0; i < sequence.Items.Count; ++i)
@@ -1596,12 +1596,12 @@ namespace System.Xml.Schema
             }
         }
 
-        private bool IsValidOccurrenceRangeRestriction(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
+        private static bool IsValidOccurrenceRangeRestriction(XmlSchemaParticle derivedParticle, XmlSchemaParticle baseParticle)
         {
             return IsValidOccurrenceRangeRestriction(derivedParticle.MinOccurs, derivedParticle.MaxOccurs, baseParticle.MinOccurs, baseParticle.MaxOccurs);
         }
 
-        private bool IsValidOccurrenceRangeRestriction(decimal minOccurs, decimal maxOccurs, decimal baseMinOccurs, decimal baseMaxOccurs)
+        private static bool IsValidOccurrenceRangeRestriction(decimal minOccurs, decimal maxOccurs, decimal baseMinOccurs, decimal baseMaxOccurs)
         {
             return (baseMinOccurs <= minOccurs) && (maxOccurs <= baseMaxOccurs);
         }
@@ -1705,7 +1705,7 @@ namespace System.Xml.Schema
             _complexTypeStack.Push(complexType);
         }
 
-        private XmlSchemaContentType GetSchemaContentType(XmlSchemaComplexType complexType, XmlSchemaComplexContent? complexContent, XmlSchemaParticle particle)
+        private static XmlSchemaContentType GetSchemaContentType(XmlSchemaComplexType complexType, XmlSchemaComplexContent? complexContent, XmlSchemaParticle particle)
         {
             if ((complexContent != null && complexContent.IsMixed) ||
                 (complexContent == null && complexType.IsMixed))

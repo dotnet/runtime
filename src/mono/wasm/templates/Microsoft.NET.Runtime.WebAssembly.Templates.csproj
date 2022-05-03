@@ -8,7 +8,7 @@
     <Description>Templates to create WebAssembly projects.</Description>
     <PackageTags>dotnet-new;templates</PackageTags>
 
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
 
     <IncludeContentInPack>true</IncludeContentInPack>
     <IncludeBuildOutput>false</IncludeBuildOutput>

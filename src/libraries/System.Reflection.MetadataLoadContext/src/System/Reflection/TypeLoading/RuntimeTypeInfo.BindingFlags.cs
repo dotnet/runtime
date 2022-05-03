@@ -169,8 +169,13 @@ namespace System.Reflection.TypeLoading
             return Query<M>(null, bindingAttr, null);
         }
 
-        private QueryResult<M> Query<M>(string name!!, BindingFlags bindingAttr) where M : MemberInfo
+        private QueryResult<M> Query<M>(string name, BindingFlags bindingAttr) where M : MemberInfo
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             return Query<M>(name, bindingAttr, null);
         }
 

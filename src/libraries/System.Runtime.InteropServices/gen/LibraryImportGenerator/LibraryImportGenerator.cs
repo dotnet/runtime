@@ -61,7 +61,7 @@ namespace Microsoft.Interop
                     {
                         MethodDeclarationSyntax syntax = (MethodDeclarationSyntax)context.Node;
                         if (context.SemanticModel.GetDeclaredSymbol(syntax, ct) is IMethodSymbol methodSymbol
-                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.GeneratedDllImportAttribute))
+                            && methodSymbol.GetAttributes().Any(static attribute => attribute.AttributeClass?.ToDisplayString() == TypeNames.LibraryImportAttribute))
                         {
                             return new { Syntax = syntax, Symbol = methodSymbol };
                         }
@@ -90,24 +90,6 @@ namespace Microsoft.Interop
                 {
                     TargetFramework fmk = DetermineTargetFramework(compilation, out Version targetFrameworkVersion);
                     return (compilation, fmk, targetFrameworkVersion);
-                });
-
-            context.RegisterSourceOutput(
-                compilationAndTargetFramework
-                    .Combine(methodsToGenerate.Collect()),
-                static (context, data) =>
-                {
-                    if (data.Left.targetFramework is TargetFramework.Unknown && data.Right.Any())
-                    {
-                        // We don't block source generation when the TFM is unknown.
-                        // This allows a user to copy generated source and use it as a starting point
-                        // for manual marshalling if desired.
-                        context.ReportDiagnostic(
-                            Diagnostic.Create(
-                                GeneratorDiagnostics.TargetFrameworkNotSupported,
-                                Location.None,
-                                data.Left.targetFrameworkVersion));
-                    }
                 });
 
             IncrementalValueProvider<LibraryImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
@@ -321,9 +303,9 @@ namespace Microsoft.Interop
             };
         }
 
-        private static LibraryImportData? ProcessGeneratedDllImportAttribute(AttributeData attrData)
+        private static LibraryImportData? ProcessLibraryImportAttribute(AttributeData attrData)
         {
-            // Found the GeneratedDllImport, but it has an error so report the error.
+            // Found the LibraryImport, but it has an error so report the error.
             // This is most likely an issue with targeting an incorrect TFM.
             if (attrData.AttributeClass?.TypeKind is null or TypeKind.Error)
             {
@@ -418,7 +400,7 @@ namespace Microsoft.Interop
             foreach (AttributeData attr in symbol.GetAttributes())
             {
                 if (attr.AttributeClass is not null
-                    && attr.AttributeClass.ToDisplayString() == TypeNames.GeneratedDllImportAttribute)
+                    && attr.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
                 {
                     generatedDllImportAttr = attr;
                 }
@@ -444,8 +426,8 @@ namespace Microsoft.Interop
 
             var generatorDiagnostics = new GeneratorDiagnostics();
 
-            // Process the GeneratedDllImport attribute
-            LibraryImportData? libraryImportData = ProcessGeneratedDllImportAttribute(generatedDllImportAttr!);
+            // Process the LibraryImport attribute
+            LibraryImportData? libraryImportData = ProcessLibraryImportAttribute(generatedDllImportAttr!);
 
             if (libraryImportData is null)
             {
@@ -459,20 +441,20 @@ namespace Microsoft.Interop
                 if (libraryImportData.StringMarshalling == StringMarshalling.Custom && libraryImportData.StringMarshallingCustomType is null)
                 {
                     generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
-                        generatedDllImportAttr, symbol.Name, Resources.InvalidStringMarshallingConfigurationMissingCustomType);
+                        generatedDllImportAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationMissingCustomType);
                 }
 
                 // User specified something other than StringMarshalling.Custom while specifying StringMarshallingCustomType
                 if (libraryImportData.StringMarshalling != StringMarshalling.Custom && libraryImportData.StringMarshallingCustomType is not null)
                 {
                     generatorDiagnostics.ReportInvalidStringMarshallingConfiguration(
-                        generatedDllImportAttr, symbol.Name, Resources.InvalidStringMarshallingConfigurationNotCustom);
+                        generatedDllImportAttr, symbol.Name, SR.InvalidStringMarshallingConfigurationNotCustom);
                 }
             }
 
             if (lcidConversionAttr is not null)
             {
-                // Using LCIDConversion with GeneratedDllImport is not supported
+                // Using LCIDConversion with LibraryImport is not supported
                 generatorDiagnostics.ReportConfigurationNotSupported(lcidConversionAttr, nameof(TypeNames.LCIDConversionAttribute));
             }
 
@@ -501,7 +483,7 @@ namespace Microsoft.Interop
                 pinvokeStub.LibraryImportData.SetLastError && !options.GenerateForwarders,
                 (elementInfo, ex) =>
                 {
-                    diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails);
+                    diagnostics.ReportMarshallingNotSupported(originalSyntax, elementInfo, ex.NotSupportedDetails, ex.DiagnosticProperties ?? ImmutableDictionary<string, string>.Empty);
                 },
                 pinvokeStub.StubContext.GeneratorFactory);
 
@@ -552,7 +534,7 @@ namespace Microsoft.Interop
             {
                 diagnostics.ReportCannotForwardToDllImport(
                     userDeclaredMethod,
-                    $"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}",
+                    $"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(StringMarshalling)}",
                     $"{nameof(StringMarshalling)}{Type.Delimiter}{pinvokeData.StringMarshalling}");
 
                 pinvokeData = pinvokeData with { IsUserDefined = pinvokeData.IsUserDefined & ~LibraryImportMember.StringMarshalling };
@@ -562,7 +544,7 @@ namespace Microsoft.Interop
             {
                 diagnostics.ReportCannotForwardToDllImport(
                     userDeclaredMethod,
-                    $"{nameof(TypeNames.GeneratedDllImportAttribute)}{Type.Delimiter}{nameof(LibraryImportMember.StringMarshallingCustomType)}");
+                    $"{nameof(TypeNames.LibraryImportAttribute)}{Type.Delimiter}{nameof(LibraryImportMember.StringMarshallingCustomType)}");
 
                 pinvokeData = pinvokeData with { IsUserDefined = pinvokeData.IsUserDefined & ~LibraryImportMember.StringMarshallingCustomType };
             }

@@ -9,38 +9,38 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPSocketAddressSizes")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPSocketAddressSizes")]
         [SuppressGCTransition]
         internal static unsafe partial Error GetIPSocketAddressSizes(int* ipv4SocketAddressSize, int* ipv6SocketAddressSize);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAddressFamily")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetAddressFamily")]
         [SuppressGCTransition]
         internal static unsafe partial Error GetAddressFamily(byte* socketAddress, int socketAddressLen, int* addressFamily);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetAddressFamily")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetAddressFamily")]
         [SuppressGCTransition]
         internal static unsafe partial Error SetAddressFamily(byte* socketAddress, int socketAddressLen, int addressFamily);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPort")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetPort")]
         [SuppressGCTransition]
         internal static unsafe partial Error GetPort(byte* socketAddress, int socketAddressLen, ushort* port);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetPort")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetPort")]
         [SuppressGCTransition]
         internal static unsafe partial Error SetPort(byte* socketAddress, int socketAddressLen, ushort port);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv4Address")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv4Address")]
         [SuppressGCTransition]
         internal static unsafe partial Error GetIPv4Address(byte* socketAddress, int socketAddressLen, uint* address);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetIPv4Address")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetIPv4Address")]
         [SuppressGCTransition]
         internal static unsafe partial Error SetIPv4Address(byte* socketAddress, int socketAddressLen, uint address);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv6Address")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetIPv6Address")]
         internal static unsafe partial Error GetIPv6Address(byte* socketAddress, int socketAddressLen, byte* address, int addressLen, uint* scopeId);
 
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetIPv6Address")]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_SetIPv6Address")]
         internal static unsafe partial Error SetIPv6Address(byte* socketAddress, int socketAddressLen, byte* address, int addressLen, uint scopeId);
     }
 }

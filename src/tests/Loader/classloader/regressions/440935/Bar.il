@@ -3,12 +3,6 @@
 
 .assembly extern System.Console { }
 
-//  Microsoft (R) .NET Framework IL Disassembler.  Version 2.0.50117.00
-//  Copyright (C) Microsoft Corporation. All rights reserved.
-
-
-
-// Metadata version: v2.0.50117
 .assembly extern retargetable mscorlib
 {
   .publickeytoken = (96 9D B8 05 3D 33 22 AC )                         // ....=3".

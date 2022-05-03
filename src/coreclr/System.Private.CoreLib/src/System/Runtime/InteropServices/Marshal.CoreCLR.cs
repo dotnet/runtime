@@ -30,8 +30,10 @@ namespace System.Runtime.InteropServices
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2070:UnrecognizedReflectionPattern",
             Justification = "Trimming doesn't affect types eligible for marshalling. Different exception for invalid inputs doesn't matter.")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr OffsetOf(Type t!!, string fieldName)
+        public static IntPtr OffsetOf(Type t, string fieldName)
         {
+            ArgumentNullException.ThrowIfNull(t);
+
             FieldInfo? f = t.GetField(fieldName, BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic);
 
             if (f is null)
@@ -77,7 +79,9 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         [Obsolete("ReadInt64(Object, Int32) may be unavailable in future releases.")]
         [RequiresDynamicCode("Marshalling code for the object might not be available")]
+#pragma warning disable CS0618 // Type or member is obsolete
         public static long ReadInt64([MarshalAs(UnmanagedType.AsAny), In] object ptr, int ofs)
+#pragma warning restore CS0618 // Type or member is obsolete
         {
             return ReadValueSlow(ptr, ofs, (IntPtr nativeHome, int offset) => ReadInt64(nativeHome, offset));
         }
@@ -213,7 +217,7 @@ namespace System.Runtime.InteropServices
             GC.KeepAlive(rmi);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_Prelink")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_Prelink")]
         private static partial void InternalPrelink(RuntimeMethodHandleInternal m);
 
         [MethodImpl(MethodImplOptions.InternalCall)]
@@ -249,13 +253,14 @@ namespace System.Runtime.InteropServices
         [EditorBrowsable(EditorBrowsableState.Never)]
         public static extern void DestroyStructure(IntPtr ptr, Type structuretype);
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern bool IsPinnable(object? obj);
+        // Note: Callers are required to keep obj alive
+        internal static unsafe bool IsPinnable(object? obj)
+            => (obj == null) || !RuntimeHelpers.GetMethodTable(obj)->ContainsGCPointers;
 
 #if TARGET_WINDOWS
         internal static bool IsBuiltInComSupported { get; } = IsBuiltInComSupportedInternal();
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsBuiltInComSupported")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_IsBuiltInComSupported")]
         [return: MarshalAs(UnmanagedType.Bool)]
         private static partial bool IsBuiltInComSupportedInternal();
 
@@ -263,8 +268,10 @@ namespace System.Runtime.InteropServices
         /// Returns the HInstance for this module.  Returns -1 if the module doesn't have
         /// an HInstance.  In Memory (Dynamic) Modules won't have an HInstance.
         /// </summary>
-        public static IntPtr GetHINSTANCE(Module m!!)
+        public static IntPtr GetHINSTANCE(Module m)
         {
+            ArgumentNullException.ThrowIfNull(m);
+
             if (m is RuntimeModule rtModule)
             {
                 return GetHINSTANCE(new QCallModule(ref rtModule));
@@ -273,7 +280,7 @@ namespace System.Runtime.InteropServices
             return (IntPtr)(-1);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHINSTANCE")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetHINSTANCE")]
         private static partial IntPtr GetHINSTANCE(QCallModule m);
 
 #endif // TARGET_WINDOWS
@@ -294,8 +301,10 @@ namespace System.Runtime.InteropServices
         /// Given a managed object that wraps an ITypeInfo, return its name.
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static string GetTypeInfoName(ITypeInfo typeInfo!!)
+        public static string GetTypeInfoName(ITypeInfo typeInfo)
         {
+            ArgumentNullException.ThrowIfNull(typeInfo);
+
             typeInfo.GetDocumentation(-1, out string strTypeLibName, out _, out _, out _);
             return strTypeLibName;
         }
@@ -317,7 +326,7 @@ namespace System.Runtime.InteropServices
             return type;
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetTypeFromCLSID", StringMarshalling = StringMarshalling.Utf16)]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetTypeFromCLSID", StringMarshalling = StringMarshalling.Utf16)]
         private static partial void GetTypeFromCLSID(in Guid clsid, string? server, ObjectHandleOnStack retType);
 
         /// <summary>
@@ -325,8 +334,10 @@ namespace System.Runtime.InteropServices
         /// where the RCW was first seen. Will return null otherwise.
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static IntPtr /* IUnknown* */ GetIUnknownForObject(object o!!)
+        public static IntPtr /* IUnknown* */ GetIUnknownForObject(object o)
         {
+            ArgumentNullException.ThrowIfNull(o);
+
             return GetIUnknownForObjectNative(o);
         }
 
@@ -337,8 +348,10 @@ namespace System.Runtime.InteropServices
         /// Return the IDispatch* for an Object.
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o!!)
+        public static IntPtr /* IDispatch */ GetIDispatchForObject(object o)
         {
+            ArgumentNullException.ThrowIfNull(o);
+
             return GetIDispatchForObjectNative(o);
         }
 
@@ -351,8 +364,11 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o!!, Type T!!)
+        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T)
         {
+            ArgumentNullException.ThrowIfNull(o);
+            ArgumentNullException.ThrowIfNull(T);
+
             return GetComInterfaceForObjectNative(o, T, true);
         }
 
@@ -366,8 +382,11 @@ namespace System.Runtime.InteropServices
         /// </summary>
         [SupportedOSPlatform("windows")]
         [EditorBrowsable(EditorBrowsableState.Never)]
-        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o!!, Type T!!, CustomQueryInterfaceMode mode)
+        public static IntPtr /* IUnknown* */ GetComInterfaceForObject(object o, Type T, CustomQueryInterfaceMode mode)
         {
+            ArgumentNullException.ThrowIfNull(o);
+            ArgumentNullException.ThrowIfNull(T);
+
             bool bEnableCustomizedQueryInterface = ((mode == CustomQueryInterfaceMode.Allow) ? true : false);
             return GetComInterfaceForObjectNative(o, T, bEnableCustomizedQueryInterface);
         }
@@ -449,8 +468,10 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Checks if the object is classic COM component.
         /// </summary>
-        public static bool IsComObject(object o!!)
+        public static bool IsComObject(object o)
         {
+            ArgumentNullException.ThrowIfNull(o);
+
             return o is __ComObject;
         }
 
@@ -769,17 +790,17 @@ namespace System.Runtime.InteropServices
         // Revist after https://github.com/mono/linker/issues/1989 is fixed
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
             Justification = "The calling method is annotated with RequiresUnreferencedCode")]
-        [GeneratedDllImport(Interop.Libraries.Ole32)]
+        [LibraryImport(Interop.Libraries.Ole32)]
         private static partial int CreateBindCtx(uint reserved, out IntPtr ppbc);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
             Justification = "The calling method is annotated with RequiresUnreferencedCode")]
-        [GeneratedDllImport(Interop.Libraries.Ole32)]
+        [LibraryImport(Interop.Libraries.Ole32)]
         private static partial int MkParseDisplayName(IntPtr pbc, [MarshalAs(UnmanagedType.LPWStr)] string szUserName, out uint pchEaten, out IntPtr ppmk);
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2050:UnrecognizedReflectionPattern",
             Justification = "The calling method is annotated with RequiresUnreferencedCode")]
-        [GeneratedDllImport(Interop.Libraries.Ole32)]
+        [LibraryImport(Interop.Libraries.Ole32)]
         private static partial int BindMoniker(IntPtr pmk, uint grfOpt, ref Guid iidResult, out IntPtr ppvResult);
 
         [SupportedOSPlatform("windows")]
@@ -794,7 +815,7 @@ namespace System.Runtime.InteropServices
         internal static extern IntPtr GetFunctionPointerForDelegateInternal(Delegate d);
 
 #if DEBUG // Used for testing in Checked or Debug
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "MarshalNative_GetIsInCooperativeGCModeFunctionPointer")]
         internal static unsafe partial delegate* unmanaged<int> GetIsInCooperativeGCModeFunctionPointer();
 #endif
     }

@@ -34,6 +34,8 @@
 /src/mono/mono/metadata/thread* @lateralusX @lambdageek
 /src/mono/mono/metadata/w32* @lateralusX @lambdageek
 
+/src/mono/mono/eventpipe @lateralusX @lambdageek
+
 /src/mono/mono/mini @vargaz @lambdageek @SamMonoRT
 /src/mono/mono/mini/*cfgdump* @vargaz
 /src/mono/mono/mini/*exceptions* @vargaz @BrzVlad

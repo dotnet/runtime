@@ -532,8 +532,10 @@ namespace System.IO
             return _strategy.BeginRead(buffer, offset, count, callback, state);
         }
 
-        public override int EndRead(IAsyncResult asyncResult!!)
+        public override int EndRead(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             return _strategy.EndRead(asyncResult);
         }
 
@@ -553,8 +555,10 @@ namespace System.IO
             return _strategy.BeginWrite(buffer, offset, count, callback, state);
         }
 
-        public override void EndWrite(IAsyncResult asyncResult!!)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             _strategy.EndWrite(asyncResult);
         }
 

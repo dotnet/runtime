@@ -168,10 +168,13 @@ namespace System.Resources
         //
         // Note: System.Windows.Forms uses this method at design time.
         //
-        private ResourceManager(string baseName!!, string resourceDir!!,
+        private ResourceManager(string baseName, string resourceDir,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
             Type? userResourceSet)
         {
+            ArgumentNullException.ThrowIfNull(baseName);
+            ArgumentNullException.ThrowIfNull(resourceDir);
+
             BaseNameField = baseName;
 
             _moduleDir = resourceDir;
@@ -183,8 +186,11 @@ namespace System.Resources
             _resourceGroveler = new FileBasedResourceGroveler(mediator);
         }
 
-        public ResourceManager(string baseName!!, Assembly assembly!!)
+        public ResourceManager(string baseName, Assembly assembly)
         {
+            ArgumentNullException.ThrowIfNull(baseName);
+            ArgumentNullException.ThrowIfNull(assembly);
+
             if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
@@ -194,10 +200,13 @@ namespace System.Resources
             CommonAssemblyInit();
         }
 
-        public ResourceManager(string baseName!!, Assembly assembly!!,
+        public ResourceManager(string baseName, Assembly assembly,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
         Type? usingResourceSet)
         {
+            ArgumentNullException.ThrowIfNull(baseName);
+            ArgumentNullException.ThrowIfNull(assembly);
+
             if (assembly is not RuntimeAssembly)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeAssembly);
 
@@ -211,8 +220,10 @@ namespace System.Resources
             CommonAssemblyInit();
         }
 
-        public ResourceManager(Type resourceSource!!)
+        public ResourceManager(Type resourceSource)
         {
+            ArgumentNullException.ThrowIfNull(resourceSource);
+
             if (resourceSource is not RuntimeType)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeType);
 
@@ -377,8 +388,10 @@ namespace System.Resources
         // if it hasn't yet been loaded and if parent CultureInfos should be
         // loaded as well for resource inheritance.
         //
-        public virtual ResourceSet? GetResourceSet(CultureInfo culture!!, bool createIfNotExists, bool tryParents)
+        public virtual ResourceSet? GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
         {
+            ArgumentNullException.ThrowIfNull(culture);
+
             Dictionary<string, ResourceSet>? localResourceSets = _resourceSets;
             ResourceSet? rs;
             if (localResourceSets != null)
@@ -509,8 +522,10 @@ namespace System.Resources
             }
         }
 
-        protected static Version? GetSatelliteContractVersion(Assembly a!!)
+        protected static Version? GetSatelliteContractVersion(Assembly a)
         {
+            ArgumentNullException.ThrowIfNull(a);
+
             string? v = a.GetCustomAttribute<SatelliteContractVersionAttribute>()?.Version;
             if (v == null)
             {
@@ -575,8 +590,10 @@ namespace System.Resources
         // specified CultureInfo, and if not found, all parent CultureInfos.
         // Returns null if the resource wasn't found.
         //
-        public virtual string? GetString(string name!!, CultureInfo? culture)
+        public virtual string? GetString(string name, CultureInfo? culture)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             culture ??= CultureInfo.CurrentUICulture;
 
             ResourceSet? last = GetFirstResourceSet(culture);
@@ -639,8 +656,10 @@ namespace System.Resources
             return GetObject(name, culture, true);
         }
 
-        private object? GetObject(string name!!, CultureInfo? culture, bool wrapUnmanagedMemStream)
+        private object? GetObject(string name, CultureInfo? culture, bool wrapUnmanagedMemStream)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (null == culture)
             {
                 culture = CultureInfo.CurrentUICulture;
@@ -717,8 +736,10 @@ namespace System.Resources
         {
             private readonly ResourceManager _rm;
 
-            internal ResourceManagerMediator(ResourceManager rm!!)
+            internal ResourceManagerMediator(ResourceManager rm)
             {
+                ArgumentNullException.ThrowIfNull(rm);
+
                 _rm = rm;
             }
 

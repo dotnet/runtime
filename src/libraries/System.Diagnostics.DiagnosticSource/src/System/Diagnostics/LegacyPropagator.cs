@@ -165,7 +165,7 @@ namespace System.Diagnostics
 
                 if (keyStart < keyEnd && valueStart < currentIndex)
                 {
-                    baggageList ??= new();
+                    baggageList ??= new List<KeyValuePair<string, string?>>();
 
                     // Insert in reverse order for asp.net compatability.
                     baggageList.Insert(0, new KeyValuePair<string, string?>(

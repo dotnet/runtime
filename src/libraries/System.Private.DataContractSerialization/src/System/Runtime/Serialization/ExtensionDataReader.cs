@@ -243,7 +243,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        private bool IsElementNode(ExtensionDataNodeType nodeType)
+        private static bool IsElementNode(ExtensionDataNodeType nodeType)
         {
             return (nodeType == ExtensionDataNodeType.Element ||
                 nodeType == ExtensionDataNodeType.ReferencedElement ||
@@ -427,7 +427,7 @@ namespace System.Runtime.Serialization
             return false;
         }
 
-        private void MoveNext(IDataNode? dataNode)
+        private static void MoveNext(IDataNode? dataNode)
         {
             throw NotImplemented.ByDesign;
         }

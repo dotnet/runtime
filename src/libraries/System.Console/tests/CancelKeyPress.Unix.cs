@@ -134,10 +134,10 @@ public partial class CancelKeyPressTests
         }
     }
 
-    [GeneratedDllImport("libc", SetLastError = true)]
+    [LibraryImport("libc", SetLastError = true)]
     private static partial int kill(int pid, int sig);
 
-    [GeneratedDllImport("libc", SetLastError = true)]
+    [LibraryImport("libc", SetLastError = true)]
     private static unsafe partial int sigaction(int signum, struct_sigaction* act, struct_sigaction* oldact);
 
     private const int SIGINT = 2;

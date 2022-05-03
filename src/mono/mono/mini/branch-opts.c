@@ -971,7 +971,6 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 {
 	MonoInst *inst;
 	MonoBasicBlock *prev_bb;
-	int i;
 
 	/* There may be only one control flow edge between two BBs that we merge, and it should connect these BBs together. */
 	g_assert (bb->out_count == 1 && bbn->in_count == 1 && bb->out_bb [0] == bbn && bbn->in_bb [0] == bb);
@@ -980,7 +979,7 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 	bb->extended |= bbn->extended;
 
 	mono_unlink_bblock (cfg, bb, bbn);
-	for (i = 0; i < bbn->out_count; ++i)
+	for (gint16 i = 0; i < bbn->out_count; ++i)
 		mono_link_bblock (cfg, bb, bbn->out_bb [i]);
 	while (bbn->out_count)
 		mono_unlink_bblock (cfg, bbn, bbn->out_bb [0]);
@@ -997,9 +996,8 @@ mono_merge_basic_blocks (MonoCompile *cfg, MonoBasicBlock *bb, MonoBasicBlock *b
 	if (bb->has_jump_table) {
 		for (inst = bb->code; inst != NULL; inst = inst->next) {
 			if (MONO_IS_JUMP_TABLE (inst)) {
-				int i;
 				MonoJumpInfoBBTable *table = (MonoJumpInfoBBTable *)MONO_JUMP_TABLE_FROM_INS (inst);
-				for (i = 0; i < table->table_size; i++ ) {
+				for (int i = 0; i < table->table_size; i++ ) {
 					/* Might be already NULL from a previous merge */
 					if (table->table [i])
 						g_assert (table->table [i] == bbn);

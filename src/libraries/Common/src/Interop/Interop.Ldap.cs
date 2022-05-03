@@ -44,6 +44,9 @@ namespace System.DirectoryServices.Protocols
         public string packageList;
         public int packageListLength;
 
+#if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(SEC_WINNT_AUTH_IDENTITY_EX), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
+#endif
         [StructLayout(LayoutKind.Sequential)]
         internal struct Native
         {
@@ -173,6 +176,7 @@ namespace System.DirectoryServices.Protocols
         public IntPtr bv_val = IntPtr.Zero;
 
 #if NET7_0_OR_GREATER
+        [CustomTypeMarshaller(typeof(BerVal), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
         internal unsafe struct PinningMarshaller
         {
             private readonly BerVal _managed;
@@ -183,7 +187,7 @@ namespace System.DirectoryServices.Protocols
 
             public ref int GetPinnableReference() => ref (_managed is null ? ref Unsafe.NullRef<int>() : ref _managed.bv_len);
 
-            public void* Value => Unsafe.AsPointer(ref GetPinnableReference());
+            public void* ToNativeValue() => Unsafe.AsPointer(ref GetPinnableReference());
         }
 #endif
     }
@@ -211,6 +215,7 @@ namespace System.DirectoryServices.Protocols
 #if NET7_0_OR_GREATER
         public static readonly unsafe int Size = sizeof(Marshaller.Native);
 
+        [CustomTypeMarshaller(typeof(LdapReferralCallback), Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
         public unsafe struct Marshaller
         {
             public unsafe struct Native
@@ -234,11 +239,9 @@ namespace System.DirectoryServices.Protocols
                 _native.dereference = managed.dereference is not null ? Marshal.GetFunctionPointerForDelegate(managed.dereference) : IntPtr.Zero;
             }
 
-            public Native Value
-            {
-                get => _native;
-                set => _native = value;
-            }
+            public Native ToNativeValue() => _native;
+
+            public void FromNativeValue(Native value) => _native = value;
 
             public LdapReferralCallback ToManaged()
             {

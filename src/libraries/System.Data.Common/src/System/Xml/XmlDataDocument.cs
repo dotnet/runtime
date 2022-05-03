@@ -149,7 +149,7 @@ namespace System.Xml
         internal void SyncTree(XmlNode node)
         {
             XmlBoundElement? be;
-            _mapper.GetRegion(node, out be);
+            DataSetMapper.GetRegion(node, out be);
             DataRow? parentRow = null;
             bool fAddRowsToTable = IsConnected(node);
 
@@ -601,7 +601,7 @@ namespace System.Xml
                 {
                     XmlBoundElement? rowElem;
                     ElementState rowElemState = ElementState.None;
-                    if (_mapper.GetRegion(node, out rowElem))
+                    if (DataSetMapper.GetRegion(node, out rowElem))
                     {
                         rowElemState = rowElem.ElementState;
                         Debug.Assert(rowElemState == ElementState.StrongFoliation || rowElemState == ElementState.WeakFoliation);
@@ -786,7 +786,7 @@ namespace System.Xml
                 XmlElement? e = node as XmlElement;
 
                 // insert location must be before any non-mapped elements or separate regions
-                if (_mapper.GetRowFromElement(e) != null)
+                if (DataSetMapper.GetRowFromElement(e) != null)
                     break;
 
                 object? schema = _mapper.GetColumnSchemaForNode(rowElement, node);
@@ -860,7 +860,7 @@ namespace System.Xml
         /// </summary>
         public DataRow? GetRowFromElement(XmlElement? e)
         {
-            return _mapper.GetRowFromElement(e);
+            return DataSetMapper.GetRowFromElement(e);
         }
 
         private XmlNode? GetRowInsertBeforeLocation(DataRow row, XmlElement rowElement, XmlNode parentElement)
@@ -1813,7 +1813,7 @@ namespace System.Xml
 
                 Debug.Assert(DataSet.EnforceConstraints == false);
 
-                if (_mapper.GetRegion(args.Node, out rowElement))
+                if (DataSetMapper.GetRegion(args.Node, out rowElement))
                 {
                     SynchronizeRowFromRowElement(rowElement);
                 }
@@ -1949,7 +1949,7 @@ namespace System.Xml
             XmlBoundElement? oldRowElem;
 
             // Synchronize values from old region
-            if (_mapper.GetRegion(oldParent, out oldRowElem))
+            if (DataSetMapper.GetRegion(oldParent, out oldRowElem))
                 SynchronizeRowFromRowElement(oldRowElem);
 
             // Disconnect all regions, starting w/ node (if it is a row-elem)
@@ -1973,7 +1973,7 @@ namespace System.Xml
         {
             XmlBoundElement? oldRowElem;
 
-            if (_mapper.GetRegion(oldParent, out oldRowElem))
+            if (DataSetMapper.GetRegion(oldParent, out oldRowElem))
             {
                 // Sync the old region if it is not deleted
                 DataRow row = oldRowElem.Row!;
@@ -2307,7 +2307,7 @@ namespace System.Xml
 
             XmlNode prevSibling = parent;
             XmlBoundElement? parentRegionRowElem;
-            _mapper.GetRegion(parent.ParentNode, out parentRegionRowElem);
+            DataSetMapper.GetRegion(parent.ParentNode, out parentRegionRowElem);
 
             TreeIterator iter = new TreeIterator(parent);
             bool fMore = iter.NextRowElement();
@@ -2712,7 +2712,7 @@ namespace System.Xml
         {
             XmlBoundElement? be;
             ArrayList rowElemList = new ArrayList();
-            if (_mapper.GetRegion(node, out be))
+            if (DataSetMapper.GetRegion(node, out be))
             {
                 if (be == node)
                 {
@@ -2750,7 +2750,7 @@ namespace System.Xml
         private void OnNodeInsertedInFragment(XmlNode node)
         {
             XmlBoundElement? be;
-            if (_mapper.GetRegion(node, out be))
+            if (DataSetMapper.GetRegion(node, out be))
             {
                 if (be == node)
                 {
@@ -2938,7 +2938,7 @@ namespace System.Xml
             Debug.Assert(childRowElem.Row != null);
 
             XmlBoundElement? parentRowElem;
-            _mapper.GetRegion(childRowElem.ParentNode, out parentRowElem);
+            DataSetMapper.GetRegion(childRowElem.ParentNode, out parentRowElem);
             SetNestedParentRegion(childRowElem, parentRowElem);
         }
 

@@ -11,20 +11,20 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a value as a signed integer encoding (major types 0,1)</summary>
         /// <param name="value">The value to write</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteInt32(int value) => WriteInt64(value);
 
         /// <summary>Writes the provided value as a signed integer encoding (major types 0,1)</summary>
         /// <param name="value">The value to write</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteInt64(long value)
         {
             if (value < 0)
@@ -42,21 +42,21 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes a value as an unsigned integer encoding (major type 0).</summary>
         /// <param name="value">The value to write</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         [CLSCompliant(false)]
         public void WriteUInt32(uint value) => WriteUInt64(value);
 
         /// <summary>Writes a value as an unsigned integer encoding (major type 0).</summary>
         /// <param name="value">The value to write</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         [CLSCompliant(false)]
         public void WriteUInt64(ulong value)
         {
@@ -66,11 +66,11 @@ namespace System.Formats.Cbor
 
         /// <summary>Writes the provided value as a CBOR negative integer representation (major type 1).</summary>
         /// <param name="value">An unsigned integer denoting -1 minus the integer.</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         /// <remarks>
         /// This method supports encoding integers between -18446744073709551616 and -1.
         /// Useful for handling values that do not fit in the <see cref="long" /> type.
@@ -118,7 +118,7 @@ namespace System.Formats.Cbor
             }
         }
 
-        private int GetIntegerEncodingLength(ulong value)
+        private static int GetIntegerEncodingLength(ulong value)
         {
             if (value < (byte)CborAdditionalInfo.Additional8BitData)
             {

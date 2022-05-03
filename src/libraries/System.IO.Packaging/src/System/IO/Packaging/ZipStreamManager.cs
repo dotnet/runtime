@@ -86,10 +86,6 @@ namespace System.IO.Packaging
             return new ZipWrappingStream(zipArchiveEntry, ns, _packageFileMode, _packageFileAccess, canRead, canWrite);
         }
 
-        public void Close(ZipArchiveEntry zipArchiveEntry)
-        {
-        }
-
         //
         // IDisposable interface
         //

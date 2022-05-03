@@ -158,9 +158,7 @@ namespace System.Security.Cryptography.X509Certificates
             return result ?? FromDerBlob(rawData, GetDerCertContentType(rawData), password, keyStorageFlags);
         }
 
-        public void DisposeTempKeychain()
-        {
-            // No temporary keychain on iOS
-        }
+        // No temporary keychain on iOS
+        partial void DisposeTempKeychain();
     }
 }

@@ -10,7 +10,7 @@ internal static partial class Interop
     internal unsafe partial class Sys
     {
         [DoesNotReturn]
-        [GeneratedDllImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_Abort")]
+        [LibraryImport(Interop.Libraries.SystemNative, EntryPoint = "SystemNative_Abort")]
         internal static partial void Abort();
     }
 }

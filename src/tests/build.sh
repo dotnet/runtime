@@ -36,7 +36,7 @@ build_Tests()
     fi
 
     echo "__TargetOS: ${__TargetOS}"
-    echo "__BuildArch: ${__BuildArch}"
+    echo "__TargetArch: ${__TargetArch}"
     echo "__BuildType: ${__BuildType}"
     echo "__TestIntermediatesDir: ${__TestIntermediatesDir}"
     echo "__NativeTestIntermediatesDir: ${__NativeTestIntermediatesDir}"
@@ -61,7 +61,7 @@ build_Tests()
 
     if [[ "$__SkipNative" != 1 && "$__BuildTestWrappersOnly" != 1 && "$__GenerateLayoutOnly" != 1 && "$__CopyNativeTestBinaries" != 1 && \
         "$__TargetOS" != "Browser" && "$__TargetOS" != "Android" && "$__TargetOS" != "iOS" && "$__TargetOS" != "iOSSimulator" ]]; then
-        build_native "$__TargetOS" "$__BuildArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
+        build_native "$__TargetOS" "$__TargetArch" "$__TestDir" "$__NativeTestIntermediatesDir" "install" "CoreCLR test component"
 
         if [[ "$?" -ne 0 ]]; then
             echo "${__ErrMsgPrefix}${__MsgPrefix}Error: native test build failed. Refer to the build log files for details (above)"
@@ -70,10 +70,10 @@ build_Tests()
     fi
 
     # Set up directories and file names
-    __BuildLog="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.log"
-    __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.wrn"
-    __BuildErr="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.err"
-    __BuildBinLog="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__BuildArch}.${__BuildType}.binlog"
+    __BuildLog="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__TargetArch}.${__BuildType}.log"
+    __BuildWrn="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__TargetArch}.${__BuildType}.wrn"
+    __BuildErr="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__TargetArch}.${__BuildType}.err"
+    __BuildBinLog="$__LogsDir/${__BuildLogRootName}.${__TargetOS}.${__TargetArch}.${__BuildType}.binlog"
     __msbuildLog="\"/flp:Verbosity=normal;LogFile=${__BuildLog}\""
     __msbuildWrn="\"/flp1:WarningsOnly;LogFile=${__BuildWrn}\""
     __msbuildErr="\"/flp2:ErrorsOnly;LogFile=${__BuildErr}\""
@@ -138,6 +138,8 @@ build_Tests()
 
 usage_list=()
 
+usage_list+=("-skipmanaged: do not build managed components.")
+usage_list+=("-skipnative: do not build native components.")
 usage_list+=("-skiprestorepackages: skip package restore.")
 usage_list+=("-skipgeneratelayout: Do not generate the Core_Root layout.")
 usage_list+=("-skiptestwrappers: Don't generate test wrappers.")
@@ -166,10 +168,20 @@ usage_list+=("-log: base file name to use for log files (used in lab pipelines t
 # Obtain the location of the bash script to figure out where the root of the repo is.
 __ProjectRoot="$(cd "$(dirname "$0")"; pwd -P)"
 __RepoRootDir="$(cd "$__ProjectRoot"/../..; pwd -P)"
-__BuildArch=
+__TargetArch=
 
 handle_arguments_local() {
     case "$1" in
+        skipmanaged|-skipmanaged)
+            __SkipManaged=1
+            __BuildTestWrappers=0
+            ;;
+
+        skipnative|-skipnative)
+            __SkipNative=1
+            __CopyNativeProjectsAfterCombinedTestBuild=false
+            ;;
+
         buildtestwrappersonly|-buildtestwrappersonly)
             __BuildTestWrappersOnly=1
             ;;
@@ -331,7 +343,7 @@ CORE_ROOT=
 
 source $__RepoRootDir/src/coreclr/_build-commons.sh
 
-if [[ "${__BuildArch}" != "${__HostArch}" ]]; then
+if [[ "${__TargetArch}" != "${__HostArch}" ]]; then
     __CrossBuild=1
 fi
 
@@ -364,7 +376,7 @@ __LogsDir="$__RootBinDir/log"
 __MsbuildDebugLogsDir="$__LogsDir/MsbuildDebugLogs"
 
 # Set the remaining variables based upon the determined build configuration
-__OSPlatformConfig="$__TargetOS.$__BuildArch.$__BuildType"
+__OSPlatformConfig="$__TargetOS.$__TargetArch.$__BuildType"
 __BinDir="$__RootBinDir/bin/coreclr/$__OSPlatformConfig"
 __PackagesBinDir="$__BinDir/.nuget"
 __TestDir="$__RepoRootDir/src/tests"

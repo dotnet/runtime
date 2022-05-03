@@ -1154,18 +1154,15 @@ BOOL MethodTableBuilder::CheckIfSIMDAndUpdateSize()
     if (jitMgr->LoadJIT())
     {
         CORJIT_FLAGS cpuCompileFlags = jitMgr->GetCPUCompileFlags();
-        if (cpuCompileFlags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_FEATURE_SIMD))
+        unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
+        if (intrinsicSIMDVectorLength != 0)
         {
-            unsigned intrinsicSIMDVectorLength = jitMgr->m_jit->getMaxIntrinsicSIMDVectorLength(cpuCompileFlags);
-            if (intrinsicSIMDVectorLength != 0)
+            bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
+            if (HasLayout())
             {
-                bmtFP->NumInstanceFieldBytes     = intrinsicSIMDVectorLength;
-                if (HasLayout())
-                {
-                    GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
-                }
-                return true;
+                GetLayoutInfo()->m_cbManagedSize = intrinsicSIMDVectorLength;
             }
+            return true;
         }
     }
 #endif // defined(TARGET_X86) || defined(TARGET_AMD64)
@@ -7053,7 +7050,7 @@ VOID MethodTableBuilder::AllocAndInitMethodDescChunk(COUNT_T startIndex, COUNT_T
     }
     _ASSERTE(offset == sizeof(MethodDescChunk) + sizeOfMethodDescs);
 
-    pChunk->SetSizeAndCount((ULONG)sizeOfMethodDescs, methodDescCount);
+    pChunk->SetSizeAndCount(sizeOfMethodDescs, methodDescCount);
 
     GetHalfBakedClass()->AddChunk(pChunk);
 }

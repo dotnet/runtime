@@ -720,6 +720,8 @@ Return Value:
     if ((HeaderWord & (1 << 21)) != 0) {
         UnwindIndex = EpilogScopeCount;
         EpilogScopeCount = 0;
+    } else {
+        UnwindIndex = 0;
     }
 
     //

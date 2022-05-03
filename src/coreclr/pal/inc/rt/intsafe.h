@@ -49,8 +49,6 @@
 
 #endif
 
-#define DWORD_MAX       0xffffffffUL
-
 //
 // It is common for -1 to be used as an error value for various types
 //

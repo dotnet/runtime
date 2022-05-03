@@ -62,12 +62,19 @@ namespace Internal.TypeSystem.Ecma
             }
         }
 
-        public static PdbSymbolReader TryOpen(string pdbFilename, MetadataStringDecoder stringDecoder)
+        public static PdbSymbolReader TryOpen(string pdbFilename, MetadataStringDecoder stringDecoder, BlobContentId expectedContentId)
         {
             MemoryMappedViewAccessor mappedViewAccessor;
             MetadataReader reader = TryOpenMetadataFile(pdbFilename, stringDecoder, out mappedViewAccessor);
             if (reader == null)
                 return null;
+
+            var foundContentId = new BlobContentId(reader.DebugMetadataHeader.Id);
+            if (foundContentId != expectedContentId)
+            {
+                mappedViewAccessor.Dispose();
+                return null;
+            }
 
             return new PortablePdbSymbolReader(reader, mappedViewAccessor);
         }

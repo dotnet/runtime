@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>System.Runtime.Loader.Tests</RootNamespace>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <TestRuntime>true</TestRuntime>
+    <DeltaScript>deltascript.json</DeltaScript>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="ReflectionAddNewType.cs" />
+  </ItemGroup>
+</Project>

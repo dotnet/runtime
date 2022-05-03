@@ -12,7 +12,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Net.Http.Headers;
 using System.Net.Security;
-using Microsoft.Extensions.Internal;
 
 namespace System.Net.Http
 {
@@ -170,52 +169,42 @@ namespace System.Net.Http
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, ValueStopwatch queueDuration, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, CancellationToken cancellationToken)
         {
             // Allocate an active request
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;
-            ValueTask waitTask = default;
 
             try
             {
                 try
                 {
-                    while (true)
+                    QuicConnection? conn = _connection;
+                    if (conn != null)
                     {
+                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
+                        {
+                            queueStartingTimestamp = Stopwatch.GetTimestamp();
+                        }
+
+                        quicStream = await conn.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
+
+                        requestStream = new Http3RequestStream(request, this, quicStream);
                         lock (SyncObj)
                         {
-                            if (_connection == null)
-                            {
-                                break;
-                            }
-
-                            if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
-                            {
-                                quicStream = _connection.OpenBidirectionalStream();
-                                requestStream = new Http3RequestStream(request, this, quicStream);
-                                _activeRequests.Add(quicStream, requestStream);
-                                break;
-                            }
-
-                            waitTask = _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
+                            _activeRequests.Add(quicStream, requestStream);
                         }
-
-                        if (HttpTelemetry.Log.IsEnabled() && !waitTask.IsCompleted && !queueDuration.IsActive)
-                        {
-                            // We avoid logging RequestLeftQueue if a stream was available immediately (synchronously)
-                            queueDuration = ValueStopwatch.StartNew();
-                        }
-
-                        // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
-                        await waitTask.ConfigureAwait(false);
                     }
                 }
+                // Swallow any exceptions caused by the connection being closed locally or even disposed due to a race.
+                // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
+                catch (ObjectDisposedException) { }
+                catch (QuicException e) when (!(e is QuicConnectionAbortedException)) { }
                 finally
                 {
-                    if (HttpTelemetry.Log.IsEnabled() && queueDuration.IsActive)
+                    if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp != 0)
                     {
-                        HttpTelemetry.Log.Http30RequestLeftQueue(queueDuration.GetElapsedTime().TotalMilliseconds);
+                        HttpTelemetry.Log.Http30RequestLeftQueue(Stopwatch.GetElapsedTime(queueStartingTimestamp).TotalMilliseconds);
                     }
                 }
 
@@ -378,7 +367,7 @@ namespace System.Net.Http
         {
             try
             {
-                _clientControl = _connection!.OpenUnidirectionalStream();
+                _clientControl = await _connection!.OpenUnidirectionalStreamAsync().ConfigureAwait(false);
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)

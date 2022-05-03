@@ -48,6 +48,7 @@ namespace System
                 CheckConsistency();
             }
 
+#pragma warning disable CA1822
             [Conditional("DEBUG")]
             public void CheckConsistency()
             {
@@ -73,6 +74,7 @@ namespace System
 
 #endif // DEBUG
             }
+#pragma warning restore CA1822
 
             public byte* GetDigitsPointer()
             {

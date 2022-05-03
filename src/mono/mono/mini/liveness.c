@@ -162,12 +162,14 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, MonoPtrSet *visited)
 			int idx = var->inst_c0;
 			MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 			cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 			if (SIZEOF_REGISTER == 4 && (var->type == STACK_I8 || (var->type == STACK_R8 && COMPILE_SOFT_FLOAT (cfg)))) {
 				/* Make the component vregs volatile as well (#612206) */
 				get_vreg_to_inst (cfg, MONO_LVREG_LS (var->dreg))->flags |= MONO_INST_VOLATILE;
 				get_vreg_to_inst (cfg, MONO_LVREG_MS (var->dreg))->flags |= MONO_INST_VOLATILE;
 			}
+MONO_RESTORE_WARNING
 		}
 
 		/* SREGS */
@@ -181,12 +183,14 @@ visit_bb (MonoCompile *cfg, MonoBasicBlock *bb, MonoPtrSet *visited)
 				int idx = var->inst_c0;
 				MonoMethodVar *vi = MONO_VARINFO (cfg, idx);
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 				cfg->varinfo [vi->idx]->flags |= MONO_INST_VOLATILE;
 				if (SIZEOF_REGISTER == 4 && (var->type == STACK_I8 || (var->type == STACK_R8 && COMPILE_SOFT_FLOAT (cfg)))) {
 					/* Make the component vregs volatile as well (#612206) */
 					get_vreg_to_inst (cfg, MONO_LVREG_LS (var->dreg))->flags |= MONO_INST_VOLATILE;
 					get_vreg_to_inst (cfg, MONO_LVREG_MS (var->dreg))->flags |= MONO_INST_VOLATILE;
 				}
+MONO_RESTORE_WARNING
 			}
 		}
 	}
@@ -1189,9 +1193,7 @@ mono_analyze_liveness_gc (MonoCompile *cfg)
 		/* Process instructions backwards */
 		callsites = NULL;
 		for (i = nins - 1; i >= 0; --i) {
-			MonoInst *ins = (MonoInst*)reverse [i];
-
-			update_liveness_gc (cfg, bb, ins, last_use, vreg_to_varinfo, &callsites);
+			update_liveness_gc (cfg, bb, (MonoInst*)reverse [i], last_use, vreg_to_varinfo, &callsites);
 		}
 		/* The callsites should already be sorted by pc offset because we added them backwards */
 		bb->gc_callsites = callsites;

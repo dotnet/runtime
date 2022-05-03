@@ -119,7 +119,7 @@
       </trans-unit>
       <trans-unit id="InvalidLangVersionMessage">
         <source>C# LangVersion of 11 or greater is required</source>
-        <target state="new">C# LangVersion of 11 or greater is required</target>
+        <target state="translated">需要 11 或更大的 C# LangVersion</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
@@ -148,8 +148,8 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
-        <target state="translated">RegexGenerator 無法為指定的規則運算式產生完整的來源實作，因為不支援的選項或規則運算式太複雜。實作會在執行時間解譯規則運算式。</target>
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
+        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
@@ -228,8 +228,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
-        <target state="translated">Regex 方法必須是部分、無參數、非泛型，並且傳回 Regex</target>
+        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
+        <target state="translated">RegexGenerator 方法必須是部分、無參數、非泛型、非抽象，並且傳回 Regex</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">

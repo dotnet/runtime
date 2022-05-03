@@ -308,7 +308,7 @@ namespace System.Xml.Xsl.Runtime
                 // 4. Change the Clr representation to the Clr type of the formal argument
                 clrTypeFormalArg = extFunc.GetClrArgumentType(i);
                 if (xmlTypeFormalArg.TypeCode == XmlTypeCode.Item || !clrTypeFormalArg.IsAssignableFrom(objActualArgs[i].GetType()))
-                    objActualArgs[i] = _runtime.ChangeTypeXsltArgument(xmlTypeFormalArg, objActualArgs[i], clrTypeFormalArg);
+                    objActualArgs[i] = XmlQueryRuntime.ChangeTypeXsltArgument(xmlTypeFormalArg, objActualArgs[i], clrTypeFormalArg);
             }
 
             // 1. Invoke the late bound method

@@ -125,7 +125,7 @@ namespace Internal.Runtime.TypeLoader
         {
             CanonicallyEquivalentEntryLocator canonWrapper = new CanonicallyEquivalentEntryLocator(declaringTypeHandle, canonFormKind);
             string fieldName = null;
-            RuntimeTypeHandle declaringTypeHandleDefinition = Instance.GetTypeDefinition(declaringTypeHandle);
+            RuntimeTypeHandle declaringTypeHandleDefinition = TypeLoaderEnvironment.GetTypeDefinition(declaringTypeHandle);
 
             foreach (NativeFormatModuleInfo mappingTableModule in ModuleList.EnumerateModules(RuntimeAugments.GetModuleFromTypeHandle(declaringTypeHandle)))
             {

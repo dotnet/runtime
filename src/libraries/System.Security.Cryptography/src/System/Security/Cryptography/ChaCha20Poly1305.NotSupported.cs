@@ -9,6 +9,7 @@ namespace System.Security.Cryptography
     {
         public static bool IsSupported => false;
 
+#pragma warning disable CA1822
         private void ImportKey(ReadOnlySpan<byte> key)
         {
             Debug.Fail("Instance ctor should fail before we reach this point.");
@@ -42,5 +43,6 @@ namespace System.Security.Cryptography
             Debug.Fail("Instance ctor should fail before we reach this point.");
             // no-op
         }
+#pragma warning restore CA1822
     }
 }

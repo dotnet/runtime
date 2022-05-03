@@ -370,7 +370,7 @@ Assembly * Assembly::Create(
     return pAssembly;
 } // Assembly::Create
 
-Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, CreateDynamicAssemblyArgs *args)
+Assembly *Assembly::CreateDynamic(AssemblyBinder* pBinder, NativeAssemblyNameParts* pAssemblyNameParts, INT32 hashAlgorithm, INT32 access, LOADERALLOCATORREF* pKeepAlive)
 {
     // WARNING: not backout clean
     CONTRACT(Assembly *)
@@ -379,7 +379,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         GC_TRIGGERS;
         INJECT_FAULT(COMPlusThrowOM(););
         MODE_COOPERATIVE;
-        PRECONDITION(CheckPointer(args));
     }
     CONTRACT_END;
 
@@ -397,22 +396,13 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
 
     // Set up the assembly name
 
-    STRINGREF strRefName = (STRINGREF) args->assemblyName->GetSimpleName();
-
-    if (strRefName == NULL)
+    if (pAssemblyNameParts->_pName == NULL || pAssemblyNameParts->_pName[0] == '\0')
         COMPlusThrow(kArgumentException, W("ArgumentNull_AssemblyNameName"));
 
-    StackSString name;
-    strRefName->GetSString(name);
-
-    if (name.GetCount() == 0)
-        COMPlusThrow(kArgumentException, W("ArgumentNull_AssemblyNameName"));
-
-    SString::Iterator i = name.Begin();
-    if (COMCharacter::nativeIsWhiteSpace(*i)
-        || name.Find(i, '\\')
-        || name.Find(i, ':')
-        || name.Find(i, '/'))
+    if (COMCharacter::nativeIsWhiteSpace(pAssemblyNameParts->_pName[0])
+        || wcschr(pAssemblyNameParts->_pName, '\\') != NULL
+        || wcschr(pAssemblyNameParts->_pName, ':') != NULL
+        || wcschr(pAssemblyNameParts->_pName, '/') != NULL)
     {
         COMPlusThrow(kArgumentException, W("InvalidAssemblyName"));
     }
@@ -431,81 +421,36 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         IID_IMetaDataAssemblyEmit,
         &pAssemblyEmit);
 
-    // remember the hash algorithm
-    ULONG ulHashAlgId = args->assemblyName->GetAssemblyHashAlgorithm();
-    if (ulHashAlgId == 0)
-        ulHashAlgId = CALG_SHA1;
-
-    ASSEMBLYMETADATA assemData;
-    memset(&assemData, 0, sizeof(assemData));
-
-    // get the version info (default to 0.0.0.0 if none)
-    VERSIONREF versionRef = (VERSIONREF) args->assemblyName->GetVersion();
-    if (versionRef != NULL)
-    {
-        assemData.usMajorVersion = (USHORT)versionRef->GetMajor();
-        assemData.usMinorVersion = (USHORT)versionRef->GetMinor();
-        assemData.usBuildNumber = (USHORT)versionRef->GetBuild();
-        assemData.usRevisionNumber = (USHORT)versionRef->GetRevision();
-    }
-
-    struct _gc
-    {
-        OBJECTREF cultureinfo;
-        STRINGREF pString;
-        OBJECTREF orArrayOrContainer;
-        OBJECTREF throwable;
-        OBJECTREF strongNameKeyPair;
-    } gc;
-    ZeroMemory(&gc, sizeof(gc));
-
-    GCPROTECT_BEGIN(gc);
-
-    StackSString culture;
-
-    gc.cultureinfo = args->assemblyName->GetCultureInfo();
-    if (gc.cultureinfo != NULL)
-    {
-        MethodDescCallSite getName(METHOD__CULTURE_INFO__GET_NAME, &gc.cultureinfo);
-
-        ARG_SLOT args2[] =
-        {
-            ObjToArgSlot(gc.cultureinfo)
-        };
-
-        // convert culture info into a managed string form
-        gc.pString = getName.Call_RetSTRINGREF(args2);
-        gc.pString->GetSString(culture);
-
-        assemData.szLocale = (LPWSTR) (LPCWSTR) culture;
-    }
-
-    SBuffer publicKey;
-    if (args->assemblyName->GetPublicKey() != NULL)
-    {
-        publicKey.Set(args->assemblyName->GetPublicKey()->GetDataPtr(),
-                      args->assemblyName->GetPublicKey()->GetNumComponents());
-    }
-
-
-    // get flags
-    DWORD dwFlags = args->assemblyName->GetFlags();
-
     // Now create a dynamic PE file out of the name & metadata
     PEAssemblyHolder pPEAssembly;
 
     {
         GCX_PREEMP();
 
+        ASSEMBLYMETADATA assemData;
+        memset(&assemData, 0, sizeof(assemData));
+
+        assemData.usMajorVersion = pAssemblyNameParts->_major;
+        assemData.usMinorVersion = pAssemblyNameParts->_minor;
+        assemData.usBuildNumber = pAssemblyNameParts->_build;
+        assemData.usRevisionNumber = pAssemblyNameParts->_revision;
+
+        assemData.szLocale = (LPWSTR)pAssemblyNameParts->_pCultureName;
+
+        if (hashAlgorithm == 0)
+            hashAlgorithm = CALG_SHA1;
+
         mdAssembly ma;
-        IfFailThrow(pAssemblyEmit->DefineAssembly(publicKey, publicKey.GetSize(), ulHashAlgId,
-                                                   name, &assemData, dwFlags,
+        IfFailThrow(pAssemblyEmit->DefineAssembly(pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, hashAlgorithm,
+                                                   pAssemblyNameParts->_pName, &assemData, pAssemblyNameParts->_flags,
                                                    &ma));
         pPEAssembly = PEAssembly::Create(pAssemblyEmit);
 
         // Set it as the fallback load context binder for the dynamic assembly being created
         pPEAssembly->SetFallbackBinder(pBinder);
     }
+
+    AppDomain* pDomain = GetAppDomain();
 
     NewHolder<DomainAssembly> pDomainAssembly;
     BOOL                      createdNewAssemblyLoaderAllocator = FALSE;
@@ -520,7 +465,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
         }
 
         // Create a new LoaderAllocator if appropriate
-        if ((args->access & ASSEMBLY_ACCESS_COLLECT) != 0)
+        if ((access & ASSEMBLY_ACCESS_COLLECT) != 0)
         {
             AssemblyLoaderAllocator *pCollectibleLoaderAllocator = new AssemblyLoaderAllocator();
             pCollectibleLoaderAllocator->SetCollectible();
@@ -533,7 +478,7 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
             // Setup the managed proxy now, but do not actually transfer ownership to it.
             // Once everything is setup and nothing can fail anymore, the ownership will be
             // atomically transfered by call to LoaderAllocator::ActivateManagedTracking().
-            pCollectibleLoaderAllocator->SetupManagedTracking(&args->loaderAllocator);
+            pCollectibleLoaderAllocator->SetupManagedTracking(pKeepAlive);
             createdNewAssemblyLoaderAllocator = TRUE;
 
             if(pBinderLoaderAllocator != nullptr)
@@ -623,7 +568,6 @@ Assembly *Assembly::CreateDynamic(AppDomain *pDomain, AssemblyBinder* pBinder, C
             pRetVal = pAssem;
         }
     }
-    GCPROTECT_END();
 
     RETURN pRetVal;
 } // Assembly::CreateDynamic

@@ -22,12 +22,14 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_ServerRequireEncryption_ConnectWithEncryption()
         {
             await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_ConnectionInfoInCallback_DoesNotThrow()
         {
             await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption, SslProtocols.Tls12, SslProtocolSupport.DefaultSslProtocols, AllowAnyServerCertificateAndVerifyConnectionInfo);
@@ -39,7 +41,9 @@ namespace System.Net.Security.Tests
             // Don't use Tls13 since we are trying to use NullEncryption
             await Assert.ThrowsAsync<AuthenticationException>(
                 () => ClientAsyncSslHelper(
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                     EncryptionPolicy.NoEncryption,
+#pragma warning restore SYSLIB0040
 #pragma warning disable SYSLIB0039 // TLS 1.0 and 1.1 are obsolete
                     SslProtocolSupport.DefaultSslProtocols, SslProtocols.Tls | SslProtocols.Tls11 | SslProtocols.Tls12));
 #pragma warning restore SYSLIB0039
@@ -47,6 +51,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_EachSupportedProtocol_Success(SslProtocols protocol)
         {
             await ClientAsyncSslHelper(protocol, protocol);
@@ -65,6 +70,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_AllServerAllClient_Success()
         {
             await ClientAsyncSslHelper(
@@ -74,6 +80,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_AllServerVsIndividualClientSupportedProtocols_Success(
             SslProtocols clientProtocol)
         {
@@ -82,6 +89,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_IndividualServerVsAllClientSupportedProtocols_Success(
             SslProtocols serverProtocol)
         {

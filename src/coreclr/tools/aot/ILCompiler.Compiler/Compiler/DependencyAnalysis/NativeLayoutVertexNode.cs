@@ -253,13 +253,20 @@ namespace ILCompiler.DependencyAnalysis
         {
             var dependencies = (DependencyList)base.GetStaticDependencies(factory);
 
-            dependencies.Add(factory.GVMDependencies(_method.GetCanonMethodTarget(CanonicalFormKind.Specific)), "Potential generic virtual method call");
+            MethodDesc canonMethod = _method.GetCanonMethodTarget(CanonicalFormKind.Specific);
+
+            dependencies.Add(factory.GVMDependencies(canonMethod), "Potential generic virtual method call");
 
             // Variant generic virtual method calls at runtime might need to build the concrete version of the
             // type we could be dispatching on to find the appropriate GVM entry.
             if (_method.OwningType.HasVariance)
             {
                 GenericTypesTemplateMap.GetTemplateTypeDependencies(ref dependencies, factory, _method.OwningType.ConvertToCanonForm(CanonicalFormKind.Specific));
+            }
+
+            foreach (TypeDesc instArg in canonMethod.Instantiation)
+            {
+                dependencies.Add(factory.MaximallyConstructableType(instArg), "Type we need to look up for GVM dispatch");
             }
 
             return dependencies;

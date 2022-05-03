@@ -12,6 +12,7 @@ namespace System.IO.Compression.Tests
     public partial class ZipFile_Unix : ZipFileTestBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68293", TestPlatforms.OSX)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void UnixCreateSetsPermissionsInExternalAttributes()
         {
@@ -196,7 +197,7 @@ namespace System.IO.Compression.Tests
             return expectedPermissions;
         }
 
-        [GeneratedDllImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        [LibraryImport("libc", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
         private static partial int mkfifo(string path, int mode);
     }
 }

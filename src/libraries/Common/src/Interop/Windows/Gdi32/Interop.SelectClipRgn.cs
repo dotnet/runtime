@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Gdi32
     {
-        [GeneratedDllImport(Libraries.Gdi32, SetLastError = true)]
+        [LibraryImport(Libraries.Gdi32, SetLastError = true)]
         public static partial RegionType SelectClipRgn(IntPtr hdc, IntPtr hrgn);
 
         public static RegionType SelectClipRgn(HandleRef hdc, HandleRef hrgn)

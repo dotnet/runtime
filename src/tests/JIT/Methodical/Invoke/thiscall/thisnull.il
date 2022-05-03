@@ -11,9 +11,9 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_thisnull_thiscall
 {
-  .class private auto ansi beforefieldinit App
+  .class public auto ansi beforefieldinit App
          extends [mscorlib]System.Object
   {
     .field private float64 m_field
@@ -27,7 +27,7 @@
       IL_0001:  brfalse.s  IL_000c
 
       IL_0003:  ldarg.0
-      IL_0004:  ldfld      float64 JitTest.App::m_field
+      IL_0004:  ldfld      float64 JitTest_thisnull_thiscall.App::m_field
       IL_0009:  stloc.0
       IL_000a:  br.s       IL_0018
 
@@ -49,7 +49,7 @@
       IL_0001:  brfalse.s  IL_000c
 
       IL_0003:  ldarg.0
-      IL_0004:  ldfld      float64 JitTest.App::m_field
+      IL_0004:  ldfld      float64 JitTest_thisnull_thiscall.App::m_field
       IL_0009:  stloc.0
       IL_000a:  br.s       IL_0018
 
@@ -61,7 +61,7 @@
       IL_0019:  ret
     } // end of method App::VirtTestMethod
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -70,13 +70,13 @@
       .entrypoint
       // Code size       95 (0x5f)
       .maxstack  2
-      .locals (class JitTest.App V_0,
+      .locals (class JitTest_thisnull_thiscall.App V_0,
                int32 V_1)
       IL_0000:  ldnull
       IL_0001:  stloc.0
       IL_0002:  ldloc.0
       IL_0003:  ldc.i4.0
-      IL_0004:  call   instance float64 JitTest.App::TestMethod(bool)
+      IL_0004:  call   instance float64 JitTest_thisnull_thiscall.App::TestMethod(bool)
       IL_0009:  ldc.r8     3.1415926000000001
       IL_0012:  beq.s      IL_0022
 
@@ -90,7 +90,7 @@
       {
         IL_0022:  ldloc.0
         IL_0023:  ldc.i4.1
-        IL_0024:  call   instance float64 JitTest.App::TestMethod(bool)
+        IL_0024:  call   instance float64 JitTest_thisnull_thiscall.App::TestMethod(bool)
         IL_0029:  pop
         IL_002a:  ldc.i4.2
         IL_002b:  stloc.1
@@ -107,7 +107,7 @@
       {
         IL_0031:  ldloc.0
         IL_0032:  ldc.i4.0
-        IL_0033:  callvirt   instance float64 JitTest.App::VirtTestMethod(bool)
+        IL_0033:  callvirt   instance float64 JitTest_thisnull_thiscall.App::VirtTestMethod(bool)
         IL_0038:  pop
         IL_0039:  ldc.i4.2
         IL_003a:  stloc.1
@@ -124,7 +124,7 @@
       {
         IL_0040:  ldloc.0
         IL_0041:  ldc.i4.1
-        IL_0042:  callvirt   instance float64 JitTest.App::VirtTestMethod(bool)
+        IL_0042:  callvirt   instance float64 JitTest_thisnull_thiscall.App::VirtTestMethod(bool)
         IL_0047:  pop
         IL_0048:  ldc.i4.2
         IL_0049:  stloc.1
@@ -154,7 +154,7 @@
       .maxstack  8
       IL_0000:  ldarg.0
       IL_0001:  ldc.r8     1.
-      IL_000a:  stfld      float64 JitTest.App::m_field
+      IL_000a:  stfld      float64 JitTest_thisnull_thiscall.App::m_field
       IL_000f:  ldarg.0
       IL_0010:  call       instance void [mscorlib]System.Object::.ctor()
       IL_0015:  ret
@@ -162,7 +162,7 @@
 
   } // end of class App
 
-} // end of namespace JitTest
+} // end of namespace JitTest_thisnull_thiscall
 
 //*********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file thisnull.res

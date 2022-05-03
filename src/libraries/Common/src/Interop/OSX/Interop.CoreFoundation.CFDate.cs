@@ -17,7 +17,7 @@ internal static partial class Interop
         // https://developer.apple.com/reference/corefoundation/cfabsolutetime
         private static readonly DateTime s_cfDateEpoch = new DateTime(2001, 1, 1, 0, 0, 0, DateTimeKind.Utc);
 
-        [GeneratedDllImport(Libraries.CoreFoundationLibrary)]
+        [LibraryImport(Libraries.CoreFoundationLibrary)]
         private static partial SafeCFDateHandle CFDateCreate(IntPtr zero, CFAbsoluteTime at);
 
         internal static SafeCFDateHandle CFDateCreate(DateTime date)

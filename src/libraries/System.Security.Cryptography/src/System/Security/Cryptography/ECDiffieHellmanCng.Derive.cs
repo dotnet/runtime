@@ -8,8 +8,10 @@ namespace System.Security.Cryptography
 {
     public sealed partial class ECDiffieHellmanCng : ECDiffieHellman
     {
-        public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey!!)
+        public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey)
         {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+
             if (otherPartyPublicKey is ECDiffieHellmanCngPublicKey otherKey)
             {
                 using (CngKey import = otherKey.Import())
@@ -37,8 +39,10 @@ namespace System.Security.Cryptography
             }
         }
 
-        public byte[] DeriveKeyMaterial(CngKey otherPartyPublicKey!!)
+        public byte[] DeriveKeyMaterial(CngKey otherPartyPublicKey)
         {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+
             if (otherPartyPublicKey.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(otherPartyPublicKey));
             if (otherPartyPublicKey.KeySize != KeySize)
@@ -91,8 +95,10 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Get a handle to the secret agreement generated between two parties
         /// </summary>
-        public SafeNCryptSecretHandle DeriveSecretAgreementHandle(ECDiffieHellmanPublicKey otherPartyPublicKey!!)
+        public SafeNCryptSecretHandle DeriveSecretAgreementHandle(ECDiffieHellmanPublicKey otherPartyPublicKey)
         {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+
             if (otherPartyPublicKey is ECDiffieHellmanCngPublicKey otherKey)
             {
                 using (CngKey importedKey = otherKey.Import())
@@ -118,8 +124,10 @@ namespace System.Security.Cryptography
         /// <summary>
         ///     Get a handle to the secret agreement between two parties
         /// </summary>
-        public SafeNCryptSecretHandle DeriveSecretAgreementHandle(CngKey otherPartyPublicKey!!)
+        public SafeNCryptSecretHandle DeriveSecretAgreementHandle(CngKey otherPartyPublicKey)
         {
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+
             if (otherPartyPublicKey.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(otherPartyPublicKey));
             if (otherPartyPublicKey.KeySize != KeySize)

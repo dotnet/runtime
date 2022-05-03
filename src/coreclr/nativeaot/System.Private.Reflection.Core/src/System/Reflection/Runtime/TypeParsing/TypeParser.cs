@@ -44,7 +44,7 @@ namespace System.Reflection.Runtime.TypeParsing
                 idx++;
             }
             if (idx < s.Length && s[idx] == ',')
-                throw new ArgumentException(SR.Arg_TypeLoadNullStr);
+                throw new ArgumentException(SR.Arg_TypeLoadNullStr, $"typeName@{idx}");
 
             try
             {

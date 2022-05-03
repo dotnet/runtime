@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.dll" />
     <HighAotMemoryUsageAssembly Include="Microsoft.CodeAnalysis.CSharp.dll" />
   </ItemGroup>
 

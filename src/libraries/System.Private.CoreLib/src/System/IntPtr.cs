@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -22,15 +23,16 @@ namespace System
 {
     [Serializable]
     [StructLayout(LayoutKind.Sequential)]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct IntPtr : IEquatable<nint>, IComparable, IComparable<nint>, ISpanFormattable, ISerializable
-#if FEATURE_GENERIC_MATH
-#pragma warning disable SA1001, CA2252 // SA1001: Comma positioning; CA2252: Preview Features
-        , IBinaryInteger<nint>,
+    [TypeForwardedFrom("mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public readonly struct IntPtr
+        : IEquatable<nint>,
+          IComparable,
+          IComparable<nint>,
+          ISpanFormattable,
+          ISerializable,
+          IBinaryInteger<nint>,
           IMinMaxValue<nint>,
           ISignedNumber<nint>
-#pragma warning restore SA1001, CA2252
-#endif // FEATURE_GENERIC_MATH
     {
         // WARNING: We allow diagnostic tools to directly inspect this member (_value).
         // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
@@ -74,8 +76,10 @@ namespace System
             _value = (void*)l;
         }
 
-        unsafe void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             info.AddValue("value", ToInt64());
         }
 
@@ -175,12 +179,14 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static IntPtr MaxValue
         {
             [NonVersionable]
             get => (IntPtr)nint_t.MaxValue;
         }
 
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         public static IntPtr MinValue
         {
             [NonVersionable]
@@ -210,23 +216,30 @@ namespace System
         public unsafe bool Equals(IntPtr other) => (nint_t)_value == (nint_t)other;
 
         public unsafe override string ToString() => ((nint_t)_value).ToString();
-        public unsafe string ToString(string? format) => ((nint_t)_value).ToString(format);
+        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ((nint_t)_value).ToString(format);
         public unsafe string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
-        public unsafe string ToString(string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
+        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
 
-        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
         public static IntPtr Parse(string s) => (IntPtr)nint_t.Parse(s);
         public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint_t.Parse(s, style);
         public static IntPtr Parse(string s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
         public static IntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, style, provider);
+        public static IntPtr Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
         public static IntPtr Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (IntPtr)nint_t.Parse(s, style, provider);
 
         public static bool TryParse([NotNullWhen(true)] string? s, out IntPtr result)
         {
             Unsafe.SkipInit(out result);
             return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+        }
+
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out IntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
         }
 
         public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
@@ -241,99 +254,90 @@ namespace System
             return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
         }
 
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out IntPtr result)
+        {
+            Unsafe.SkipInit(out result);
+            return nint_t.TryParse(s, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+        }
+
         public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
         {
             Unsafe.SkipInit(out result);
             return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
         }
 
-#if FEATURE_GENERIC_MATH
         //
         // IAdditionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right)
-            => left + right;
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static nint IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right) => left + right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked nint IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right)
-        //     => checked(left + right);
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static nint IAdditionOperators<nint, nint, nint>.operator checked +(nint left, nint right) => checked(left + right);
 
         //
         // IAdditiveIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
         static nint IAdditiveIdentity<nint, nint>.AdditiveIdentity => 0;
 
         //
         // IBinaryInteger
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IBinaryInteger<nint>.LeadingZeroCount(nint value)
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) => Math.DivRem(left, right);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
+        public static nint LeadingZeroCount(nint value) => BitOperations.LeadingZeroCount((nuint)value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
+        public static nint PopCount(nint value) => BitOperations.PopCount((nuint)value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
+        public static nint RotateLeft(nint value, int rotateAmount) => (nint)BitOperations.RotateLeft((nuint)value, rotateAmount);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
+        public static nint RotateRight(nint value, int rotateAmount) => (nint)BitOperations.RotateRight((nuint)value, rotateAmount);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
+        unsafe long IBinaryInteger<nint>.GetShortestBitLength()
         {
-            if (Environment.Is64BitProcess)
+            nint value = (nint)_value;
+
+            if (value >= 0)
             {
-                return BitOperations.LeadingZeroCount((ulong)value);
+                return (sizeof(nint) * 8) - BitOperations.LeadingZeroCount((nuint)value);
             }
             else
             {
-                return BitOperations.LeadingZeroCount((uint)value);
+                return (sizeof(nint) * 8) + 1 - BitOperations.LeadingZeroCount((nuint)(~value));
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IBinaryInteger<nint>.PopCount(nint value)
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
+        unsafe int IBinaryInteger<nint>.GetByteCount() => sizeof(nint);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
+        unsafe bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (Environment.Is64BitProcess)
+            if (destination.Length >= sizeof(nint))
             {
-                return BitOperations.PopCount((ulong)value);
+                nint value = BitConverter.IsLittleEndian ? (nint)_value : (nint)BinaryPrimitives.ReverseEndianness((nint)_value);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(nint);
+                return true;
             }
             else
             {
-                return BitOperations.PopCount((uint)value);
-            }
-        }
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nint)BitOperations.RotateLeft((ulong)value, rotateAmount);
-            }
-            else
-            {
-                return (nint)BitOperations.RotateLeft((uint)value, rotateAmount);
-            }
-        }
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IBinaryInteger<nint>.RotateRight(nint value, int rotateAmount)
-
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nint)BitOperations.RotateRight((ulong)value, rotateAmount);
-            }
-            else
-            {
-                return (nint)BitOperations.RotateRight((uint)value, rotateAmount);
-            }
-        }
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IBinaryInteger<nint>.TrailingZeroCount(nint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.TrailingZeroCount((ulong)value);
-            }
-            else
-            {
-                return BitOperations.TrailingZeroCount((uint)value);
+                bytesWritten = 0;
+                return false;
             }
         }
 
@@ -341,178 +345,152 @@ namespace System
         // IBinaryNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IBinaryNumber<nint>.IsPow2(nint value)
-            => BitOperations.IsPow2(value);
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
+        public static bool IsPow2(nint value) => BitOperations.IsPow2(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IBinaryNumber<nint>.Log2(nint value)
+        /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
+        public static nint Log2(nint value)
         {
             if (value < 0)
             {
                 ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
-
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.Log2((ulong)value);
-            }
-            else
-            {
-                return BitOperations.Log2((uint)value);
-            }
+            return BitOperations.Log2((nuint)value);
         }
 
         //
         // IBitwiseOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right)
-            => left & right;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseAnd(TSelf, TOther)" />
+        static nint IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right) => left & right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IBitwiseOperators<nint, nint, nint>.operator |(nint left, nint right)
-            => left | right;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_BitwiseOr(TSelf, TOther)" />
+        static nint IBitwiseOperators<nint, nint, nint>.operator |(nint left, nint right) => left | right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IBitwiseOperators<nint, nint, nint>.operator ^(nint left, nint right)
-            => left ^ right;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_ExclusiveOr(TSelf, TOther)" />
+        static nint IBitwiseOperators<nint, nint, nint>.operator ^(nint left, nint right) => left ^ right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IBitwiseOperators<nint, nint, nint>.operator ~(nint value)
-            => ~value;
+        /// <inheritdoc cref="IBitwiseOperators{TSelf, TOther, TResult}.op_OnesComplement(TSelf)" />
+        static nint IBitwiseOperators<nint, nint, nint>.operator ~(nint value) => ~value;
 
         //
         // IComparisonOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<nint, nint>.operator <(nint left, nint right)
-            => left < right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThan(TSelf, TOther)" />
+        static bool IComparisonOperators<nint, nint>.operator <(nint left, nint right) => left < right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<nint, nint>.operator <=(nint left, nint right)
-            => left <= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_LessThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<nint, nint>.operator <=(nint left, nint right) => left <= right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<nint, nint>.operator >(nint left, nint right)
-            => left > right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThan(TSelf, TOther)" />
+        static bool IComparisonOperators<nint, nint>.operator >(nint left, nint right) => left > right;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IComparisonOperators<nint, nint>.operator >=(nint left, nint right)
-            => left >= right;
+        /// <inheritdoc cref="IComparisonOperators{TSelf, TOther}.op_GreaterThanOrEqual(TSelf, TOther)" />
+        static bool IComparisonOperators<nint, nint>.operator >=(nint left, nint right) => left >= right;
 
         //
         // IDecrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IDecrementOperators<nint>.operator --(nint value)
-            => --value;
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static nint IDecrementOperators<nint>.operator --(nint value) => --value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked nint IDecrementOperators<nint>.operator --(nint value)
-        //     => checked(--value);
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static nint IDecrementOperators<nint>.operator checked --(nint value) => checked(--value);
 
         //
         // IDivisionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right)
-            => left / right;
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
+        static nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right) => left / right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right)
-        //     => checked(left / right);
-
-        //
-        // IEqualityOperators
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<nint, nint>.operator ==(nint left, nint right)
-            => left == right;
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IEqualityOperators<nint, nint>.operator !=(nint left, nint right)
-            => left != right;
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static nint IDivisionOperators<nint, nint, nint>.operator checked /(nint left, nint right) => left / right;
 
         //
         // IIncrementOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IIncrementOperators<nint>.operator ++(nint value)
-            => ++value;
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        static nint IIncrementOperators<nint>.operator ++(nint value) => ++value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked nint IIncrementOperators<nint>.operator ++(nint value)
-        //     => checked(++value);
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static nint IIncrementOperators<nint>.operator checked ++(nint value) => checked(++value);
 
         //
         // IMinMaxValue
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         static nint IMinMaxValue<nint>.MinValue => MinValue;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         static nint IMinMaxValue<nint>.MaxValue => MaxValue;
 
         //
         // IModulusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IModulusOperators<nint, nint, nint>.operator %(nint left, nint right)
-            => left % right;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked nint IModulusOperators<nint, nint, nint>.operator %(nint left, nint right)
-        //     => checked(left % right);
+        /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
+        static nint IModulusOperators<nint, nint, nint>.operator %(nint left, nint right) => left % right;
 
         //
         // IMultiplicativeIdentity
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
         static nint IMultiplicativeIdentity<nint, nint>.MultiplicativeIdentity => 1;
 
         //
         // IMultiplyOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right)
-            => left * right;
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
+        static nint IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right) => left * right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked nint IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right)
-        //     => checked(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        static nint IMultiplyOperators<nint, nint, nint>.operator checked *(nint left, nint right) => checked(left * right);
 
         //
         // INumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.One => 1;
+        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
+        public static nint Abs(nint value) => Math.Abs(value);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Zero => 0;
+        /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
+        public static nint Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Abs(nint value)
-            => Math.Abs(value);
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static nint CopySign(nint value, nint sign)
+        {
+            nint absValue = value;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Clamp(nint value, nint min, nint max)
-            => Math.Clamp(value, min, max);
+            if (absValue < 0)
+            {
+                absValue = -absValue;
+            }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+            if (sign >= 0)
+            {
+                if (absValue < 0)
+                {
+                    Math.ThrowNegateTwosCompOverflow();
+                }
+
+                return absValue;
+            }
+
+            return -absValue;
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.Create<TOther>(TOther value)
+        public static nint CreateChecked<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -577,9 +555,10 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateSaturating<TOther>(TOther value)
+        public static nint CreateSaturating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -655,9 +634,10 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateTruncating<TOther>(TOther value)
+        public static nint CreateTruncating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -722,33 +702,82 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static (nint Quotient, nint Remainder) INumber<nint>.DivRem(nint left, nint right)
-            => Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(nint value) => value < 0;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Max(nint x, nint y)
-            => Math.Max(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static nint Max(nint x, nint y) => Math.Max(x, y);
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Min(nint x, nint y)
-            => Math.Min(x, y);
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static nint MaxMagnitude(nint x, nint y)
+        {
+            nint absX = x;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Parse(string s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
+            if (absX < 0)
+            {
+                absX = -absX;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
-            => Parse(s, style, provider);
+                if (absX < 0)
+                {
+                    return x;
+                }
+            }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint INumber<nint>.Sign(nint value)
-            => Math.Sign(value);
+            nint absY = y;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+            if (absY < 0)
+            {
+                absY = -absY;
+
+                if (absY < 0)
+                {
+                    return y;
+                }
+            }
+
+            return (absX >= absY) ? x : y;
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static nint Min(nint x, nint y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static nint MinMagnitude(nint x, nint y)
+        {
+            nint absX = x;
+
+            if (absX < 0)
+            {
+                absX = -absX;
+
+                if (absX < 0)
+                {
+                    return y;
+                }
+            }
+
+            nint absY = y;
+
+            if (absY < 0)
+            {
+                absY = -absY;
+
+                if (absY < 0)
+                {
+                    return x;
+                }
+            }
+
+            return (absX <= absY) ? x : y;
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(nint value) => Math.Sign(value);
+
+        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<nint>.TryCreate<TOther>(TOther value, out nint result)
+        public static bool TryCreate<TOther>(TOther value, out nint result)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -884,96 +913,61 @@ namespace System
             }
         }
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<nint>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result)
-            => TryParse(s, style, provider, out result);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool INumber<nint>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result)
-            => TryParse(s, style, provider, out result);
-
         //
-        // IParseable
+        // INumberBase
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IParseable<nint>.Parse(string s, IFormatProvider? provider)
-            => Parse(s, provider);
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static nint INumberBase<nint>.One => 1;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool IParseable<nint>.TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nint result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static nint INumberBase<nint>.Zero => 0;
 
         //
         // IShiftOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount)
-            => value << (int)shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
+        static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount) => value << shiftAmount;
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount)
-            => value >> (int)shiftAmount;
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
+        static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount) => value >> shiftAmount;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount)
-        //     => (nint)((nuint)value >> (int)shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISignedNumber
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
+        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
         static nint ISignedNumber<nint>.NegativeOne => -1;
-
-        //
-        // ISpanParseable
-        //
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint ISpanParseable<nint>.Parse(ReadOnlySpan<char> s, IFormatProvider? provider)
-            => Parse(s, NumberStyles.Integer, provider);
-
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static bool ISpanParseable<nint>.TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out nint result)
-            => TryParse(s, NumberStyles.Integer, provider, out result);
 
         //
         // ISubtractionOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint ISubtractionOperators<nint, nint, nint>.operator -(nint left, nint right)
-            => left - right;
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
+        static nint ISubtractionOperators<nint, nint, nint>.operator -(nint left, nint right) => left - right;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked nint ISubtractionOperators<nint, nint, nint>.operator -(nint left, nint right)
-        //     => checked(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static nint ISubtractionOperators<nint, nint, nint>.operator checked -(nint left, nint right) => checked(left - right);
 
         //
         // IUnaryNegationOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IUnaryNegationOperators<nint, nint>.operator -(nint value)
-            => -value;
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
+        static nint IUnaryNegationOperators<nint, nint>.operator -(nint value) => -value;
 
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked nint IUnaryNegationOperators<nint, nint>.operator -(nint value)
-        //     => checked(-value);
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static nint IUnaryNegationOperators<nint, nint>.operator checked -(nint value) => checked(-value);
 
         //
         // IUnaryPlusOperators
         //
 
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        static nint IUnaryPlusOperators<nint, nint>.operator +(nint value)
-            => +value;
-
-        // [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
-        // static checked nint IUnaryPlusOperators<nint, nint>.operator +(nint value)
-        //     => checked(+value);
-#endif // FEATURE_GENERIC_MATH
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        static nint IUnaryPlusOperators<nint, nint>.operator +(nint value) => +value;
     }
 }

@@ -7,7 +7,6 @@ using System.ComponentModel.Design;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
-using System.Linq;
 using System.Reflection;
 using System.Threading;
 
@@ -228,8 +227,10 @@ namespace System.ComponentModel
         /// table for the editor type, if one can be found.
         /// </summary>
         [RequiresUnreferencedCode("The Types specified in table may be trimmed, or have their static construtors trimmed.")]
-        internal static void AddEditorTable(Type editorBaseType!!, Hashtable table)
+        internal static void AddEditorTable(Type editorBaseType, Hashtable table)
         {
+            ArgumentNullException.ThrowIfNull(editorBaseType);
+
             Debug.Assert(table != null, "COMPAT: Editor table should not be null"); // don't throw; RTM didn't so we can't do it either.
 
             lock (s_internalSyncObject)
@@ -619,8 +620,10 @@ namespace System.ComponentModel
             return properties;
         }
 
-        protected internal override IExtenderProvider[] GetExtenderProviders(object instance!!)
+        protected internal override IExtenderProvider[] GetExtenderProviders(object instance)
         {
+            ArgumentNullException.ThrowIfNull(instance);
+
             IComponent? component = instance as IComponent;
             if (component != null && component.Site != null)
             {
@@ -1006,7 +1009,7 @@ namespace System.ComponentModel
                 {
                     // Get the type's attributes.
                     //
-                    attrs = type.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
+                    attrs = Attribute.GetCustomAttributes(type, typeof(Attribute), inherit: false);
                     attributeCache[type] = attrs;
                 }
             }
@@ -1034,7 +1037,7 @@ namespace System.ComponentModel
                 {
                     // Get the member's attributes.
                     //
-                    attrs = member.GetCustomAttributes(typeof(Attribute), false).OfType<Attribute>().ToArray();
+                    attrs = Attribute.GetCustomAttributes(member, typeof(Attribute), inherit: false);
                     attributeCache[member] = attrs;
                 }
             }
@@ -1292,7 +1295,7 @@ namespace System.ComponentModel
                         properties = newProperties;
                     }
 
-                    Debug.Assert(!properties.Any(dbgProp => dbgProp == null), $"Holes in property array for type {type}");
+                    Debug.Assert(Array.TrueForAll(properties, dbgProp => dbgProp is not null), $"Holes in property array for type {type}");
 
                     propertyCache[type] = properties;
                 }

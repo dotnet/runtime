@@ -6,8 +6,10 @@ namespace System.ComponentModel.Composition.Hosting
 {
     internal static class AtomicCompositionExtensions
     {
-        internal static T GetValueAllowNull<T>(this AtomicComposition? atomicComposition, T defaultResultAndKey!!) where T : class
+        internal static T GetValueAllowNull<T>(this AtomicComposition? atomicComposition, T defaultResultAndKey) where T : class
         {
+            ArgumentNullException.ThrowIfNull(defaultResultAndKey);
+
             return GetValueAllowNull<T>(atomicComposition, defaultResultAndKey, defaultResultAndKey);
         }
 
@@ -22,8 +24,10 @@ namespace System.ComponentModel.Composition.Hosting
             return defaultResult;
         }
 
-        internal static void AddRevertActionAllowNull(this AtomicComposition? atomicComposition, Action action!!)
+        internal static void AddRevertActionAllowNull(this AtomicComposition? atomicComposition, Action action)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             if (atomicComposition == null)
             {
                 action();
@@ -34,8 +38,10 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        internal static void AddCompleteActionAllowNull(this AtomicComposition? atomicComposition, Action action!!)
+        internal static void AddCompleteActionAllowNull(this AtomicComposition? atomicComposition, Action action)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             if (atomicComposition == null)
             {
                 action();

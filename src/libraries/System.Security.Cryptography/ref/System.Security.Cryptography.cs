@@ -996,12 +996,14 @@ namespace System.Security.Cryptography
         public override byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public override System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
         public override System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.", DiagnosticId="SYSLIB0042", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void FromXmlString(string xml, System.Security.Cryptography.ECKeyXmlFormat format) { }
         public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
         public override void ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
         public override void ImportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
         public override void ImportParameters(System.Security.Cryptography.ECParameters parameters) { }
         public override void ImportPkcs8PrivateKey(System.ReadOnlySpan<byte> source, out int bytesRead) { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.", DiagnosticId="SYSLIB0042", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ToXmlString(System.Security.Cryptography.ECKeyXmlFormat format) { throw null; }
         public override bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public override bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -1016,8 +1018,10 @@ namespace System.Security.Cryptography
         public override System.Security.Cryptography.ECParameters ExportParameters() { throw null; }
         [System.Runtime.Versioning.SupportedOSPlatformAttribute("windows")]
         public static System.Security.Cryptography.ECDiffieHellmanPublicKey FromByteArray(byte[] publicKeyBlob, System.Security.Cryptography.CngKeyBlobFormat format) { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.", DiagnosticId="SYSLIB0042", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public static System.Security.Cryptography.ECDiffieHellmanCngPublicKey FromXmlString(string xml) { throw null; }
         public System.Security.Cryptography.CngKey Import() { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.", DiagnosticId="SYSLIB0042", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public override string ToXmlString() { throw null; }
     }
     public enum ECDiffieHellmanKeyDerivationFunction
@@ -1066,13 +1070,16 @@ namespace System.Security.Cryptography
     public abstract partial class ECDiffieHellmanPublicKey : System.IDisposable
     {
         protected ECDiffieHellmanPublicKey() { }
+        [System.ObsoleteAttribute("ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead.", DiagnosticId="SYSLIB0043", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         protected ECDiffieHellmanPublicKey(byte[] keyBlob) { }
         public void Dispose() { }
         protected virtual void Dispose(bool disposing) { }
         public virtual System.Security.Cryptography.ECParameters ExportExplicitParameters() { throw null; }
         public virtual System.Security.Cryptography.ECParameters ExportParameters() { throw null; }
         public virtual byte[] ExportSubjectPublicKeyInfo() { throw null; }
+        [System.ObsoleteAttribute("ECDiffieHellmanPublicKey.ToByteArray() and the associated constructor do not have a consistent and interoperable implementation on all platforms. Use ECDiffieHellmanPublicKey.ExportSubjectPublicKeyInfo() instead.", DiagnosticId="SYSLIB0043", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual byte[] ToByteArray() { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.", DiagnosticId="SYSLIB0042", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public virtual string ToXmlString() { throw null; }
         public virtual bool TryExportSubjectPublicKeyInfo(System.Span<byte> destination, out int bytesWritten) { throw null; }
     }
@@ -1147,6 +1154,7 @@ namespace System.Security.Cryptography
         public override byte[] ExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters) { throw null; }
         public override System.Security.Cryptography.ECParameters ExportExplicitParameters(bool includePrivateParameters) { throw null; }
         public override System.Security.Cryptography.ECParameters ExportParameters(bool includePrivateParameters) { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.", DiagnosticId="SYSLIB0042", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public void FromXmlString(string xml, System.Security.Cryptography.ECKeyXmlFormat format) { }
         public override void GenerateKey(System.Security.Cryptography.ECCurve curve) { }
         protected override byte[] HashData(byte[] data, int offset, int count, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { throw null; }
@@ -1159,6 +1167,7 @@ namespace System.Security.Cryptography
         public byte[] SignData(byte[] data, int offset, int count) { throw null; }
         public byte[] SignData(System.IO.Stream data) { throw null; }
         public override byte[] SignHash(byte[] hash) { throw null; }
+        [System.ObsoleteAttribute("ToXmlString and FromXmlString have no implementation for ECC types, and are obsolete. Use a standard import and export format such as ExportSubjectPublicKeyInfo or ImportSubjectPublicKeyInfo for public keys and ExportPkcs8PrivateKey or ImportPkcs8PrivateKey for private keys.", DiagnosticId="SYSLIB0042", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public string ToXmlString(System.Security.Cryptography.ECKeyXmlFormat format) { throw null; }
         public override bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<byte> passwordBytes, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
         public override bool TryExportEncryptedPkcs8PrivateKey(System.ReadOnlySpan<char> password, System.Security.Cryptography.PbeParameters pbeParameters, System.Span<byte> destination, out int bytesWritten) { throw null; }
@@ -1716,12 +1725,17 @@ namespace System.Security.Cryptography
     [System.Runtime.Versioning.UnsupportedOSPlatformAttribute("browser")]
     public partial class Rfc2898DeriveBytes : System.Security.Cryptography.DeriveBytes
     {
+        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations) { }
         public Rfc2898DeriveBytes(byte[] password, byte[] salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt) { }
+        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations) { }
         public Rfc2898DeriveBytes(string password, byte[] salt, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
+        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize) { }
+        [System.ObsoleteAttribute("The default hash algorithm and iteration counts in Rfc2898DeriveBytes constructors are outdated and insecure. Use a constructor that accepts the hash algorithm and the number of iterations.", DiagnosticId="SYSLIB0041", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations) { }
         public Rfc2898DeriveBytes(string password, int saltSize, int iterations, System.Security.Cryptography.HashAlgorithmName hashAlgorithm) { }
         public System.Security.Cryptography.HashAlgorithmName HashAlgorithm { get { throw null; } }
@@ -2524,6 +2538,21 @@ namespace System.Security.Cryptography.X509Certificates
         public string Name { get { throw null; } }
         public string Decode(System.Security.Cryptography.X509Certificates.X500DistinguishedNameFlags flag) { throw null; }
         public override string Format(bool multiLine) { throw null; }
+    }
+    public sealed partial class X500DistinguishedNameBuilder
+    {
+        public X500DistinguishedNameBuilder() { }
+        public void Add(System.Security.Cryptography.Oid oid, string value, System.Formats.Asn1.UniversalTagNumber? stringEncodingType = default(System.Formats.Asn1.UniversalTagNumber?)) { }
+        public void Add(string oidValue, string value, System.Formats.Asn1.UniversalTagNumber? stringEncodingType = default(System.Formats.Asn1.UniversalTagNumber?)) { }
+        public void AddCommonName(string commonName) { }
+        public void AddCountryOrRegion(string twoLetterCode) { }
+        public void AddDomainComponent(string domainComponent) { }
+        public void AddEmailAddress(string emailAddress) { }
+        public void AddLocalityName(string localityName) { }
+        public void AddOrganizationalUnitName(string organizationalUnitName) { }
+        public void AddOrganizationName(string organizationName) { }
+        public void AddStateOrProvinceName(string stateOrProvinceName) { }
+        public System.Security.Cryptography.X509Certificates.X500DistinguishedName Build() { throw null; }
     }
     [System.FlagsAttribute]
     public enum X500DistinguishedNameFlags

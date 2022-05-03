@@ -119,7 +119,7 @@
       </trans-unit>
       <trans-unit id="InvalidLangVersionMessage">
         <source>C# LangVersion of 11 or greater is required</source>
-        <target state="new">C# LangVersion of 11 or greater is required</target>
+        <target state="translated">Se requiere C# LangVersion de 11 o superior</target>
         <note />
       </trans-unit>
       <trans-unit id="InvalidRegexArgumentsMessage">
@@ -148,8 +148,8 @@
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
-        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression, due to an unsupported option or too complex a regular expression.  The implementation will interpret the regular expression at run-time.</source>
-        <target state="translated">RegexGenerator no pudo generar una implementación de origen completa para la expresión regular especificada debido a una opción no admitida o a una expresión regular demasiado compleja.  La implementación interpretará la expresión regular en tiempo de ejecución.</target>
+        <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
+        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
@@ -228,8 +228,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
-        <source>Regex method must be partial, parameterless, non-generic, and return Regex</source>
-        <target state="translated">El método regex debe ser parcial, sin parámetros, no genérico y devolver Regex</target>
+        <source>RegexGenerator method must be partial, parameterless, non-generic, non-abstract, and return Regex</source>
+        <target state="translated">El método RegexGenerator debe ser parcial, sin parámetros, no genérico, no abstracto y devolver Regex</target>
         <note />
       </trans-unit>
       <trans-unit id="ReplacementError">

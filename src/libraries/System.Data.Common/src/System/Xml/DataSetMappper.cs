@@ -181,7 +181,7 @@ namespace System.Xml
             }
             return null;
         }
-        internal DataTable? GetTableSchemaForElement(XmlElement elem)
+        internal static DataTable? GetTableSchemaForElement(XmlElement elem)
         {
             XmlBoundElement? be = elem as XmlBoundElement;
             if (be == null)
@@ -192,7 +192,7 @@ namespace System.Xml
             return GetTableSchemaForElement(be);
         }
 
-        internal DataTable? GetTableSchemaForElement(XmlBoundElement be) => be.Row?.Table;
+        internal static DataTable? GetTableSchemaForElement(XmlBoundElement be) => be.Row?.Table;
 
         internal static bool IsNotMapped(DataColumn c) => c.ColumnMapping == MappingType.Hidden;
 
@@ -202,14 +202,14 @@ namespace System.Xml
         //     XmlElement e = be;
         //     GetRowFromElement( be ); // Calls GetRowFromElement( XmlBoundElement )
         //     GetRowFromElement( e );  // Calls GetRowFromElement( XmlElement ), in spite of e beeing an instance of XmlBoundElement
-        internal DataRow? GetRowFromElement(XmlElement? e) => (e as XmlBoundElement)?.Row;
+        internal static DataRow? GetRowFromElement(XmlElement? e) => (e as XmlBoundElement)?.Row;
 
-        internal DataRow? GetRowFromElement(XmlBoundElement be) => be.Row;
+        internal static DataRow? GetRowFromElement(XmlBoundElement be) => be.Row;
 
         // Get the row-elem associatd w/ the region node is in.
         // If node is in a region not mapped (like document element node) the function returns false and sets elem to null)
         // This function does not work if the region is not associated w/ a DataRow (it uses DataRow association to know what is the row element associated w/ the region)
-        internal bool GetRegion(XmlNode? node, [NotNullWhen(true)] out XmlBoundElement? rowElem)
+        internal static bool GetRegion(XmlNode? node, [NotNullWhen(true)] out XmlBoundElement? rowElem)
         {
             while (node != null)
             {
@@ -372,7 +372,7 @@ namespace System.Xml
             return localName + ":" + namespaceURI;
         }
 
-        private bool IsNextColumn(DataColumnCollection columns, ref int iColumn, DataColumn col)
+        private static bool IsNextColumn(DataColumnCollection columns, ref int iColumn, DataColumn col)
         {
             for (; iColumn < columns.Count; iColumn++)
             {

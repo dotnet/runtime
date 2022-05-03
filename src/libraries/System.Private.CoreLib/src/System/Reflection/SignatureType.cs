@@ -37,9 +37,9 @@ namespace System.Reflection
         public sealed override MemberTypes MemberType => MemberTypes.TypeInfo;
 
         // Compositors
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public sealed override Type MakeArrayType() => new SignatureArrayType(this, rank: 1, isMultiDim: false);
-        [RequiresDynamicCode("The native code for the array might not be available at runtime.")]
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public sealed override Type MakeArrayType(int rank)
         {
             if (rank <= 0)

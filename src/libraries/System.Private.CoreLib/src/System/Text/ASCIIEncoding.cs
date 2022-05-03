@@ -77,8 +77,6 @@ namespace System.Text
 
         public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
-            // Validate input parameters
-
             if (chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.chars, ExceptionResource.ArgumentNull_Array);
@@ -107,8 +105,6 @@ namespace System.Text
 
         public override unsafe int GetByteCount(string chars)
         {
-            // Validate input parameters
-
             if (chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.chars);
@@ -127,9 +123,7 @@ namespace System.Text
         [CLSCompliant(false)]
         public override unsafe int GetByteCount(char* chars, int count)
         {
-            // Validate Parameters
-
-            if (chars == null)
+            if (chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.chars);
             }
@@ -159,7 +153,7 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pChars is not null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
 
@@ -213,8 +207,6 @@ namespace System.Text
         public override unsafe int GetBytes(string chars, int charIndex, int charCount,
                                               byte[] bytes, int byteIndex)
         {
-            // Validate Parameters
-
             if (chars is null || bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
@@ -236,7 +228,7 @@ namespace System.Text
 
             if ((uint)byteIndex > bytes!.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             fixed (char* pChars = chars)
@@ -263,8 +255,6 @@ namespace System.Text
         public override unsafe int GetBytes(char[] chars, int charIndex, int charCount,
                                                byte[] bytes, int byteIndex)
         {
-            // Validate parameters
-
             if (chars is null || bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
@@ -286,7 +276,7 @@ namespace System.Text
 
             if ((uint)byteIndex > bytes!.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.byteIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             fixed (char* pChars = chars)
@@ -303,9 +293,7 @@ namespace System.Text
         [CLSCompliant(false)]
         public override unsafe int GetBytes(char* chars, int charCount, byte* bytes, int byteCount)
         {
-            // Validate Parameters
-
-            if (chars == null || bytes == null)
+            if (chars is null || bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
                     argument: (chars is null) ? ExceptionArgument.chars : ExceptionArgument.bytes,
@@ -340,9 +328,9 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pChars is not null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
             Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
 
@@ -434,8 +422,6 @@ namespace System.Text
 
         public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
-            // Validate Parameters
-
             if (bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes, ExceptionResource.ArgumentNull_Array);
@@ -464,9 +450,7 @@ namespace System.Text
         [CLSCompliant(false)]
         public override unsafe int GetCharCount(byte* bytes, int count)
         {
-            // Validate Parameters
-
-            if (bytes == null)
+            if (bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes, ExceptionResource.ArgumentNull_Array);
             }
@@ -496,7 +480,7 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
 
@@ -547,8 +531,6 @@ namespace System.Text
         public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount,
                                               char[] chars, int charIndex)
         {
-            // Validate Parameters
-
             if (bytes is null || chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
@@ -570,7 +552,7 @@ namespace System.Text
 
             if ((uint)charIndex > (uint)chars!.Length)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_Index);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.charIndex, ExceptionResource.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             fixed (byte* pBytes = bytes)
@@ -587,8 +569,6 @@ namespace System.Text
         [CLSCompliant(false)]
         public override unsafe int GetChars(byte* bytes, int byteCount, char* chars, int charCount)
         {
-            // Validate Parameters
-
             if (bytes is null || chars is null)
             {
                 ThrowHelper.ThrowArgumentNullException(
@@ -624,9 +604,9 @@ namespace System.Text
             // A modification of this method should be copied in to each of the supported encodings: ASCII, UTF8, UTF16, UTF32.
 
             Debug.Assert(byteCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pBytes != null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pBytes is not null || byteCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
             Debug.Assert(charCount >= 0, "Caller shouldn't specify negative length buffer.");
-            Debug.Assert(pChars != null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
+            Debug.Assert(pChars is not null || charCount == 0, "Input pointer shouldn't be null if non-zero length specified.");
 
             // First call into the fast path.
 
@@ -717,8 +697,6 @@ namespace System.Text
 
         public override unsafe string GetString(byte[] bytes, int byteIndex, int byteCount)
         {
-            // Validate Parameters
-
             if (bytes is null)
             {
                 ThrowHelper.ThrowArgumentNullException(ExceptionArgument.bytes, ExceptionResource.ArgumentNull_Array);

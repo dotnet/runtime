@@ -49,6 +49,7 @@ internal static partial class Interop
             internal string Value;
             internal uint ValueLength;
 
+            [CustomTypeMarshaller(typeof(HttpHeader), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             internal struct Native
             {
                 private IntPtr Name;

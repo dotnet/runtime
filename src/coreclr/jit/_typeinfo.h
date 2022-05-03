@@ -143,6 +143,21 @@ inline ti_types JITtype2tiType(CorInfoType type)
 };
 
 /*****************************************************************************
+* Captures information about a method pointer
+*
+* m_token is the CORINFO_RESOLVED_TOKEN from the IL, potentially with a more
+*         precise method handle from getCallInfo
+* m_tokenConstraint is the constraint if this was a constrained ldftn.
+*
+*/
+class methodPointerInfo
+{
+public:
+    CORINFO_RESOLVED_TOKEN m_token;
+    mdToken                m_tokenConstraint;
+};
+
+/*****************************************************************************
  * Declares the typeInfo class, which represents the type of an entity on the
  * stack, in a local variable or an argument.
  *
@@ -221,9 +236,6 @@ inline ti_types JITtype2tiType(CorInfoType type)
 // since conversions between them are not verifiable.
 #define TI_FLAG_NATIVE_INT 0x00000200
 
-// This item contains resolved token. It is used for ctor delegate optimization.
-#define TI_FLAG_TOKEN 0x00000400
-
 // This item contains the 'this' pointer (used for tracking)
 
 #define TI_FLAG_THIS_PTR 0x00001000
@@ -270,7 +282,7 @@ inline ti_types JITtype2tiType(CorInfoType type)
  * - A type (ref, array, value type) (m_cls describes the type)
  * - An array (m_cls describes the array type)
  * - A byref (byref flag set, otherwise the same as the above),
- * - A Function Pointer (m_method)
+ * - A Function Pointer (m_methodPointerInfo)
  * - A byref local variable (byref and byref local flags set), can be
  *   uninitialized
  *
@@ -291,7 +303,7 @@ private:
             unsigned byref : 1;            // used
             unsigned byref_readonly : 1;   // used
             unsigned nativeInt : 1;        // used
-            unsigned token : 1;            // used
+            unsigned : 1;                  // unused
             unsigned : 1;                  // unused
             unsigned thisPtr : 1;          // used
             unsigned thisPermHome : 1;     // used
@@ -303,10 +315,8 @@ private:
 
     union {
         CORINFO_CLASS_HANDLE m_cls;
-        // Valid only for type TI_METHOD without IsToken
-        CORINFO_METHOD_HANDLE m_method;
-        // Valid only for TI_TOKEN with IsToken
-        CORINFO_RESOLVED_TOKEN* m_token;
+        // Valid only for type TI_METHOD
+        methodPointerInfo* m_methodPointerInfo;
     };
 
     template <typename T>
@@ -362,21 +372,13 @@ public:
         m_cls = cls;
     }
 
-    typeInfo(CORINFO_METHOD_HANDLE method)
+    typeInfo(methodPointerInfo* methodPointerInfo)
     {
-        assert(method != nullptr && !isInvalidHandle(method));
-        m_flags  = TI_METHOD;
-        m_method = method;
-    }
-
-    typeInfo(CORINFO_RESOLVED_TOKEN* token)
-    {
-        assert(token != nullptr);
-        assert(token->hMethod != nullptr);
-        assert(!isInvalidHandle(token->hMethod));
-        m_flags = TI_METHOD;
-        SetIsToken();
-        m_token = token;
+        assert(methodPointerInfo != nullptr);
+        assert(methodPointerInfo->m_token.hMethod != nullptr);
+        assert(!isInvalidHandle(methodPointerInfo->m_token.hMethod));
+        m_flags             = TI_METHOD;
+        m_methodPointerInfo = methodPointerInfo;
     }
 
 #ifdef DEBUG
@@ -457,12 +459,6 @@ public:
     /////////////////////////////////////////////////////////////////////////
     // Operations
     /////////////////////////////////////////////////////////////////////////
-
-    void SetIsToken()
-    {
-        m_flags |= TI_FLAG_TOKEN;
-        assert(m_bits.token);
-    }
 
     void SetIsThisPtr()
     {
@@ -573,17 +569,13 @@ public:
     CORINFO_METHOD_HANDLE GetMethod() const
     {
         assert(GetType() == TI_METHOD);
-        if (IsToken())
-        {
-            return m_token->hMethod;
-        }
-        return m_method;
+        return m_methodPointerInfo->m_token.hMethod;
     }
 
-    CORINFO_RESOLVED_TOKEN* GetToken() const
+    methodPointerInfo* GetMethodPointerInfo() const
     {
-        assert(IsToken());
-        return m_token;
+        assert(GetType() == TI_METHOD);
+        return m_methodPointerInfo;
     }
 
     // Get this item's type
@@ -748,11 +740,6 @@ public:
     bool IsUninitialisedObjRef() const
     {
         return (m_flags & TI_FLAG_UNINIT_OBJREF);
-    }
-
-    bool IsToken() const
-    {
-        return IsMethod() && ((m_flags & TI_FLAG_TOKEN) != 0);
     }
 
 private:

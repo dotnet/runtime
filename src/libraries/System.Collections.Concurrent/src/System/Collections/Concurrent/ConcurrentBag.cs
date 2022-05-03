@@ -53,8 +53,10 @@ namespace System.Collections.Concurrent
         /// cref="ConcurrentBag{T}"/>.</param>
         /// <exception cref="ArgumentNullException"><paramref name="collection"/> is a null reference
         /// (Nothing in Visual Basic).</exception>
-        public ConcurrentBag(IEnumerable<T> collection!!)
+        public ConcurrentBag(IEnumerable<T> collection)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             _locals = new ThreadLocal<WorkStealingQueue>();
 
             WorkStealingQueue queue = GetCurrentThreadWorkStealingQueue(forceCreate: true)!;
@@ -238,7 +240,7 @@ namespace System.Collections.Concurrent
         /// <summary>
         /// Attempts to steal from each queue starting from <paramref name="startInclusive"/> to <paramref name="endExclusive"/>.
         /// </summary>
-        private bool TryStealFromTo(WorkStealingQueue? startInclusive, WorkStealingQueue? endExclusive, [MaybeNullWhen(false)] out T result, bool take)
+        private static bool TryStealFromTo(WorkStealingQueue? startInclusive, WorkStealingQueue? endExclusive, [MaybeNullWhen(false)] out T result, bool take)
         {
             for (WorkStealingQueue? queue = startInclusive; queue != endExclusive; queue = queue._nextQueue)
             {
@@ -272,8 +274,10 @@ namespace System.Collections.Concurrent
         /// -or- the number of elements in the source <see
         /// cref="ConcurrentBag{T}"/> is greater than the available space from
         /// <paramref name="index"/> to the end of the destination <paramref name="array"/>.</exception>
-        public void CopyTo(T[] array!!, int index)
+        public void CopyTo(T[] array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), SR.Collection_CopyTo_ArgumentOutOfRangeException);

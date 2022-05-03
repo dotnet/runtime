@@ -139,6 +139,12 @@ def run_command(command_to_run, _cwd=None, _exit_on_fail=False, _output_file=Non
     print("Running: " + " ".join(command_to_run))
     command_stdout = ""
     command_stderr = ""
+
+    if _env:
+        print("  with environment:")
+        for name, value in _env.items():
+            print("    {0}={1}".format(name,value))
+
     return_code = 1
 
     output_type = subprocess.STDOUT if _output_file else subprocess.PIPE
@@ -599,7 +605,7 @@ def download_with_progress_urlretrieve(uri, target_location, fail_if_not_found=T
             if try_num == num_tries - 1:
                 raise ex
 
-            if ex is urllib.error.HTTPError and ex == 404:
+            if isinstance(ex, urllib.error.HTTPError) and ex.code == 404:
                 if fail_if_not_found:
                     logging.error("HTTP 404 error")
                     raise ex

@@ -45,7 +45,7 @@ class BindHandle1
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Unexpected exception: {0}", ex);
+                Console.WriteLine($"Unexpected exception - HResult: 0x{ex.HResult:x}, Exception: {ex}");
                 return (98);
             }
         }

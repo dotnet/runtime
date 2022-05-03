@@ -69,6 +69,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(Tls13Supported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void NegotiatedCipherSuite_SslProtocolIsTls13_ShouldBeTls13()
         {
             var p = new ConnectionParams()
@@ -90,6 +91,7 @@ namespace System.Net.Security.Tests
         [InlineData(SslProtocols.Tls11)]
 #pragma warning restore SYSLIB0039
         [InlineData(SslProtocols.Tls12)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void NegotiatedCipherSuite_SslProtocolIsLowerThanTls13_ShouldMatchTheProtocol(SslProtocols protocol)
         {
             var p = new ConnectionParams()
@@ -129,7 +131,9 @@ namespace System.Net.Security.Tests
             {
                 CipherSuitesPolicy = BuildPolicy(TlsCipherSuite.TLS_AES_128_GCM_SHA256,
                                                  SupportedNonTls13CipherSuites[0]),
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 EncryptionPolicy = EncryptionPolicy.NoEncryption,
+#pragma warning restore SYSLIB0040
             };
 
             NegotiatedParams ret = ConnectAndGetNegotiatedParams(p, p);
@@ -152,6 +156,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(CipherSuitesPolicyAndTls13Supported))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public void CipherSuitesPolicy_AllowOneOnOneSideTls13_Success()
         {
             bool hasSucceededAtLeastOnce = false;
@@ -707,7 +712,7 @@ namespace System.Net.Security.Tests
                 clientOptions.TargetHost = "test";
                 clientOptions.RemoteCertificateValidationCallback = delegate { return true; };
 
-                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).GetAwaiter().GetResult();
+                Exception failure = WaitForSecureConnection(client, clientOptions, server, serverOptions).WaitAsync(TestConfiguration.PassingTestTimeoutMilliseconds).GetAwaiter().GetResult();
 
                 if (failure == null)
                 {

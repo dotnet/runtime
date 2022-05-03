@@ -13,8 +13,6 @@ namespace System.Reflection.Emit
             // Prevent generating a default constructor
         }
 
-        public const int UnspecifiedTypeSize = 0;
-
         public override Assembly Assembly
         {
             get
@@ -229,11 +227,6 @@ namespace System.Reflection.Emit
             return default;
         }
 
-        public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, Type[] parameterTypes)
-        {
-            return default;
-        }
-
         public ConstructorBuilder DefineConstructor(MethodAttributes attributes, CallingConventions callingConvention, Type[] parameterTypes, Type[][] requiredCustomModifiers, Type[][] optionalCustomModifiers)
         {
             return default;
@@ -245,11 +238,6 @@ namespace System.Reflection.Emit
         }
 
         public EventBuilder DefineEvent(string name, EventAttributes attributes, Type eventtype)
-        {
-            return default;
-        }
-
-        public FieldBuilder DefineField(string fieldName, Type type, FieldAttributes attributes)
         {
             return default;
         }
@@ -269,58 +257,13 @@ namespace System.Reflection.Emit
             return default;
         }
 
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes)
-        {
-            return default;
-        }
-
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention)
-        {
-            return default;
-        }
-
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes)
-        {
-            return default;
-        }
-
         public MethodBuilder DefineMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers, Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers)
-        {
-            return default;
-        }
-
-        public MethodBuilder DefineMethod(string name, MethodAttributes attributes, Type returnType, Type[] parameterTypes)
         {
             return default;
         }
 
         public void DefineMethodOverride(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
         {
-        }
-
-        public TypeBuilder DefineNestedType(string name)
-        {
-            return default;
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr)
-        {
-            return default;
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent)
-        {
-            return default;
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent, int typeSize)
-        {
-            return default;
-        }
-
-        public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent, PackingSize packSize)
-        {
-            return default;
         }
 
         public TypeBuilder DefineNestedType(string name, TypeAttributes attr, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type parent, PackingSize packSize, int typeSize)
@@ -334,39 +277,12 @@ namespace System.Reflection.Emit
         }
 
         [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            return default;
-        }
-
-        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
-        public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes, CallingConvention nativeCallConv, CharSet nativeCharSet)
-        {
-            return default;
-        }
-
-        [RequiresUnreferencedCode("P/Invoke marshalling may dynamically access members that could be trimmed.")]
         public MethodBuilder DefinePInvokeMethod(string name, string dllName, string entryName, MethodAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers, Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers, CallingConvention nativeCallConv, CharSet nativeCharSet)
         {
             return default;
         }
 
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] parameterTypes)
-        {
-            return default;
-        }
-
         public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, CallingConventions callingConvention, Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers, Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers)
-        {
-            return default;
-        }
-
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, Type returnType, Type[] parameterTypes)
-        {
-            return default;
-        }
-
-        public PropertyBuilder DefineProperty(string name, PropertyAttributes attributes, Type returnType, Type[] returnTypeRequiredCustomModifiers, Type[] returnTypeOptionalCustomModifiers, Type[] parameterTypes, Type[][] parameterTypeRequiredCustomModifiers, Type[][] parameterTypeOptionalCustomModifiers)
         {
             return default;
         }
@@ -622,11 +538,13 @@ namespace System.Reflection.Emit
             }
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType()
         {
             return default;
         }
 
+        [RequiresDynamicCode("The code for an array of the specified type might not be available.")]
         public override Type MakeArrayType(int rank)
         {
             return default;
@@ -637,6 +555,7 @@ namespace System.Reflection.Emit
             return default;
         }
 
+        [RequiresDynamicCode("The native code for this instantiation might not be available at runtime.")]
         [RequiresUnreferencedCode("If some of the generic arguments are annotated (either with DynamicallyAccessedMembersAttribute, or generic constraints), trimming can't validate that the requirements of those annotations are met.")]
         public override Type MakeGenericType(params Type[] typeArguments)
         {

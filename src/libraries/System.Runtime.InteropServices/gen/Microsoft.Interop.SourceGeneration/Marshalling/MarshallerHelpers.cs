@@ -12,19 +12,11 @@ namespace Microsoft.Interop
 {
     public static class MarshallerHelpers
     {
-        public static readonly ExpressionSyntax IsWindows = InvocationExpression(
-                                                        MemberAccessExpression(
-                                                            SyntaxKind.SimpleMemberAccessExpression,
-                                                            ParseTypeName("System.OperatingSystem"),
-                                                            IdentifierName("IsWindows")));
-
-        public static readonly TypeSyntax InteropServicesMarshalType = ParseTypeName(TypeNames.System_Runtime_InteropServices_Marshal);
-
         public static readonly TypeSyntax SystemIntPtrType = ParseTypeName(TypeNames.System_IntPtr);
 
-        public static ForStatementSyntax GetForLoop(string collectionIdentifier, string indexerIdentifier)
+        public static ForStatementSyntax GetForLoop(ExpressionSyntax lengthExpression, string indexerIdentifier)
         {
-            // for(int <indexerIdentifier> = 0; <indexerIdentifier> < <collectionIdentifier>.Length; ++<indexerIdentifier>)
+            // for(int <indexerIdentifier> = 0; <indexerIdentifier> < <lengthIdentifier>; ++<indexerIdentifier>)
             //      ;
             return ForStatement(EmptyStatement())
             .WithDeclaration(
@@ -32,7 +24,7 @@ namespace Microsoft.Interop
                     PredefinedType(
                         Token(SyntaxKind.IntKeyword)))
                 .WithVariables(
-                    SingletonSeparatedList<VariableDeclaratorSyntax>(
+                    SingletonSeparatedList(
                         VariableDeclarator(
                             Identifier(indexerIdentifier))
                         .WithInitializer(
@@ -44,10 +36,7 @@ namespace Microsoft.Interop
                 BinaryExpression(
                     SyntaxKind.LessThanExpression,
                     IdentifierName(indexerIdentifier),
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        IdentifierName(collectionIdentifier),
-                        IdentifierName("Length"))))
+                    lengthExpression))
             .WithIncrementors(
                 SingletonSeparatedList<ExpressionSyntax>(
                     PrefixUnaryExpression(
@@ -100,6 +89,11 @@ namespace Microsoft.Interop
         public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return context.GetAdditionalIdentifier(info, "marshaller");
+        }
+
+        public static string GetManagedSpanIdentifier(TypePositionInfo info, StubCodeContext context)
+        {
+            return context.GetAdditionalIdentifier(info, "managedSpan");
         }
 
         public static string GetNativeSpanIdentifier(TypePositionInfo info, StubCodeContext context)
@@ -189,7 +183,7 @@ namespace Microsoft.Interop
             // If we have edges left, then we have a cycle.
             if (edgeMap.AnyEdges)
             {
-                throw new InvalidOperationException(Resources.GraphHasCycles);
+                throw new InvalidOperationException(SR.GraphHasCycles);
             }
 
             // If we make it here, we have a topologically sorted list.
@@ -232,7 +226,7 @@ namespace Microsoft.Interop
         public static IEnumerable<TypePositionInfo> GetDependentElementsOfMarshallingInfo(
             MarshallingInfo elementMarshallingInfo)
         {
-            if (elementMarshallingInfo is NativeContiguousCollectionMarshallingInfo nestedCollection)
+            if (elementMarshallingInfo is NativeLinearCollectionMarshallingInfo nestedCollection)
             {
                 if (nestedCollection.ElementCountInfo is CountElementCountInfo { ElementInfo: TypePositionInfo nestedCountElement })
                 {
@@ -242,49 +236,6 @@ namespace Microsoft.Interop
                 {
                     yield return nestedElements;
                 }
-            }
-        }
-
-        public static class StringMarshaller
-        {
-            public static ExpressionSyntax AllocationExpression(CharEncoding encoding, string managedIdentifier)
-            {
-                string methodName = encoding switch
-                {
-                    CharEncoding.Utf8 => "StringToCoTaskMemUTF8", // Not in .NET Standard 2.0, so we use the hard-coded name
-                    CharEncoding.Utf16 => nameof(System.Runtime.InteropServices.Marshal.StringToCoTaskMemUni),
-                    CharEncoding.Ansi => nameof(System.Runtime.InteropServices.Marshal.StringToCoTaskMemAnsi),
-                    _ => throw new System.ArgumentOutOfRangeException(nameof(encoding))
-                };
-
-                // Marshal.StringToCoTaskMemUTF8(<managed>)
-                // or
-                // Marshal.StringToCoTaskMemUni(<managed>)
-                // or
-                // Marshal.StringToCoTaskMemAnsi(<managed>)
-                return InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        InteropServicesMarshalType,
-                        IdentifierName(methodName)),
-                    ArgumentList(
-                        SingletonSeparatedList<ArgumentSyntax>(
-                            Argument(IdentifierName(managedIdentifier)))));
-            }
-
-            public static ExpressionSyntax FreeExpression(string nativeIdentifier)
-            {
-                // Marshal.FreeCoTaskMem((IntPtr)<nativeIdentifier>)
-                return InvocationExpression(
-                    MemberAccessExpression(
-                        SyntaxKind.SimpleMemberAccessExpression,
-                        InteropServicesMarshalType,
-                        IdentifierName(nameof(System.Runtime.InteropServices.Marshal.FreeCoTaskMem))),
-                    ArgumentList(SingletonSeparatedList(
-                        Argument(
-                            CastExpression(
-                                SystemIntPtrType,
-                                IdentifierName(nativeIdentifier))))));
             }
         }
     }

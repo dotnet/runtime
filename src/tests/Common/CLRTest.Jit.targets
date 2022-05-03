@@ -32,10 +32,8 @@ WARNING:   When setting properties based on their current state (for example:
   <Target Name="GetIlasmRoundTripBashScript"
           Returns="$(IlasmRoundTripBashScript);$(BashIlrtTestLaunchCmds)">
     <PropertyGroup>
-      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)).Replace("\","/"))</InputAssemblyName>
-      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).dll</InputAssemblyName>
-      <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>$(MSBuildProjectName).asm.dll</TargetAssemblyName>
+      <DisassemblyName>$(AssemblyName).dasm.il</DisassemblyName>
+      <TargetAssemblyName>$(AssemblyName).asm.dll</TargetAssemblyName>
 
       <IlasmRoundTripBashScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 # IlasmRoundTrip Script
@@ -117,10 +115,8 @@ fi
   <Target Name="GetIlasmRoundTripBatchScript"
           Returns="$(IlasmRoundTripBatchScript);$(BatchIlrtTestLaunchCmds)">
     <PropertyGroup>
-      <InputAssemblyName Condition="'$(CLRTestKind)' == 'RunOnly'">$([MSBuild]::MakeRelative($(OutputPath), $(_CLRTestToRunFileFullPath)))</InputAssemblyName>
-      <InputAssemblyName Condition="'$(CLRTestKind)' == 'BuildAndRun'">$(MSBuildProjectName).dll</InputAssemblyName>
-      <DisassemblyName>$(MSBuildProjectName).dasm.il</DisassemblyName>
-      <TargetAssemblyName>$(MSBuildProjectName).asm.dll</TargetAssemblyName>
+      <DisassemblyName>$(AssemblyName).dasm.il</DisassemblyName>
+      <TargetAssemblyName>$(AssemblyName).asm.dll</TargetAssemblyName>
 
       <IlasmRoundTripBatchScript Condition="'$(CLRTestKind)' == 'RunOnly'"><![CDATA[
 REM IlasmRoundTrip Script
