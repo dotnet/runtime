@@ -118,7 +118,7 @@ namespace System.Threading.Tests
             // Step 2: Verify that now the timer does get collected
             WaitForTimerToBeCollected(timer, expected: true);
 
-            // It is important that we do these two thing sin NoInlining
+            // It is important that we do these two things in NoInlining
             // methods. We are only guaranteed that references inside these
             // methods are not live anymore when the functions return.
             [MethodImpl(MethodImplOptions.NoInlining)]
