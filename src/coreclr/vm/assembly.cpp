@@ -2238,9 +2238,8 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
 
             // Create an AssemblyNameObject from the string.
             FriendAssemblyNameHolder pFriendAssemblyName;
-            StackScratchBuffer buffer;
             pFriendAssemblyName = new FriendAssemblyName_t;
-            hr = pFriendAssemblyName->Init(displayName.GetUTF8(buffer));
+            hr = pFriendAssemblyName->InitNoThrow(displayName);
 
             if (SUCCEEDED(hr))
             {

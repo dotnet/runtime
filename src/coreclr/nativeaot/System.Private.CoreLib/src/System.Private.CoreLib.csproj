@@ -120,7 +120,6 @@
   <ItemGroup>
     <Compile Include="System\Reflection\RuntimeAssembly.cs" />
     <Compile Include="System\Reflection\RuntimeAssemblyName.cs" />
-    <Compile Include="System\Reflection\AssemblyNameHelpers.cs" />
     <Compile Include="System\Reflection\AssemblyRuntimeNameHelpers.cs" />
     <Compile Include="System\Reflection\Attribute.CoreRT.cs" />
     <Compile Include="System\Reflection\Assembly.CoreRT.cs" />
