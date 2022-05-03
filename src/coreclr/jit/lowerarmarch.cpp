@@ -758,24 +758,24 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
 // Arguments:
 //    node - the node to lower
 //
-void Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
+GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
 {
     assert(node->OperIs(GT_ADD));
 
     if (!comp->opts.OptimizationEnabled())
-        return;
+        return nullptr;
 
     if (node->isContained())
-        return;
+        return nullptr;
 
     if (!varTypeIsIntegral(node))
-        return;
+        return nullptr;
 
     if (node->gtFlags & GTF_SET_FLAGS)
-        return;
+        return nullptr;
 
     if (node->gtOverflow())
-        return;
+        return nullptr;
 
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
@@ -809,6 +809,10 @@ void Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
             node->gtOp1 = c;
             node->gtOp2 = mul;
             node->ChangeOper(GT_SUB);
+
+            ContainCheckNode(node);
+
+            return node->gtNext;
         }
         // Transform "a * -b + c" to "c - a * b"
         else if (b->OperIs(GT_NEG) && !(b->gtFlags & GTF_SET_FLAGS) && !a->OperIs(GT_NEG) && !b->isContained() &&
@@ -819,14 +823,24 @@ void Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
             node->gtOp1 = c;
             node->gtOp2 = mul;
             node->ChangeOper(GT_SUB);
+
+            ContainCheckNode(node);
+
+            return node->gtNext;
         }
         // Transform "a * b + c" to "c + a * b"
         else if (op1->OperIs(GT_MUL))
         {
             node->gtOp1 = c;
             node->gtOp2 = mul;
+
+            ContainCheckNode(node);
+
+            return node->gtNext;
         }
     }
+
+    return nullptr;
 }
 #endif
 

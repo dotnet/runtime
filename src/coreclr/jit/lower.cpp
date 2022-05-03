@@ -5387,8 +5387,6 @@ bool Lowering::TryCreateAddrMode(GenTree* addr, bool isContainable, GenTree* par
 //
 GenTree* Lowering::LowerAdd(GenTreeOp* node)
 {
-    assert(node->OperIs(GT_ADD));
-
     if (varTypeIsIntegralOrI(node->TypeGet()))
     {
         GenTree* op1 = node->gtGetOp1();
@@ -5418,9 +5416,6 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
             JITDUMP("Remove [%06u], [%06u]\n", op2->gtTreeID, node->gtTreeID);
             return next;
         }
-#ifdef TARGET_ARM64
-        LowerAddForPossibleContainment(node);
-#endif // TARGET_ARM64
 
 #ifdef TARGET_XARCH
         if (BlockRange().TryGetUse(node, &use))
@@ -5436,7 +5431,18 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #endif // TARGET_XARCH
     }
 
-    ContainCheckBinary(node);
+    if (node->OperIs(GT_ADD))
+    {
+        ContainCheckBinary(node);
+    }
+
+#ifdef TARGET_ARM64
+    GenTree* next = LowerAddForPossibleContainment(node);
+    if (next != nullptr)
+    {
+        return next;
+    }
+#endif // TARGET_ARM64
 
     return nullptr;
 }
