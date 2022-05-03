@@ -9,7 +9,6 @@ Commonly Used Types:
 System.IO.Pipelines.Pipe
 System.IO.Pipelines.PipeWriter
 System.IO.Pipelines.PipeReader</PackageDescription>
-    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <ServicingVersion>3</ServicingVersion>
   </PropertyGroup>
   <ItemGroup>
