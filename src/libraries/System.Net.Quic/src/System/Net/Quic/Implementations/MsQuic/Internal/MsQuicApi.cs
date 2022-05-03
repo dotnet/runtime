@@ -14,7 +14,7 @@ using Microsoft.Win32;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal unsafe sealed class MsQuicApi
+    internal sealed unsafe class MsQuicApi
     {
         private static readonly byte[] s_appName = Encoding.ASCII.GetBytes("System.Net.Quic");
 

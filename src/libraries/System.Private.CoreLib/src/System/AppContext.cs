@@ -30,8 +30,10 @@ namespace System
             // It is the value read from the TargetFrameworkAttribute on the .exe that started the process.
             Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
 
-        public static object? GetData(string name!!)
+        public static object? GetData(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (s_dataStore == null)
                 return null;
 
@@ -49,8 +51,10 @@ namespace System
         /// <param name="name">The name of the data element</param>
         /// <param name="data">The value of <paramref name="name"/></param>
         /// <exception cref="ArgumentNullException">If <paramref name="name"/> is <see langword="null"/></exception>
-        public static void SetData(string name!!, object? data)
+        public static void SetData(string name, object? data)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (s_dataStore == null)
             {
                 Interlocked.CompareExchange(ref s_dataStore, new Dictionary<string, object?>(), null);

@@ -9,7 +9,7 @@ internal static partial class Interop
     internal static partial class Advapi32
     {
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-        public class WTSSESSION_NOTIFICATION
+        public sealed class WTSSESSION_NOTIFICATION
         {
             public int size;
             public int sessionId;

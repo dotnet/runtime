@@ -892,7 +892,11 @@ namespace Microsoft.VisualBasic
                 }
                 else
                 {
+#if NETCOREAPP
+                    Output.Write(typeName.AsSpan(0, index + 1));
+#else
                     Output.Write(typeName.Substring(0, index + 1));
+#endif
                 }
 
                 // The tricky thing is we need to declare the size - 1
@@ -913,7 +917,11 @@ namespace Microsoft.VisualBasic
                 }
                 else
                 {
+#if NETCOREAPP
+                    Output.Write(typeName.AsSpan(index + 1));
+#else
                     Output.Write(typeName.Substring(index + 1));
+#endif
                 }
 
                 Output.Write(" {}");

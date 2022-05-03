@@ -96,64 +96,109 @@ namespace System.ComponentModel.Composition.Registration
             return ExportInterfaces(t => true, null);
         }
 
-        public PartBuilder ExportInterfaces(Predicate<Type> interfaceFilter!!,
+        public PartBuilder ExportInterfaces(Predicate<Type> interfaceFilter,
             Action<Type, ExportBuilder> exportConfiguration)
         {
+            if (interfaceFilter is null)
+            {
+                throw new ArgumentNullException(nameof(interfaceFilter));
+            }
+
             _interfaceExports.Add(Tuple.Create(interfaceFilter, exportConfiguration));
 
             return this;
         }
 
         // Choose a property to export then configure it
-        public PartBuilder ExportProperties(Predicate<PropertyInfo> propertyFilter!!)
+        public PartBuilder ExportProperties(Predicate<PropertyInfo> propertyFilter)
         {
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+
             return ExportProperties(propertyFilter, null);
         }
 
-        public PartBuilder ExportProperties(Predicate<PropertyInfo> propertyFilter!!,
+        public PartBuilder ExportProperties(Predicate<PropertyInfo> propertyFilter,
             Action<PropertyInfo, ExportBuilder> exportConfiguration)
         {
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+
             _propertyExports.Add(Tuple.Create(propertyFilter, exportConfiguration, default(Type)));
 
             return this;
         }
 
         // Choose a property to export then configure it
-        public PartBuilder ExportProperties<T>(Predicate<PropertyInfo> propertyFilter!!)
+        public PartBuilder ExportProperties<T>(Predicate<PropertyInfo> propertyFilter)
         {
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+
             return ExportProperties<T>(propertyFilter, null);
         }
 
-        public PartBuilder ExportProperties<T>(Predicate<PropertyInfo> propertyFilter!!,
+        public PartBuilder ExportProperties<T>(Predicate<PropertyInfo> propertyFilter,
             Action<PropertyInfo, ExportBuilder> exportConfiguration)
         {
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+
             _propertyExports.Add(Tuple.Create(propertyFilter, exportConfiguration, typeof(T)));
 
             return this;
         }
 
         // Choose a property to export then configure it
-        public PartBuilder ImportProperties(Predicate<PropertyInfo> propertyFilter!!)
+        public PartBuilder ImportProperties(Predicate<PropertyInfo> propertyFilter)
         {
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+
             return ImportProperties(propertyFilter, null);
         }
 
-        public PartBuilder ImportProperties(Predicate<PropertyInfo> propertyFilter!!,
+        public PartBuilder ImportProperties(Predicate<PropertyInfo> propertyFilter,
             Action<PropertyInfo, ImportBuilder> importConfiguration)
         {
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+
             _propertyImports.Add(Tuple.Create(propertyFilter, importConfiguration, default(Type)));
             return this;
         }
 
         // Choose a property to export then configure it
-        public PartBuilder ImportProperties<T>(Predicate<PropertyInfo> propertyFilter!!)
+        public PartBuilder ImportProperties<T>(Predicate<PropertyInfo> propertyFilter)
         {
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+
             return ImportProperties<T>(propertyFilter, null);
         }
 
-        public PartBuilder ImportProperties<T>(Predicate<PropertyInfo> propertyFilter!!,
+        public PartBuilder ImportProperties<T>(Predicate<PropertyInfo> propertyFilter,
             Action<PropertyInfo, ImportBuilder> importConfiguration)
         {
+            if (propertyFilter is null)
+            {
+                throw new ArgumentNullException(nameof(propertyFilter));
+            }
+
             _propertyImports.Add(Tuple.Create(propertyFilter, importConfiguration, typeof(T)));
             return this;
         }

@@ -11,7 +11,7 @@ namespace System.Text.RegularExpressions.Symbolic
 {
 #if DEBUG
     /// <summary>Utility for generating unicode category ranges and corresponing binary decision diagrams.</summary>
-    [ExcludeFromCodeCoverage]
+    [ExcludeFromCodeCoverage(Justification = "Used from tests to generate src data files")]
     internal static class UnicodeCategoryRangesGenerator
     {
         /// <summary>Generator for BDD Unicode category definitions.</summary>
@@ -104,33 +104,32 @@ namespace {namespacename}
                 sw.Write(" }");
             }
         }
-    }
 
-    /// <summary>Used internally for creating a collection of ranges for serialization.</summary>
-    [ExcludeFromCodeCoverage]
-    internal sealed class Ranges
-    {
-        public readonly List<(char Lower, char Upper)> ranges = new List<(char Lower, char Upper)>();
-
-        public void Add(char n)
+        /// <summary>Used internally for creating a collection of ranges for serialization.</summary>
+        private sealed class Ranges
         {
-            // Add the character, extending an existing range if there's already one contiguous
-            // with the new character.
+            public readonly List<(char Lower, char Upper)> ranges = new List<(char Lower, char Upper)>();
 
-            for (int i = 0; i < ranges.Count; i++)
+            public void Add(char n)
             {
-                (char lower, char upper) = ranges[i];
-                if (upper == (n - 1))
+                // Add the character, extending an existing range if there's already one contiguous
+                // with the new character.
+
+                for (int i = 0; i < ranges.Count; i++)
                 {
-                    ranges[i] = (lower, n);
-                    return;
+                    (char lower, char upper) = ranges[i];
+                    if (upper == (n - 1))
+                    {
+                        ranges[i] = (lower, n);
+                        return;
+                    }
                 }
+
+                ranges.Add((n, n));
             }
 
-            ranges.Add((n, n));
+            public int Count => ranges.Count;
         }
-
-        public int Count => ranges.Count;
     }
 #endif
 }

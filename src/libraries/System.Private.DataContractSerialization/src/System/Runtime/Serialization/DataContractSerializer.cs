@@ -104,7 +104,7 @@ namespace System.Runtime.Serialization
         }
 
         [MemberNotNull(nameof(_rootType))]
-        private void Initialize(Type type!!,
+        private void Initialize(Type type,
             IEnumerable<Type>? knownTypes,
             int maxItemsInObjectGraph,
             bool ignoreExtensionDataObject,
@@ -112,6 +112,8 @@ namespace System.Runtime.Serialization
             DataContractResolver? dataContractResolver,
             bool serializeReadOnlyTypes)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             _rootType = type;
 
             if (knownTypes != null)

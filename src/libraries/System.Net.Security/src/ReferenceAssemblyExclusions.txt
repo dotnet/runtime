@@ -1,0 +1,3 @@
+# Used internally by System.Net.Quic
+F:System.Net.Security.SslStreamCertificateContext.Certificate
+F:System.Net.Security.SslStreamCertificateContext.IntermediateCertificates

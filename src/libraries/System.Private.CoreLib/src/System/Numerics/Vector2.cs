@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
 using System.Text;
 
 namespace System.Numerics
@@ -641,10 +642,28 @@ namespace System.Numerics
         /// <param name="other">The other vector.</param>
         /// <returns><see langword="true" /> if the two vectors are equal; otherwise, <see langword="false" />.</returns>
         /// <remarks>Two vectors are equal if their <see cref="System.Numerics.Vector2.X" /> and <see cref="System.Numerics.Vector2.Y" /> elements are equal.</remarks>
-        [Intrinsic]
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public readonly bool Equals(Vector2 other)
         {
-            return this == other;
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector64.IsHardwareAccelerated)
+            {
+                return Vector64.LoadUnsafe(ref Unsafe.AsRef(in X)).Equals(Vector64.LoadUnsafe(ref other.X));
+            }
+            else if (Vector128.IsHardwareAccelerated)
+            {
+                return this.AsVector128().Equals(other.AsVector128());
+            }
+
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Vector2 self, Vector2 other)
+            {
+                return self.X.Equals(other.X)
+                    && self.Y.Equals(other.Y);
+            }
         }
 
         /// <summary>Returns the hash code for this instance.</summary>

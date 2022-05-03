@@ -68,11 +68,11 @@ mono_llvm_build_alloca (LLVMBuilderRef builder, LLVMTypeRef Ty,
 						int alignment, const char *Name);
 
 LLVMValueRef
-mono_llvm_build_atomic_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
+mono_llvm_build_atomic_load (LLVMBuilderRef builder, LLVMTypeRef Type, LLVMValueRef PointerVal,
 							 const char *Name, gboolean is_volatile, int alignment, BarrierKind barrier);
 
 LLVMValueRef
-mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMValueRef PointerVal,
+mono_llvm_build_aligned_load (LLVMBuilderRef builder, LLVMTypeRef Type, LLVMValueRef PointerVal,
 							  const char *Name, gboolean is_volatile, int alignment);
 
 LLVMValueRef

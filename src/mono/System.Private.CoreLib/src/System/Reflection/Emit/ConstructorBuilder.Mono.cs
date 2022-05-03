@@ -259,8 +259,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.CompilerServices.MethodImplAttribute")
@@ -288,10 +287,8 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-                throw new ArgumentNullException(nameof(con));
-            if (binaryAttribute == null)
-                throw new ArgumentNullException(nameof(binaryAttribute));
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             SetCustomAttribute(new CustomAttributeBuilder(con, binaryAttribute));
         }

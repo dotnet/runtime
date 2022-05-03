@@ -28,6 +28,7 @@ namespace System.Net.Security.Tests
         [InlineData(false, true)]
         [InlineData(true, false)]
         [InlineData(true, true)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_RequireClientCert_IsMutuallyAuthenticated_ReturnsTrue(bool clientCertificateRequired, bool useClientSelectionCallback)
         {
             (Stream stream1, Stream stream2) = TestHelper.GetConnectedStreams();

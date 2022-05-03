@@ -47,24 +47,30 @@ namespace System.IO.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData("", "", "")]
+        [InlineData("", "foo.txt", "bar.txt")]
         [InlineData("bar", "foo.txt", "bar.txt")]
         [InlineData("bar\\baz", "foo.txt", "bar.txt")]
         public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePath_Windows(string directory, string name, string oldName)
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), directory, oldName), args.OldFullPath);
+            var expectedDirectory = PathInternal.EnsureTrailingSeparator(Path.Combine(Directory.GetCurrentDirectory(), directory));
+            Assert.Equal(Path.Combine(expectedDirectory, oldName), args.OldFullPath);
         }
 
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("", "", "")]
+        [InlineData("", "foo.txt", "bar.txt")]
         [InlineData("bar", "foo.txt", "bar.txt")]
         [InlineData("bar/baz", "foo.txt", "bar.txt")]
         public static void RenamedEventArgs_ctor_OldFullPath_DirectoryIsRelativePath_Unix(string directory, string name, string oldName)
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
 
-            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), directory, oldName), args.OldFullPath);
+            var expectedDirectory = PathInternal.EnsureTrailingSeparator(Path.Combine(Directory.GetCurrentDirectory(), directory));
+            Assert.Equal(Path.Combine(expectedDirectory, oldName), args.OldFullPath);
         }
 
         [Theory]
@@ -83,7 +89,6 @@ namespace System.IO.Tests
         [Fact]
         public static void RenamedEventArgs_ctor_Invalid()
         {
-            Assert.Throws<ArgumentException>(() => new RenamedEventArgs((WatcherChangeTypes)0, "", "foo.txt", "bar.txt"));
             Assert.Throws<ArgumentNullException>(() => new RenamedEventArgs((WatcherChangeTypes)0, null, "foo.txt", "bar.txt"));
         }
     }

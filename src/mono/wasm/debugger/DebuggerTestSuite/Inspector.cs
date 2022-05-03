@@ -29,11 +29,25 @@ namespace DebuggerTests
         public const string READY = "ready";
         public CancellationToken Token { get; }
         public InspectorClient Client { get; }
+        public DebuggerProxyBase? Proxy { get; }
         public bool DetectAndFailOnAssertions { get; set; } = true;
 
         private CancellationTokenSource _cancellationTokenSource;
+        private Exception? _isFailingWithException;
 
-        protected ILoggerFactory _loggerFactory;
+        protected static Lazy<ILoggerFactory> s_loggerFactory = new(() =>
+        {
+            return LoggerFactory.Create(builder =>
+                    builder
+                        // .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
+                        .AddSimpleConsole(options =>
+                            {
+                                options.SingleLine = true;
+                                options.TimestampFormat = "[HH:mm:ss] ";
+                            })
+                           .AddFilter(null, LogLevel.Trace));
+        });
+
         protected ILogger _logger;
         public int Id { get; init; }
 
@@ -43,20 +57,11 @@ namespace DebuggerTests
             _cancellationTokenSource = new CancellationTokenSource();
             Token = _cancellationTokenSource.Token;
 
-            string logFilePath = Path.Combine(DebuggerTestBase.TestLogPath, $"{Id}-test.log");
-            File.Delete(logFilePath);
-            _loggerFactory = LoggerFactory.Create(builder =>
-                    builder
-                        .AddFile(logFilePath, minimumLevel: LogLevel.Debug)
-                        .AddSimpleConsole(options =>
-                            {
-                                options.SingleLine = true;
-                                options.TimestampFormat = "[HH:mm:ss] ";
-                            })
-                           .AddFilter(null, LogLevel.Trace));
-
-            Client = new InspectorClient(_loggerFactory.CreateLogger($"{nameof(InspectorClient)}-{Id}"));
-            _logger = _loggerFactory.CreateLogger($"{nameof(Inspector)}-{Id}");
+            _logger = s_loggerFactory.Value.CreateLogger($"{nameof(Inspector)}-{Id}");
+            if (DebuggerTestBase.RunningOnChrome)
+                Client = new InspectorClient(_logger);
+            else
+                Client = new FirefoxInspectorClient(_logger);
         }
 
         public Task<JObject> WaitFor(string what)
@@ -129,6 +134,7 @@ namespace DebuggerTests
 
             if (exception != null)
             {
+                _isFailingWithException = exception;
                 foreach (var tcs in notifications.Values)
                     tcs.TrySetException(exception);
             }
@@ -148,6 +154,9 @@ namespace DebuggerTests
                 if (arg?["value"] != null)
                     consoleArgs.Add(arg!["value"]!.ToString());
             }
+
+            if (consoleArgs.Count == 0)
+                return "console: <message missing>";
 
             int position = 1;
             string first = consoleArgs[0];
@@ -193,6 +202,7 @@ namespace DebuggerTests
                     {
                         args["__forMethod"] = method;
                         Client.Fail(new ArgumentException($"Unexpected runtime error/warning message detected: {line}{Environment.NewLine}{args}"));
+                        TestHarnessProxy.ShutdownProxy(Id.ToString());
                         return;
                     }
 
@@ -219,33 +229,59 @@ namespace DebuggerTests
             }
         }
 
+        public async Task LaunchBrowser(DateTime start, TimeSpan span)
+        {
+            _cancellationTokenSource.CancelAfter(span);
+            string uriStr = $"ws://{TestHarnessProxy.Endpoint.Authority}/launch-host-and-connect/?test_id={Id}";
+            if (!DebuggerTestBase.RunningOnChrome)
+            {
+                uriStr += "&host=firefox&firefox-proxy-port=6002";
+                // Ensure the listener is running early, so trying to
+                // connect to that does not race with the starting of it
+                FirefoxDebuggerProxy.StartListener(6002, _logger);
+            }
+
+            await Client.Connect(new Uri(uriStr), OnMessage, _cancellationTokenSource);
+            Client.RunLoopStopped += (_, args) =>
+            {
+                switch (args.reason)
+                {
+                    case RunLoopStopReason.Exception:
+                        if (TestHarnessProxy.TryGetProxyExitState(Id.ToString(), out var state))
+                        {
+                            Console.WriteLine ($"client exiting with exception, and proxy has: {state}");
+                        }
+                        FailAllWaiters(args.exception);
+                        break;
+
+                    case RunLoopStopReason.Cancelled when Token.IsCancellationRequested:
+                        if (_isFailingWithException is null)
+                            FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds})"));
+                        break;
+
+                    default:
+                        if (_isFailingWithException is null)
+                            FailAllWaiters();
+                        break;
+                };
+            };
+
+            TestHarnessProxy.RegisterExitHandler(Id.ToString(), state =>
+            {
+                if (_isFailingWithException is null && state.reason == RunLoopStopReason.Exception)
+                {
+                    Client.Fail(state.exception);
+                    FailAllWaiters(state.exception);
+                }
+            });
+        }
+
         public async Task OpenSessionAsync(Func<InspectorClient, CancellationToken, List<(string, Task<Result>)>> getInitCmds, TimeSpan span)
         {
             var start = DateTime.Now;
             try
             {
-                _cancellationTokenSource.CancelAfter(span);
-
-                var uri = new Uri($"ws://{TestHarnessProxy.Endpoint.Authority}/launch-chrome-and-connect/?test_id={Id}");
-
-                await Client.Connect(uri, OnMessage, _cancellationTokenSource.Token);
-                Client.RunLoopStopped += (_, args) =>
-                {
-                    switch (args.reason)
-                    {
-                        case RunLoopStopReason.Exception:
-                            FailAllWaiters(args.ex);
-                            break;
-
-                        case RunLoopStopReason.Cancelled when Token.IsCancellationRequested:
-                            FailAllWaiters(new TaskCanceledException($"Test timed out (elapsed time: {(DateTime.Now - start).TotalSeconds})"));
-                            break;
-
-                        default:
-                            FailAllWaiters();
-                            break;
-                    };
-                };
+                await LaunchBrowser(start, span);
 
                 var init_cmds = getInitCmds(Client, _cancellationTokenSource.Token);
 
@@ -261,6 +297,9 @@ namespace DebuggerTests
                     int cmdIdx = init_cmds.FindIndex(ct => ct.Item2 == completedTask);
                     string cmd_name = init_cmds[cmdIdx].Item1;
 
+                    if (_isFailingWithException is not null)
+                        throw _isFailingWithException;
+
                     if (completedTask.IsCanceled)
                     {
                         throw new TaskCanceledException(
@@ -274,7 +313,7 @@ namespace DebuggerTests
                         _logger.LogError($"Command {cmd_name} failed with {completedTask.Exception}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}.");
                         throw completedTask.Exception!;
                     }
-
+                    await Client.ProcessCommand(completedTask.Result, _cancellationTokenSource.Token);
                     Result res = completedTask.Result;
                     if (!res.IsOk)
                         throw new ArgumentException($"Command {cmd_name} failed with: {res.Error}. Remaining commands: {RemainingCommandsToString(cmd_name, init_cmds)}");
@@ -287,6 +326,13 @@ namespace DebuggerTests
             catch (Exception ex)
             {
                 _logger.LogDebug(ex.ToString());
+                if (TestHarnessProxy.TryGetProxyExitState(Id.ToString(), out var state))
+                {
+                    Console.WriteLine ($"OpenSession crashing. proxy state: {state}");
+                    if (state.reason == RunLoopStopReason.Exception && state.exception is not null)
+                        throw state.exception;
+                }
+
                 throw;
             }
 
@@ -317,6 +363,7 @@ namespace DebuggerTests
 
             try
             {
+                TestHarnessProxy.ShutdownProxy(Id.ToString());
                 await Client.Shutdown(_cancellationTokenSource.Token).ConfigureAwait(false);
             }
             catch (Exception ex)
@@ -328,7 +375,6 @@ namespace DebuggerTests
             {
                 _cancellationTokenSource.Cancel();
                 Client.Dispose();
-                _loggerFactory?.Dispose();
                 _cancellationTokenSource.Dispose();
             }
         }

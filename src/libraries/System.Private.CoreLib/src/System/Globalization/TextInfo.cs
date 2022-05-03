@@ -89,8 +89,10 @@ namespace System.Globalization
         /// Create a cloned readonly instance or return the input one if it is
         /// readonly.
         /// </summary>
-        public static TextInfo ReadOnly(TextInfo textInfo!!)
+        public static TextInfo ReadOnly(TextInfo textInfo)
         {
+            ArgumentNullException.ThrowIfNull(textInfo);
+
             if (textInfo.IsReadOnly)
             {
                 return textInfo;
@@ -163,8 +165,10 @@ namespace System.Globalization
             return Invariant.ChangeCase(c, toUpper: false);
         }
 
-        public string ToLower(string str!!)
+        public string ToLower(string str)
         {
+            ArgumentNullException.ThrowIfNull(str);
+
             if (GlobalizationMode.Invariant)
             {
                 return InvariantModeCasing.ToLower(str);
@@ -572,8 +576,10 @@ namespace System.Globalization
             return Invariant.ChangeCase(c, toUpper: true);
         }
 
-        public string ToUpper(string str!!)
+        public string ToUpper(string str)
         {
+            ArgumentNullException.ThrowIfNull(str);
+
             if (GlobalizationMode.Invariant)
             {
                 return InvariantModeCasing.ToUpper(str);
@@ -645,8 +651,10 @@ namespace System.Globalization
         /// influence which letter or letters of a "word" are uppercased when titlecasing strings.  For example
         /// "l'arbre" is considered two words in French, whereas "can't" is considered one word in English.
         /// </summary>
-        public unsafe string ToTitleCase(string str!!)
+        public unsafe string ToTitleCase(string str)
         {
+            ArgumentNullException.ThrowIfNull(str);
+
             if (str.Length == 0)
             {
                 return str;

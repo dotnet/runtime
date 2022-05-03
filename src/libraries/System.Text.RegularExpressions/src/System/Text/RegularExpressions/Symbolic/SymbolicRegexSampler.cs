@@ -7,7 +7,7 @@ using System.Diagnostics;
 
 namespace System.Text.RegularExpressions.Symbolic
 {
-    internal sealed class SymbolicRegexSampler<TSet> where TSet : IComparable<TSet>
+    internal sealed class SymbolicRegexSampler<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         private Random _random;
         private SymbolicRegexNode<TSet> _root;

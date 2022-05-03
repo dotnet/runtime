@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Tests
         {
             private JsonConverter<KeyValuePair<int, string>> _intToStringConverter;
 
-            public DictionaryInt32StringKeyValueConverter(JsonSerializerOptions options!!)
+            public DictionaryInt32StringKeyValueConverter(JsonSerializerOptions options)
             {
                 if (options == null)
                 {

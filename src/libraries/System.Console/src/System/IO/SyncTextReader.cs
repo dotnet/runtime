@@ -115,8 +115,10 @@ namespace System.IO
                 Task.FromResult(ReadToEnd());
         }
 
-        public override Task<int> ReadBlockAsync(char[] buffer!!, int index, int count)
+        public override Task<int> ReadBlockAsync(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)
@@ -125,8 +127,10 @@ namespace System.IO
             return Task.FromResult(ReadBlock(buffer, index, count));
         }
 
-        public override Task<int> ReadAsync(char[] buffer!!, int index, int count)
+        public override Task<int> ReadAsync(char[] buffer, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (buffer.Length - index < count)

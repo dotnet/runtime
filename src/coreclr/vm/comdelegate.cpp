@@ -171,16 +171,34 @@ public:
         // Shuffle float registers first
         if (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg)
         {
-            index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
-            m_currentFloatRegIndex++;
+#if defined(TARGET_LOONGARCH64)
+            if ((m_argLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND) && (m_currentGenRegIndex < m_argLocDesc->m_cGenReg))
+            {
+                // the first field is integer so just skip this.
+            }
+            else
+#endif
+            {
+                index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
+                m_currentFloatRegIndex++;
 
-            return index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
+                return index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
+            }
         }
 
         // Shuffle any registers first (the order matters since otherwise we could end up shuffling a stack slot
         // over a register we later need to shuffle down as well).
         if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
         {
+#if defined(TARGET_LOONGARCH64)
+            if (7 < (m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
+            {
+                m_currentGenRegIndex++;
+                index = m_currentByteStackIndex;
+                m_currentByteStackIndex += TARGET_POINTER_SIZE;
+                return index;
+            }
+#endif
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
             m_currentGenRegIndex++;
 

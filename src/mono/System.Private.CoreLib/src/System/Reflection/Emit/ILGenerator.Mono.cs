@@ -444,8 +444,7 @@ namespace System.Reflection.Emit
 
         public virtual LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
-            if (localType == null)
-                throw new ArgumentNullException(nameof(localType));
+            ArgumentNullException.ThrowIfNull(localType);
             if (localType.IsUserType)
                 throw new NotSupportedException("User defined subclasses of System.Type are not yet supported.");
             LocalBuilder res = new LocalBuilder(localType, this);
@@ -572,8 +571,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, Label[] labels)
         {
-            if (labels == null)
-                throw new ArgumentNullException(nameof(labels));
+            ArgumentNullException.ThrowIfNull(labels);
 
             /* opcode needs to be switch. */
             int count = labels.Length;
@@ -620,8 +618,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, LocalBuilder local)
         {
-            if (local == null)
-                throw new ArgumentNullException(nameof(local));
+            ArgumentNullException.ThrowIfNull(local);
             if (local.ilgen != this)
                 throw new ArgumentException(SR.Argument_UnmatchedMethodForLocal, nameof(local));
 
@@ -712,8 +709,7 @@ namespace System.Reflection.Emit
 
         public virtual void Emit(OpCode opcode, MethodInfo meth)
         {
-            if (meth == null)
-                throw new ArgumentNullException(nameof(meth));
+            ArgumentNullException.ThrowIfNull(meth);
 
             // For compatibility with MS
             if ((meth is DynamicMethod) && ((opcode == OpCodes.Ldftn) || (opcode == OpCodes.Ldvirtftn) || (opcode == OpCodes.Ldtoken)))
@@ -785,8 +781,7 @@ namespace System.Reflection.Emit
         // FIXME: vararg methods are not supported
         public virtual void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
-            if (methodInfo == null)
-                throw new ArgumentNullException(nameof(methodInfo));
+            ArgumentNullException.ThrowIfNull(methodInfo);
             short value = opcode.Value;
             if (!(value == OpCodes.Call.Value || value == OpCodes.Callvirt.Value))
                 throw new NotSupportedException("Only Call and CallVirt are allowed");
@@ -827,8 +822,7 @@ namespace System.Reflection.Emit
 
         public virtual void EmitWriteLine(FieldInfo fld)
         {
-            if (fld == null)
-                throw new ArgumentNullException(nameof(fld));
+            ArgumentNullException.ThrowIfNull(fld);
 
             // The MS implementation does not check for valuetypes here but it
             // should. Also, it should check that if the field is not static,
@@ -846,8 +840,7 @@ namespace System.Reflection.Emit
 
         public virtual void EmitWriteLine(LocalBuilder localBuilder)
         {
-            if (localBuilder == null)
-                throw new ArgumentNullException(nameof(localBuilder));
+            ArgumentNullException.ThrowIfNull(localBuilder);
             if (localBuilder.LocalType is TypeBuilder)
                 throw new ArgumentException("Output streams do not support TypeBuilders.");
             // The MS implementation does not check for valuetypes here but it
@@ -896,8 +889,7 @@ namespace System.Reflection.Emit
 
         public virtual void ThrowException([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type excType)
         {
-            if (excType == null)
-                throw new ArgumentNullException(nameof(excType));
+            ArgumentNullException.ThrowIfNull(excType);
             if (!((excType == typeof(Exception)) ||
                    excType.IsSubclassOf(typeof(Exception))))
                 throw new ArgumentException("Type should be an exception type", nameof(excType));

@@ -84,8 +84,10 @@ namespace System.Xml
             return true;
         }
 
-        public virtual bool TryLookup(XmlDictionaryString value!!, [NotNullWhen(true)] out XmlDictionaryString? result)
+        public virtual bool TryLookup(XmlDictionaryString value, [NotNullWhen(true)] out XmlDictionaryString? result)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.Dictionary != this)
             {
                 result = null;

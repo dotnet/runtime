@@ -20,8 +20,13 @@ namespace Microsoft.CSharp
             _generator = new CSharpCodeGenerator();
         }
 
-        public CSharpCodeProvider(IDictionary<string, string> providerOptions!!)
+        public CSharpCodeProvider(IDictionary<string, string> providerOptions)
         {
+            if (providerOptions is null)
+            {
+                throw new ArgumentNullException(nameof(providerOptions));
+            }
+
             _generator = new CSharpCodeGenerator(providerOptions);
         }
 

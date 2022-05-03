@@ -5,7 +5,6 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Security;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
@@ -16,9 +15,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal sealed class SafeMsQuicConfigurationHandle : MsQuicSafeHandle
     {
-        private static readonly FieldInfo _contextCertificate = typeof(SslStreamCertificateContext).GetField("Certificate", BindingFlags.NonPublic | BindingFlags.Instance)!;
-        private static readonly FieldInfo _contextChain = typeof(SslStreamCertificateContext).GetField("IntermediateCertificates", BindingFlags.NonPublic | BindingFlags.Instance)!;
-
         public unsafe SafeMsQuicConfigurationHandle(QUIC_HANDLE* handle)
             : base(handle, ptr => MsQuicApi.Api.ApiTable->ConfigurationClose((QUIC_HANDLE*)ptr), SafeHandleType.Configuration)
         { }
@@ -172,13 +168,8 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
                 if (certificateContext != null)
                 {
-                    certificate = (X509Certificate2?)_contextCertificate.GetValue(certificateContext);
-                    intermediates = (X509Certificate2[]?)_contextChain.GetValue(certificateContext);
-
-                    if (certificate == null || intermediates == null)
-                    {
-                        throw new ArgumentException(nameof(certificateContext));
-                    }
+                    certificate = certificateContext.Certificate;
+                    intermediates = certificateContext.IntermediateCertificates;
                 }
 
                 int status;

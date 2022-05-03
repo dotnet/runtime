@@ -59,8 +59,13 @@ namespace System.Security.Cryptography.Xml
             ReferenceList.Add(keyReference);
         }
 
-        public override void LoadXml(XmlElement value!!)
+        public override void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             XmlNamespaceManager nsm = new XmlNamespaceManager(value.OwnerDocument.NameTable);
             nsm.AddNamespace("enc", EncryptedXml.XmlEncNamespaceUrl);
             nsm.AddNamespace("ds", SignedXml.XmlDsigNamespaceUrl);

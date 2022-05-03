@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -43,8 +43,13 @@ namespace System.Text.Json.Serialization.Converters
 
         internal override bool CanHaveMetadata => Converter.CanHaveMetadata;
 
-        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator!!, ConverterStrategy converterStrategy)
+        public JsonMetadataServicesConverter(Func<JsonConverter<T>> converterCreator, ConverterStrategy converterStrategy)
         {
+            if (converterCreator is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(converterCreator));
+            }
+
             _converterCreator = converterCreator;
             _converterStrategy = converterStrategy;
         }
