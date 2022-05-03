@@ -64,8 +64,15 @@ Note that these properties can be conditional, e.g.:
 
 More information about writing/adding tests to src/tests can be found [here](../testing/coreclr/test-configuration.md).
 
+## Disabling runtime tests (src/tests) with xunit attributes
+
+When this document was written, the src/tests tree was in the process of being converted to a new
+execution model (see [dotnet/runtime#54512](https://github.com/dotnet/runtime/issues/54512)). This model annotates tests with xunit-style
+`[Fact]` attributes. For tests which have been converted to this form, all the xunit attributes related to test disabling
+described in the "src/libraries" section below are also applicable.
+
 ## Disabling libraries tests (src/libraries)
 
 Information on disabling libraries tests is found [here](../testing/libraries/filtering-tests.md).
 
-In particular, look at `ActiveIssueAttribute` and `SkipOnCoreClrAttribute`.
+In particular, look at `ActiveIssueAttribute`, `SkipOnCoreClrAttribute`, and `SkipOnMonoAttribute`.

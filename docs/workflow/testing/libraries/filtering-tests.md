@@ -298,3 +298,42 @@ SkipOnCoreClr(string reason, TestPlatforms testPlatforms, RuntimeConfiguration r
 SkipOnCoreClr(string reason, TestPlatforms testPlatforms, RuntimeTestModes testMode)
 SkipOnCoreClr(string reason, TestPlatforms testPlatforms, RuntimeConfiguration runtimeConfigurations, RuntimeTestModes testModes)
 ```
+
+**Disable using multiple attributes:**
+
+This attribute can be used multiple times, in which case the test is disabled for any of the conditions. In this example,
+only Release builds where `COMPlus_JITMinOpts` is not set would run the test.
+```cs
+[SkipOnCoreClr("https://github.com/dotnet/runtime/issues/67886", ~RuntimeConfiguration.Release)]
+[SkipOnCoreClr("https://github.com/dotnet/runtime/issues/67886", RuntimeTestModes.JitMinOpts)]
+```
+
+## SkipOnMonoAttribute
+
+This attribute is used to disable a test only when run with Mono.
+
+This attribute can be applied either to an assembly, class, or method.
+
+This attribute is defined [here](https://github.com/dotnet/arcade/blob/main/src/Microsoft.DotNet.XUnitExtensions/src/Attributes/SkipOnMonoAttribute.cs).
+
+**Disable for all platforms:**
+
+```cs
+[SkipOnMonoAttribute(string reason, TestPlatforms testPlatforms = TestPlatforms.Any)]
+```
+Example:
+```cs
+[SkipOnMono("No SAPI on Mono")]
+```
+
+## CollectionAttribute
+
+This is a standard xunit attribute, defined [here](https://github.com/xunit/xunit/blob/07663749ab0f62597acc5ff5f163df9f5a0ab8d5/src/xunit.v3.core/CollectionAttribute.cs).
+
+A common usage in the libraries tests is the following:
+
+```cs
+[Collection(nameof(DisableParallelization))]
+```
+
+This is put on test classes to indicate that none of the tests in that class (which as usual run serially with respect to each other) may run concurrently with tests in another class. This is used for tests that use a lot of disk space or memory, or dominate all the cores, such that they are likely to disrupt any tests that run concurrently.
