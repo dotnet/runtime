@@ -61,7 +61,7 @@ typedef struct _StreamWriterVtable StreamWriterVtable;
 
 #define EP_ACTIVITY_ID_SIZE EP_GUID_SIZE
 
-#define EP_MAX_STACK_DEPTH 512
+#define EP_MAX_STACK_DEPTH 200
 
 /*
  * EventPipe Enums.

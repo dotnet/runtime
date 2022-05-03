@@ -247,6 +247,7 @@ ep_stack_contents_instance_get_length (EventPipeStackContentsInstance *stack_con
 	return ep_stack_contents_instance_get_next_available_frame (stack_contents);
 }
 
+static
 inline
 uint32_t
 ep_stack_contents_instance_get_total_size (const EventPipeStackContentsInstance *stack_contents_instance)
