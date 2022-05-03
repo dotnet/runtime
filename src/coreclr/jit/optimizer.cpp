@@ -451,21 +451,6 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
             continue;
         }
 
-        if ((loop.lpHead == block) && (block->bbFlags & BBF_LOOP_PREHEADER))
-        {
-            assert(loop.lpFlags & LPFLG_HAS_PREHEAD);
-            reportBefore();
-
-            // `block` is a preheader and its removal doesn't mean the loop should
-            // be removed.
-            // Just set the loop's new head and move on.
-            assert(block->bbPrev->KindIs(BBJ_NONE, BBJ_ALWAYS));
-            loop.lpHead = block->bbPrev;
-
-            reportAfter();
-            continue;
-        }
-
         // If the loop is still in the table any block in the loop must be reachable.
 
         noway_assert((loop.lpEntry != block) && (loop.lpBottom != block));
@@ -577,20 +562,26 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
                 optMarkLoopRemoved(loopNum);
             }
         }
+        else if (loop.lpHead == block)
+        {
+            reportBefore();
+            /* The loop has a new head - Just update the loop table */
+            loop.lpHead = block->bbPrev;
+        }
 
         reportAfter();
     }
 
     if ((skipUnmarkLoop == false) &&                  // If we don't want to unmark this loop...
-        (removeLoop) &&                               // We decided to remove this loop...
         block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        // This block reaches conditionally or always
         block->bbJumpDest->isLoopHead() &&            // to a loop head...
+        (fgCurBBEpochSize == fgBBNumMax + 1) &&       // We didn't add new blocks since last renumber...
         (block->bbJumpDest->bbNum <= block->bbNum) && // This is a backedge...
         fgDomsComputed &&                             // Given the doms are computed and valid...
         (fgCurBBEpochSize == fgDomBBcount + 1) &&     //
         fgReachable(block->bbJumpDest, block))        // Block's destination is reachable from block...
     {
-        optUnmarkLoopBlocks(block->bbJumpDest, block); // Unmark the loop blocks.
+        optUnmarkLoopBlocks(block->bbJumpDest, block); // Unscale the blocks in such loop.
     }
 }
 
