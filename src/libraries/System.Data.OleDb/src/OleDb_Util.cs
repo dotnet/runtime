@@ -697,7 +697,7 @@ namespace System.Data.OleDb
                 result = "";
             }
 
-            return $"{result}(0x{(int)hr:X8})");
+            return $"{result}(0x{(int)hr:X8})";
         }
 
 #if DEBUG

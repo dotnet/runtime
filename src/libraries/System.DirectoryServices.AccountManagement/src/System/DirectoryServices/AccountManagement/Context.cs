@@ -85,7 +85,7 @@ namespace System.DirectoryServices.AccountManagement
 
         private bool BindSam(string target, string userName, string password)
         {
-            string adsPath = $"WinNT://{_serverName},computer");
+            string adsPath = $"WinNT://{_serverName},computer";
             Guid g = new Guid("fd8256d0-fd15-11ce-abc4-02608c9e7553"); // IID_IUnknown
             object value = null;
             // always attempt secure auth..
