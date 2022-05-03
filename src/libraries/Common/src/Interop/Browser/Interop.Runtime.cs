@@ -15,9 +15,9 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern string InvokeJS(string str, out int exceptionalResult);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object CompileFunction(string str, out int exceptionalResult);
+        internal static extern void CompileFunctionRef(in string str, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern object InvokeJSWithArgs(IntPtr jsHandle, string method, object?[] parms, out int exceptionalResult);
+        internal static extern void InvokeJSWithArgsRef(IntPtr jsHandle, in string method, in object?[] parms, out int exceptionalResult, out object result);
         // FIXME: All of these signatures need to be object? in various places and not object, but the nullability
         //  warnings will take me hours and hours to fix so I'm not doing that right now since they're already broken
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
@@ -56,7 +56,7 @@ internal static partial class Interop
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
         internal static extern void WebSocketCloseRef(IntPtr webSocketJSHandle, int code, in string? reason, bool waitForCloseReceived, out IntPtr promiseJSHandle, out int exceptionalResult, out object result);
         [MethodImplAttribute(MethodImplOptions.InternalCall)]
-        internal static extern string CancelPromise(IntPtr promiseJSHandle, out int exceptionalResult);
+        internal static extern void CancelPromiseRef(IntPtr promiseJSHandle, out int exceptionalResult, out string result);
 
         // / <summary>
         // / Execute the provided string in the JavaScript context
@@ -73,7 +73,7 @@ internal static partial class Interop
 
         public static System.Runtime.InteropServices.JavaScript.Function? CompileFunction(string snippet)
         {
-            object res = CompileFunction(snippet, out int exception);
+            CompileFunctionRef(snippet, out int exception, out object res);
             if (exception != 0)
                 throw new JSException((string)res);
             ReleaseInFlight(res);

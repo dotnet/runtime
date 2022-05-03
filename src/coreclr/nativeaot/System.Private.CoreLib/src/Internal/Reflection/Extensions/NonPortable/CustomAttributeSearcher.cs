@@ -74,6 +74,30 @@ namespace Internal.Reflection.Extensions.NonPortable
                         return true;
                     };
             }
+            else if (optionalAttributeTypeFilter.IsGenericTypeDefinition)
+            {
+                passesFilter =
+                    delegate (Type actualType)
+                    {
+                        if (actualType.IsConstructedGenericType && actualType.GetGenericTypeDefinition() == optionalAttributeTypeFilter)
+                        {
+                            return true;
+                        }
+
+                        if (!typeFilterKnownToBeSealed)
+                        {
+                            for (Type? type = actualType.BaseType; type != null; type = type.BaseType)
+                            {
+                                if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == optionalAttributeTypeFilter)
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+
+                        return false;
+                    };
+            }
             else
             {
                 passesFilter =

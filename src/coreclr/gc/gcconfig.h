@@ -179,6 +179,6 @@ static void Initialize();
 
 };
 
-bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* config_affinity_set);
+bool ParseGCHeapAffinitizeRanges(const char* cpu_index_ranges, AffinitySet* config_affinity_set, uintptr_t& config_affinity_mask);
 
 #endif // __GCCONFIG_H__

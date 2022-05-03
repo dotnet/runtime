@@ -135,7 +135,7 @@ namespace System.Diagnostics.Eventing.Reader
         /// <summary>
         /// Incorrect CorrelationHint value mistakenly shipped in .NET 3.5. Don't use: duplicates AuditFailure.
         /// </summary>
-        [Obsolete("StandardEventKeywords.CorrelationHint has an incorrect value. Use CorrelationHint2 instead.")]
+        [Obsolete("StandardEventKeywords.CorrelationHint has an incorrect value and has been deprecated. Use CorrelationHint2 instead.")]
         CorrelationHint = 0x10000000000000,
         /// <summary>
         /// Transfer events where the related Activity ID is a computed value and not a GUID

@@ -22,12 +22,14 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_ServerRequireEncryption_ConnectWithEncryption()
         {
             await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption);
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_ConnectionInfoInCallback_DoesNotThrow()
         {
             await ClientAsyncSslHelper(EncryptionPolicy.RequireEncryption, SslProtocols.Tls12, SslProtocolSupport.DefaultSslProtocols, AllowAnyServerCertificateAndVerifyConnectionInfo);
@@ -49,6 +51,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_EachSupportedProtocol_Success(SslProtocols protocol)
         {
             await ClientAsyncSslHelper(protocol, protocol);
@@ -67,6 +70,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_AllServerAllClient_Success()
         {
             await ClientAsyncSslHelper(
@@ -76,6 +80,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_AllServerVsIndividualClientSupportedProtocols_Success(
             SslProtocols clientProtocol)
         {
@@ -84,6 +89,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [ClassData(typeof(SslProtocolSupport.SupportedSslProtocolsTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ClientAsyncAuthenticate_IndividualServerVsAllClientSupportedProtocols_Success(
             SslProtocols serverProtocol)
         {

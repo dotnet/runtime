@@ -195,19 +195,27 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         private bool _isConfigured;
+        private object _configureLock = new object();
 
         internal void EnsureConfigured()
         {
             if (_isConfigured)
                 return;
 
-            Configure();
+            lock (_configureLock)
+            {
+                if (_isConfigured)
+                    return;
 
-            _isConfigured = true;
+                Configure();
+
+                _isConfigured = true;
+            }
         }
 
         internal virtual void Configure()
         {
+            Debug.Assert(Monitor.IsEntered(_configureLock), "Configure called directly, use EnsureConfigured which locks this method");
             JsonConverter converter = PropertyInfoForTypeInfo.ConverterBase;
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == PropertyInfoForTypeInfo.ConverterBase.ConverterStrategy,
                 $"ConverterStrategy from PropertyInfoForTypeInfo.ConverterStrategy ({PropertyInfoForTypeInfo.ConverterStrategy}) does not match converter's ({PropertyInfoForTypeInfo.ConverterBase.ConverterStrategy})");
@@ -255,7 +263,7 @@ namespace System.Text.Json.Serialization.Metadata
             bool propCacheInitialized = PropertyCache != null;
 
             StringBuilder sb = new();
-            sb.AppendLine($"{jtiTypeName} {{");
+            sb.AppendLine("{");
             sb.AppendLine($"  GetType: {jtiTypeName},");
             sb.AppendLine($"  Type: {typeName},");
             sb.AppendLine($"  ConverterStrategy: {strat},");
@@ -268,11 +276,8 @@ namespace System.Text.Json.Serialization.Metadata
                 foreach (var property in PropertyCache!.List)
                 {
                     JsonPropertyInfo pi = property.Value!;
-                    sb.AppendLine($"    {property.Key}: {{");
-                    sb.AppendLine($"      Ignored: {pi.IsIgnored},");
-                    sb.AppendLine($"      ShouldSerialize: {pi.ShouldSerialize},");
-                    sb.AppendLine($"      ShouldDeserialize: {pi.ShouldDeserialize},");
-                    sb.AppendLine("    },");
+                    sb.AppendLine($"    {property.Key}:");
+                    sb.AppendLine($"{pi.GetDebugInfo(indent: 6)},");
                 }
 
                 sb.AppendLine("  },");

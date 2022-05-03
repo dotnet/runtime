@@ -17,7 +17,6 @@ using System.Reflection;
 using System.Text;
 using System.Runtime.CompilerServices;
 using System.Diagnostics;
-using System.Reflection.Metadata;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -986,7 +985,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             Result res = await proxy.SendMonoCommand(sessionId, MonoCommands.SendDebuggerAgentCommand(proxy.RuntimeId, GetNewId(), (int)GetCommandSetForCommand(command), (int)(object)command, arguments?.ToBase64().data ?? string.Empty), token);
             return !res.IsOk && throwOnError
-                        ? throw new DebuggerAgentException($"SendDebuggerAgentCommand failed for {command}")
+                        ? throw new DebuggerAgentException($"SendDebuggerAgentCommand failed for {command}: {res}")
                         : MonoBinaryReader.From(res);
         }
 
@@ -1848,7 +1847,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             else
                 className = "(" + await GetTypeName(typeId, token) + ")";
 
-            int pointerId = 0;
+            int pointerId = -1;
             if (valueAddress != 0 && className != "(void*)")
             {
                 pointerId = Interlocked.Increment(ref debuggerObjectId);

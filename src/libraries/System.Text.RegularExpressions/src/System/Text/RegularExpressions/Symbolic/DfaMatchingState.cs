@@ -9,7 +9,7 @@ using System.Net;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Captures a state of a DFA explored during matching.</summary>
-    internal sealed class DfaMatchingState<TSet> where TSet : IComparable<TSet>
+    internal sealed class DfaMatchingState<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         internal DfaMatchingState(SymbolicRegexNode<TSet> node, uint prevCharKind)
         {

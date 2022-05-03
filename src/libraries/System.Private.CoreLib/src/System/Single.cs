@@ -10,6 +10,7 @@
 **
 ===========================================================*/
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -174,9 +175,9 @@ namespace System
             // A NaN will never equal itself so this is an
             // easy and efficient way to check for NaN.
 
-            #pragma warning disable CS1718
+#pragma warning disable CS1718
             return f != f;
-            #pragma warning restore CS1718
+#pragma warning restore CS1718
         }
 
         /// <summary>Determines whether the specified value is negative.</summary>
@@ -703,6 +704,12 @@ namespace System
             if (destination.Length >= sizeof(uint))
             {
                 uint significand = Significand;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
+
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
 
                 bytesWritten = sizeof(uint);
