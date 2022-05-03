@@ -2283,15 +2283,15 @@ public:
 
     GenTree* gtNewSconNode(int CPX, CORINFO_MODULE_HANDLE scpHandle);
 
+    GenTreeVecCon* gtNewVconNode(var_types type);
+
+    GenTree* gtNewAllBitsSetConNode(var_types type);
+
     GenTree* gtNewZeroConNode(var_types type);
 
     GenTree* gtNewOneConNode(var_types type);
 
     GenTreeLclVar* gtNewStoreLclVar(unsigned dstLclNum, GenTree* src);
-
-#ifdef FEATURE_SIMD
-    GenTree* gtNewSIMDVectorZero(var_types simdType, CorInfoType simdBaseJitType, unsigned simdSize);
-#endif
 
     GenTree* gtNewBlkOpNode(GenTree* dst, GenTree* srcOrFillVal, bool isVolatile, bool isCopyBlock);
 
@@ -2555,11 +2555,6 @@ public:
                                       CorInfoType simdBaseJitType,
                                       unsigned    simdSize,
                                       bool        isSimdAsHWIntrinsic);
-
-    GenTree* gtNewSimdZeroNode(var_types   type,
-                               CorInfoType simdBaseJitType,
-                               unsigned    simdSize,
-                               bool        isSimdAsHWIntrinsic);
 
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, NamedIntrinsic hwIntrinsicID);
     GenTreeHWIntrinsic* gtNewScalarHWIntrinsicNode(var_types type, GenTree* op1, NamedIntrinsic hwIntrinsicID);
@@ -8188,9 +8183,6 @@ private:
 
     SIMDHandlesCache* m_simdHandleCache;
 
-    // Get an appropriate "zero" for the given type and class handle.
-    GenTree* gtGetSIMDZero(var_types simdType, CorInfoType simdBaseJitType, CORINFO_CLASS_HANDLE simdHandle);
-
     // Get the handle for a SIMD type.
     CORINFO_CLASS_HANDLE gtGetStructHandleForSIMD(var_types simdType, CorInfoType simdBaseJitType)
     {
@@ -10656,6 +10648,7 @@ public:
             case GT_CNS_LNG:
             case GT_CNS_DBL:
             case GT_CNS_STR:
+            case GT_CNS_VEC:
             case GT_MEMORYBARRIER:
             case GT_JMP:
             case GT_JCC:

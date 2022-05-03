@@ -736,11 +736,11 @@ void Lowering::ContainCheckStoreLoc(GenTreeLclVarCommon* storeLoc) const
     if (varTypeIsSIMD(storeLoc))
     {
         // If this is a store to memory, we can initialize a zero vector in memory from REG_ZR.
-        if ((op1->IsIntegralConst(0) || op1->IsSIMDZero()) && varDsc->lvDoNotEnregister)
+        if ((op1->IsIntegralConst(0) || op1->IsVectorZero()) && varDsc->lvDoNotEnregister)
         {
             // For an InitBlk we want op1 to be contained
             MakeSrcContained(storeLoc, op1);
-            if (op1->IsSIMDZero())
+            if (op1->IsVectorZero())
             {
                 MakeSrcContained(op1, op1->gtGetOp1());
             }

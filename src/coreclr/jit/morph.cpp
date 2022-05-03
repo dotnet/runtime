@@ -935,10 +935,20 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
                 else if (isMultiRegArg && varTypeIsSIMD(argx->TypeGet()))
                 {
+                    GenTree* nodeToCheck = argx;
+
+                    if (nodeToCheck->OperIs(GT_OBJ))
+                    {
+                        nodeToCheck = nodeToCheck->AsObj()->gtOp1;
+
+                        if (nodeToCheck->OperIs(GT_ADDR))
+                        {
+                            nodeToCheck = nodeToCheck->AsOp()->gtOp1;
+                        }
+                    }
+
                     // SIMD types do not need the optimization below due to their sizes
-                    if (argx->OperIsSimdOrHWintrinsic() ||
-                        (argx->OperIs(GT_OBJ) && argx->AsObj()->gtOp1->OperIs(GT_ADDR) &&
-                         argx->AsObj()->gtOp1->AsOp()->gtOp1->OperIsSimdOrHWintrinsic()))
+                    if (nodeToCheck->OperIsSimdOrHWintrinsic() || nodeToCheck->IsCnsVec())
                     {
                         SetNeedsTemp(&arg);
                     }
@@ -9209,7 +9219,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
         return nullptr;
     }
 
-    if (src->IsCall() || src->OperIsSIMD())
+    if (src->IsCall() || src->OperIsSimdOrHWintrinsic() || src->IsCnsVec())
     {
         // Can't take ADDR from these nodes, let fgMorphCopyBlock handle it, #11413.
         return nullptr;
@@ -9461,7 +9471,7 @@ GenTree* Compiler::fgMorphOneAsgBlockOp(GenTree* tree)
                 noway_assert(src->IsIntegralConst(0));
                 noway_assert(destVarDsc != nullptr);
 
-                src = gtNewSIMDNode(asgType, src, SIMDIntrinsicInit, destVarDsc->GetSimdBaseJitType(), size);
+                src = gtNewZeroConNode(asgType);
             }
             else
 #endif
@@ -12940,56 +12950,19 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         return node;
     }
 
-    switch (node->GetHWIntrinsicId())
-    {
-        case NI_Vector128_Create:
-#if defined(TARGET_XARCH)
-        case NI_Vector256_Create:
-#elif defined(TARGET_ARM64)
-        case NI_Vector64_Create:
-#endif
-        {
-            bool hwAllArgsAreConstZero = true;
-            for (GenTree* arg : node->Operands())
-            {
-                if (!arg->IsIntegralConst(0) && !arg->IsFloatPositiveZero())
-                {
-                    hwAllArgsAreConstZero = false;
-                    break;
-                }
-            }
+    simd32_t simd32Val = {};
 
-            if (hwAllArgsAreConstZero)
-            {
-                switch (node->GetHWIntrinsicId())
-                {
-                    case NI_Vector128_Create:
-                    {
-                        node->ResetHWIntrinsicId(NI_Vector128_get_Zero);
-                        break;
-                    }
-#if defined(TARGET_XARCH)
-                    case NI_Vector256_Create:
-                    {
-                        node->ResetHWIntrinsicId(NI_Vector256_get_Zero);
-                        break;
-                    }
-#elif defined(TARGET_ARM64)
-                    case NI_Vector64_Create:
-                    {
-                        node->ResetHWIntrinsicId(NI_Vector64_get_Zero);
-                        break;
-                    }
-#endif
-                    default:
-                        unreached();
-                }
-            }
-            break;
+    if (GenTreeVecCon::IsHWIntrinsicCreateConstant(node, simd32Val))
+    {
+        GenTreeVecCon* vecCon = gtNewVconNode(node->TypeGet());
+
+        for (GenTree* arg : node->Operands())
+        {
+            DEBUG_DESTROY_NODE(arg);
         }
 
-        default:
-            break;
+        vecCon->gtSimd32Val = simd32Val;
+        return fgMorphTree(vecCon);
     }
 
     return node;
@@ -14003,13 +13976,13 @@ GenTree* Compiler::fgMorphMultiOp(GenTreeMultiOp* multiOp)
                 GenTree* op2 = hw->Op(2);
                 if (!gtIsActiveCSE_Candidate(hw))
                 {
-                    if (op1->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op1))
+                    if (op1->IsVectorZero() && !gtIsActiveCSE_Candidate(op1))
                     {
                         DEBUG_DESTROY_NODE(hw);
                         DEBUG_DESTROY_NODE(op1);
                         return op2;
                     }
-                    if (op2->IsIntegralConstVector(0) && !gtIsActiveCSE_Candidate(op2))
+                    if (op2->IsVectorZero() && !gtIsActiveCSE_Candidate(op2))
                     {
                         DEBUG_DESTROY_NODE(hw);
                         DEBUG_DESTROY_NODE(op2);

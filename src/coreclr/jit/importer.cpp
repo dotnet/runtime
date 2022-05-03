@@ -334,6 +334,7 @@ void Compiler::impSaveStackState(SavedStack* savePtr, bool copy)
                     case GT_CNS_LNG:
                     case GT_CNS_DBL:
                     case GT_CNS_STR:
+                    case GT_CNS_VEC:
                     case GT_LCL_VAR:
                         table->val = gtCloneExpr(tree);
                         break;
@@ -1217,7 +1218,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 #endif // FEATURE_HW_INTRINSICS
     {
         assert(src->OperIs(GT_LCL_VAR, GT_LCL_FLD, GT_FIELD, GT_IND, GT_OBJ, GT_CALL, GT_MKREFANY, GT_RET_EXPR,
-                           GT_COMMA) ||
+                           GT_COMMA, GT_CNS_VEC) ||
                ((src->TypeGet() != TYP_STRUCT) && src->OperIsSIMD()));
     }
 #endif // DEBUG
@@ -1586,7 +1587,7 @@ GenTree* Compiler::impGetStructAddr(GenTree*             structVal,
         return (structVal->AsObj()->Addr());
     }
     else if (oper == GT_CALL || oper == GT_RET_EXPR || oper == GT_OBJ || oper == GT_MKREFANY ||
-             structVal->OperIsSimdOrHWintrinsic())
+             structVal->OperIsSimdOrHWintrinsic() || structVal->IsCnsVec())
     {
         unsigned tmpNum = lvaGrabTemp(true DEBUGARG("struct address for call/obj"));
 
@@ -1779,6 +1780,13 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             alreadyNormalized = true;
             break;
 
+        case GT_CNS_VEC:
+        {
+            assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
+            makeTemp = true;
+            break;
+        }
+
 #ifdef FEATURE_SIMD
         case GT_SIMD:
             assert(varTypeIsSIMD(structVal) && (structVal->gtType == structType));
@@ -1818,7 +1826,7 @@ GenTree* Compiler::impNormStructVal(GenTree*             structVal,
             }
 
 #ifdef FEATURE_SIMD
-            if (blockNode->OperIsSimdOrHWintrinsic())
+            if (blockNode->OperIsSimdOrHWintrinsic() || blockNode->IsCnsVec())
             {
                 parent->AsOp()->gtOp2 = impNormStructVal(blockNode, structHnd, curLevel, forceNormalization);
                 alreadyNormalized     = true;

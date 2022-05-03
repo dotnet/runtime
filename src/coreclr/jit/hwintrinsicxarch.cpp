@@ -884,7 +884,194 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
         case NI_Vector128_Create:
         case NI_Vector256_Create:
+        case NI_Vector128_CreateScalarUnsafe:
+        case NI_Vector256_CreateScalarUnsafe:
         {
+            uint32_t simdLength = getSIMDVectorLength(simdSize, simdBaseType);
+            assert((sig->numArgs == 1) || (sig->numArgs == simdLength));
+
+            bool isConstant = true;
+
+            if (varTypeIsFloating(simdBaseType))
+            {
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    GenTree* arg = impStackTop(index).val;
+
+                    if (!arg->IsCnsFltOrDbl())
+                    {
+                        isConstant = false;
+                        break;
+                    }
+                }
+            }
+            else
+            {
+                assert(varTypeIsIntegral(simdBaseType));
+
+                for (uint32_t index = 0; index < sig->numArgs; index++)
+                {
+                    GenTree* arg = impStackTop(index).val;
+
+                    if (!arg->IsIntegralConst())
+                    {
+                        isConstant = false;
+                        break;
+                    }
+                }
+            }
+
+            if (isConstant)
+            {
+                // Some of the below code assumes 16 or 32 byte SIMD types
+                assert((simdSize == 16) || (simdSize == 32));
+
+                // For create intrinsics that take 1 operand, we broadcast the value.
+                //
+                // This happens even for CreateScalarUnsafe since the upper bits are
+                // considered non-deterministic and we can therefore set them to anything.
+                //
+                // We do this as it simplifies the logic and allows certain code paths to
+                // have better codegen, such as for 0, AllBitsSet, or certain small constants
+
+                GenTreeVecCon* vecCon = gtNewVconNode(retType);
+
+                switch (simdBaseType)
+                {
+                    case TYP_BYTE:
+                    case TYP_UBYTE:
+                    {
+                        uint8_t cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = (uint8_t)impPopStack().val->AsIntConCommon()->IntegralValue();
+                            vecCon->gtSimd32Val.u8[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < simdLength - 1; index++)
+                            {
+                                vecCon->gtSimd32Val.u8[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_SHORT:
+                    case TYP_USHORT:
+                    {
+                        uint16_t cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = (uint16_t)impPopStack().val->AsIntConCommon()->IntegralValue();
+                            vecCon->gtSimd32Val.u16[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < (simdLength - 1); index++)
+                            {
+                                vecCon->gtSimd32Val.u16[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_INT:
+                    case TYP_UINT:
+                    {
+                        uint32_t cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = (uint32_t)impPopStack().val->AsIntConCommon()->IntegralValue();
+                            vecCon->gtSimd32Val.u32[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < (simdLength - 1); index++)
+                            {
+                                vecCon->gtSimd32Val.u32[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_LONG:
+                    case TYP_ULONG:
+                    {
+                        uint64_t cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = (uint64_t)impPopStack().val->AsIntConCommon()->IntegralValue();
+                            vecCon->gtSimd32Val.u64[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < (simdLength - 1); index++)
+                            {
+                                vecCon->gtSimd32Val.u64[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_FLOAT:
+                    {
+                        float cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = (float)impPopStack().val->AsDblCon()->gtDconVal;
+                            vecCon->gtSimd32Val.f32[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < (simdLength - 1); index++)
+                            {
+                                vecCon->gtSimd32Val.f32[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    case TYP_DOUBLE:
+                    {
+                        double cnsVal = 0;
+
+                        for (uint32_t index = 0; index < sig->numArgs; index++)
+                        {
+                            cnsVal = (double)impPopStack().val->AsDblCon()->gtDconVal;
+                            vecCon->gtSimd32Val.f64[simdLength - 1 - index] = cnsVal;
+                        }
+
+                        if (sig->numArgs == 1)
+                        {
+                            for (uint32_t index = 0; index < (simdLength - 1); index++)
+                            {
+                                vecCon->gtSimd32Val.f64[index] = cnsVal;
+                            }
+                        }
+                        break;
+                    }
+
+                    default:
+                    {
+                        unreached();
+                    }
+                }
+
+                retNode = vecCon;
+                break;
+            }
+
 #if defined(TARGET_X86)
             if (varTypeIsLong(simdBaseType))
             {
@@ -903,26 +1090,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
             }
 
             retNode = gtNewSimdHWIntrinsicNode(retType, std::move(nodeBuilder), intrinsic, simdBaseJitType, simdSize);
-            break;
-        }
-
-        case NI_Vector128_CreateScalarUnsafe:
-        case NI_Vector256_CreateScalarUnsafe:
-        {
-            assert(sig->numArgs == 1);
-
-#ifdef TARGET_X86
-            if (varTypeIsLong(simdBaseType))
-            {
-                // TODO-XARCH-CQ: It may be beneficial to emit the movq
-                // instruction, which takes a 64-bit memory address and
-                // works on 32-bit x86 systems.
-                break;
-            }
-#endif // TARGET_X86
-
-            op1     = impPopStack().val;
-            retNode = gtNewSimdHWIntrinsicNode(retType, op1, intrinsic, simdBaseJitType, simdSize);
             break;
         }
 
@@ -1204,7 +1371,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_get_AllBitsSet:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewSimdHWIntrinsicNode(retType, intrinsic, simdBaseJitType, simdSize);
+            retNode = gtNewAllBitsSetConNode(retType);
             break;
         }
 
@@ -1223,7 +1390,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_get_Zero:
         {
             assert(sig->numArgs == 0);
-            retNode = gtNewSimdZeroNode(retType, simdBaseJitType, simdSize, /* isSimdAsHWIntrinsic */ false);
+            retNode = gtNewZeroConNode(retType);
             break;
         }
 
@@ -1882,6 +2049,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         case NI_Vector256_Shuffle:
         {
             assert((sig->numArgs == 2) || (sig->numArgs == 3));
+            assert((simdSize == 16) || (simdSize == 32));
 
             GenTree* indices = impStackTop(0).val;
 
@@ -1893,12 +2061,6 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
             size_t elementSize  = genTypeSize(simdBaseType);
             size_t elementCount = simdSize / elementSize;
-
-            if (genTypeSize(indices->AsHWIntrinsic()->GetSimdBaseType()) != elementSize)
-            {
-                // TODO-XARCH-CQ: Handling reinterpreted vector constants is a bit more complex
-                break;
-            }
 
             if (simdSize == 32)
             {
@@ -1914,7 +2076,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                     for (size_t index = 0; index < elementCount; index++)
                     {
-                        uint64_t value = indices->GetIntegralVectorConstElement(index);
+                        uint64_t value = indices->GetIntegralVectorConstElement(index, simdBaseType);
 
                         if (value >= elementCount)
                         {

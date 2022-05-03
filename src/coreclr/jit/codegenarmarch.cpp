@@ -188,6 +188,7 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
 
         case GT_CNS_INT:
         case GT_CNS_DBL:
+        case GT_CNS_VEC:
             genSetRegToConst(targetReg, targetType, treeNode);
             genProduceReg(treeNode);
             break;

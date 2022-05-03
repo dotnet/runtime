@@ -287,6 +287,11 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
         }
         break;
 
+        case GT_CNS_VEC:
+        {
+            unreached();
+        }
+
         default:
             unreached();
     }
