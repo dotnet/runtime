@@ -32,7 +32,7 @@ namespace Mono.Linker
 			return false;
 		}
 
-		public static LinkerAttributesInformation Create (LinkContext context, ICustomAttributeProvider provider)
+		public static LinkerAttributesInformation Create (LinkContext context, IMemberDefinition provider)
 		{
 			Debug.Assert (context.CustomAttributes.HasAny (provider));
 
@@ -42,12 +42,14 @@ namespace Mono.Linker
 				var attributeType = customAttribute.AttributeType;
 
 				Attribute? attributeValue;
+				bool allowMultiple = false;
 				switch (attributeType.Name) {
 				case "RequiresUnreferencedCodeAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
 					attributeValue = ProcessRequiresUnreferencedCodeAttribute (context, provider, customAttribute);
 					break;
 				case "DynamicDependencyAttribute" when attributeType.Namespace == "System.Diagnostics.CodeAnalysis":
 					attributeValue = DynamicDependency.ProcessAttribute (context, provider, customAttribute);
+					allowMultiple = true;
 					break;
 				case "RemoveAttributeInstancesAttribute":
 					if (provider is not TypeDefinition td)
@@ -58,6 +60,7 @@ namespace Mono.Linker
 						continue;
 
 					attributeValue = new RemoveAttributeInstancesAttribute (customAttribute.ConstructorArguments);
+					allowMultiple = true;
 					break;
 				default:
 					continue;
@@ -74,6 +77,9 @@ namespace Mono.Linker
 				if (!TryFindAttributeList (cache, attributeValueType, out var attributeList)) {
 					attributeList = new List<Attribute> ();
 					cache.Add ((attributeValueType, attributeList));
+				} else if (!allowMultiple) {
+					context.LogWarning (provider, DiagnosticId.AttributeShouldOnlyBeUsedOnceOnMember, attributeValueType.FullName ?? "", (provider is MemberReference memberRef) ? memberRef.GetDisplayName () : provider.FullName);
+					continue;
 				}
 
 				attributeList.Add (attributeValue);

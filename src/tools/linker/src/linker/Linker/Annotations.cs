@@ -34,7 +34,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
-using ILLink.Shared;
 using ILLink.Shared.TrimAnalysis;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -583,11 +582,8 @@ namespace Mono.Linker
 		public bool TryGetLinkerAttribute<T> (IMemberDefinition member, [NotNullWhen (returnValue: true)] out T? attribute) where T : Attribute
 		{
 			var attributes = GetLinkerAttributes<T> (member);
-			if (attributes.Count () > 1) {
-				context.LogWarning (member, DiagnosticId.AttributeShouldOnlyBeUsedOnceOnMember, typeof (T).FullName ?? "", (member is MemberReference memberRef) ? memberRef.GetDisplayName () : member.FullName);
-			}
-
-			attribute = attributes.FirstOrDefault ();
+			// This should only be called for attribute types which don't allow multiple attributes.
+			attribute = attributes.SingleOrDefault ();
 			return attribute != null;
 		}
 
