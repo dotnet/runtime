@@ -105,7 +105,7 @@ U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len,
     PER_FUNCTION_BLOCK(ucol_open, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_openElements, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_openRules, libicui18n, true) \
-    PER_FUNCTION_BLOCK(ucol_safeClone, libicui18n, true) \
+    PER_FUNCTION_BLOCK(ucol_clone, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_setAttribute, libicui18n, true) \
     PER_FUNCTION_BLOCK(ucol_strcoll, libicui18n, true) \
     PER_FUNCTION_BLOCK(udat_close, libicui18n, true) \
@@ -244,7 +244,7 @@ FOR_ALL_ICU_FUNCTIONS
 #define ucol_open(...) ucol_open_ptr(__VA_ARGS__)
 #define ucol_openElements(...) ucol_openElements_ptr(__VA_ARGS__)
 #define ucol_openRules(...) ucol_openRules_ptr(__VA_ARGS__)
-#define ucol_safeClone(...) ucol_safeClone_ptr(__VA_ARGS__)
+#define ucol_clone(...) ucol_clone_ptr(__VA_ARGS__)
 #define ucol_setAttribute(...) ucol_setAttribute_ptr(__VA_ARGS__)
 #define ucol_setMaxVariable(...) ucol_setMaxVariable_ptr(__VA_ARGS__)
 #define ucol_strcoll(...) ucol_strcoll_ptr(__VA_ARGS__)
