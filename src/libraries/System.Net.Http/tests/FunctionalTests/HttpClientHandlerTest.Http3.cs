@@ -1057,7 +1057,7 @@ namespace System.Net.Http.Functional.Tests
 
             var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
 
-            Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10)); ;
+            Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10));
             // Send headers
             await requestStream.FlushAsync();
 
