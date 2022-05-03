@@ -10,15 +10,18 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal;
 
 /// <summary>
 /// Helper class to convert managed data into QUIC_BUFFER* consumable by MsQuic.
-/// It also allows reuse with repeated Reset/Initialize calls.
+/// It also allows reuse with repeated Reset/Initialize calls, e.g. new, Initialize, (use), Reset, Initialize, (use), Reset, Initialize, (use), Dispose.
 /// Note that since this is struct and there's no finalizer, Dispose must be always called to release the unmanaged memory allocated by this struct.
 /// </summary>
 internal unsafe struct MsQuicBuffers : IDisposable
 {
+    // ArrayPool only for MsQuicBuffers which always clears arrays upon return.
+    private static readonly ArrayPool<MemoryHandle> s_pool = ArrayPool<MemoryHandle>.Create();
+
     // Handles to pinned memory blocks from the user.
     private MemoryHandle[] _handles;
     // Native memory block which holds the pinned memory pointers from _handles and can be passed to MsQuic as QUIC_BUFFER*.
-    private void* _buffers;
+    private QUIC_BUFFER* _buffers;
     // Number of QUIC_BUFFER instance currently allocated in _buffers, so that we can reuse the memory instead of reallocating.
     private int _count;
 
@@ -29,12 +32,12 @@ internal unsafe struct MsQuicBuffers : IDisposable
         _count = 0;
     }
 
-    public QUIC_BUFFER* Buffers => (QUIC_BUFFER*)_buffers;
+    public QUIC_BUFFER* Buffers => _buffers;
     public int Count => _count;
 
     /// <summary>
-    /// The mothod initializes QUIC_BUFFER* with data from inputs, converted via toBuffer.
-    /// Note that the struct either needs to be freshly created or previously cleaned up with Reset.
+    /// The method initializes QUIC_BUFFER* with data from inputs, converted via toBuffer.
+    /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
     /// </summary>
     /// <param name="inputs">Inputs to get their byte array, pin them and pepare them to be passed to MsQuic as QUIC_BUFFER*.</param>
     /// <param name="toBuffer">Method extracting byte array from the inputs, e.g. applicationProtocol.Protocol.</param>
@@ -43,32 +46,33 @@ internal unsafe struct MsQuicBuffers : IDisposable
     {
         if (_handles.Length < inputs.Count)
         {
-            ArrayPool<MemoryHandle>.Shared.Return(_handles);
-            _handles = ArrayPool<MemoryHandle>.Shared.Rent(inputs.Count);
-            Array.Clear(_handles);
+            s_pool.Return(_handles, clearArray: true);
+            _handles = s_pool.Rent(inputs.Count);
         }
         if (_count < inputs.Count)
         {
-            NativeMemory.Free(_buffers);
-            _buffers = NativeMemory.Alloc((nuint)sizeof(QUIC_BUFFER), (nuint)inputs.Count);
+            QUIC_BUFFER* buffers = _buffers;
+            _buffers = null;
+            NativeMemory.Free(buffers);
+            _buffers = (QUIC_BUFFER*)NativeMemory.Alloc((nuint)sizeof(QUIC_BUFFER), (nuint)inputs.Count);
         }
 
         _count = inputs.Count;
 
-        var buffers = Buffers;
         for (int i = 0; i < inputs.Count; ++i)
         {
-            var buffer = toBuffer(inputs[i]);
-            var handle = buffer.Pin();
+            ReadOnlyMemory<byte> buffer = toBuffer(inputs[i]);
+            MemoryHandle handle = buffer.Pin();
 
             _handles[i] = handle;
-            buffers[i].Buffer = (byte*)handle.Pointer;
-            buffers[i].Length = (uint)buffer.Length;
+            _buffers[i].Buffer = (byte*)handle.Pointer;
+            _buffers[i].Length = (uint)buffer.Length;
         }
     }
 
     /// <summary>
     /// Unpins the managed memory and allows reuse of this struct.
+    /// Do not Reset the struct right before Dispose, that will lead to double MemoryHandle disposal.
     /// </summary>
     public void Reset()
     {
@@ -85,7 +89,7 @@ internal unsafe struct MsQuicBuffers : IDisposable
     public void Dispose()
     {
         Reset();
-        ArrayPool<MemoryHandle>.Shared.Return(_handles);
+        s_pool.Return(_handles, clearArray: true);
         NativeMemory.Free(_buffers);
     }
 }
