@@ -1041,7 +1041,7 @@ namespace System.Numerics
                 for (int iuDst = 0; iuDst < cuDst; iuDst++)
                 {
                     Debug.Assert(rguDst[iuDst] < kuBase);
-                    ulong uuRes = NumericsHelpers.MakeUlong(rguDst[iuDst], uCarry);
+                    ulong uuRes = NumericsHelpers.MakeUInt64(rguDst[iuDst], uCarry);
                     rguDst[iuDst] = (uint)(uuRes % kuBase);
                     uCarry = (uint)(uuRes / kuBase);
                 }
