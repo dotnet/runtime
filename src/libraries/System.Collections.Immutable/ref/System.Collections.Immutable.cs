@@ -267,7 +267,7 @@ namespace System.Collections.Immutable
             public int LastIndexOf(T item, int startIndex, int count, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public System.Collections.Immutable.ImmutableArray<T> MoveToImmutable() { throw null; }
             public bool Remove(T element) { throw null; }
-            public void Remove(T element, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
+            public bool Remove(T element, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public void RemoveAll(Predicate<T> match) { throw null; }
             public void RemoveAt(int index) { }
             public void RemoveRange(int index, int length) { throw null; }
@@ -718,7 +718,7 @@ namespace System.Collections.Immutable
             public int LastIndexOf(T item, int startIndex, int count) { throw null; }
             public int LastIndexOf(T item, int startIndex, int count, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public bool Remove(T item) { throw null; }
-            public void Remove(T item, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
+            public bool Remove(T item, System.Collections.Generic.IEqualityComparer<T>? equalityComparer) { throw null; }
             public int RemoveAll(System.Predicate<T> match) { throw null; }
             public void RemoveAt(int index) { }
             public void RemoveRange(int index, int count) { throw null; }

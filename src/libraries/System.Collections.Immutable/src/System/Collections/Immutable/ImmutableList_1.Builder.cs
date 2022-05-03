@@ -758,13 +758,16 @@ namespace System.Collections.Immutable
             /// The equality comparer to use in the search.
             /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
             /// </param>
-            public void Remove(T item, IEqualityComparer<T>? equalityComparer)
+            public bool Remove(T item, IEqualityComparer<T>? equalityComparer)
             {
                 int index = this.IndexOf(item, 0, this.Count, equalityComparer);
                 if (index >= 0)
                 {
                     this.RemoveAt(index);
+                    return true;
                 }
+
+                return false;
             }
 
             /// <summary>

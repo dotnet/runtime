@@ -201,11 +201,11 @@ namespace System.Collections.Immutable.Tests
             mutable.Add(2.4);
             mutable.Add(3.6);
 
-            mutable.Remove(2.4, null);
+            Assert.True(mutable.Remove(2.4, null));
             Assert.Equal(new[] { 1.5, 3.6 }, mutable);
 
             var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
-            mutable.Remove(-1.5, absComparer);
+            Assert.True(mutable.Remove(-1.5, absComparer));
             Assert.Equal(new[] { 3.6 }, mutable);
         }
 

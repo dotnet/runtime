@@ -336,7 +336,7 @@ namespace System.Collections.Immutable.Tests
             var builder = ImmutableArray.Create(1.5, 2.5, 3.5).ToBuilder();
             var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
 
-            builder.Remove(-1.5, absComparer);
+            Assert.True(builder.Remove(-1.5, absComparer));
             Assert.Equal(new[] { 2.5, 3.5 }, builder);
         }
 
