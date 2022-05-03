@@ -9571,6 +9571,7 @@ bool Compiler::optAnyChildNotRemoved(unsigned loopNum)
 // optMarkLoopRemoved: Mark the specified loop as removed (some optimization, such as unrolling, has made the
 // loop no longer exist). Note that only the given loop is marked as being removed; if it has any children,
 // they are not touched (but a warning message is output to the JitDump).
+// This method also resets the `bbNatLoopNum` field to point to either parent's loop number or NOT_IN_LOOP.
 //
 // Arguments:
 //      loopNum - the loop number to remove
@@ -9587,6 +9588,16 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
     if (optAnyChildNotRemoved(loopNum))
     {
         JITDUMP("Removed loop " FMT_LP " has one or more live children\n", loopNum);
+    }
+
+    for (BasicBlock* const auxBlock : Blocks())
+    {
+        if (auxBlock->bbNatLoopNum == loopNum)
+        {
+            JITDUMP("Resetting loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", auxBlock->bbNum, loopNum,
+                    loop.lpParent);
+            auxBlock->bbNatLoopNum = loop.lpParent;
+        }
     }
 
 // Note: we can't call `fgDebugCheckLoopTable()` here because if there are live children, it will assert.
