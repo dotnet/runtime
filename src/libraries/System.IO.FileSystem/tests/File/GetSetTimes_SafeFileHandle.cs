@@ -17,7 +17,7 @@ namespace System.IO.Tests
 
         protected override bool CanBeReadOnly => false;
 
-        protected override bool SettingPropertiesUpdatesLink => false;
+        protected override bool ApiTargetsLink => false;
 
         protected override void SetCreationTime(string path, DateTime creationTime)
         {

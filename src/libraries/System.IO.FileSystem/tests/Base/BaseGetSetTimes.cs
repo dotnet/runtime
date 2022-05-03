@@ -28,7 +28,8 @@ namespace System.IO.Tests
 
         protected abstract T CreateSymlink(string path, string pathToTarget);
 
-        protected virtual bool SettingPropertiesUpdatesLink => true;
+        // When the item is a link, indicates whether the .NET API will get/set the link itself, or its target. 
+        protected virtual bool ApiTargetsLink => true;
 
         protected T CreateSymlinkToItem(T item)
         {
@@ -67,14 +68,14 @@ namespace System.IO.Tests
             Assert.All(TimeFunctions(requiresRoundtripping: true), (function) =>
             {
                 bool isLink = linkTarget is not null;
-                T target = !isLink || SettingPropertiesUpdatesLink ? item : linkTarget;
 
                 // Checking that milliseconds are not dropped after setter.
                 // Emscripten drops milliseconds in Browser
                 DateTime dt = new DateTime(2014, 12, 1, 12, 3, 3, LowTemporalResolution ? 0 : 321, function.Kind);
-                function.Setter(target, dt);
+                function.Setter(item, dt);
 
-                DateTime result = function.Getter(target);
+                T getTarget = !isLink || ApiTargetsLink ? item : linkTarget;
+                DateTime result = function.Getter(getTarget);
 
                 Assert.Equal(dt, result);
                 Assert.Equal(dt.ToLocalTime(), result.ToLocalTime());
@@ -132,50 +133,36 @@ namespace System.IO.Tests
             T link = CreateSymlinkToItem(target);
             if (!targetExists)
             {
-                if (!SettingPropertiesUpdatesLink)
+                // Don't check when settings update the target.
+                if (ApiTargetsLink)
                 {
-                    SettingUpdatesPropertiesCore(target, link);
+                    SettingUpdatesPropertiesCore(link, target);
                 }
             }
             else
             {
-                // Get the target's initial times
-                IEnumerable<TimeFunction> timeFunctions = TimeFunctions(requiresRoundtripping: true);
-                DateTime[] initialTimes = timeFunctions
-                    .Select((func) => func.Getter(target))
-                    .ToArray();
-
-                SettingUpdatesPropertiesCore(target, link);
-
-                // Ensure that we have the latest times.
-                if (target is FileSystemInfo fsi)
+                // When properties update link, verify the target properties don't change.
+                IEnumerable<TimeFunction>? timeFunctions = null;
+                DateTime[]? initialTimes = null;
+                if (ApiTargetsLink)
                 {
-                    fsi.Refresh();
+                    timeFunctions = TimeFunctions(requiresRoundtripping: true);
+                    initialTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
                 }
 
-                T getTarget = SettingPropertiesUpdatesLink ? link : target;
+                SettingUpdatesPropertiesCore(link, target);
 
-                // Ensure the target's times haven't changed.
-                DateTime[] updatedTimes = timeFunctions
-                    .Select(func => func.Getter(getTarget))
-                    .ToArray();
-                if (SettingPropertiesUpdatesLink)
+                // Ensure target properties haven't changed.
+                if (ApiTargetsLink)
                 {
-                    for (int i = 0; i < initialTimes.Length; i++)
+                    // Ensure that we have the latest times.
+                    if (target is FileSystemInfo fsi)
                     {
-                        DateTime initialTime = initialTimes[i];
-                        DateTime updatedTime = updatedTimes[i];
-
-                        // There is some precision loss between initialTimes and updatedTimes,
-                        // so we check for a delta of max 1.5 seconds (15,000,000 ticks)
-                        Assert.True(
-                            Math.Abs(updatedTime.Ticks - initialTime.Ticks) < 1.5 * TimeSpan.TicksPerSecond,
-                            $"{nameof(updatedTime)} ({updatedTime}) is not similar to {nameof(initialTime)} ({initialTime})");
+                        fsi.Refresh();
                     }
-                }
-                else
-                {
-                    Assert.NotEqual(initialTimes, updatedTimes);
+
+                    DateTime[] updatedTimes = timeFunctions.Select((funcs) => funcs.Getter(target)).ToArray();
+                    Assert.Equal(initialTimes, updatedTimes);
                 }
             }
         }
