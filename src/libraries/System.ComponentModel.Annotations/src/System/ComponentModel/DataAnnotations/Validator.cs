@@ -703,7 +703,7 @@ namespace System.ComponentModel.DataAnnotations
             internal void ThrowValidationException() => throw new ValidationException(ValidationResult, _validationAttribute, _value);
         }
 
-        private record Path(string Name, int Index = -1)
+        private sealed record Path(string Name, int Index = -1)
         {
             public override string ToString() => Index == -1 ? Name : $"{Name}[{Index}]";
         }
