@@ -2531,6 +2531,30 @@ inline void Compiler::impEvalSideEffects()
 
 /*****************************************************************************
  *
+ *  If the stack entry is a tree with side effects in it, assign that
+ *  tree to a temp and replace it on the stack with refs to its temp.
+ *  i is the stack entry which will be checked and spilled.
+ */
+
+inline void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(const char* reason))
+{
+    assert(i <= verCurrentState.esStackDepth);
+
+    GenTreeFlags spillFlags = spillGlobEffects ? GTF_GLOB_EFFECT : GTF_SIDE_EFFECT;
+    GenTree*     tree       = verCurrentState.esStack[i].val;
+
+    if ((tree->gtFlags & spillFlags) != 0 ||
+        (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
+         !impIsAddressInLocal(tree) && // No need to spill the GT_ADDR node on a local.
+         gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
+                                       // lvAddrTaken flag.
+    {
+        impSpillStackEntry(i, BAD_VAR_NUM DEBUGARG(false) DEBUGARG(reason));
+    }
+}
+
+/*****************************************************************************
+ *
  *  If the stack contains any trees with side effects in them, assign those
  *  trees to temps and replace them on the stack with refs to their temps.
  *  [0..chkLevel) is the portion of the stack which will be checked and spilled.
@@ -2552,20 +2576,9 @@ inline void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLev
 
     assert(chkLevel <= verCurrentState.esStackDepth);
 
-    GenTreeFlags spillFlags = spillGlobEffects ? GTF_GLOB_EFFECT : GTF_SIDE_EFFECT;
-
     for (unsigned i = 0; i < chkLevel; i++)
     {
-        GenTree* tree = verCurrentState.esStack[i].val;
-
-        if ((tree->gtFlags & spillFlags) != 0 ||
-            (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
-             !impIsAddressInLocal(tree) && // No need to spill the GT_ADDR node on a local.
-             gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
-                                           // lvAddrTaken flag.
-        {
-            impSpillStackEntry(i, BAD_VAR_NUM DEBUGARG(false) DEBUGARG(reason));
-        }
+        impSpillSideEffect(spillGlobEffects, i DEBUGARG(reason));
     }
 }
 
@@ -4809,6 +4822,10 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // add
             // ret
 
+            // TODO-Cleanup: This is working around a JIT bug where an AV is raised if these aren't first spilled
+            impSpillSideEffect(true, verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for Unsafe.Add"));
+            impSpillSideEffect(true, verCurrentState.esStackDepth - 1 DEBUGARG("Spilling op2 side effects for Unsafe.Add"));
+
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1, op2);
@@ -4903,18 +4920,13 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // sub
             // ret
 
+            impSpillSideEffect(true, verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for Unsafe.ByteOffset"));
+
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1, op2);
 
-            unsigned temp = lvaGrabTemp(true DEBUGARG("Evaluate op1 to a local so side-effects can be preserved"));
-
-            impAssignTempGen(temp, op1, NO_CLASS_HANDLE, (unsigned)CHECK_SPILL_ALL, nullptr, impCurStmtDI);
-            var_types type = genActualType(lvaTable[temp].TypeGet());
-
-            op1 = gtNewLclvNode(temp, type);
-
-            type = impGetByRefResultType(GT_SUB, /* uns */ false, &op2, &op1);
+            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op2, &op1);
             return gtNewOperNode(GT_SUB, type, op2, op1);
         }
 

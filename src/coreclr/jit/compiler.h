@@ -3961,6 +3961,7 @@ private:
     void impSpillStackEnsure(bool spillLeaves = false);
     void impEvalSideEffects();
     void impSpillSpecialSideEff();
+    void impSpillSideEffect(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void               impSpillValueClasses();
     void               impSpillEvalStack();
