@@ -360,7 +360,7 @@ namespace System
             {
                 p = UInt32ToDecChars(p, decimal.DecDivMod1E9(ref d), 9);
             }
-            p = UInt32ToDecChars(p, d.Low);
+            p = UInt32ToDecChars(p, d.Low, 0);
 
             int i = (int)((buffer + DecimalPrecision) - p);
 
@@ -1187,7 +1187,7 @@ namespace System
             }
 
             byte* buffer = number.GetDigitsPointer();
-            byte* p = UInt32ToDecChars(buffer + Int32Precision, (uint)value);
+            byte* p = UInt32ToDecChars(buffer + Int32Precision, (uint)value, 0);
 
             int i = (int)(buffer + Int32Precision - p);
 
@@ -1316,7 +1316,7 @@ namespace System
             number.IsNegative = false;
 
             byte* buffer = number.GetDigitsPointer();
-            byte* p = UInt32ToDecChars(buffer + UInt32Precision, value);
+            byte* p = UInt32ToDecChars(buffer + UInt32Precision, value, 0);
 
             int i = (int)(buffer + UInt32Precision - p);
 
@@ -1462,7 +1462,7 @@ namespace System
             }
 
             byte* buffer = number.GetDigitsPointer();
-            byte* p = UInt64ToDecChars(buffer + Int64Precision, (ulong)value);
+            byte* p = UInt64ToDecChars(buffer + Int64Precision, (ulong)value, 0);
 
             int i = (int)(buffer + Int64Precision - p);
 
