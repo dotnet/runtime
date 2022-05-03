@@ -69,7 +69,7 @@ ep_event_instance_init (
 
 #ifdef EP_CHECKED_BUILD
 	event_instance->debug_event_start = 0xDEADBEEF;
-	event_instance->debug_event_end = 0x0DDBA11;
+	event_instance->debug_event_end = 0xC0DEC0DE;
 #endif
 
 	event_instance->ep_event = ep_event;
@@ -113,7 +113,7 @@ ep_event_instance_ensure_consistency (const EventPipeEventInstance *ep_event_ins
 {
 #ifdef EP_CHECKED_BUILD
 	EP_ASSERT (ep_event_instance->debug_event_start == 0xDEADBEEF);
-	EP_ASSERT (ep_event_instance->debug_event_end == 0x0DDBA11);
+	EP_ASSERT (ep_event_instance->debug_event_end == 0xC0DEC0DE);
 #endif
 
 	return true;
