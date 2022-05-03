@@ -6,7 +6,7 @@
 
 #import <Foundation/Foundation.h>
 
-const char* DetectDefaultAppleLocaleName()
+char* DetectDefaultAppleLocaleName()
 {
     NSLocale *currentLocale = [NSLocale currentLocale];
     NSString *localeName = @"";

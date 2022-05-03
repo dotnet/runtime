@@ -59,5 +59,5 @@ DetectDefaultSystemLocaleName
 
 Detects the default locale string for Apple platforms
 */
-const char* DetectDefaultAppleLocaleName(void);
+char* DetectDefaultAppleLocaleName(void);
 #endif
