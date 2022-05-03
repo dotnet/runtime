@@ -937,7 +937,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         }
         else
         {
-            lastArg = call->gtArgs.InsertAfter(this, lastArg, argNode);
+            lastArg = call->gtArgs.InsertAfterUnchecked(this, lastArg, argNode);
         }
 
         call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
