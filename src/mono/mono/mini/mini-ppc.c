@@ -3116,7 +3116,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_STORE_MEMBASE_REG:
 			if (ppc_is_imm16 (ins->inst_offset)) {
-				ppc_stptr (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
+				if (ppc_is_dsoffset_valid(ins->inst_offset)) {
+					ppc_stptr (code, ins->sreg1, ins->inst_offset, ins->inst_destbasereg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+					ppc_stptr_indexed(code, ins->sreg1, ins->inst_destbasereg, ppc_r0);
+				}
 			} else {
 				if (ppc_is_imm32 (ins->inst_offset)) {
 					ppc_addis (code, ppc_r11, ins->inst_destbasereg, ppc_ha(ins->inst_offset));
@@ -3151,7 +3156,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 			break;
 		case OP_LOAD_MEMBASE:
 			if (ppc_is_imm16 (ins->inst_offset)) {
-				ppc_ldptr (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+				if( ppc_is_dsoffset_valid (ins->inst_offset)) {
+					ppc_ldptr (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+                                        ppc_ldptr_indexed (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				}
 			} else {
 				if (ppc_is_imm32 (ins->inst_offset) && (ins->dreg > 0)) {
 					ppc_addis (code, ins->dreg, ins->inst_basereg, ppc_ha(ins->inst_offset));
@@ -3165,7 +3175,12 @@ mono_arch_output_basic_block (MonoCompile *cfg, MonoBasicBlock *bb)
 		case OP_LOADI4_MEMBASE:
 #ifdef __mono_ppc64__
 			if (ppc_is_imm16 (ins->inst_offset)) {
-				ppc_lwa (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+				if(ppc_is_dsoffset_valid (ins->inst_offset)) {
+					ppc_lwa (code, ins->dreg, ins->inst_offset, ins->inst_basereg);
+				} else {
+					ppc_load (code, ppc_r0, ins->inst_offset);
+                                        ppc_lwax (code, ins->dreg, ins->inst_basereg, ppc_r0);
+				}
 			} else {
 				if (ppc_is_imm32 (ins->inst_offset) && (ins->dreg > 0)) {
 					ppc_addis (code, ins->dreg, ins->inst_basereg, ppc_ha(ins->inst_offset));
