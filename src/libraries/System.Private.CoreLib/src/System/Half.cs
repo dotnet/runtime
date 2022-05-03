@@ -86,10 +86,10 @@ namespace System
 
         public static Half NaN => new Half(NegativeQNaNBits);                       //  0.0 / 0.0
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         public static Half MinValue => new Half(MinValueBits);                      // -65504
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static Half MaxValue => new Half(MaxValueBits);                      //  65504
 
         private readonly ushort _value;

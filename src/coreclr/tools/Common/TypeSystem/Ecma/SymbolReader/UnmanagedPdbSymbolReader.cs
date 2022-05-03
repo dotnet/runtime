@@ -25,7 +25,7 @@ namespace Internal.TypeSystem.Ecma
     /// </summary>
     public abstract class UnmanagedPdbSymbolReader : PdbSymbolReader
     {
-        public static PdbSymbolReader TryOpenSymbolReaderForMetadataFile(string metadataFileName, string searchPath)
+        public static PdbSymbolReader? TryOpenSymbolReaderForMetadataFile(string metadataFileName, string searchPath)
         {
             return null;
         }

@@ -20,9 +20,6 @@ namespace System.Diagnostics.Tracing
     /// function to collect metrics on its own rather than the user having to call WriteMetric()
     /// every time.
     /// </summary>
-#if NETCOREAPP
-    [UnsupportedOSPlatform("browser")]
-#endif
     public partial class PollingCounter : DiagnosticCounter
     {
         /// <summary>

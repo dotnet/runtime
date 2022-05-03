@@ -1725,7 +1725,6 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         public static string DescribeSet(string set)
         {
             int setLength = set[SetLengthIndex];
@@ -1836,7 +1835,6 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Produces a human-readable description for a single character.</summary>
-        [ExcludeFromCodeCoverage]
         public static string DescribeChar(char ch) =>
             ch switch
             {
@@ -1852,7 +1850,6 @@ namespace System.Text.RegularExpressions
                 _ => $"\\u{(uint)ch:X4}"
             };
 
-        [ExcludeFromCodeCoverage]
         private static string DescribeCategory(char ch) =>
             (short)ch switch
             {

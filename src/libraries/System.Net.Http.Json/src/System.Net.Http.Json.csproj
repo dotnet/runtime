@@ -9,6 +9,7 @@ System.Net.Http.Json.HttpClientJsonExtensions
 System.Net.Http.Json.HttpContentJsonExtensions
 System.Net.Http.Json.JsonContent</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\Net\Http\Json\JsonHelpers.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.Get.cs" />
@@ -19,11 +20,13 @@ System.Net.Http.Json.JsonContent</PackageDescription>
     <Compile Include="System\Net\Http\Json\JsonContent.cs" />
     <Compile Include="System\Net\Http\Json\JsonContentOfT.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System\Net\Http\Json\HttpContentJsonExtensions.netcoreapp.cs" />
     <Compile Include="System\Net\Http\Json\JsonContent.netcoreapp.cs" />
     <Compile Include="System\Net\Http\Json\JsonContentOfT.netcoreapp.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="System\ArraySegmentExtensions.netstandard.cs" />
     <Compile Include="System\Net\Http\Json\HttpClientJsonExtensions.netstandard.cs" />
@@ -35,6 +38,7 @@ System.Net.Http.Json.JsonContent</PackageDescription>
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\RequiresUnreferencedCodeAttribute.cs" />
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\UnconditionalSuppressMessageAttribute.cs" />
   </ItemGroup>
+
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\StringSyntaxAttribute.cs" />
   </ItemGroup>
@@ -43,7 +47,7 @@ System.Net.Http.Json.JsonContent</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Net.Http" />
     <Reference Include="System.Net.Primitives" />
     <Reference Include="System.Runtime" />

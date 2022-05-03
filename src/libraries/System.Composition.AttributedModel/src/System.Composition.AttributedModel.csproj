@@ -2,8 +2,8 @@
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <Nullable>disable</Nullable>
-    <IsPackable>true</IsPackable>
     <StrongNameKeyId>Microsoft</StrongNameKeyId>
+    <IsPackable>true</IsPackable>
     <PackageDescription>Provides common attributes used by System.Composition types.
 
 Commonly Used Types:
@@ -26,9 +26,5 @@ System.Composition.Convention.AttributedModelProvider</PackageDescription>
     <Compile Include="System\Composition\PartNotDiscoverableAttribute.cs" />
     <Compile Include="System\Composition\SharedAttribute.cs" />
     <Compile Include="System\Composition\SharingBoundaryAttribute.cs" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Runtime" />
   </ItemGroup>
 </Project>

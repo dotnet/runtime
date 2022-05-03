@@ -23,6 +23,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/metadata-internals.h>
+#include "mono/utils/mono-logger-internals.h"
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
@@ -2298,6 +2299,12 @@ ep_rt_write_event_threadpool_io_dequeue (
 bool
 ep_rt_write_event_threadpool_working_thread_count (
 	uint16_t count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_io_pack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
 	uint16_t clr_instance_id);
 
 /*

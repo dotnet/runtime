@@ -81,6 +81,12 @@ namespace System.Threading.RateLimiting.Test
         public abstract Task CanCancelWaitAsyncBeforeQueuing();
 
         [Fact]
+        public abstract Task CanFillQueueWithNewestFirstAfterCancelingQueuedRequestWithAnotherQueuedRequest();
+
+        [Fact]
+        public abstract Task CanDisposeAfterCancelingQueuedRequest();
+
+        [Fact]
         public abstract Task CancelUpdatesQueueLimit();
 
         [Fact]

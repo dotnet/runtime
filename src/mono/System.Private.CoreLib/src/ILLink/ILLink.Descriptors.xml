@@ -555,9 +555,9 @@
 			<method name="DangerousRelease" />
 		</type>
 
-		<!-- marshal.c: mono_mb_emit_exception_marshal_directive -->
+		<!-- marshal.c: mono_marshal_shared_mb_emit_exception_marshal_directive -->
 		<type fullname="System.Runtime.InteropServices.MarshalDirectiveException">
-			<!-- mono_mb_emit_exception_marshal_directive -->
+			<!-- mono_marshal_shared_mb_emit_exception_marshal_directive -->
 			<method signature="System.Void .ctor()" />
 		</type>
 

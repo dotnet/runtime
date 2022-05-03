@@ -2,13 +2,14 @@
   <PropertyGroup>
     <_workItemTimeout Condition="'$(Scenario)' == 'BuildWasmApps' and '$(_workItemTimeout)' == ''">01:30:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true'">01:00:00</_workItemTimeout>
-    <_workItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests'">00:30:00</_workItemTimeout>
+    <_workItemTimeout Condition="'$(Scenario)' == 'WasmDebuggerTests'">01:00:00</_workItemTimeout>
     <_workItemTimeout Condition="'$(Scenario)' == 'WasmTestOnBrowser' and '$(BrowserHost)' == 'windows'">00:45:00</_workItemTimeout>
 
     <IsWasmDebuggerTests Condition="'$(Scenario)' == 'WasmDebuggerTests'">true</IsWasmDebuggerTests>
     <IsRunningLibraryTests Condition="'$(Scenario)' == 'normal' or '$(Scenario)' == 'WasmTestOnBrowser' or '$(Scenario)' == 'WasmTestOnNodeJs'">true</IsRunningLibraryTests>
 
     <BuildHelixWorkItemsDependsOn>$(BuildHelixWorkItemsDependsOn);StageEmSdkForHelix;PrepareForBuildHelixWorkItems_Wasm</BuildHelixWorkItemsDependsOn>
+    <BuildHelixWorkItemsDependsOn Condition="'$(WindowsShell)' != 'true'">$(BuildHelixWorkItemsDependsOn);DownloadFirefoxToSendToHelix</BuildHelixWorkItemsDependsOn>
     <IncludeHelixCorrelationPayload>false</IncludeHelixCorrelationPayload>
     <EnableDefaultBuildHelixWorkItems Condition="'$(IsRunningLibraryTests)' != 'true'">false</EnableDefaultBuildHelixWorkItems>
 
@@ -18,6 +19,8 @@
     <!-- on unix CI has emscripten provisioned in $(EMSDK_PATH) as `/usr/local/emscripten`. -->
     <EMSDK_PATH Condition="$([MSBuild]::IsOSPlatform('WINDOWS')) and '$(EMSDK_PATH)' == ''">$(RepoRoot)src\mono\wasm\emsdk\</EMSDK_PATH>
     <EmSdkDirForHelixPayload>$([MSBuild]::NormalizeDirectory('$(RepoRoot)', 'src', 'mono', 'wasm', 'emsdk'))</EmSdkDirForHelixPayload>
+    <FirefoxForHelixPayload>$(TestArchiveRoot)firefox.zip</FirefoxForHelixPayload>
+    <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
     <NeedsWorkload Condition="'$(Scenario)' == 'BuildWasmApps'">true</NeedsWorkload>
     <NeedsEMSDK Condition="'$(NeedsToBuildWasmAppsOnHelix)' == 'true' or '$(Scenario)' == 'BuildWasmApps'">true</NeedsEMSDK>
@@ -47,8 +50,8 @@
     <HelixPreCommand Include="export XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="export XHARNESS_LOG_WITH_TIMESTAMPS=true" />
 
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromiumDirName):$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromeDriverDirName):$PATH" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="export PATH=$HELIX_CORRELATION_PAYLOAD/$(ChromiumDirName):$PATH" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(WindowsShell)' == 'true'">
@@ -60,8 +63,8 @@
     <HelixPreCommand Include="set XHARNESS_DISABLE_COLORED_OUTPUT=true" />
     <HelixPreCommand Include="set XHARNESS_LOG_WITH_TIMESTAMPS=true" />
 
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDriverDirName)%3B%PATH%" />
-    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromiumDirName)%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromeDriverDirName)%3B%PATH%" />
+    <HelixPreCommand Condition="'$(NeedsToRunOnBrowser)' == 'true' and '$(DebuggerHost)' == 'chrome'" Include="set PATH=%HELIX_CORRELATION_PAYLOAD%\$(ChromiumDirName)%3B%PATH%" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(NeedsEMSDKNode)' == 'true' and '$(WindowsShell)' != 'true'">
@@ -127,8 +130,11 @@
     </PropertyGroup>
 
     <ItemGroup Condition="'$(NeedsToRunOnBrowser)' == 'true'">
-      <HelixCorrelationPayload Include="chromium" Uri="$(ChromiumUrl)" />
-      <HelixCorrelationPayload Include="chromedriver" Uri="$(ChromeDriverUrl)" />
+      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="chromium" Uri="$(ChromiumUrl)" />
+      <HelixCorrelationPayload Condition="'$(DebuggerHost)' == 'chrome'" Include="chromedriver" Uri="$(ChromeDriverUrl)" />
+
+      <!--<HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="firefox" Uri="$(FirefoxUrl)" />-->
+      <HelixCorrelationPayload Condition="'$(WindowsShell)' != 'true' and '$(DebuggerHost)' == 'firefox'" Include="$(FirefoxForHelixPayload)" />
     </ItemGroup>
 
     <ItemGroup Condition="'$(NeedsEMSDK)' == 'true'">
@@ -198,7 +204,7 @@
     </ItemGroup>
 
     <ItemGroup Condition="'$(Scenario)' == 'WasmDebuggerTests'">
-      <HelixWorkItem Include="@(WasmDebuggerTests_PerJobList)">
+      <HelixWorkItem Include="@(WasmDebuggerTests_PerJobList -> '$(DebuggerHost)-%(Identity)')">
         <PayloadArchive>$(_WasmDebuggerTestsPayloadArchive)</PayloadArchive>
 
         <!-- FIXME: workaround for https://github.com/dotnet/runtime/issues/62660 -->
@@ -238,5 +244,12 @@
     </ItemGroup>
 
     <Copy SourceFiles="@(_EmSdkFiles)" DestinationFolder="$(EmSdkDirForHelixPayload)\%(RecursiveDir)" />
+  </Target>
+
+  <Target Name="DownloadFirefoxToSendToHelix" Condition="!Exists($(FirefoxForHelixPayload)) and '$(DebuggerHost)' == 'firefox'">
+    <DownloadFile SourceUrl="$(FirefoxUrl)" DestinationFolder="$(TestArchiveRoot)" SkipUnchangedFiles="true">
+      <Output TaskParameter="DownloadedFile" PropertyName="_DownloadedFile" />
+    </DownloadFile>
+    <Exec Command="tar -xf $(_DownloadedFile) -C $(TestArchiveRoot) &amp;&amp; rm $(_DownloadedFile) &amp;&amp; cd $(TestArchiveRoot) &amp;&amp; zip -q -r firefox.zip firefox"/>
   </Target>
 </Project>

@@ -224,31 +224,11 @@ void Compiler::fgPerNodeLocalVarLiveness(GenTree* tree)
             fgMarkUseDef(tree->AsLclVarCommon());
             break;
 
-        case GT_CLS_VAR:
-            // For Volatile indirection, first mutate GcHeap/ByrefExposed.
-            // See comments in ValueNum.cpp (under case GT_CLS_VAR)
-            // This models Volatile reads as def-then-use of memory
-            // and allows for a CSE of a subsequent non-volatile read.
-            if ((tree->gtFlags & GTF_FLD_VOLATILE) != 0)
-            {
-                // For any Volatile indirection, we must handle it as a
-                // definition of GcHeap/ByrefExposed
-                fgCurMemoryDef |= memoryKindSet(GcHeap, ByrefExposed);
-            }
-            // If the GT_CLS_VAR is the lhs of an assignment, we'll handle it as a GcHeap/ByrefExposed def, when we get
-            // to the assignment.
-            // Otherwise, we treat it as a use here.
-            if ((tree->gtFlags & GTF_CLS_VAR_ASG_LHS) == 0)
-            {
-                fgCurMemoryUse |= memoryKindSet(GcHeap, ByrefExposed);
-            }
-            break;
-
         case GT_IND:
         case GT_OBJ:
         case GT_BLK:
             // For Volatile indirection, first mutate GcHeap/ByrefExposed
-            // see comments in ValueNum.cpp (under case GT_CLS_VAR)
+            // see comments in ValueNum.cpp (under the memory read case)
             // This models Volatile reads as def-then-use of memory.
             // and allows for a CSE of a subsequent non-volatile read
             if ((tree->gtFlags & GTF_IND_VOLATILE) != 0)
@@ -2205,35 +2185,15 @@ bool Compiler::fgTryRemoveNonLocal(GenTree* node, LIR::Range* blockRange)
 }
 
 //---------------------------------------------------------------------
-// fgRemoveDeadStoreSimple - remove a dead store
+// fgRemoveDeadStoreLIR - remove a dead store from LIR
 //
-//   pTree          - GenTree** to local, including store-form local or local addr (post-rationalize)
-//   varDsc         - var that is being stored to
-//   life           - current live tracked vars (maintained as we walk backwards)
-//   doAgain        - out parameter, true if we should restart the statement
-//   pStmtInfoDirty - should defer the cost computation to the point after the reverse walk is completed?
+//   store          - A store tree
+//   block          - Block that the store is part of
 //
 void Compiler::fgRemoveDeadStoreLIR(GenTree* store, BasicBlock* block)
 {
     LIR::Range& blockRange = LIR::AsRange(block);
-
-    // If the store is marked as a late argument, it is referenced by a call.
-    // Instead of removing it, bash it to a NOP.
-    if ((store->gtFlags & GTF_LATE_ARG) != 0)
-    {
-        JITDUMP("node is a late arg; replacing with NOP\n");
-        store->gtBashToNOP();
-
-        // NOTE: this is a bit of a hack. We need to keep these nodes around as they are
-        // referenced by the call, but they're considered side-effect-free non-value-producing
-        // nodes, so they will be removed if we don't do this.
-        store->gtFlags |= GTF_ORDER_SIDEEFF;
-    }
-    else
-    {
-        blockRange.Remove(store);
-    }
-
+    blockRange.Remove(store);
     assert(!opts.MinOpts());
     fgStmtRemoved = true;
 }
