@@ -1524,7 +1524,7 @@ namespace System
             charsWritten = bufferLength;
             fixed (char* buffer = &MemoryMarshal.GetReference(destination))
             {
-                char* p = UInt64ToDecChars(buffer + bufferLength, (uint)(-value), digits);
+                char* p = UInt64ToDecChars(buffer + bufferLength, (ulong)(-value), digits);
                 Debug.Assert(p == buffer + sNegative.Length);
 
                 for (int i = sNegative.Length - 1; i >= 0; i--)
