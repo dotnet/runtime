@@ -90,32 +90,6 @@ public sealed partial class Avx2Tests
                 Assert.Equal(expected, actual.AsInt64());
             }
 
-            // public static unsafe Vector128<nint> GatherVector128(long* baseAddress, Vector128<nint> index, byte scale);
-            using (TestTable<long, nint> table = new(Unsafe.As<nint[], long[]>(ref baseData), new long[scale]))
-            {
-                var actual = Avx2.GatherVector128((long*)table.InArrayPtr, nativeIndex, scale);
-                Assert.Equal(expected, actual.AsInt64());
-
-                var method = typeof(Avx2).GetMethod(nameof(Avx2.GatherVector128),
-                    new[] { typeof(long*), typeof(Vector128<nint>), typeof(byte) })!;
-
-                actual = (Vector128<long>)method.Invoke(null, new[] { Pointer.Box(table.InArrayPtr, typeof(long*)), nativeIndex, scale })!;
-                Assert.Equal(expected, actual.AsInt64());
-            }
-
-            // public static unsafe Vector128<nint> GatherVector128(long* baseAddress, Vector128<nint> index, byte scale);
-            using (TestTable<ulong, nint> table = new(Unsafe.As<nint[], ulong[]>(ref baseData), new ulong[scale]))
-            {
-                var actual = Avx2.GatherVector128((ulong*)table.InArrayPtr, nativeIndex, scale);
-                Assert.Equal(expected, actual.AsInt64());
-
-                var method = typeof(Avx2).GetMethod(nameof(Avx2.GatherVector128),
-                    new[] { typeof(ulong*), typeof(Vector128<nint>), typeof(byte) })!;
-
-                actual = (Vector128<ulong>)method.Invoke(null, new[] { Pointer.Box(table.InArrayPtr, typeof(ulong*)), nativeIndex, scale })!;
-                Assert.Equal(expected, actual.AsInt64());
-            }
-
             // public static unsafe Vector128<nint> GatherVector128(nint* baseAddress, Vector128<nint> index, byte scale);
             using (TestTable<nint, nint> table = new(Unsafe.As<nint[], nint[]>(ref baseData), new nint[scale]))
             {
@@ -291,32 +265,6 @@ public sealed partial class Avx2Tests
                     new[] { typeof(uint*), typeof(Vector128<nint>), typeof(byte) })!;
 
                 actual = (Vector128<uint>)method.Invoke(null, new[] { Pointer.Box(table.InArrayPtr, typeof(uint*)), nativeIndex, scale })!;
-                Assert.Equal(expected, actual.AsInt64());
-            }
-
-            // public static unsafe Vector128<nint> GatherVector128(long* baseAddress, Vector128<nint> index, byte scale);
-            using (TestTable<long, nint> table = new(Unsafe.As<nint[], long[]>(ref baseData), new long[scale]))
-            {
-                var actual = Avx2.GatherVector128((long*)table.InArrayPtr, nativeIndex, scale);
-                Assert.Equal(expected, actual.AsInt64());
-
-                var method = typeof(Avx2).GetMethod(nameof(Avx2.GatherVector128),
-                    new[] { typeof(long*), typeof(Vector128<nint>), typeof(byte) })!;
-
-                actual = (Vector128<long>)method.Invoke(null, new[] { Pointer.Box(table.InArrayPtr, typeof(long*)), nativeIndex, scale })!;
-                Assert.Equal(expected, actual.AsInt64());
-            }
-
-            // public static unsafe Vector128<nint> GatherVector128(long* baseAddress, Vector128<nint> index, byte scale);
-            using (TestTable<ulong, nint> table = new(Unsafe.As<nint[], ulong[]>(ref baseData), new ulong[scale]))
-            {
-                var actual = Avx2.GatherVector128((ulong*)table.InArrayPtr, nativeIndex, scale);
-                Assert.Equal(expected, actual.AsInt64());
-
-                var method = typeof(Avx2).GetMethod(nameof(Avx2.GatherVector128),
-                    new[] { typeof(ulong*), typeof(Vector128<nint>), typeof(byte) })!;
-
-                actual = (Vector128<ulong>)method.Invoke(null, new[] { Pointer.Box(table.InArrayPtr, typeof(ulong*)), nativeIndex, scale })!;
                 Assert.Equal(expected, actual.AsInt64());
             }
 

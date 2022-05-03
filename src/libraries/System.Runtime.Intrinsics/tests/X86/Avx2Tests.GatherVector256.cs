@@ -40,10 +40,10 @@ public sealed partial class Avx2Tests
             {
                 var actual = Avx2.GatherVector256((nint*)table.InArrayPtr, index, scale);
                 Assert.Equal(expected.AsNInt(), actual);
-
+                
                 var method = typeof(Avx2).GetMethod(nameof(Avx2.GatherVector256),
                     new[] { typeof(nint*), typeof(Vector256<int>), typeof(byte) })!;
-
+                
                 actual = (Vector256<nint>)method.Invoke(null,
                     new[] { Pointer.Box(table.InArrayPtr, typeof(nint*)), index, scale })!;
                 Assert.Equal(expected.AsNInt(), actual);
@@ -62,7 +62,7 @@ public sealed partial class Avx2Tests
                     new[] { Pointer.Box(table.InArrayPtr, typeof(nint*)), index, scale })!;
                 Assert.Equal(expected.AsNUInt(), actual);
             }
-
+            
             // public static unsafe Vector256<nint> GatherVector256(long* baseAddress, Vector256<nint> index, byte scale);
             using (TestTable<int, nint> table = new(Unsafe.As<nint[], int[]>(ref baseData), new int[scale]))
             {
@@ -76,7 +76,7 @@ public sealed partial class Avx2Tests
                     new[] { Pointer.Box(table.InArrayPtr, typeof(long*)), nativeIndex, scale })!;
                 Assert.Equal(expected.AsNInt()[0], actual[0]);
             }
-
+            
             // public static unsafe Vector256<nuint> GatherVector256(ulong* baseAddress, Vector256<nint> index, byte scale);
             using (TestTable<ulong, nint> table = new(Unsafe.As<nint[], ulong[]>(ref baseData), new ulong[scale]))
             {
@@ -90,7 +90,7 @@ public sealed partial class Avx2Tests
                     new[] { Pointer.Box(table.InArrayPtr, typeof(ulong*)), nativeIndex, scale })!;
                 Assert.Equal(expected.AsNUInt()[0], actual[0]);
             }
-
+            
             // public static unsafe Vector256<nint> GatherVector256(nint* baseAddress, Vector256<nint> index, byte scale);
             using (TestTable<nint, nint> table = new(Unsafe.As<nint[], nint[]>(ref baseData), new nint[scale]))
             {
@@ -104,7 +104,7 @@ public sealed partial class Avx2Tests
                     new[] { Pointer.Box(table.InArrayPtr, typeof(nint*)), nativeIndex, scale })!;
                 Assert.Equal(expected.AsNInt()[0], actual[0]);
             }
-
+            
             // public static unsafe Vector256<nuint> GatherVector256(nuint* baseAddress, Vector256<nint> index, byte scale);
             using (TestTable<nuint, nint> table = new(Unsafe.As<nint[], nuint[]>(ref baseData), new nuint[scale]))
             {
@@ -118,7 +118,7 @@ public sealed partial class Avx2Tests
                     new[] { Pointer.Box(table.InArrayPtr, typeof(nuint*)), nativeIndex, scale })!;
                 Assert.Equal(expected.AsNUInt()[0], actual[0]);
             }
-
+            
             // public static unsafe Vector256<double> GatherVector256(double* baseAddress, Vector256<nint> index, byte scale);
             using (TestTable<double, nint> table = new(Unsafe.As<nint[], double[]>(ref baseData), new double[scale]))
             {
