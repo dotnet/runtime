@@ -83,14 +83,6 @@ ep_buffer_write_event (
 
 	bool success = true;
 
-	EventPipeStackContents stack_contents;
-	EventPipeStackContents *current_stack_contents;
-	current_stack_contents = ep_stack_contents_init (&stack_contents);
-	if (stack == NULL && ep_event_get_need_stack (ep_event) && !ep_session_get_rundown_enabled (session)) {
-		ep_walk_managed_stack_for_current_thread (current_stack_contents);
-		stack = current_stack_contents;
-	}
-
 	// Calculate the location of the data payload.
 	uint8_t *data_dest;
 	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof(EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_get_instance_size (stack));
