@@ -173,33 +173,41 @@ namespace System.Net.Security
 
         public static bool TryGetFrameHeader(ReadOnlySpan<byte> frame, ref TlsFrameHeader header)
         {
-            bool result = frame.Length > 4;
-
-            if (frame.Length >= 1)
+            header.Type = (TlsContentType)(frame.Length >= 1 ? frame[0] : 0);
+            if (frame.Length < TlsFrameHelper.HeaderSize)
             {
-                header.Type = (TlsContentType)frame[0];
-
-                if (frame.Length >= 3)
-                {
-                    // SSLv3, TLS or later
-                    if (frame[1] == 3)
-                    {
-                        if (frame.Length > 4)
-                        {
-                            header.Length = ((frame[3] << 8) | frame[4]);
-                        }
-
-                        header.Version = TlsMinorVersionToProtocol(frame[2]);
-                    }
-                    else
-                    {
-                        header.Length = -1;
-                        header.Version = SslProtocols.None;
-                    }
-                }
+                header.Length = -1;
+                header.Version = SslProtocols.None;
+                return false;
             }
 
-            return result;
+            // SSLv3, TLS or later
+            if (frame[1] == ProtocolVersionTlsMajorValue)
+            {
+                header.Length = ((frame[3] << 8) | frame[4]);
+                header.Version = TlsMinorVersionToProtocol(frame[2]);
+            }
+            // Sslv2 or Unified
+            else if (frame[2] == (byte)TlsHandshakeType.ClientHello &&
+                     frame[3] == ProtocolVersionTlsMajorValue) // SSL3 or above
+            {
+                header.Length = (frame[0] & 0x80) != 0 ?
+                                    (((frame[0] & 0x7f) << 8) | frame[1]) + 2 : // two bytes
+                                    (((frame[0] & 0x3f) << 8) | frame[1]) + 3;  // three bytes
+#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+                header.Version = SslProtocols.Ssl2;
+#pragma warning restore CS0618
+                header.Type = TlsContentType.Handshake;
+            }
+            else
+            {
+                // neither looks like TLS nor Ssl2 Hello
+                header.Length = -1;
+                header.Version = SslProtocols.None;
+                return false;
+            }
+
+            return true;
         }
 
         // Returns frame size e.g. header + content
@@ -252,6 +260,18 @@ namespace System.Net.Security
             }
 
             info.HandshakeType = (TlsHandshakeType)frame[HandshakeTypeOffset];
+#pragma warning disable CS0618 // Ssl2 and Ssl3 are obsolete
+            if (info.Header.Version == SslProtocols.Ssl2)
+            {
+                // This is safe. We would not get here if the length is too small.
+                info.SupportedVersions |= TlsMinorVersionToProtocol(frame[4]);
+                // We only recognize Unified ClientHello at the moment.
+                // This is needed to trigger certificate selection callback in SslStream.
+                info.HandshakeType = TlsHandshakeType.ClientHello;
+                // There is no more parsing for old protocols.
+                return true;
+            }
+#pragma warning restore CS0618
 
             // Check if we have full frame.
             bool isComplete = frame.Length >= HeaderSize + info.Header.Length;
@@ -404,10 +424,10 @@ namespace System.Net.Security
             // Skip compression methods (max size 2^8-1 => size fits in 1 byte)
             p = SkipOpaqueType1(p);
 
-            // is invalid structure or no extensions?
+            // no extensions
             if (p.IsEmpty)
             {
-                return false;
+                return true;
             }
 
             // client_hello_extension_list (max size 2^16-1 => size fits in 2 bytes)
