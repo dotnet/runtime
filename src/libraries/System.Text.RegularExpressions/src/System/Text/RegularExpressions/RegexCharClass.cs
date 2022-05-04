@@ -1731,6 +1731,7 @@ namespace System.Text.RegularExpressions
             int categoryLength = set[CategoryLengthIndex];
             int endPosition = SetStartIndex + setLength + categoryLength;
             bool negated = IsNegated(set);
+            Span<char> scratch = stackalloc char[32];
 
             // Special-case set of a single character to output that character without set square brackets.
             if (!negated && // no negation
@@ -1801,38 +1802,41 @@ namespace System.Text.RegularExpressions
                 ch1 = set[index];
                 if (ch1 == 0)
                 {
-                    bool found = false;
-
-                    const char GroupChar = (char)0;
+                    const char GroupChar = '\0';
                     int lastindex = set.IndexOf(GroupChar, index + 1);
                     if (lastindex != -1)
                     {
-                        string group = set.Substring(index, lastindex - index + 1);
-
-                        foreach (KeyValuePair<string, string> kvp in s_definedCategories)
+                        ReadOnlySpan<char> group = set.AsSpan(index, lastindex - index + 1);
+                        switch (group)
                         {
-                            if (group.Equals(kvp.Value))
-                            {
-                                desc.Append((short)set[index + 1] > 0 ? "\\p{" : "\\P{").Append(kvp.Key).Append('}');
-                                found = true;
+                            case WordCategories:
+                                desc.Append(@"\w");
                                 break;
-                            }
-                        }
 
-                        if (!found)
-                        {
-                            if (group.Equals(WordCategories))
-                            {
-                                desc.Append("\\w");
-                            }
-                            else if (group.Equals(NotWordCategories))
-                            {
-                                desc.Append("\\W");
-                            }
-                            else
-                            {
-                                // TODO: The code is incorrectly handling pretty-printing groups like \P{P}.
-                            }
+                            case NotWordCategories:
+                                desc.Append(@"\W");
+                                break;
+
+                            default:
+                                // The inverse of a group as created by AddCategoryFromName simply negates every character as a 16-bit value.
+                                Span<char> invertedGroup = group.Length <= scratch.Length ? scratch.Slice(0, group.Length) : new char[group.Length];
+                                for (int i = 0; i < group.Length; i++)
+                                {
+                                    invertedGroup[i] = (char)-(short)group[i];
+                                }
+
+                                // Determine whether the group is a known Unicode category, e.g. \p{Mc}, or group of categories, e.g. \p{L},
+                                // or the inverse of those.
+                                foreach (KeyValuePair<string, string> kvp in s_definedCategories)
+                                {
+                                    bool equalsGroup = group.SequenceEqual(kvp.Value.AsSpan());
+                                    if (equalsGroup || invertedGroup.SequenceEqual(kvp.Value.AsSpan()))
+                                    {
+                                        desc.Append(equalsGroup ? @"\p{" : @"\P{").Append(kvp.Key).Append('}');
+                                        break;
+                                    }
+                                }
+                                break;
                         }
 
                         index = lastindex;
