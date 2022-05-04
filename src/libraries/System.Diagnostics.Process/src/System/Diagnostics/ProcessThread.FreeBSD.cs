@@ -7,11 +7,6 @@ namespace System.Diagnostics
 {
     public partial class ProcessThread
     {
-        /// <summary>
-        /// Returns or sets the priority level of the associated thread.  The priority level is
-        /// not an absolute level, but instead contributes to the actual thread priority by
-        /// considering the priority class of the process.
-        /// </summary>
         private ThreadPriorityLevel PriorityLevelCore
         {
             get
@@ -29,51 +24,16 @@ namespace System.Diagnostics
         // all threads e.g. reflects process start. This may be re-visited later.
         private static DateTime GetStartTime() => throw new PlatformNotSupportedException();
 
-        /// <summary>
-        /// Returns the amount of time the associated thread has spent utilizing the CPU.
-        /// It is the sum of the System.Diagnostics.ProcessThread.UserProcessorTime and
-        /// System.Diagnostics.ProcessThread.PrivilegedProcessorTime.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan TotalProcessorTime
+        private TimeSpan GetTotalProcessorTime()
         {
-            get
-            {
-                Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, Id);
-                return Process.TicksToTimeSpan(stat.userTime + stat.systemTime);
-            }
+            Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, Id);
+            return Process.TicksToTimeSpan(stat.userTime + stat.systemTime);
         }
 
-        /// <summary>
-        /// Returns the amount of time the associated thread has spent running code
-        /// inside the application (not the operating system core).
-        /// </summary>
-        public TimeSpan UserProcessorTime
-        {
-            get
-            {
-                Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, Id);
-                return Process.TicksToTimeSpan(stat.userTime);
-            }
-        }
+        private TimeSpan GetUserProcessorTime()
+            => Process.TicksToTimeSpan(Interop.Process.GetThreadInfo(_processId, Id).userTime);
 
-        /// <summary>
-        /// Returns the amount of time the thread has spent running code inside the operating
-        /// system core.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan PrivilegedProcessorTime
-        {
-            get
-            {
-                Interop.Process.proc_stats stat = Interop.Process.GetThreadInfo(_processId, Id);
-                return Process.TicksToTimeSpan(stat.systemTime);
-            }
-
-        }
+        private TimeSpan GetPrivilegedProcessorTime()
+            => Process.TicksToTimeSpan(Interop.Process.GetThreadInfo(_processId, Id).systemTime);
     }
 }

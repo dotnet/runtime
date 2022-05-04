@@ -60,10 +60,10 @@ namespace System.Diagnostics
             get { return unchecked((int)_threadInfo._threadId); }
         }
 
-        /// <devdoc>
-        ///      Returns or sets whether this thread would like a priority boost if the user interacts
-        ///      with user interface associated with this thread.
-        /// </devdoc>
+        /// <summary>
+        /// Returns or sets whether this thread would like a priority boost if the user interacts
+        /// with user interface associated with this thread.
+        /// </summary>
         public bool PriorityBoostEnabled
         {
             get
@@ -81,11 +81,11 @@ namespace System.Diagnostics
             }
         }
 
-        /// <devdoc>
-        ///     Returns or sets the priority level of the associated thread.  The priority level is
-        ///     not an absolute level, but instead contributes to the actual thread priority by
-        ///     considering the priority class of the process.
-        /// </devdoc>
+        /// <summary>
+        /// Returns or sets the priority level of the associated thread.  The priority level is
+        /// not an absolute level, but instead contributes to the actual thread priority by
+        /// considering the priority class of the process.
+        /// </summary>
         public ThreadPriorityLevel PriorityLevel
         {
             [SupportedOSPlatform("windows")]
@@ -147,9 +147,54 @@ namespace System.Diagnostics
             get => GetStartTime();
         }
 
+        /// <summary>Sets the processor that this thread would ideally like to run on.</summary>
+        public int IdealProcessor { set { SetIdealProcessor(value); } }
+
+        /// <summary>
+        /// Resets the ideal processor so there is no ideal processor for this thread (e.g.
+        /// any processor is ideal).
+        /// </summary>
+        public void ResetIdealProcessor() => ResetIdealProcessorCore();
+
+        /// <summary>
+        /// Sets which processors the associated thread is allowed to be scheduled to run on.
+        /// Each processor is represented as a bit: bit 0 is processor one, bit 1 is processor
+        /// two, etc.  For example, the value 1 means run on processor one, 2 means run on
+        /// processor two, 3 means run on processor one or two.
+        /// </summary>
+        [SupportedOSPlatform("windows")]
+        public IntPtr ProcessorAffinity { set { SetProcessorAffinity(value); } }
+
+        /// <summary>
+        /// Returns the amount of time the thread has spent running code inside the operating
+        /// system core.
+        /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public TimeSpan PrivilegedProcessorTime => GetPrivilegedProcessorTime();
+
+        /// <summary>
+        /// Returns the amount of time the associated thread has spent utilizing the CPU.
+        /// It is the sum of the System.Diagnostics.ProcessThread.UserProcessorTime and
+        /// System.Diagnostics.ProcessThread.PrivilegedProcessorTime.
+        /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public TimeSpan TotalProcessorTime => GetTotalProcessorTime();
+
         /// <devdoc>
         ///     Helper to check preconditions for property access.
         /// </devdoc>
+        /// <summary>
+        /// Returns the amount of time the associated thread has spent running code
+        /// inside the application (not the operating system core).
+        /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
+        public TimeSpan UserProcessorTime => GetUserProcessorTime();
         private void EnsureState(State state)
         {
             if (((state & State.IsLocal) != (State)0) && _isRemoteMachine)

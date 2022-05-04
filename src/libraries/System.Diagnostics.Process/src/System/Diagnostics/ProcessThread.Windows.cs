@@ -9,36 +9,24 @@ namespace System.Diagnostics
 {
     public partial class ProcessThread
     {
-        /// <summary>Sets the processor that this thread would ideally like to run on.</summary>
-        public int IdealProcessor
+        private void SetIdealProcessor(int value)
         {
-            set
+            using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_SET_INFORMATION))
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_SET_INFORMATION))
+                if (Interop.Kernel32.SetThreadIdealProcessor(threadHandle, value) < 0)
                 {
-                    if (Interop.Kernel32.SetThreadIdealProcessor(threadHandle, value) < 0)
-                    {
-                        throw new Win32Exception();
-                    }
+                    throw new Win32Exception();
                 }
             }
         }
 
-        /// <summary>
-        /// Resets the ideal processor so there is no ideal processor for this thread (e.g.
-        /// any processor is ideal).
-        /// </summary>
-        public void ResetIdealProcessor()
+        private void ResetIdealProcessorCore()
         {
             // MAXIMUM_PROCESSORS == 32 on 32-bit or 64 on 64-bit, and means the thread has no preferred processor
             int MAXIMUM_PROCESSORS = IntPtr.Size == 4 ? 32 : 64;
             IdealProcessor = MAXIMUM_PROCESSORS;
         }
 
-        /// <summary>
-        /// Returns or sets whether this thread would like a priority boost if the user interacts
-        /// with user interface associated with this thread.
-        /// </summary>
         private bool PriorityBoostEnabledCore
         {
             get
@@ -63,11 +51,6 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>
-        /// Returns or sets the priority level of the associated thread.  The priority level is
-        /// not an absolute level, but instead contributes to the actual thread priority by
-        /// considering the priority class of the process.
-        /// </summary>
         private ThreadPriorityLevel PriorityLevelCore
         {
             get
@@ -94,65 +77,24 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>
-        /// Sets which processors the associated thread is allowed to be scheduled to run on.
-        /// Each processor is represented as a bit: bit 0 is processor one, bit 1 is processor
-        /// two, etc.  For example, the value 1 means run on processor one, 2 means run on
-        /// processor two, 3 means run on processor one or two.
-        /// </summary>
-        [SupportedOSPlatform("windows")]
-        public IntPtr ProcessorAffinity
+        private void SetProcessorAffinity(IntPtr value)
         {
-            set
+            using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_SET_INFORMATION | Interop.Kernel32.ThreadOptions.THREAD_QUERY_INFORMATION))
             {
-                using (SafeThreadHandle threadHandle = OpenThreadHandle(Interop.Kernel32.ThreadOptions.THREAD_SET_INFORMATION | Interop.Kernel32.ThreadOptions.THREAD_QUERY_INFORMATION))
+                if (Interop.Kernel32.SetThreadAffinityMask(threadHandle, value) == IntPtr.Zero)
                 {
-                    if (Interop.Kernel32.SetThreadAffinityMask(threadHandle, value) == IntPtr.Zero)
-                    {
-                        throw new Win32Exception();
-                    }
+                    throw new Win32Exception();
                 }
             }
         }
 
-        /// <summary>
-        /// Returns the amount of time the thread has spent running code inside the operating
-        /// system core.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan PrivilegedProcessorTime
-        {
-            get { return GetThreadTimes().PrivilegedProcessorTime; }
-        }
+        private TimeSpan GetPrivilegedProcessorTime() => GetThreadTimes().PrivilegedProcessorTime;
 
         private DateTime GetStartTime() => GetThreadTimes().StartTime;
 
-        /// <summary>
-        /// Returns the amount of time the associated thread has spent utilizing the CPU.
-        /// It is the sum of the System.Diagnostics.ProcessThread.UserProcessorTime and
-        /// System.Diagnostics.ProcessThread.PrivilegedProcessorTime.
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan TotalProcessorTime
-        {
-            get { return GetThreadTimes().TotalProcessorTime; }
-        }
+        private TimeSpan GetTotalProcessorTime() => GetThreadTimes().TotalProcessorTime;
 
-        /// <summary>
-        /// Returns the amount of time the associated thread has spent running code
-        /// inside the application (not the operating system core).
-        /// </summary>
-        [UnsupportedOSPlatform("ios")]
-        [UnsupportedOSPlatform("tvos")]
-        [SupportedOSPlatform("maccatalyst")]
-        public TimeSpan UserProcessorTime
-        {
-            get { return GetThreadTimes().UserProcessorTime; }
-        }
+        private TimeSpan GetUserProcessorTime() => GetThreadTimes().UserProcessorTime;
 
         /// <summary>Gets timing information for the thread.</summary>
         private ProcessThreadTimes GetThreadTimes()
