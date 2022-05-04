@@ -32,6 +32,13 @@ internal unsafe struct MsQuicBuffers : IDisposable
     public QUIC_BUFFER* Buffers => _buffers;
     public int Count => _count;
 
+    private void FreeNativeMemory()
+    {
+        QUIC_BUFFER* buffers = _buffers;
+        _buffers = null;
+        NativeMemory.Free(buffers);
+    }
+
     /// <summary>
     /// The method initializes QUIC_BUFFER* with data from inputs, converted via toBuffer.
     /// Note that the struct either needs to be freshly created via new or previously cleaned up with Reset.
@@ -47,9 +54,7 @@ internal unsafe struct MsQuicBuffers : IDisposable
         }
         if (_count < inputs.Count)
         {
-            QUIC_BUFFER* buffers = _buffers;
-            _buffers = null;
-            NativeMemory.Free(buffers);
+            FreeNativeMemory();
             _buffers = (QUIC_BUFFER*)NativeMemory.Alloc((nuint)sizeof(QUIC_BUFFER), (nuint)inputs.Count);
         }
 
@@ -68,7 +73,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
 
     /// <summary>
     /// Unpins the managed memory and allows reuse of this struct.
-    /// Do not Reset the struct right before Dispose, that will lead to double MemoryHandle disposal.
     /// </summary>
     public void Reset()
     {
@@ -85,6 +89,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
     public void Dispose()
     {
         Reset();
-        NativeMemory.Free(_buffers);
+        FreeNativeMemory();
     }
 }
