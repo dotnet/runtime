@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
@@ -18,12 +19,15 @@ public sealed partial class Sse41Tests
     {
         Vector128<nint> expectedVector = Vector128.Create(left, right).AsNInt();
 
-        Span<nint> span = stackalloc nint[2];
-        span[0] = (nint)left;
-        span[1] = (nint)right;
-
         unsafe
         {
+            Span<nint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nint) * 2), 32), 2)
+                {
+                    [0] = (nint)left,
+                    [1] = (nint)right
+                };
+
             fixed (nint* ptr = &span[0])
             {
                 Vector128<nint> actualVector = Sse41.LoadAlignedVector128NonTemporal(ptr);
@@ -42,12 +46,15 @@ public sealed partial class Sse41Tests
     {
         Vector128<nint> expectedVector = Vector128.Create(left, right).AsNInt();
 
-        Span<nint> span = stackalloc nint[2];
-        span[0] = left;
-        span[1] = right;
-
         unsafe
         {
+            Span<nint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nint) * 2), 32), 2)
+                {
+                    [0] = left,
+                    [1] = right
+                };
+
             fixed (nint* ptr = &span[0])
             {
                 Vector128<nint> actualVector = Sse41.LoadAlignedVector128NonTemporal(ptr);
@@ -66,12 +73,15 @@ public sealed partial class Sse41Tests
     {
         Vector128<nuint> expectedVector = Vector128.Create(left, right).AsNUInt();
 
-        Span<nuint> span = stackalloc nuint[2];
-        span[0] = (nuint)left;
-        span[1] = (nuint)right;
-
         unsafe
         {
+            Span<nuint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nuint) * 2), 32), 2)
+                {
+                    [0] = (nuint)left,
+                    [1] = (nuint)right
+                };
+
             fixed (nuint* ptr = &span[0])
             {
                 Vector128<nuint> actualVector = Sse41.LoadAlignedVector128NonTemporal(ptr);
@@ -90,12 +100,15 @@ public sealed partial class Sse41Tests
     {
         Vector128<nuint> expectedVector = Vector128.Create(left, right).AsNUInt();
 
-        Span<nuint> span = stackalloc nuint[2];
-        span[0] = left;
-        span[1] = right;
-
         unsafe
         {
+            Span<nuint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nuint) * 2), 32), 2)
+                {
+                    [0] = left,
+                    [1] = right
+                };
+
             fixed (nuint* ptr = &span[0])
             {
                 Vector128<nuint> actualVector = Sse41.LoadAlignedVector128NonTemporal(ptr);

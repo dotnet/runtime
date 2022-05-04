@@ -36,6 +36,16 @@
     <Compile Include="X86\Avx2Tests.Or.cs" />
     <Compile Include="X86\Avx2Tests.Permute2x128.cs" />
     <Compile Include="X86\Avx2Tests.Permute4x64.cs" />
+    <Compile Include="X86\Avx2Tests.ShiftLeftLogical.cs" />
+    <Compile Include="X86\Avx2Tests.ShiftLeftLogical128BitLane.cs" />
+    <Compile Include="X86\Avx2Tests.ShiftLeftLogicalVariable.cs" />
+    <Compile Include="X86\Avx2Tests.ShiftRightLogical.cs" />
+    <Compile Include="X86\Avx2Tests.ShiftRightLogical128BitLane.cs" />
+    <Compile Include="X86\Avx2Tests.ShiftRightLogicalVariable.cs" />
+    <Compile Include="X86\Avx2Tests.Subtract.cs" />
+    <Compile Include="X86\Avx2Tests.UnpackHigh.cs" />
+    <Compile Include="X86\Avx2Tests.UnpackLow.cs" />
+    <Compile Include="X86\Avx2Tests.Xor.cs" />
     <Compile Include="X86\AvxTests.cs" />
     <Compile Include="X86\AvxTests.ExtractVector128.cs" />
     <Compile Include="X86\AvxTests.InsertVector128.cs" />

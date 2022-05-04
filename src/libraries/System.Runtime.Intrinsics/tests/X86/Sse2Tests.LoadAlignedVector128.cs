@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
@@ -15,11 +16,15 @@ public sealed partial class Sse2Tests
     [InlineData(long.MaxValue, long.MinValue)]
     public void LoadAlignedVector128_nint_64Bit(long firstValue, long secondValue)
     {
-        Span<nint> span = stackalloc nint[2];
-        span[0] = (nint)firstValue;
-        span[1] = (nint)secondValue;
         unsafe
         {
+            Span<nint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nint) * 2), 32), 2)
+                {
+                    [0] = (nint)firstValue,
+                    [1] = (nint)secondValue
+                };
+
             fixed (nint* ptr = &span[0])
             {
                 Vector128<nint> actualVector = Sse2.LoadAlignedVector128(ptr);
@@ -36,11 +41,15 @@ public sealed partial class Sse2Tests
     [InlineData(int.MaxValue, int.MinValue)]
     public void LoadAlignedVector128_nint_32Bit(int firstValue, int secondValue)
     {
-        Span<nint> span = stackalloc nint[2];
-        span[0] = firstValue;
-        span[1] = secondValue;
         unsafe
         {
+            Span<nint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nint) * 2), 32), 2)
+                {
+                    [0] = firstValue,
+                    [1] = secondValue
+                };
+
             fixed (nint* ptr = &span[0])
             {
                 Vector128<nint> actualVector = Sse2.LoadAlignedVector128(ptr);
@@ -57,11 +66,15 @@ public sealed partial class Sse2Tests
     [InlineData(ulong.MaxValue, ulong.MinValue)]
     public void LoadAlignedVector128_nuint_64Bit(ulong firstValue, ulong secondValue)
     {
-        Span<nuint> span = stackalloc nuint[2];
-        span[0] = (nuint)firstValue;
-        span[1] = (nuint)secondValue;
         unsafe
         {
+            Span<nuint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nuint) * 2), 32), 2)
+                {
+                    [0] = (nuint)firstValue,
+                    [1] = (nuint)secondValue
+                };
+
             fixed (nuint* ptr = &span[0])
             {
                 Vector128<nuint> actualVector = Sse2.LoadAlignedVector128(ptr);
@@ -78,11 +91,15 @@ public sealed partial class Sse2Tests
     [InlineData(uint.MaxValue, uint.MinValue)]
     public void LoadAlignedVector128_nuint_32Bit(uint firstValue, uint secondValue)
     {
-        Span<nuint> span = stackalloc nuint[2];
-        span[0] = firstValue;
-        span[1] = secondValue;
         unsafe
         {
+            Span<nuint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nuint) * 2), 32), 2)
+                {
+                    [0] = firstValue,
+                    [1] = secondValue
+                };
+
             fixed (nuint* ptr = &span[0])
             {
                 Vector128<nuint> actualVector = Sse2.LoadAlignedVector128(ptr);

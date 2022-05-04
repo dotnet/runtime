@@ -46,3 +46,4 @@ public sealed partial class Sse42Tests
         Assert.Equal(expectedResult, actualResult);
     }
 }
+

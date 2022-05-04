@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Runtime.InteropServices;
 using System.Runtime.Intrinsics.X86;
 using Xunit;
 
@@ -16,10 +17,12 @@ public sealed partial class Sse2Tests
     public void StoreAligned_nint_64Bit(long lower, long upper)
     {
         Vector128<nint> sourceVector = Vector128.Create(lower, upper).AsNInt();
-        Span<nint> span = stackalloc nint[2];
 
         unsafe
         {
+            Span<nint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nint) * 2), 32), 4);
+
             fixed (nint* ptr = &span[0])
             {
                 Sse2.StoreAligned(ptr, sourceVector);
@@ -37,10 +40,12 @@ public sealed partial class Sse2Tests
     public void StoreAligned_nint_32Bit(int lower, int upper)
     {
         Vector128<nint> sourceVector = Vector128.Create(lower, upper).AsNInt();
-        Span<nint> span = stackalloc nint[2];
 
         unsafe
         {
+            Span<nint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nint) * 2), 32), 4);
+
             fixed (nint* ptr = &span[0])
             {
                 Sse2.StoreAligned(ptr, sourceVector);
@@ -57,10 +62,12 @@ public sealed partial class Sse2Tests
     public void StoreAligned_nuint_64Bit(ulong lower, ulong upper)
     {
         Vector128<nuint> sourceVector = Vector128.Create(lower, upper).AsNUInt();
-        Span<nuint> span = stackalloc nuint[2];
 
         unsafe
         {
+            Span<nuint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nuint) * 2), 32), 4);
+
             fixed (nuint* ptr = &span[0])
             {
                 Sse2.StoreAligned(ptr, sourceVector);
@@ -77,10 +84,12 @@ public sealed partial class Sse2Tests
     public void StoreAligned_nuint_32Bit(uint lower, uint upper)
     {
         Vector128<nuint> sourceVector = Vector128.Create(lower, upper).AsNUInt();
-        Span<nuint> span = stackalloc nuint[2];
 
         unsafe
         {
+            Span<nuint> span =
+                new(NativeMemory.AlignedAlloc((nuint)(sizeof(nuint) * 2), 32), 4);
+
             fixed (nuint* ptr = &span[0])
             {
                 Sse2.StoreAligned(ptr, sourceVector);
