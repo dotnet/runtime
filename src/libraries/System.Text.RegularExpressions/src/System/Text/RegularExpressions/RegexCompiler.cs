@@ -898,16 +898,16 @@ namespace System.Text.RegularExpressions
                         BltFar(returnFalse);
                     }
 
-                    // if (i >= slice.Length - (minRequiredLength - 1)) goto returnFalse;
+                    // if ((uint)(i + (minRequiredLength - 1)) >= slice.Length) goto returnFalse;
                     if (sets.Count > 1)
                     {
                         Debug.Assert(needLoop);
+                        Ldloc(iLocal);
+                        Ldc(minRequiredLength - 1);
+                        Add();
                         Ldloca(textSpanLocal);
                         Call(s_spanGetLengthMethod);
-                        Ldc(minRequiredLength - 1);
-                        Sub();
-                        Ldloc(iLocal);
-                        BleFar(returnFalse);
+                        _ilg!.Emit(OpCodes.Bge_Un, returnFalse);
                     }
                 }
 

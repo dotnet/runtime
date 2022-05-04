@@ -824,7 +824,7 @@ namespace System.Text.RegularExpressions.Generator
 
                         if (setsToUse > 1)
                         {
-                            using (EmitBlock(writer, $"if (i >= span.Length - {minRequiredLength - 1})"))
+                            using (EmitBlock(writer, $"if ((uint)(i + {minRequiredLength - 1}) >= span.Length)"))
                             {
                                 noMatchFoundLabelNeeded = true;
                                 Goto(NoMatchFound);
