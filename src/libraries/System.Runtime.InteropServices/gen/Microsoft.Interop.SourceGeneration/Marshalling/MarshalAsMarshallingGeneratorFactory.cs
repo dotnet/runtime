@@ -149,6 +149,11 @@ namespace Microsoft.Interop
                         {
                             NotSupportedDetails = string.Format(SR.MarshallingCharAsSpecifiedStringMarshallingNotSupported, nameof(CharEncoding.Utf8))
                         };
+                    case CharEncoding.Custom:
+                        throw new MarshallingNotSupportedException(info, context)
+                        {
+                            NotSupportedDetails = SR.MarshallingCharAsStringMarshallingCustomNotSupported
+                        };
                 }
             }
 
