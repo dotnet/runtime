@@ -207,6 +207,9 @@ namespace System.Collections.Immutable.Tests
             var absComparer = new DelegateEqualityComparer<double>(equals: (x, y) => Math.Abs(x) == Math.Abs(y));
             Assert.True(mutable.Remove(-1.5, absComparer));
             Assert.Equal(new[] { 3.6 }, mutable);
+
+            Assert.False(mutable.Remove(5, absComparer));
+            Assert.False(mutable.Remove(5, null));
         }
 
         [Fact]

@@ -480,13 +480,15 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
-            /// Removes the specified element.
+            /// Removes the first occurrence of the specified element from the builder.
+            /// If no match is found, the builder remains unchanged.
             /// </summary>
             /// <param name="element">The element to remove.</param>
             /// <param name="equalityComparer">
             /// The equality comparer to use in the search.
             /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
             /// </param>
+            /// <returns>A value indicating whether the specified element was found and removed from the collection.</returns>
             public bool Remove(T element, IEqualityComparer<T>? equalityComparer)
             {
                 int index = this.IndexOf(element, 0, _count, equalityComparer);

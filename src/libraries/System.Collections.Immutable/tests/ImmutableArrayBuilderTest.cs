@@ -338,6 +338,9 @@ namespace System.Collections.Immutable.Tests
 
             Assert.True(builder.Remove(-1.5, absComparer));
             Assert.Equal(new[] { 2.5, 3.5 }, builder);
+
+            Assert.False(builder.Remove(5, absComparer));
+            Assert.False(builder.Remove(4, null));
         }
 
         [Fact]
