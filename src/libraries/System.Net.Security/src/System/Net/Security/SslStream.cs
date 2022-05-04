@@ -552,7 +552,6 @@ namespace System.Net.Security
             get
             {
                 ThrowIfExceptionalOrNotHandshake();
-
                 return _connectionInfo.ApplicationProtocol != null ? new SslApplicationProtocol(_connectionInfo.ApplicationProtocol, false) : default;
             }
         }

@@ -15,7 +15,7 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
+        private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
         private int _nestedAuth;
         private bool _isRenego;
 

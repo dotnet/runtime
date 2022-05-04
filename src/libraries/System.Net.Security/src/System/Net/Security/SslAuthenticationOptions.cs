@@ -109,7 +109,6 @@ namespace System.Net.Security
             }
             else if (sslServerAuthenticationOptions.ServerCertificate != null)
             {
-
                 X509Certificate2? certificateWithKey = sslServerAuthenticationOptions.ServerCertificate as X509Certificate2;
 
                 if (certificateWithKey != null && certificateWithKey.HasPrivateKey)
