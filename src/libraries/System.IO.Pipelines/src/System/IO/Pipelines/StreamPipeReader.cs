@@ -3,6 +3,7 @@
 
 using System.Buffers;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -217,6 +218,9 @@ namespace System.IO.Pipelines
 
             return Core(this, tokenSource, cancellationToken);
 
+#if NETCOREAPP
+            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+#endif
             static async ValueTask<ReadResult> Core(StreamPipeReader reader, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration reg = default;
@@ -302,6 +306,9 @@ namespace System.IO.Pipelines
 
             return Core(this, minimumSize, tokenSource, cancellationToken);
 
+#if NETCOREAPP
+            [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
+#endif
             static async ValueTask<ReadResult> Core(StreamPipeReader reader, int minimumSize, CancellationTokenSource tokenSource, CancellationToken cancellationToken)
             {
                 CancellationTokenRegistration reg = default;

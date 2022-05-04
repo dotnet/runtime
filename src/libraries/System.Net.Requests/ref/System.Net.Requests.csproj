@@ -4,18 +4,19 @@
     <!-- SYSLIB0014: WebRequest, HttpWebRequest, ServicePoint, and WebClient are obsolete. Use HttpClient instead. -->
     <NoWarn>$(NoWarn);CS0809;SYSLIB0014</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Net.Requests.cs" />
     <Compile Include="System.Net.Requests.Forwards.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
-    <ProjectReference Include="..\..\System.Net.Primitives\ref\System.Net.Primitives.csproj" />
-    <ProjectReference Include="..\..\System.Net.Security\ref\System.Net.Security.csproj" />
-    <ProjectReference Include="..\..\System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" />
-    <ProjectReference Include="..\..\System.Net.WebHeaderCollection\ref\System.Net.WebHeaderCollection.csproj" />
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Security.Cryptography.X509Certificates\ref\System.Security.Cryptography.X509Certificates.csproj" />
-    <ProjectReference Include="..\..\System.Security.Principal\ref\System.Security.Principal.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Specialized\ref\System.Collections.Specialized.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Primitives\ref\System.Net.Primitives.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.Security\ref\System.Net.Security.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.ServicePoint\ref\System.Net.ServicePoint.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Net.WebHeaderCollection\ref\System.Net.WebHeaderCollection.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
   </ItemGroup>
 </Project>

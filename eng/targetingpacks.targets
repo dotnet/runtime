@@ -67,21 +67,13 @@
     </Reference>
   </ItemGroup>
 
-  <Target Name="RemoveFrameworkReferences"
-          BeforeTargets="_HandlePackageFileConflicts"
-          AfterTargets="ResolveTargetingPackAssets"
-          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <!-- Point MicrosoftNetCoreAppRefPackRefDir to the acquired targeting pack to use it later for AssemblySearchPaths resolution. -->
-    <PropertyGroup Condition="'$(TargetFrameworkVersion)' != 'v$(NetCoreAppCurrentVersion)'">
-      <MicrosoftNetCoreAppRefPackRefDir>%(ResolvedFrameworkReference.TargetingPackPath)\ref\net$(TargetFrameworkVersion.TrimStart('v'))\</MicrosoftNetCoreAppRefPackRefDir>
-    </PropertyGroup>
-  </Target>
-
   <!-- Add the resolved targeting pack to the assembly search path. -->
   <Target Name="UseTargetingPackForAssemblySearchPaths"
           BeforeTargets="ResolveAssemblyReferences;
                          DesignTimeResolveAssemblyReferences"
-          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+          Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
+                     '$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)' and
+                     '$(DisableImplicitFrameworkReferences)' == 'true'">
     <PropertyGroup>
       <AssemblySearchPaths>$(AssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</AssemblySearchPaths>
       <DesignTimeAssemblySearchPaths>$(DesignTimeAssemblySearchPaths);$(MicrosoftNetCoreAppRefPackRefDir.TrimEnd('/\'))</DesignTimeAssemblySearchPaths>
@@ -131,7 +123,7 @@
   
   <!-- Filter out conflicting implicit assembly references. -->
   <Target Name="FilterImplicitAssemblyReferences"
-          Condition="'$(DisableImplicitAssemblyReferences)' != 'true'"
+          Condition="'$(DisableImplicitFrameworkReferences)' != 'true'"
           DependsOnTargets="ResolveProjectReferences"
           AfterTargets="ResolveTargetingPackAssets">
     <ItemGroup>

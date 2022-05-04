@@ -110,6 +110,7 @@ namespace System.Runtime.CompilerServices
             return ObjectHeader.GetHashCode(o);
         }
 
+        [Obsolete("OffsetToStringData has been deprecated. Use string.GetPinnableReference() instead.")]
         public static int OffsetToStringData
         {
             // This offset is baked in by string indexer intrinsic, so there is no harm

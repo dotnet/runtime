@@ -7,6 +7,8 @@
     <!-- Target reference assemblies instead of implementation assemblies. -->
     <CompileUsingReferenceAssemblies>true</CompileUsingReferenceAssemblies>
     <TrimOutPrivateAssembliesFromReferencePath>true</TrimOutPrivateAssembliesFromReferencePath>
+    <!-- Temporarily disable baseline validation so that we can add baselines for the upcoming API compat fix https://github.com/dotnet/arcade/pull/9168 -->
+    <ValidateBaseline>false</ValidateBaseline>
 
     <ApiCompatNetStandard20BaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netstandard2.0.txt</ApiCompatNetStandard20BaselineFile>
     <ApiCompatNetStandard21BaselineFile>$(MSBuildThisFileDirectory)ApiCompatBaseline.netstandard2.1.txt</ApiCompatNetStandard21BaselineFile>
@@ -55,7 +57,7 @@
                    ExcludeAttributes="@(ApiCompatExcludeAttributesFile)"
                    ImplementationDirectories="$(LibrariesAllRefArtifactsPath)"
                    BaselineFiles="$(ApiCompatNetStandard21BaselineFile)"
-                   ValidateBaseline="true"
+                   ValidateBaseline="$(ValidateBaseline)"
                    OutFilePath="$(ApiCompatNetStandard21OutputFile)"
                    DisableAssemblyResolveTraceListener="true"
                    IgnoreExitCode="true">
@@ -68,7 +70,7 @@
                    ExcludeAttributes="@(ApiCompatExcludeAttributesFile)"
                    ImplementationDirectories="$(LibrariesAllRefArtifactsPath)"
                    BaselineFiles="$(ApiCompatNetStandard20BaselineFile)"
-                   ValidateBaseline="true"
+                   ValidateBaseline="$(ValidateBaseline)"
                    OutFilePath="$(ApiCompatNetStandard20OutputFile)"
                    DisableAssemblyResolveTraceListener="true"
                    IgnoreExitCode="true">
@@ -81,7 +83,7 @@
                    ExcludeAttributes="@(ApiCompatExcludeAttributesFile)"
                    ImplementationDirectories="$(LibrariesAllRefArtifactsPath)"
                    BaselineFiles="$(ApiCompatNetCoreAppLatestStableBaselineFile)"
-                   ValidateBaseline="true"
+                   ValidateBaseline="$(ValidateBaseline)"
                    OutFilePath="$(ApiCompatNetCoreAppLatestStableOutputFile)"
                    DisableAssemblyResolveTraceListener="true"
                    IgnoreExitCode="true">

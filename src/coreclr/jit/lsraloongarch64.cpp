@@ -162,7 +162,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_COMMA:
         case GT_QMARK:
         case GT_COLON:
-        case GT_CLS_VAR:
         case GT_ADDR:
             srcCount = 0;
             assert(dstCount == 0);

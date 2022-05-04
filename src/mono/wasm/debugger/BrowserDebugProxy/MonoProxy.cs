@@ -1061,9 +1061,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return true;
         }
+
+        internal virtual void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Result res)
+        {
+        }
+
         internal async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
             Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
+            SaveLastDebuggerAgentBufferReceivedToContext(sessionId, res);
             if (!res.IsOk)
                 return false;
 

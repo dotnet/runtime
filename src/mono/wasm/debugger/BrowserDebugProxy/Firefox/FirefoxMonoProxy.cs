@@ -660,13 +660,19 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return false;
     }
 
+    internal override void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Result res)
+    {
+        var context = GetContextFixefox(sessionId);
+        context.LastDebuggerAgentBufferReceived = res;
+    }
+
     private async Task<bool> SendPauseToBrowser(SessionId sessionId, JObject args, CancellationToken token)
     {
-        Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
+        var context = GetContextFixefox(sessionId);
+        Result res = context.LastDebuggerAgentBufferReceived;
         if (!res.IsOk)
             return false;
 
-        var context = GetContextFixefox(sessionId);
         byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
         using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
         retDebuggerCmdReader.ReadBytes(11);

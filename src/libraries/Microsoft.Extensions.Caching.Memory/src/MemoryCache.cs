@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
@@ -30,7 +29,7 @@ namespace Microsoft.Extensions.Caching.Memory
         private readonly ThreadLocal<Stats>? _stats;
         private CoherentState _coherentState;
         private bool _disposed;
-        private DateTimeOffset _lastExpirationScan;
+        private DateTime _lastExpirationScan;
 
         /// <summary>
         /// Creates a new <see cref="MemoryCache"/> instance.
@@ -54,11 +53,6 @@ namespace Microsoft.Extensions.Caching.Memory
 
             _coherentState = new CoherentState();
 
-            if (_options.Clock == null)
-            {
-                _options.Clock = new SystemClock();
-            }
-
             if (_options.TrackStatistics)
             {
                 _allStats = new List<WeakReference<Stats>>();
@@ -66,9 +60,11 @@ namespace Microsoft.Extensions.Caching.Memory
                 _stats = new ThreadLocal<Stats>(() => new Stats(this));
             }
 
-            _lastExpirationScan = _options.Clock.UtcNow;
+            _lastExpirationScan = UtcNow;
             TrackLinkedCacheEntries = _options.TrackLinkedCacheEntries; // we store the setting now so it's consistent for entire MemoryCache lifetime
         }
+
+        private DateTime UtcNow => _options.Clock?.UtcNow.UtcDateTime ?? DateTime.UtcNow;
 
         /// <summary>
         /// Cleans up the background collection events.
@@ -102,22 +98,22 @@ namespace Microsoft.Extensions.Caching.Memory
                 return;
             }
 
-            if (_options.SizeLimit.HasValue && !entry.Size.HasValue)
+            if (_options.HasSizeLimit && entry.Size < 0)
             {
                 throw new InvalidOperationException(SR.Format(SR.CacheEntryHasEmptySize, nameof(entry.Size), nameof(_options.SizeLimit)));
             }
 
-            DateTimeOffset utcNow = _options.Clock!.UtcNow;
+            DateTime utcNow = UtcNow;
 
             // Applying the option's absolute expiration only if it's not already smaller.
             // This can be the case if a dependent cache entry has a smaller value, and
             // it was set by cascading it to its parent.
-            if (entry.AbsoluteExpirationRelativeToNow.HasValue)
+            if (entry.AbsoluteExpirationRelativeToNow.Ticks > 0)
             {
-                var absoluteExpiration = utcNow + entry.AbsoluteExpirationRelativeToNow.Value;
-                if (!entry.AbsoluteExpiration.HasValue || absoluteExpiration < entry.AbsoluteExpiration.Value)
+                long absoluteExpiration = (utcNow + entry.AbsoluteExpirationRelativeToNow).Ticks;
+                if ((ulong)absoluteExpiration < (ulong)entry.AbsoluteExpirationTicks)
                 {
-                    entry.AbsoluteExpiration = absoluteExpiration;
+                    entry.AbsoluteExpirationTicks = absoluteExpiration;
                 }
             }
 
@@ -137,15 +133,10 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     coherentState.RemoveEntry(priorEntry, _options);
                 }
-                StartScanForExpiredItemsIfNeeded(utcNow);
-                return;
             }
-
-            bool exceedsCapacity = UpdateCacheSizeExceedsCapacity(entry, coherentState);
-            if (!exceedsCapacity)
+            else if (!UpdateCacheSizeExceedsCapacity(entry, coherentState))
             {
                 bool entryAdded;
-
                 if (priorEntry == null)
                 {
                     // Try to add the new entry if no previous entries exist.
@@ -158,10 +149,10 @@ namespace Microsoft.Extensions.Caching.Memory
 
                     if (entryAdded)
                     {
-                        if (_options.SizeLimit.HasValue)
+                        if (_options.HasSizeLimit)
                         {
                             // The prior entry was removed, decrease the by the prior entry's size
-                            Interlocked.Add(ref coherentState._cacheSize, -priorEntry.Size!.Value);
+                            Interlocked.Add(ref coherentState._cacheSize, -priorEntry.Size);
                         }
                     }
                     else
@@ -179,19 +170,16 @@ namespace Microsoft.Extensions.Caching.Memory
                 }
                 else
                 {
-                    if (_options.SizeLimit.HasValue)
+                    if (_options.HasSizeLimit)
                     {
                         // Entry could not be added, reset cache size
-                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size!.Value);
+                        Interlocked.Add(ref coherentState._cacheSize, -entry.Size);
                     }
                     entry.SetExpired(EvictionReason.Replaced);
                     entry.InvokeEvictionCallbacks();
                 }
 
-                if (priorEntry != null)
-                {
-                    priorEntry.InvokeEvictionCallbacks();
-                }
+                priorEntry?.InvokeEvictionCallbacks();
             }
             else
             {
@@ -214,11 +202,12 @@ namespace Microsoft.Extensions.Caching.Memory
 
             CheckDisposed();
 
-            DateTimeOffset utcNow = _options.Clock!.UtcNow;
+            DateTime utcNow = UtcNow;
 
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
-            if (coherentState._entries.TryGetValue(key, out CacheEntry? entry))
+            if (coherentState._entries.TryGetValue(key, out CacheEntry? tmp))
             {
+                CacheEntry entry = tmp;
                 // Check if expired due to expiration tokens, timers, etc. and if so, remove it.
                 // Allow a stale Replaced value to be returned due to concurrent calls to SetExpired during SetEntry.
                 if (!entry.CheckExpired(utcNow) || entry.EvictionReason == EvictionReason.Replaced)
@@ -226,11 +215,11 @@ namespace Microsoft.Extensions.Caching.Memory
                     entry.LastAccessed = utcNow;
                     result = entry.Value;
 
-                    if (TrackLinkedCacheEntries && entry.CanPropagateOptions())
+                    if (TrackLinkedCacheEntries)
                     {
                         // When this entry is retrieved in the scope of creating another entry,
                         // that entry needs a copy of these expiration tokens.
-                        entry.PropagateOptions(CacheEntryHelper.Current);
+                        entry.PropagateOptionsToCurrent();
                     }
 
                     StartScanForExpiredItemsIfNeeded(utcNow);
@@ -277,16 +266,16 @@ namespace Microsoft.Extensions.Caching.Memory
             CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
             if (coherentState._entries.TryRemove(key, out CacheEntry? entry))
             {
-                if (_options.SizeLimit.HasValue)
+                if (_options.HasSizeLimit)
                 {
-                    Interlocked.Add(ref coherentState._cacheSize, -entry.Size!.Value);
+                    Interlocked.Add(ref coherentState._cacheSize, -entry.Size);
                 }
 
                 entry.SetExpired(EvictionReason.Removed);
                 entry.InvokeEvictionCallbacks();
             }
 
-            StartScanForExpiredItemsIfNeeded(_options.Clock!.UtcNow);
+            StartScanForExpiredItemsIfNeeded(UtcNow);
         }
 
         /// <summary>
@@ -297,7 +286,7 @@ namespace Microsoft.Extensions.Caching.Memory
             CheckDisposed();
 
             CoherentState oldState = Interlocked.Exchange(ref _coherentState, new CoherentState());
-            foreach (var entry in oldState._entries)
+            foreach (KeyValuePair<object, CacheEntry> entry in oldState._entries)
             {
                 entry.Value.SetExpired(EvictionReason.Removed);
                 entry.Value.InvokeEvictionCallbacks();
@@ -329,23 +318,23 @@ namespace Microsoft.Extensions.Caching.Memory
         {
             // TODO: For efficiency consider processing these expirations in batches.
             _coherentState.RemoveEntry(entry, _options);
-            StartScanForExpiredItemsIfNeeded(_options.Clock!.UtcNow);
+            StartScanForExpiredItemsIfNeeded(UtcNow);
         }
 
         // Called by multiple actions to see how long it's been since we last checked for expired items.
         // If sufficient time has elapsed then a scan is initiated on a background task.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private void StartScanForExpiredItemsIfNeeded(DateTimeOffset utcNow)
+        private void StartScanForExpiredItemsIfNeeded(DateTime utcNow)
         {
             if (_options.ExpirationScanFrequency < utcNow - _lastExpirationScan)
             {
                 ScheduleTask(utcNow);
             }
 
-            void ScheduleTask(DateTimeOffset utcNow)
+            void ScheduleTask(DateTime utcNow)
             {
                 _lastExpirationScan = utcNow;
-                Task.Factory.StartNew(state => ScanForExpiredItems((MemoryCache)state!), this,
+                Task.Factory.StartNew(state => ((MemoryCache)state!).ScanForExpiredItems(), this,
                     CancellationToken.None, TaskCreationOptions.DenyChildAttach, TaskScheduler.Default);
             }
         }
@@ -416,44 +405,47 @@ namespace Microsoft.Extensions.Caching.Memory
             }
         }
 
-        private static void ScanForExpiredItems(MemoryCache cache)
+        private void ScanForExpiredItems()
         {
-            DateTimeOffset now = cache._lastExpirationScan = cache._options.Clock!.UtcNow;
+            DateTime utcNow = _lastExpirationScan = UtcNow;
 
-            CoherentState coherentState = cache._coherentState; // Clear() can update the reference in the meantime
+            CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
             foreach (KeyValuePair<object, CacheEntry> item in coherentState._entries)
             {
                 CacheEntry entry = item.Value;
 
-                if (entry.CheckExpired(now))
+                if (entry.CheckExpired(utcNow))
                 {
-                    coherentState.RemoveEntry(entry, cache._options);
+                    coherentState.RemoveEntry(entry, _options);
                 }
             }
         }
 
         private bool UpdateCacheSizeExceedsCapacity(CacheEntry entry, CoherentState coherentState)
         {
-            if (!_options.SizeLimit.HasValue)
+            long sizeLimit = _options.SizeLimitValue;
+            if (sizeLimit < 0)
             {
                 return false;
             }
 
+            long sizeRead = coherentState.Size;
             for (int i = 0; i < 100; i++)
             {
-                long sizeRead = coherentState.Size;
-                long newSize = sizeRead + entry.Size!.Value;
+                long newSize = sizeRead + entry.Size;
 
-                if (newSize < 0 || newSize > _options.SizeLimit)
+                if ((ulong)newSize > (ulong)sizeLimit)
                 {
                     // Overflow occurred, return true without updating the cache size
                     return true;
                 }
 
-                if (sizeRead == Interlocked.CompareExchange(ref coherentState._cacheSize, newSize, sizeRead))
+                long original = Interlocked.CompareExchange(ref coherentState._cacheSize, newSize, sizeRead);
+                if (sizeRead == original)
                 {
                     return false;
                 }
+                sizeRead = original;
             }
 
             return true;
@@ -461,26 +453,33 @@ namespace Microsoft.Extensions.Caching.Memory
 
         private void TriggerOvercapacityCompaction()
         {
-            _logger.LogDebug("Overcapacity compaction triggered");
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug("Overcapacity compaction triggered");
 
             // Spawn background thread for compaction
-            ThreadPool.QueueUserWorkItem(s => OvercapacityCompaction((MemoryCache)s!), this);
+            ThreadPool.QueueUserWorkItem(s => ((MemoryCache)s!).OvercapacityCompaction(), this);
         }
 
-        private static void OvercapacityCompaction(MemoryCache cache)
+        private void OvercapacityCompaction()
         {
-            CoherentState coherentState = cache._coherentState; // Clear() can update the reference in the meantime
+            CoherentState coherentState = _coherentState; // Clear() can update the reference in the meantime
             long currentSize = coherentState.Size;
 
-            cache._logger.LogDebug($"Overcapacity compaction executing. Current size {currentSize}");
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug($"Overcapacity compaction executing. Current size {currentSize}");
 
-            double? lowWatermark = cache._options.SizeLimit * (1 - cache._options.CompactionPercentage);
-            if (currentSize > lowWatermark)
+            long sizeLimit = _options.SizeLimitValue;
+            if (sizeLimit >= 0)
             {
-                cache.Compact(currentSize - (long)lowWatermark, entry => entry.Size!.Value, coherentState);
+                long lowWatermark = sizeLimit - (long)(sizeLimit * _options.CompactionPercentage);
+                if (currentSize > lowWatermark)
+                {
+                     Compact(currentSize - (long)lowWatermark, entry => entry.Size, coherentState);
+                }
             }
 
-            cache._logger.LogDebug($"Overcapacity compaction executed. New size {coherentState.Size}");
+            if (_logger.IsEnabled(LogLevel.Debug))
+                _logger.LogDebug($"Overcapacity compaction executed. New size {coherentState.Size}");
         }
 
         /// Remove at least the given percentage (0.10 for 10%) of the total entries (or estimated memory?), according to the following policy:
@@ -507,11 +506,11 @@ namespace Microsoft.Extensions.Caching.Memory
             long removedSize = 0;
 
             // Sort items by expired & priority status
-            DateTimeOffset now = _options.Clock!.UtcNow;
+            DateTime utcNow = UtcNow;
             foreach (KeyValuePair<object, CacheEntry> item in coherentState._entries)
             {
                 CacheEntry entry = item.Value;
-                if (entry.CheckExpired(now))
+                if (entry.CheckExpired(utcNow))
                 {
                     entriesToRemove.Add(entry);
                     removedSize += computeEntrySize(entry);
@@ -623,7 +622,7 @@ namespace Microsoft.Extensions.Caching.Memory
 
             internal int Count => _entries.Count;
 
-            internal long Size => Interlocked.Read(ref _cacheSize);
+            internal long Size => Volatile.Read(ref _cacheSize);
 
             internal void RemoveEntry(CacheEntry entry, MemoryCacheOptions options)
             {
@@ -631,7 +630,7 @@ namespace Microsoft.Extensions.Caching.Memory
                 {
                     if (options.SizeLimit.HasValue)
                     {
-                        Interlocked.Add(ref _cacheSize, -entry.Size!.Value);
+                        Interlocked.Add(ref _cacheSize, -entry.Size);
                     }
                     entry.InvokeEvictionCallbacks();
                 }

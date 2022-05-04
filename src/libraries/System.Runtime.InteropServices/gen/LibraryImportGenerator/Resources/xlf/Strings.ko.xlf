@@ -462,21 +462,6 @@
         <target state="translated">'SafeHandle'에서 파생된 추상 형식은 참조로 마샬링할 수 없습니다. 제공된 형식은 구체적이어야 합니다.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedDescription">
-        <source>P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks.</source>
-        <target state="translated">알 수 없는 대상 프레임워크 v{0}에서는 P/Invoke 소스 생성이 지원되지 않습니다. 생성된 소스는 다른 프레임워크와 호환되지 않습니다.</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedMessage">
-        <source>'LibraryImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</source>
-        <target state="translated">알 수 없는 대상 프레임워크 v{0}에서 소스 생성 P/Invoke에 'LibraryImportAttribute'를 사용할 수 없습니다.</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedTitle">
-        <source>Current target framework is not supported by source-generated P/Invokes</source>
-        <target state="translated">현재 대상 프레임워크는 소스 생성 P/Invoke에서 지원되지 않습니다.</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
         <source>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
         <target state="translated">'ToNativeValue' 메서드를 제공하는 마샬러 형식은 'TwoStageMarshalling' 기능을 지원하도록 지정해야 합니다.</target>
