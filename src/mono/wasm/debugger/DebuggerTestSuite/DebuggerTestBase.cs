@@ -859,7 +859,7 @@ namespace DebuggerTests
 
             return await GetProperties(objectId);
         }
- 
+
         /* @fn_args is for use with `Runtime.callFunctionOn` only */
         internal virtual async Task<JToken> GetProperties(string id, JToken fn_args = null, bool? own_properties = null, bool? accessors_only = null, bool expect_ok = true)
         {
