@@ -15,9 +15,6 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal;
 /// </summary>
 internal unsafe struct MsQuicBuffers : IDisposable
 {
-    // ArrayPool only for MsQuicBuffers which always clears arrays upon return.
-    private static readonly ArrayPool<MemoryHandle> s_pool = ArrayPool<MemoryHandle>.Create();
-
     // Handles to pinned memory blocks from the user.
     private MemoryHandle[] _handles;
     // Native memory block which holds the pinned memory pointers from _handles and can be passed to MsQuic as QUIC_BUFFER*.
@@ -46,8 +43,7 @@ internal unsafe struct MsQuicBuffers : IDisposable
     {
         if (_handles.Length < inputs.Count)
         {
-            s_pool.Return(_handles, clearArray: true);
-            _handles = s_pool.Rent(inputs.Count);
+            _handles = new MemoryHandle[inputs.Count];
         }
         if (_count < inputs.Count)
         {
@@ -89,7 +85,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
     public void Dispose()
     {
         Reset();
-        s_pool.Return(_handles, clearArray: true);
         NativeMemory.Free(_buffers);
     }
 }
