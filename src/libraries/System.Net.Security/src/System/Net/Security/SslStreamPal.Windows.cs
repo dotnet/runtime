@@ -128,10 +128,10 @@ namespace System.Net.Security
             ref SafeFreeCredentials? credentialsHandle,
             ref SafeDeleteSslContext? context,
             SslAuthenticationOptions sslAuthenticationOptions,
-            out byte[]? outputBuffer )
+            out byte[]? outputBuffer)
         {
             byte[]? output = Array.Empty<byte>();
-            SecurityStatusPal status =  AcceptSecurityContext(ref credentialsHandle, ref context, Span<byte>.Empty, ref output, sslAuthenticationOptions);
+            SecurityStatusPal status = AcceptSecurityContext(ref credentialsHandle, ref context, Span<byte>.Empty, ref output, sslAuthenticationOptions);
             outputBuffer = output;
             return status;
         }
@@ -196,16 +196,6 @@ namespace System.Net.Security
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_MANUAL_CRED_VALIDATION |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_DEFAULT_CREDS |
                     Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_SEND_AUX_RECORD;
-
-#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
-                // Always opt-in SCH_USE_STRONG_CRYPTO for TLS.
-                if (((protocolFlags == 0) ||
-                        (protocolFlags & ~(Interop.SChannel.SP_PROT_SSL2 | Interop.SChannel.SP_PROT_SSL3)) != 0)
-                     && (policy != EncryptionPolicy.AllowNoEncryption) && (policy != EncryptionPolicy.NoEncryption))
-                {
-                    flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_USE_STRONG_CRYPTO;
-                }
-#pragma warning restore SYSLIB0040
             }
             else
             {
@@ -216,6 +206,16 @@ namespace System.Net.Security
                     flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_CRED_NO_SYSTEM_MAPPER;
                 }
             }
+
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
+            // Always opt-in SCH_USE_STRONG_CRYPTO for TLS.
+            if (((protocolFlags == 0) ||
+                    (protocolFlags & ~(Interop.SChannel.SP_PROT_SSL2 | Interop.SChannel.SP_PROT_SSL3)) != 0)
+                    && (policy != EncryptionPolicy.AllowNoEncryption) && (policy != EncryptionPolicy.NoEncryption))
+            {
+                flags |= Interop.SspiCli.SCHANNEL_CRED.Flags.SCH_USE_STRONG_CRYPTO;
+            }
+#pragma warning restore SYSLIB0040
 
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info($"flags=({flags}), ProtocolFlags=({protocolFlags}), EncryptionPolicy={policy}");
             Interop.SspiCli.SCHANNEL_CRED secureCredential = CreateSecureCredential(
@@ -261,7 +261,7 @@ namespace System.Net.Security
             if (policy == EncryptionPolicy.RequireEncryption)
             {
                 // Always opt-in SCH_USE_STRONG_CRYPTO for TLS.
-                if (!isServer && ((protocolFlags & Interop.SChannel.SP_PROT_SSL3) == 0))
+                if ((protocolFlags & Interop.SChannel.SP_PROT_SSL3) == 0)
                 {
                     flags |= Interop.SspiCli.SCH_CREDENTIALS.Flags.SCH_USE_STRONG_CRYPTO;
                 }

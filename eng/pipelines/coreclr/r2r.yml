@@ -20,7 +20,8 @@ jobs:
     - Linux_x64
     - OSX_arm64
     - windows_arm
-    - windows_arm64
+    # Disable arm64 run until https://github.com/dotnet/runtime/issues/68626 gets solved
+    # - windows_arm64
     - windows_x64
     - windows_x86
     - CoreClrTestBuildHost # Either OSX_x64 or Linux_x64
@@ -46,7 +47,8 @@ jobs:
     - Linux_x64
     - OSX_arm64
     - windows_arm
-    - windows_arm64
+    # Disable arm64 run until https://github.com/dotnet/runtime/issues/68626 gets solved
+    # - windows_arm64
     - windows_x64
     - windows_x86
     helixQueueGroup: ci

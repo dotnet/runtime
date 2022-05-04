@@ -17959,7 +17959,7 @@ SPILLSTACK:
             case BBJ_EHFINALLYRET:
             case BBJ_EHFILTERRET:
             case BBJ_THROW:
-                NO_WAY("can't have 'unreached' end of BB with non-empty stack");
+                BADCODE("can't have 'unreached' end of BB with non-empty stack");
                 break;
 
             default:

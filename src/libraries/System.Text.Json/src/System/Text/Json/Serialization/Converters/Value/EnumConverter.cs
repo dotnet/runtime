@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Converters
         private static readonly TypeCode s_enumTypeCode = Type.GetTypeCode(typeof(T));
 
         // Odd type codes are conveniently signed types (for enum backing types).
-        private static readonly string? s_negativeSign = ((int)s_enumTypeCode % 2) == 0 ? null : NumberFormatInfo.CurrentInfo.NegativeSign;
+        private static readonly bool s_isSignedEnum = ((int)s_enumTypeCode % 2) == 1;
 
         private const string ValueSeparator = ", ";
 
@@ -178,6 +178,8 @@ namespace System.Text.Json.Serialization.Converters
                 {
                     // We are dealing with a combination of flag constants since
                     // all constant values were cached during warm-up.
+                    Debug.Assert(original.Contains(ValueSeparator));
+
                     JavaScriptEncoder? encoder = options.Encoder;
 
                     if (_nameCache.Count < NameCacheSizeSoftLimit)
@@ -272,7 +274,7 @@ namespace System.Text.Json.Serialization.Converters
             // so we'll just pick the first valid one and check for a negative sign
             // if needed.
             return (value[0] >= 'A' &&
-                (s_negativeSign == null || !value.StartsWith(s_negativeSign)));
+                (!s_isSignedEnum || !value.StartsWith(NumberFormatInfo.CurrentInfo.NegativeSign)));
         }
 
         private JsonEncodedText FormatEnumValue(string value, JavaScriptEncoder? encoder)
@@ -357,6 +359,8 @@ namespace System.Text.Json.Serialization.Converters
             string original = value.ToString();
             if (IsValidIdentifier(original))
             {
+                Debug.Assert(original.Contains(ValueSeparator));
+
                 if (options.DictionaryKeyPolicy != null)
                 {
                     original = options.DictionaryKeyPolicy.ConvertName(original);
