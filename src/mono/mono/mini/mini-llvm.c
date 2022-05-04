@@ -1543,7 +1543,7 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	MonoType *rtype;
 
 	if (strstr(ctx->method_name, "test") != NULL)
-		printf("~~~Reached sig_to_llvm_sig_full for Min\n");
+		printf("~~~Reached sig_to_llvm_sig_full for test\n");
 
 	if (!cinfo)
 		return sig_to_llvm_sig_no_cinfo (ctx, sig);
@@ -4518,7 +4518,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			break;
 		}
 		case LLVMArgVtypeInSIMDReg: {
-			args [pindex] = convert (ctx, LLVMBuildLoad (ctx->builder, addresses [reg], "load_param"), IntPtrType ());
+			args [pindex] = LLVMBuildLoad (ctx->builder, addresses [reg], "load_param");
 			break;
 		}
 		case LLVMArgVtypeByVal:
@@ -12353,6 +12353,7 @@ mono_llvm_emit_call (MonoCompile *cfg, MonoCallInst *call)
 		case LLVMArgVtypeByVal:
 		case LLVMArgVtypeByRef:
 		case LLVMArgVtypeInReg:
+		case LLVMArgVtypeInSIMDReg:
 		case LLVMArgVtypeAddr:
 		case LLVMArgVtypeAsScalar:
 		case LLVMArgAsIArgs:
