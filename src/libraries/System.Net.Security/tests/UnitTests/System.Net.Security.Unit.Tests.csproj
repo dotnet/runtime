@@ -42,10 +42,10 @@
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'Browser'">
     <!-- Production code references -->
-    <Compile Include="..\..\src\System\Net\Security\MD4.cs"
-             Link="ProductionCode\System\Net\Security\MD4.cs" />
-    <Compile Include="..\..\src\System\Net\Security\RC4.cs"
-             Link="ProductionCode\System\Net\Security\RC4.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\MD4.cs"
+             Link="Common\System\Net\Security\MD4.cs" />
+    <Compile Include="$(CommonPath)System\Net\Security\RC4.cs"
+             Link="Common\System\Net\Security\RC4.cs" />
     <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
              Link="ProductionCode\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs"
