@@ -277,6 +277,8 @@ struct insGroup
                                   // and the emitter should continue to track GC info as if there was no new block.
 #define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
+#define IGF_REMOVED_ALIGN 0x0800  // this group had an alignment instruction(s) which was later removed without updating
+                                  // the IG's size/offsets.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be

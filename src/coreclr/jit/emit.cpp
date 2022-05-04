@@ -5096,10 +5096,14 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
 {
     unsigned loopSize = 0;
 
+    JITDUMP("*************** In getLoopSize() for %s\n", emitLabelString(igLoopHeader), loopSize);
+
     for (insGroup* igInLoop = igLoopHeader; igInLoop != nullptr; igInLoop = igInLoop->igNext)
     {
         loopSize += igInLoop->igSize;
-        if (igInLoop->endsWithAlignInstr())
+        JITDUMP("   %s has %u bytes.", emitLabelString(igInLoop), igInLoop->igSize);
+
+        if (igInLoop->endsWithAlignInstr() /*|| (igInLoop->igFlags & IGF_REMOVED_ALIGN)*/)
         {
             // If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
             // for next IG or some future IG.
@@ -5179,16 +5183,35 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
             else
 #endif
             {
+                JITDUMP(" but ends with align instruction, taking off %u bytes.",
+                        emitComp->opts.compJitAlignPaddingLimit);
                 // The current loop size should exclude the align instruction size reserved for next loop.
                 loopSize -= emitComp->opts.compJitAlignPaddingLimit;
             }
         }
+        else if (igInLoop->igFlags & IGF_REMOVED_ALIGN)
+        {
+            assert("!Failed to remove 15 bytes");
+        }
         if ((igInLoop->igLoopBackEdge == igLoopHeader) || (loopSize > maxLoopSize))
         {
+#ifdef DEBUG
+            if (igInLoop->igLoopBackEdge == igLoopHeader)
+            {
+                JITDUMP(" -- Found the back edge.");
+            }
+            else
+            {
+                JITDUMP(" -- loopSize exceeded the threshold of %u bytes.", maxLoopSize);
+            }
+            JITDUMP("\n");
             break;
+#endif
         }
+        JITDUMP("\n");
     }
 
+    JITDUMP("loopSize of %s = %u bytes.\n", emitLabelString(igLoopHeader), loopSize);
     return loopSize;
 }
 
@@ -5280,9 +5303,10 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 
                     // This IG should no longer contain alignment instruction
                     alignInstr->removeAlignFlags();
+                    alignInstr->idaIG->igFlags |= IGF_REMOVED_ALIGN;
 
                     markedCurrLoop = true;
-                    JITDUMP("** Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop "
+                    JITDUMP(";; Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop "
                             "IG%02u ~ IG%02u.\n",
                             currLoopStart, currLoopEnd, emitLastLoopStart, emitLastLoopEnd);
                 }
@@ -5296,9 +5320,10 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
 
                     // This IG should no longer contain alignment instruction
                     alignInstr->removeAlignFlags();
+                    alignInstr->idaIG->igFlags |= IGF_REMOVED_ALIGN;
 
                     markedLastLoop = true;
-                    JITDUMP("** Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
+                    JITDUMP(";; Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
                             "IG%02u ~ IG%02u.\n",
                             emitLastLoopStart, emitLastLoopEnd, currLoopStart, currLoopEnd);
                 }
