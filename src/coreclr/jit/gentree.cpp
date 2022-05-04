@@ -1675,7 +1675,7 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* node, We
     assert(found && "Could not find arg to insert after in argument list");
 #endif
 
-    InsertAfterUnchecked(comp, after, node, wellKnownArg);
+    return InsertAfterUnchecked(comp, after, node, wellKnownArg);
 }
 
 //---------------------------------------------------------------
