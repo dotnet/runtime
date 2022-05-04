@@ -535,8 +535,11 @@ namespace System.Diagnostics.Contracts
         /// <paramref name="collection"/>.</returns>
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.TrueForAll"/>
         [Pure]
-        public static bool ForAll<T>(IEnumerable<T> collection!!, Predicate<T> predicate!!)
+        public static bool ForAll<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentNullException.ThrowIfNull(predicate);
+
             foreach (T t in collection)
                 if (!predicate(t)) return false;
             return true;
@@ -578,8 +581,11 @@ namespace System.Diagnostics.Contracts
         /// <paramref name="collection"/>.</returns>
         /// <seealso cref="System.Collections.Generic.List&lt;T&gt;.Exists"/>
         [Pure]
-        public static bool Exists<T>(IEnumerable<T> collection!!, Predicate<T> predicate!!)
+        public static bool Exists<T>(IEnumerable<T> collection, Predicate<T> predicate)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentNullException.ThrowIfNull(predicate);
+
             foreach (T t in collection)
                 if (predicate(t)) return true;
             return false;

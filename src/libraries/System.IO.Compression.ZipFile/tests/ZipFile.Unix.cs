@@ -12,6 +12,7 @@ namespace System.IO.Compression.Tests
     public partial class ZipFile_Unix : ZipFileTestBase
     {
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68293", TestPlatforms.OSX)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void UnixCreateSetsPermissionsInExternalAttributes()
         {

@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.IO;
@@ -14,10 +14,10 @@ namespace System.Text.Json.SourceGeneration.Tests
         private readonly JsonSerializerContext _defaultContext;
         private readonly Func<JsonSerializerOptions, JsonSerializerContext> _customContextCreator;
 
-        public StringSerializerWrapper(JsonSerializerContext defaultContext!!, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator!!)
+        public StringSerializerWrapper(JsonSerializerContext defaultContext, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator)
         {
-            _defaultContext = defaultContext;
-            _customContextCreator = customContextCreator;
+            _defaultContext = defaultContext ?? throw new ArgumentNullException(nameof(defaultContext));
+            _customContextCreator = customContextCreator ?? throw new ArgumentNullException(nameof(customContextCreator));
         }
 
         public override Task<string> SerializeWrapper(object value, Type type, JsonSerializerOptions? options = null)
@@ -86,10 +86,10 @@ namespace System.Text.Json.SourceGeneration.Tests
 
         public override bool IsAsyncSerializer => true;
 
-        public AsyncStreamSerializerWrapper(JsonSerializerContext defaultContext!!, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator!!)
+        public AsyncStreamSerializerWrapper(JsonSerializerContext defaultContext, Func<JsonSerializerOptions, JsonSerializerContext> customContextCreator)
         {
-            _defaultContext = defaultContext;
-            _customContextCreator = customContextCreator;
+            _defaultContext = defaultContext ?? throw new ArgumentNullException(nameof(defaultContext));
+            _customContextCreator = customContextCreator ?? throw new ArgumentNullException(nameof(customContextCreator));
         }
 
         public override async Task<T> DeserializeWrapper<T>(Stream utf8Json, JsonSerializerOptions? options = null)

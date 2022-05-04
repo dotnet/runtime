@@ -191,6 +191,13 @@ jobs:
           artifactFileName: 'MauiAndroidPodcast.tar.gz'
           artifactName: 'MauiAndroidPodcast'
           displayName: 'Maui Android Podcast'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)
+          cleanUnpackFolder: false
+          artifactFileName: 'MauiBlazorAndroidApp.tar.gz'
+          artifactName: 'MauiBlazorAndroidApp'
+          displayName: 'Maui Blazor Android App'
           
 
     # Download iOSMono tests and MauiiOS/MacCatalyst

@@ -91,7 +91,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(Helpers), nameof(Helpers.SupportsEventLogs))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/64153", typeof(PlatformDetection), nameof(PlatformDetection.IsWindowsX86OrX64))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/64153")]
         public void GetProviderNames_AssertProperties()
         {
             const string Prefix = "win:";

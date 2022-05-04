@@ -676,8 +676,10 @@ namespace System.Reflection
         internal static void ParseAttributeArguments(ConstArray attributeBlob,
             ref CustomAttributeCtorParameter[] customAttributeCtorParameters,
             ref CustomAttributeNamedParameter[] customAttributeNamedParameters,
-            RuntimeModule customAttributeModule!!)
+            RuntimeModule customAttributeModule)
         {
+            ArgumentNullException.ThrowIfNull(customAttributeModule);
+
             Debug.Assert(customAttributeCtorParameters is not null);
             Debug.Assert(customAttributeNamedParameters is not null);
 
@@ -707,8 +709,10 @@ namespace System.Reflection
         private readonly CustomAttributeType m_type;
         private readonly CustomAttributeEncodedArgument m_encodedArgument;
 
-        public CustomAttributeNamedParameter(string argumentName!!, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
+        public CustomAttributeNamedParameter(string argumentName, CustomAttributeEncoding fieldOrProperty, CustomAttributeType type)
         {
+            ArgumentNullException.ThrowIfNull(argumentName);
+
             m_argumentName = argumentName;
             m_fieldOrProperty = fieldOrProperty;
             m_padding = fieldOrProperty;
@@ -1289,7 +1293,7 @@ namespace System.Reflection
             attributeType = (decoratedModule.ResolveType(scope.GetParentToken(caCtorToken), null, null) as RuntimeType)!;
 
             // Test attribute type against user provided attribute type filter
-            if (!attributeFilterType.IsAssignableFrom(attributeType))
+            if (!MatchesTypeFilter(attributeType, attributeFilterType))
                 return false;
 
             // Ensure if attribute type must be inheritable that it is inheritable
@@ -1369,6 +1373,23 @@ namespace System.Reflection
 
             GC.KeepAlive(ctorWithParameters);
             return result;
+        }
+
+        private static bool MatchesTypeFilter(RuntimeType attributeType, RuntimeType attributeFilterType)
+        {
+            if (attributeFilterType.IsGenericTypeDefinition)
+            {
+                for (RuntimeType? type = attributeType; type != null; type = (RuntimeType?)type.BaseType)
+                {
+                    if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == attributeFilterType)
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            return attributeFilterType.IsAssignableFrom(attributeType);
         }
         #endregion
 

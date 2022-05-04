@@ -67,8 +67,13 @@ namespace System.ServiceModel.Syndication
             _items = items;
         }
 
-        protected SyndicationFeed(SyndicationFeed source!!, bool cloneItems)
+        protected SyndicationFeed(SyndicationFeed source, bool cloneItems)
         {
+            if (source is null)
+            {
+                throw new ArgumentNullException(nameof(source));
+            }
+
             _authors = FeedUtils.ClonePersons(source._authors);
             _categories = FeedUtils.CloneCategories(source._categories);
             _contributors = FeedUtils.ClonePersons(source._contributors);
@@ -404,8 +409,13 @@ namespace System.ServiceModel.Syndication
 
         public static SyndicationFeed Load(XmlReader reader) => Load<SyndicationFeed>(reader);
 
-        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader!!) where TSyndicationFeed : SyndicationFeed, new()
+        public static TSyndicationFeed Load<TSyndicationFeed>(XmlReader reader) where TSyndicationFeed : SyndicationFeed, new()
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
             Atom10FeedFormatter<TSyndicationFeed> atomSerializer = new Atom10FeedFormatter<TSyndicationFeed>();
             if (atomSerializer.CanRead(reader))
             {

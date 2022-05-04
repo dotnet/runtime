@@ -1165,6 +1165,10 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
 #include <asm/hwcap.h>
 #endif
 
+#if HAVE_SYSCTLBYNAME
+#include <sys/sysctl.h>
+#endif
+
 // Based on PAL_GetJitCpuCapabilityFlags from CoreCLR (jitsupport.cpp)
 REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 {
@@ -1308,6 +1312,36 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 #endif // AT_HWCAP2
 
 #else // !HAVE_AUXV_HWCAP_H
+
+#if HAVE_SYSCTLBYNAME
+    int64_t valueFromSysctl = 0;
+    size_t sz = sizeof(valueFromSysctl);
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_AES", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Aes;
+
+    if ((sysctlbyname("hw.optional.armv8_crc32", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Crc32;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_DotProd", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Dp;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_RDM", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Rdm;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SHA1", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Sha1;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_SHA256", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Sha256;
+
+    if ((sysctlbyname("hw.optional.armv8_1_atomics", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Atomics;
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        *flags |= ARM64IntrinsicConstants_Rcpc;
+#endif // HAVE_SYSCTLBYNAME
+
     // Every ARM64 CPU should support SIMD and FP
     // If the OS have no function to query for CPU capabilities we set just these
 

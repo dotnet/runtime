@@ -32,10 +32,12 @@ enum ARM64IntrinsicConstants
     ARM64IntrinsicConstants_AdvSimd = 0x0001,
     ARM64IntrinsicConstants_Aes = 0x0002,
     ARM64IntrinsicConstants_Crc32 = 0x0004,
-    ARM64IntrinsicConstants_Sha1 = 0x0008,
-    ARM64IntrinsicConstants_Sha256 = 0x0010,
-    ARM64IntrinsicConstants_Atomics = 0x0020,
-    ARM64IntrinsicConstants_Rcpc = 0x0040,
+    ARM64IntrinsicConstants_Dp = 0x0008,
+    ARM64IntrinsicConstants_Rdm = 0x0010,
+    ARM64IntrinsicConstants_Sha1 = 0x0020,
+    ARM64IntrinsicConstants_Sha256 = 0x0040,
+    ARM64IntrinsicConstants_Atomics = 0x0080,
+    ARM64IntrinsicConstants_Rcpc = 0x0100,
 };
 #endif //HOST_ARM64
 

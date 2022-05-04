@@ -256,8 +256,7 @@ namespace System
         internal static TypeSpec Parse(string typeName)
         {
             int pos = 0;
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
 
             TypeSpec res = Parse(typeName, ref pos, false, true);
             if (pos < typeName.Length)

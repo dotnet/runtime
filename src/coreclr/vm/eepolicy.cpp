@@ -12,7 +12,6 @@
 #include "eepolicy.h"
 #include "corhost.h"
 #include "dbginterface.h"
-#include "eemessagebox.h"
 
 #include "eventreporter.h"
 #include "finalizerthread.h"
@@ -49,36 +48,16 @@ void SafeExitProcess(UINT exitCode, ShutdownCompleteAction sca = SCA_ExitProcess
     {
         if (CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_BreakOnBadExit))
         {
-            // Workaround for aspnet
-            PathString  wszFilename;
-            bool bShouldAssert = true;
-            if (WszGetModuleFileName(NULL, wszFilename))
-            {
-                wszFilename.LowerCase();
-
-                if (wcsstr(wszFilename, W("aspnet_compiler")))
-                {
-                    bShouldAssert = false;
-                }
-            }
-
             unsigned goodExit = CLRConfig::GetConfigValue(CLRConfig::UNSUPPORTED_SuccessExit);
-            if (bShouldAssert && exitCode != goodExit)
+            if (exitCode != goodExit)
             {
                 _ASSERTE(!"Bad Exit value");
                 FAULT_NOT_FATAL();      // if we OOM we can simply give up
-                SetErrorMode(0);        // Insure that we actually cause the messsage box to pop.
-                EEMessageBoxCatastrophic(IDS_EE_ERRORMESSAGETEMPLATE, IDS_EE_ERRORTITLE, exitCode, W("BreakOnBadExit: returning bad exit code"));
+                fprintf(stderr, "Error 0x%08x.\n\nBreakOnBadExit: returning bad exit code.", exitCode);
+                DebugBreak();
             }
         }
     }
-
-    // If we call ExitProcess, other threads will be torn down
-    // so we don't get to debug their state.  Stop this!
-#ifdef _DEBUG
-    if (_DbgBreakCount)
-        _ASSERTE(!"In SafeExitProcess: An assert was hit on some other thread");
-#endif
 
     // Turn off exception processing, because if some other random DLL has a
     //  fault in DLL_PROCESS_DETACH, we could get called for exception handling.

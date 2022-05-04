@@ -703,19 +703,19 @@ namespace System.IO.Tests
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string testBase = GetTestFileName();
-            testDir.CreateSubdirectory(testBase + "aBBb");
-            testDir.CreateSubdirectory(testBase + "aBBB");
+            testDir.CreateSubdirectory(testBase + "aBBBBBBBBBBb");
+            testDir.CreateSubdirectory(testBase + "aBBBBBBBBBBB");
 
-            File.Create(Path.Combine(testDir.FullName, testBase + "AAAA")).Dispose();
-            File.Create(Path.Combine(testDir.FullName, testBase + "aAAa")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, testBase + "AAAAAAAAAA")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, testBase + "aAAAAAAAAa")).Dispose();
 
             if (TestDirectories)
             {
-                Assert.Equal(2, GetEntries(testDir.FullName, "*BB*").Length);
+                Assert.Equal(2, GetEntries(testDir.FullName, "*BBBBBBBB*").Length);
             }
             if (TestFiles)
             {
-                Assert.Equal(2, GetEntries(testDir.FullName, "*AA*").Length);
+                Assert.Equal(2, GetEntries(testDir.FullName, "*AAAAAAAA*").Length);
             }
         }
 
@@ -724,19 +724,19 @@ namespace System.IO.Tests
         {
             DirectoryInfo testDir = Directory.CreateDirectory(GetTestFilePath());
             string testBase = GetTestFileName();
-            testDir.CreateSubdirectory(testBase + "yZZz");
-            testDir.CreateSubdirectory(testBase + "yZZZ");
+            testDir.CreateSubdirectory(testBase + "yZZZZZZZZZZz");
+            testDir.CreateSubdirectory(testBase + "yZZZZZZZZZZZ");
 
-            File.Create(Path.Combine(testDir.FullName, testBase + "YYYY")).Dispose();
-            File.Create(Path.Combine(testDir.FullName, testBase + "yYYy")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, testBase + "YYYYYYYYYYYY")).Dispose();
+            File.Create(Path.Combine(testDir.FullName, testBase + "yYYYYYYYYYYy")).Dispose();
 
             if (TestDirectories)
             {
-                Assert.Equal(1, GetEntries(testDir.FullName, "*ZZ*").Length);
+                Assert.Equal(1, GetEntries(testDir.FullName, "*ZZZZZZZZZZ*").Length);
             }
             if (TestFiles)
             {
-                Assert.Equal(1, GetEntries(testDir.FullName, "*YY*").Length);
+                Assert.Equal(1, GetEntries(testDir.FullName, "*YYYYYYYYYY*").Length);
             }
         }
 

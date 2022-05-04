@@ -568,9 +568,14 @@ namespace System.Net.Http
         }
 
         protected override Task<HttpResponseMessage> SendAsync(
-            HttpRequestMessage request!!,
+            HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
+            if (request is null)
+            {
+                throw new ArgumentNullException(nameof(request));
+            }
+
             Uri? requestUri = request.RequestUri;
             if (requestUri is null || !requestUri.IsAbsoluteUri)
             {

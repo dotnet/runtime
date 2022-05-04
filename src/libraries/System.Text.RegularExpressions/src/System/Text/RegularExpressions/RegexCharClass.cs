@@ -276,6 +276,7 @@ namespace System.Text.RegularExpressions
         private StringBuilder? _categories;
         private RegexCharClass? _subtractor;
         private bool _negate;
+        private RegexCaseBehavior _caseBehavior;
 
 #if DEBUG
         static RegexCharClass()
@@ -440,7 +441,7 @@ namespace System.Text.RegularExpressions
                     (char First, char Last) range = rangeList[i];
                     if (range.First == range.Last)
                     {
-                        if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(range.First, culture, out ReadOnlySpan<char> equivalences))
+                        if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(range.First, culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
                         {
                             foreach (char equivalence in equivalences)
                             {
@@ -464,7 +465,7 @@ namespace System.Text.RegularExpressions
         {
             for (int i = chMin; i <= chMax; i++)
             {
-                if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior((char)i, culture, out ReadOnlySpan<char> equivalences))
+                if (RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior((char)i, culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences))
                 {
                     foreach (char equivalence in equivalences)
                     {
@@ -1724,7 +1725,6 @@ namespace System.Text.RegularExpressions
         /// <summary>
         /// Produces a human-readable description for a set string.
         /// </summary>
-        [ExcludeFromCodeCoverage]
         public static string DescribeSet(string set)
         {
             int setLength = set[SetLengthIndex];
@@ -1835,7 +1835,6 @@ namespace System.Text.RegularExpressions
         }
 
         /// <summary>Produces a human-readable description for a single character.</summary>
-        [ExcludeFromCodeCoverage]
         public static string DescribeChar(char ch) =>
             ch switch
             {
@@ -1851,7 +1850,6 @@ namespace System.Text.RegularExpressions
                 _ => $"\\u{(uint)ch:X4}"
             };
 
-        [ExcludeFromCodeCoverage]
         private static string DescribeCategory(char ch) =>
             (short)ch switch
             {

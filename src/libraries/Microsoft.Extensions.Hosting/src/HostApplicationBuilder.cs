@@ -321,40 +321,50 @@ namespace Microsoft.Extensions.Hosting
 
             public IHostBuilder ConfigureHostConfiguration(Action<IConfigurationBuilder> configureDelegate)
             {
-                _configureHostConfigActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+                ThrowHelper.ThrowIfNull(configureDelegate);
+
+                _configureHostConfigActions.Add(configureDelegate);
                 return this;
             }
 
             public IHostBuilder ConfigureAppConfiguration(Action<HostBuilderContext, IConfigurationBuilder> configureDelegate)
             {
-                _configureAppConfigActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+                ThrowHelper.ThrowIfNull(configureDelegate);
+
+                _configureAppConfigActions.Add(configureDelegate);
                 return this;
             }
 
             public IHostBuilder ConfigureServices(Action<HostBuilderContext, IServiceCollection> configureDelegate)
             {
-                _configureServicesActions.Add(configureDelegate ?? throw new ArgumentNullException(nameof(configureDelegate)));
+                ThrowHelper.ThrowIfNull(configureDelegate);
+
+                _configureServicesActions.Add(configureDelegate);
                 return this;
             }
 
             public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(IServiceProviderFactory<TContainerBuilder> factory) where TContainerBuilder : notnull
             {
-                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory ?? throw new ArgumentNullException(nameof(factory)));
+                ThrowHelper.ThrowIfNull(factory);
+
+                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(factory);
                 return this;
 
             }
 
             public IHostBuilder UseServiceProviderFactory<TContainerBuilder>(Func<HostBuilderContext, IServiceProviderFactory<TContainerBuilder>> factory) where TContainerBuilder : notnull
             {
-                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostApplicationBuilder._hostBuilderContext, factory ?? throw new ArgumentNullException(nameof(factory)));
+                ThrowHelper.ThrowIfNull(factory);
+
+                _serviceProviderFactory = new ServiceFactoryAdapter<TContainerBuilder>(() => _hostApplicationBuilder._hostBuilderContext, factory);
                 return this;
             }
 
             public IHostBuilder ConfigureContainer<TContainerBuilder>(Action<HostBuilderContext, TContainerBuilder> configureDelegate)
             {
-                _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate
-                    ?? throw new ArgumentNullException(nameof(configureDelegate))));
+                ThrowHelper.ThrowIfNull(configureDelegate);
 
+                _configureContainerActions.Add(new ConfigureContainerAdapter<TContainerBuilder>(configureDelegate));
                 return this;
             }
         }

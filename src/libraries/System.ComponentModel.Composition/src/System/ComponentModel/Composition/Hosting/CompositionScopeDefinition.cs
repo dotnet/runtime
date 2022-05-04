@@ -184,8 +184,10 @@ namespace System.ComponentModel.Composition.Hosting
             return _catalog.GetExports(definition);
         }
 
-        internal IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> GetExportsFromPublicSurface(ImportDefinition definition!!)
+        internal IEnumerable<Tuple<ComposablePartDefinition, ExportDefinition>> GetExportsFromPublicSurface(ImportDefinition definition)
         {
+            ArgumentNullException.ThrowIfNull(definition);
+
             var exports = new List<Tuple<ComposablePartDefinition, ExportDefinition>>();
 
             foreach (var exportDefinition in PublicSurface)

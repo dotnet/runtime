@@ -678,7 +678,7 @@ private:
         // mark the entire struct as address exposed results in CQ regressions.
         GenTreeCall* callTree  = user->IsCall() ? user->AsCall() : nullptr;
         bool         isThisArg = (callTree != nullptr) && callTree->gtArgs.HasThisPointer() &&
-                         (val.Node() == callTree->gtArgs.GetThisArg()->GetEarlyNode());
+                         (val.Node() == callTree->gtArgs.GetThisArg()->GetNode());
         bool exposeParentLcl = varDsc->lvIsStructField && !isThisArg;
 
         bool hasHiddenStructArg = false;
@@ -687,7 +687,7 @@ private:
             if (varTypeIsStruct(varDsc) && varDsc->lvIsTemp)
             {
                 if ((callTree != nullptr) && callTree->gtArgs.HasRetBuffer() &&
-                    (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetEarlyNode()))
+                    (val.Node() == callTree->gtArgs.GetRetBufferArg()->GetNode()))
                 {
                     assert(!exposeParentLcl);
 
@@ -723,8 +723,8 @@ private:
 
         // TODO-ADDR: For now use LCL_VAR_ADDR and LCL_FLD_ADDR only as call arguments and assignment sources.
         // Other usages require more changes. For example, a tree like OBJ(ADD(ADDR(LCL_VAR), 4))
-        // could be changed to OBJ(LCL_FLD_ADDR) but then DefinesLocalAddr does not recognize
-        // LCL_FLD_ADDR (even though it does recognize LCL_VAR_ADDR).
+        // could be changed to OBJ(LCL_FLD_ADDR) but historically DefinesLocalAddr did not recognize
+        // LCL_FLD_ADDR (and there may be other things now as well).
         if (user->OperIs(GT_CALL, GT_ASG) && !hasHiddenStructArg)
         {
             MorphLocalAddress(val);

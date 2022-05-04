@@ -17,8 +17,11 @@ namespace System.Diagnostics.PerformanceData
         private int _active;
         internal unsafe Interop.PerfCounter.PerfCounterSetInstanceStruct* _nativeInst;
 
-        internal unsafe CounterSetInstance(CounterSet counterSetDefined!!, string instanceName!!)
+        internal unsafe CounterSetInstance(CounterSet counterSetDefined, string instanceName)
         {
+            ArgumentNullException.ThrowIfNull(counterSetDefined);
+            ArgumentNullException.ThrowIfNull(instanceName);
+
             if (instanceName.Length == 0)
             {
                 throw new ArgumentException(SR.Perflib_Argument_EmptyInstanceName, nameof(instanceName));

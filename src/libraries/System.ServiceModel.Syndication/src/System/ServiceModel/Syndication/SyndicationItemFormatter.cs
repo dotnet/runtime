@@ -16,8 +16,13 @@ namespace System.ServiceModel.Syndication
             _item = null;
         }
 
-        protected SyndicationItemFormatter(SyndicationItem itemToWrite!!)
+        protected SyndicationItemFormatter(SyndicationItem itemToWrite)
         {
+            if (itemToWrite is null)
+            {
+                throw new ArgumentNullException(nameof(itemToWrite));
+            }
+
             _item = itemToWrite;
         }
 
@@ -33,8 +38,13 @@ namespace System.ServiceModel.Syndication
 
         public abstract void WriteTo(XmlWriter writer);
 
-        protected internal virtual void SetItem(SyndicationItem item!!)
+        protected internal virtual void SetItem(SyndicationItem item)
         {
+            if (item is null)
+            {
+                throw new ArgumentNullException(nameof(item));
+            }
+
             _item = item;
         }
 

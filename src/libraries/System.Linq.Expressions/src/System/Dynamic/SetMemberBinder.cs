@@ -17,7 +17,7 @@ namespace System.Dynamic
         /// <param name="ignoreCase">true if the name should be matched ignoring case; false otherwise.</param>
         protected SetMemberBinder(string name, bool ignoreCase)
         {
-            ContractUtils.RequiresNotNull(name, nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             Name = name;
             IgnoreCase = ignoreCase;
@@ -46,12 +46,12 @@ namespace System.Dynamic
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[] args)
         {
-            ContractUtils.RequiresNotNull(target, nameof(target));
-            ContractUtils.RequiresNotNull(args, nameof(args));
+            ArgumentNullException.ThrowIfNull(target);
+            ArgumentNullException.ThrowIfNull(args);
             ContractUtils.Requires(args.Length == 1, nameof(args));
 
             var arg0 = args[0];
-            ContractUtils.RequiresNotNull(arg0, nameof(args));
+            ArgumentNullException.ThrowIfNull(arg0, nameof(args));
 
             return target.BindSetMember(this, arg0);
         }

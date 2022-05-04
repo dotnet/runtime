@@ -678,14 +678,18 @@ namespace System.Security.Principal
         // Public methods.
         //
 
-        public static void RunImpersonated(SafeAccessTokenHandle safeAccessTokenHandle, Action action!!)
+        public static void RunImpersonated(SafeAccessTokenHandle safeAccessTokenHandle, Action action)
         {
+            ArgumentNullException.ThrowIfNull(action);
+
             RunImpersonatedInternal(safeAccessTokenHandle, action);
         }
 
 
-        public static T RunImpersonated<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<T> func!!)
+        public static T RunImpersonated<T>(SafeAccessTokenHandle safeAccessTokenHandle, Func<T> func)
         {
+            ArgumentNullException.ThrowIfNull(func);
+
             T result = default!;
             RunImpersonatedInternal(safeAccessTokenHandle, () => result = func());
             return result;
@@ -914,8 +918,10 @@ namespace System.Security.Principal
             return safeLocalAllocHandle;
         }
 
-        private static string? GetAuthType(WindowsIdentity identity!!)
+        private static string? GetAuthType(WindowsIdentity identity)
         {
+            ArgumentNullException.ThrowIfNull(identity);
+
             return identity._authType;
         }
 
