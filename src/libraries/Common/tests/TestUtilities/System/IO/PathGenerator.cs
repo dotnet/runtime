@@ -8,6 +8,8 @@ namespace System.IO
 {
     public static class PathGenerator
     {
+        private static Random _rand = new Random();
+
         public static string GenerateTestFileName([CallerMemberName] string memberName = null, [CallerLineNumber] int lineNumber = 0)
             => GenerateTestFileName(null, memberName, lineNumber);
 
@@ -17,6 +19,27 @@ namespace System.IO
                 memberName ?? "TestBase",
                 lineNumber,
                 index.GetValueOrDefault(),
-                Guid.NewGuid().ToString("N").Substring(0, 8)); // randomness to avoid collisions between derived test classes using same base method concurrently
+                GenerateRandomFileSafeString(8)); // randomness to avoid collisions between derived test classes using same base method concurrently
+
+        private static string GenerateRandomFileSafeString(int length)
+        {
+            // A little more entropy than Guid.NewGuid().ToString("N").Substring(0, length))
+            const string AlphaNumeric = "abcdefghijklmnopqrstuvwxyz0123456789";
+
+            byte[] bytes = new byte[length];
+            lock (_rand)
+            {
+                _rand.NextBytes(bytes);
+            }
+
+            char[] chars = new char[length];
+
+            for (int i = 0; i < length; i++)
+            {
+                chars[i] = AlphaNumeric[bytes[i] % AlphaNumeric.Length];
+            }
+
+            return new String(chars);
+        }
     }
 }

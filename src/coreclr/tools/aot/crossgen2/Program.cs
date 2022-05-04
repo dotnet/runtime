@@ -29,6 +29,7 @@ namespace ILCompiler
         public TargetArchitecture _targetArchitecture;
         private bool _armelAbi = false;
         public OptimizationMode _optimizationMode;
+        private ulong _imageBase;
 
         // File names as strings in args
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -313,6 +314,16 @@ namespace ILCompiler
                                                                   _targetArchitecture);
         }
 
+        private void ConfigureImageBase(TargetDetails targetDetails)
+        {
+            bool is64BitTarget = targetDetails.PointerSize == sizeof(long);
+
+            if (_commandLineOptions.ImageBase != null)
+                _imageBase = is64BitTarget ? Convert.ToUInt64(_commandLineOptions.ImageBase, 16) : Convert.ToUInt32(_commandLineOptions.ImageBase, 16);
+            else
+                _imageBase = is64BitTarget ? PEWriter.PE64HeaderConstants.DllImageBase : PEWriter.PE32HeaderConstants.ImageBase;
+        }
+
         private int Run(string[] args)
         {
             InitializeDefaultOptions();
@@ -337,6 +348,8 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.CoreRTArmel : TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
+
+            ConfigureImageBase(targetDetails);
 
             bool versionBubbleIncludesCoreLib = false;
             if (_commandLineOptions.InputBubble)
@@ -738,6 +751,7 @@ namespace ILCompiler
                         .UseCustomPESectionAlignment(_commandLineOptions.CustomPESectionAlignment)
                         .UseVerifyTypeAndFieldLayout(_commandLineOptions.VerifyTypeAndFieldLayout)
                         .GenerateOutputFile(outFile)
+                        .UseImageBase(_imageBase)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)

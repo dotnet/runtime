@@ -1,4 +1,5 @@
 Compat issues with assembly mscorlib:
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.RequiresPreviewFeaturesAttribute' exists on 'System.String System.Runtime.CompilerServices.RuntimeFeature.VirtualStaticsInInterfaces' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.Aes' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeDeformatter' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeFormatter' in the contract but not the implementation.
@@ -30,6 +31,7 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 Compat issues with assembly netstandard:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MaxWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MinWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
+CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Net.Http.HttpClientHandler.Proxy' changed from '[UnsupportedOSPlatformAttribute("browser")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.CopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.CopyTo(System.Span<T>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.CopyTo(T[])' in the contract but not the implementation.
@@ -43,6 +45,7 @@ CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAtt
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.ToString(System.String, System.IFormatProvider)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<T>)' in the contract but not the implementation.
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.RequiresPreviewFeaturesAttribute' exists on 'System.String System.Runtime.CompilerServices.RuntimeFeature.VirtualStaticsInInterfaces' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.Aes' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeDeformatter' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.AsymmetricKeyExchangeFormatter' in the contract but not the implementation.
@@ -89,6 +92,8 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 Compat issues with assembly System.Diagnostics.Process:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MaxWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.SupportedOSPlatformAttribute' on 'System.Diagnostics.Process.MinWorkingSet.set(System.IntPtr)' changed from '[SupportedOSPlatformAttribute("freebsd")]' in the contract to '[SupportedOSPlatformAttribute("freebsd")]' in the implementation.
+Compat issues with assembly System.Net.Http:
+CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Net.Http.HttpClientHandler.Proxy' changed from '[UnsupportedOSPlatformAttribute("browser")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
 Compat issues with assembly System.Net.Security:
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Net.Security.SslCertificateTrust.CreateForX509Collection(System.Security.Cryptography.X509Certificates.X509Certificate2Collection, System.Boolean)' in the contract but not the implementation.
 Compat issues with assembly System.Numerics.Vectors:
@@ -105,6 +110,8 @@ CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAtt
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.ToString(System.String, System.IFormatProvider)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<System.Byte>)' in the contract but not the implementation.
 CannotRemoveAttribute : Attribute 'System.Runtime.CompilerServices.IsReadOnlyAttribute' exists on 'System.Numerics.Vector<T>.TryCopyTo(System.Span<T>)' in the contract but not the implementation.
+Compat issues with assembly System.Runtime:
+CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.RequiresPreviewFeaturesAttribute' exists on 'System.String System.Runtime.CompilerServices.RuntimeFeature.VirtualStaticsInInterfaces' in the contract but not the implementation.
 Compat issues with assembly System.Runtime.Intrinsics:
 MembersMustExist : Member 'public System.Runtime.Intrinsics.Vector128<U> System.Runtime.Intrinsics.Vector128.As<T, U>(System.Runtime.Intrinsics.Vector128<T>)' does not exist in the implementation but it does exist in the contract.
 MembersMustExist : Member 'public System.Runtime.Intrinsics.Vector256<U> System.Runtime.Intrinsics.Vector256.As<T, U>(System.Runtime.Intrinsics.Vector256<T>)' does not exist in the implementation but it does exist in the contract.
@@ -144,4 +151,4 @@ CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatfo
 CannotRemoveAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' exists on 'System.Security.Cryptography.TripleDES' in the contract but not the implementation.
 Compat issues with assembly System.Security.Cryptography.X509Certificates:
 CannotChangeAttribute : Attribute 'System.Runtime.Versioning.UnsupportedOSPlatformAttribute' on 'System.Security.Cryptography.X509Certificates.PublicKey.GetDSAPublicKey()' changed from '[UnsupportedOSPlatformAttribute("ios")]' in the contract to '[UnsupportedOSPlatformAttribute("browser")]' in the implementation.
-Total Issues: 136
+Total Issues: 141

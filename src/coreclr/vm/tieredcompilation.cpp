@@ -504,9 +504,9 @@ void TieredCompilationManager::BackgroundWorkerStart()
         {
             continue;
         }
-        _ASSERTE(waitResult == WAIT_TIMEOUT);
 
-        // The wait timed out, see if the worker can exit
+        // The wait timed out, see if the worker can exit. When using the PAL, it may be possible to get WAIT_FAILED in some
+        // shutdown scenarios, treat that as a timeout too since a signal would not have been observed anyway.
 
         LockHolder tieredCompilationLockHolder;
 

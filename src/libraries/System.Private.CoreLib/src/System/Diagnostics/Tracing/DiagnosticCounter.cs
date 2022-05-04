@@ -20,9 +20,6 @@ namespace System.Diagnostics.Tracing
     /// DiagnosticCounter is an abstract class that serves as the parent class for various Counter* classes,
     /// namely EventCounter, PollingCounter, IncrementingEventCounter, and IncrementingPollingCounter.
     /// </summary>
-#if NETCOREAPP
-    [UnsupportedOSPlatform("browser")]
-#endif
     public abstract class DiagnosticCounter : IDisposable
     {
         /// <summary>

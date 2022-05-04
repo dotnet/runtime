@@ -22,8 +22,15 @@ namespace System.IO.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData("D:\\", null, "D:\\")]
+        [InlineData("D:\\", "", "D:\\")]
         [InlineData("D:\\", "foo.txt", "D:\\foo.txt")]
+        [InlineData("E:\\bar", null, "E:\\bar\\")]
+        [InlineData("E:\\bar", "", "E:\\bar\\")]
         [InlineData("E:\\bar", "foo.txt", "E:\\bar\\foo.txt")]
+        [InlineData("E:\\bar\\", null, "E:\\bar\\")]
+        [InlineData("E:\\bar\\", "", "E:\\bar\\")]
+        [InlineData("E:\\bar\\", "foo.txt", "E:\\bar\\foo.txt")]
         public static void FileSystemEventArgs_ctor_DirectoryIsAbsolutePath_Windows(string directory, string name, string expectedFullPath)
         {
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
@@ -33,8 +40,16 @@ namespace System.IO.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("/", null, "/")]
+        [InlineData("/", "", "/")]
+        [InlineData("/", "   ", "/   ")]
         [InlineData("/", "foo.txt", "/foo.txt")]
+        [InlineData("/bar", null, "/bar/")]
+        [InlineData("/bar", "", "/bar/")]
         [InlineData("/bar", "foo.txt", "/bar/foo.txt")]
+        [InlineData("/bar/", null, "/bar/")]
+        [InlineData("/bar/", "", "/bar/")]
+        [InlineData("/bar/", "foo.txt", "/bar/foo.txt")]
         public static void FileSystemEventArgs_ctor_DirectoryIsAbsolutePath_Unix(string directory, string name, string expectedFullPath)
         {
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
@@ -44,24 +59,32 @@ namespace System.IO.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.Windows)]
+        [InlineData("", "")]
+        [InlineData("", "foo.txt")]
         [InlineData("bar", "foo.txt")]
         [InlineData("bar\\baz", "foo.txt")]
         public static void FileSystemEventArgs_ctor_DirectoryIsRelativePath_Windows(string directory, string name)
         {
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
 
-            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), directory, name), args.FullPath);
+            var expectedDirectory = PathInternal.EnsureTrailingSeparator(Path.Combine(Directory.GetCurrentDirectory(), directory));
+            Assert.Equal(Path.Combine(expectedDirectory, name), args.FullPath);
         }
 
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
+        [InlineData("", "")]
+        [InlineData("", "foo.txt")]
+        [InlineData("   ", "    ")]
+        [InlineData("   ", "foo.txt")]
         [InlineData("bar", "foo.txt")]
         [InlineData("bar/baz", "foo.txt")]
         public static void FileSystemEventArgs_ctor_DirectoryIsRelativePath_Unix(string directory, string name)
         {
             FileSystemEventArgs args = new FileSystemEventArgs(WatcherChangeTypes.All, directory, name);
 
-            Assert.Equal(Path.Combine(Directory.GetCurrentDirectory(), directory, name), args.FullPath);
+            var expectedDirectory = PathInternal.EnsureTrailingSeparator(Path.Combine(Directory.GetCurrentDirectory(), directory));
+            Assert.Equal(Path.Combine(expectedDirectory, name), args.FullPath);
         }
 
         [Theory]
@@ -80,7 +103,6 @@ namespace System.IO.Tests
         public static void FileSystemEventArgs_ctor_Invalid()
         {
             Assert.Throws<ArgumentNullException>(() => new FileSystemEventArgs((WatcherChangeTypes)0, null, "foo.txt"));
-            Assert.Throws<ArgumentException>(() => new FileSystemEventArgs((WatcherChangeTypes)0, "", "foo.txt"));
         }
     }
 }

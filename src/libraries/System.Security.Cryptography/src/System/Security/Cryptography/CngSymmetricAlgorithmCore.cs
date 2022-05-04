@@ -86,13 +86,13 @@ namespace System.Security.Cryptography
 
         public void GenerateKey()
         {
-            byte[] key = Helpers.GenerateRandom(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BaseKeySize));
+            byte[] key = RandomNumberGenerator.GetBytes(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BaseKeySize));
             SetKey(key);
         }
 
         public void GenerateIV()
         {
-            byte[] iv = Helpers.GenerateRandom(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize));
+            byte[] iv = RandomNumberGenerator.GetBytes(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize));
             _outer.IV = iv;
         }
 
