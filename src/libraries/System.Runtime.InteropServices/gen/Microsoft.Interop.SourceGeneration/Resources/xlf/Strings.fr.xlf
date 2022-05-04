@@ -97,9 +97,9 @@
         <target state="translated">Le marshaling bool sans informations de marshaling explicite n’est pas pris en charge. Spécifiez « MarshalUsingAttribute » ou « MarshalAsAttribute ».</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallingCharAsSpecifiedCharSetNotSupported">
-        <source>Marshalling char with 'CharSet.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
-        <target state="translated">Le marshaling de char avec « CharSet.{0} » n’est pas pris en charge. Convertissez plutôt manuellement le type de caractère en représentation d’octet souhaitée et passez au P/Invoke généré par la source.</target>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="new">Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">
