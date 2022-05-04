@@ -32,7 +32,6 @@
     <Compile Include="Fakes\FakeSslStream.Implementation.cs" />
     <Compile Include="Fakes\FakeAuthenticatedStream.cs" />
     <Compile Include="Fakes\FakeNtlmServer.cs" />
-    <Compile Include="Fakes\FakeNtlmServer.RC4.cs" />
     <!-- Common test files -->
     <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
              Link="Common\DisableRuntimeMarshalling.cs" />
@@ -45,6 +44,8 @@
     <!-- Production code references -->
     <Compile Include="..\..\src\System\Net\Security\MD4.cs"
              Link="ProductionCode\System\Net\Security\MD4.cs" />
+    <Compile Include="..\..\src\System\Net\Security\RC4.cs"
+             Link="ProductionCode\System\Net\Security\RC4.cs" />
     <Compile Include="..\..\src\System\Net\Security\NetEventSource.Security.cs"
              Link="ProductionCode\System\Net\Security\NetEventSource.Security.cs" />
     <Compile Include="..\..\src\System\Net\Security\SslStream.cs"
