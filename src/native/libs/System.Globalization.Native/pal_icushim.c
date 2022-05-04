@@ -441,7 +441,7 @@ int32_t GlobalizationNative_LoadICU()
 #endif // TARGET_WINDOWS || TARGET_OSX
 
 #if defined(ANDROID_FORCE_ICU_DATA_DIR)
-    setenv ("ICU_DATA", "/system/apex/com.android.runtime.debug/etc/icu/:/system/apex/com.android.runtime.release/etc/icu/", 0);
+    setenv ("ICU_DATA", "/system/usr/icu/", 0);
 #endif
     FOR_ALL_ICU_FUNCTIONS
     ValidateICUDataCanLoad();
