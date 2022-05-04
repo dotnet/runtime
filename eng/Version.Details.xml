@@ -74,9 +74,9 @@
       <Uri>https://github.com/dotnet/arcade</Uri>
       <Sha>1527dc867ccb652def4c0f57fbd2ebbed3a94019</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="7.0.0-beta.22179.1">
+    <Dependency Name="Microsoft.DotNet.XUnitExtensions" Version="7.0.0-beta.22254.2">
       <Uri>https://github.com/dotnet/arcade</Uri>
-      <Sha>1527dc867ccb652def4c0f57fbd2ebbed3a94019</Sha>
+      <Sha>9c9de91045b8691364e40426177da2e5c535d3ab</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XUnitConsoleRunner" Version="2.5.1-beta.22179.1">
       <Uri>https://github.com/dotnet/arcade</Uri>
