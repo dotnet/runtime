@@ -21658,6 +21658,9 @@ GenTree* Compiler::gtNewSimdShuffleNode(var_types   type,
         nodeBuilder.AddOperand(i, gtNewIconNode(vecCns[i]));
     }
 
+    // VectorTableLookup is only valid on byte/sbyte
+    simdBaseJitType = varTypeIsUnsigned(simdBaseType) ? CORINFO_TYPE_UBYTE : CORINFO_TYPE_BYTE;
+
     op2 = gtNewSimdHWIntrinsicNode(type, std::move(nodeBuilder), createIntrinsic, simdBaseJitType, simdSize,
                                    isSimdAsHWIntrinsic);
 

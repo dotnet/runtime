@@ -5585,24 +5585,163 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     if (!info.compMatchedVM)
     {
-#if defined(TARGET_ARM)
+        CORINFO_InstructionSetFlags instructionSetFlags;
 
-// Currently nothing needs to be done. There are no ARM flags that conflict with other flags.
+        // We need to assume, by default, that all flags coming from the VM are invalid.
+        instructionSetFlags.Reset();
 
-#endif // defined(TARGET_ARM)
+// We then add each available instruction set for the target architecture provided
+// that the corresponding JitConfig switch hasn't explicitly asked for it to be
+// disabled. This allows us to default to "everything" supported for altjit scenarios
+// while also still allowing instruction set opt-out providing users with the ability
+// to, for example, see and debug ARM64 codegen for any desired CPU configuration without
+// needing to have the hardware in question.
 
 #if defined(TARGET_ARM64)
+        if (JitConfig.EnableHWIntrinsic() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+        }
 
-        // The x86/x64 architecture capabilities flags overlap with the ARM64 ones. Set a reasonable architecture
-        // target default. Currently this is disabling all ARM64 architecture features except FP and SIMD, but this
-        // should be altered to possibly enable all of them, when they are known to all work.
+        if (JitConfig.EnableArm64AdvSimd() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
+        }
 
-        CORINFO_InstructionSetFlags defaultArm64Flags;
-        defaultArm64Flags.AddInstructionSet(InstructionSet_ArmBase);
-        defaultArm64Flags.AddInstructionSet(InstructionSet_AdvSimd);
-        defaultArm64Flags.Set64BitInstructionSetVariants();
-        compileFlags->SetInstructionSetFlags(defaultArm64Flags);
-#endif // defined(TARGET_ARM64)
+        if (JitConfig.EnableArm64Aes() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Aes);
+        }
+
+        if (JitConfig.EnableArm64Crc32() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Crc32);
+        }
+
+        if (JitConfig.EnableArm64Dp() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Dp);
+        }
+
+        if (JitConfig.EnableArm64Rdm() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Rdm);
+        }
+
+        if (JitConfig.EnableArm64Sha1() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sha1);
+        }
+
+        if (JitConfig.EnableArm64Sha256() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sha256);
+        }
+
+        if (JitConfig.EnableArm64Atomics() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Atomics);
+        }
+
+        if (JitConfig.EnableArm64Dczva() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Dczva);
+        }
+#elif defined(TARGET_XARCH)
+        if (JitConfig.EnableHWIntrinsic() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
+        }
+
+        if (JitConfig.EnableSSE() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE);
+        }
+
+        if (JitConfig.EnableSSE2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE2);
+        }
+
+        if ((JitConfig.EnableSSE3() != 0) && (JitConfig.EnableSSE3_4() != 0))
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
+        }
+
+        if (JitConfig.EnableSSSE3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSSE3);
+        }
+
+        if (JitConfig.EnableSSE41() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE41);
+        }
+
+        if (JitConfig.EnableSSE42() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE42);
+        }
+
+        if (JitConfig.EnableAVX() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX);
+        }
+
+        if (JitConfig.EnableAVX2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX2);
+        }
+
+        if (JitConfig.EnableAES() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AES);
+        }
+
+        if (JitConfig.EnableBMI1() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_BMI1);
+        }
+
+        if (JitConfig.EnableBMI2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_BMI2);
+        }
+
+        if (JitConfig.EnableFMA() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_FMA);
+        }
+
+        if (JitConfig.EnableLZCNT() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_LZCNT);
+        }
+
+        if (JitConfig.EnablePCLMULQDQ() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ);
+        }
+
+        if (JitConfig.EnablePOPCNT() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
+        }
+
+        if (JitConfig.EnableAVXVNNI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
+        }
+#endif
+
+        // These calls are important and explicitly ordered to ensure that the flags are correct in
+        // the face of missing or removed instruction sets. Without them, we might end up with incorrect
+        // downstream checks.
+
+        instructionSetFlags.Set64BitInstructionSetVariants();
+        instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+
+        compileFlags->SetInstructionSetFlags(instructionSetFlags);
     }
 
     compMaxUncheckedOffsetForNullObject = eeGetEEInfo()->maxUncheckedOffsetForNullObject;

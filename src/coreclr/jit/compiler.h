@@ -5451,6 +5451,7 @@ public:
     UINT32                                 fgPgoBlockCounts;
     UINT32                                 fgPgoEdgeCounts;
     UINT32                                 fgPgoClassProfiles;
+    UINT32                                 fgPgoMethodProfiles;
     unsigned                               fgPgoInlineePgo;
     unsigned                               fgPgoInlineeNoPgo;
     unsigned                               fgPgoInlineeNoPgoSingleBlock;
