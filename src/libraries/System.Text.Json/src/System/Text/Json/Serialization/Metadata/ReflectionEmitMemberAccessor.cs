@@ -49,6 +49,11 @@ namespace System.Text.Json.Serialization.Metadata
             else
             {
                 generator.Emit(OpCodes.Newobj, realMethod);
+                if (type.IsValueType)
+                {
+                    // Since C# 10 it's now possible to have parameterless constructors in structs
+                    generator.Emit(OpCodes.Box, type);
+                }
             }
 
             generator.Emit(OpCodes.Ret);
