@@ -234,9 +234,6 @@ BOOL ZapSig::GetSignatureForTypeHandle(TypeHandle      handle,
     if ((index != 0) && (this->pfnTokenDefinition != NULL))
     {
         (*this->pfnTokenDefinition)(this->context.pModuleContext, pTypeHandleModule, index, &token);
-
-        // ibcExternalType tokens are actually encoded as mdtTypeDef tokens in the signature
-        _ASSERTE(TypeFromToken(token) == ibcExternalType);
         token = TokenFromRid(RidFromToken(token), mdtTypeDef);
     }
 
@@ -1189,10 +1186,6 @@ BOOL ZapSig::EncodeMethod(
         externalTokens = ZapSig::MulticoreJitTokens;
         pInfoModule = pMethod->GetModule_NoLogging();
     }
-    else if (pfnDefineToken != NULL)
-    {
-        externalTokens = ZapSig::IbcTokens;
-    }
 
     ZapSig zapSig(pInfoModule, pEncodeModuleContext, externalTokens,
                     (EncodeModuleCallback)    pfnEncodeModule,
@@ -1212,22 +1205,8 @@ BOOL ZapSig::EncodeMethod(
     if (fMethodNeedsInstantiation)
         methodFlags |= ENCODE_METHOD_SIG_MethodInstantiation;
 
-    //
-    // For backward compatibility, IBC tokens use slightly different encoding:
-    // - Owning type is uncoditionally encoded
-    // - Number of method instantiation arguments is not encoded
-    //
-    if (externalTokens == ZapSig::IbcTokens)
-    {
-        // The type is always encoded before flags for IBC
-        if (!zapSig.GetSignatureForTypeHandle(ownerType, pSigBuilder))
-            return FALSE;
-    }
-    else
-    {
-        // Assume that the owner type is going to be needed
-        methodFlags |= ENCODE_METHOD_SIG_OwnerType;
-    }
+    // Assume that the owner type is going to be needed
+    methodFlags |= ENCODE_METHOD_SIG_OwnerType;
 
     if (IsNilToken(methodToken))
     {
@@ -1351,11 +1330,6 @@ BOOL ZapSig::EncodeMethod(
         else
         {
             Instantiation inst = pMethod->GetMethodInstantiation();
-
-            // Number of method instantiation arguments is not encoded in IBC tokens - see comment above
-            if (externalTokens != ZapSig::IbcTokens)
-                pSigBuilder->AppendData(inst.GetNumArgs());
-
             for (DWORD i = 0; i < inst.GetNumArgs(); i++)
             {
                 TypeHandle t = inst[i];

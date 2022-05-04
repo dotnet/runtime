@@ -1125,9 +1125,6 @@ CHECK PEDecoder::CheckCorHeader() const
             for(namelen=0; (namelen<32)&&(pSS->rcName[namelen]!=0); namelen++);
             CHECK((0 < namelen)&&(namelen < 32));
 
-            // Forbid HOT_MODEL_STREAM
-            CHECK(strcmp(pSS->rcName, HOT_MODEL_STREAM_A) != 0);
-
             pcMD = dac_cast<TADDR>(NextStorageStream(pSS));
             ctMD -= (COUNT_T)(pcMD - dac_cast<TADDR>(pSS));
 
