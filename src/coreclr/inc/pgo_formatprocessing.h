@@ -8,15 +8,7 @@
 
 #ifdef FEATURE_PGO
 
-inline bool AddTypeHandleToUnknownTypeHandleMask(INT_PTR typeHandle, uint32_t *unknownTypeHandleMask)
-{
-    uint32_t bitMask = (uint32_t)(1 << (typeHandle - UNKNOWN_TYPEHANDLE_MIN));
-    bool result = (bitMask & *unknownTypeHandleMask) == 0;
-    *unknownTypeHandleMask |= bitMask;
-    return result;
-}
-
-inline INT_PTR HashToPgoUnknownTypeHandle(uint32_t hash)
+inline INT_PTR HashToPgoUnknownHandle(uint32_t hash)
 {
     // Map from a 32bit hash to the 32 different unknown type handle values
     return (hash & 0x1F) + 1;
@@ -53,6 +45,7 @@ inline uint32_t InstrumentationKindToSize(ICorJitInfo::PgoInstrumentationKind ki
         case ICorJitInfo::PgoInstrumentationKind::EightByte:
             return 8;
         case ICorJitInfo::PgoInstrumentationKind::TypeHandle:
+        case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
             return TARGET_POINTER_SIZE;
         default:
             _ASSERTE(FALSE);
@@ -242,6 +235,7 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDa
     bool done = false;
     int64_t lastDataValue = 0;
     int64_t lastTypeDataValue = 0;
+    int64_t lastMethodDataValue = 0;
     int32_t dataCountToRead = 0;
     
     ReadCompressedInts(pByte, cbDataMax, [&](int64_t curValue)
@@ -267,8 +261,16 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDa
                     return false;
                 }
                 break;
+            case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
+                lastMethodDataValue += curValue;
+
+                if (!handler(schemaHandler.GetSchema(), lastMethodDataValue, schemaHandler.GetSchema().Count - dataCountToRead))
+                {
+                    return false;
+                }
+                break;
             default:
-                assert(false);
+                assert(!"Unexpected PGO instrumentation data type");
                 break;
             }
             dataCountToRead--;
@@ -516,6 +518,7 @@ class SchemaAndDataWriter
     ICorJitInfo::PgoInstrumentationSchema prevSchema = {};
     int64_t lastIntDataWritten = 0;
     int64_t lastTypeDataWritten = 0;
+    int64_t lastMethodDataWritten = 0;
 
 public:
     SchemaAndDataWriter(const ByteWriter& byteWriter, uint8_t* pInstrumentationData) :
@@ -532,8 +535,8 @@ public:
         return true;
     }
 
-    template<class TypeHandleProcessor>
-    bool AppendDataFromLastSchema(TypeHandleProcessor& thProcessor)
+    template<class TypeHandleProcessor, class MethodHandleProcessor>
+    bool AppendDataFromLastSchema(TypeHandleProcessor& thProcessor, MethodHandleProcessor& mhProcessor)
     {
         uint8_t *pData = (pInstrumentationData + prevSchema.Offset);
         for (int32_t iDataElem = 0; iDataElem < prevSchema.Count; iDataElem++)
@@ -572,6 +575,20 @@ public:
 
                     bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastTypeDataWritten, byteWriter);
                     lastTypeDataWritten = logicalDataToWrite;
+                    if (!returnValue)
+                        return false;
+                    pData += sizeof(intptr_t);
+                    break;
+                }
+                case ICorJitInfo::PgoInstrumentationKind::MethodHandle:
+                {
+                    logicalDataToWrite = *(volatile intptr_t*)pData;
+
+                    // As there could be tearing otherwise, inform the caller of exactly what value was written.
+                    mhProcessor(logicalDataToWrite);
+
+                    bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastMethodDataWritten, byteWriter);
+                    lastMethodDataWritten = logicalDataToWrite;
                     if (!returnValue)
                         return false;
                     pData += sizeof(intptr_t);

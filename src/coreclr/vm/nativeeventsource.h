@@ -26,6 +26,7 @@ extern "C" void QCALLTYPE LogThreadPoolWorkerThreadAdjustmentStats(_In_z_ double
 extern "C" void QCALLTYPE LogThreadPoolIOEnqueue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ bool multiDequeues, _In_z_ short ClrInstanceID);
 extern "C" void QCALLTYPE LogThreadPoolIODequeue(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ short ClrInstanceID);
 extern "C" void QCALLTYPE LogThreadPoolWorkingThreadCount(_In_z_ uint count, _In_z_ short ClrInstanceID);
+extern "C" void QCALLTYPE LogThreadPoolIOPack(_In_z_ void* nativeOverlapped, _In_z_ void* overlapped, _In_z_ short ClrInstanceID);
 #endif // defined(FEATURE_PERFTRACING)
 
 #endif //_NATIVEEVENTSOURCE_H_

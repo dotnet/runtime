@@ -141,15 +141,9 @@ AliasSet::NodeInfo::NodeInfo(Compiler* compiler, GenTree* node)
     if (node->IsCall())
     {
         // For calls having return buffer, update the local number that is written after this call.
-        GenTree* retBufArgNode = node->AsCall()->GetLclRetBufArgNode();
+        GenTree* retBufArgNode = compiler->gtCallGetDefinedRetBufLclAddr(node->AsCall());
         if (retBufArgNode != nullptr)
         {
-            // If a copy/reload is inserted by LSRA, retrieve the returnBuffer
-            if (retBufArgNode->IsCopyOrReload())
-            {
-                retBufArgNode = retBufArgNode->AsCopyOrReload()->gtGetOp1();
-            }
-
             m_flags |= ALIAS_WRITES_LCL_VAR;
             m_lclNum  = retBufArgNode->AsLclVarCommon()->GetLclNum();
             m_lclOffs = retBufArgNode->AsLclVarCommon()->GetLclOffs();

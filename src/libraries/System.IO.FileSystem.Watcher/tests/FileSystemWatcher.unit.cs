@@ -31,40 +31,37 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_NewFileInfoAction_TriggersNothing()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+            string file = CreateTestFile(TestDirectory, "file");
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
-                Action action = () => new FileInfo(file.Path);
+                Action action = () => new FileInfo(file);
 
-                ExpectEvent(watcher, 0, action, expectedPath: file.Path);
+                ExpectEvent(watcher, 0, action, expectedPath: file);
             }
         }
 
         [Fact]
         public void FileSystemWatcher_FileInfoGetter_TriggersNothing()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+            string file = CreateTestFile(TestDirectory, "file");
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 FileAttributes res;
-                Action action = () => res = new FileInfo(file.Path).Attributes;
+                Action action = () => res = new FileInfo(file).Attributes;
 
-                ExpectEvent(watcher, 0, action, expectedPath: file.Path);
+                ExpectEvent(watcher, 0, action, expectedPath: file);
             }
         }
 
         [Fact]
         public void FileSystemWatcher_EmptyAction_TriggersNothing()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(testDirectory.Path, "file")))
-            using (var watcher = new FileSystemWatcher(testDirectory.Path, Path.GetFileName(file.Path)))
+            string file = CreateTestFile(TestDirectory, "file");
+            using (var watcher = new FileSystemWatcher(TestDirectory, Path.GetFileName(file)))
             {
                 Action action = () => { };
 
-                ExpectEvent(watcher, 0, action, expectedPath: file.Path);
+                ExpectEvent(watcher, 0, action, expectedPath: file);
             }
         }
 
@@ -98,31 +95,26 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_ctor_NullStrings()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            {
-                // Null filter
-                Assert.Throws<ArgumentNullException>("filter", () => new FileSystemWatcher(testDirectory.Path, null));
+            // Null filter
+            Assert.Throws<ArgumentNullException>("filter", () => new FileSystemWatcher(TestDirectory, null));
 
-                // Null path
-                Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, null));
-                Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null));
-                Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, "*"));
-            }
+            // Null path
+            Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, null));
+            Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null));
+            Assert.Throws<ArgumentNullException>("path", () => new FileSystemWatcher(null, "*"));
+            
         }
 
         [Fact]
         public void FileSystemWatcher_ctor_InvalidStrings()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            {
-                // Empty path
-                AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(string.Empty));
-                AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(string.Empty, "*"));
+            // Empty path
+            AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(string.Empty));
+            AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(string.Empty, "*"));
 
-                // Invalid directory
-                AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(GetTestFilePath()));
-                AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(GetTestFilePath(), "*"));
-            }
+            // Invalid directory
+            AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(GetTestFilePath()));
+            AssertExtensions.Throws<ArgumentException>("path", () => new FileSystemWatcher(GetTestFilePath(), "*"));
         }
 
         [Fact]
@@ -186,17 +178,16 @@ namespace System.IO.Tests
         [Fact]
         public void FileSystemWatcher_EnableRaisingEvents()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            {
-                FileSystemWatcher watcher = new FileSystemWatcher(testDirectory.Path);
-                Assert.False(watcher.EnableRaisingEvents);
 
-                watcher.EnableRaisingEvents = true;
-                Assert.True(watcher.EnableRaisingEvents);
+            FileSystemWatcher watcher = new FileSystemWatcher(TestDirectory);
+            Assert.False(watcher.EnableRaisingEvents);
 
-                watcher.EnableRaisingEvents = false;
-                Assert.False(watcher.EnableRaisingEvents);
-            }
+            watcher.EnableRaisingEvents = true;
+            Assert.True(watcher.EnableRaisingEvents);
+
+            watcher.EnableRaisingEvents = false;
+            Assert.False(watcher.EnableRaisingEvents);
+            
         }
 
         [Fact]
@@ -373,11 +364,10 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.Windows)]  // Casing matters on Linux
         public void FileSystemWatcher_OnCreatedWithMismatchedCasingGivesExpectedFullPath()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var fsw = new FileSystemWatcher(dir.Path))
+            using (var fsw = new FileSystemWatcher(TestDirectory))
             {
                 AutoResetEvent are = new AutoResetEvent(false);
-                string fullPath = Path.Combine(dir.Path.ToUpper(), "Foo.txt");
+                string fullPath = Path.Combine(TestDirectory.ToUpper(), "Foo.txt");
 
                 fsw.Created += (o, e) =>
                 {
@@ -466,22 +456,21 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)] // Unix FSW don't trigger on a file rename.
         public void FileSystemWatcher_Windows_OnRenameGivesExpectedFullPath()
         {
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var file = new TempFile(Path.Combine(dir.Path, "file")))
-            using (var fsw = new FileSystemWatcher(dir.Path))
+            string file = CreateTestFile(TestDirectory, "file");
+            using (var fsw = new FileSystemWatcher(TestDirectory))
             {
                 AutoResetEvent eventOccurred = WatchRenamed(fsw).EventOccured;
 
-                string newPath = Path.Combine(dir.Path, "newPath");
+                string newPath = Path.Combine(TestDirectory, "newPath");
 
                 fsw.Renamed += (o, e) =>
                 {
-                    Assert.Equal(file.Path, e.OldFullPath);
+                    Assert.Equal(file, e.OldFullPath);
                     Assert.Equal(newPath, e.FullPath);
                 };
 
                 fsw.EnableRaisingEvents = true;
-                File.Move(file.Path, newPath);
+                File.Move(file, newPath);
                 ExpectEvent(eventOccurred, "renamed");
             }
         }
@@ -559,39 +548,36 @@ namespace System.IO.Tests
         {
             // Check the case where Stop or Dispose (they do the same thing) is called from
             // a FSW event callback and make sure we don't Thread.Join to deadlock
-            using (var dir = new TempDirectory(GetTestFilePath()))
+
+            string filePath = CreateTestFile(TestDirectory, "testfile.txt");
+            AutoResetEvent are = new AutoResetEvent(false);
+            FileSystemWatcher watcher = new FileSystemWatcher(Path.GetFullPath(TestDirectory), "*");
+            FileSystemEventHandler callback = (sender, arg) =>
             {
-                string filePath = Path.Combine(dir.Path, "testfile.txt");
-                File.Create(filePath).Dispose();
-                AutoResetEvent are = new AutoResetEvent(false);
-                FileSystemWatcher watcher = new FileSystemWatcher(Path.GetFullPath(dir.Path), "*");
-                FileSystemEventHandler callback = (sender, arg) =>
-                {
-                    watcher.Dispose();
-                    are.Set();
-                };
-                watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
-                watcher.Changed += callback;
-                watcher.EnableRaisingEvents = true;
-                File.SetLastWriteTime(filePath, File.GetLastWriteTime(filePath).AddDays(1));
-                Assert.True(are.WaitOne(10000));
-                Assert.Throws<ObjectDisposedException>(() => watcher.EnableRaisingEvents = true);
-            }
+                watcher.Dispose();
+                are.Set();
+            };
+            watcher.NotifyFilter = NotifyFilters.FileName | NotifyFilters.LastWrite;
+            watcher.Changed += callback;
+            watcher.EnableRaisingEvents = true;
+            File.SetLastWriteTime(filePath, File.GetLastWriteTime(filePath).AddDays(1));
+            Assert.True(are.WaitOne(10000));
+            Assert.Throws<ObjectDisposedException>(() => watcher.EnableRaisingEvents = true);
+            
         }
 
         [Fact]
         public void FileSystemWatcher_WatchingAliasedFolderResolvesToRealPathWhenWatching()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            using (var dir = new TempDirectory(Path.Combine(testDirectory.Path, "dir")))
-            using (var fsw = new FileSystemWatcher(dir.Path))
+            string dir = CreateTestDirectory(TestDirectory, "dir");
+            using (var fsw = new FileSystemWatcher(dir))
             {
                 AutoResetEvent are = WatchCreated(fsw).EventOccured;
 
                 fsw.Filter = "*";
                 fsw.EnableRaisingEvents = true;
 
-                using (var temp = new TempDirectory(Path.Combine(dir.Path, "foo")))
+                using (var temp = new TempDirectory(Path.Combine(dir, "foo")))
                 {
                     ExpectEvent(are, "created");
                 }
@@ -878,33 +864,29 @@ namespace System.IO.Tests
         [Fact]
         public void GetFilterAfterFiltersClear()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            {
-                var watcher = new FileSystemWatcher(testDirectory.Path);
-                watcher.Filters.Add("*.pdb");
-                watcher.Filters.Add("*.dll");
+            var watcher = new FileSystemWatcher(TestDirectory);
+            watcher.Filters.Add("*.pdb");
+            watcher.Filters.Add("*.dll");
 
-                watcher.Filters.Clear();
-                Assert.Equal("*", watcher.Filter);
-                Assert.Equal(new string[] { }, watcher.Filters);
-            }
+            watcher.Filters.Clear();
+            Assert.Equal("*", watcher.Filter);
+            Assert.Equal(new string[] { }, watcher.Filters);
+            
         }
 
         [Fact]
         public void GetFiltersAfterFiltersClear()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            {
-                var watcher = new FileSystemWatcher(testDirectory.Path);
-                watcher.Filters.Add("*.pdb");
-                watcher.Filters.Add("*.dll");
+            var watcher = new FileSystemWatcher(TestDirectory);
+            watcher.Filters.Add("*.pdb");
+            watcher.Filters.Add("*.dll");
 
-                watcher.Filters.Clear();
-                Assert.Throws<ArgumentOutOfRangeException>(() => watcher.Filters[0]);
-                Assert.Equal(0, watcher.Filters.Count);
-                Assert.Empty(watcher.Filters);
-                Assert.NotNull(watcher.Filters);
-            }
+            watcher.Filters.Clear();
+            Assert.Throws<ArgumentOutOfRangeException>(() => watcher.Filters[0]);
+            Assert.Equal(0, watcher.Filters.Count);
+            Assert.Empty(watcher.Filters);
+            Assert.NotNull(watcher.Filters);
+            
         }
 
         [Fact]
@@ -922,33 +904,29 @@ namespace System.IO.Tests
         [Fact]
         public void SetAndGetFilterProperty()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            {
-                var watcher = new FileSystemWatcher(testDirectory.Path, "*.pdb");
-                watcher.Filters.Add("foo");
-                Assert.Equal(2, watcher.Filters.Count);
-                Assert.Equal(new string[] { "*.pdb", "foo" }, watcher.Filters);
+            var watcher = new FileSystemWatcher(TestDirectory, "*.pdb");
+            watcher.Filters.Add("foo");
+            Assert.Equal(2, watcher.Filters.Count);
+            Assert.Equal(new string[] { "*.pdb", "foo" }, watcher.Filters);
 
-                watcher.Filter = "*.doc";
-                Assert.Equal(1, watcher.Filters.Count);
-                Assert.Equal("*.doc", watcher.Filter);
-                Assert.Equal("*.doc", watcher.Filters[0]);
-                Assert.Equal(new string[] { "*.doc" }, watcher.Filters);
+            watcher.Filter = "*.doc";
+            Assert.Equal(1, watcher.Filters.Count);
+            Assert.Equal("*.doc", watcher.Filter);
+            Assert.Equal("*.doc", watcher.Filters[0]);
+            Assert.Equal(new string[] { "*.doc" }, watcher.Filters);
 
-                watcher.Filters.Clear();
-                Assert.Equal("*", watcher.Filter);
-            }
+            watcher.Filters.Clear();
+            Assert.Equal("*", watcher.Filter);
+            
         }
 
         [Fact]
         public void SetAndGetFiltersProperty()
         {
-            using (var testDirectory = new TempDirectory(GetTestFilePath()))
-            {
-                var watcher = new FileSystemWatcher(testDirectory.Path, "*.pdb");
-                watcher.Filters.Add("foo");
-                Assert.Equal(new string[] { "*.pdb", "foo" }, watcher.Filters);
-            }
+            var watcher = new FileSystemWatcher(TestDirectory, "*.pdb");
+            watcher.Filters.Add("foo");
+            Assert.Equal(new string[] { "*.pdb", "foo" }, watcher.Filters);
+            
         }
 
         [Fact]
@@ -1122,30 +1100,29 @@ namespace System.IO.Tests
         {
             int maxUserWatches = int.Parse(File.ReadAllText("/proc/sys/fs/inotify/max_user_watches"));
 
-            using (var dir = new TempDirectory(GetTestFilePath()))
-            using (var watcher = new FileSystemWatcher(dir.Path) { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.FileName })
+            using (var watcher = new FileSystemWatcher(TestDirectory) { IncludeSubdirectories = true, NotifyFilter = NotifyFilters.FileName })
             {
                 Action action = () =>
                 {
                     // Create enough directories to exceed the number of allowed watches
                     for (int i = 0; i <= maxUserWatches; i++)
                     {
-                        Directory.CreateDirectory(Path.Combine(dir.Path, i.ToString()));
+                        Directory.CreateDirectory(Path.Combine(TestDirectory, i.ToString()));
                     }
                 };
                 Action cleanup = () =>
                 {
                     for (int i = 0; i <= maxUserWatches; i++)
                     {
-                        Directory.Delete(Path.Combine(dir.Path, i.ToString()));
+                        Directory.Delete(Path.Combine(TestDirectory, i.ToString()));
                     }
                 };
 
                 ExpectError(watcher, action, cleanup);
 
                 // Make sure existing watches still work even after we've had one or more failures
-                Action createAction = () => File.WriteAllText(Path.Combine(dir.Path, Path.GetRandomFileName()), "text");
-                Action createCleanup = () => File.Delete(Path.Combine(dir.Path, Path.GetRandomFileName()));
+                Action createAction = () => File.WriteAllText(Path.Combine(TestDirectory, Path.GetRandomFileName()), "text");
+                Action createCleanup = () => File.Delete(Path.Combine(TestDirectory, Path.GetRandomFileName()));
                 ExpectEvent(watcher, WatcherChangeTypes.Created, createAction, createCleanup);
             }
         }

@@ -17,8 +17,6 @@
 #endif
 #include <aclapi.h>
 
-#include "eemessagebox.h"
-
 #ifndef SM_REMOTESESSION
 #define SM_REMOTESESSION 0x1000
 #endif

@@ -503,7 +503,6 @@ FCFuncStart(gInteropMarshalFuncs)
     FCFuncElement("StructureToPtr", MarshalNative::StructureToPtr)
     FCFuncElement("PtrToStructureHelper", MarshalNative::PtrToStructureHelper)
     FCFuncElement("DestroyStructure", MarshalNative::DestroyStructure)
-    FCFuncElement("IsPinnable", MarshalNative::IsPinnable)
     FCFuncElement("GetExceptionCode", ExceptionNative::GetExceptionCode)
     FCFuncElement("GetExceptionPointers", ExceptionNative::GetExceptionPointers)
 
