@@ -5431,18 +5431,21 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #endif // TARGET_XARCH
     }
 
+#ifdef TARGET_ARM64
+    if (node->OperIs(GT_ADD))
+    {
+        GenTree* next = LowerAddForPossibleContainment(node);
+        if (next != nullptr)
+        {
+            return next;
+        }
+    }
+#endif // TARGET_ARM64
+
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
     }
-
-#ifdef TARGET_ARM64
-    GenTree* next = LowerAddForPossibleContainment(node);
-    if (next != nullptr)
-    {
-        return next;
-    }
-#endif // TARGET_ARM64
 
     return nullptr;
 }

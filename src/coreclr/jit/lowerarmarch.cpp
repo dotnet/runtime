@@ -780,6 +780,12 @@ GenTree* Lowering::LowerAddForPossibleContainment(GenTreeOp* node)
     GenTree* op1 = node->gtGetOp1();
     GenTree* op2 = node->gtGetOp2();
 
+    // If the second operand is a containable immediate,
+    // then we do not want to risk moving it around
+    // in this transformation.
+    if (IsContainableImmed(node, op2))
+        return nullptr;
+
     GenTree* mul = nullptr;
     GenTree* c   = nullptr;
     if (op1->OperIs(GT_MUL))
