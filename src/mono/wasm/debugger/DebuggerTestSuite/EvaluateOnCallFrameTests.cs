@@ -861,12 +861,12 @@ namespace DebuggerTests
            });
 
         [ConditionalTheory(nameof(RunningOnChrome))]
-        // [InlineData("EvaluateBrowsableClass", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
-        // [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
-        // [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
-        // [InlineData("EvaluateBrowsableStruct", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
-        // [InlineData("EvaluateBrowsableStaticClass", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
-        // [InlineData("EvaluateBrowsableStaticClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
+        [InlineData("EvaluateBrowsableClass", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
+        [InlineData("EvaluateBrowsableClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
+        [InlineData("EvaluateBrowsableStruct", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
+        [InlineData("EvaluateBrowsableStruct", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
+        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluateFieldsNone", "testFieldsNone", 10)]
+        [InlineData("EvaluateBrowsableStaticClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 10)]
         [InlineData("EvaluateBrowsableCustomPropertiesClass", "TestEvaluatePropertiesNone", "testPropertiesNone", 5, true)]
         public async Task EvaluateBrowsableNone(
             string outerClassName, string className, string localVarName, int breakLine, bool isCustomGetter = false) => await CheckInspectLocalsAtBreakpointSite(
