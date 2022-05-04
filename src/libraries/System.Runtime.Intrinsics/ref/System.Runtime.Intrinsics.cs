@@ -3979,8 +3979,10 @@ namespace System.Runtime.Intrinsics.X86
         public static System.Runtime.Intrinsics.Vector256<nuint> ShiftLeftLogical128BitLane(System.Runtime.Intrinsics.Vector256<nuint> value, byte numBytes) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<int> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector128<int> value, System.Runtime.Intrinsics.Vector128<uint> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<long> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector128<long> value, System.Runtime.Intrinsics.Vector128<ulong> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nint> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector128<nint> value, System.Runtime.Intrinsics.Vector128<nuint> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<uint> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector128<uint> value, System.Runtime.Intrinsics.Vector128<uint> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<ulong> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector128<ulong> value, System.Runtime.Intrinsics.Vector128<ulong> count) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<nuint> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector128<nuint> value, System.Runtime.Intrinsics.Vector128<nuint> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<int> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector256<int> value, System.Runtime.Intrinsics.Vector256<uint> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<long> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector256<long> value, System.Runtime.Intrinsics.Vector256<ulong> count) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<nint> ShiftLeftLogicalVariable(System.Runtime.Intrinsics.Vector256<nint> value, System.Runtime.Intrinsics.Vector256<nint> count) { throw null; }

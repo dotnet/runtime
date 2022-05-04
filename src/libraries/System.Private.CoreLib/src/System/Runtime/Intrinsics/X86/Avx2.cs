@@ -1183,6 +1183,38 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPGATHERDD xmm, vm32x, xmm
         /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
         /// </summary>
+        public static unsafe Vector128<float> GatherVector128(float* baseAddress, Vector128<int> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+        /// <summary>
+        /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
+        public static unsafe Vector128<double> GatherVector128(double* baseAddress, Vector128<int> index, byte scale)
+        {
+            return scale switch
+            {
+                1 => GatherVector128(baseAddress, index, 1),
+                2 => GatherVector128(baseAddress, index, 2),
+                4 => GatherVector128(baseAddress, index, 4),
+                8 => GatherVector128(baseAddress, index, 8),
+                _ => throw new ArgumentOutOfRangeException(nameof(scale)),
+            };
+        }
+        /// <summary>
+        /// __m128i _mm_i32gather_epi32 (int const* base_addr, __m128i vindex, const int scale)
+        ///   VPGATHERDD xmm, vm32x, xmm
+        /// The scale parameter should be 1, 2, 4 or 8, otherwise, ArgumentOutOfRangeException will be thrown.
+        /// </summary>
         public static unsafe Vector128<int> GatherVector128(int* baseAddress, Vector128<int> index, byte scale)
         {
             return scale switch
@@ -3620,6 +3652,16 @@ namespace System.Runtime.Intrinsics.X86
         ///   VPSLLVQ xmm, ymm, xmm/m128
         /// </summary>
         public static Vector128<ulong> ShiftLeftLogicalVariable(Vector128<ulong> value, Vector128<ulong> count) => ShiftLeftLogicalVariable(value, count);
+        /// <summary>
+        /// __m128i _mm_sllv_epi64 (__m128i a, __m128i count)
+        ///   VPSLLVQ xmm, ymm, xmm/m128
+        /// </summary>
+        public static Vector128<nint> ShiftLeftLogicalVariable(Vector128<nint> value, Vector128<nuint> count) => ShiftLeftLogicalVariable(value, count);
+        /// <summary>
+        /// __m128i _mm_sllv_epi64 (__m128i a, __m128i count)
+        ///   VPSLLVQ xmm, ymm, xmm/m128
+        /// </summary>
+        public static Vector128<nuint> ShiftLeftLogicalVariable(Vector128<nuint> value, Vector128<nuint> count) => ShiftLeftLogicalVariable(value, count);
 
         /// <summary>
         /// _mm256_sra_epi16 (__m256i a, __m128i count)
