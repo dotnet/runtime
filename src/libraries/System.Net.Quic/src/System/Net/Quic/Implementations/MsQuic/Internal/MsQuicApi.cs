@@ -100,7 +100,10 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                                 }
                                 else
                                 {
-                                    NetEventSource.Info(null, $"Incompatible MsQuic library version '{version}', expecting '{MsQuicVersion}'");
+                                    if (NetEventSource.Log.IsEnabled())
+                                    {
+                                        NetEventSource.Info(null, $"Incompatible MsQuic library version '{version}', expecting '{MsQuicVersion}'");
+                                    }
                                 }
                             }
                         }
