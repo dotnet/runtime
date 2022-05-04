@@ -5191,7 +5191,7 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
         }
         else if (igInLoop->igFlags & IGF_REMOVED_ALIGN)
         {
-            assert("!Failed to remove 15 bytes");
+            assert(!"Failed to remove 15 bytes");
         }
         if ((igInLoop->igLoopBackEdge == igLoopHeader) || (loopSize > maxLoopSize))
         {
