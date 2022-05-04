@@ -57,7 +57,7 @@ namespace Microsoft.NET.HostModel.Bundle
                 throw new ArgumentException($"Invalid input: Unsupported Target Framework Version {targetFrameworkVersion}");
             }
 
-            if (IsLinux && Arch == Architecture.Arm64)
+            if (Arch == Architecture.Arm64)
             {
                 // We align assemblies in the bundle at 4K so that we can use mmap on Linux without changing the page alignment of ARM64 R2R code.
                 // This is only necessary for R2R assemblies, but we do it for all assemblies for simplicity.
