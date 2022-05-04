@@ -82,7 +82,7 @@ namespace System.IO.Tests
             // When setting CreationTime to a value that isn't in the future, getting the CreationTime should return the same value.
 
             string path = GetTestFilePath();
-            await File.WriteAllTextAsync(path, "");
+            File.WriteAllText(path, "");
 
             // Set the creation time to a value in the past that is between ctime and now.
             await Task.Delay(600);
@@ -141,30 +141,30 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void SetLastWriteTimeTicks()
         {
-            string firstFilePath = GetTestFilePath();
-            string secondFilePath = GetTestFilePath();
+            string firstFile = GetTestFilePath();
+            string secondFile = GetTestFilePath();
 
-            File.WriteAllText(firstFilePath, "");
-            File.WriteAllText(secondFilePath, "");
+            File.WriteAllText(firstFile, "");
+            File.WriteAllText(secondFile, "");
 
-            SetLastAccessTimeUtc(firstFilePath, DateTime.UtcNow);
-            long firstFileTicks = GetLastWriteTimeUtc(firstFilePath).Ticks;
-            long secondFileTicks = GetLastWriteTimeUtc(secondFilePath).Ticks;
+            SetLastAccessTimeUtc(firstFile, DateTime.UtcNow);
+            long firstFileTicks = GetLastWriteTimeUtc(firstFile).Ticks;
+            long secondFileTicks = GetLastWriteTimeUtc(secondFile).Ticks;
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
         }
 
         [ConditionalFact(nameof(HighTemporalResolution))] // OSX HFS driver format/Browser Platform do not support nanosecond granularity.
         public void SetUptoNanoseconds()
         {
-            string filePath = GetTestFilePath();
-            File.WriteAllText(filePath, "");
+            string file = GetTestFilePath();
+            File.WriteAllText(file, "");
 
             DateTime dateTime = DateTime.UtcNow;
 
-            SetLastWriteTimeUtc(filePath, dateTime);
-            long ticks = GetLastWriteTimeUtc(filePath).Ticks;
+            SetLastWriteTimeUtc(file, dateTime);
+            long ticks = GetLastWriteTimeUtc(file).Ticks;
 
-            Assert.Equal(dateTime, GetLastWriteTimeUtc(filePath));
+            Assert.Equal(dateTime, GetLastWriteTimeUtc(file));
             Assert.Equal(ticks, dateTime.Ticks);
         }
 
@@ -173,14 +173,14 @@ namespace System.IO.Tests
         [ConditionalFact(nameof(SupportsLongMaxDateTime))]
         public void SetDateTimeMax()
         {
-            string filePath = GetTestFilePath();
-            File.WriteAllText(filePath, "");
+            string file = GetTestFilePath();
+            File.WriteAllText(file, "");
 
             DateTime dateTime = new(9999, 4, 11, 23, 47, 17, 21, DateTimeKind.Utc);
-            SetLastWriteTimeUtc(filePath, dateTime);
-            long ticks = GetLastWriteTimeUtc(filePath).Ticks;
+            SetLastWriteTimeUtc(file, dateTime);
+            long ticks = GetLastWriteTimeUtc(file).Ticks;
 
-            Assert.Equal(dateTime, GetLastWriteTimeUtc(filePath));
+            Assert.Equal(dateTime, GetLastWriteTimeUtc(file));
             Assert.Equal(ticks, dateTime.Ticks);
         }
 
@@ -188,15 +188,15 @@ namespace System.IO.Tests
         [PlatformSpecific(TestPlatforms.Windows)]
         public void SetLastAccessTimeTicks()
         {
-            string firstFilePath = GetTestFilePath();
-            string secondFilePath = GetTestFilePath();
+            string firstFile = GetTestFilePath();
+            string secondFile = GetTestFilePath();
 
-            File.WriteAllText(firstFilePath, "");
-            File.WriteAllText(secondFilePath, "");
+            File.WriteAllText(firstFile, "");
+            File.WriteAllText(secondFile, "");
 
-            SetLastWriteTimeUtc(secondFilePath, DateTime.UtcNow);
-            long firstFileTicks = GetLastAccessTimeUtc(firstFilePath).Ticks;
-            long secondFileTicks = GetLastAccessTimeUtc(secondFilePath).Ticks;
+            SetLastWriteTimeUtc(secondFile, DateTime.UtcNow);
+            long firstFileTicks = GetLastAccessTimeUtc(firstFile).Ticks;
+            long secondFileTicks = GetLastAccessTimeUtc(secondFile).Ticks;
             Assert.True(firstFileTicks <= secondFileTicks, $"First File Ticks\t{firstFileTicks}\nSecond File Ticks\t{secondFileTicks}");
         }
     }
