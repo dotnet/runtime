@@ -1732,7 +1732,7 @@ namespace System.Text.RegularExpressions
             int endPosition = SetStartIndex + setLength + categoryLength;
             bool negated = IsNegated(set);
 
-            // Special-case of set of a single character to output that character.
+            // Special-case set of a single character to output that character without set square brackets.
             if (!negated && // no negation
                 categoryLength == 0 && // no categories
                 endPosition >= set.Length && // no subtraction
@@ -1742,39 +1742,59 @@ namespace System.Text.RegularExpressions
                 return DescribeChar(set[SetStartIndex]);
             }
 
-            var desc = new StringBuilder();
-
-            desc.Append('[');
-
             int index = SetStartIndex;
             char ch1;
             char ch2;
+            StringBuilder desc = new StringBuilder().Append('[');
+
+            void RenderRanges()
+            {
+                for (; index < SetStartIndex + set[SetLengthIndex]; index += 2)
+                {
+                    ch1 = set[index];
+                    ch2 = index + 1 < set.Length ?
+                        (char)(set[index + 1] - 1) :
+                        LastChar;
+
+                    desc.Append(DescribeChar(ch1));
+
+                    if (ch2 != ch1)
+                    {
+                        if (ch1 + 1 != ch2)
+                        {
+                            desc.Append('-');
+                        }
+
+                        desc.Append(DescribeChar(ch2));
+                    }
+                }
+            }
+
+            // Special-case sets where the description will be more succinct by rendering it as negated, e.g. where
+            // there are fewer gaps between ranges than there are ranges.  This is the case when the first range
+            // includes \0 and the last range includes 0xFFFF, and typically occurs for sets that were actually
+            // initially negated but ended up as non-negated from various transforms along the way.
+            if (categoryLength == 0 && // no categories
+                endPosition >= set.Length && // no subtraction
+                setLength % 2 == 1 && // odd number of values because the last range won't include an upper bound
+                set[index] == 0)
+            {
+                // We now have an odd number of values structures as:
+                //     0,end0,start1,end1,start2,end2,...,startN
+                // Rather than walking the pairs starting from index 0, we walk pairs starting from index 1 (creating a range from end0 to start1),
+                // since we're creating ranges from the gaps.
+                index++;
+                desc.Append('^');
+                RenderRanges();
+                return desc.Append(']').ToString();
+            }
 
             if (negated)
             {
                 desc.Append('^');
             }
 
-            while (index < SetStartIndex + set[SetLengthIndex])
-            {
-                ch1 = set[index];
-                ch2 = index + 1 < set.Length ?
-                    (char)(set[index + 1] - 1) :
-                    LastChar;
-
-                desc.Append(DescribeChar(ch1));
-
-                if (ch2 != ch1)
-                {
-                    if (ch1 + 1 != ch2)
-                    {
-                        desc.Append('-');
-                    }
-
-                    desc.Append(DescribeChar(ch2));
-                }
-                index += 2;
-            }
+            RenderRanges();
 
             while (index < SetStartIndex + set[SetLengthIndex] + set[CategoryLengthIndex])
             {
@@ -1838,6 +1858,7 @@ namespace System.Text.RegularExpressions
         public static string DescribeChar(char ch) =>
             ch switch
             {
+                '\0' => @"\0",
                 '\a' => "\\a",
                 '\b' => "\\b",
                 '\t' => "\\t",
