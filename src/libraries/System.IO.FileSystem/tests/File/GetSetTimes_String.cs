@@ -42,7 +42,10 @@ namespace System.IO.Tests
         public void PageFileHasTimes()
         {
             // Typically there is a page file on the C: drive, if not, don't bother trying to track it down.
-            string pageFilePath = Directory.EnumerateFiles(@"C:\", "pagefile.sys").FirstOrDefault();
+            string pageFilePath = Directory.EnumerateFiles(@"C:\", "pagefile.sys", new EnumerationOptions
+            {
+                AttributesToSkip = 0
+            }).FirstOrDefault();
             if (pageFilePath != null)
             {
                 Assert.All(TimeFunctions(), (item) =>
