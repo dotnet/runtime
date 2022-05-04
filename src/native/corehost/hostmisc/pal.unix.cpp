@@ -505,6 +505,10 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
 
 #if defined(TARGET_OSX)
     recv->assign(_X("/usr/local/share/dotnet"));
+    if (pal::is_emulating_x64())
+    {
+        append_path(recv, _X("x64"));
+    }
 #else
     recv->assign(_X("/usr/share/dotnet"));
 #endif
@@ -977,6 +981,26 @@ void pal::readdir_onlydirectories(const pal::string_t& path, std::vector<pal::st
 bool pal::is_running_in_wow64()
 {
     return false;
+}
+
+bool pal::is_emulating_x64()
+{
+    int is_translated_process = 0;
+#if defined(TARGET_OSX)
+    size_t size = sizeof(is_translated_process);
+    if (sysctlbyname("sysctl.proc_translated", &is_translated_process, &size, NULL, 0) == -1)
+    {
+        trace::info(_X("Could not determine whether the current process is running under Rosetta."));
+        if (errno != ENOENT)
+        {
+            trace::info(_X("Call to sysctlbyname failed: %s"), strerror(errno));
+        }
+
+        return false;
+    }
+#endif
+
+    return is_translated_process == 1;
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

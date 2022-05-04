@@ -292,6 +292,11 @@ bool pal::get_default_installation_dir(pal::string_t* recv)
     }
 
     append_path(recv, _X("dotnet"));
+    if (pal::is_emulating_x64())
+    {
+        // Install location for emulated x64 should be %ProgramFiles%\dotnet\x64.
+        append_path(recv, _X("x64"));
+    }
 
     return true;
 }
@@ -781,6 +786,46 @@ bool pal::is_running_in_wow64()
         return false;
     }
     return (fWow64Process != FALSE);
+}
+
+typedef BOOL (WINAPI* is_wow64_process2)(
+    HANDLE hProcess,
+    USHORT *pProcessMachine,
+    USHORT *pNativeMachine
+);
+
+bool pal::is_emulating_x64()
+{
+#if defined(TARGET_AMD64)
+    auto kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
+    if (kernel32 == nullptr)
+    {
+        // Loading kernel32.dll failed, log the error and continue.
+        trace::info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
+        return false;
+    }
+
+    is_wow64_process2 is_wow64_process2_func = (is_wow64_process2)::GetProcAddress(kernel32, "IsWow64Process2");
+    if (is_wow64_process2_func == nullptr)
+    {
+        // Could not find IsWow64Process2.
+        return false;
+    }
+
+    USHORT process_machine;
+    USHORT native_machine;
+    if (!is_wow64_process2_func(GetCurrentProcess(), &process_machine, &native_machine))
+    {
+        // IsWow64Process2 failed. Log the error and continue.
+        trace::info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
+        return false;
+    }
+
+    // If we are running targeting x64 on a non-x64 machine, we are emulating
+    return native_machine != IMAGE_FILE_MACHINE_AMD64;
+#else
+    return false;
+#endif
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)
