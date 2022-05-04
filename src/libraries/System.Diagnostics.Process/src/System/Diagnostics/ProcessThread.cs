@@ -6,13 +6,11 @@ using System.Runtime.Versioning;
 
 namespace System.Diagnostics
 {
-    /// <devdoc>
-    ///    <para>
-    ///       Represents a Win32 thread. This can be used to obtain
-    ///       information about the thread, such as it's performance characteristics. This is
-    ///       returned from the System.Diagnostics.Process.ProcessThread property of the System.Diagnostics.Process component.
-    ///    </para>
-    /// </devdoc>
+    /// <summary>
+    /// Represents a Win32 thread. This can be used to obtain
+    /// information about the thread, such as it's performance characteristics. This is
+    /// returned from the System.Diagnostics.Process.ProcessThread property of the System.Diagnostics.Process component.
+    /// </summary>
     [Designer("System.Diagnostics.Design.ProcessThreadDesigner, System.Design, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")]
     public partial class ProcessThread : Component
     {
@@ -22,10 +20,6 @@ namespace System.Diagnostics
         private bool? _priorityBoostEnabled;
         private ThreadPriorityLevel? _priorityLevel;
 
-        /// <devdoc>
-        ///     Internal constructor.
-        /// </devdoc>
-        /// <internalonly/>
         internal ProcessThread(bool isRemoteMachine, int processId, ThreadInfo threadInfo)
         {
             _isRemoteMachine = isRemoteMachine;
@@ -33,28 +27,26 @@ namespace System.Diagnostics
             _threadInfo = threadInfo;
         }
 
-        /// <devdoc>
-        ///     Returns the base priority of the thread which is computed by combining the
-        ///     process priority class with the priority level of the associated thread.
-        /// </devdoc>
+        /// <summary>
+        /// Returns the base priority of the thread which is computed by combining the
+        /// process priority class with the priority level of the associated thread.
+        /// </summary>
         public int BasePriority
         {
             get { return _threadInfo._basePriority; }
         }
 
-        /// <devdoc>
-        ///     The current priority indicates the actual priority of the associated thread,
-        ///     which may deviate from the base priority based on how the OS is currently
-        ///     scheduling the thread.
-        /// </devdoc>
+        /// <summary>
+        /// The current priority indicates the actual priority of the associated thread,
+        /// which may deviate from the base priority based on how the OS is currently
+        /// scheduling the thread.
+        /// </summary>
         public int CurrentPriority
         {
             get { return _threadInfo._currentPriority; }
         }
 
-        /// <devdoc>
-        ///     Returns the unique identifier for the associated thread.
-        /// </devdoc>
+        /// <summary>Returns the unique identifier for the associated thread.</summary>
         public int Id
         {
             get { return unchecked((int)_threadInfo._threadId); }
@@ -107,26 +99,19 @@ namespace System.Diagnostics
             }
         }
 
-        /// <devdoc>
-        ///     Returns the memory address of the function that was called when the associated
-        ///     thread was started.
-        /// </devdoc>
+        /// <summary>Returns the memory address of the function that was called when the associated thread was started.</summary>
         public IntPtr StartAddress
         {
             get { return _threadInfo._startAddress; }
         }
 
-        /// <devdoc>
-        ///     Returns the current state of the associated thread, e.g. is it running, waiting, etc.
-        /// </devdoc>
+        /// <summary>Returns the current state of the associated thread, e.g. is it running, waiting, etc.</summary>
         public ThreadState ThreadState
         {
             get { return _threadInfo._threadState; }
         }
 
-        /// <devdoc>
-        ///     Returns the reason the associated thread is waiting, if any.
-        /// </devdoc>
+        /// <summary>Returns the reason the associated thread is waiting, if any.</summary>
         public ThreadWaitReason WaitReason
         {
             get
@@ -184,9 +169,6 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan TotalProcessorTime => GetTotalProcessorTime();
 
-        /// <devdoc>
-        ///     Helper to check preconditions for property access.
-        /// </devdoc>
         /// <summary>
         /// Returns the amount of time the associated thread has spent running code
         /// inside the application (not the operating system core).
@@ -195,6 +177,8 @@ namespace System.Diagnostics
         [UnsupportedOSPlatform("tvos")]
         [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime => GetUserProcessorTime();
+
+        /// <summary>Helper to check preconditions for property access.</summary>
         private void EnsureState(State state)
         {
             if (((state & State.IsLocal) != (State)0) && _isRemoteMachine)
@@ -203,10 +187,7 @@ namespace System.Diagnostics
             }
         }
 
-        /// <summary>
-        ///      Preconditions for accessing properties.
-        /// </summary>
-        /// <internalonly/>
+        /// <summary>Preconditions for accessing properties.</summary>
         private enum State
         {
             IsLocal = 0x2
