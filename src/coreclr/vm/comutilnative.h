@@ -121,6 +121,7 @@ typedef GCMemoryInfoData * GCMEMORYINFODATA;
 typedef GCMemoryInfoData * GCMEMORYINFODATAREF;
 #endif // USE_CHECKED_OBJECTREFS
 
+
 class GCInterface {
 private:
     static INT32    m_gc_counts[3];

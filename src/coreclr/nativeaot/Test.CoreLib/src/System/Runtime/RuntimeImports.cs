@@ -88,9 +88,6 @@ namespace System.Runtime
         [DllImport(RuntimeLibrary)]
         internal static unsafe extern void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
 
-        [DllImport(RuntimeLibrary)]
-        internal static unsafe extern long RhGetTotalPauseDuration();
-
         [MethodImpl(MethodImplOptions.InternalCall)]
         [RuntimeImport(RuntimeLibrary, "RhpFallbackFailFast")]
         internal static extern unsafe void RhpFallbackFailFast();
