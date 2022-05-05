@@ -89,18 +89,17 @@ namespace System.Text.Json.Serialization.Tests
 
         private static string GetNumberAsString<T>(T number)
         {
-            if (OperatingSystem.IsAndroid() && RuntimeInformation.ProcessArchitecture == Architecture.X86)
+            switch (Type.GetTypeCode(typeof(T)))
             {
-               return number.ToString();
+                case TypeCode.Double:
+                    return Convert.ToDouble(number).ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
+                case TypeCode.Single:
+                    return Convert.ToSingle(number).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
+                case TypeCode.Decimal:
+                    return Convert.ToDecimal(number).ToString(CultureInfo.InvariantCulture);
+                default:
+                    return number.ToString();
             }
-            
-            return number switch
-            {
-                double @double => @double.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture),
-                float @float => @float.ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture),
-                decimal @decimal => @decimal.ToString(CultureInfo.InvariantCulture),
-                _ => number.ToString()
-            };
         }
 
         private static void PerformAsRootTypeSerialization<T>(T number, string jsonWithNumberAsNumber, string jsonWithNumberAsString)
