@@ -318,29 +318,29 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     // Match the trees that looks like this:
     //    i % 16(or any constant that is the power of 2)
     //    SUB
-    //      LCL_VAR
+    //      LCL_VAR V0
     //      LSH
     //        RSH
     //          ADD
     //            AND
     //              RSH
-    //                LCL_VAR
+    //                LCL_VAR V0
     //                CNS_INT 31
     //              CNS_INT 15
-    //            LCL_VAR
+    //            LCL_VAR V0
     //          CNS_INT 4
     //        CNS_INT 4
     //
     //    i % 2
     //    SUB
-    //      LCL_VAR
+    //      LCL_VAR V0
     //      LSH
     //        RSH
     //          ADD
     //            RSZ
-    //              LCL_VAR
+    //              LCL_VAR V0
     //              CNS_INT 31
-    //            LCL_VAR
+    //            LCL_VAR V0
     //          CNS_INT 1
     //        CNS_INT 1
     // We want to turn these matches into a MOD with its second operand
