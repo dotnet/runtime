@@ -329,7 +329,6 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     //                    LCL_VAR
     //                CNS_INT 4
     //            CNS_INT 4
-
     // We want to turn this into a MOD with its second operand
     // being the power of 2. Then MOD will be lowered to a more optimized form
     // of this logic.
