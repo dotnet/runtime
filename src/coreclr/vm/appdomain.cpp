@@ -5275,7 +5275,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 #if !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
 
 // Returns S_OK if the assembly was successfully loaded
-HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, CLRPrivBinderCoreCLR *pTPABinder, ICLRPrivAssembly **ppLoadedAssembly)
+HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, CLRPrivBinderCoreCLR *pTPABinder, AssemblyLoadContext *pBinder, ICLRPrivAssembly **ppLoadedAssembly)
 {
     CONTRACTL
     {
@@ -5451,6 +5451,21 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 PathString name;
                 pAssemblyName->GetDisplayName(name, BINDER_SPACE::AssemblyName::INCLUDE_ALL);
                 COMPlusThrowHR(COR_E_INVALIDOPERATION, IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED, name);
+            }
+
+            // For collectible assemblies, ensure that the parent loader allocator keeps the assembly's loader allocator
+            // alive for all its lifetime.
+            if (pDomainAssembly->IsCollectible())
+            {
+                LoaderAllocator *pResultAssemblyLoaderAllocator = pDomainAssembly->GetLoaderAllocator();
+                LoaderAllocator *pParentLoaderAllocator = NULL;
+                hr = pBinder->GetLoaderAllocator((LPVOID*)&pParentLoaderAllocator);
+                if (SUCCEEDED(hr))
+                {
+                    _ASSERTE(pParentLoaderAllocator);
+                    _ASSERTE(pResultAssemblyLoaderAllocator);
+                    pParentLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
+                }
             }
 
             pResolvedAssembly = pLoadedPEAssembly->GetHostAssembly();
