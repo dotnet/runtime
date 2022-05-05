@@ -60,16 +60,16 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 {
                     {"item1", new HashSet<string>(new[] {"existing1", "existing2"})}
                 };
-            
+
             public IEnumerable<string> NonInstantiatedIEnumerable { get; set; } = null!;
             public ISet<string> InstantiatedISet { get; set; } = new HashSet<string>();
             public ISet<string> InstantiatedISetWithSomeValues { get; set; } =
-                new HashSet<string>(new[] {"existing1", "existing2"});
+                new HashSet<string>(new[] { "existing1", "existing2" });
 
 #if NET5_0_OR_GREATER
             public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = new HashSet<string>();
             public IReadOnlySet<string> InstantiatedIReadOnlySetWithSomeValues { get; set; } =
-                new HashSet<string>(new[] {"existing1", "existing2"});
+                new HashSet<string>(new[] { "existing1", "existing2" });
             public IReadOnlySet<string> NonInstantiatedIReadOnlySet { get; set; }
             public IDictionary<string, IReadOnlySet<string>> InstantiatedDictionaryWithReadOnlySetWithSomeValues { get; set; } =
                 new Dictionary<string, IReadOnlySet<string>>
@@ -109,8 +109,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         {
             public ICustomCollectionDerivedFromIEnumerableT<string> CustomIEnumerableCollection { get; set; }
             public ICustomCollectionDerivedFromICollectionT<string> CustomCollection { get; set; }
-
-            
         }
 
         public interface ICustomSet<T> : ISet<T>
@@ -722,55 +720,71 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         [Fact]
-        public void SkipsCustomIEnumerableCollection()
+        public void ThrowsForCustomIEnumerableCollection()
         {
             var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["CustomIEnumerableCollection:0"] = "Yo!",
             });
             var config = configurationBuilder.Build();
-            var instance = config.Get<MyClassWithCustomCollections>()!;
-            Assert.Null(instance.CustomIEnumerableCollection);
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<MyClassWithCustomCollections>());
+            Assert.Equal(
+                SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ICustomCollectionDerivedFromIEnumerableT<string>)),
+                exception.Message);
         }
 
         [Fact]
-        public void SkipsCustomICollection()
+        public void ThrowsForCustomICollection()
         {
             var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["CustomCollection:0"] = "Yo!",
             });
             var config = configurationBuilder.Build();
-            var instance = config.Get<MyClassWithCustomCollections>()!;
-            Assert.Null(instance.CustomCollection);
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<MyClassWithCustomCollections>());
+            Assert.Equal(
+                SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ICustomCollectionDerivedFromICollectionT<string>)),
+                exception.Message);
         }
 
         [Fact]
-        public void SkipsCustomDictionary()
+        public void ThrowsForCustomDictionary()
         {
             var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
-                ["CustomCollection:0"] = "Yo!",
+                ["CustomDictionary:0"] = "Yo!",
             });
             var config = configurationBuilder.Build();
-            var instance = config.Get<MyClassWithCustomDictionary>()!;
-            Assert.Null(instance.CustomDictionary);
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<MyClassWithCustomDictionary>());
+            Assert.Equal(
+                SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ICustomDictionary<string, int>)),
+                exception.Message);
         }
 
         [Fact]
-        public void SkipsCustomSet()
+        public void ThrowsForCustomSet()
         {
             var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection( new Dictionary<string, string>
+            configurationBuilder.AddInMemoryCollection(new Dictionary<string, string>
             {
                 ["CustomSet:0"] = "Yo!",
             });
             var config = configurationBuilder.Build();
-            var instance = config.Get<MyClassWithCustomSet>()!;
-            Assert.Null(instance.CustomSet);
+
+            var exception = Assert.Throws<InvalidOperationException>(
+                () => config.Get<MyClassWithCustomSet>());
+            Assert.Equal(
+                SR.Format(SR.Error_CannotActivateAbstractOrInterface, typeof(ICustomSet<string>)),
+                exception.Message);
         }
 
         [Fact]
