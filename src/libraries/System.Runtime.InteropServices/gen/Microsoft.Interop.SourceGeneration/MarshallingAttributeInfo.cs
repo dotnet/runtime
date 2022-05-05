@@ -746,31 +746,35 @@ namespace Microsoft.Interop
 
             // No marshalling info was computed, but a character encoding was provided.
             // If the type is a character or string then pass on these details.
-            if (type.SpecialType == SpecialType.System_Char || type.SpecialType == SpecialType.System_String)
+            if (type.SpecialType == SpecialType.System_Char && _defaultInfo.CharEncoding != CharEncoding.Undefined)
             {
-                if (_defaultInfo.CharEncoding != CharEncoding.Undefined)
+                marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
+                return true;
+            }
+
+            if (type.SpecialType == SpecialType.System_String && _defaultInfo.CharEncoding != CharEncoding.Undefined)
+            {
+                if (_defaultInfo.CharEncoding == CharEncoding.Custom)
                 {
-                    if (_defaultInfo.CharEncoding == CharEncoding.Custom)
+                    if (_defaultInfo.StringMarshallingCustomType is not null)
                     {
-                        if (_defaultInfo.StringMarshallingCustomType is not null)
-                        {
-                            AttributeData attrData = _contextSymbol is IMethodSymbol
-                                ? _contextSymbol.GetAttributes().FirstOrDefault(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
-                                : default;
-                            marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionDepthUsed);
-                            return true;
-                        }
-                    }
-                    else if (type.SpecialType == SpecialType.System_String)
-                    {
-                        marshallingInfo = CreateStringMarshallingInfo(type, _defaultInfo.CharEncoding);
+                        AttributeData attrData = _contextSymbol is IMethodSymbol
+                            ? _contextSymbol.GetAttributes().FirstOrDefault(a => a.AttributeClass.ToDisplayString() == TypeNames.LibraryImportAttribute)
+                            : default;
+                        marshallingInfo = CreateNativeMarshallingInfo(type, _defaultInfo.StringMarshallingCustomType, attrData, true, indirectionLevel, parsedCountInfo, useSiteAttributes, inspectedElements, ref maxIndirectionDepthUsed);
                         return true;
                     }
-
-                    marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
+                }
+                else
+                {
+                    marshallingInfo = CreateStringMarshallingInfo(type, _defaultInfo.CharEncoding);
                     return true;
                 }
+
+                marshallingInfo = new MarshallingInfoStringSupport(_defaultInfo.CharEncoding);
+                return true;
             }
+
 
             if (type.SpecialType == SpecialType.System_Boolean)
             {

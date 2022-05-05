@@ -94,7 +94,6 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf8) };
 
             // StringMarshallingCustomType
-            yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<char>() };
             yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<string>() };
 
             // MarshalAs
