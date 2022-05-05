@@ -13,7 +13,10 @@ namespace System.Text.Json.Reflection
     {
         public CustomAttributeDataWrapper(AttributeData a, MetadataLoadContextInternal metadataLoadContext)
         {
-            Debug.Assert(a.AttributeConstructor != null);
+            if (a.AttributeConstructor is null)
+            {
+                throw new InvalidOperationException();
+            }
 
             var namedArguments = new List<CustomAttributeNamedArgument>();
             foreach (KeyValuePair<string, TypedConstant> na in a.NamedArguments)
