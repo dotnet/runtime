@@ -311,6 +311,7 @@ namespace BrowserDebugProxy
             var nProperties = retDebuggerCmdReader.ReadInt32();
             var typeInfo = await sdbHelper.GetTypeInfo(typeId, token);
             var typePropertiesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
+            var parentSuffix = containerTypeName.Split('.').LastOrDefault();
 
             GetMembersResult ret = new();
             for (int i = 0; i < nProperties; i++)
@@ -331,7 +332,19 @@ namespace BrowserDebugProxy
 
                 typePropertiesBrowsableInfo.TryGetValue(propName, out DebuggerBrowsableState? state);
 
-                if (allMembers.TryGetValue(propName, out JObject backingField))
+                // handle parents' members:
+                var propNameWithSufix = propName;
+                JObject backingField;
+                if (allMembers.TryGetValue(propName, out backingField)
+                    && !isOwn
+                    && backingField["__isBackingField"]?.Value<bool>() != true
+                    && backingField?["get"] == null)
+                {
+                    propNameWithSufix = $"{propName} ({parentSuffix})";
+                    backingField = allMembers.GetValueOrDefault(propNameWithSufix);
+                }
+
+                if (backingField != null)
                 {
                     if (backingField["__isBackingField"]?.Value<bool>() == true)
                     {
@@ -346,18 +359,17 @@ namespace BrowserDebugProxy
 
                         if (state is not null)
                         {
-                            string namePrefix = GetNamePrefixForValues(propName, containerTypeName, isOwn, state);
+                            string namePrefix = GetNamePrefixForValues(propNameWithSufix, containerTypeName, isOwn, state);
 
                             string backingFieldTypeName = backingField["value"]?["className"]?.Value<string>();
                             var expanded = await GetExpandedMemberValues(
                                 sdbHelper, backingFieldTypeName, namePrefix, backingField, state, includeStatic, token);
                             backingField.Remove();
-                            allMembers.Remove(propName);
+                            allMembers.Remove(propNameWithSufix);
                             foreach (JObject evalue in expanded)
                                 allMembers[evalue["name"].Value<string>()] = evalue;
                         }
                     }
-
                     // derived type already had a member of this name
                     continue;
                 }
@@ -369,7 +381,7 @@ namespace BrowserDebugProxy
                     {
                         try
                         {
-                            propRet = await sdbHelper.InvokeMethod(getterParamsBuffer, getMethodId, token, name: propName);
+                            propRet = await sdbHelper.InvokeMethod(getterParamsBuffer, getMethodId, token, name: propNameWithSufix);
                         }
                         catch (Exception)
                         {
@@ -377,7 +389,7 @@ namespace BrowserDebugProxy
                         }
                     }
                     else
-                        propRet = GetNotAutoExpandableObject(getMethodId, propName);
+                        propRet = GetNotAutoExpandableObject(getMethodId, propNameWithSufix);
 
                     propRet["isOwn"] = isOwn;
                     propRet["__section"] = getterAttrs switch
@@ -388,7 +400,7 @@ namespace BrowserDebugProxy
                     };
                     propRet["__state"] = state?.ToString();
 
-                    string namePrefix = GetNamePrefixForValues(propName, containerTypeName, isOwn, state);
+                    string namePrefix = GetNamePrefixForValues(propNameWithSufix, containerTypeName, isOwn, state);
                     var expandedMembers = await GetExpandedMemberValues(
                         sdbHelper, returnTypeName, namePrefix, propRet, state, includeStatic, token);
                     foreach (var member in expandedMembers)
@@ -425,6 +437,7 @@ namespace BrowserDebugProxy
                 });
             }
         }
+
 
         public static async Task<GetMembersResult> GetObjectMemberValues(
             MonoSDBHelper sdbHelper,
@@ -488,7 +501,7 @@ namespace BrowserDebugProxy
                         foreach (var f in allFields)
                             f["__hidden"] = true;
                     }
-                    AddOnlyNewValuesByNameTo(allFields, allMembers, isOwn);
+                    AddOnlyNewValuesByNameTo(allFields, allMembers, typeName, isOwn);
                 }
 
                 // skip loading properties if not necessary
@@ -518,14 +531,24 @@ namespace BrowserDebugProxy
             }
             return GetMembersResult.FromValues(allMembers.Values, sortByAccessLevel);
 
-            static void AddOnlyNewValuesByNameTo(JArray namedValues, IDictionary<string, JObject> valuesDict, bool isOwn)
+            static void AddOnlyNewValuesByNameTo(JArray namedValues, IDictionary<string, JObject> valuesDict, string typeName, bool isOwn)
             {
+                var parentSuffix = isOwn ? "" : typeName.Split('.').LastOrDefault();
                 foreach (var item in namedValues)
                 {
                     var key = item["name"]?.Value<string>();
                     if (key != null)
                     {
-                        valuesDict.TryAdd(key, item as JObject);
+                        if (!valuesDict.TryAdd(key, item as JObject)
+                            && !isOwn
+                            && valuesDict[key]["get"] == null)
+                        {
+                            var parentMemberName = $"{key} ({parentSuffix})";
+                            if (valuesDict.TryAdd(parentMemberName, item as JObject))
+                            {
+                                item["name"] = parentMemberName;
+                            }
+                        }
                     }
                 }
             }
