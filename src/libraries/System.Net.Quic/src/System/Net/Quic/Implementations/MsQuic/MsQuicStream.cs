@@ -58,11 +58,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             public SendState SendState;
             public long SendErrorCode = -1;
 
-            // Buffers to hold during a call to send.
-            public MemoryHandle[] BufferArrays = new MemoryHandle[1];
-            public IntPtr SendQuicBuffers;
-            public int SendBufferMaxCount;
-            public int SendBufferCount;
+            public MsQuicBuffers SendBuffers;
 
             // Resettable completions to be used for multiple calls to send.
             public readonly ResettableCompletionSource<int> SendResettableCompletionSource = new ResettableCompletionSource<int>();
@@ -85,6 +81,11 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Set once stream have been shutdown.
             public readonly TaskCompletionSource ShutdownCompletionSource = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
 
+            public State()
+            {
+                SendBuffers = new MsQuicBuffers();
+            }
+
             public void Cleanup()
             {
                 if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"{Handle} releasing handles.");
@@ -92,8 +93,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 ShutdownState = ShutdownState.Finished;
                 CleanupSendState(this);
                 Handle?.Dispose();
-                Marshal.FreeHGlobal(SendQuicBuffers);
-                SendQuicBuffers = IntPtr.Zero;
+                SendBuffers.Dispose();
                 if (StateGCHandle.IsAllocated) StateGCHandle.Free();
                 ConnectionState?.RemoveStream(null);
             }
@@ -323,10 +323,10 @@ namespace System.Net.Quic.Implementations.MsQuic
             adapter.SetupSendState(_state);
 
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            uint status = MsQuicApi.Api.StreamSendDelegate(
-                _state.Handle,
-                (QuicBuffer*)_state.SendQuicBuffers,
-                (uint)_state.SendBufferCount,
+            int status = MsQuicApi.Api.ApiTable->StreamSend(
+                _state.Handle.QuicHandle,
+                _state.SendBuffers.Buffers,
+                (uint)_state.SendBuffers.Count,
                 flags,
                 IntPtr.Zero);
 
@@ -1416,12 +1416,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             lock (state)
             {
                 Debug.Assert(state.SendState != SendState.Pending);
-                Debug.Assert(state.SendBufferCount <= state.BufferArrays.Length);
-
-                for (int i = 0; i < state.SendBufferCount; i++)
-                {
-                    state.BufferArrays[i].Dispose();
-                }
+                state.SendBuffers.Reset();
             }
         }
 
@@ -1713,27 +1708,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             void SetupSendState(State state);
 
             bool IsEmpty { get; }
-
-            static unsafe void Reserve(State state, int count)
-            {
-                if (state.SendBufferMaxCount < count)
-                {
-                    NativeMemory.Free((void*)state.SendQuicBuffers);
-                    state.SendQuicBuffers = IntPtr.Zero;
-                    state.SendQuicBuffers = (IntPtr)NativeMemory.Alloc((nuint)count, (nuint)sizeof(QuicBuffer));
-                    state.SendBufferMaxCount = count;
-                    state.BufferArrays = new MemoryHandle[count];
-                }
-            }
-
-            static unsafe void SetBuffer(State state, int index, ReadOnlyMemory<byte> buffer)
-            {
-                MemoryHandle handle = buffer.Pin();
-                QuicBuffer* quicBuffer = (QuicBuffer*)state.SendQuicBuffers + index;
-                quicBuffer->Length = (uint)buffer.Length;
-                quicBuffer->Buffer = (byte*)handle.Pointer;
-                state.BufferArrays[index] = handle;
-            }
         }
 
         private struct WriteMemoryAdapter : ISendBufferAdapter
@@ -1744,11 +1718,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public bool IsEmpty => _buffer.IsEmpty;
 
-            public unsafe void SetupSendState(State state)
+            public void SetupSendState(State state)
             {
-                ISendBufferAdapter.Reserve(state, 1);
-                ISendBufferAdapter.SetBuffer(state, 0, _buffer);
-                state.SendBufferCount = 1;
+                state.SendBuffers.Initialize(_buffer);
             }
         }
 
@@ -1760,24 +1732,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public bool IsEmpty => _buffers.IsEmpty;
 
-            public unsafe void SetupSendState(State state)
+            public void SetupSendState(State state)
             {
-                int count = 0;
-
-                foreach (ReadOnlyMemory<byte> _ in _buffers)
-                {
-                    ++count;
-                }
-
-                ISendBufferAdapter.Reserve(state, count);
-                state.SendBufferCount = count;
-                count = 0;
-
-                foreach (ReadOnlyMemory<byte> buffer in _buffers)
-                {
-                    ISendBufferAdapter.SetBuffer(state, count, buffer);
-                    ++count;
-                }
+                state.SendBuffers.Initialize(_buffers);
             }
         }
 
@@ -1789,18 +1746,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             public bool IsEmpty => _buffers.IsEmpty;
 
-            public unsafe void SetupSendState(State state)
+            public void SetupSendState(State state)
             {
-                int count = _buffers.Length;
-                ISendBufferAdapter.Reserve(state, count);
-                state.SendBufferCount = count;
-                count = 0;
-
-                foreach (ReadOnlyMemory<byte> buffer in _buffers.Span)
-                {
-                    ISendBufferAdapter.SetBuffer(state, count, buffer);
-                    ++count;
-                }
+                state.SendBuffers.Initialize(_buffers);
             }
         }
     }
