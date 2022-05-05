@@ -366,7 +366,6 @@ if [[ "$iosmono" == "true" ]]; then
         # Get the .app so we can resign in the xharness item for podcast
         cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
         unzip -d $source_directory/MauiiOSPodcastIPA $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.zip
-        ls -aR $source_directory/MauiiOSPodcastIPA/
         mv $source_directory/MauiiOSPodcastIPA/Payload/Microsoft.NetConf2021.Maui.app $payload_directory/
     fi
 fi
