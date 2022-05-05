@@ -315,23 +315,36 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
     }
 
 #ifdef TARGET_ARM64
-    // Match the tree that looks like this:
+    // Match the trees that looks like this:
+    //    i % 16(or any constant that is the power of 2)
     //    SUB
-    //        LCL_VAR
-    //        LSH
-    //            RSH
-    //                ADD
-    //                    AND
-    //                        RSH
-    //                            LCL_VAR
-    //                            CNS_INT 31
-    //                        CNS_INT 15
-    //                    LCL_VAR
-    //                CNS_INT 4
-    //            CNS_INT 4
-    // We want to turn this into a MOD with its second operand
-    // being the power of 2. Then MOD will be lowered to a more optimized form
-    // of this logic.
+    //      LCL_VAR
+    //      LSH
+    //        RSH
+    //          ADD
+    //            AND
+    //              RSH
+    //                LCL_VAR
+    //                CNS_INT 31
+    //              CNS_INT 15
+    //            LCL_VAR
+    //          CNS_INT 4
+    //        CNS_INT 4
+    //
+    //    i % 2
+    //    SUB
+    //      LCL_VAR
+    //      LSH
+    //        RSH
+    //          ADD
+    //            RSZ
+    //              LCL_VAR
+    //              CNS_INT 31
+    //            LCL_VAR
+    //          CNS_INT 1
+    //        CNS_INT 1
+    // We want to turn these matches into a MOD with its second operand
+    // being the power of 2. Then MOD will be lowered to a more optimized form.
     if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_SUB))
     {
         GenTree* lclVar1 = binOp->gtGetOp1();
@@ -353,45 +366,79 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                         size_t cnsValue2 = cns2->AsIntConCommon()->IntegralValue();
                         if (cnsValue1 == cnsValue2)
                         {
-                            GenTree* andOp   = add->gtGetOp1();
+                            GenTree* andOrRsz = add->gtGetOp1();
                             GenTree* lclVar2 = add->gtGetOp2();
                             if (lclVar2->OperIs(GT_LCL_VAR) &&
-                                (lclVar2->AsLclVar()->GetLclNum() == lclVar1->AsLclVar()->GetLclNum()) &&
-                                andOp->OperIs(GT_AND))
+                                (lclVar2->AsLclVar()->GetLclNum() == lclVar1->AsLclVar()->GetLclNum()))
                             {
-                                GenTree* rsh2 = andOp->gtGetOp1();
-                                GenTree* cns3 = andOp->gtGetOp2();
-                                if (rsh2->OperIs(GT_RSH) && cns3->IsIntegralConst())
+                                // path for: i % 16(or any constant that is the power of 2)
+                                if (andOrRsz->OperIs(GT_AND))
                                 {
-                                    size_t cnsValue3 = cns3->AsIntConCommon()->IntegralValue() + 1;
-                                    if (isPow2(cnsValue3))
+                                    GenTree* rsh2 = andOrRsz->gtGetOp1();
+                                    GenTree* cns3 = andOrRsz->gtGetOp2();
+                                    if (rsh2->OperIs(GT_RSH) && cns3->IsIntegralConst())
                                     {
-                                        GenTree* lclVar3 = rsh2->gtGetOp1();
-                                        GenTree* cns4    = rsh2->gtGetOp2();
-                                        if (lclVar3->OperIs(GT_LCL_VAR) &&
-                                            (lclVar3->AsLclVar()->GetLclNum() == lclVar1->AsLclVar()->GetLclNum()) &&
-                                            cns4->IsIntegralConst())
+                                        size_t cnsValue3 = cns3->AsIntConCommon()->IntegralValue() + 1;
+                                        if (isPow2(cnsValue3))
                                         {
-                                            size_t cnsValue4 = cns4->AsIntConCommon()->IntegralValue() + 1;
-                                            if (cnsValue4 == 32 && (cnsValue3 >> cnsValue1) == 1)
+                                            GenTree* lclVar3 = rsh2->gtGetOp1();
+                                            GenTree* cns4    = rsh2->gtGetOp2();
+                                            if (lclVar3->OperIs(GT_LCL_VAR) &&
+                                                (lclVar3->AsLclVar()->GetLclNum() ==
+                                                 lclVar1->AsLclVar()->GetLclNum()) &&
+                                                cns4->IsIntegralConst())
                                             {
-                                                GenTree* cns = comp->gtNewIconNode(cnsValue3, cns3->TypeGet());
-                                                binOp->ChangeOper(GT_MOD);
-                                                binOp->AsOp()->gtOp2 = cns;
-                                                BlockRange().Remove(lclVar3);
-                                                BlockRange().Remove(cns4);
-                                                BlockRange().Remove(rsh2);
-                                                BlockRange().Remove(cns3);
-                                                BlockRange().Remove(andOp);
-                                                BlockRange().Remove(lclVar2);
-                                                BlockRange().Remove(add);
-                                                BlockRange().Remove(cns2);
-                                                BlockRange().Remove(rsh);
-                                                BlockRange().Remove(cns1);
-                                                BlockRange().Remove(op2);
-                                                BlockRange().InsertAfter(lclVar1, cns);
-                                                LowerModPow2(binOp);
+                                                size_t cnsValue4 = cns4->AsIntConCommon()->IntegralValue() + 1;
+                                                if (((cnsValue4 == 32) || (cnsValue4 == 64)) &&
+                                                    (cnsValue3 >> cnsValue1) == 1)
+                                                {
+                                                    GenTree* cns = comp->gtNewIconNode(cnsValue3, cns4->TypeGet());
+                                                    binOp->ChangeOper(GT_MOD);
+                                                    binOp->AsOp()->gtOp2 = cns;
+                                                    BlockRange().Remove(lclVar3);
+                                                    BlockRange().Remove(cns4);
+                                                    BlockRange().Remove(rsh2);
+                                                    BlockRange().Remove(cns3);
+                                                    BlockRange().Remove(andOrRsz);
+                                                    BlockRange().Remove(lclVar2);
+                                                    BlockRange().Remove(add);
+                                                    BlockRange().Remove(cns2);
+                                                    BlockRange().Remove(rsh);
+                                                    BlockRange().Remove(cns1);
+                                                    BlockRange().Remove(op2);
+                                                    BlockRange().InsertAfter(lclVar1, cns);
+                                                    LowerModPow2(binOp);
+                                                }
                                             }
+                                        }
+                                    }
+                                }
+                                // path for: i % 2
+                                else if (andOrRsz->OperIs(GT_RSZ) && cnsValue1 == 1)
+                                {
+                                    GenTree* lclVar3 = andOrRsz->gtGetOp1();
+                                    GenTree* cns3    = andOrRsz->gtGetOp2();
+                                    if (lclVar3->OperIs(GT_LCL_VAR) &&
+                                        (lclVar3->AsLclVar()->GetLclNum() == lclVar1->AsLclVar()->GetLclNum()) &&
+                                        cns3->IsIntegralConst())
+                                    {
+                                        size_t cnsValue4 = cns3->AsIntConCommon()->IntegralValue() + 1;
+                                        if ((cnsValue4 == 32) || (cnsValue4 == 64))
+                                        {
+                                            GenTree* cns = comp->gtNewIconNode(2, cns3->TypeGet());
+                                            binOp->ChangeOper(GT_MOD);
+                                            binOp->AsOp()->gtOp2 = cns;
+                                            BlockRange().Remove(lclVar3);
+                                            BlockRange().Remove(cns3);
+                                            BlockRange().Remove(andOrRsz);
+                                            BlockRange().Remove(lclVar2);
+                                            BlockRange().Remove(add);
+                                            BlockRange().Remove(cns2);
+                                            BlockRange().Remove(rsh);
+                                            BlockRange().Remove(cns1);
+                                            BlockRange().Remove(op2);
+                                            BlockRange().InsertAfter(lclVar1, cns);
+                                            LowerModPow2(binOp);
                                         }
                                     }
                                 }
