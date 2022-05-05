@@ -1453,7 +1453,7 @@ namespace System.Net.Sockets
 
             private Exception CreateException(SocketError error, bool forAsyncThrow = true)
             {
-                Exception e = new SocketException((int)error);
+                Exception e = new SocketException((int)error, RemoteEndPoint);
 
                 if (forAsyncThrow)
                 {

@@ -14,6 +14,7 @@ namespace System.Net.Sockets
         /// <summary>The SocketError or Int32 specified when constructing the exception.</summary>
         /// <remarks>Based on platform, this may or may not be the same as the underlying NativeErrorCode.</remarks>
         private readonly SocketError _errorCode;
+        private readonly EndPoint? _endPoint;
 
         /// <summary>Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code.</summary>
         public SocketException(int errorCode) : this((SocketError)errorCode)
@@ -30,13 +31,18 @@ namespace System.Net.Sockets
             // but that's the least bad option right now.
         }
 
+        public SocketException(int errorCode, EndPoint? endPoint) : this((SocketError)errorCode)
+        {
+            _endPoint = endPoint;
+        }
+
         /// <summary>Creates a new instance of the <see cref='System.Net.Sockets.SocketException'/> class with the specified error code as SocketError.</summary>
         internal SocketException(SocketError socketError) : base(GetNativeErrorForSocketError(socketError))
         {
             _errorCode = socketError;
         }
 
-        public override string Message => base.Message;
+        public override string Message => (_endPoint == null) ? base.Message : base.Message + " " + _endPoint.ToString();
 
         public SocketError SocketErrorCode => _errorCode;
 

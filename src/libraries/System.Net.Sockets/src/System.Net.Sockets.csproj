@@ -78,8 +78,6 @@
              Link="Common\System\Net\Internals\IPEndPointExtensions.cs" />
     <Compile Include="$(CommonPath)System\Net\Internals\IPAddressExtensions.cs"
              Link="Common\System\Net\Internals\IPAddressExtensions.cs" />
-    <Compile Include="$(CommonPath)System\Net\Internals\SocketExceptionFactory.cs"
-             Link="Common\System\Net\Internals\SocketExceptionFactory.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolFamily.cs"
              Link="Common\System\Net\Sockets\ProtocolFamily.cs" />
     <Compile Include="$(CommonPath)System\Net\Sockets\ProtocolType.cs"
