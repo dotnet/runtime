@@ -812,7 +812,7 @@ namespace System.Net.Quic.Tests
                 },
                 async serverStream =>
                 {
-                    // It may happen, that the WriteAsync call finishes early (before the AbortWrite
+                    // It may happen, that the WriteAsync call finishes early (before the AbortWrite 
                     // below), and we hit a check on the next iteration of the WriteForever.
                     // But in most cases it will still exercise aborting the outstanding write task.
 
