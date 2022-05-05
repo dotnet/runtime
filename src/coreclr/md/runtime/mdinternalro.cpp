@@ -3164,7 +3164,7 @@ HRESULT _FillVariant(
     {
     case ELEMENT_TYPE_BOOLEAN:
         V_VT(pvar) = VT_BOOL;
-        V_BOOL(pvar) = pMDDefaultValue->m_bValue;
+        V_BOOL(pvar) = !!pMDDefaultValue->m_bValue ? VARIANT_TRUE : VARIANT_FALSE;
         break;
     case ELEMENT_TYPE_I1:
         V_VT(pvar) = VT_I1;

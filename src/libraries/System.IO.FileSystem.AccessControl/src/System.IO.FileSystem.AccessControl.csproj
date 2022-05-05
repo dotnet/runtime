@@ -91,17 +91,10 @@
     <Reference Include="System.Buffers" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Reference Include="System.Collections" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Reference Include="System.Collections.NonGeneric" />
-    <Reference Include="System.Diagnostics.Debug" />
-    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
-    <Reference Include="System.Resources.ResourceManager" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Runtime.Handles" />
     <Reference Include="System.Runtime.InteropServices" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
     <Reference Include="System.Security.AccessControl" />
     <Reference Include="System.Security.Principal.Windows" />
-    <Reference Include="System.Threading.Tasks" Condition="'$(TargetPlatformIdentifier)' == 'windows'" />
   </ItemGroup>
 </Project>

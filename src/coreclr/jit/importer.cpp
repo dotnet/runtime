@@ -15637,7 +15637,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     // generated for ARM as well as x86, so the following IR will be accepted:
                     // STMTx (IL 0x... ???)
                     //   *  ASG long
-                    //   +--*  CLS_VAR   long
+                    //   +--*  LCL_VAR   long
                     //   \--*  CNS_INT   int    2
 
                     if ((op1->TypeGet() != op2->TypeGet()) && op2->OperIsConst() && varTypeIsIntOrI(op2->TypeGet()) &&
@@ -17959,7 +17959,7 @@ SPILLSTACK:
             case BBJ_EHFINALLYRET:
             case BBJ_EHFILTERRET:
             case BBJ_THROW:
-                NO_WAY("can't have 'unreached' end of BB with non-empty stack");
+                BADCODE("can't have 'unreached' end of BB with non-empty stack");
                 break;
 
             default:

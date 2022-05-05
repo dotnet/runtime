@@ -207,7 +207,7 @@ namespace System.Threading
             set { _overlappedData.OffsetHigh = value; }
         }
 
-        [Obsolete("This property is not 64-bit compatible.  Use EventHandleIntPtr instead.  http://go.microsoft.com/fwlink/?linkid=14202")]
+        [Obsolete("Overlapped.EventHandle is not 64-bit compatible and has been deprecated. Use EventHandleIntPtr instead.")]
         public int EventHandle
         {
             get { return EventHandleIntPtr.ToInt32(); }

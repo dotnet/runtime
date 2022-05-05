@@ -405,7 +405,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_UNSIGNED    = 0x00008000, // With GT_CAST:   the source operand is an unsigned type
                                   // With operators: the specified node is an unsigned operator
-    GTF_LATE_ARG    = 0x00010000, // The specified node is evaluated to a temp in the arg list, and this temp is added to gtCallLateArgs.
     GTF_SPILL       = 0x00020000, // Needs to be spilled here
 
 // The extra flag GTF_IS_IN_CSE is used to tell the consumer of the side effect flags
@@ -487,9 +486,9 @@ enum GenTreeFlags : unsigned int
 
     GTF_MEMORYBARRIER_LOAD      = 0x40000000, // GT_MEMORYBARRIER -- Load barrier
 
-    GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
-    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD/GT_CLS_VAR -- field access requires preceding class/static init helper
-    GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_TGT_HEAP
+    GTF_FLD_VOLATILE            = 0x40000000, // GT_FIELD -- same as GTF_IND_VOLATILE
+    GTF_FLD_INITCLASS           = 0x20000000, // GT_FIELD -- field access requires preceding class/static init helper
+    GTF_FLD_TGT_HEAP            = 0x10000000, // GT_FIELD -- same as GTF_IND_TGT_HEAP
 
     GTF_INX_RNGCHK              = 0x80000000, // GT_INDEX/GT_INDEX_ADDR -- the array reference should be range-checked.
     GTF_INX_STRING_LAYOUT       = 0x40000000, // GT_INDEX -- this uses the special string array layout
@@ -516,12 +515,6 @@ enum GenTreeFlags : unsigned int
 
     GTF_IND_FLAGS = GTF_IND_VOLATILE | GTF_IND_NONFAULTING | GTF_IND_TLS_REF | GTF_IND_UNALIGNED | GTF_IND_INVARIANT |
                     GTF_IND_NONNULL | GTF_IND_TGT_NOT_HEAP | GTF_IND_TGT_HEAP,
-
-    GTF_CLS_VAR_VOLATILE        = 0x40000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_VOLATILE
-    GTF_CLS_VAR_INITCLASS       = 0x20000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_FLD_INITCLASS
-    GTF_CLS_VAR_TGT_HEAP        = 0x10000000, // GT_FIELD/GT_CLS_VAR -- same as GTF_IND_TGT_HEAP
-    GTF_CLS_VAR_ASG_LHS         = 0x04000000, // GT_CLS_VAR   -- this GT_CLS_VAR node is (the effective val) of the LHS
-                                              //                 of an assignment; don't evaluate it independently.
 
     GTF_ADDRMODE_NO_CSE         = 0x80000000, // GT_ADD/GT_MUL/GT_LSH -- Do not CSE this node only, forms complex
                                               //                         addressing mode
@@ -1717,6 +1710,10 @@ public:
     inline bool IsSIMDZero() const;
     inline bool IsFloatPositiveZero() const;
     inline bool IsVectorZero() const;
+    inline bool IsVectorAllBitsSet() const;
+    inline bool IsVectorConst();
+
+    inline uint64_t GetIntegralVectorConstElement(size_t index);
 
     inline bool IsBoxedValue();
 
@@ -1933,6 +1930,9 @@ public:
     // Determine whether this is an assignment tree of the form X = X (op) Y,
     // where Y is an arbitrary tree, and X is a lclVar.
     unsigned IsLclVarUpdateTree(GenTree** otherTree, genTreeOps* updateOper);
+
+    // Determine whether this tree is a basic block profile count update.
+    bool IsBlockProfileUpdate();
 
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
 
@@ -5167,8 +5167,6 @@ struct GenTreeCall final : public GenTree
 
     bool IsHelperCall(Compiler* compiler, unsigned helper) const;
 
-    void ReplaceCallOperand(GenTree** operandUseEdge, GenTree* replacement);
-
     bool AreArgsComplete() const;
 
     CorInfoCallConvExtension GetUnmanagedCallConv() const
@@ -7136,24 +7134,15 @@ public:
     pointers) must be flagged as 'large' in GenTree::InitNodeSize().
  */
 
-/* AsClsVar() -- 'static data member' (GT_CLS_VAR) */
-
+// GenTreeClsVar: data address node (GT_CLS_VAR_ADDR).
+//
 struct GenTreeClsVar : public GenTree
 {
     CORINFO_FIELD_HANDLE gtClsVarHnd;
-    FieldSeqNode*        gtFieldSeq;
 
-    GenTreeClsVar(var_types type, CORINFO_FIELD_HANDLE clsVarHnd, FieldSeqNode* fldSeq)
-        : GenTree(GT_CLS_VAR, type), gtClsVarHnd(clsVarHnd), gtFieldSeq(fldSeq)
+    GenTreeClsVar(var_types type, CORINFO_FIELD_HANDLE clsVarHnd)
+        : GenTree(GT_CLS_VAR_ADDR, type), gtClsVarHnd(clsVarHnd)
     {
-        gtFlags |= GTF_GLOB_REF;
-    }
-
-    GenTreeClsVar(genTreeOps oper, var_types type, CORINFO_FIELD_HANDLE clsVarHnd, FieldSeqNode* fldSeq)
-        : GenTree(oper, type), gtClsVarHnd(clsVarHnd), gtFieldSeq(fldSeq)
-    {
-        assert((oper == GT_CLS_VAR) || (oper == GT_CLS_VAR_ADDR));
-        gtFlags |= GTF_GLOB_REF;
     }
 
 #if DEBUGGABLE_GENTREE
@@ -8152,6 +8141,155 @@ inline bool GenTree::IsVectorZero() const
 #elif defined(TARGET_ARM64)
         return (intrinsicId == NI_Vector64_get_Zero) || (intrinsicId == NI_Vector128_get_Zero);
 #endif // !TARGET_XARCH && !TARGET_ARM64
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsVectorAllBitsSet: returns true if this node is a HWIntrinsic that is Vector*_get_AllBitsSet.
+//
+// Returns:
+//     True if this represents a HWIntrinsic node that is Vector*_get_AllBitsSet.
+//
+inline bool GenTree::IsVectorAllBitsSet() const
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (gtOper == GT_HWINTRINSIC)
+    {
+        const GenTreeHWIntrinsic* node        = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = node->GetHWIntrinsicId();
+
+#if defined(TARGET_XARCH)
+        return (intrinsicId == NI_Vector128_get_AllBitsSet) || (intrinsicId == NI_Vector256_get_AllBitsSet);
+#elif defined(TARGET_ARM64)
+        return (intrinsicId == NI_Vector64_get_AllBitsSet) || (intrinsicId == NI_Vector128_get_AllBitsSet);
+#endif // !TARGET_XARCH && !TARGET_ARM64
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// IsVectorConst: returns true if this node is a HWIntrinsic that represents a constant.
+//
+// Returns:
+//     True if this represents a HWIntrinsic node that represents a constant.
+//
+inline bool GenTree::IsVectorConst()
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (gtOper == GT_HWINTRINSIC)
+    {
+        const GenTreeHWIntrinsic* node        = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId = node->GetHWIntrinsicId();
+
+#if defined(TARGET_XARCH)
+        if ((intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create))
+        {
+            for (GenTree* arg : Operands())
+            {
+                if (!arg->IsIntegralConst() && !arg->IsCnsFltOrDbl())
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+#elif defined(TARGET_ARM64)
+        if ((intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create))
+        {
+            for (GenTree* arg : Operands())
+            {
+                if (!arg->IsIntegralConst() && !arg->IsCnsFltOrDbl())
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+        return IsVectorZero() || IsVectorAllBitsSet();
+    }
+#endif // FEATURE_HW_INTRINSICS
+
+    return false;
+}
+
+//-------------------------------------------------------------------
+// GetIntegralVectorConstElement: Gets the value of a given element in an integral vector constant
+//
+// Returns:
+//     The value of a given element in an integral vector constant
+//
+inline uint64_t GenTree::GetIntegralVectorConstElement(size_t index)
+{
+#ifdef FEATURE_HW_INTRINSICS
+    if (gtOper == GT_HWINTRINSIC)
+    {
+        const GenTreeHWIntrinsic* node          = AsHWIntrinsic();
+        const NamedIntrinsic      intrinsicId   = node->GetHWIntrinsicId();
+        size_t                    operandsCount = node->GetOperandCount();
+
+        CorInfoType simdBaseJitType = node->GetSimdBaseJitType();
+        var_types   simdBaseType    = node->GetSimdBaseType();
+
+#if defined(TARGET_XARCH)
+        if ((intrinsicId == NI_Vector128_Create) || (intrinsicId == NI_Vector256_Create))
+        {
+            return (uint64_t)node->Op(index + 1)->AsIntConCommon()->IntegralValue();
+        }
+#elif defined(TARGET_ARM64)
+        if ((intrinsicId == NI_Vector64_Create) || (intrinsicId == NI_Vector128_Create))
+        {
+            return (uint64_t)node->Op(index + 1)->AsIntConCommon()->IntegralValue();
+        }
+#endif // !TARGET_XARCH && !TARGET_ARM64
+
+        if (IsVectorZero())
+        {
+            return 0;
+        }
+
+        if (IsVectorAllBitsSet())
+        {
+            switch (simdBaseType)
+            {
+                case TYP_BYTE:
+                case TYP_UBYTE:
+                {
+                    return 0xFF;
+                }
+
+                case TYP_SHORT:
+                case TYP_USHORT:
+                {
+                    return 0xFFFF;
+                }
+
+                case TYP_INT:
+                case TYP_UINT:
+                {
+                    return 0xFFFFFFFF;
+                }
+
+                case TYP_LONG:
+                case TYP_ULONG:
+                {
+                    return 0xFFFFFFFFFFFFFFFF;
+                }
+
+                default:
+                {
+                    unreached();
+                }
+            }
+        }
     }
 #endif // FEATURE_HW_INTRINSICS
 

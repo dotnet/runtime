@@ -5380,7 +5380,7 @@ void CodeGen::genCall(GenTreeCall* call)
     for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
         GenTree* argNode = arg.GetEarlyNode();
-        if (argNode->OperIs(GT_PUTARG_STK) && ((argNode->gtFlags & GTF_LATE_ARG) == 0))
+        if (argNode->OperIs(GT_PUTARG_STK) && (arg.GetLateNode() == nullptr))
         {
             GenTree* source = argNode->AsPutArgStk()->gtGetOp1();
             unsigned size   = argNode->AsPutArgStk()->GetStackByteSize();

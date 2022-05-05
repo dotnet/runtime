@@ -462,21 +462,6 @@
         <target state="translated">'SafeHandle' özelliğinden türetilen soyut türler, başvuruya göre sıralanamaz. Sağlanan tür somut olmalıdır.</target>
         <note />
       </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedDescription">
-        <source>P/Invoke source generation is not supported on unknown target framework v{0}. The generated source will not be compatible with other frameworks.</source>
-        <target state="translated">P/Invoke kaynak oluşturma işlemi, bilinmeyen hedef çerçeve v{0} üzerinde desteklenmiyor. Oluşturulan kaynak diğer çerçevelerle uyumlu değil.</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedMessage">
-        <source>'LibraryImportAttribute' cannot be used for source-generated P/Invokes on an unknown target framework v{0}.</source>
-        <target state="translated">'LibraryImportAttribute', bilinmeyen hedef çerçeve v{0} üzerinde kaynak tarafından oluşturulan P/Invokes için kullanılamaz.</target>
-        <note>{0} is a version number</note>
-      </trans-unit>
-      <trans-unit id="TargetFrameworkNotSupportedTitle">
-        <source>Current target framework is not supported by source-generated P/Invokes</source>
-        <target state="translated">Geçerli hedef çerçeve, kaynak tarafından oluşturulan P/Invokes tarafından desteklenmiyor</target>
-        <note />
-      </trans-unit>
       <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
         <source>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
         <target state="translated">Bir 'ToNativeValue' metodunun sağlandığı sıralayıcı türünde türün, 'TwoStageMarshalling' özelliğini desteklediği belirtilmelidir.</target>

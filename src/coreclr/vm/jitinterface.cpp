@@ -2049,7 +2049,7 @@ static unsigned MarkGCField(BYTE* gcPtrs, CorInfoGCType type)
     // that we don't double count the data in the gc layout.
     if (*gcPtrs == TYPE_GC_NONE)
     {
-        *gcPtrs = type;
+        *gcPtrs = (BYTE)type;
         return 1;
     }
     else if (*gcPtrs != type)
@@ -2245,14 +2245,14 @@ bool CEEInfo::getSystemVAmd64PassStructInRegisterDescriptor(
 
             structPassInRegDescPtr->passedInRegisters = true;
 
-            structPassInRegDescPtr->eightByteCount = helper.eightByteCount;
+            structPassInRegDescPtr->eightByteCount = (uint8_t)helper.eightByteCount;
             _ASSERTE(structPassInRegDescPtr->eightByteCount <= CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS);
 
             for (unsigned int i = 0; i < CLR_SYSTEMV_MAX_EIGHTBYTES_COUNT_TO_PASS_IN_REGISTERS; i++)
             {
                 structPassInRegDescPtr->eightByteClassifications[i] = helper.eightByteClassifications[i];
-                structPassInRegDescPtr->eightByteSizes[i] = helper.eightByteSizes[i];
-                structPassInRegDescPtr->eightByteOffsets[i] = helper.eightByteOffsets[i];
+                structPassInRegDescPtr->eightByteSizes[i] = (uint8_t)helper.eightByteSizes[i];
+                structPassInRegDescPtr->eightByteOffsets[i] = (uint8_t)helper.eightByteOffsets[i];
             }
         }
 

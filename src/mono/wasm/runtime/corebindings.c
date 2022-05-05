@@ -17,7 +17,7 @@
 #include "gc-common.h"
 
 //JS funcs
-extern MonoObject* mono_wasm_invoke_js_with_args (int js_handle, MonoString *method, MonoArray *args, int *is_exception);
+extern void mono_wasm_invoke_js_with_args_ref (int js_handle, MonoString **method, MonoArray **args, int *is_exception, MonoObject **result);
 extern void mono_wasm_get_object_property_ref (int js_handle, MonoString **propertyName, int *is_exception, MonoObject **result);
 extern void mono_wasm_get_by_index_ref (int js_handle, int property_index, int *is_exception, MonoObject **result);
 extern void mono_wasm_set_object_property_ref (int js_handle, MonoString **propertyName, MonoObject **value, int createIfNotExist, int hasOwnProperty, int *is_exception, MonoObject **result);
@@ -29,17 +29,17 @@ extern void mono_wasm_typed_array_to_array_ref (int js_handle, int *is_exception
 extern void mono_wasm_typed_array_copy_to_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
 extern void mono_wasm_typed_array_from_ref (int ptr, int begin, int end, int bytes_per_element, int type, int *is_exception, MonoObject** result);
 extern void mono_wasm_typed_array_copy_from_ref (int js_handle, int ptr, int begin, int end, int bytes_per_element, int *is_exception, MonoObject** result);
-extern MonoString* mono_wasm_cancel_promise (int thenable_js_handle, int *is_exception);
+extern void mono_wasm_cancel_promise_ref (int thenable_js_handle, int *is_exception, MonoString** result);
 extern void mono_wasm_web_socket_open_ref (MonoString **uri, MonoArray **subProtocols, MonoDelegate **on_close, int *web_socket_js_handle, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_send (int webSocket_js_handle, void* buffer_ptr, int offset, int length, int message_type, int end_of_message, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_receive (int webSocket_js_handle, void* buffer_ptr, int offset, int length, void* response_ptr, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_close_ref (int webSocket_js_handle, int code, MonoString **reason, int wait_for_close_received, int *thenable_js_handle, int *is_exception, MonoObject **result);
 extern void mono_wasm_web_socket_abort (int webSocket_js_handle, int *is_exception, MonoString **result);
-extern MonoObject* mono_wasm_compile_function (MonoString *str, int *is_exception);
+extern void mono_wasm_compile_function_ref (MonoString *str, int *is_exception, MonoObject **result);
 
 void core_initialize_internals ()
 {
-	mono_add_internal_call ("Interop/Runtime::InvokeJSWithArgs", mono_wasm_invoke_js_with_args);
+	mono_add_internal_call ("Interop/Runtime::InvokeJSWithArgsRef", mono_wasm_invoke_js_with_args_ref);
 	mono_add_internal_call ("Interop/Runtime::GetObjectPropertyRef", mono_wasm_get_object_property_ref);
 	mono_add_internal_call ("Interop/Runtime::GetByIndexRef", mono_wasm_get_by_index_ref);
 	mono_add_internal_call ("Interop/Runtime::SetObjectPropertyRef", mono_wasm_set_object_property_ref);
@@ -51,13 +51,13 @@ void core_initialize_internals ()
 	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyToRef", mono_wasm_typed_array_copy_to_ref);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayFromRef", mono_wasm_typed_array_from_ref);
 	mono_add_internal_call ("Interop/Runtime::TypedArrayCopyFromRef", mono_wasm_typed_array_copy_from_ref);
-	mono_add_internal_call ("Interop/Runtime::CompileFunction", mono_wasm_compile_function);
+	mono_add_internal_call ("Interop/Runtime::CompileFunctionRef", mono_wasm_compile_function_ref);
 	mono_add_internal_call ("Interop/Runtime::WebSocketOpenRef", mono_wasm_web_socket_open_ref);
 	mono_add_internal_call ("Interop/Runtime::WebSocketSend", mono_wasm_web_socket_send);
 	mono_add_internal_call ("Interop/Runtime::WebSocketReceive", mono_wasm_web_socket_receive);
 	mono_add_internal_call ("Interop/Runtime::WebSocketCloseRef", mono_wasm_web_socket_close_ref);
 	mono_add_internal_call ("Interop/Runtime::WebSocketAbort", mono_wasm_web_socket_abort);
-	mono_add_internal_call ("Interop/Runtime::CancelPromise", mono_wasm_cancel_promise);
+	mono_add_internal_call ("Interop/Runtime::CancelPromiseRef", mono_wasm_cancel_promise_ref);
 }
 
 // Int8Array 		| int8_t	| byte or SByte (signed byte)
