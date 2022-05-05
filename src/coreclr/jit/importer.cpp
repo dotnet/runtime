@@ -4822,12 +4822,6 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // add
             // ret
 
-            // TODO-Cleanup: This is working around a JIT bug where an AV is raised if these aren't first spilled
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 2 DEBUGARG("Spilling op1 side effects for Unsafe.Add"));
-            impSpillSideEffect(true,
-                               verCurrentState.esStackDepth - 1 DEBUGARG("Spilling op2 side effects for Unsafe.Add"));
-
             GenTree* op2 = impPopStack().val;
             GenTree* op1 = impPopStack().val;
             impBashVarAddrsToI(op1, op2);
