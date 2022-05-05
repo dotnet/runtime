@@ -412,7 +412,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                                                     BlockRange().Remove(cns1);
                                                     BlockRange().Remove(op2);
                                                     BlockRange().InsertAfter(lclVar1, cns);
-                                                    LowerModPow2(binOp);
+                                                    return LowerNode(binOp);
                                                 }
                                             }
                                         }
@@ -443,7 +443,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                                             BlockRange().Remove(cns1);
                                             BlockRange().Remove(op2);
                                             BlockRange().InsertAfter(lclVar1, cns);
-                                            LowerModPow2(binOp);
+                                            return LowerNode(binOp);
                                         }
                                     }
                                 }
