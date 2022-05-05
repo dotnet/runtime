@@ -1370,7 +1370,7 @@ namespace System
                 }
             }
 
-#if !CORERT
+#if !NATIVEAOT
             return EqualityComparer<T>.Default.IndexOf(array, value, startIndex, count);
 #else
             return IndexOfImpl(array, value, startIndex, count);
@@ -1625,7 +1625,7 @@ namespace System
                 }
             }
 
-#if !CORERT
+#if !NATIVEAOT
             return EqualityComparer<T>.Default.LastIndexOf(array, value, startIndex, count);
 #else
             return LastIndexOfImpl(array, value, startIndex, count);

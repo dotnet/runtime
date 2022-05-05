@@ -535,7 +535,7 @@ namespace ILCompiler
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
-            var targetAbi = TargetAbi.CoreRT;
+            var targetAbi = TargetAbi.NativeAot;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
             CompilerTypeSystemContext typeSystemContext = 
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0, _maxGenericCycle);

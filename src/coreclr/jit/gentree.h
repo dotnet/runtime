@@ -3724,10 +3724,10 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_R2R_REL_INDIRECT        = 0x00002000, // ready to run call is indirected through a relative address
     GTF_CALL_M_DOES_NOT_RETURN         = 0x00004000, // call does not return
     GTF_CALL_M_WRAPPER_DELEGATE_INV    = 0x00008000, // call is in wrapper delegate
-    GTF_CALL_M_FAT_POINTER_CHECK       = 0x00010000, // CoreRT managed calli needs transformation, that checks
+    GTF_CALL_M_FAT_POINTER_CHECK       = 0x00010000, // NativeAOT managed calli needs transformation, that checks
                                                      // special bit in calli address. If it is set, then it is necessary
                                                      // to restore real function address and load hidden argument
-                                                     // as the first argument for calli. It is CoreRT replacement for instantiating
+                                                     // as the first argument for calli. It is NativeAOT replacement for instantiating
                                                      // stubs, because executable code cannot be generated at runtime.
     GTF_CALL_M_HELPER_SPECIAL_DCE      = 0x00020000, // this helper call can be removed if it is part of a comma and
                                                      // the comma result is unused.

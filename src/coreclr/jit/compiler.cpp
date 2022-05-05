@@ -5536,7 +5536,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     compFrameInfo = {0};
 #endif
 
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
