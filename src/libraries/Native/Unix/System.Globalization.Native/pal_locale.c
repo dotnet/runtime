@@ -136,9 +136,7 @@ int32_t FixupLocaleName(UChar* value, int32_t valueLength)
 // The reason is POSIX locale collation behavior is not desirable at all because it doesn't support case insensitive string comparisons.
 const char* DetectDefaultLocaleName()
 {
-    const char* icuLocale;
-
-    icuLocale = uloc_getDefault();
+    const char* icuLocale = uloc_getDefault();
 
     if (strcmp(icuLocale, "en_US_POSIX") == 0)
     {
