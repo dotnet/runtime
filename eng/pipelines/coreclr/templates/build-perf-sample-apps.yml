@@ -37,13 +37,16 @@ steps:
       displayName: clean bindir
     
   - ${{ if eq(parameters.osGroup, 'iOS') }}:
-    - script: brew install lzfse
-      displayName: Install lzfse
     - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false
       env:
         DevTeamProvisioning: '-'
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Build HelloiOS AOT sample app LLVM=False
+    - script: brew install lzfse
+      displayName: Install lzfse
+    - script: lzfse -encode -i ./bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app -o ./bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.fakeipa
+      workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
+      displayName: Try Compressing .app
     - task: PublishBuildArtifacts@1
       condition: succeededOrFailed()
       displayName: 'Publish binlog'
