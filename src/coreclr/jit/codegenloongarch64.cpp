@@ -1084,7 +1084,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // If there is no PSPSym (NativeAOT ABI), we are done. Otherwise, we need to set up the PSPSym in the functlet frame.
+    // If there is no PSPSym (NativeAOT ABI), we are done. Otherwise, we need to set up the PSPSym in the functlet
+    // frame.
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
         if (isFilter)
