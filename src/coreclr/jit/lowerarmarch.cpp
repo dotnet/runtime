@@ -314,6 +314,97 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         }
     }
 
+#ifdef TARGET_ARM64
+    // Match the tree that looks like this:
+    //    SUB
+    //        LCL_VAR
+    //        LSH
+    //            RSH
+    //                ADD
+    //                    AND
+    //                        RSH
+    //                            LCL_VAR
+    //                            CNS_INT 31
+    //                        CNS_INT 15
+    //                    LCL_VAR
+    //                CNS_INT 4
+    //            CNS_INT 4
+
+    // We want to turn this into a MOD with its second operand
+    // being the power of 2. Then MOD will be lowered to a more optimized form
+    // of this logic.
+    if (comp->opts.OptimizationEnabled() && binOp->OperIs(GT_SUB))
+    {
+        GenTree* lclVar1 = binOp->gtGetOp1();
+        GenTree* op2     = binOp->gtGetOp2();
+        if (binOp->TypeIs(TYP_INT, TYP_LONG) && !binOp->IsUnsigned() && lclVar1->OperIs(GT_LCL_VAR))
+        {
+            GenTree* lsh = op2;
+            if (lsh->OperIs(GT_LSH))
+            {
+                GenTree* rsh  = lsh->gtGetOp1();
+                GenTree* cns1 = lsh->gtGetOp2();
+                if (rsh->OperIs(GT_RSH) && cns1->IsIntegralConst())
+                {
+                    GenTree* add = rsh->gtGetOp1();
+                    GenTree* cns2 = rsh->gtGetOp2();
+                    if (add->OperIs(GT_ADD) && cns2->IsIntegralConst())
+                    {
+                        size_t cnsValue1 = cns1->AsIntConCommon()->IntegralValue();
+                        size_t cnsValue2 = cns2->AsIntConCommon()->IntegralValue();
+                        if (cnsValue1 == cnsValue2)
+                        {
+                            GenTree* andOp   = add->gtGetOp1();
+                            GenTree* lclVar2 = add->gtGetOp2();
+                            if (lclVar2->OperIs(GT_LCL_VAR) &&
+                                (lclVar2->AsLclVar()->GetLclNum() == lclVar1->AsLclVar()->GetLclNum()) &&
+                                andOp->OperIs(GT_AND))
+                            {
+                                GenTree* rsh2 = andOp->gtGetOp1();
+                                GenTree* cns3 = andOp->gtGetOp2();
+                                if (rsh2->OperIs(GT_RSH) && cns3->IsIntegralConst())
+                                {
+                                    size_t cnsValue3 = cns3->AsIntConCommon()->IntegralValue() + 1;
+                                    if (isPow2(cnsValue3))
+                                    {
+                                        GenTree* lclVar3 = rsh2->gtGetOp1();
+                                        GenTree* cns4    = rsh2->gtGetOp2();
+                                        if (lclVar3->OperIs(GT_LCL_VAR) &&
+                                            (lclVar3->AsLclVar()->GetLclNum() == lclVar1->AsLclVar()->GetLclNum()) &&
+                                            cns4->IsIntegralConst())
+                                        {
+                                            size_t cnsValue4 = cns4->AsIntConCommon()->IntegralValue() + 1;
+                                            if (cnsValue4 == 32 && (cnsValue3 >> cnsValue1) == 1)
+                                            {
+                                                GenTree* cns = comp->gtNewIconNode(cnsValue3, cns3->TypeGet());
+                                                binOp->ChangeOper(GT_MOD);
+                                                binOp->AsOp()->gtOp2 = cns;
+                                                BlockRange().Remove(lclVar3);
+                                                BlockRange().Remove(cns4);
+                                                BlockRange().Remove(rsh2);
+                                                BlockRange().Remove(cns3);
+                                                BlockRange().Remove(andOp);
+                                                BlockRange().Remove(lclVar2);
+                                                BlockRange().Remove(add);
+                                                BlockRange().Remove(cns2);
+                                                BlockRange().Remove(rsh);
+                                                BlockRange().Remove(cns1);
+                                                BlockRange().Remove(op2);
+                                                BlockRange().InsertAfter(lclVar1, cns);
+                                                LowerModPow2(binOp);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+#endif // TARGET_ARM64
+
     ContainCheckBinary(binOp);
 
     return binOp->gtNext;
@@ -633,23 +724,17 @@ void Lowering::LowerRotate(GenTree* tree)
 //     TODO: We could do this optimization in morph but we do not have
 //           a conditional select op in HIR. At some point, we may
 //           introduce such an op.
-GenTree* Lowering::LowerModPow2(GenTree* node)
+void Lowering::LowerModPow2(GenTree* node)
 {
     assert(node->OperIs(GT_MOD));
-    GenTree* mod      = node;
-    GenTree* dividend = mod->gtGetOp1();
-    GenTree* divisor  = mod->gtGetOp2();
+    GenTreeOp* mod      = node->AsOp();
+    GenTree*   dividend = mod->gtGetOp1();
+    GenTree*   divisor  = mod->gtGetOp2();
 
     assert(divisor->IsIntegralConstPow2());
 
     const var_types type = mod->TypeGet();
     assert((type == TYP_INT) || (type == TYP_LONG));
-
-    LIR::Use use;
-    if (!BlockRange().TryGetUse(node, &use))
-    {
-        return nullptr;
-    }
 
     ssize_t cnsValue = static_cast<ssize_t>(divisor->AsIntConCommon()->IntegralValue()) - 1;
 
@@ -681,21 +766,15 @@ GenTree* Lowering::LowerModPow2(GenTree* node)
     BlockRange().InsertAfter(cns2, falseExpr);
     LowerNode(falseExpr);
 
-    GenTree* const cc = comp->gtNewOperNode(GT_CSNEG_MI, type, trueExpr, falseExpr);
-    cc->gtFlags |= GTF_USE_FLAGS;
+    mod->ChangeOper(GT_CSNEG_MI);
+    mod->gtOp1 = trueExpr;
+    mod->gtOp2 = falseExpr;
+    mod->gtFlags |= GTF_USE_FLAGS;
 
     JITDUMP("Lower: optimize X MOD POW2");
     DISPNODE(mod);
-    JITDUMP("to:\n");
-    DISPNODE(cc);
 
-    BlockRange().InsertBefore(mod, cc);
-    ContainCheckNode(cc);
-    BlockRange().Remove(mod);
-
-    use.ReplaceWith(cc);
-
-    return cc->gtNext;
+    ContainCheckNode(mod);
 }
 #endif
 
