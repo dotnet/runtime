@@ -37,6 +37,8 @@ steps:
       displayName: clean bindir
     
   - ${{ if eq(parameters.osGroup, 'iOS') }}:
+    - script: brew install lzfse
+      displayName: Install lzfse
     - script: make build-appbundle TARGET=iOS MONO_ARCH=arm64 MONO_CONFIG=Release AOT=True USE_LLVM=False DEPLOY_AND_RUN=false
       env:
         DevTeamProvisioning: '-'
