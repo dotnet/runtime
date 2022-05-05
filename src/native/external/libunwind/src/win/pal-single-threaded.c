@@ -112,6 +112,13 @@ ssize_t read(int fd, void *buf, size_t count)
     return -1;
 }
 
+ssize_t write(int fd, const void *buf, size_t nbyte)
+{
+    // For dump debugging we shouldn't need to open files
+    // Especially since we didn't implement open()
+    return -1;
+}
+
 int close(int fd)
 {
     // For dump debugging we shouldn't need to open files
