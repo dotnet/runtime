@@ -11694,7 +11694,7 @@ DONE_MORPHING_CHILDREN:
 #ifdef TARGET_LOONGARCH64
         case GT_MOD:
 #endif
-            if (!varTypeIsFloating(tree->gtType))
+            if (!varTypeIsFloating(tree->gtType) && (!op2->IsIntegralConst() || op2->IsIntegralConst(0)))
             {
                 // Codegen for this instruction needs to be able to throw two exceptions:
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
