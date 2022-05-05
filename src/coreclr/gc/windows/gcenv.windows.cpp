@@ -1126,7 +1126,7 @@ bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per
         for (uint32_t i = 0; i < g_nNodes; i++)
         {
             GROUP_AFFINITY processorMask;
-            if (GetNumaNodeProcessorMaskEx(i, &processorMask))
+            if (GetNumaNodeProcessorMaskEx((uint16_t)i, &processorMask))
             {
                 DWORD procsOnNode = 0;
                 uintptr_t mask = (uintptr_t)processorMask.Mask;
@@ -1139,7 +1139,7 @@ bool GCToOSInterface::GetNumaInfo(uint16_t* total_nodes, uint32_t* max_procs_per
                 currentProcsOnNode = max(currentProcsOnNode, procsOnNode);
             }
             *max_procs_per_node = currentProcsOnNode;
-            *total_nodes = g_nNodes;
+            *total_nodes = (uint16_t)g_nNodes;
         }
         return true;
     }

@@ -4794,7 +4794,7 @@ ClrDataAccess::SetAllCodeNotifications(
                     PTR_HOST_TO_TADDR(((ClrDataModule*)mod)->GetModule()) :
                     NULL;
 
-                if (jn.SetAllNotifications(modulePtr, flags, &changedTable))
+                if (jn.SetAllNotifications(modulePtr, (USHORT)flags, &changedTable))
                 {
                     if (!changedTable ||
                         (changedTable && jn.UpdateOutOfProcTable()))

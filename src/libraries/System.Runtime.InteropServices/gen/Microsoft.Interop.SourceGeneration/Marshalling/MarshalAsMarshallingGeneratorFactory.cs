@@ -144,10 +144,15 @@ namespace Microsoft.Interop
                 {
                     case CharEncoding.Utf16:
                         return s_utf16Char;
-                    case CharEncoding.Ansi:
-                        throw new MarshallingNotSupportedException(info, context) // [Compat] ANSI is not supported for char
+                    case CharEncoding.Utf8:
+                        throw new MarshallingNotSupportedException(info, context) // [Compat] UTF-8 is not supported for char
                         {
-                            NotSupportedDetails = string.Format(SR.MarshallingCharAsSpecifiedCharSetNotSupported, CharSet.Ansi)
+                            NotSupportedDetails = string.Format(SR.MarshallingCharAsSpecifiedStringMarshallingNotSupported, nameof(CharEncoding.Utf8))
+                        };
+                    case CharEncoding.Custom:
+                        throw new MarshallingNotSupportedException(info, context)
+                        {
+                            NotSupportedDetails = SR.MarshallingCharAsStringMarshallingCustomNotSupported
                         };
                 }
             }
