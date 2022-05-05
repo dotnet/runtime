@@ -351,6 +351,12 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
         GenTree* op2     = binOp->gtGetOp2();
         if (binOp->TypeIs(TYP_INT, TYP_LONG) && !binOp->IsUnsigned() && lclVar1->OperIs(GT_LCL_VAR))
         {
+            int targetSize = 32;
+            if (binOp->TypeIs(TYP_LONG))
+            {
+                targetSize = 64;
+            }
+
             GenTree* lsh = op2;
             if (lsh->OperIs(GT_LSH))
             {
@@ -389,8 +395,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                                                 cns4->IsIntegralConst())
                                             {
                                                 size_t cnsValue4 = cns4->AsIntConCommon()->IntegralValue() + 1;
-                                                if (((cnsValue4 == 32) || (cnsValue4 == 64)) &&
-                                                    (cnsValue3 >> cnsValue1) == 1)
+                                                if (cnsValue4 = targetSize && (cnsValue3 >> cnsValue1) == 1)
                                                 {
                                                     GenTree* cns = comp->gtNewIconNode(cnsValue3, cns4->TypeGet());
                                                     binOp->ChangeOper(GT_MOD);
@@ -423,7 +428,7 @@ GenTree* Lowering::LowerBinaryArithmetic(GenTreeOp* binOp)
                                         cns3->IsIntegralConst())
                                     {
                                         size_t cnsValue4 = cns3->AsIntConCommon()->IntegralValue() + 1;
-                                        if ((cnsValue4 == 32) || (cnsValue4 == 64))
+                                        if (cnsValue4 == targetSize)
                                         {
                                             GenTree* cns = comp->gtNewIconNode(2, cns3->TypeGet());
                                             binOp->ChangeOper(GT_MOD);
