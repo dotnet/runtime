@@ -110,6 +110,7 @@ namespace System.IO.Compression
         public System.IO.Compression.ZipArchive Archive { get { throw null; } }
         [System.Diagnostics.CodeAnalysis.AllowNull]
         public string Comment { get { throw null; } set { } }
+        public bool IsEncrypted { get { throw null; } }
         public long CompressedLength { get { throw null; } }
         [System.CLSCompliantAttribute(false)]
         public uint Crc32 { get { throw null; } }

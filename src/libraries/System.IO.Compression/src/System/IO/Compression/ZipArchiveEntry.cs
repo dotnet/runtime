@@ -21,6 +21,7 @@ namespace System.IO.Compression
         private ZipVersionNeededValues _versionMadeBySpecification;
         internal ZipVersionNeededValues _versionToExtract;
         private BitFlagValues _generalPurposeBitFlag;
+        private bool _isEncrypted;
         private CompressionMethodValues _storedCompressionMethod;
         private DateTimeOffset _lastModified;
         private long _compressedSize;
@@ -55,6 +56,7 @@ namespace System.IO.Compression
             _versionMadeBySpecification = (ZipVersionNeededValues)cd.VersionMadeBySpecification;
             _versionToExtract = (ZipVersionNeededValues)cd.VersionNeededToExtract;
             _generalPurposeBitFlag = (BitFlagValues)cd.GeneralPurposeBitFlag;
+            _isEncrypted = _generalPurposeBitFlag.HasFlag(BitFlagValues.IsEncrypted);
             CompressionMethod = (CompressionMethodValues)cd.CompressionMethod;
             _lastModified = new DateTimeOffset(ZipHelper.DosTimeToDateTime(cd.LastModified));
             _compressedSize = cd.CompressedSize;
@@ -150,6 +152,11 @@ namespace System.IO.Compression
 
         [CLSCompliant(false)]
         public uint Crc32 => _crc32;
+
+        /// <summary>
+        /// Gets whether or not this archive entry is encrypted.
+        /// </summary>
+        public bool IsEncrypted { get => _isEncrypted; }
 
         /// <summary>
         /// The compressed size of the entry. If the archive that the entry belongs to is in Create mode, attempts to get this property will always throw an exception. If the archive that the entry belongs to is in update mode, this property will only be valid if the entry has not been opened.
@@ -1306,7 +1313,7 @@ namespace System.IO.Compression
         }
 
         [Flags]
-        internal enum BitFlagValues : ushort { DataDescriptor = 0x8, UnicodeFileNameAndComment = 0x800 }
+        internal enum BitFlagValues : ushort { IsEncrypted = 0x1, DataDescriptor = 0x8, UnicodeFileNameAndComment = 0x800 }
 
         internal enum CompressionMethodValues : ushort { Stored = 0x0, Deflate = 0x8, Deflate64 = 0x9, BZip2 = 0xC, LZMA = 0xE }
     }
