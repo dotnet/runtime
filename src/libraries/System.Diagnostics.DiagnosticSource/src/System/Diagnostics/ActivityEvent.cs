@@ -11,8 +11,8 @@ namespace System.Diagnostics
     /// </summary>
     public readonly struct ActivityEvent
     {
-        private static readonly Activity.TagsLinkedList s_emptyTags = new();
-        private readonly Activity.TagsLinkedList _tags;
+        private static readonly IEnumerable<KeyValuePair<string, object?>> s_emptyTags = Array.Empty<KeyValuePair<string, object?>>();
+        private readonly Activity.TagsLinkedList? _tags;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ActivityEvent"/> class.
@@ -33,9 +33,7 @@ namespace System.Diagnostics
             Name = name ?? string.Empty;
             Timestamp = timestamp != default ? timestamp : DateTimeOffset.UtcNow;
 
-            _tags = tags == null || tags.Count <= 0
-                ? s_emptyTags
-                : new Activity.TagsLinkedList(tags);
+            _tags = tags?.Count > 0 ? new Activity.TagsLinkedList(tags) : null;
         }
 
         /// <summary>
@@ -51,12 +49,12 @@ namespace System.Diagnostics
         /// <summary>
         /// Gets the collection of tags associated with the event.
         /// </summary>
-        public IEnumerable<KeyValuePair<string, object?>> Tags => _tags;
+        public IEnumerable<KeyValuePair<string, object?>> Tags => _tags ?? s_emptyTags;
 
         /// <summary>
         /// Enumerate the tags attached to this <see cref="ActivityEvent"/> object.
         /// </summary>
         /// <returns><see cref="Activity.Enumerator{T}"/>.</returns>
-        public Activity.Enumerator<KeyValuePair<string, object?>> EnumerateTagObjects() => new Activity.Enumerator<KeyValuePair<string, object?>>(_tags.First);
+        public Activity.Enumerator<KeyValuePair<string, object?>> EnumerateTagObjects() => new Activity.Enumerator<KeyValuePair<string, object?>>(_tags?.First);
     }
 }

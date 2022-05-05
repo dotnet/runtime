@@ -25,9 +25,7 @@ namespace System.Diagnostics
         {
             Context = context;
 
-            _tags = tags != null && tags.Count > 0
-                ? new Activity.TagsLinkedList(tags)
-                : null;
+            _tags = tags?.Count > 0 ? new Activity.TagsLinkedList(tags) : null;
         }
 
         /// <summary>
