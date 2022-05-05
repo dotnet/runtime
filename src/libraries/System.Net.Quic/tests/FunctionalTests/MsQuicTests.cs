@@ -667,6 +667,22 @@ namespace System.Net.Quic.Tests
             }
         }
 
+        [Fact]
+        public async Task CloseAsync_MultipleCalls_FollowingCallsAreIgnored()
+        {
+
+            (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
+
+            using (clientConnection)
+            using (serverConnection)
+            {
+                await clientConnection.CloseAsync(0);
+                await clientConnection.CloseAsync(0);
+
+                await serverConnection.CloseAsync(0);
+            }
+        }
+
         internal static ReadOnlySequence<byte> CreateReadOnlySequenceFromBytes(byte[] data)
         {
             List<byte[]> segments = new List<byte[]>
