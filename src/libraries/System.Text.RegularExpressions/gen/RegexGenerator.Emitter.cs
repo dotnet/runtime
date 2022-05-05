@@ -824,12 +824,26 @@ namespace System.Text.RegularExpressions.Generator
 
                         if (setsToUse > 1)
                         {
-                            using (EmitBlock(writer, $"if (i >= span.Length - {minRequiredLength - 1})"))
+                            // Of the remaining sets we're going to check, find the maximum distance of any of them.
+                            // If it's further than the primary set we checked, we need a bounds check.
+                            int maxDistance = sets[1].Distance;
+                            for (int i = 2; i < setsToUse; i++)
                             {
-                                noMatchFoundLabelNeeded = true;
-                                Goto(NoMatchFound);
+                                maxDistance = Math.Max(maxDistance, sets[i].Distance);
                             }
-                            writer.WriteLine();
+                            if (maxDistance > primarySet.Distance)
+                            {
+                                int numRemainingSets = setsToUse - 1;
+                                writer.WriteLine($"// The primary set being searched for was found. {numRemainingSets} more set{(numRemainingSets > 1 ? "s" : "")} will be checked so as");
+                                writer.WriteLine($"// to minimize the number of places TryMatchAtCurrentPosition is run unnecessarily.");
+                                writer.WriteLine($"// Make sure {(numRemainingSets > 1 ? "they fit" : "it fits")} in the remainder of the input.");
+                                using (EmitBlock(writer, $"if ((uint)(i + {maxDistance}) >= span.Length)"))
+                                {
+                                    noMatchFoundLabelNeeded = true;
+                                    Goto(NoMatchFound);
+                                }
+                                writer.WriteLine();
+                            }
                         }
                     }
                     else

@@ -898,16 +898,29 @@ namespace System.Text.RegularExpressions
                         BltFar(returnFalse);
                     }
 
-                    // if (i >= slice.Length - (minRequiredLength - 1)) goto returnFalse;
-                    if (sets.Count > 1)
+                    if (setsToUse > 1)
                     {
-                        Debug.Assert(needLoop);
-                        Ldloca(textSpanLocal);
-                        Call(s_spanGetLengthMethod);
-                        Ldc(minRequiredLength - 1);
-                        Sub();
-                        Ldloc(iLocal);
-                        BleFar(returnFalse);
+                        // Of the remaining sets we're going to check, find the maximum distance of any of them.
+                        // If it's further than the primary set we checked, we need a bounds check.
+                        int maxDistance = sets[1].Distance;
+                        for (int i = 2; i < setsToUse; i++)
+                        {
+                            maxDistance = Math.Max(maxDistance, sets[i].Distance);
+                        }
+                        if (maxDistance > primarySet.Distance)
+                        {
+                            // if ((uint)(i + maxDistance) >= slice.Length) goto returnFalse;
+                            if (setsToUse > 1)
+                            {
+                                Debug.Assert(needLoop);
+                                Ldloc(iLocal);
+                                Ldc(maxDistance);
+                                Add();
+                                Ldloca(textSpanLocal);
+                                Call(s_spanGetLengthMethod);
+                                _ilg!.Emit(OpCodes.Bge_Un, returnFalse);
+                            }
+                        }
                     }
                 }
 
@@ -916,7 +929,7 @@ namespace System.Text.RegularExpressions
                 // if (!CharInClass(slice[i + 2], prefix[2], "...")) continue;
                 // ...
                 Debug.Assert(setIndex is 0 or 1);
-                for ( ; setIndex < sets.Count; setIndex++)
+                for ( ; setIndex < setsToUse; setIndex++)
                 {
                     Debug.Assert(needLoop);
                     Ldloca(textSpanLocal);
