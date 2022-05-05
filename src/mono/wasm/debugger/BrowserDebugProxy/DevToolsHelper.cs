@@ -63,64 +63,67 @@ namespace Microsoft.WebAssembly.Diagnostics
 
     internal sealed class DotnetObjectId
     {
+        private int? _intValue;
+
         public string Scheme { get; }
-        public int Value { get; }
+        public int Value
+        {
+            get
+            {
+                if (_intValue == null)
+                    throw new ArgumentException($"DotnetObjectId (scheme: {Scheme}, ValueAsJson: {ValueAsJson}) does not have an int value");
+                return _intValue.Value;
+            }
+        }
         public int SubValue { get; set; }
-        public bool IsValueType { get; set; }
+        public bool IsValueType => Scheme == "valuetype";
+
+        public JObject ValueAsJson { get; init; }
 
         public static bool TryParse(JToken jToken, out DotnetObjectId objectId) => TryParse(jToken?.Value<string>(), out objectId);
 
         public static bool TryParse(string id, out DotnetObjectId objectId)
         {
             objectId = null;
-            try
-            {
-                if (id == null)
-                    return false;
-
-                if (!id.StartsWith("dotnet:"))
-                    return false;
-
-                string[] parts = id.Split(":");
-
-                if (parts.Length < 3)
-                    return false;
-
-                objectId = new DotnetObjectId(parts[1], int.Parse(parts[2]));
-                switch (objectId.Scheme)
-                {
-                    case "methodId":
-                        if (parts.Length > 4)
-                        {
-                            objectId.SubValue = int.Parse(parts[3]);
-                            objectId.IsValueType = parts[4] == "ValueType";
-                            return true;
-                        }
-                        return false;
-                }
-                return true;
-            }
-            catch (Exception)
-            {
+            if (id == null)
                 return false;
-            }
+
+            if (!id.StartsWith("dotnet:"))
+                return false;
+
+            string[] parts = id.Split(":", 3);
+
+            if (parts.Length < 3)
+                return false;
+
+            objectId = new DotnetObjectId(parts[1], parts[2]);
+            return true;
         }
 
         public DotnetObjectId(string scheme, int value)
+                : this(scheme, value.ToString()) { }
+
+        public DotnetObjectId(string scheme, string value)
         {
             Scheme = scheme;
-            Value = value;
+            if (int.TryParse(value, out int ival))
+            {
+                _intValue = ival;
+            }
+            else
+            {
+                try
+                {
+                    ValueAsJson = JObject.Parse(value);
+                }
+                catch (JsonReaderException) { }
+            }
         }
 
         public override string ToString()
-        {
-            switch (Scheme)
-            {
-                case "methodId":
-                    return $"dotnet:{Scheme}:{Value}:{SubValue}";
-            }
-            return $"dotnet:{Scheme}:{Value}";
-        }
+            => _intValue != null
+                    ? $"dotnet:{Scheme}:{_intValue}"
+                    : $"dotnet:{Scheme}:{ValueAsJson}";
     }
 
     public struct Result
