@@ -5154,6 +5154,8 @@ void Compiler::placeLoopAlignInstructions()
     {
         // Adding align instruction in prolog is not supported
         // hence just remove that loop from our list.
+        fgFirstBB->bbFlags &= ~BBF_LOOP_ALIGN;
+        JITDUMP("Removing LOOP_ALIGN flag from prolog " FMT_BB "\n", fgFirstBB->bbNum);
         loopsToProcess--;
     }
 
