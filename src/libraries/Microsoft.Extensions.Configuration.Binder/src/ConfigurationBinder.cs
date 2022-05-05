@@ -202,7 +202,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static void BindNonScalar(this IConfiguration configuration, object instance, BinderOptions options)
+        private static void BindProperties(object instance, IConfiguration configuration, BinderOptions options)
         {
             List<PropertyInfo> modelProperties = GetAllProperties(instance.GetType());
 
@@ -258,36 +258,6 @@ namespace Microsoft.Extensions.Configuration
             }
         }
 
-        // Called when the binding point doesn't have a value. We need to determine the best type
-        // to use given just an interface.
-        // If there is no best type to create, for instance, the user provided a custom interface derived from `IEnumerable<>`,
-        // then we return null.
-        [RequiresUnreferencedCode("In case type is a Dictionary, cannot statically analyze what the element type is of the value objects in the dictionary so its members may be trimmed.")]
-        private static (bool WasCollection, object? NewInstance) AttemptBindToCollectionInterfaces(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
-            IConfiguration config, BinderOptions options)
-        {
-            if (!type.IsInterface)
-            {
-                return (false, null);
-            }
-
-            if (TypeCanBeAssignedADictionary(type))
-            {
-                Type typeOfKey = type.GenericTypeArguments[0];
-                Type typeOfValue = type.GenericTypeArguments[1];
-                object instance = Activator.CreateInstance(typeof(Dictionary<,>).MakeGenericType(typeOfKey, typeOfValue))!;
-                BindDictionary(instance, typeof(Dictionary<,>).MakeGenericType(typeOfKey, typeOfValue), config, options);
-                return (true, instance);
-            }
-
-            // The interface that we've been given is not something that can be bound to as a collection.
-            // We return whether or not it was an IEnumerable<>. If it *was* (i.e. we can't create it), then the caller binds
-            // null to it, and if it wasn't (i.e. *not* a collection), then the caller creates an instance of it.
-            bool wasACollection = FindOpenGenericInterface(typeof(IEnumerable<>), type) != null;
-            return (wasACollection, null);
-        }
-
         [RequiresUnreferencedCode(TrimmingWarningMessage)]
         private static void BindInstance(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type type,
@@ -329,7 +299,7 @@ namespace Microsoft.Extensions.Configuration
                 }
 
                 // for sets and read-only set interfaces, we concatenate on to what is already there
-                if (TypeCanBeAssignedAHashSet(type))
+                if (TypeIsASetInterface(type))
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
@@ -347,38 +317,40 @@ namespace Microsoft.Extensions.Configuration
                         return;
                     }
 
-                    (bool wasInterface, object? instance) = AttemptBindToCollectionInterfaces(type, config, options);
-                    if (wasInterface)
+                    // For other mutable interfaces like ICollection<> and ISet<>, we prefer copying values and setting them
+                    // on a new instance of the interface over populating the existing instance implementing the interface.
+                    // This has already been done, so there's not need to check again. For dictionaries, we fill the existing
+                    // instance if there is one (which hasn't happened yet), and only create a new instance if necessary.
+                    if (TypeIsADictionaryInterface(type))
                     {
-                        if (instance != null)
-                        {
-                            bindingPoint.SetValue(instance);
-                        }
-
-                        return; // We are already done if binding to a new collection instance worked
+                        Type typeOfKey = type.GenericTypeArguments[0];
+                        Type typeOfValue = type.GenericTypeArguments[1];
+                        // Overwrite type in case it was a IReadOnlyDictionary<>. We still want to be able to bind items.
+                        // REVIEW: What about settable IReadOnlyDictionary<> instances with an initial value?
+                        // I think we should consider preferring copying like we do for all other collection interfaces.
+                        type = typeof(Dictionary<,>).MakeGenericType(typeOfKey, typeOfValue);
                     }
 
                     bindingPoint.SetValue(CreateInstance(type, config, options));
                 }
 
-                // See if it's a Dictionary
-                Type? collectionInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
-                if (collectionInterface != null)
+                // At this point we know that we have a non-null bindingPoint.Value, we just have to populate the items
+                // using the IDictionary<> or ICollection<> interfaces, or properties using reflection.
+                Type? dictionaryInterface = FindOpenGenericInterface(typeof(IDictionary<,>), type);
+                if (dictionaryInterface != null)
                 {
-                    BindDictionary(bindingPoint.Value!, collectionInterface, config, options);
+                    BindDictionary(bindingPoint.Value!, dictionaryInterface, config, options);
                 }
                 else
                 {
-                    // See if it's an ICollection
-                    collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
+                    Type? collectionInterface = FindOpenGenericInterface(typeof(ICollection<>), type);
                     if (collectionInterface != null)
                     {
                         BindCollection(bindingPoint.Value!, collectionInterface, config, options);
                     }
-                    // Something else
                     else
                     {
-                        BindNonScalar(config, bindingPoint.Value!, options);
+                        BindProperties(bindingPoint.Value!, config, options);
                     }
                 }
             }
@@ -553,6 +525,7 @@ namespace Microsoft.Extensions.Configuration
             // ICollection<T> is guaranteed to have exactly one parameter
             Type itemType = collectionType.GenericTypeArguments[0];
             MethodInfo? addMethod = collectionType.GetMethod("Add", DeclaredOnlyLookup);
+
             foreach (IConfigurationSection section in config.GetChildren())
             {
                 try
@@ -739,7 +712,7 @@ namespace Microsoft.Extensions.Configuration
             return result;
         }
 
-        private static bool TypeCanBeAssignedADictionary(Type type)
+        private static bool TypeIsADictionaryInterface(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
 
@@ -759,7 +732,7 @@ namespace Microsoft.Extensions.Configuration
                 || genericTypeDefinition == typeof(IReadOnlyList<>);
         }
 
-        private static bool TypeCanBeAssignedAHashSet(Type type)
+        private static bool TypeIsASetInterface(Type type)
         {
             if (!type.IsInterface || !type.IsConstructedGenericType) { return false; }
 
