@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-namespace System.Runtime.InteropServices
+namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
     /// Attribute used to indicate that the type can be used to convert a value of the provided <see cref="ManagedType"/> to a native representation.

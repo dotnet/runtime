@@ -3,7 +3,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace System.Runtime.InteropServices
+namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
     /// Marshaller for UTF-16 strings
