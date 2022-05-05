@@ -21,8 +21,6 @@ pr:
     - eng/pipelines/coreclr/*.*
     - eng/pipelines/libraries/*.*
     - eng/pipelines/installer/*.*
-    - eng/pipelines/*.*
-    - !eng/pipelines/global-build.yml
     - PATENTS.TXT
     - THIRD-PARTY-NOTICES.TXT
 
