@@ -21,6 +21,7 @@
 class CLRPrivBinderCoreCLR;
 class PEAssembly;
 class PEImage;
+class AssemblyLoadContext;
 
 namespace BINDER_SPACE
 {
@@ -59,6 +60,7 @@ namespace BINDER_SPACE
         static HRESULT BindUsingHostAssemblyResolver (/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ CLRPrivBinderCoreCLR *pTPABinder,
+                                                      /* in */ AssemblyLoadContext *pBinder,
                                                       /* out */ Assembly           **ppAssembly);
 
         static HRESULT BindUsingPEImage(/* in */  ApplicationContext *pApplicationContext,

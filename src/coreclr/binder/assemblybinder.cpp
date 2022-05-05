@@ -33,6 +33,7 @@
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                  CLRPrivBinderCoreCLR *pTPABinder,
+                                                 AssemblyLoadContext *pBinder,
                                                  ICLRPrivAssembly **ppLoadedAssembly);
 
 #endif // !defined(DACCESS_COMPILE) && !defined(CROSSGEN_COMPILE)
@@ -1408,6 +1409,7 @@ namespace BINDER_SPACE
 HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                       /* in */ AssemblyName       *pAssemblyName,
                                                       /* in */ CLRPrivBinderCoreCLR *pTPABinder,
+                                                      /* in */ AssemblyLoadContext *pBinder,
                                                       /* out */ Assembly           **ppAssembly)
 {
     HRESULT hr = E_FAIL;
@@ -1417,7 +1419,7 @@ HRESULT AssemblyBinder::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedA
     // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CLRPrivBinderAssemblyLoadContext::BindAssemblyByName.
     ICLRPrivAssembly *pLoadedAssembly = NULL;
     hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
-                                           pAssemblyName, pTPABinder, &pLoadedAssembly);
+                                           pAssemblyName, pTPABinder, pBinder, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);
