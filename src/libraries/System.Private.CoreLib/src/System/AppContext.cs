@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -62,8 +63,10 @@ namespace System
         }
 
 #pragma warning disable CS0067 // events raised by the VM
+        [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(UnhandledExceptionEventArgs))]
         public static event UnhandledExceptionEventHandler? UnhandledException;
 
+        [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(FirstChanceExceptionEventArgs))]
         public static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
