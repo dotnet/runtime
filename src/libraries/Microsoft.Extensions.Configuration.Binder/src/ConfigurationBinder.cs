@@ -303,7 +303,11 @@ namespace Microsoft.Extensions.Configuration
                 {
                     if (!bindingPoint.IsReadOnly)
                     {
-                        bindingPoint.SetValue(BindSet(type, (IEnumerable?)bindingPoint.Value, config, options));
+                        object? newValue = BindSet(type, (IEnumerable?)bindingPoint.Value, config, options);
+                        if (newValue != null)
+                        {
+                            bindingPoint.SetValue(newValue);
+                        }
                     }
                     return;
                 }
@@ -600,11 +604,21 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode("Cannot statically analyze what the element type is of the Array so its members may be trimmed.")]
-        private static object BindSet(Type type, IEnumerable? source, IConfiguration config, BinderOptions options)
+        private static object? BindSet(Type type, IEnumerable? source, IConfiguration config, BinderOptions options)
         {
             Type elementType = type.GetGenericArguments()[0];
 
-            Type genericType = typeof(HashSet<>).MakeGenericType(type.GenericTypeArguments[0]);
+            Type keyType = type.GenericTypeArguments[0];
+
+            bool keyTypeIsEnum = keyType.IsEnum;
+
+            if (keyType != typeof(string) && !keyTypeIsEnum)
+            {
+                // We only support string and enum keys
+                return null;
+            }
+
+            Type genericType = typeof(HashSet<>).MakeGenericType(keyType);
             object instance = Activator.CreateInstance(genericType)!;
 
             MethodInfo addMethod = genericType.GetMethod("Add", DeclaredOnlyLookup)!;

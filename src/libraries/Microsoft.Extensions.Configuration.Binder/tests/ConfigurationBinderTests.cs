@@ -66,6 +66,11 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public ISet<string> InstantiatedISetWithSomeValues { get; set; } =
                 new HashSet<string>(new[] { "existing1", "existing2" });
 
+            public ISet<UnsupportedTypeInHashSet> HashSetWithUnsupportedKey { get; set; } =
+                new HashSet<UnsupportedTypeInHashSet>();
+
+            public ISet<UnsupportedTypeInHashSet> UninstantiatedHashSetWithUnsupportedKey { get; set; } 
+
 #if NET5_0_OR_GREATER
             public IReadOnlySet<string> InstantiatedIReadOnlySet { get; set; } = new HashSet<string>();
             public IReadOnlySet<string> InstantiatedIReadOnlySetWithSomeValues { get; set; } =
@@ -101,6 +106,8 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 }
             }
         }
+
+        public class UnsupportedTypeInHashSet { }
 
         public interface ICustomCollectionDerivedFromIEnumerableT<out T> : IEnumerable<T> { }
         public interface ICustomCollectionDerivedFromICollectionT<T> : ICollection<T> { }
@@ -828,6 +835,42 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("existing2", options.InstantiatedISetWithSomeValues.ElementAt(1));
             Assert.Equal("Yo1", options.InstantiatedISetWithSomeValues.ElementAt(2));
             Assert.Equal("Yo2", options.InstantiatedISetWithSomeValues.ElementAt(3));
+        }
+
+        [Fact]
+        public void DoesNotBindInstantiatedISetWithUnsupportedKeys()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"HashSetWithUnsupportedKey:0", "Yo1"},
+                {"HashSetWithUnsupportedKey:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Equal(0, options.HashSetWithUnsupportedKey.Count);
+        }
+
+        [Fact]
+        public void DoesNotBindUninstantiatedISetWithUnsupportedKeys()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"UninstantiatedHashSetWithUnsupportedKey:0", "Yo1"},
+                {"UninstantiatedHashSetWithUnsupportedKey:1", "Yo2"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ComplexOptions>()!;
+
+            Assert.Null(options.UninstantiatedHashSetWithUnsupportedKey);
         }
 
         [Fact]
