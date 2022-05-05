@@ -22,7 +22,7 @@ char* DetectDefaultAppleLocaleName()
     }
     else
     {
-        localeName = [currentLocale.localeIdentifier stringByReplacingOccurrencesOfString:@"_" withString:@"-"];
+        localeName = currentLocale.localeIdentifier;
     }
     
     return strdup([localeName UTF8String]);
