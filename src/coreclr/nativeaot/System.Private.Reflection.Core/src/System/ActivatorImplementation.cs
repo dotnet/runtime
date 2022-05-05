@@ -49,7 +49,7 @@ namespace System
             if (type == null)
                 throw new ArgumentNullException(nameof(type));
 
-            // If they didn't specify a lookup, then we will provide the default lookup.
+            // If they didn't specify a lookup, then we will provide the default lookup. 
             const BindingFlags LookupMask = (BindingFlags)0x000000FF;
             if ((bindingAttr & LookupMask) == 0)
                 bindingAttr |= BindingFlags.Instance | BindingFlags.Public | BindingFlags.CreateInstance;
