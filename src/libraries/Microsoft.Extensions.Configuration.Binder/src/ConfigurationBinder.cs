@@ -735,7 +735,7 @@ namespace Microsoft.Extensions.Configuration
         }
 
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
-        private static object? BindParameter(ParameterInfo property, IConfiguration config, BinderOptions options)
+        private static object? BindParameter(ParameterInfo parameter, IConfiguration config, BinderOptions options)
         {
             string parameterName = property.Name!;
 
