@@ -17,6 +17,8 @@ namespace System.IO
         /// </devdoc>
         public FileSystemEventArgs(WatcherChangeTypes changeType, string directory, string? name)
         {
+            ArgumentNullException.ThrowIfNull(directory);
+
             _changeType = changeType;
             _name = name;
             _fullPath = Combine(directory, name);
