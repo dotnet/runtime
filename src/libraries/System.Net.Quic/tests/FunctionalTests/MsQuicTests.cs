@@ -667,8 +667,10 @@ namespace System.Net.Quic.Tests
             }
         }
 
-        [Fact]
-        public async Task CloseAsync_MultipleCalls_FollowingCallsAreIgnored()
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task CloseAsync_MultipleCalls_FollowingCallsAreIgnored(bool client)
         {
 
             (QuicConnection clientConnection, QuicConnection serverConnection) = await CreateConnectedQuicConnection();
@@ -676,10 +678,16 @@ namespace System.Net.Quic.Tests
             using (clientConnection)
             using (serverConnection)
             {
-                await clientConnection.CloseAsync(0);
-                await clientConnection.CloseAsync(0);
-
-                await serverConnection.CloseAsync(0);
+                if (client)
+                {
+                    await clientConnection.CloseAsync(0);
+                    await clientConnection.CloseAsync(0);
+                }
+                else
+                {
+                    await serverConnection.CloseAsync(0);
+                    await serverConnection.CloseAsync(0);
+                }
             }
         }
 
