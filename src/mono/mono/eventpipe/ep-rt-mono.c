@@ -2903,7 +2903,7 @@ void
 ep_rt_bulk_type_value_clear (BulkTypeValue *bulk_type_value);
 
 static
-uint32_t
+int
 ep_rt_mono_get_byte_count_in_event (BulkTypeValue *bulk_type_value);
 
 static
@@ -2976,10 +2976,10 @@ ep_rt_bulk_type_value_clear (BulkTypeValue *bulk_type_value)
 }
 
 static
-uint32_t
+int
 ep_rt_mono_get_byte_count_in_event (BulkTypeValue *bulk_type_value)
 {
-	size_t s_name_len = 0;
+	int s_name_len = 0;
 
 	return sizeof (bulk_type_value->fixed_sized_data.type_id) + 	// Fixed Sized Data
 		sizeof (bulk_type_value->fixed_sized_data.module_id) +
@@ -2987,22 +2987,22 @@ ep_rt_mono_get_byte_count_in_event (BulkTypeValue *bulk_type_value)
 		sizeof (bulk_type_value->fixed_sized_data.flags) +
 		sizeof (bulk_type_value->fixed_sized_data.cor_element_type) +
 		sizeof (bulk_type_value->c_type_parameters) +		// Type parameters
-		 (s_name_len + 1) * sizeof (ep_char8_t) +		// Size of name, including null terminator
+		(s_name_len + 1) * sizeof (ep_char8_t) +		// Size of name, including null terminator
 		bulk_type_value->c_type_parameters * sizeof (uint64_t);	// Type parameters
 }
 
 // ETW has a limitation of 64K for TOTAL event Size, however there is overhead associated with
 // the event headers.   It is unclear exactly how much that is, but 1K should be sufficiently
 // far away to avoid problems without sacrificing the perf of bulk processing.
-static const uint32_t CB_MAX_ETW_EVENT = 63 * 1024;
+#define CB_MAX_ETW_EVENT (63 * 1024)
 
 // The maximum event size, and the size of the buffer that we allocate to hold the event contents.
-static const size_t K_SIZE_OF_EVENT_BUFFER = 65536;
+#define K_SIZE_OF_EVENT_BUFFER 65536
 
 // Estimate of how many bytes we can squeeze in the event data for the value struct
 // array. (Intentionally overestimate the size of the non-array parts to keep it safe.)
 // This follows CoreCLR's kMaxBytesTypeValues.
-static const uint32_t K_MAX_BYTES_TYPE_VALUES = (CB_MAX_ETW_EVENT - 0x30);
+#define K_MAX_BYTES_TYPE_VALUES (CB_MAX_ETW_EVENT - 0x30)
 
 // Estimate of how many type value elements we can put into the struct array, while
 // staying under the ETW event size limit. Note that this is impossible to calculate
@@ -3429,7 +3429,7 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 	if (method_inst)
 		method_inst_parameter_types_count = method_inst->type_argc;
 
-	intptr_t method_inst_parameters_type_ids [method_inst_parameter_types_count];
+	intptr_t method_inst_parameters_type_ids [K_MAX_METHOD_TYPE_ARGUMENT_COUNT];
 	for (int i = 0; i < method_inst_parameter_types_count; i++) {
 		method_inst_parameters_type_ids [i] = get_typeid_for_type (method_inst->type_argv [i]);
 
