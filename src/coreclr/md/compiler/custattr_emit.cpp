@@ -1318,9 +1318,9 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
         FALLTHROUGH;
     case CA_MethodImplAttribute3:
         // Validate bits.
-        if (qArgs[0].val.u4 & ~(miUserMask))
+        if (qArgs[0].val.u2 & ~(miUserMask))
             IfFailGo(PostError(META_E_CA_INVALID_VALUE));
-        reinterpret_cast<MethodRec*>(pRow)->AddImplFlags(qArgs[0].val.u4);
+        reinterpret_cast<MethodRec*>(pRow)->AddImplFlags(qArgs[0].val.u2);
         if (!qNamedArgs[MI_CodeType].val.type.tag)
             break;
         // fall through to set the code type.
@@ -1328,10 +1328,10 @@ HRESULT RegMeta::_HandleKnownCustomAttribute(    // S_OK or error.
     case CA_MethodImplAttribute1:
         {
         USHORT usFlags = reinterpret_cast<MethodRec*>(pRow)->GetImplFlags();
-        if (qNamedArgs[MI_CodeType].val.i4 & ~(miCodeTypeMask))
+        if (qNamedArgs[MI_CodeType].val.u2 & ~(miCodeTypeMask))
             IfFailGo(PostError(META_E_CA_INVALID_VALUE));
         // Mask out old value, put in new one.
-        usFlags = (usFlags & ~miCodeTypeMask) | qNamedArgs[MI_CodeType].val.i4;
+        usFlags = (usFlags & ~miCodeTypeMask) | qNamedArgs[MI_CodeType].val.u2;
         reinterpret_cast<MethodRec*>(pRow)->SetImplFlags(usFlags);
         }
         break;

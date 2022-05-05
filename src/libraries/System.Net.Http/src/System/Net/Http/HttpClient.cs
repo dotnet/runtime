@@ -558,8 +558,10 @@ namespace System.Net.Http
             }
         }
 
-        private void CheckRequestBeforeSend(HttpRequestMessage request!!)
+        private void CheckRequestBeforeSend(HttpRequestMessage request)
         {
+            ArgumentNullException.ThrowIfNull(request);
+
             CheckDisposed();
             CheckRequestMessage(request);
 

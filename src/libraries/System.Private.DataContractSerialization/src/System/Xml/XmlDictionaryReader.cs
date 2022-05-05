@@ -19,8 +19,10 @@ namespace System.Xml
     {
         internal const int MaxInitialArrayLength = 65535;
 
-        public static XmlDictionaryReader CreateDictionaryReader(XmlReader reader!!)
+        public static XmlDictionaryReader CreateDictionaryReader(XmlReader reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             XmlDictionaryReader? dictionaryReader = reader as XmlDictionaryReader;
 
             if (dictionaryReader == null)
@@ -31,8 +33,10 @@ namespace System.Xml
             return dictionaryReader;
         }
 
-        public static XmlDictionaryReader CreateBinaryReader(byte[] buffer!!, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateBinaryReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             return CreateBinaryReader(buffer, 0, buffer.Length, quotas);
         }
 
@@ -88,8 +92,10 @@ namespace System.Xml
             return reader;
         }
 
-        public static XmlDictionaryReader CreateTextReader(byte[] buffer!!, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateTextReader(byte[] buffer, XmlDictionaryReaderQuotas quotas)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             return CreateTextReader(buffer, 0, buffer.Length, quotas);
         }
 
@@ -122,8 +128,10 @@ namespace System.Xml
             return reader;
         }
 
-        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding encoding!!, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateMtomReader(Stream stream, Encoding encoding, XmlDictionaryReaderQuotas quotas)
         {
+            ArgumentNullException.ThrowIfNull(encoding);
+
             return CreateMtomReader(stream, new Encoding[1] { encoding }, quotas);
         }
 
@@ -143,8 +151,10 @@ namespace System.Xml
             throw new PlatformNotSupportedException(SR.PlatformNotSupported_MtomEncoding);
         }
 
-        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding encoding!!, XmlDictionaryReaderQuotas quotas)
+        public static XmlDictionaryReader CreateMtomReader(byte[] buffer, int offset, int count, Encoding encoding, XmlDictionaryReaderQuotas quotas)
         {
+            ArgumentNullException.ThrowIfNull(encoding);
+
             return CreateMtomReader(buffer, offset, count, new Encoding[1] { encoding }, quotas);
         }
 
@@ -219,18 +229,24 @@ namespace System.Xml
             return this.LocalName == localName;
         }
 
-        public virtual bool IsLocalName(XmlDictionaryString localName!!)
+        public virtual bool IsLocalName(XmlDictionaryString localName)
         {
+            ArgumentNullException.ThrowIfNull(localName);
+
             return IsLocalName(localName.Value);
         }
 
-        public virtual bool IsNamespaceUri(string namespaceUri!!)
+        public virtual bool IsNamespaceUri(string namespaceUri)
         {
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             return this.NamespaceURI == namespaceUri;
         }
 
-        public virtual bool IsNamespaceUri(XmlDictionaryString namespaceUri!!)
+        public virtual bool IsNamespaceUri(XmlDictionaryString namespaceUri)
         {
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             return IsNamespaceUri(namespaceUri.Value);
         }
 
@@ -277,8 +293,11 @@ namespace System.Xml
             return IsStartElement(XmlDictionaryString.GetString(localName), XmlDictionaryString.GetString(namespaceUri));
         }
 
-        public virtual int IndexOfLocalName(string[] localNames!!, string namespaceUri!!)
+        public virtual int IndexOfLocalName(string[] localNames, string namespaceUri)
         {
+            ArgumentNullException.ThrowIfNull(localNames);
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             if (this.NamespaceURI == namespaceUri)
             {
                 string localName = this.LocalName;
@@ -297,8 +316,11 @@ namespace System.Xml
             return -1;
         }
 
-        public virtual int IndexOfLocalName(XmlDictionaryString[] localNames!!, XmlDictionaryString namespaceUri!!)
+        public virtual int IndexOfLocalName(XmlDictionaryString[] localNames, XmlDictionaryString namespaceUri)
         {
+            ArgumentNullException.ThrowIfNull(localNames);
+            ArgumentNullException.ThrowIfNull(namespaceUri);
+
             if (this.NamespaceURI == namespaceUri.Value)
             {
                 string localName = this.LocalName;
@@ -588,8 +610,10 @@ namespace System.Xml
             return base.ReadContentAs(type, namespaceResolver);
         }
 
-        public virtual string ReadContentAsString(string[] strings!!, out int index)
+        public virtual string ReadContentAsString(string[] strings, out int index)
         {
+            ArgumentNullException.ThrowIfNull(strings);
+
             string s = ReadContentAsString();
             index = -1;
             for (int i = 0; i < strings.Length; i++)
@@ -606,8 +630,10 @@ namespace System.Xml
             return s;
         }
 
-        public virtual string ReadContentAsString(XmlDictionaryString[] strings!!, out int index)
+        public virtual string ReadContentAsString(XmlDictionaryString[] strings, out int index)
         {
+            ArgumentNullException.ThrowIfNull(strings);
+
             string s = ReadContentAsString();
             index = -1;
             for (int i = 0; i < strings.Length; i++)
@@ -980,8 +1006,10 @@ namespace System.Xml
             return false;
         }
 
-        private static void CheckArray(Array array!!, int offset, int count)
+        private static void CheckArray(Array array, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (offset < 0)
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentOutOfRangeException(nameof(offset), SR.ValueMustBeNonNegative));
             if (offset > array.Length)

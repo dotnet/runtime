@@ -27,7 +27,6 @@
 #include "cordebug.h"
 #include "corsym.h"
 #include "generics.h"
-#include "eemessagebox.h"
 #include "stackwalk.h"
 
 #ifndef DACCESS_COMPILE

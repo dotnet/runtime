@@ -82,8 +82,10 @@ namespace System.IO
         /// <param name="offset"></param>
         /// <param name="length"></param>
         /// <param name="access"></param>
-        protected void Initialize(SafeBuffer buffer!!, long offset, long length, FileAccess access)
+        protected void Initialize(SafeBuffer buffer, long offset, long length, FileAccess access)
         {
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (offset < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset), SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -157,8 +159,10 @@ namespace System.IO
         /// Subclasses must call this method (or the other overload) to properly initialize all instance fields.
         /// </summary>
         [CLSCompliant(false)]
-        protected unsafe void Initialize(byte* pointer!!, long length, long capacity, FileAccess access)
+        protected unsafe void Initialize(byte* pointer, long length, long capacity, FileAccess access)
         {
+            ArgumentNullException.ThrowIfNull(pointer);
+
             if (length < 0 || capacity < 0)
                 throw new ArgumentOutOfRangeException((length < 0) ? nameof(length) : nameof(capacity), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (length > capacity)

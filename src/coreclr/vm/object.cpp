@@ -394,6 +394,14 @@ void STDCALL CopyValueClassArgUnchecked(ArgDestination *argDest, void* src, Meth
         return;
     }
 
+#elif defined(TARGET_LOONGARCH64)
+
+    if (argDest->IsStructPassedInRegs())
+    {
+        argDest->CopyStructToRegisters(src, pMT->GetNumInstanceFieldBytes());
+        return;
+    }
+
 #endif // UNIX_AMD64_ABI
     // destOffset is only valid for Nullable<T> passed in registers
     _ASSERTE(destOffset == 0);
@@ -418,6 +426,16 @@ void InitValueClassArg(ArgDestination *argDest, MethodTable *pMT)
     }
 
 #endif
+
+#if defined(TARGET_LOONGARCH64)
+    if (argDest->IsStructPassedInRegs())
+    {
+        *(UINT64*)(argDest->GetStructGenRegDestinationAddress()) = 0;
+        *(UINT64*)(argDest->GetDestinationAddress()) = 0;
+        return;
+    }
+#endif
+
     InitValueClass(argDest->GetDestinationAddress(), pMT);
 }
 
@@ -1789,6 +1807,44 @@ BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, Met
     }
 
 #endif // UNIX_AMD64_ABI
+
+#if defined(TARGET_LOONGARCH64)
+    if (argDest->IsStructPassedInRegs())
+    {
+        // We should only get here if we are unboxing a T as a Nullable<T>
+        _ASSERTE(IsNullableType(destMT));
+
+        // We better have a concrete instantiation, or our field offset asserts are not useful
+        _ASSERTE(!destMT->ContainsGenericVariables());
+
+        if (boxedVal == NULL)
+        {
+            // Logically we are doing *dest->HasValueAddr(destMT) = false;
+            // We zero out the whole structure becasue it may contain GC references
+            // and these need to be initialized to zero.   (could optimize in the non-GC case)
+            InitValueClassArg(argDest, destMT);
+        }
+        else
+        {
+            if (!IsNullableForTypeNoGC(destMT, boxedVal->GetMethodTable()))
+            {
+                // For safety's sake, also allow true nullables to be unboxed normally.
+                // This should not happen normally, but we want to be robust
+                if (destMT == boxedVal->GetMethodTable())
+                {
+                    CopyValueClassArg(argDest, boxedVal->GetData(), destMT, 0);
+                    return TRUE;
+                }
+                return FALSE;
+            }
+
+            CopyValueClassArg(argDest, boxedVal->UnBox(), boxedVal->GetMethodTable(), 0);
+            *(UINT64*)(argDest->GetStructGenRegDestinationAddress()) = 1;
+        }
+        return TRUE;
+    }
+
+#endif
 
     return UnBoxNoGC(argDest->GetDestinationAddress(), boxedVal, destMT);
 }

@@ -413,8 +413,10 @@ namespace System.Net.Mail
             Send(mailMessage);
         }
 
-        public void Send(MailMessage message!!)
+        public void Send(MailMessage message)
         {
+            ArgumentNullException.ThrowIfNull(message);
+
             ObjectDisposedException.ThrowIf(_disposed, this);
 
             if (NetEventSource.Log.IsEnabled())

@@ -58,9 +58,11 @@ namespace System.Resources
             ReadResources();
         }
 
-        public ResourceSet(IResourceReader reader!!)
+        public ResourceSet(IResourceReader reader)
             : this()
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             Reader = reader;
             ReadResources();
         }
@@ -198,8 +200,10 @@ namespace System.Resources
             // to help with some WinRes lifetime issues.
         }
 
-        private object? GetObjectInternal(string name!!)
+        private object? GetObjectInternal(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             Dictionary<object, object?>? copyOfTable = _table;  // Avoid a race with Dispose
 
             if (copyOfTable == null)

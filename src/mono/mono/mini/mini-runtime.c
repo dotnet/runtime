@@ -4345,6 +4345,37 @@ free_jit_mem_manager (MonoMemoryManager *mem_manager)
 	mem_manager->runtime_info = NULL;
 }
 
+static void
+init_class (MonoClass *klass)
+{
+	if (!mono_is_corlib_image (m_class_get_image (klass)))
+		return;
+
+	const char *name = m_class_get_name (klass);
+
+#ifdef TARGET_AMD64
+	/*
+	 * Some of the intrinsics used by the VectorX classes are only implemented on amd64.
+	 * The JIT can't handle SIMD types with != 16 size yet.
+	 */
+	if (!strcmp (m_class_get_name_space (klass), "System.Numerics")) {
+		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
+		if (!strcmp (name, "Vector4"))
+			mono_class_set_is_simd_type (klass, TRUE);
+	}
+#endif
+
+	if (m_class_is_ginst (klass)) {
+		if (!strcmp (name, "Vector`1") || !strcmp (name, "Vector64`1") || !strcmp (name, "Vector128`1") || !strcmp (name, "Vector256`1")) {
+			MonoGenericClass *gclass = mono_class_try_get_generic_class (klass);
+			g_assert (gclass);
+			MonoType *etype = gclass->context.class_inst->type_argv [0];
+			if (mono_type_is_primitive (etype) && etype->type != MONO_TYPE_CHAR && etype->type != MONO_TYPE_BOOLEAN)
+				mono_class_set_is_simd_type (klass, TRUE);
+		}
+	}
+}
+
 #ifdef ENABLE_LLVM
 static gboolean
 llvm_init_inner (void)
@@ -4526,6 +4557,7 @@ mini_init (const char *filename)
 
 	callbacks.get_jit_stats = get_jit_stats;
 	callbacks.get_exception_stats = get_exception_stats;
+	callbacks.init_class = init_class;
 
 	mono_install_callbacks (&callbacks);
 

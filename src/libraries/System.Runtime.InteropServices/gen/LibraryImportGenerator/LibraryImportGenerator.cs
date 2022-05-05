@@ -92,24 +92,6 @@ namespace Microsoft.Interop
                     return (compilation, fmk, targetFrameworkVersion);
                 });
 
-            context.RegisterSourceOutput(
-                compilationAndTargetFramework
-                    .Combine(methodsToGenerate.Collect()),
-                static (context, data) =>
-                {
-                    if (data.Left.targetFramework is TargetFramework.Unknown && data.Right.Any())
-                    {
-                        // We don't block source generation when the TFM is unknown.
-                        // This allows a user to copy generated source and use it as a starting point
-                        // for manual marshalling if desired.
-                        context.ReportDiagnostic(
-                            Diagnostic.Create(
-                                GeneratorDiagnostics.TargetFrameworkNotSupported,
-                                Location.None,
-                                data.Left.targetFrameworkVersion));
-                    }
-                });
-
             IncrementalValueProvider<LibraryImportGeneratorOptions> stubOptions = context.AnalyzerConfigOptionsProvider
                 .Select(static (options, ct) => new LibraryImportGeneratorOptions(options.GlobalOptions));
 

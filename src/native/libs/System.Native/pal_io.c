@@ -22,6 +22,9 @@
 #include <sys/file.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
+#if !HAVE_MAKEDEV_FILEH && HAVE_MAKEDEV_SYSMACROSH
+#include <sys/sysmacros.h>
+#endif
 #include <sys/uio.h>
 #include <syslog.h>
 #include <termios.h>
@@ -123,6 +126,7 @@ c_static_assert(PAL_S_ISGID == S_ISGID);
 // accordingly.
 c_static_assert(PAL_S_IFMT == S_IFMT);
 c_static_assert(PAL_S_IFIFO == S_IFIFO);
+c_static_assert(PAL_S_IFBLK == S_IFBLK);
 c_static_assert(PAL_S_IFCHR == S_IFCHR);
 c_static_assert(PAL_S_IFDIR == S_IFDIR);
 c_static_assert(PAL_S_IFREG == S_IFREG);
@@ -763,6 +767,35 @@ int32_t SystemNative_SymLink(const char* target, const char* linkPath)
 {
     int32_t result;
     while ((result = symlink(target, linkPath)) < 0 && errno == EINTR);
+    return result;
+}
+
+int32_t SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
+{
+    dev_t castedDev = (dev_t)dev;
+    *majorNumber = (uint32_t)major(castedDev);
+    *minorNumber = (uint32_t)minor(castedDev);
+    return ConvertErrorPlatformToPal(errno);
+}
+
+int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
+{
+    dev_t dev = (dev_t)makedev(major, minor);
+
+    if (errno > 0)
+    {
+        return -1;
+    }
+
+    int32_t result;
+    while ((result = mknod(pathName, (mode_t)mode, dev)) < 0 && errno == EINTR);
+    return result;
+}
+
+int32_t SystemNative_MkFifo(const char* pathName, uint32_t mode)
+{
+    int32_t result;
+    while ((result = mkfifo(pathName, (mode_t)mode)) < 0 && errno == EINTR);
     return result;
 }
 

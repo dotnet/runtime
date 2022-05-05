@@ -31,10 +31,11 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
+                ThrowHelper.ThrowIfNull(environment);
+
                 configBuilder.AddInMemoryCollection(new[]
                 {
-                    new KeyValuePair<string, string?>(HostDefaults.EnvironmentKey,
-                        environment ?? throw new ArgumentNullException(nameof(environment)))
+                    new KeyValuePair<string, string?>(HostDefaults.EnvironmentKey, environment)
                 });
             });
         }
@@ -50,10 +51,11 @@ namespace Microsoft.Extensions.Hosting
         {
             return hostBuilder.ConfigureHostConfiguration(configBuilder =>
             {
+                ThrowHelper.ThrowIfNull(contentRoot);
+
                 configBuilder.AddInMemoryCollection(new[]
                 {
-                    new KeyValuePair<string, string?>(HostDefaults.ContentRootKey,
-                        contentRoot ?? throw new ArgumentNullException(nameof(contentRoot)))
+                    new KeyValuePair<string, string?>(HostDefaults.ContentRootKey, contentRoot)
                 });
             });
         }

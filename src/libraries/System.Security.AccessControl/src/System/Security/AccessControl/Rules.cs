@@ -31,12 +31,14 @@ namespace System.Security.AccessControl
         #region Constructors
 
         protected internal AuthorizationRule(
-            IdentityReference identity!!,
+            IdentityReference identity,
             int accessMask,
             bool isInherited,
             InheritanceFlags inheritanceFlags,
             PropagationFlags propagationFlags)
         {
+            ArgumentNullException.ThrowIfNull(identity);
+
             if (accessMask == 0)
             {
                 throw new ArgumentException(SR.Argument_ArgumentZero, nameof(accessMask));

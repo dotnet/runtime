@@ -751,7 +751,7 @@ inline void PEAssembly::GetDisplayName(SString &result, DWORD flags)
 #ifndef DACCESS_COMPILE
     AssemblySpec spec;
     spec.InitializeSpec(this);
-    spec.GetFileOrDisplayName(flags, result);
+    spec.GetDisplayName(flags, result);
 #else
     DacNotImpl();
 #endif //DACCESS_COMPILE

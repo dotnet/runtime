@@ -171,16 +171,34 @@ public:
         // Shuffle float registers first
         if (m_currentFloatRegIndex < m_argLocDesc->m_cFloatReg)
         {
-            index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
-            m_currentFloatRegIndex++;
+#if defined(TARGET_LOONGARCH64)
+            if ((m_argLocDesc->m_structFields & STRUCT_FLOAT_FIELD_SECOND) && (m_currentGenRegIndex < m_argLocDesc->m_cGenReg))
+            {
+                // the first field is integer so just skip this.
+            }
+            else
+#endif
+            {
+                index = m_argLocDesc->m_idxFloatReg + m_currentFloatRegIndex;
+                m_currentFloatRegIndex++;
 
-            return index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
+                return index | ShuffleEntry::REGMASK | ShuffleEntry::FPREGMASK;
+            }
         }
 
         // Shuffle any registers first (the order matters since otherwise we could end up shuffling a stack slot
         // over a register we later need to shuffle down as well).
         if (m_currentGenRegIndex < m_argLocDesc->m_cGenReg)
         {
+#if defined(TARGET_LOONGARCH64)
+            if (7 < (m_currentGenRegIndex + m_argLocDesc->m_idxGenReg))
+            {
+                m_currentGenRegIndex++;
+                index = m_currentByteStackIndex;
+                m_currentByteStackIndex += TARGET_POINTER_SIZE;
+                return index;
+            }
+#endif
             index = m_argLocDesc->m_idxGenReg + m_currentGenRegIndex;
             m_currentGenRegIndex++;
 
@@ -277,9 +295,9 @@ public:
 // Return an index of argument slot. First indices are reserved for general purpose registers,
 // the following ones for float registers and then the rest for stack slots.
 // This index is independent of how many registers are actually used to pass arguments.
-int GetNormalizedArgumentSlotIndex(UINT16 offset)
+static UINT16 GetNormalizedArgumentSlotIndex(UINT16 offset)
 {
-    int index;
+    UINT16 index;
 
     if (offset & ShuffleEntry::FPREGMASK)
     {
@@ -513,11 +531,11 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         {
             ShuffleEntry entry = (*pShuffleEntryArray)[i];
 
-            int srcIndex = GetNormalizedArgumentSlotIndex(entry.srcofs);
-            int dstIndex = GetNormalizedArgumentSlotIndex(entry.dstofs);
+            UINT16 srcIndex = GetNormalizedArgumentSlotIndex(entry.srcofs);
+            UINT16 dstIndex = GetNormalizedArgumentSlotIndex(entry.dstofs);
 
-            _ASSERTE((srcIndex >= 0) && ((unsigned int)srcIndex < argSlots));
-            _ASSERTE((dstIndex >= 0) && ((unsigned int)dstIndex < argSlots));
+            _ASSERTE((srcIndex >= 0) && (srcIndex < argSlots));
+            _ASSERTE((dstIndex >= 0) && (dstIndex < argSlots));
 
             // Unmark the node to indicate that it was not processed yet
             pGraphNodes[srcIndex].isMarked = false;

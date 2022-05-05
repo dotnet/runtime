@@ -509,12 +509,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowFileLoadException_InvalidAssemblyName(string name)
-        {
-            throw new FileLoadException(SR.InvalidAssemblyName, name);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
@@ -682,7 +676,7 @@ namespace System
             }
         }
 
-#if false // Reflection-based implementation does not work for CoreRT/ProjectN
+#if false // Reflection-based implementation does not work for NativeAOT
         // This function will convert an ExceptionArgument enum value to the argument name string.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetArgumentName(ExceptionArgument argument)
@@ -900,7 +894,7 @@ namespace System
             }
         }
 
-#if false // Reflection-based implementation does not work for CoreRT/ProjectN
+#if false // Reflection-based implementation does not work for NativeAOT
         // This function will convert an ExceptionResource enum value to the resource string.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static string GetResourceString(ExceptionResource resource)

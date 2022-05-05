@@ -107,7 +107,7 @@ namespace Microsoft.Interop.Analyzers
             }
         }
 
-        private class CustomFixAllProvider : DocumentBasedFixAllProvider
+        private sealed class CustomFixAllProvider : DocumentBasedFixAllProvider
         {
             public static readonly CustomFixAllProvider Instance = new();
 

@@ -2757,9 +2757,8 @@ inline UNATIVE_OFFSET emitter::emitInsSizeCV(instrDesc* id, code_t code)
     instruction ins      = id->idIns();
     emitAttr    attrSize = id->idOpSize();
 
-    // fgMorph changes any statics that won't fit into 32-bit addresses
-    // into constants with an indir, rather than GT_CLS_VAR
-    // so we should only hit this path for statics that are RIP-relative
+    // It is assumed that all addresses for the "M" format
+    // can be reached via RIP-relative addressing.
     UNATIVE_OFFSET size = sizeof(INT32);
 
     size += emitGetAdjustedSize(ins, attrSize, code);
@@ -3162,14 +3161,8 @@ void emitter::emitHandleMemOp(GenTreeIndir* indir, instrDesc* id, insFormat fmt,
         // Static always need relocs
         if (!jitStaticFldIsGlobAddr(fldHnd))
         {
-            // Contract:
-            // fgMorphField() changes any statics that won't fit into 32-bit addresses into
-            // constants with an indir, rather than GT_CLS_VAR, based on reloc type hint given
-            // by VM. Hence emitter should always mark GT_CLS_VAR_ADDR as relocatable.
-            //
-            // Data section constants: these get allocated close to code block of the method and
-            // always addressable IP relative.  These too should be marked as relocatable.
-
+            // "CLS_VAR_ADDR"s (currently only used for data section constants, which
+            // are addressable IP relative) are, by contract, always relocatable.
             id->idSetIsDspReloc();
         }
 

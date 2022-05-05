@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -147,8 +147,8 @@ namespace System.Collections.Generic
         // by the keys of all entries in the given dictionary as well as keys
         // subsequently added to the sorted list.
         //
-        public SortedList(IDictionary<TKey, TValue> dictionary!!, IComparer<TKey>? comparer)
-            : this(dictionary.Count, comparer)
+        public SortedList(IDictionary<TKey, TValue> dictionary, IComparer<TKey>? comparer)
+            : this(dictionary?.Count ?? throw new ArgumentNullException(nameof(dictionary)), comparer)
         {
             int count = dictionary.Count;
             if (count != 0)
@@ -177,8 +177,10 @@ namespace System.Collections.Generic
         // Adds an entry with the given key and value to this sorted list. An
         // ArgumentException is thrown if the key is already present in the sorted list.
         //
-        public void Add(TKey key!!, TValue value)
+        public void Add(TKey key, TValue value)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             int i = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
             if (i >= 0)
                 throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate, key), nameof(key));
@@ -261,8 +263,10 @@ namespace System.Collections.Generic
             }
         }
 
-        void IDictionary.Add(object key!!, object? value)
+        void IDictionary.Add(object key, object? value)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             if (value == null && default(TValue) != null)    // null is an invalid value for Value types
                 throw new ArgumentNullException(nameof(value));
 
@@ -435,8 +439,10 @@ namespace System.Collections.Generic
         }
 
         // Copies the values in this SortedList to an array.
-        void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array!!, int arrayIndex)
+        void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
@@ -454,8 +460,10 @@ namespace System.Collections.Generic
             }
         }
 
-        void ICollection.CopyTo(Array array!!, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -632,8 +640,10 @@ namespace System.Collections.Generic
         // size is the size of this sorted list. The returned value is -1 if
         // the given key does not occur in this sorted list. Null is an invalid
         // key value.
-        public int IndexOfKey(TKey key!!)
+        public int IndexOfKey(TKey key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             int ret = Array.BinarySearch<TKey>(keys, 0, _size, key, comparer);
             return ret >= 0 ? ret : -1;
         }
@@ -735,8 +745,10 @@ namespace System.Collections.Generic
             }
         }
 
-        private static bool IsCompatibleKey(object key!!)
+        private static bool IsCompatibleKey(object key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             return (key is TKey);
         }
 
@@ -1085,8 +1097,10 @@ namespace System.Collections.Generic
                 return new SortedListKeyEnumerator(_dict);
             }
 
-            public int IndexOf(TKey key!!)
+            public int IndexOf(TKey key)
             {
+                ArgumentNullException.ThrowIfNull(key);
+
                 int i = Array.BinarySearch<TKey>(_dict.keys, 0,
                                           _dict.Count, key, _dict.comparer);
                 if (i >= 0) return i;

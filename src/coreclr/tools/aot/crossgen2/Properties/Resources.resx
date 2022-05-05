@@ -372,4 +372,7 @@
   <data name="UnsupportedInputFileExtension" xml:space="preserve">
     <value>Input file with '{0}' extension not supported</value>
   </data>
+  <data name="ImageBase" xml:space="preserve">
+    <value>Hexademical value to set target PE-file ImageBase field</value>
+  </data>
 </root>

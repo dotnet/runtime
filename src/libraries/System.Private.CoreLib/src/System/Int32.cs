@@ -985,8 +985,8 @@ namespace System
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
         static int IShiftOperators<int, int>.operator >>(int value, int shiftAmount) => value >> shiftAmount;
 
-        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        // static int IShiftOperators<int, int>.operator >>>(int value, int shiftAmount) => (int)((uint)value >> shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        static int IShiftOperators<int, int>.operator >>>(int value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISignedNumber

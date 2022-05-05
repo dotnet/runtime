@@ -301,8 +301,10 @@ namespace System.Runtime.InteropServices.JavaScript
             return o.ToString() ?? string.Empty;
         }
 
-        public static double GetDateValueRef(ref object dtv!!)
+        public static double GetDateValueRef(ref object dtv)
         {
+            ArgumentNullException.ThrowIfNull(dtv);
+
             if (!(dtv is DateTime dt))
                 throw new InvalidCastException(SR.Format(SR.UnableCastObjectToType, dtv.GetType(), typeof(DateTime)));
             if (dt.Kind == DateTimeKind.Local)
@@ -327,7 +329,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void CancelPromise(IntPtr promiseJSHandle)
         {
-            var res = Interop.Runtime.CancelPromise(promiseJSHandle, out int exception);
+            Interop.Runtime.CancelPromiseRef(promiseJSHandle, out int exception, out string res);
             if (exception != 0)
                 throw new JSException(res);
         }

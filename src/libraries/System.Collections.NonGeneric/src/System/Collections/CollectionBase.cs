@@ -225,8 +225,9 @@ namespace System.Collections
         {
         }
 
-        protected virtual void OnValidate(object value!!)
+        protected virtual void OnValidate(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
         }
 
         protected virtual void OnSetComplete(int index, object? oldValue, object? newValue)

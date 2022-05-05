@@ -2762,7 +2762,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
             if (!EEFileLoadException::CheckType(pEx))
             {
                 StackSString name;
-                pSpec->GetFileOrDisplayName(0, name);
+                pSpec->GetDisplayName(0, name);
                 pEx=new EEFileLoadException(name, pEx->GetHR(), pEx);
                 AddExceptionToCache(pSpec, pEx);
                 PAL_CPP_THROW(Exception *, pEx);
@@ -3370,37 +3370,6 @@ BOOL AppDomain::AddFileToCache(AssemblySpec* pSpec, PEAssembly * pPEAssembly, BO
         }
     }
 
-    // If the ALC for the result (pPEAssembly) is collectible and not the same as the ALC for the request (pSpec),
-    // which can happen when extension points (AssemblyLoadContext.Load, AssemblyLoadContext.Resolving) resolve the
-    // assembly, we need to ensure the result ALC is not collected before the request ALC. We do this by adding an
-    // explicit reference between the LoaderAllocators corresponding to the ALCs.
-    //
-    // To get the LoaderAllocators, we rely on the DomainAssembly corresponding to:
-    // - Parent assembly for the request
-    //   - For loads via explicit load or reflection, this will be NULL. In these cases, the request ALC should not
-    //    implicitly (as in not detectable via managed references) depend on the result ALC, so it is fine to not
-    //    add the reference.
-    //   - For loads via assembly references, this will never be NULL.
-    // - Result assembly for the result
-    //   - For dynamic assemblies, there is no host assembly, so we don't have the result assembly / LoaderAllocator.
-    //     We currently block resolving to dynamic assemblies, so we simply assert that we have a host assembly.
-    //   - For non-dynamic assemblies, we should be able to get the host assembly.
-    DomainAssembly *pParentAssembly = pSpec->GetParentAssembly();
-    BINDER_SPACE::Assembly *pBinderSpaceAssembly = pPEAssembly->GetHostAssembly();
-    _ASSERTE(pBinderSpaceAssembly != NULL);
-    DomainAssembly *pResultAssembly = pBinderSpaceAssembly->GetDomainAssembly();
-    if ((pParentAssembly != NULL) && (pResultAssembly != NULL))
-    {
-        LoaderAllocator *pParentAssemblyLoaderAllocator = pParentAssembly->GetLoaderAllocator();
-        LoaderAllocator *pResultAssemblyLoaderAllocator = pResultAssembly->GetLoaderAllocator();
-        _ASSERTE(pParentAssemblyLoaderAllocator);
-        _ASSERTE(pResultAssemblyLoaderAllocator);
-        if (pResultAssemblyLoaderAllocator->IsCollectible())
-        {
-            pParentAssemblyLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
-        }
-    }
-
     return TRUE;
 }
 
@@ -3773,7 +3742,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                                 StackSString exceptionDisplayName, failedSpecDisplayName;
 
                                 ((EEFileLoadException*)ex)->GetName(exceptionDisplayName);
-                                pFailedSpec->GetFileOrDisplayName(0, failedSpecDisplayName);
+                                pFailedSpec->GetDisplayName(0, failedSpecDisplayName);
 
                                 if (exceptionDisplayName.CompareCaseInsensitive(failedSpecDisplayName) == 0)
                                 {
@@ -4598,7 +4567,7 @@ AppDomain::RaiseAssemblyResolveEvent(
     CONTRACT_END;
 
     StackSString ssName;
-    pSpec->GetFileOrDisplayName(0, ssName);
+    pSpec->GetDisplayName(0, ssName);
 
     // Elevate threads allowed loading level.  This allows the host to load an assembly even in a restricted
     // condition.  Note, however, that this exposes us to possible recursion failures, if the host tries to
@@ -4937,7 +4906,7 @@ AppDomain::AssemblyIterator::Next_Unlocked(
 #if !defined(DACCESS_COMPILE)
 
 // Returns S_OK if the assembly was successfully loaded
-HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, DefaultAssemblyBinder *pDefaultBinder, BINDER_SPACE::Assembly **ppLoadedAssembly)
+HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin, BINDER_SPACE::AssemblyName *pAssemblyName, DefaultAssemblyBinder *pDefaultBinder, AssemblyBinder *pBinder, BINDER_SPACE::Assembly **ppLoadedAssembly)
 {
     CONTRACTL
     {
@@ -5113,6 +5082,22 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 PathString name;
                 pAssemblyName->GetDisplayName(name, BINDER_SPACE::AssemblyName::INCLUDE_ALL);
                 COMPlusThrowHR(COR_E_INVALIDOPERATION, IDS_HOST_ASSEMBLY_RESOLVER_DYNAMICALLY_EMITTED_ASSEMBLIES_UNSUPPORTED, name);
+            }
+
+            // For collectible assemblies, ensure that the parent loader allocator keeps the assembly's loader allocator
+            // alive for all its lifetime.
+            if (pDomainAssembly->IsCollectible())
+            {
+                LoaderAllocator *pResultAssemblyLoaderAllocator = pDomainAssembly->GetLoaderAllocator();
+                LoaderAllocator *pParentLoaderAllocator = pBinder->GetLoaderAllocator();
+                if (pParentLoaderAllocator == NULL)
+                {
+                    // The AssemblyLoadContext for which we are resolving the the Assembly is not collectible.
+                    COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible")); 
+                }
+
+                _ASSERTE(pResultAssemblyLoaderAllocator);
+                pParentLoaderAllocator->EnsureReference(pResultAssemblyLoaderAllocator);
             }
 
             pResolvedAssembly = pLoadedPEAssembly->GetHostAssembly();
