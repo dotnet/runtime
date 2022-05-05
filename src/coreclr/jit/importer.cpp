@@ -5119,7 +5119,22 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // sub
             // ret
 
-            return nullptr;
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+            impBashVarAddrsToI(op1, op2);
+
+            op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
+
+            unsigned classSize = info.compCompHnd->getClassSize(sig->sigInst.methInst[0]);
+
+            if (classSize != 1)
+            {
+                GenTree* size = gtNewIconNode(classSize, TYP_I_IMPL);
+                op2           = gtNewOperNode(GT_MUL, TYP_I_IMPL, op2, size);
+            }
+
+            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &op2);
+            return gtNewOperNode(GT_SUB, type, op1, op2);
         }
 
         case NI_SRCS_UNSAFE_SubtractByteOffset:
@@ -5131,7 +5146,12 @@ GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
             // sub
             // ret
 
-            return nullptr;
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+            impBashVarAddrsToI(op1, op2);
+
+            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &op2);
+            return gtNewOperNode(GT_SUB, type, op1, op2);
         }
 
         case NI_SRCS_UNSAFE_Unbox:
