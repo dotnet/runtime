@@ -44306,8 +44306,8 @@ void GCHeap::SetYieldProcessorScalingFactor (float scalingFactor)
     int saved_yp_spin_count_unit = yp_spin_count_unit;
     yp_spin_count_unit = (int)((float)original_spin_count_unit * scalingFactor / (float)9);
 
-    // It's very suspicious if it becomes 0
-    if (yp_spin_count_unit == 0)
+    // It's very suspicious if it becomes 0 and also, we don't want to spin too much.
+    if ((yp_spin_count_unit == 0) || (yp_spin_count_unit > 32768))
     {
         yp_spin_count_unit = saved_yp_spin_count_unit;
     }
