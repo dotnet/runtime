@@ -4270,6 +4270,51 @@ namespace System.Text.RegularExpressions.Generator
                     AddIsWordCharHelper(requiredHelpers);
                     negate ^= charClass == RegexCharClass.NotWordClass;
                     return $"{(negate ? "!" : "")}{HelpersTypeName}.IsWordChar({chExpr})";
+
+                case RegexCharClass.ControlClass:
+                case RegexCharClass.NotControlClass:
+                    negate ^= charClass == RegexCharClass.NotControlClass;
+                    return $"{(negate ? "!" : "")}char.IsControl({chExpr})";
+
+                case RegexCharClass.LetterClass:
+                case RegexCharClass.NotLetterClass:
+                    negate ^= charClass == RegexCharClass.NotLetterClass;
+                    return $"{(negate ? "!" : "")}char.IsLetter({chExpr})";
+
+                case RegexCharClass.LetterOrDigitClass:
+                case RegexCharClass.NotLetterOrDigitClass:
+                    negate ^= charClass == RegexCharClass.NotLetterOrDigitClass;
+                    return $"{(negate ? "!" : "")}char.IsLetterOrDigit({chExpr})";
+
+                case RegexCharClass.LowerClass:
+                case RegexCharClass.NotLowerClass:
+                    negate ^= charClass == RegexCharClass.NotLowerClass;
+                    return $"{(negate ? "!" : "")}char.IsLower({chExpr})";
+
+                case RegexCharClass.UpperClass:
+                case RegexCharClass.NotUpperClass:
+                    negate ^= charClass == RegexCharClass.NotUpperClass;
+                    return $"{(negate ? "!" : "")}char.IsUpper({chExpr})";
+
+                case RegexCharClass.NumberClass:
+                case RegexCharClass.NotNumberClass:
+                    negate ^= charClass == RegexCharClass.NotNumberClass;
+                    return $"{(negate ? "!" : "")}char.IsNumber({chExpr})";
+
+                case RegexCharClass.PunctuationClass:
+                case RegexCharClass.NotPunctuationClass:
+                    negate ^= charClass == RegexCharClass.NotPunctuationClass;
+                    return $"{(negate ? "!" : "")}char.IsPunctuation({chExpr})";
+
+                case RegexCharClass.SeparatorClass:
+                case RegexCharClass.NotSeparatorClass:
+                    negate ^= charClass == RegexCharClass.NotSeparatorClass;
+                    return $"{(negate ? "!" : "")}char.IsSeparator({chExpr})";
+
+                case RegexCharClass.SymbolClass:
+                case RegexCharClass.NotSymbolClass:
+                    negate ^= charClass == RegexCharClass.NotSymbolClass;
+                    return $"{(negate ? "!" : "")}char.IsSymbol({chExpr})";
             }
 
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
