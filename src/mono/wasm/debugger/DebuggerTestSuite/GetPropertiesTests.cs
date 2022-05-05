@@ -475,7 +475,7 @@ namespace DebuggerTests
             return data;
         }
         
-        [Theory]
+        [ConditionalTheory(nameof(RunningOnChrome))]
         [MemberData(nameof(GetDataForProtectionLevels))]
         public async Task PropertiesSortedByProtectionLevel(
             Dictionary<string, JObject> expectedPublic, Dictionary<string, JObject> expectedProtInter, Dictionary<string, JObject> expectedPriv, string entryMethod) =>  
