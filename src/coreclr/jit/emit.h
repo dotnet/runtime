@@ -277,8 +277,6 @@ struct insGroup
                                   // and the emitter should continue to track GC info as if there was no new block.
 #define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
-#define IGF_REMOVED_ALIGN 0x0800  // this group had an alignment instruction(s) which was later removed without updating
-                                  // the IG's size/offsets.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -1994,6 +1992,7 @@ private:
     unsigned        emitLastAlignedIgNum; // last IG that has align instruction
     instrDescAlign* emitAlignList;        // list of all align instructions in method
     instrDescAlign* emitAlignLast;        // last align instruction in method
+    bool            emitLoopAlignRemoved; // quick way to check if any loop's alignment was ever removed.
 
     // Points to the most recent added align instruction. If there are multiple align instructions like in arm64 or
     // non-adaptive alignment on xarch, this points to the first align instruction of the series of align instructions.
@@ -2003,6 +2002,8 @@ private:
                          unsigned maxLoopSize DEBUG_ARG(bool isAlignAdjusted)); // Get the smallest loop size
     void emitLoopAlignment(DEBUG_ARG1(bool isPlacedBehindJmp));
     bool emitEndsWithAlignInstr(); // Validate if newLabel is appropriate
+    void emitRemoveIGAlignFlag(instrDescAlign* alignInstr);
+    bool emitIGHadAlignFlag(insGroup* igToCheck);
     void emitSetLoopBackEdge(BasicBlock* loopTopBlock);
     void     emitLoopAlignAdjustments(); // Predict if loop alignment is needed and make appropriate adjustments
     unsigned emitCalculatePaddingForLoopAlignment(insGroup* ig, size_t offset DEBUG_ARG(bool isAlignAdjusted));

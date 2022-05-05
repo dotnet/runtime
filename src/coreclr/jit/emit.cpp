@@ -1040,6 +1040,7 @@ void emitter::emitBegFN(bool hasFramePtr
     emitLastAlignedIgNum = 0;
     emitLastLoopStart    = 0;
     emitLastLoopEnd      = 0;
+    emitLoopAlignRemoved = false;
 #endif
 
     /* Record stack frame info (the temp size is just an estimate) */
@@ -5079,6 +5080,52 @@ bool emitter::emitEndsWithAlignInstr()
 }
 
 //-----------------------------------------------------------------------------
+//  emitRemoveIGAlignFlag: Remove the align flag of `alignInstr`.
+//
+void emitter::emitRemoveIGAlignFlag(instrDescAlign* alignInstr)
+{
+    emitLoopAlignRemoved = true;
+    alignInstr->removeAlignFlags();
+}
+
+//-----------------------------------------------------------------------------
+//  emitIGHadAlignFlag: Checks if 'igToCheck' ever was marked as aligned and later
+//                      decided to not align. Sometimes, a loop is marked as not
+//                      needing alignment, but the igSize was not adjusted immediately.
+//                      This method would helpful to know that specially during loopSize
+//                      calculation where we would adjust the loopsize by removed alignment
+//                      bytes.
+//
+//  Returns:  true iff igToCheck had alignment but was later removed. For any other IG
+//            whether was marked aligned or not, the method will return false.
+//
+bool emitter::emitIGHadAlignFlag(insGroup* igToCheck)
+{
+    if (!emitLoopAlignRemoved || igToCheck->endsWithAlignInstr())
+    {
+        // If we never removed align flag of any loop or if
+        // the IG already has an align flag, it means it was not removed.
+        return false;
+    }
+
+    // Otherwise scan the align instruction list and see if the
+    // `igToCheck` was present.
+    instrDescAlign* alignInstr = emitAlignList;
+    while ((alignInstr != nullptr))
+    {
+        if (alignInstr->idaIG == igToCheck)
+        {
+            return true;
+        }
+        alignInstr = emitAlignInNextIG(alignInstr);
+    }
+
+    // `igToCheck` was not part of the align instruction and
+    // hence the 'align' flag was never removed from it.
+    return false;
+}
+
+//-----------------------------------------------------------------------------
 //  getLoopSize: Starting from loopHeaderIg, find the size of the smallest possible loop
 //               such that it doesn't exceed the maxLoopSize.
 //
@@ -5103,7 +5150,7 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
         loopSize += igInLoop->igSize;
         JITDUMP("   %s has %u bytes.", emitLabelString(igInLoop), igInLoop->igSize);
 
-        if (igInLoop->endsWithAlignInstr() /*|| (igInLoop->igFlags & IGF_REMOVED_ALIGN)*/)
+        if (igInLoop->endsWithAlignInstr() || emitIGHadAlignFlag(igInLoop))
         {
             // If IGF_HAS_ALIGN is present, igInLoop contains align instruction at the end,
             // for next IG or some future IG.
@@ -5188,10 +5235,6 @@ unsigned emitter::getLoopSize(insGroup* igLoopHeader, unsigned maxLoopSize DEBUG
                 // The current loop size should exclude the align instruction size reserved for next loop.
                 loopSize -= emitComp->opts.compJitAlignPaddingLimit;
             }
-        }
-        else if (igInLoop->igFlags & IGF_REMOVED_ALIGN)
-        {
-            assert(!"Failed to remove 15 bytes");
         }
         if ((igInLoop->igLoopBackEdge == igLoopHeader) || (loopSize > maxLoopSize))
         {
@@ -5302,8 +5345,7 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                     assert(!markedCurrLoop);
 
                     // This IG should no longer contain alignment instruction
-                    alignInstr->removeAlignFlags();
-                    alignInstr->idaIG->igFlags |= IGF_REMOVED_ALIGN;
+                    emitRemoveIGAlignFlag(alignInstr);
 
                     markedCurrLoop = true;
                     JITDUMP(";; Skip alignment for current loop IG%02u ~ IG%02u because it encloses an aligned loop "
@@ -5316,11 +5358,10 @@ void emitter::emitSetLoopBackEdge(BasicBlock* loopTopBlock)
                 if (!alignLastLoop && (loopHeadIG != nullptr) && (loopHeadIG->igNum == emitLastLoopStart))
                 {
                     assert(!markedLastLoop);
-                    assert(alignInstr->idaIG->endsWithAlignInstr());
+                    assert(alignInstr->idaIG->endsWithAlignInstr() || emitIGHadAlignFlag(alignInstr->idaIG));
 
                     // This IG should no longer contain alignment instruction
-                    alignInstr->removeAlignFlags();
-                    alignInstr->idaIG->igFlags |= IGF_REMOVED_ALIGN;
+                    emitRemoveIGAlignFlag(alignInstr);
 
                     markedLastLoop = true;
                     JITDUMP(";; Skip alignment for aligned loop IG%02u ~ IG%02u because it encloses the current loop "
@@ -5413,7 +5454,7 @@ void emitter::emitLoopAlignAdjustments()
             containingIG->igFlags |= IGF_UPD_ISZ;
             if (actualPaddingNeeded == 0)
             {
-                alignInstr->removeAlignFlags();
+                emitRemoveIGAlignFlag(alignInstr);
             }
 
 #ifdef TARGET_XARCH
