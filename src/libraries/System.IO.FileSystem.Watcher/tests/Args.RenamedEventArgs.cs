@@ -85,9 +85,9 @@ namespace System.IO.Tests
 
         [Theory]
         [PlatformSpecific(TestPlatforms.AnyUnix)]
-        [InlineData("bar", "", "", "bar\\")]
-        [InlineData("bar", null, null, "bar\\")]
-        [InlineData("bar", "foo.txt", null, "bar\\")]
+        [InlineData("bar", "", "", "bar/")]
+        [InlineData("bar", null, null, "bar/")]
+        [InlineData("bar", "foo.txt", null, "bar/")]
         public static void RenamedEventArgs_ctor_EmptyOldFileName_Unix(string directory, string name, string oldName, string expectedOldFullPath)
         {
             RenamedEventArgs args = new RenamedEventArgs(WatcherChangeTypes.All, directory, name, oldName);
