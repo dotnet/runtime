@@ -47,10 +47,18 @@ namespace DebuggerTests
                 {"_base_dateTime",                  (TGetter("_base_dateTime"), false)},
                 {"_base_autoProperty",              (TString("private_autoproperty"), false)},
 
-                // inherited public
-                {"Base_AutoStringProperty",         (TString("base#Base_AutoStringProperty"), false)},
+                // inherited from BaseClass - protected
                 {"base_num",                        (TNumber(5), false)},
-                {"LastName",                        (TGetter("LastName"), false)}
+
+                // inherited from BaseClass - public
+                {"Base_AutoStringProperty",                                     (TString("base#Base_AutoStringProperty"), false)},
+                {"LastName",                                                    (TGetter("LastName"), false)},
+                {"BaseBase_MemberForOverride (BaseClass)",                      (TGetter("BaseBase_MemberForOverride (BaseClass)"), false)},
+                {"Base_AutoStringPropertyForOverrideWithField (BaseClass)",     (TObject("string", is_null: true), false)},
+                {"Base_GetterForOverrideWithField (BaseClass)",                 (TGetter("Base_GetterForOverrideWithField (BaseClass)"), false)},
+
+                // inherited from BaseBaseClass - public
+                {"BaseBase_MemberForOverride (BaseBaseClass)",                  (TString(null), false)}
             };
 
             // default, all properties
@@ -91,7 +99,9 @@ namespace DebuggerTests
                 "_base_dateTime",
                 "FirstName",
                 "LastName",
-                "DateTimeForOverride"
+                "DateTimeForOverride",
+                "BaseBase_MemberForOverride (BaseClass)",
+                "Base_GetterForOverrideWithField (BaseClass)"
             };
 
             var only_own_accessors = new[]
@@ -408,10 +418,10 @@ namespace DebuggerTests
             }
         }
 
-         public static TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string> GetDataForProtectionLevels()
+        public static TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string> GetDataForProtectionLevels()
         {
             var data = new TheoryData<Dictionary<string, JObject>, Dictionary<string, JObject>, Dictionary<string, JObject>, string>();
-            // object DerivedClass; should be 23 elements:
+
             var public_props = new Dictionary<string, JObject>()
             {
                 //  own
@@ -427,8 +437,12 @@ namespace DebuggerTests
                 {"BaseBase_MemberForOverride",                  TString("DerivedClass#BaseBase_MemberForOverride")},
 
                 // inherited public
-                {"Base_AutoStringProperty",         TString("base#Base_AutoStringProperty")},
-                {"LastName",                        TGetter("LastName")}
+                {"Base_AutoStringProperty",                                     TString("base#Base_AutoStringProperty")},
+                {"LastName",                                                    TGetter("LastName")},
+                {"BaseBase_MemberForOverride (BaseClass)",                      TGetter("BaseBase_MemberForOverride (BaseClass)")},
+                {"Base_AutoStringPropertyForOverrideWithField (BaseClass)",     TObject("string", is_null: true)},
+                {"Base_GetterForOverrideWithField (BaseClass)",                 TGetter("Base_GetterForOverrideWithField (BaseClass)")},
+                {"BaseBase_MemberForOverride (BaseBaseClass)",                  TString(null)}
             };
 
             var internal_protected_props = new Dictionary<string, JObject>(){

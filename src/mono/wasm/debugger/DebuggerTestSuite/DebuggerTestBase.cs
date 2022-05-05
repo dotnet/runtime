@@ -756,8 +756,6 @@ namespace DebuggerTests
                 else if (exp_val["__custom_type"] != null && exp_val["__custom_type"]?.Value<string>() == "getter")
                 {
                     // hack: for getters, actual won't have a .value
-                    // are we doing it on purpose? Why? CHECK if properties are displayed in Browser/VS, if not revert the value field here
-                    // we should be leaving properties, not their backing fields
                     await CheckCustomType(actual_obj, exp_val, $"{label}#{exp_name}");
                 }
                 else
