@@ -4654,9 +4654,14 @@ namespace System.Text.RegularExpressions.Generator
                         _ => "",
                     };
 
+                    // Get a textual description of the node, making it safe for an XML comment (escaping the minimal amount necessary to
+                    // avoid compilation failures: we don't want to escape single and double quotes, as HtmlEncode would do).
+                    string nodeDescription = DescribeNode(node, rm);
+                    nodeDescription = nodeDescription.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
                     // Write out the line for the node.
                     const char BulletPoint = '\u25CB';
-                    writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{HttpUtility.HtmlEncode(DescribeNode(node, rm))}<br/>");
+                    writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{nodeDescription}<br/>");
                 }
 
                 // Process each child.

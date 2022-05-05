@@ -131,7 +131,9 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .Execute();
             }
 
-            result.Should().HaveStdErrContaining("Using global installation location");
+            result.Should().HaveUsedGlobalInstallLocation(installLocation);
+            if (useRegisteredLocation)
+                result.Should().HaveUsedRegisteredInstallLocation(installLocation);
 
             if (isValid)
             {
@@ -213,7 +215,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
+                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         sharedState.InvalidInstallRoot)
                     .DotNetRoot(null)
@@ -233,7 +235,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 if (shouldPass)
                 {
                     result.Should().Pass()
-                        .And.HaveUsedConfigFileInstallLocation(installLocation)
+                        .And.HaveUsedRegisteredInstallLocation(installLocation)
                         .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
                 }
                 else
@@ -262,7 +264,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
+                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         sharedState.InvalidInstallRoot)
                     .DotNetRoot(null)
@@ -272,7 +274,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .And.HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         sharedState.RepoDirectories.BuildArchitecture)
-                    .And.HaveUsedConfigFileInstallLocation(installLocation)
+                    .And.HaveUsedRegisteredInstallLocation(installLocation)
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
         }
@@ -293,7 +295,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                 CommandResult result = Command.Create(sharedState.NativeHostPath, GetHostFxrPath)
                     .EnableTracingAndCaptureOutputs()
                     .ApplyRegisteredInstallLocationOverride(registeredInstallLocationOverride)
-                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass 
+                    .EnvironmentVariable( // Redirect the default install location to an invalid location so that it doesn't cause the test to pass
                         Constants.TestOnlyEnvironmentVariables.DefaultInstallPath,
                         sharedState.InvalidInstallRoot)
                     .DotNetRoot(null)
@@ -303,7 +305,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
                     .And.HaveLookedForArchitectureSpecificInstallLocation(
                         registeredInstallLocationOverride.PathValueOverride,
                         sharedState.RepoDirectories.BuildArchitecture)
-                    .And.HaveUsedConfigFileInstallLocation(installLocation)
+                    .And.HaveUsedRegisteredInstallLocation(installLocation)
                     .And.HaveStdOutContaining($"hostfxr_path: {sharedState.HostFxrPath}".ToLower());
             }
         }

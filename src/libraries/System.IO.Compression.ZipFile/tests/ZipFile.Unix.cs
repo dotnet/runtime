@@ -13,7 +13,7 @@ namespace System.IO.Compression.Tests
     {
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/68293", TestPlatforms.OSX)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void UnixCreateSetsPermissionsInExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits get preserved in ExternalAttributes

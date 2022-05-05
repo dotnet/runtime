@@ -4,7 +4,7 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace System.Runtime.InteropServices.GeneratedMarshalling
+namespace System.Runtime.InteropServices.Marshalling
 {
     // Stack-alloc threshold set to 256 bytes to enable small arrays to be passed on the stack.
     // Number kept small to ensure that P/Invokes with a lot of array parameters doesn't
@@ -239,7 +239,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
             : MemoryMarshal.Cast<T, byte>(_data);
 
         public ReadOnlySpan<byte> GetNativeValuesSource(int length) => new ReadOnlySpan<byte>(_nativeValue, length * sizeof(T));
-        
+
         public ref T GetPinnableReference() => ref _data.GetPinnableReference();
 
         public T* ToNativeValue()

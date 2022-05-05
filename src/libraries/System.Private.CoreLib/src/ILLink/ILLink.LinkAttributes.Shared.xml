@@ -268,7 +268,7 @@
     <type fullname="System.Runtime.InteropServices.LibraryImportAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
-    <type fullname="System.Runtime.InteropServices.MarshalUsingAttribute">
+    <type fullname="System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute">
       <attribute internal="RemoveAttributeInstances" />
     </type>
     <type fullname="System.CodeDom.Compiler.GeneratedCodeAttribute">

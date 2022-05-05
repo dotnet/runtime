@@ -1731,8 +1731,9 @@ namespace System.Text.RegularExpressions
             int categoryLength = set[CategoryLengthIndex];
             int endPosition = SetStartIndex + setLength + categoryLength;
             bool negated = IsNegated(set);
+            Span<char> scratch = stackalloc char[32];
 
-            // Special-case of set of a single character to output that character.
+            // Special-case set of a single character to output that character without set square brackets.
             if (!negated && // no negation
                 categoryLength == 0 && // no categories
                 endPosition >= set.Length && // no subtraction
@@ -1742,77 +1743,100 @@ namespace System.Text.RegularExpressions
                 return DescribeChar(set[SetStartIndex]);
             }
 
-            var desc = new StringBuilder();
-
-            desc.Append('[');
-
             int index = SetStartIndex;
             char ch1;
             char ch2;
+            StringBuilder desc = new StringBuilder().Append('[');
+
+            void RenderRanges()
+            {
+                for (; index < SetStartIndex + set[SetLengthIndex]; index += 2)
+                {
+                    ch1 = set[index];
+                    ch2 = index + 1 < set.Length ?
+                        (char)(set[index + 1] - 1) :
+                        LastChar;
+
+                    desc.Append(DescribeChar(ch1));
+
+                    if (ch2 != ch1)
+                    {
+                        if (ch1 + 1 != ch2)
+                        {
+                            desc.Append('-');
+                        }
+
+                        desc.Append(DescribeChar(ch2));
+                    }
+                }
+            }
+
+            // Special-case sets where the description will be more succinct by rendering it as negated, e.g. where
+            // there are fewer gaps between ranges than there are ranges.  This is the case when the first range
+            // includes \0 and the last range includes 0xFFFF, and typically occurs for sets that were actually
+            // initially negated but ended up as non-negated from various transforms along the way.
+            if (categoryLength == 0 && // no categories
+                endPosition >= set.Length && // no subtraction
+                setLength % 2 == 1 && // odd number of values because the last range won't include an upper bound
+                set[index] == 0)
+            {
+                // We now have an odd number of values structures as:
+                //     0,end0,start1,end1,start2,end2,...,startN
+                // Rather than walking the pairs starting from index 0, we walk pairs starting from index 1 (creating a range from end0 to start1),
+                // since we're creating ranges from the gaps.
+                index++;
+                desc.Append('^');
+                RenderRanges();
+                return desc.Append(']').ToString();
+            }
 
             if (negated)
             {
                 desc.Append('^');
             }
 
-            while (index < SetStartIndex + set[SetLengthIndex])
-            {
-                ch1 = set[index];
-                ch2 = index + 1 < set.Length ?
-                    (char)(set[index + 1] - 1) :
-                    LastChar;
-
-                desc.Append(DescribeChar(ch1));
-
-                if (ch2 != ch1)
-                {
-                    if (ch1 + 1 != ch2)
-                    {
-                        desc.Append('-');
-                    }
-
-                    desc.Append(DescribeChar(ch2));
-                }
-                index += 2;
-            }
+            RenderRanges();
 
             while (index < SetStartIndex + set[SetLengthIndex] + set[CategoryLengthIndex])
             {
                 ch1 = set[index];
                 if (ch1 == 0)
                 {
-                    bool found = false;
-
-                    const char GroupChar = (char)0;
+                    const char GroupChar = '\0';
                     int lastindex = set.IndexOf(GroupChar, index + 1);
                     if (lastindex != -1)
                     {
-                        string group = set.Substring(index, lastindex - index + 1);
-
-                        foreach (KeyValuePair<string, string> kvp in s_definedCategories)
+                        ReadOnlySpan<char> group = set.AsSpan(index, lastindex - index + 1);
+                        switch (group)
                         {
-                            if (group.Equals(kvp.Value))
-                            {
-                                desc.Append((short)set[index + 1] > 0 ? "\\p{" : "\\P{").Append(kvp.Key).Append('}');
-                                found = true;
+                            case WordCategories:
+                                desc.Append(@"\w");
                                 break;
-                            }
-                        }
 
-                        if (!found)
-                        {
-                            if (group.Equals(WordCategories))
-                            {
-                                desc.Append("\\w");
-                            }
-                            else if (group.Equals(NotWordCategories))
-                            {
-                                desc.Append("\\W");
-                            }
-                            else
-                            {
-                                // TODO: The code is incorrectly handling pretty-printing groups like \P{P}.
-                            }
+                            case NotWordCategories:
+                                desc.Append(@"\W");
+                                break;
+
+                            default:
+                                // The inverse of a group as created by AddCategoryFromName simply negates every character as a 16-bit value.
+                                Span<char> invertedGroup = group.Length <= scratch.Length ? scratch.Slice(0, group.Length) : new char[group.Length];
+                                for (int i = 0; i < group.Length; i++)
+                                {
+                                    invertedGroup[i] = (char)-(short)group[i];
+                                }
+
+                                // Determine whether the group is a known Unicode category, e.g. \p{Mc}, or group of categories, e.g. \p{L},
+                                // or the inverse of those.
+                                foreach (KeyValuePair<string, string> kvp in s_definedCategories)
+                                {
+                                    bool equalsGroup = group.SequenceEqual(kvp.Value.AsSpan());
+                                    if (equalsGroup || invertedGroup.SequenceEqual(kvp.Value.AsSpan()))
+                                    {
+                                        desc.Append(equalsGroup ? @"\p{" : @"\P{").Append(kvp.Key).Append('}');
+                                        break;
+                                    }
+                                }
+                                break;
                         }
 
                         index = lastindex;
@@ -1838,6 +1862,7 @@ namespace System.Text.RegularExpressions
         public static string DescribeChar(char ch) =>
             ch switch
             {
+                '\0' => @"\0",
                 '\a' => "\\a",
                 '\b' => "\\b",
                 '\t' => "\\t",
