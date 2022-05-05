@@ -41,6 +41,15 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod = typeof(RegexCaseEquivalences).GetMethod("TryFindCaseEquivalencesForCharWithIBehavior", BindingFlags.Static | BindingFlags.Public)!;
         private static readonly MethodInfo s_charIsDigitMethod = typeof(char).GetMethod("IsDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsControlMethod = typeof(char).GetMethod("IsControl", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsLetterMethod = typeof(char).GetMethod("IsLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsLetterOrDigitMethod = typeof(char).GetMethod("IsLetterOrDigit", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsLowerMethod = typeof(char).GetMethod("IsLower", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsUpperMethod = typeof(char).GetMethod("IsUpper", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsNumberMethod = typeof(char).GetMethod("IsNumber", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsPunctuationMethod = typeof(char).GetMethod("IsPunctuation", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsSeparatorMethod = typeof(char).GetMethod("IsSeparator", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsSymbolMethod = typeof(char).GetMethod("IsSymbol", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charGetUnicodeInfo = typeof(char).GetMethod("GetUnicodeCategory", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_spanGetItemMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Item", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_spanGetLengthMethod = typeof(ReadOnlySpan<char>).GetMethod("get_Length")!;
@@ -1758,7 +1767,7 @@ namespace System.Text.RegularExpressions
                     Call(s_regexCaseEquivalencesTryFindCaseEquivalencesForCharWithIBehaviorMethod);
                     BrfalseFar(doneLabel);
 
-                    // if (equivalences.IndexOf(slice[i]) == -1) // Or if (equivalences.IndexOf(inputSpan[pos - matchLength + i]) == -1) when rtl
+                    // if (equivalences.IndexOf(slice[i]) < 0) // Or if (equivalences.IndexOf(inputSpan[pos - matchLength + i]) < 0) when rtl
                     Ldloc(caseEquivalences);
                     if (!rtl)
                     {
@@ -1777,10 +1786,9 @@ namespace System.Text.RegularExpressions
                     Call(s_spanGetItemMethod);
                     LdindU2();
                     Call(s_spanIndexOfChar);
-                    Ldc(-1);
-                    Ceq();
+                    Ldc(0);
                     // return false; // input didn't match.
-                    BrtrueFar(doneLabel);
+                    BltFar(doneLabel);
                 }
                 else
                 {
@@ -5049,39 +5057,87 @@ namespace System.Text.RegularExpressions
                     return;
 
                 case RegexCharClass.DigitClass:
+                case RegexCharClass.NotDigitClass:
                     // char.IsDigit(ch)
                     Call(s_charIsDigitMethod);
-                    return;
-
-                case RegexCharClass.NotDigitClass:
-                    // !char.IsDigit(ch)
-                    Call(s_charIsDigitMethod);
-                    Ldc(0);
-                    Ceq();
+                    NegateIf(charClass == RegexCharClass.NotDigitClass);
                     return;
 
                 case RegexCharClass.SpaceClass:
+                case RegexCharClass.NotSpaceClass:
                     // char.IsWhiteSpace(ch)
                     Call(s_charIsWhiteSpaceMethod);
-                    return;
-
-                case RegexCharClass.NotSpaceClass:
-                    // !char.IsWhiteSpace(ch)
-                    Call(s_charIsWhiteSpaceMethod);
-                    Ldc(0);
-                    Ceq();
+                    NegateIf(charClass == RegexCharClass.NotSpaceClass);
                     return;
 
                 case RegexCharClass.WordClass:
+                case RegexCharClass.NotWordClass:
                     // RegexRunner.IsWordChar(ch)
                     Call(s_isWordCharMethod);
+                    NegateIf(charClass == RegexCharClass.NotWordClass);
                     return;
 
-                case RegexCharClass.NotWordClass:
-                    // !RegexRunner.IsWordChar(ch)
-                    Call(s_isWordCharMethod);
-                    Ldc(0);
-                    Ceq();
+                case RegexCharClass.ControlClass:
+                case RegexCharClass.NotControlClass:
+                    // char.IsControl(ch)
+                    Call(s_charIsControlMethod);
+                    NegateIf(charClass == RegexCharClass.NotControlClass);
+                    return;
+
+                case RegexCharClass.LetterClass:
+                case RegexCharClass.NotLetterClass:
+                    // char.IsLetter(ch)
+                    Call(s_charIsLetterMethod);
+                    NegateIf(charClass == RegexCharClass.NotLetterClass);
+                    return;
+
+                case RegexCharClass.LetterOrDigitClass:
+                case RegexCharClass.NotLetterOrDigitClass:
+                    // char.IsLetterOrDigit(ch)
+                    Call(s_charIsLetterOrDigitMethod);
+                    NegateIf(charClass == RegexCharClass.NotLetterOrDigitClass);
+                    return;
+
+                case RegexCharClass.LowerClass:
+                case RegexCharClass.NotLowerClass:
+                    // char.IsLower(ch)
+                    Call(s_charIsLowerMethod);
+                    NegateIf(charClass == RegexCharClass.NotLowerClass);
+                    return;
+
+                case RegexCharClass.UpperClass:
+                case RegexCharClass.NotUpperClass:
+                    // char.IsUpper(ch)
+                    Call(s_charIsUpperMethod);
+                    NegateIf(charClass == RegexCharClass.NotUpperClass);
+                    return;
+
+                case RegexCharClass.NumberClass:
+                case RegexCharClass.NotNumberClass:
+                    // char.IsNumber(ch)
+                    Call(s_charIsNumberMethod);
+                    NegateIf(charClass == RegexCharClass.NotNumberClass);
+                    return;
+
+                case RegexCharClass.PunctuationClass:
+                case RegexCharClass.NotPunctuationClass:
+                    // char.IsPunctuation(ch)
+                    Call(s_charIsPunctuationMethod);
+                    NegateIf(charClass == RegexCharClass.NotPunctuationClass);
+                    return;
+
+                case RegexCharClass.SeparatorClass:
+                case RegexCharClass.NotSeparatorClass:
+                    // char.IsSeparator(ch)
+                    Call(s_charIsSeparatorMethod);
+                    NegateIf(charClass == RegexCharClass.NotSeparatorClass);
+                    return;
+
+                case RegexCharClass.SymbolClass:
+                case RegexCharClass.NotSymbolClass:
+                    // char.IsSymbol(ch)
+                    Call(s_charIsSymbolMethod);
+                    NegateIf(charClass == RegexCharClass.NotSymbolClass);
                     return;
             }
 
@@ -5104,11 +5160,7 @@ namespace System.Text.RegularExpressions
                 }
 
                 // Negate the answer if the negation flag was set
-                if (RegexCharClass.IsNegated(charClass))
-                {
-                    Ldc(0);
-                    Ceq();
-                }
+                NegateIf(RegexCharClass.IsNegated(charClass));
 
                 return;
             }
@@ -5125,12 +5177,7 @@ namespace System.Text.RegularExpressions
                 Call(s_charGetUnicodeInfo);
                 Ldc((int)categories[0]);
                 Ceq();
-                if (negated)
-                {
-                    Ldc(0);
-                    Ceq();
-                }
-
+                NegateIf(negated);
                 return;
             }
 
@@ -5175,11 +5222,7 @@ namespace System.Text.RegularExpressions
                     Or();
                 }
 
-                if (RegexCharClass.IsNegated(charClass))
-                {
-                    Ldc(0);
-                    Ceq();
-                }
+                NegateIf(RegexCharClass.IsNegated(charClass));
                 return;
             }
 
@@ -5202,11 +5245,7 @@ namespace System.Text.RegularExpressions
                 Sub();
                 Ldc(rangeUpper.HighInclusive - rangeUpper.LowInclusive + 1);
                 CltUn();
-                if (negate)
-                {
-                    Ldc(0);
-                    Ceq();
-                }
+                NegateIf(negate);
                 return;
             }
 
@@ -5269,11 +5308,7 @@ namespace System.Text.RegularExpressions
                 Ldc(0);
                 _ilg!.Emit(OpCodes.Conv_I8);
                 _ilg!.Emit(OpCodes.Clt);
-                if (negatedClass)
-                {
-                    Ldc(0);
-                    Ceq();
-                }
+                NegateIf(negatedClass);
 
                 return;
             }
@@ -5299,11 +5334,7 @@ namespace System.Text.RegularExpressions
                     Ldc(range0.HighInclusive - range0.LowInclusive + 1);
                     CltUn();
                 }
-                if (negate)
-                {
-                    Ldc(0);
-                    Ceq();
-                }
+                NegateIf(negate);
 
                 if (range1.LowInclusive == range1.HighInclusive)
                 {
@@ -5321,11 +5352,7 @@ namespace System.Text.RegularExpressions
                     Ldc(range1.HighInclusive - range1.LowInclusive + 1);
                     CltUn();
                 }
-                if (negate)
-                {
-                    Ldc(0);
-                    Ceq();
-                }
+                NegateIf(negate);
 
                 if (negate)
                 {
@@ -5473,6 +5500,16 @@ namespace System.Text.RegularExpressions
             }
             MarkLabel(doneLabel);
             Ldloc(resultLocal);
+        }
+
+        /// <summary>Emits negation of the value on top of the evaluation stack if <paramref name="condition"/> is true.</summary>
+        private void NegateIf(bool condition)
+        {
+            if (condition)
+            {
+                Ldc(0);
+                Ceq();
+            }
         }
 
         /// <summary>Emits a timeout check if one has been set explicitly or implicitly via a default setting.</summary>
