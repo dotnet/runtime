@@ -2895,14 +2895,14 @@ typedef struct _BulkTypeValue {
 	uint32_t c_type_parameters;
 	intptr_t rg_type_parameters[k_size_of_type_parameter_array];
 	MonoType *rg_mono_type_parameters[k_size_of_type_parameter_array];
-	ep_char8_t *s_name;
+	ep_char8_t *s_name; // Currently should only be NULL, TODO if we want to provide the name in the BulkTypeEvent data, figure out memory management to use
 } BulkTypeValue;
 
 // Clear out BulkTypeValue before filling it out (array elements can get reused if there
 // are enough types that we need to flush to multiple events).
 static
 void
-ep_rt_bulk_type_value_init(BulkTypeValue *bulk_type_value)
+ep_rt_bulk_type_value_clear(BulkTypeValue *bulk_type_value)
 {
 	bulk_type_value->fixed_sized_data.type_id = 0;
 	bulk_type_value->fixed_sized_data.module_id = 0;
@@ -2912,8 +2912,7 @@ ep_rt_bulk_type_value_init(BulkTypeValue *bulk_type_value)
 	bulk_type_value->c_type_parameters = 0;
 	memset(bulk_type_value->rg_type_parameters, 0, k_size_of_type_parameter_array);
 	memset(bulk_type_value->rg_mono_type_parameters, 0, k_size_of_type_parameter_array);
-	if (bulk_type_value->s_name)
-		bulk_type_value->s_name[0] = '\0';
+	bulk_type_value->s_name = NULL;
 }
 
 static
@@ -2921,10 +2920,6 @@ uint32_t
 ep_rt_mono_get_byte_count_in_event(BulkTypeValue *bulk_type_value)
 {
 	size_t s_name_len = 0;
-
-	if (bulk_type_value->s_name)
-		while (bulk_type_value->s_name [s_name_len])
-			s_name_len++;
 
 	return
 		sizeof(bulk_type_value->fixed_sized_data.type_id) + 	// sizeof(bulk_type_value->fixed_sized_data) +
@@ -2973,8 +2968,6 @@ BulkTypeEventLogger*
 ep_rt_bulk_type_event_logger_init()
 {
 	BulkTypeEventLogger *p_type_logger = g_malloc0 (sizeof(BulkTypeEventLogger));
-	for (int i = 0; i < k_max_count_type_values; i++)
-		ep_rt_bulk_type_value_init (&p_type_logger->m_rg_bulk_type_values[i]);
 	p_type_logger->m_p_bulk_type_event_buffer = g_malloc0 (sizeof(uint8_t) * k_size_of_event_buffer);
 	return p_type_logger;
 }
@@ -3026,13 +3019,6 @@ write_event_buffer_int64 (int64_t val, char *buf_start, char **buf_next)
 
 static
 int
-write_event_buffer_intptr (intptr_t val, char *buf_start, char **buf_next)
-{
-	return write_event_buffer ((const uint8_t *)&val, sizeof (intptr_t), buf_start, buf_next);
-}
-
-static
-int
 write_event_buffer_utf16_str (gunichar2 *value, char *buf_start, char **buf_next)
 {
 	if (!value)
@@ -3059,8 +3045,6 @@ ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger)
 	if (p_type_logger->m_n_bulk_type_value_count == 0)
 		return;
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "Firing BulkTypeEvent!");
-
 	uint16_t n_clr_instance_id = clr_instance_get_id();
 
 	uint32_t i_size = 0;
@@ -3069,7 +3053,6 @@ ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger)
 
 	for (int i_type_data = 0; i_type_data < p_type_logger->m_n_bulk_type_value_count; i_type_data++)
 	{
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "TypeData[%lu]\n", i_type_data);
 		BulkTypeValue *target = &p_type_logger->m_rg_bulk_type_values[i_type_data];
 
 		i_size += write_event_buffer_int64 (target->fixed_sized_data.type_id, ptr, &ptr);
@@ -3078,34 +3061,17 @@ ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger)
 		i_size += write_event_buffer_int32 (target->fixed_sized_data.flags, ptr, &ptr);
 		i_size += write_event_buffer_int8 (target->fixed_sized_data.cor_element_type, ptr, &ptr);
 
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "FSB\ntype_id: %lu\nmodule_id: %lu\ntype_name_id: %lu\nflags: %lu\ncor_element_type: %lu\n", target->fixed_sized_data.type_id, target->fixed_sized_data.module_id, target->fixed_sized_data.type_name_id, target->fixed_sized_data.flags, target->fixed_sized_data.cor_element_type);
-
-		gunichar2 *wsz_name = g_utf8_to_utf16 (target->s_name, -1, NULL, NULL, NULL);
-		if (!wsz_name)
-		{
-			i_size += write_event_buffer_int16 (0, ptr, &ptr);
-		}
-		else
-		{
-			i_size += write_event_buffer_utf16_str (wsz_name, ptr, &ptr);
-			g_free (wsz_name);
-		}
+		g_assert (target->s_name == NULL);
+		i_size += write_event_buffer_int16 (0, ptr, &ptr);
 
 		i_size += write_event_buffer_int32 (target->c_type_parameters, ptr, &ptr);
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "c_type_parameters: %lu\n", target->c_type_parameters);
 
 		for (int i = 0; i < target->c_type_parameters; i++)
 		{
-			i_size += write_event_buffer_intptr (target->rg_type_parameters[i], ptr, &ptr);
-		}
-		for (int i = 0; i < target->c_type_parameters; i++)
-		{
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "target->rg_mono_type_parameters[%lu]: %lu\n", i, target->rg_mono_type_parameters[i]);
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "target->rg_type_parameters[%lu]: %lu\n", i, target->rg_type_parameters[i]);
+			i_size += write_event_buffer_int64 ((int64_t)target->rg_type_parameters[i], ptr, &ptr);
 		}
 	}
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "Count: %lu\nClrInstanceID: %lu\nValues_ElementSize: %lu\n", p_type_logger->m_n_bulk_type_value_count, n_clr_instance_id, i_size);
 	FireEtwBulkType(p_type_logger->m_n_bulk_type_value_count,
 					n_clr_instance_id,
 					i_size,
@@ -3174,7 +3140,7 @@ ep_rt_mono_log_single_type (BulkTypeEventLogger *p_type_logger, MonoType *mono_t
 	EP_ASSERT (p_type_logger->m_n_bulk_type_value_count < k_max_count_type_values);
 
 	BulkTypeValue *p_val = &p_type_logger->m_rg_bulk_type_values[p_type_logger->m_n_bulk_type_value_count];
-	ep_rt_bulk_type_value_init (p_val);
+	ep_rt_bulk_type_value_clear (p_val);
 
 	MonoClass *klass = mono_class_from_mono_type_internal (mono_type);
 	MonoType *mono_underlying_type = mono_type_get_underlying_type (mono_type);
@@ -3182,7 +3148,7 @@ ep_rt_mono_log_single_type (BulkTypeEventLogger *p_type_logger, MonoType *mono_t
 	// Initialize p_val fixed_sized_data
 	p_val->fixed_sized_data.type_id = (uint64_t)type_id;
 	p_val->fixed_sized_data.module_id = (uint64_t)m_class_get_image (klass);
-	p_val->fixed_sized_data.type_name_id = mono_metadata_make_token (MONO_TABLE_TYPEDEF, mono_metadata_token_index (m_class_get_type_token (klass)));
+	p_val->fixed_sized_data.type_name_id = m_class_get_type_token (klass) ? mono_metadata_make_token (MONO_TABLE_TYPEDEF, mono_metadata_token_index (m_class_get_type_token (klass))) : 0;
 	if (mono_class_has_finalizer (klass))
 		p_val->fixed_sized_data.flags |= K_ETW_TYPE_FLAGS_FINALIZABLE;
 	if (m_class_is_delegate (klass))
@@ -3252,15 +3218,13 @@ ep_rt_mono_log_single_type (BulkTypeEventLogger *p_type_logger, MonoType *mono_t
 	int cb_val = ep_rt_mono_get_byte_count_in_event(p_val);
 	if (cb_val > k_max_bytes_type_values)
 	{
-		if (p_val->s_name)
-			p_val->s_name[0] = '\0';
 		cb_val = ep_rt_mono_get_byte_count_in_event(p_val);
 
 		if (cb_val > k_max_bytes_type_values)
 		{
 			// This type is apparently so huge, it's too big to squeeze into an event, even
 			// if it were the only type batched in the whole event.  Bail
-			mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed to log single mono type %lu with typeID %lu. Type is too large for the BulkType Event.\n", mono_type, type_id);
+			mono_trace (G_LOG_LEVEL_ERROR, MONO_TRACE_DIAGNOSTICS, "Failed to log single mono type %p with typeID %p. Type is too large for the BulkType Event.\n", (gpointer)mono_type, type_id);
 			return -1;
 		}
 	}
@@ -3276,11 +3240,6 @@ ep_rt_mono_log_single_type (BulkTypeEventLogger *p_type_logger, MonoType *mono_t
 		g_assert (p_type_logger->m_n_bulk_type_value_byte_count + cb_val > k_max_bytes_type_values);
 		ep_rt_mono_fire_bulk_type_event(p_type_logger);
 		return ep_rt_mono_log_single_type(p_type_logger, mono_type, type_id);
-	}
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "p_val added at index: %lu\ntype_id: %lu\nmodule_id: %lu\ntype_name_id: %lu\ntype: %lu\nc_type_parameters: %lu", p_type_logger->m_n_bulk_type_value_count, p_val->fixed_sized_data.type_id, p_val->fixed_sized_data.module_id, p_val->fixed_sized_data.type_name_id, mono_underlying_type->type, p_val->c_type_parameters);
-	for (int i = 0; i < p_val->c_type_parameters; i++)
-	{
-		mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "type: %lu\n", ((MonoType*)p_val->rg_type_parameters[i])->type);
 	}
 
 	// The type fits into the batch, so update our state
@@ -3417,7 +3376,6 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 
 	ep_rt_mono_fire_bulk_type_event(p_type_logger);
 
-	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_DIAGNOSTICS, "Firing Method: %s\n%s[%lu]\ntype ID [%lu]\nToken %lu -> %lu\nNumParam %lu\nmodule %lu\n", mono_method_get_full_name (method), method->name, (uint64_t)method, method_type_id, method->token, method_token, method_inst_parameter_types_count, loader_module_id);
 	FireEtwMethodDetails((uint64_t)method,
 						 (uint64_t)method_type_id,
 						 method_token,
