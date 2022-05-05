@@ -3,7 +3,6 @@
 
 import { bind_runtime_method } from "./method-binding";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./types/emscripten";
-import { LibraryChannel } from "./library-channel";
 
 export type GCHandle = {
     __brand: "GCHandle"
@@ -262,9 +261,4 @@ export const enum MarshalError {
     NULL_TYPE_POINTER = 514,
     UNSUPPORTED_TYPE = 515,
     FIRST = BUFFER_TOO_SMALL
-}
-
-export type MonoWasmCrypto = {
-    channel: LibraryChannel,
-    worker: Worker,
 }

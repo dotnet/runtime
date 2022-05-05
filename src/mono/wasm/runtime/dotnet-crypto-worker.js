@@ -24,7 +24,6 @@ var ChannelWorker = {
         }
 
         async await_request(async_call) {
-            console.info("now awaiting requests in the web worker");
             for (;;) {
                 // eslint-disable-next-line no-debugger
                 debugger;
@@ -166,7 +165,6 @@ var s_channel;
 
 // Initialize WebWorker
 onmessage = function (p) {
-    console.info("we are now initializing the webworker");
     var data = p;
     if (p.data !== undefined) {
         data = p.data;

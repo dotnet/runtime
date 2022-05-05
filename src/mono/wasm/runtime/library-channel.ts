@@ -2,27 +2,27 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 export class LibraryChannel {
-    msg_char_len: number;
-    comm_buf: SharedArrayBuffer;
-    msg_buf: SharedArrayBuffer;
-    comm: Int32Array;
-    msg: Uint16Array;
+    private msg_char_len: number;
+    private comm_buf: SharedArrayBuffer;
+    private msg_buf: SharedArrayBuffer;
+    private comm: Int32Array;
+    private msg: Uint16Array;
     
     // Index constants for the communication buffer.
-    get STATE_IDX(): number { return 0; }
-    get MSG_SIZE_IDX(): number { return 1; }
-    get COMM_LAST_IDX(): number { return this.MSG_SIZE_IDX; }
+    private get STATE_IDX(): number { return 0; }
+    private get MSG_SIZE_IDX(): number { return 1; }
+    private get COMM_LAST_IDX(): number { return this.MSG_SIZE_IDX; }
 
     // Communication states.
-    get STATE_SHUTDOWN(): number { return -1; } // Shutdown
-    get STATE_IDLE(): number { return 0; }
-    get STATE_REQ(): number { return 1; }
-    get STATE_RESP(): number { return 2; }
-    get STATE_REQ_P(): number { return 3; } // Request has multiple parts
-    get STATE_RESP_P(): number { return 4; } // Response has multiple parts
-    get STATE_AWAIT(): number { return 5; } // Awaiting the next part
+    private get STATE_SHUTDOWN(): number { return -1; } // Shutdown
+    private get STATE_IDLE(): number { return 0; }
+    private get STATE_REQ(): number { return 1; }
+    private get STATE_RESP(): number { return 2; }
+    private get STATE_REQ_P(): number { return 3; } // Request has multiple parts
+    private get STATE_RESP_P(): number { return 4; } // Response has multiple parts
+    private get STATE_AWAIT(): number { return 5; } // Awaiting the next part
 
-    constructor(msg_char_len: number) {
+    private constructor(msg_char_len: number) {
         this.msg_char_len = msg_char_len;
 
         const int_bytes = 4;
@@ -39,19 +39,19 @@ export class LibraryChannel {
         this.msg = new Uint16Array(this.msg_buf);
     }
 
-    get_msg_len(): number { return this.msg_char_len; }
-    get_msg_buffer(): SharedArrayBuffer { return this.msg_buf; }
-    get_comm_buffer(): SharedArrayBuffer { return this.comm_buf; }
+    public get_msg_len(): number { return this.msg_char_len; }
+    public get_msg_buffer(): SharedArrayBuffer { return this.msg_buf; }
+    public get_comm_buffer(): SharedArrayBuffer { return this.comm_buf; }
 
-    send_msg(msg: string): string {
+    public send_msg(msg: string): string {
         if (Atomics.load(this.comm, this.STATE_IDX) !== this.STATE_IDLE) {
             throw "OWNER: Invalid sync communication channel state. " + Atomics.load(this.comm, this.STATE_IDX);
         }
-        this._send_request(msg);
-        return this._read_response();
+        this.send_request(msg);
+        return this.read_response();
     }
 
-    shutdown(): void {
+    public shutdown(): void {
         if (Atomics.load(this.comm, this.STATE_IDX) !== this.STATE_IDLE) {
             throw "OWNER: Invalid sync communication channel state. " + Atomics.load(this.comm, this.STATE_IDX);
         }
@@ -62,14 +62,14 @@ export class LibraryChannel {
         Atomics.notify(this.comm, this.STATE_IDX);
     }
 
-    _send_request(msg: string): void {
+    private send_request(msg: string): void {
         let state;
         const msg_len = msg.length;
         let msg_written = 0;
 
         for (;;) {
             // Write the message and return how much was written.
-            const wrote = this._write_to_msg(msg, msg_written, msg_len);
+            const wrote = this.write_to_msg(msg, msg_written, msg_len);
             msg_written += wrote;
 
             // Indicate how much was written to the this.msg buffer.
@@ -94,7 +94,7 @@ export class LibraryChannel {
         }
     }
 
-    _write_to_msg(input: string, start: number, input_len: number): number {
+    private write_to_msg(input: string, start: number, input_len: number): number {
         let mi = 0;
         let ii = start;
         while (mi < this.msg_char_len && ii < input_len) {
@@ -105,7 +105,7 @@ export class LibraryChannel {
         return ii - start;
     }
 
-    _read_response(): string {
+    private read_response(): string {
         let state;
         let response = "";
         for (;;) {
@@ -118,7 +118,7 @@ export class LibraryChannel {
             const size_to_read = Atomics.load(this.comm, this.MSG_SIZE_IDX);
 
             // Append the latest part of the message.
-            response += this._read_from_msg(0, size_to_read);
+            response += this.read_from_msg(0, size_to_read);
 
             // The response is complete.
             if (state === this.STATE_RESP) {
@@ -139,13 +139,13 @@ export class LibraryChannel {
         return response;
     }
 
-    _read_from_msg(begin: number, end: number): string {
+    private read_from_msg(begin: number, end: number): string {
         const slicedMessage: number[] = [];
         this.msg.slice(begin, end).forEach((value, index) => slicedMessage[index] = value);
         return String.fromCharCode.apply(null, slicedMessage);
     }
 
-    static create(msg_char_len: number): LibraryChannel {
+    public static create(msg_char_len: number): LibraryChannel {
         if (msg_char_len === undefined) {
             msg_char_len = 1024; // Default size is arbitrary but is in 'char' units (i.e. UTF-16 code points).
         }
