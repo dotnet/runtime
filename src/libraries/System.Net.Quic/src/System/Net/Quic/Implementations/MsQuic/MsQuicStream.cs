@@ -1706,50 +1706,31 @@ namespace System.Net.Quic.Implementations.MsQuic
         private interface ISendBufferAdapter
         {
             void SetupSendState(State state);
-
             bool IsEmpty { get; }
         }
 
         private struct WriteMemoryAdapter : ISendBufferAdapter
         {
             private readonly ReadOnlyMemory<byte> _buffer;
-
             public WriteMemoryAdapter(ReadOnlyMemory<byte> buffer) => _buffer = buffer;
-
             public bool IsEmpty => _buffer.IsEmpty;
-
-            public void SetupSendState(State state)
-            {
-                state.SendBuffers.Initialize(_buffer);
-            }
+            public void SetupSendState(State state) => state.SendBuffers.Initialize(_buffer);
         }
 
         private struct WriteSequenceAdapter : ISendBufferAdapter
         {
             private readonly ReadOnlySequence<byte> _buffers;
-
             public WriteSequenceAdapter(ReadOnlySequence<byte> buffers) => _buffers = buffers;
-
             public bool IsEmpty => _buffers.IsEmpty;
-
-            public void SetupSendState(State state)
-            {
-                state.SendBuffers.Initialize(_buffers);
-            }
+            public void SetupSendState(State state) => state.SendBuffers.Initialize(_buffers);
         }
 
         private struct WriteMemoryOfMemoryAdapter : ISendBufferAdapter
         {
             private readonly ReadOnlyMemory<ReadOnlyMemory<byte>> _buffers;
-
             public WriteMemoryOfMemoryAdapter(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers) => _buffers = buffers;
-
             public bool IsEmpty => _buffers.IsEmpty;
-
-            public void SetupSendState(State state)
-            {
-                state.SendBuffers.Initialize(_buffers);
-            }
+            public void SetupSendState(State state) => state.SendBuffers.Initialize(_buffers);
         }
     }
 }
