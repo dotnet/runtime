@@ -104,7 +104,7 @@
 // will be used to mean GcHeap), $Heap.
 //
 // A store to the ScalarField is seen. Now, the value numbering of fields is done in the following pattern for
-// maps that it builds: [$Heap][$FirstField][$Object][offset:offset + size of the load]. It may seem odd that
+// maps that it builds: [$Heap][$FirstField][$Object][offset:offset + size of the store]. It may seem odd that
 // the indexing is done first for the field, and only then for the object, but the reason for that is the fact
 // that it enables MapStores to $Heap to refer to distinct selectors, thus enabling the traversal through the
 // map updates when looking for the values that were stored. Were $Object VNs used for this, the traversal could
@@ -117,7 +117,7 @@
 //
 // Now that we know where to store, the store maps are built:
 //
-//  $ScalarFieldSelector     = PhysicalSelector(offsetof(StructField) + offsetof(ScalarField), sizeof(ScalarField))
+//  $ScalarFieldSelector     = PhysicalSelector(offsetof(ScalarField), sizeof(ScalarField))
 //  $NewStructFieldForObjMap = MapPhysicalStore($StructFieldForObjMap, $ScalarFieldSelector, $ObjVal)
 //  $NewStructFieldMap       = MapStore($StructFieldMap, $Obj, $NewStructFieldForObjMap)
 //  $NewHeap                 = MapStore($Heap, $StructField, $NewStructFieldMap)
