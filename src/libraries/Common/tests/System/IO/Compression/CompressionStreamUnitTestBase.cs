@@ -499,7 +499,7 @@ namespace System.IO.Compression
         public async Task StreamTruncation_IsDetected(TestScenario scenario)
         {
             var buffer = new byte[16];
-            var source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
+            byte[] source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
             byte[] compressedData;
             using (var compressed = new MemoryStream())
             using (Stream compressor = CreateStream(compressed, CompressionMode.Compress))

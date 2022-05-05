@@ -277,7 +277,7 @@ namespace System.IO.Compression
         [Fact]
         public void StreamCorruption_IsDetected()
         {
-            var source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
+            byte[] source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
             var buffer = new byte[64];
             byte[] compressedData;
             using (var compressed = new MemoryStream())
@@ -298,7 +298,7 @@ namespace System.IO.Compression
             for (int byteToCorrupt = 0; byteToCorrupt < compressedData.Length; byteToCorrupt++)
             {
                 if (byteToSkip.Contains(byteToCorrupt))
-                        continue;
+                    continue;
 
                 // corrupt the data
                 compressedData[byteToCorrupt]++;
