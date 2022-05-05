@@ -874,7 +874,7 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        public static Complex operator --(Complex value) => --value;
+        public static Complex operator --(Complex value) => value - One;
 
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static Complex IDecrementOperators<Complex>.operator checked --(Complex value) => --value;
@@ -891,7 +891,7 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
-        public static Complex operator ++(Complex value) => ++value;
+        public static Complex operator ++(Complex value) => value + One;
 
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
         static Complex IIncrementOperators<Complex>.operator checked ++(Complex value) => ++value;

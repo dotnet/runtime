@@ -97,8 +97,8 @@ namespace System.Numerics.Tests
         public static void op_DecrementTest()
         {
             AssertBitwiseEqual(-2.0, DecrementOperatorsHelper<Complex>.op_Decrement(-1.0));
-            AssertBitwiseEqual(-1.0, DecrementOperatorsHelper<Complex>.op_Decrement(-MinNormal));
-            AssertBitwiseEqual(-1.0, DecrementOperatorsHelper<Complex>.op_Decrement(-MaxSubnormal));
+            AssertBitwiseEqual(new Complex(-1.0, -0.0), DecrementOperatorsHelper<Complex>.op_Decrement(-MinNormal));
+            AssertBitwiseEqual(new Complex(-1.0, -0.0), DecrementOperatorsHelper<Complex>.op_Decrement(-MaxSubnormal));
             AssertBitwiseEqual(-1.0, DecrementOperatorsHelper<Complex>.op_Decrement(-0.0));
             AssertBitwiseEqual(Complex.NaN, DecrementOperatorsHelper<Complex>.op_Decrement(Complex.NaN));
             AssertBitwiseEqual(-1.0, DecrementOperatorsHelper<Complex>.op_Decrement(0.0));
@@ -111,8 +111,8 @@ namespace System.Numerics.Tests
         public static void op_CheckedDecrementTest()
         {
             AssertBitwiseEqual(-2.0, DecrementOperatorsHelper<Complex>.op_CheckedDecrement(-1.0));
-            AssertBitwiseEqual(-1.0, DecrementOperatorsHelper<Complex>.op_CheckedDecrement(-MinNormal));
-            AssertBitwiseEqual(-1.0, DecrementOperatorsHelper<Complex>.op_CheckedDecrement(-MaxSubnormal));
+            AssertBitwiseEqual(new Complex(-1.0, -0.0), DecrementOperatorsHelper<Complex>.op_CheckedDecrement(-MinNormal));
+            AssertBitwiseEqual(new Complex(-1.0, -0.0), DecrementOperatorsHelper<Complex>.op_CheckedDecrement(-MaxSubnormal));
             AssertBitwiseEqual(-1.0, DecrementOperatorsHelper<Complex>.op_CheckedDecrement(-0.0));
             AssertBitwiseEqual(Complex.NaN, DecrementOperatorsHelper<Complex>.op_CheckedDecrement(Complex.NaN));
             AssertBitwiseEqual(-1.0, DecrementOperatorsHelper<Complex>.op_CheckedDecrement(0.0));
@@ -127,7 +127,7 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(-0.5, DivisionOperatorsHelper<Complex, Complex, Complex>.op_Division(-1.0, 2.0));
             AssertBitwiseEqual(-1.1125369292536007E-308, DivisionOperatorsHelper<Complex, Complex, Complex>.op_Division(-MinNormal, 2.0));
             AssertBitwiseEqual(-1.1125369292536007E-308, DivisionOperatorsHelper<Complex, Complex, Complex>.op_Division(-MaxSubnormal, 2.0));
-            AssertBitwiseEqual(-0.0, DivisionOperatorsHelper<Complex, Complex, Complex>.op_Division(-0.0, 2.0));
+            AssertBitwiseEqual(0.0, DivisionOperatorsHelper<Complex, Complex, Complex>.op_Division(-0.0, 2.0));
             AssertBitwiseEqual(Complex.NaN, DivisionOperatorsHelper<Complex, Complex, Complex>.op_Division(Complex.NaN, 2.0));
             AssertBitwiseEqual(0.0, DivisionOperatorsHelper<Complex, Complex, Complex>.op_Division(0.0, 2.0));
             AssertBitwiseEqual(1.1125369292536007E-308, DivisionOperatorsHelper<Complex, Complex, Complex>.op_Division(MaxSubnormal, 2.0));
@@ -141,7 +141,7 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(-0.5, DivisionOperatorsHelper<Complex, Complex, Complex>.op_CheckedDivision(-1.0, 2.0));
             AssertBitwiseEqual(-1.1125369292536007E-308, DivisionOperatorsHelper<Complex, Complex, Complex>.op_CheckedDivision(-MinNormal, 2.0));
             AssertBitwiseEqual(-1.1125369292536007E-308, DivisionOperatorsHelper<Complex, Complex, Complex>.op_CheckedDivision(-MaxSubnormal, 2.0));
-            AssertBitwiseEqual(-0.0, DivisionOperatorsHelper<Complex, Complex, Complex>.op_CheckedDivision(-0.0, 2.0));
+            AssertBitwiseEqual(0.0, DivisionOperatorsHelper<Complex, Complex, Complex>.op_CheckedDivision(-0.0, 2.0));
             AssertBitwiseEqual(Complex.NaN, DivisionOperatorsHelper<Complex, Complex, Complex>.op_CheckedDivision(Complex.NaN, 2.0));
             AssertBitwiseEqual(0.0, DivisionOperatorsHelper<Complex, Complex, Complex>.op_CheckedDivision(0.0, 2.0));
             AssertBitwiseEqual(1.1125369292536007E-308, DivisionOperatorsHelper<Complex, Complex, Complex>.op_CheckedDivision(MaxSubnormal, 2.0));
@@ -209,8 +209,8 @@ namespace System.Numerics.Tests
         public static void op_MultiplyTest()
         {
             AssertBitwiseEqual(-2.0, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_Multiply(-1.0, 2.0));
-            AssertBitwiseEqual(-4.4501477170144028E-308, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_Multiply(-MinNormal, 2.0));
-            AssertBitwiseEqual(-4.4501477170144018E-308, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_Multiply(-MaxSubnormal, 2.0));
+            AssertBitwiseEqual(new Complex(-4.4501477170144028E-308, -0.0), MultiplyOperatorsHelper<Complex, Complex, Complex>.op_Multiply(-MinNormal, 2.0));
+            AssertBitwiseEqual(new Complex(-4.4501477170144018E-308, -0.0), MultiplyOperatorsHelper<Complex, Complex, Complex>.op_Multiply(-MaxSubnormal, 2.0));
             AssertBitwiseEqual(-0.0, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_Multiply(-0.0, 2.0));
             AssertBitwiseEqual(Complex.NaN, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_Multiply(Complex.NaN, 2.0));
             AssertBitwiseEqual(0.0, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_Multiply(0.0, 2.0));
@@ -223,8 +223,8 @@ namespace System.Numerics.Tests
         public static void op_CheckedMultiplyTest()
         {
             AssertBitwiseEqual(-2.0, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_CheckedMultiply(-1.0, 2.0));
-            AssertBitwiseEqual(-4.4501477170144028E-308, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_CheckedMultiply(-MinNormal, 2.0));
-            AssertBitwiseEqual(-4.4501477170144018E-308, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_CheckedMultiply(-MaxSubnormal, 2.0));
+            AssertBitwiseEqual(new Complex(-4.4501477170144028E-308, -0.0), MultiplyOperatorsHelper<Complex, Complex, Complex>.op_CheckedMultiply(-MinNormal, 2.0));
+            AssertBitwiseEqual(new Complex(-4.4501477170144018E-308, -0.0), MultiplyOperatorsHelper<Complex, Complex, Complex>.op_CheckedMultiply(-MaxSubnormal, 2.0));
             AssertBitwiseEqual(-0.0, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_CheckedMultiply(-0.0, 2.0));
             AssertBitwiseEqual(Complex.NaN, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_CheckedMultiply(Complex.NaN, 2.0));
             AssertBitwiseEqual(0.0, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_CheckedMultiply(0.0, 2.0));
@@ -237,8 +237,8 @@ namespace System.Numerics.Tests
         public static void op_SubtractionTest()
         {
             AssertBitwiseEqual(-2.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_Subtraction(-1.0, 1.0));
-            AssertBitwiseEqual(-1.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_Subtraction(-MinNormal, 1.0));
-            AssertBitwiseEqual(-1.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_Subtraction(-MaxSubnormal, 1.0));
+            AssertBitwiseEqual(new Complex(-1.0, -0.0), SubtractionOperatorsHelper<Complex, Complex, Complex>.op_Subtraction(-MinNormal, 1.0));
+            AssertBitwiseEqual(new Complex(-1.0, -0.0), SubtractionOperatorsHelper<Complex, Complex, Complex>.op_Subtraction(-MaxSubnormal, 1.0));
             AssertBitwiseEqual(-1.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_Subtraction(-0.0, 1.0));
             AssertBitwiseEqual(Complex.NaN, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_Subtraction(Complex.NaN, 1.0));
             AssertBitwiseEqual(-1.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_Subtraction(0.0, 1.0));
@@ -251,8 +251,8 @@ namespace System.Numerics.Tests
         public static void op_CheckedSubtractionTest()
         {
             AssertBitwiseEqual(-2.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_CheckedSubtraction(-1.0, 1.0));
-            AssertBitwiseEqual(-1.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_CheckedSubtraction(-MinNormal, 1.0));
-            AssertBitwiseEqual(-1.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_CheckedSubtraction(-MaxSubnormal, 1.0));
+            AssertBitwiseEqual(new Complex(-1.0, -0.0), SubtractionOperatorsHelper<Complex, Complex, Complex>.op_CheckedSubtraction(-MinNormal, 1.0));
+            AssertBitwiseEqual(new Complex(-1.0, -0.0), SubtractionOperatorsHelper<Complex, Complex, Complex>.op_CheckedSubtraction(-MaxSubnormal, 1.0));
             AssertBitwiseEqual(-1.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_CheckedSubtraction(-0.0, 1.0));
             AssertBitwiseEqual(Complex.NaN, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_CheckedSubtraction(Complex.NaN, 1.0));
             AssertBitwiseEqual(-1.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_CheckedSubtraction(0.0, 1.0));
@@ -264,29 +264,29 @@ namespace System.Numerics.Tests
         [Fact]
         public static void op_UnaryNegationTest()
         {
-            AssertBitwiseEqual(1.0, UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(-1.0));
+            AssertBitwiseEqual(new Complex(1.0, -0.0), UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(-1.0));
             AssertBitwiseEqual(MinNormal, UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(-MinNormal));
             AssertBitwiseEqual(MaxSubnormal, UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(-MaxSubnormal));
-            AssertBitwiseEqual(0.0, UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(-0.0));
+            AssertBitwiseEqual(new Complex(0.0, -0.0), UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(-0.0));
             AssertBitwiseEqual(Complex.NaN, UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(Complex.NaN));
-            AssertBitwiseEqual(-0.0, UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(0.0));
+            AssertBitwiseEqual(new Complex(-0.0, -0.0), UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(0.0));
             AssertBitwiseEqual(-MaxSubnormal, UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(MaxSubnormal));
             AssertBitwiseEqual(-MinNormal, UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(MinNormal));
-            AssertBitwiseEqual(-1.0, UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(1.0));
+            AssertBitwiseEqual(new Complex(-1.0, -0.0), UnaryNegationOperatorsHelper<Complex, Complex>.op_UnaryNegation(1.0));
         }
 
         [Fact]
         public static void op_CheckedUnaryNegationTest()
         {
-            AssertBitwiseEqual(1.0, UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(-1.0));
+            AssertBitwiseEqual(new Complex(1.0, -0.0), UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(-1.0));
             AssertBitwiseEqual(MinNormal, UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(-MinNormal));
             AssertBitwiseEqual(MaxSubnormal, UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(-MaxSubnormal));
-            AssertBitwiseEqual(0.0, UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(-0.0));
+            AssertBitwiseEqual(new Complex(0.0, -0.0), UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(-0.0));
             AssertBitwiseEqual(Complex.NaN, UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(Complex.NaN));
-            AssertBitwiseEqual(-0.0, UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(0.0));
+            AssertBitwiseEqual(new Complex(-0.0, -0.0), UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(0.0));
             AssertBitwiseEqual(-MaxSubnormal, UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(MaxSubnormal));
             AssertBitwiseEqual(-MinNormal, UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(MinNormal));
-            AssertBitwiseEqual(-1.0, UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(1.0));
+            AssertBitwiseEqual(new Complex(-1.0, -0.0), UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(1.0));
         }
 
         [Fact]
