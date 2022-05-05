@@ -292,8 +292,14 @@ namespace System.IO.Compression
                 compressedData = compressed.ToArray();
             }
 
+            // corrupting these bytes goes undetected, skip them
+            int[] byteToSkip = { 3, 4, 5, 6, 7, 8, 9 };
+
             for (int byteToCorrupt = 0; byteToCorrupt < compressedData.Length; byteToCorrupt++)
             {
+                if (byteToSkip.Contains(byteToCorrupt))
+                        continue;
+
                 // corrupt the data
                 compressedData[byteToCorrupt]++;
 
@@ -301,15 +307,10 @@ namespace System.IO.Compression
                 {
                     using (Stream decompressor = CreateStream(decompressedStream, CompressionMode.Decompress))
                     {
-                        try
+                        Assert.Throws<InvalidDataException>(() =>
                         {
-                            while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { };
-
-                            Assert.Equal(source, buffer);
-                        }
-                        catch (InvalidDataException)
-                        {
-                        }
+                            while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0);
+                        });
                     }
                 }
 
