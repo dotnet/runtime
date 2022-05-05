@@ -7465,10 +7465,10 @@ BOOL DumpFile()
             printError( g_pFile, "/r2rnativemetadata only works on non-composite R2R images." );
             goto exit;
         }
-        READYTORUN_HEADER * pR2RHeader;
+        READYTORUN_HEADER * pR2RHeader = NULL;
         g_pPELoader->getVAforRVA(VAL32(g_CORHeader->ManagedNativeHeader.VirtualAddress), (void**)&pR2RHeader);
 
-        if (pR2RHeader->Signature != READYTORUN_SIGNATURE)
+        if (pR2RHeader == NULL || pR2RHeader->Signature != READYTORUN_SIGNATURE)
         {
             printError( g_pFile, "/r2rnativemetadata only works on non-composite R2R images." );
             goto exit;
