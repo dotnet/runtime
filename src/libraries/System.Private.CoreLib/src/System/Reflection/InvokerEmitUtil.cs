@@ -21,7 +21,7 @@ namespace System.Reflection
             bool emitNew = method is RuntimeConstructorInfo;
             bool hasThis = !(emitNew || method.IsStatic);
 
-            // The first parameter is unused and allows the DynamicMethod to be treated as an instance method which is slightly faster than a static.
+            // The first parameter is unused but supports treating the DynamicMethod as an instance method which is slightly faster than a static.
             Type[] delegateParameters = new Type[3] { typeof(object), typeof(object), typeof(IntPtr*) };
 
             string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
@@ -47,12 +47,6 @@ namespace System.Reflection
             ParameterInfo[] parameters = method.GetParametersNoCopy();
             for (int i = 0; i < parameters.Length; i++)
             {
-                RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
-                if (parameterType.IsPointer)
-                {
-                    parameterType = (RuntimeType)typeof(IntPtr);
-                }
-
                 il.Emit(OpCodes.Ldarg_2);
                 if (i != 0)
                 {
@@ -61,9 +55,11 @@ namespace System.Reflection
                 }
 
                 il.Emit(OpCodes.Call, Methods.ByReferenceOfByte_Value()); // This can be replaced by ldfld once byref fields are available in C#
+
+                RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
                 if (!parameterType.IsByRef)
                 {
-                    il.Emit(OpCodes.Ldobj, parameterType);
+                    il.Emit(OpCodes.Ldobj, parameterType.IsPointer ? typeof(IntPtr) : parameterType);
                 }
             }
 
