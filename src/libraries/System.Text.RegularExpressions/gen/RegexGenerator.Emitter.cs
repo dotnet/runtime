@@ -824,12 +824,26 @@ namespace System.Text.RegularExpressions.Generator
 
                         if (setsToUse > 1)
                         {
-                            using (EmitBlock(writer, $"if (i >= span.Length - {minRequiredLength - 1})"))
+                            // Of the remaining sets we're going to check, find the maximum distance of any of them.
+                            // If it's further than the primary set we checked, we need a bounds check.
+                            int maxDistance = sets[1].Distance;
+                            for (int i = 2; i < setsToUse; i++)
                             {
-                                noMatchFoundLabelNeeded = true;
-                                Goto(NoMatchFound);
+                                maxDistance = Math.Max(maxDistance, sets[i].Distance);
                             }
-                            writer.WriteLine();
+                            if (maxDistance > primarySet.Distance)
+                            {
+                                int numRemainingSets = setsToUse - 1;
+                                writer.WriteLine($"// The primary set being searched for was found. {numRemainingSets} more set{(numRemainingSets > 1 ? "s" : "")} will be checked so as");
+                                writer.WriteLine($"// to minimize the number of places TryMatchAtCurrentPosition is run unnecessarily.");
+                                writer.WriteLine($"// Make sure {(numRemainingSets > 1 ? "they fit" : "it fits")} in the remainder of the input.");
+                                using (EmitBlock(writer, $"if ((uint)(i + {maxDistance}) >= span.Length)"))
+                                {
+                                    noMatchFoundLabelNeeded = true;
+                                    Goto(NoMatchFound);
+                                }
+                                writer.WriteLine();
+                            }
                         }
                     }
                     else
@@ -4331,6 +4345,10 @@ namespace System.Text.RegularExpressions.Generator
             // Next, handle sets where the high - low + 1 range is <= 64.  In that case, we can emit
             // a branchless lookup in a ulong that does not rely on loading any objects (e.g. the string-based
             // lookup we use later).  This nicely handles common sets like [0-9A-Fa-f], [0-9a-f], [A-Za-z], etc.
+            // Note that unlike RegexCompiler, the source generator doesn't know whether the code is going to be
+            // run in a 32-bit or 64-bit process: in a 64-bit process, this is an optimization, but in a 32-bit process,
+            // it's a deoptimization.  In general we optimize for 64-bit perf, so this code remains; it complicates
+            // the code too much to try to include both this and a fallback for the check.
             if (analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
             {
                 additionalDeclarations.Add("ulong charMinusLow;");
@@ -4650,9 +4668,14 @@ namespace System.Text.RegularExpressions.Generator
                         _ => "",
                     };
 
+                    // Get a textual description of the node, making it safe for an XML comment (escaping the minimal amount necessary to
+                    // avoid compilation failures: we don't want to escape single and double quotes, as HtmlEncode would do).
+                    string nodeDescription = DescribeNode(node, rm);
+                    nodeDescription = nodeDescription.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;");
+
                     // Write out the line for the node.
                     const char BulletPoint = '\u25CB';
-                    writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{HttpUtility.HtmlEncode(DescribeNode(node, rm))}<br/>");
+                    writer.WriteLine($"/// {new string(' ', depth * 4)}{BulletPoint} {tag}{nodeDescription}<br/>");
                 }
 
                 // Process each child.

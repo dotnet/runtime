@@ -1495,15 +1495,15 @@ public:
         }
 
         schemaElem.InstrumentationKind = JitConfig.JitCollect64BitCounts()
-                                             ? ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount
-                                             : ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+                                             ? ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount
+                                             : ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
         schemaElem.ILOffset = (int32_t)call->gtClassProfileCandidateInfo->ilOffset;
         schemaElem.Offset   = 0;
 
         m_schema.push_back(schemaElem);
 
         // Re-using ILOffset and Other fields from schema item for TypeHandleHistogramCount
-        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle;
+        schemaElem.InstrumentationKind = ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes;
         schemaElem.Count               = ICorJitInfo::ClassProfile32::SIZE;
         m_schema.push_back(schemaElem);
 
@@ -1550,9 +1550,9 @@ public:
         //
         assert(m_schema[*m_currentSchemaIndex].ILOffset == (int32_t)call->gtClassProfileCandidateInfo->ilOffset);
         bool is32 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
-                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount;
+                    ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount;
         bool is64 = m_schema[*m_currentSchemaIndex].InstrumentationKind ==
-                    ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount;
+                    ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount;
         assert(is32 || is64);
 
         // Figure out where the table is located.
@@ -2048,11 +2048,31 @@ PhaseStatus Compiler::fgIncorporateProfileData()
                 fgPgoEdgeCounts++;
                 break;
 
-            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
-            case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
             case ICorJitInfo::PgoInstrumentationKind::GetLikelyClass:
                 fgPgoClassProfiles++;
                 break;
+
+            case ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount:
+            case ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount:
+                if (iSchema + 1 < fgPgoSchemaCount)
+                {
+                    if (fgPgoSchema[iSchema + 1].InstrumentationKind ==
+                        ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes)
+                    {
+                        fgPgoClassProfiles++;
+                        iSchema++;
+                        break;
+                    }
+                    if (fgPgoSchema[iSchema + 1].InstrumentationKind ==
+                        ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods)
+                    {
+                        fgPgoMethodProfiles++;
+                        iSchema++;
+                        break;
+                    }
+                }
+
+                __fallthrough;
 
             default:
                 JITDUMP("Unknown PGO record type 0x%x in schema entry %u (offset 0x%x count 0x%x other 0x%x)\n",
@@ -2068,8 +2088,9 @@ PhaseStatus Compiler::fgIncorporateProfileData()
         fgNumProfileRuns = 1;
     }
 
-    JITDUMP("Profile summary: %d runs, %d block probes, %d edge probes, %d class profiles, %d other records\n",
-            fgNumProfileRuns, fgPgoBlockCounts, fgPgoEdgeCounts, fgPgoClassProfiles, otherRecords);
+    JITDUMP("Profile summary: %d runs, %d block probes, %d edge probes, %d class profiles, %d method profiles, %d "
+            "other records\n",
+            fgNumProfileRuns, fgPgoBlockCounts, fgPgoEdgeCounts, fgPgoClassProfiles, fgPgoMethodProfiles, otherRecords);
 
     const bool haveBlockCounts = fgPgoBlockCounts > 0;
     const bool haveEdgeCounts  = fgPgoEdgeCounts > 0;

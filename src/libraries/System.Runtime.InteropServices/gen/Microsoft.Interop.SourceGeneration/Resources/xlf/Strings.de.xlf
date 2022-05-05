@@ -97,9 +97,14 @@
         <target state="translated">Marshalling eines booleschen Werts ohne explizite Marshallinginformationen wird nicht unterstützt. Geben Sie entweder \"MarshalUsingAttribute\" oder \"MarshalAsAttribute\" an.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallingCharAsSpecifiedCharSetNotSupported">
-        <source>Marshalling char with 'CharSet.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
-        <target state="translated">Marshalling von char mit \"CharSet.{0}\" wird nicht unterstützt. Konvertieren Sie stattdessen den Char-Typ manuell in die gewünschte Bytedarstellung, und übergeben Sie diesen an das quellgenerierte P/Invoke.</target>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="new">Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="new">Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">

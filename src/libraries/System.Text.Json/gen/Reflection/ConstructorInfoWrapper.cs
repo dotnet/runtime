@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
@@ -15,6 +16,7 @@ namespace System.Text.Json.Reflection
 
         public ConstructorInfoWrapper(IMethodSymbol ctor, MetadataLoadContextInternal metadataLoadContext)
         {
+            Debug.Assert(ctor != null);
             _ctor = ctor;
             _metadataLoadContext = metadataLoadContext;
         }

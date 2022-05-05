@@ -2531,15 +2531,12 @@ namespace Microsoft.VisualBasic
 
         private string GetTypeOutputWithoutArrayPostFix(CodeTypeReference typeRef)
         {
-            StringBuilder sb = new StringBuilder();
-
             while (typeRef.ArrayElementType != null)
             {
                 typeRef = typeRef.ArrayElementType;
             }
 
-            sb.Append(GetBaseTypeOutput(typeRef));
-            return sb.ToString();
+            return GetBaseTypeOutput(typeRef);
         }
 
         private string GetTypeArgumentsOutput(CodeTypeReferenceCollection typeArguments)

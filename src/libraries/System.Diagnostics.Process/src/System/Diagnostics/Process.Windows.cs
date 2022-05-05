@@ -28,27 +28,18 @@ namespace System.Diagnostics
         [SupportedOSPlatform("maccatalyst")]
         public static Process[] GetProcessesByName(string? processName, string machineName)
         {
-            if (processName == null)
+            bool isRemoteMachine = ProcessManager.IsRemoteMachine(machineName);
+
+            ProcessInfo[] processInfos = ProcessManager.GetProcessInfos(processName, machineName);
+            Process[] processes = new Process[processInfos.Length];
+
+            for (int i = 0; i < processInfos.Length; i++)
             {
-                processName = string.Empty;
+                ProcessInfo processInfo = processInfos[i];
+                processes[i] = new Process(machineName, isRemoteMachine, processInfo.ProcessId, processInfo);
             }
 
-            Process[] procs = GetProcesses(machineName);
-            var list = new List<Process>();
-
-            for (int i = 0; i < procs.Length; i++)
-            {
-                if (string.Equals(processName, procs[i].ProcessName, StringComparison.OrdinalIgnoreCase))
-                {
-                    list.Add(procs[i]);
-                }
-                else
-                {
-                    procs[i].Dispose();
-                }
-            }
-
-            return list.ToArray();
+            return processes;
         }
 
         [CLSCompliant(false)]
