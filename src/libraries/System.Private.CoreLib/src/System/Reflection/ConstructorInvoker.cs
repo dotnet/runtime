@@ -13,7 +13,7 @@ namespace System.Reflection
 #if !MONO // Temporary until Mono is updated.
         private bool _invoked;
         private bool _strategyDetermined;
-        private InvokerEmitUtil.InvokeFunc? _emitInvoke;
+        private InvokerEmitUtil.InvokeFunc? _invokeFunc;
 #endif
 
         public ConstructorInvoker(RuntimeConstructorInfo constructorInfo)
@@ -29,17 +29,24 @@ namespace System.Reflection
 #endif
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
 #if MONO // Temporary until Mono is updated.
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        public unsafe object? InvokeUnsafe(object? obj, Span<object?> args, BindingFlags invokeAttr)
-        {
-            return InvokeNonEmitUnsafe(obj, args, invokeAttr);
-        }
+        public unsafe object? InlinedInvoke(object? obj, Span<object?> args, BindingFlags invokeAttr) => InterpretedInvoke(obj, args, invokeAttr);
 #else
+        public unsafe object? InlinedInvoke(object? obj, IntPtr* args, BindingFlags invokeAttr)
+        {
+            if (_invokeFunc != null && (invokeAttr & BindingFlags.DoNotWrapExceptions) != 0 && obj == null)
+            {
+                return _invokeFunc(target: null, args);
+            }
+            return Invoke(obj, args, invokeAttr);
+        }
+#endif
+
+#if !MONO // Temporary until Mono is updated.
         [DebuggerStepThrough]
         [DebuggerHidden]
-        public unsafe object? InvokeUnsafe(object? obj, IntPtr* args, BindingFlags invokeAttr)
+        private unsafe object? Invoke(object? obj, IntPtr* args, BindingFlags invokeAttr)
         {
             if (!_strategyDetermined)
             {
@@ -52,7 +59,7 @@ namespace System.Reflection
                 {
                     if (RuntimeFeature.IsDynamicCodeCompiled)
                     {
-                        _emitInvoke = InvokerEmitUtil.CreateInvokeDelegate(_method);
+                        _invokeFunc = InvokerEmitUtil.CreateInvokeDelegate(_method);
                     }
                     _strategyDetermined = true;
                 }
@@ -63,15 +70,15 @@ namespace System.Reflection
             {
                 try
                 {
-                    // For the rarely used and broken scenario of calling the constructor directly through MethodBase.Invoke()
+                    // For the rarely used scenario of calling the constructor directly through MethodBase.Invoke()
                     // with a non-null 'obj', we use the slow path to avoid having two emit-based delegates.
-                    if (_emitInvoke != null && obj == null)
+                    if (_invokeFunc != null && obj == null)
                     {
-                        ret = _emitInvoke(target: null, args);
+                        ret = _invokeFunc(target: null, args);
                     }
                     else
                     {
-                        ret = InvokeNonEmitUnsafe(obj, args);
+                        ret = InterpretedInvoke(obj, args);
                     }
                 }
                 catch (Exception e)
@@ -79,13 +86,13 @@ namespace System.Reflection
                     throw new TargetInvocationException(e);
                 }
             }
-            else if (_emitInvoke != null && obj == null)
+            else if (_invokeFunc != null && obj == null)
             {
-                ret = _emitInvoke(target: null, args);
+                ret = _invokeFunc(target: null, args);
             }
             else
             {
-                ret = InvokeNonEmitUnsafe(obj, args);
+                ret = InterpretedInvoke(obj, args);
             }
 
             return ret;

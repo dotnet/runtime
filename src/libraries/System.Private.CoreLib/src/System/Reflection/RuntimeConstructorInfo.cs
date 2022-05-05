@@ -130,7 +130,7 @@ namespace System.Reflection
             {
                 if (argCount == 0)
                 {
-                    Invoker.InvokeUnsafe(obj, args: default, invokeAttr);
+                    Invoker.InlinedInvoke(obj, args: default, invokeAttr);
                 }
                 else if (argCount > MaxStackAllocArgCount)
                 {
@@ -158,9 +158,9 @@ namespace System.Reflection
                         invokeAttr);
 
 #if MONO // Temporary until Mono is updated.
-                    Invoker.InvokeUnsafe(obj, copyOfParameters, invokeAttr);
+                    Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
 #else
-                    Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+                    Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
 #endif
 
                     // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
@@ -217,9 +217,9 @@ namespace System.Reflection
                     invokeAttr);
 
 #if MONO // Temporary until Mono is updated.
-                ci.Invoker.InvokeUnsafe(obj, copyOfParameters, invokeAttr);
+                ci.Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
 #else
-                ci.Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+                ci.Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
 #endif
             }
             finally
@@ -262,7 +262,7 @@ namespace System.Reflection
             {
                 if (argCount == 0)
                 {
-                    retValue = Invoker.InvokeUnsafe(obj: null, args: default, invokeAttr);
+                    retValue = Invoker.InlinedInvoke(obj: null, args: default, invokeAttr);
                 }
                 else if (argCount > MaxStackAllocArgCount)
                 {
@@ -289,9 +289,9 @@ namespace System.Reflection
                         invokeAttr);
 
 #if MONO // Temporary until Mono is updated.
-                    retValue = Invoker.InvokeUnsafe(obj: null, copyOfParameters, invokeAttr);
+                    retValue = Invoker.InlinedInvoke(obj: null, copyOfParameters, invokeAttr);
 #else
-                    retValue = Invoker.InvokeUnsafe(obj: null, pByRefStorage, invokeAttr);
+                    retValue = Invoker.InlinedInvoke(obj: null, pByRefStorage, invokeAttr);
 #endif
 
                     // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
@@ -351,9 +351,9 @@ namespace System.Reflection
                     invokeAttr);
 
 #if MONO // Temporary until Mono is updated.
-                retValue = ci.Invoker.InvokeUnsafe(obj: null, copyOfParameters, invokeAttr);
+                retValue = ci.Invoker.InlinedInvoke(obj: null, copyOfParameters, invokeAttr);
 #else
-                retValue = ci.Invoker.InvokeUnsafe(obj: null, pByRefStorage, invokeAttr);
+                retValue = ci.Invoker.InlinedInvoke(obj: null, pByRefStorage, invokeAttr);
 #endif
             }
             finally

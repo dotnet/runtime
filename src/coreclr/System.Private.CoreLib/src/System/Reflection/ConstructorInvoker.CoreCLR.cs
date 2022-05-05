@@ -10,7 +10,7 @@ namespace System.Reflection
         public InvocationFlags _invocationFlags;
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe object? InvokeNonEmitUnsafe(object? obj, IntPtr* arguments)
+        private unsafe object? InterpretedInvoke(object? obj, IntPtr* arguments)
         {
             return RuntimeMethodHandle.InvokeMethod(obj, (void**)arguments, _method.Signature, isConstructor: obj is null)!;
         }

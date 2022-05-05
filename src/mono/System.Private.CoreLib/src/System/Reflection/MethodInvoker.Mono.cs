@@ -21,7 +21,7 @@ namespace System.Reflection
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private unsafe object? InvokeNonEmitUnsafe(object? obj, Span<object?> args, BindingFlags invokeAttr)
+        private unsafe object? InterpretedInvoke(object? obj, Span<object?> args, BindingFlags invokeAttr)
         {
             Exception? exc;
             object? o;

@@ -1653,7 +1653,7 @@ namespace System
 
             unsafe
             {
-                return ctor.Invoker.InvokeUnsafe(
+                return ctor.Invoker.InlinedInvoke(
                     obj: null,
                     args: default,
                     wrapExceptions ? BindingFlags.Default : BindingFlags.DoNotWrapExceptions);
@@ -2043,7 +2043,7 @@ namespace System
 
             unsafe
             {
-                return ctor.Invoker.InvokeUnsafe(obj: null, args: default, BindingFlags.Default)!;
+                return ctor.Invoker.InlinedInvoke(obj: null, args: default, BindingFlags.Default)!;
             }
         }
 

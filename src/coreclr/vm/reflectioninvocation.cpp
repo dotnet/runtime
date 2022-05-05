@@ -150,8 +150,7 @@ FCIMPL2(Object*, ReflectionInvocation::AllocateValueType, ReflectClassBaseObject
 
     // This method is only intended for value types; it is not called directly by any public APIs
     // so we don't expect validation issues here.
-    _ASSERTE(InvokeUtil::IsPrimitiveType(targetType.GetSignatureCorElementType()) ||
-        targetType.GetSignatureCorElementType() == ELEMENT_TYPE_VALUETYPE);
+    _ASSERTE(targetType.IsValueType());
 
     MethodTable* allocMT = targetType.AsMethodTable();
     _ASSERTE(!allocMT->IsByRefLike());
@@ -850,17 +849,18 @@ FCIMPL1(Object*, RuntimeMethodHandle::ReboxFromNullable, Object* pBoxedValUNSAFE
         OBJECTREF retVal;
     } gc;
 
+    if (pBoxedValUNSAFE == NULL)
+        return NULL;
+
     gc.pBoxed = ObjectToOBJECTREF(pBoxedValUNSAFE);
-    gc.retVal = gc.pBoxed;
+    MethodTable* retMT = gc.pBoxed->GetMethodTable();
+    if (!Nullable::IsNullableType(retMT))
+        return pBoxedValUNSAFE;
+
+    gc.retVal = NULL;
 
     HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(gc);
-
-    if (gc.pBoxed != NULL) {
-        MethodTable* retMT = gc.pBoxed->GetMethodTable();
-        if (Nullable::IsNullableType(retMT))
-            gc.retVal = Nullable::Box(gc.pBoxed->GetData(), retMT);
-    }
-
+    gc.retVal = Nullable::Box(gc.pBoxed->GetData(), retMT);
     HELPER_METHOD_FRAME_END();
 
     return OBJECTREFToObject(gc.retVal);

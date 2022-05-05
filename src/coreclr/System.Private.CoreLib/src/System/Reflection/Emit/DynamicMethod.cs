@@ -489,7 +489,7 @@ namespace System.Reflection.Emit
             {
                 if (argCount == 0)
                 {
-                    retValue = Invoker.InvokeUnsafe(obj, args: default, invokeAttr);
+                    retValue = Invoker.InlinedInvoke(obj, args: default, invokeAttr);
                 }
                 else if (argCount > MaxStackAllocArgCount)
                 {
@@ -516,7 +516,7 @@ namespace System.Reflection.Emit
                         culture,
                         invokeAttr);
 
-                    retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+                    retValue = Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
 
                     // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
                     for (int i = 0; i < argCount; i++)
@@ -571,7 +571,7 @@ namespace System.Reflection.Emit
                     culture,
                     invokeAttr);
 
-                retValue = mi.Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+                retValue = mi.Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
             }
             finally
             {

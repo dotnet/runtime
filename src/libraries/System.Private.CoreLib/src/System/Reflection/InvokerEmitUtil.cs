@@ -21,7 +21,7 @@ namespace System.Reflection
             bool emitNew = method is RuntimeConstructorInfo;
             bool hasThis = !(emitNew || method.IsStatic);
 
-            // The first element allows the DynamicMethod to be treated as an instance method which is slightly faster than a static.
+            // The first parameter is unused and allows the DynamicMethod to be treated as an instance method which is slightly faster than a static.
             Type[] delegateParameters = new Type[3] { typeof(object), typeof(object), typeof(IntPtr*) };
 
             string declaringTypeName = method.DeclaringType != null ? method.DeclaringType.Name + "." : string.Empty;
@@ -47,7 +47,11 @@ namespace System.Reflection
             ParameterInfo[] parameters = method.GetParametersNoCopy();
             for (int i = 0; i < parameters.Length; i++)
             {
-                RuntimeType parameterType = NormalizePointerType((RuntimeType)parameters[i].ParameterType);
+                RuntimeType parameterType = (RuntimeType)parameters[i].ParameterType;
+                if (parameterType.IsPointer)
+                {
+                    parameterType = (RuntimeType)typeof(IntPtr);
+                }
 
                 il.Emit(OpCodes.Ldarg_2);
                 if (i != 0)
@@ -148,20 +152,6 @@ namespace System.Reflection
 
             // Create the delegate; it is also compiled at this point due to restrictedSkipVisibility=true.
             return (InvokeFunc)dm.CreateDelegate(typeof(InvokeFunc), target: null);
-        }
-
-        private static RuntimeType NormalizePointerType(RuntimeType type)
-        {
-            if (type.IsPointer)
-            {
-                type = (RuntimeType)typeof(IntPtr);
-            }
-            else if (type.IsByRef && RuntimeTypeHandle.GetElementType(type).IsPointer)
-            {
-                type = (RuntimeType)typeof(IntPtr).MakeByRefType();
-            }
-
-            return type;
         }
 
         private static class ThrowHelper

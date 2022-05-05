@@ -367,9 +367,9 @@ namespace System.Reflection
                     invokeAttr);
 
 #if MONO // Temporary until Mono is updated.
-                retValue = Invoker.InvokeUnsafe(obj, copyOfParameters, invokeAttr);
+                retValue = Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
 #else
-                retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+                retValue = Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
 #endif
             }
 

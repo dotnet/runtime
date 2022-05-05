@@ -1739,7 +1739,7 @@ BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
         {
             // For safety's sake, also allow true nullables to be unboxed normally.
             // This should not happen normally, but we want to be robust
-            if (destMT->IsEquivalentTo(boxedVal->GetMethodTable()))
+            if (destMT == boxedVal->GetMethodTable())
             {
                 CopyValueClass(dest, boxedVal->GetData(), destMT);
                 return TRUE;

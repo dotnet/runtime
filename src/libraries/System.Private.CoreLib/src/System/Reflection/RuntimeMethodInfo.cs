@@ -126,7 +126,7 @@ namespace System.Reflection
             {
                 if (argCount == 0)
                 {
-                    retValue = Invoker.InvokeUnsafe(obj, args: default, invokeAttr);
+                    retValue = Invoker.InlinedInvoke(obj, args: default, invokeAttr);
                 }
                 else if (argCount > MaxStackAllocArgCount)
                 {
@@ -154,9 +154,9 @@ namespace System.Reflection
                         invokeAttr);
 
 #if MONO // Temporary until Mono is updated.
-                    retValue = Invoker.InvokeUnsafe(obj, copyOfParameters, invokeAttr);
+                    retValue = Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
 #else
-                    retValue = Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+                    retValue = Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
 #endif
 
                     // Copy modified values out. This should be done only with ByRef or Type.Missing parameters.
@@ -214,9 +214,9 @@ namespace System.Reflection
                     invokeAttr);
 
 #if MONO // Temporary until Mono is updated.
-                retValue = mi.Invoker.InvokeUnsafe(obj, copyOfParameters, invokeAttr);
+                retValue = mi.Invoker.InlinedInvoke(obj, copyOfParameters, invokeAttr);
 #else
-                retValue = mi.Invoker.InvokeUnsafe(obj, pByRefStorage, invokeAttr);
+                retValue = mi.Invoker.InlinedInvoke(obj, pByRefStorage, invokeAttr);
 #endif
             }
             finally
