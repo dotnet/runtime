@@ -50,7 +50,9 @@ public:
 
     HRESULT Init(mdToken tkAssemblyRef, IMDInternalImport *pImport);
     HRESULT Init(mdAssembly tkAssemblyRef, IMetaDataAssemblyImport* pImport);
-    HRESULT Init(LPCSTR pAssemblyDisplayName);
+
+    void Init(SString& assemblyDisplayName);
+    HRESULT InitNoThrow(SString& assemblyDisplayName);
 
     // Note that this method does not clone the fields!
     VOID CopyFrom(const BaseAssemblySpec *pSpec);
@@ -72,14 +74,12 @@ public:
         return m_pBinder;
     }
 
-    HRESULT ParseName();
     DWORD Hash();
 
     LPCSTR GetName() const;
     inline void GetName(SString & ssName) const { WRAPPER_NO_CONTRACT; ssName.SetUTF8(GetName()); }
 
     void SetName(LPCSTR szName);
-    void SetName(SString const & ssName);
 
     VOID SetCulture(LPCSTR szCulture);
 

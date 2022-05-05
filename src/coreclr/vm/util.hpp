@@ -662,7 +662,7 @@ inline bool IsInCantStopRegion()
 }
 #endif // _DEBUG
 
-BOOL IsValidMethodCodeNotification(USHORT Notification);
+BOOL IsValidMethodCodeNotification(ULONG32 Notification);
 
 typedef DPTR(struct JITNotification) PTR_JITNotification;
 struct JITNotification

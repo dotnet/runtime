@@ -82,9 +82,11 @@
 
           # Testing commands
           $(Python) test.py devicestartup --device-type ios --package-path MauiTesting.app --package-name net.dot.mauitesting --scenario-name "%(Identity)"
-
+          ((result=$?))
+          
           # Post commands
-          $(Python) post.py   
+          $(Python) post.py
+          exit $result
         ]]>
 	  </CustomCommands>
 	</XHarnessAppBundleToTest>
@@ -106,11 +108,23 @@
 
           # Testing commands
           $(Python) test.py devicestartup --device-type ios --package-path Microsoft.NetConf2021.Maui.app --package-name net.dot.netconf2021.maui --scenario-name "%(Identity)"
-
+          ((result=$?))
+          
           # Post commands
-          $(Python) post.py   
+          $(Python) post.py
+          exit $result
         ]]>
 	  </CustomCommands>
 	</XHarnessAppBundleToTest>
   </ItemGroup>
+  <!--
+    This target is to work around the XHarness command that depend on scripts in ORIGPYPATH
+    being run before we get to run our normal Post commands. AddXHarnessCLI is the XHarness
+    Target so we just make sure we add this after that.
+  -->
+  <Target Name="ResetPYTHONPATHBeforeXHarnessCommand" AfterTargets="AddXHarnessCLI">
+    <PropertyGroup>
+      <HelixPostCommands>export PYTHONPATH=$ORIGPYPATH;$(HelixPostCommands)</HelixPostCommands>
+    </PropertyGroup>
+  </Target>
 </Project>

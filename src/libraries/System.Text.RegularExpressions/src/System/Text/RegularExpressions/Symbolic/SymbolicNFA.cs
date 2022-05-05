@@ -161,11 +161,6 @@ namespace System.Text.RegularExpressions.Symbolic
         public IEnumerable<(TSet, SymbolicRegexNode<TSet>?, int)> EnumeratePaths(int sourceState) =>
             _transitionFunction[sourceState].EnumeratePaths(_solver, _solver.Full);
 
-        /// <summary>
-        /// TODO: Explore an unexplored state on transition further.
-        /// </summary>
-        public static void ExploreState(int state) => new NotImplementedException();
-
         public static SymbolicNFA<TSet> Explore(SymbolicRegexNode<TSet> root, int bound)
         {
             (Dictionary<TransitionRegex<TSet>, Transition> cache,

@@ -154,8 +154,6 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     return SendCommandInternal(msgId, "", res, token);
                 return null;
             }
-            //{"type":"evaluationResult","resultID":"1634575904746-0","hasException":false,"input":"ret = 10","result":10,"startTime":1634575904746,"timestamp":1634575904748,"from":"server1.conn21.child10/consoleActor2"}
-
             return null;
         }
         catch (Exception ex)

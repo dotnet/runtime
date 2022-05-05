@@ -5407,7 +5407,7 @@ VOID ETW::MethodLog::GetR2RGetEntryPointStart(MethodDesc *pMethodDesc)
     }
 }
 
-VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t typeHandles)
+VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t cbData, BYTE *data, TypeHandle* pTypeHandles, uint32_t numTypeHandles, MethodDesc** pMethods, uint32_t numMethods)
 {
     CONTRACTL{
         NOTHROW;
@@ -5424,15 +5424,20 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
             SendMethodDetailsEvent(method);
 
             // If there are any type handles, fire the BulkType events to describe them
-            if (typeHandles != 0)
+            if (numTypeHandles != 0)
             {
                 BulkTypeEventLogger typeLogger;
 
-                for (uint32_t iTypeHandle = 0; iTypeHandle < typeHandles; iTypeHandle++)
+                for (uint32_t iTypeHandle = 0; iTypeHandle < numTypeHandles; iTypeHandle++)
                 {
                     ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(&typeLogger, (ULONGLONG)pTypeHandles[iTypeHandle].AsPtr(), ETW::TypeSystemLog::kTypeLogBehaviorAlwaysLog);
                 }
                 typeLogger.FireBulkTypeEvent();
+            }
+
+            for (uint32_t iMethod = 0; iMethod < numMethods; iMethod++)
+            {
+                ETW::MethodLog::SendMethodDetailsEvent(pMethods[iMethod]);
             }
 
             ULONG ulMethodToken=0;
