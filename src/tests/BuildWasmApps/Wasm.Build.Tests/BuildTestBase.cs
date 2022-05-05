@@ -499,7 +499,7 @@ namespace Wasm.Build.Tests
                 "dotnet.timezones.blat",
                 "dotnet.wasm",
                 "mono-config.json",
-                "dotnet.js"
+                "dotnet.js",
                 "dotnet-crypto-worker.js"
             });
 
