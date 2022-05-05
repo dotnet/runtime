@@ -502,23 +502,23 @@ namespace System.IO.Compression
             var source = Enumerable.Range(0, 64).Select(i => (byte)i).ToArray();
             byte[] compressedData;
             using (var compressed = new MemoryStream())
-            using (var gzip = new GZipStream(compressed, CompressionMode.Compress))
+            using (Stream compressor = CreateStream(compressed, CompressionMode.Compress))
             {
-                foreach (var b in source)
+                foreach (byte b in source)
                 {
-                    gzip.WriteByte(b);
+                    compressor.WriteByte(b);
                 }
 
-                gzip.Dispose();
+                compressor.Dispose();
                 compressedData = compressed.ToArray();
             }
 
             for (var i = 1; i <= compressedData.Length; i += 1)
             {
-                var expectException = i < compressedData.Length;
+                bool expectException = i < compressedData.Length;
                 using (var compressedStream = new MemoryStream(compressedData.Take(i).ToArray()))
                 {
-                    using (var s = new GZipStream(compressedStream, CompressionMode.Decompress))
+                    using (Stream decompressor = CreateStream(compressedStream, CompressionMode.Decompress))
                     {
                         var decompressedStream = new MemoryStream();
 
@@ -527,27 +527,27 @@ namespace System.IO.Compression
                             switch (scenario)
                             {
                                 case TestScenario.Copy:
-                                    s.CopyTo(decompressedStream);
+                                    decompressor.CopyTo(decompressedStream);
                                     break;
 
                                 case TestScenario.CopyAsync:
-                                    await s.CopyToAsync(decompressedStream);
+                                    await decompressor.CopyToAsync(decompressedStream);
                                     break;
 
                                 case TestScenario.Read:
-                                    while (ZipFileTestBase.ReadAllBytes(s, buffer, 0, buffer.Length) != 0) { };
+                                    while (ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { };
                                     break;
 
                                 case TestScenario.ReadAsync:
-                                    while (await ZipFileTestBase.ReadAllBytesAsync(s, buffer, 0, buffer.Length) != 0) { };
+                                    while (await ZipFileTestBase.ReadAllBytesAsync(decompressor, buffer, 0, buffer.Length) != 0) { };
                                     break;
 
                                 case TestScenario.ReadByte:
-                                    while (s.ReadByte() != -1) { }
+                                    while (decompressor.ReadByte() != -1) { }
                                     break;
 
                                 case TestScenario.ReadByteAsync:
-                                    while (await s.ReadByteAsync() != -1) { }
+                                    while (await decompressor.ReadByteAsync() != -1) { }
                                     break;
                             }
                         }
@@ -575,29 +575,29 @@ namespace System.IO.Compression
             var buffer = new byte[64];
             byte[] compressedData;
             using (var compressed = new MemoryStream())
-            using (var gzip = new GZipStream(compressed, CompressionMode.Compress))
+            using (Stream compressor = CreateStream(compressed, CompressionMode.Compress))
             {
-                foreach (var b in source)
+                foreach (byte b in source)
                 {
-                    gzip.WriteByte(b);
+                    compressor.WriteByte(b);
                 }
 
-                gzip.Dispose();
+                compressor.Dispose();
                 compressedData = compressed.ToArray();
             }
 
-            for (var byteToCorrupt = 0; byteToCorrupt < compressedData.Length; byteToCorrupt++)
+            for (int byteToCorrupt = 0; byteToCorrupt < compressedData.Length; byteToCorrupt++)
             {
                 // corrupt the data
                 compressedData[byteToCorrupt]++;
 
                 using (var decompressedStream = new MemoryStream(compressedData))
                 {
-                    using (var s = new GZipStream(decompressedStream, CompressionMode.Decompress))
+                    using (Stream decompressor = CreateStream(decompressedStream, CompressionMode.Decompress))
                     {
                         try
                         {
-                            while(ZipFileTestBase.ReadAllBytes(s, buffer, 0, buffer.Length) != 0) { };
+                            while(ZipFileTestBase.ReadAllBytes(decompressor, buffer, 0, buffer.Length) != 0) { };
 
                             Assert.Equal(source, buffer);
                         }
