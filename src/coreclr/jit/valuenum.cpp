@@ -9723,23 +9723,15 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
 
     // If the call generates a definition, because it uses "return buffer", then VN the local
     // as well.
-    GenTreeLclVarCommon* lclVarTree;
-    if (call->DefinesLocal(this, &lclVarTree))
+    GenTreeLclVarCommon* lclVarTree = nullptr;
+    ssize_t              offset     = 0;
+    if (call->DefinesLocal(this, &lclVarTree, /* pIsEntire */ nullptr, &offset))
     {
-        assert((lclVarTree->gtFlags & GTF_VAR_DEF) != 0);
+        ValueNumPair storeValue;
+        storeValue.SetBoth(vnStore->VNForExpr(compCurBB, TYP_STRUCT));
+        unsigned storeSize = typGetObjLayout(call->gtRetClsHnd)->GetSize();
 
-        unsigned   hiddenArgLclNum = lclVarTree->GetLclNum();
-        LclVarDsc* hiddenArgVarDsc = lvaGetDesc(hiddenArgLclNum);
-        unsigned   lclDefSsaNum    = GetSsaNumForLocalVarDef(lclVarTree);
-
-        // TODO-Bug: call "fgValueNumberLocalStore" here, currently this code fails to update
-        // the heap state if the local was address-exposed.
-        if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
-        {
-            ValueNumPair newHiddenArgLclVNPair = ValueNumPair();
-            newHiddenArgLclVNPair.SetBoth(vnStore->VNForExpr(compCurBB, hiddenArgVarDsc->TypeGet()));
-            hiddenArgVarDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newHiddenArgLclVNPair;
-        }
+        fgValueNumberLocalStore(call, lclVarTree, offset, storeSize, storeValue);
     }
 }
 
