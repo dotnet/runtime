@@ -64,6 +64,7 @@ enum
     ARCH_S390X,
     ARCH_LOONGARCH64,
     ARCH_ARMV6,
+    ARCH_POWERPC64,
 };
 
 int32_t SystemNative_GetOSArchitecture()
