@@ -145,8 +145,6 @@ public:
                                             PTR_PTR_VOID *  ppvRetAddrLocation,     // out
                                             GCRefKind *     pRetValueKind) = 0;     // out
 
-    virtual void UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo) = 0;
-
     virtual PTR_VOID RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC) = 0;
 
     virtual bool EHEnumInit(MethodInfo * pMethodInfo, PTR_VOID * pMethodStartAddress, EHEnumState * pEHEnumState) = 0;

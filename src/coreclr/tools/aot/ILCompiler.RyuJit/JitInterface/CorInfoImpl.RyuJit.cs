@@ -1593,7 +1593,7 @@ namespace Internal.JitInterface
                             _compilation.NodeFactory.ReadyToRunHelper(helperId, slotDefiningMethod));
                 }
 
-                // The current CoreRT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
+                // The current NativeAOT ReadyToRun helpers do not handle null thisptr - ask the JIT to emit explicit null checks
                 // TODO: Optimize this
                 pResult->nullInstanceCheck = true;
             }

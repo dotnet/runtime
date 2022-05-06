@@ -77,7 +77,7 @@ HRESULT GCHeapUtilities::InitializeDefaultGC()
 
 void GCHeapUtilities::RecordEventStateChange(bool isPublicProvider, GCEventKeyword keywords, GCEventLevel level)
 {
-    // CoreRT does not support standalone GC. Call GCEventStatus directly to keep things simple.
+    // NativeAOT does not support standalone GC. Call GCEventStatus directly to keep things simple.
     GCEventStatus::Set(isPublicProvider ? GCEventProvider_Default : GCEventProvider_Private, keywords, level);
 }
 
