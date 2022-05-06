@@ -1105,7 +1105,7 @@ namespace DebuggerTests
 
                    ("test.GetString()", TString("1.23")),
                    ("test.GetUnicodeString()", TString("żółć")),
-                   ("test.GetString(null)", TObject("string", is_null: true)),
+                   ("test.GetString(null)", TString(null)),
                    ("test.GetStringNullable()", TString("1.23")),
 
                    ("test.GetSingle()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
@@ -1113,9 +1113,9 @@ namespace DebuggerTests
                    ("test.GetSingleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
                    ("test.GetDoubleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
 
-                   ("test.GetBool()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
-                   ("test.GetBoolNullable()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
-                   ("test.GetNull()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
+                   ("test.GetBool()", TBool(true)),
+                   ("test.GetBoolNullable()", TBool(true)),
+                   ("test.GetNull()", TBool(true)),
 
                    ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
                    ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
