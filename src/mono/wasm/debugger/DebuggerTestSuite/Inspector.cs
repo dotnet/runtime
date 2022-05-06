@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
+using System.Runtime.ExceptionServices;
 
 #nullable enable
 
@@ -330,7 +331,7 @@ namespace DebuggerTests
                 {
                     Console.WriteLine ($"OpenSession crashing. proxy state: {state}");
                     if (state.reason == RunLoopStopReason.Exception && state.exception is not null)
-                        throw state.exception;
+                        ExceptionDispatchInfo.Capture(state.exception).Throw();
                 }
 
                 throw;
