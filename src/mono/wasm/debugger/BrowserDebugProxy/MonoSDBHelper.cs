@@ -1918,7 +1918,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             long initialPos =  /*retDebuggerCmdReader == null ? 0 : */retDebuggerCmdReader.BaseStream.Position;
             ElementType etype = (ElementType)retDebuggerCmdReader.ReadByte();
-            Console.WriteLine($"CreateJObjectForVariableValue {etype}");
             JObject ret = null;
             switch (etype) {
                 case ElementType.I:
