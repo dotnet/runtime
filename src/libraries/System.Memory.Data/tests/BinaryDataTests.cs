@@ -585,6 +585,12 @@ namespace System.Tests
             Assert.Same(BinaryData.Empty, BinaryData.Empty);
         }
 
+        [Fact]
+        public void ToStringReturnEmptyStringWhenBinaryDataEmpty()
+        {
+            Assert.Equal(string.Empty, BinaryData.Empty.ToString());
+        }
+
         private class TestModel
         {
             public string A { get; set; }

@@ -16,28 +16,28 @@
 }
 .assembly extern xunit.core {}
 // MVID: {A29CDE84-6701-43B3-B56A-DE8480CE7421}
-.namespace JitTest
+.namespace JitTest_volatile_il
 {
-  .class value private auto ansi sealed VT extends [mscorlib]System.ValueType
+  .class value public auto ansi sealed VT extends [mscorlib]System.ValueType
   {
   	.field public int32 m_n
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00
 		)
 		.entrypoint
 		.maxstack  8
-		.locals (value class JitTest.VT src, value class JitTest.VT dst)
+		.locals (value class JitTest_volatile_il.VT src, value class JitTest_volatile_il.VT dst)
 		ldloca src
-		initobj JitTest.VT
+		initobj JitTest_volatile_il.VT
 		ldloc src
 		ldloca src
 		ldc.i4 1000
-		stfld int32 JitTest.VT::m_n
+		stfld int32 JitTest_volatile_il.VT::m_n
 		stloc dst
 		ldloca dst
-		ldfld int32 JitTest.VT::m_n
+		ldfld int32 JitTest_volatile_il.VT::m_n
 		dup
 		call void [System.Console]System.Console::WriteLine(int32)
 		ldc.i4 100
@@ -47,6 +47,6 @@
 
   } // end of class VT
 
-} // end of namespace JitTest
+} // end of namespace JitTest_volatile_il
 
 //*********** DISASSEMBLY COMPLETE ***********************

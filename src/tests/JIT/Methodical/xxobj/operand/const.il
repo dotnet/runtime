@@ -12,9 +12,9 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_const_operand_il
 {
-  .class private sequential ansi sealed beforefieldinit Test
+  .class public sequential ansi sealed beforefieldinit Test
          extends [mscorlib]System.ValueType
   {
     .field private int32 m_v
@@ -55,7 +55,7 @@
       ldc.i4.0
       ret
     }
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -71,21 +71,21 @@
 
 	ldloca.s V_1
 	conv.u
-      IL_0000:  call       int32 JitTest.Test::const_ldobj(int8*)
+      IL_0000:  call       int32 JitTest_const_operand_il.Test::const_ldobj(int8*)
       IL_0005:  brfalse.s  IL_0016
       IL_0007:  ldstr      "const_ldobj() failed."
       IL_000c:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0011:  ldc.i4.s   101
       IL_0013:  stloc.0
       IL_0014:  br.s       IL_0067
-      IL_0016:  call       int32 JitTest.Test::const_initobj()
+      IL_0016:  call       int32 JitTest_const_operand_il.Test::const_initobj()
       IL_001b:  brfalse.s  IL_002c
       IL_001d:  ldstr      "const_initobj() failed."
       IL_0022:  call       void [System.Console]System.Console::WriteLine(string)
       IL_0027:  ldc.i4.s   102
       IL_0029:  stloc.0
       IL_002a:  br.s       IL_0067
-      IL_002c:  call       int32 JitTest.Test::const_stobj()
+      IL_002c:  call       int32 JitTest_const_operand_il.Test::const_stobj()
       IL_0031:  brfalse.s  IL_0042
       IL_0033:  ldstr      "const_stobj() failed."
       IL_0038:  call       void [System.Console]System.Console::WriteLine(string)
@@ -95,7 +95,7 @@
       IL_0042:  
 		ldloca.s V_1
 		conv.u		
-		call       int32 JitTest.Test::const_cpobj(int8*)
+		call       int32 JitTest_const_operand_il.Test::const_cpobj(int8*)
       IL_0047:  brfalse.s  IL_0058
       IL_0049:  ldstr      "const_cpobj() failed."
       IL_004e:  call       void [System.Console]System.Console::WriteLine(string)

@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <GCStressIncompatible>true</GCStressIncompatible>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>
   </PropertyGroup>

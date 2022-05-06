@@ -117,6 +117,7 @@ extern "C"
 #endif
 
 extern char *g_szCoreCLRPath;
+extern bool g_running_in_exe;
 
 using namespace CorUnix;
 
@@ -1250,6 +1251,7 @@ See MSDN doc.
 --*/
 VOID
 PALAPI
+DECLSPEC_NORETURN
 RaiseFailFastException(
     IN PEXCEPTION_RECORD pExceptionRecord,
     IN PCONTEXT pContextRecord,
@@ -2340,6 +2342,11 @@ PROCBuildCreateDumpCommandLine(
     if (flags & GenerateDumpFlagsCrashReportEnabled)
     {
         argv.push_back("--crashreport");
+    }
+
+    if (g_running_in_exe)
+    {
+        argv.push_back("--singlefile");
     }
 
     if (logFileName != nullptr)

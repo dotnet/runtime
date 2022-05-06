@@ -501,7 +501,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     pal::string_t install_location_path = get_dotnet_self_registered_config_location();
     pal::string_t arch_specific_install_location_file_path = install_location_path;
     append_path(&arch_specific_install_location_file_path, (_X("install_location_") + to_lower(get_arch())).c_str());
-    trace::verbose(_X("Looking for architecture specific install_location file in '%s'."), arch_specific_install_location_file_path.c_str());
+    trace::verbose(_X("Looking for architecture-specific install_location file in '%s'."), arch_specific_install_location_file_path.c_str());
 
     pal::string_t install_location;
     bool file_found = false;
@@ -523,7 +523,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     }
 
     recv->assign(install_location);
-    trace::verbose(_X("Using install location '%s'."), recv->c_str());
+    trace::verbose(_X("Found registered install location '%s'."), recv->c_str());
     return true;
 }
 

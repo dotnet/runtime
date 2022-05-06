@@ -394,12 +394,12 @@
       <MergedAssemblyMarkerPaths Include="$(XunitTestBinBase)\**\*.MergedTestAssembly"/>
       <MergedAssemblyFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyMarkerPaths.Identity)'))" />
       <MergedAssemblyParentFolders Include="$([System.IO.Path]::GetDirectoryName('%(MergedAssemblyFolders.Identity)'))" />
-      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" />
-      <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" />
+      <AllRunnableTestPaths Remove="%(MergedAssemblyParentFolders.Identity)\**\*.$(TestScriptExtension)" Condition="'@(MergedAssemblyParentFolders)' != ''" />
+      <MergedRunnableTestPaths Include="$([System.IO.Path]::ChangeExtension('%(MergedAssemblyMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(MergedAssemblyMarkerPaths)' != ''" />
       <OutOfProcessTestMarkerPaths Include="$(XunitTestBinBase)\**\*.OutOfProcessTest"/>
-      <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" />
+      <OutOfProcessTestPaths Include="$([System.IO.Path]::ChangeExtension('%(OutOfProcessTestMarkerPaths.Identity)', '.$(TestScriptExtension)'))" Condition="'@(OutOfProcessTestMarkerPaths)' != ''" />
       <NoMonoAotMarkerPaths Include="$(XunitTestBinBase)\**\*.NoMonoAot" />
-      <NoMonoAotAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(NoMonoAotMarkerPaths.Identity)', '.dll'))" />
+      <NoMonoAotAssemblyPaths Include="$([System.IO.Path]::ChangeExtension('%(NoMonoAotMarkerPaths.Identity)', '.dll'))" Condition="'@(NoMonoAotMarkerPaths)' != ''" />
     </ItemGroup>
     <!-- Remove the cmd/sh scripts for merged test runner app bundles from our list. -->
     <PropertyGroup Condition="'$(TargetsMobile)' == 'true'">

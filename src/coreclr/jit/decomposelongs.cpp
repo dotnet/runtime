@@ -157,7 +157,7 @@ GenTree* DecomposeLongs::DecomposeNode(GenTree* tree)
     LIR::Use use;
     if (!Range().TryGetUse(tree, &use))
     {
-        use = LIR::Use::GetDummyUse(Range(), tree);
+        LIR::Use::MakeDummyUse(Range(), tree, &use);
     }
 
     GenTree* nextNode = nullptr;

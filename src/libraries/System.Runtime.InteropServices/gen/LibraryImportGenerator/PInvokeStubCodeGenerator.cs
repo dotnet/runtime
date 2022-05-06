@@ -198,15 +198,6 @@ namespace Microsoft.Interop
             {
                 try
                 {
-                    // TODO: Remove once helper types (like ArrayMarshaller) are part of the runtime
-                    // This check is to help with enabling the source generator for runtime libraries without making each
-                    // library directly reference System.Memory and System.Runtime.CompilerServices.Unsafe unless it needs to
-                    if (p.MarshallingAttributeInfo is MissingSupportMarshallingInfo
-                        && (environment.TargetFramework == TargetFramework.Net && environment.TargetFrameworkVersion.Major >= 7))
-                    {
-                        throw new MarshallingNotSupportedException(p, this);
-                    }
-
                     return new BoundGenerator(p, generatorFactory.Create(p, this));
                 }
                 catch (MarshallingNotSupportedException e)

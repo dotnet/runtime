@@ -157,8 +157,7 @@ namespace TestLibrary
             return returnString;
         }
 
-        // Given a character, display its unicode value in hex format. ProjectN doens't support
-        // unicode category as a Property on Char.
+        // Given a character, display its unicode value in hex format.
         public static string FormatHexStringFromUnicodeChar(char char1, bool includeUnicodeCategory)
         {
             if (includeUnicodeCategory)

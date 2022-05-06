@@ -1,6 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
     <!-- TestAssemblyLoadContext.Load called from the finalizer -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
     <RequiresProcessIsolation>true</RequiresProcessIsolation>

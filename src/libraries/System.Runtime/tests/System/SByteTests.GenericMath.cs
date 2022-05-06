@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
-using System.Runtime.Versioning;
 using Xunit;
 
 namespace System.Tests
@@ -120,6 +119,16 @@ namespace System.Tests
             Assert.Equal((sbyte)0x00, BinaryIntegerHelper<sbyte>.TrailingZeroCount((sbyte)0x7F));
             Assert.Equal((sbyte)0x07, BinaryIntegerHelper<sbyte>.TrailingZeroCount(unchecked((sbyte)0x80)));
             Assert.Equal((sbyte)0x00, BinaryIntegerHelper<sbyte>.TrailingZeroCount(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void GetShortestBitLengthTest()
+        {
+            Assert.Equal(0x00, BinaryIntegerHelper<sbyte>.GetShortestBitLength((sbyte)0x00));
+            Assert.Equal(0x01, BinaryIntegerHelper<sbyte>.GetShortestBitLength((sbyte)0x01));
+            Assert.Equal(0x07, BinaryIntegerHelper<sbyte>.GetShortestBitLength((sbyte)0x7F));
+            Assert.Equal(0x08, BinaryIntegerHelper<sbyte>.GetShortestBitLength(unchecked((sbyte)0x80)));
+            Assert.Equal(0x01, BinaryIntegerHelper<sbyte>.GetShortestBitLength(unchecked((sbyte)0xFF)));
         }
 
         [Fact]
@@ -1069,6 +1078,47 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void GetByteCountTest()
+        {
+            Assert.Equal(1, BinaryIntegerHelper<sbyte>.GetByteCount((sbyte)0x00));
+            Assert.Equal(1, BinaryIntegerHelper<sbyte>.GetByteCount((sbyte)0x01));
+            Assert.Equal(1, BinaryIntegerHelper<sbyte>.GetByteCount((sbyte)0x7F));
+            Assert.Equal(1, BinaryIntegerHelper<sbyte>.GetByteCount(unchecked((sbyte)0x80)));
+            Assert.Equal(1, BinaryIntegerHelper<sbyte>.GetByteCount(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void TryWriteLittleEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[1];
+            int bytesWritten = 0;
+
+            Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian((sbyte)0x00, destination, out bytesWritten));
+            Assert.Equal(1, bytesWritten);
+            Assert.Equal(new byte[] { 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian((sbyte)0x01, destination, out bytesWritten));
+            Assert.Equal(1, bytesWritten);
+            Assert.Equal(new byte[] { 0x01 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian((sbyte)0x7F, destination, out bytesWritten));
+            Assert.Equal(1, bytesWritten);
+            Assert.Equal(new byte[] { 0x7F }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian(unchecked((sbyte)0x80), destination, out bytesWritten));
+            Assert.Equal(1, bytesWritten);
+            Assert.Equal(new byte[] { 0x80 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian(unchecked((sbyte)0xFF), destination, out bytesWritten));
+            Assert.Equal(1, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF }, destination.ToArray());
+
+            Assert.False(BinaryIntegerHelper<sbyte>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF }, destination.ToArray());
+        }
+
+        [Fact]
         public static void op_LeftShiftTest()
         {
             Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, sbyte>.op_LeftShift((sbyte)0x00, 1));
@@ -1086,6 +1136,16 @@ namespace System.Tests
             Assert.Equal((sbyte)0x3F, ShiftOperatorsHelper<sbyte, sbyte>.op_RightShift((sbyte)0x7F, 1));
             Assert.Equal(unchecked((sbyte)0xC0), ShiftOperatorsHelper<sbyte, sbyte>.op_RightShift(unchecked((sbyte)0x80), 1));
             Assert.Equal(unchecked((sbyte)0xFF), ShiftOperatorsHelper<sbyte, sbyte>.op_RightShift(unchecked((sbyte)0xFF), 1));
+        }
+
+        [Fact]
+        public static void op_UnsignedRightShiftTest()
+        {
+            Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, sbyte>.op_UnsignedRightShift((sbyte)0x00, 1));
+            Assert.Equal((sbyte)0x00, ShiftOperatorsHelper<sbyte, sbyte>.op_UnsignedRightShift((sbyte)0x01, 1));
+            Assert.Equal((sbyte)0x3F, ShiftOperatorsHelper<sbyte, sbyte>.op_UnsignedRightShift((sbyte)0x7F, 1));
+            Assert.Equal((sbyte)0x40, ShiftOperatorsHelper<sbyte, sbyte>.op_UnsignedRightShift(unchecked((sbyte)0x80), 1));
+            Assert.Equal((sbyte)0x7F, ShiftOperatorsHelper<sbyte, sbyte>.op_UnsignedRightShift(unchecked((sbyte)0xFF), 1));
         }
 
         [Fact]

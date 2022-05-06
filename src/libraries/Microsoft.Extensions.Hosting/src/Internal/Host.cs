@@ -21,7 +21,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private readonly HostOptions _options;
         private readonly IHostEnvironment _hostEnvironment;
         private readonly PhysicalFileProvider _defaultProvider;
-        private IEnumerable<IHostedService> _hostedServices;
+        private IEnumerable<IHostedService>? _hostedServices;
         private volatile bool _stopCalled;
 
         public Host(IServiceProvider services,
@@ -32,8 +32,13 @@ namespace Microsoft.Extensions.Hosting.Internal
                     IHostLifetime hostLifetime,
                     IOptions<HostOptions> options)
         {
-            Services = services ?? throw new ArgumentNullException(nameof(services));
-            _applicationLifetime = (applicationLifetime ?? throw new ArgumentNullException(nameof(applicationLifetime))) as ApplicationLifetime;
+            ThrowHelper.ThrowIfNull(services);
+            ThrowHelper.ThrowIfNull(applicationLifetime);
+            ThrowHelper.ThrowIfNull(logger);
+            ThrowHelper.ThrowIfNull(hostLifetime);
+
+            Services = services;
+            _applicationLifetime = (applicationLifetime as ApplicationLifetime)!;
             _hostEnvironment = hostEnvironment;
             _defaultProvider = defaultProvider;
 
@@ -41,8 +46,8 @@ namespace Microsoft.Extensions.Hosting.Internal
             {
                 throw new ArgumentException(SR.IHostApplicationLifetimeReplacementNotSupported, nameof(applicationLifetime));
             }
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _hostLifetime = hostLifetime ?? throw new ArgumentNullException(nameof(hostLifetime));
+            _logger = logger;
+            _hostLifetime = hostLifetime;
             _options = options?.Value ?? throw new ArgumentNullException(nameof(options));
         }
 
@@ -58,7 +63,7 @@ namespace Microsoft.Extensions.Hosting.Internal
             await _hostLifetime.WaitForStartAsync(combinedCancellationToken).ConfigureAwait(false);
 
             combinedCancellationToken.ThrowIfCancellationRequested();
-            _hostedServices = Services.GetService<IEnumerable<IHostedService>>();
+            _hostedServices = Services.GetRequiredService<IEnumerable<IHostedService>>();
 
             foreach (IHostedService hostedService in _hostedServices)
             {
@@ -80,7 +85,7 @@ namespace Microsoft.Extensions.Hosting.Internal
         private async Task TryExecuteBackgroundServiceAsync(BackgroundService backgroundService)
         {
             // backgroundService.ExecuteTask may not be set (e.g. if the derived class doesn't call base.StartAsync)
-            Task backgroundTask = backgroundService.ExecuteTask;
+            Task? backgroundTask = backgroundService.ExecuteTask;
             if (backgroundTask == null)
             {
                 return;

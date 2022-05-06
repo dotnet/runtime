@@ -234,7 +234,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       <IlcArg Condition="$(IlcInstructionSet) != ''" Include="--instructionset:$(IlcInstructionSet)" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--disablereflection" />
       <IlcArg Condition="$(IlcDisableReflection) == 'true'" Include="--feature:System.Collections.Generic.DefaultComparers=false" />
-      <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--singlethreaded" />
+      <IlcArg Condition="$(IlcSingleThreaded) == 'true'" Include="--parallelism:1" />
       <IlcArg Condition="$(IlcSystemModule) != ''" Include="--systemmodule:$(IlcSystemModule)" />
       <IlcArg Condition="$(IlcDumpIL) == 'true'" Include="--ildump:$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).il" />
       <IlcArg Condition="$(NoWarn) != ''" Include='--nowarn:"$([MSBuild]::Escape($(NoWarn)))"' />
@@ -265,7 +265,7 @@ The .NET Foundation licenses this file to you under the MIT license.
       Outputs="%(ManagedBinary.IlcOutputFile)"
       DependsOnTargets="WriteIlcRspFileForCompilation;$(IlcCompileDependsOn)">
     <Message Text="Generating native code" Condition="$(_BuildingInCompatibleMode) != 'true'" Importance="high" />
-    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeCoreRT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
+    <Message Text="Generating compatible native code. To optimize for size or speed, visit https://aka.ms/OptimizeNativeAOT" Condition="$(_BuildingInCompatibleMode) == 'true'" Importance="high" />
 
     <Exec Command="&quot;$(IlcToolsPath)\ilc&quot; @&quot;$(NativeIntermediateOutputPath)%(ManagedBinary.Filename).ilc.rsp&quot;" />
 

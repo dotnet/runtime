@@ -4005,7 +4005,7 @@ bool Compiler::fgOptimizeBranch(BasicBlock* bJump)
 
     /* Visit all the statements in bDest */
 
-    for (Statement* const curStmt : bDest->Statements())
+    for (Statement* const curStmt : bDest->NonPhiStatements())
     {
         // Clone/substitute the expression.
         Statement* stmt = gtCloneStmt(curStmt);

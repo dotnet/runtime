@@ -1237,6 +1237,228 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void GetExponentByteCountTest()
+        {
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(double.NegativeInfinity));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(double.MinValue));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(-1.0));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(-MinNormal));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(-MaxSubnormal));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(-double.Epsilon));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(-0.0));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(double.NaN));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(0.0));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(double.Epsilon));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(MaxSubnormal));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(MinNormal));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(1.0));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(double.MaxValue));
+            Assert.Equal(2, FloatingPointHelper<double>.GetExponentByteCount(double.PositiveInfinity));
+        }
+
+        [Fact]
+        public static void GetExponentShortestBitLengthTest()
+        {
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(double.NegativeInfinity));
+            Assert.Equal(10, FloatingPointHelper<double>.GetExponentShortestBitLength(double.MinValue));
+            Assert.Equal(0, FloatingPointHelper<double>.GetExponentShortestBitLength(-1.0));
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(-MinNormal));
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(-MaxSubnormal));
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(-double.Epsilon));
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(-0.0));
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(double.NaN));
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(0.0));
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(double.Epsilon));
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(MaxSubnormal));
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(MinNormal));
+            Assert.Equal(0, FloatingPointHelper<double>.GetExponentShortestBitLength(1.0));
+            Assert.Equal(10, FloatingPointHelper<double>.GetExponentShortestBitLength(double.MaxValue));
+            Assert.Equal(11, FloatingPointHelper<double>.GetExponentShortestBitLength(double.PositiveInfinity));
+        }
+
+        [Fact]
+        public static void GetSignificandByteCountTest()
+        {
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(double.NegativeInfinity));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(double.MinValue));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(-1.0));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(-MinNormal));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(-MaxSubnormal));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(-double.Epsilon));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(-0.0));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(double.NaN));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(0.0));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(double.Epsilon));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(MaxSubnormal));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(MinNormal));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(1.0));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(double.MaxValue));
+            Assert.Equal(8, FloatingPointHelper<double>.GetSignificandByteCount(double.PositiveInfinity));
+        }
+
+        [Fact]
+        public static void GetSignificandBitLengthTest()
+        {
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(double.NegativeInfinity));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(double.MinValue));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(-1.0));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(-MinNormal));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(-MaxSubnormal));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(-double.Epsilon));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(-0.0));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(double.NaN));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(0.0));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(double.Epsilon));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(MaxSubnormal));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(MinNormal));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(1.0));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(double.MaxValue));
+            Assert.Equal(53, FloatingPointHelper<double>.GetSignificandBitLength(double.PositiveInfinity));
+        }
+
+        [Fact]
+        public static void TryWriteExponentLittleEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[2];
+            int bytesWritten = 0;
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.NegativeInfinity, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x04 }, destination.ToArray()); // +1024
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.MinValue, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0x03 }, destination.ToArray()); // +1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(-1.0, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray()); // +0
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(-MinNormal, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x02, 0xFC }, destination.ToArray()); // -1022
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(-MaxSubnormal, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(-double.Epsilon, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(-0.0, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.NaN, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x04 }, destination.ToArray()); // +1024
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(0.0, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.Epsilon, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(MaxSubnormal, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0xFC }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(MinNormal, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x02, 0xFC }, destination.ToArray()); // -1022
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(1.0, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray()); // +0
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.MaxValue, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0x03 }, destination.ToArray()); // +1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentLittleEndian(double.PositiveInfinity, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x04 }, destination.ToArray()); // +1024
+
+            Assert.False(FloatingPointHelper<double>.TryWriteExponentLittleEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x04 }, destination.ToArray());
+        }
+
+        [Fact]
+        public static void TryWriteSignificandLittleEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[8];
+            int bytesWritten = 0;
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.NegativeInfinity, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.MinValue, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x1F, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(-1.0, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(-MinNormal, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(-MaxSubnormal, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(-double.Epsilon, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(-0.0, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.NaN, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x18, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(0.0, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.Epsilon, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(MaxSubnormal, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x0F, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(MinNormal, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(1.0, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.MaxValue, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x1F, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(double.PositiveInfinity, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+
+            Assert.False(FloatingPointHelper<double>.TryWriteSignificandLittleEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x10, 0x00 }, destination.ToArray());
+        }
+
+        [Fact]
         public static void op_SubtractionTest()
         {
             AssertBitwiseEqual(double.NegativeInfinity, SubtractionOperatorsHelper<double, double, double>.op_Subtraction(double.NegativeInfinity, 1.0));

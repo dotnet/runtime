@@ -12,7 +12,7 @@ using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal unsafe sealed class MsQuicApi
+    internal sealed unsafe class MsQuicApi
     {
         private static readonly Version MinWindowsVersion = new Version(10, 0, 20145, 1000);
 

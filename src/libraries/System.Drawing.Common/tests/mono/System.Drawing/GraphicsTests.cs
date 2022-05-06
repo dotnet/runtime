@@ -3152,7 +3152,6 @@ namespace MonoTests.System.Drawing
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void TransformPoints()
         {

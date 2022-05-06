@@ -73,7 +73,7 @@ namespace System.ServiceProcess.Tests
         }
 
 #if NETCOREAPP
-        [Theory]
+        [ConditionalTheory(nameof(IsProcessElevated))]
         [InlineData(-2)]
         [InlineData((long)int.MaxValue + 1)]
         public void RequestAdditionalTime_Throws_ArgumentOutOfRangeException(long milliseconds)

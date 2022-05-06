@@ -583,15 +583,6 @@ BOOL CheckInstantiation(Instantiation inst)
         {
             return FALSE;
         }
-
-        MethodTable* pMT = th.GetMethodTable();
-        if (pMT != NULL)
-        {
-            if (pMT->IsByRefLike())
-            {
-                return FALSE;
-            }
-        }
     }
     return TRUE;
 }

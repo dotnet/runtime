@@ -1828,7 +1828,7 @@ static BOOL IsVarargPInvokeStub(PCODE stubStartAddress)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub))
         return TRUE;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     if (stubStartAddress == GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg))
         return TRUE;
 #endif

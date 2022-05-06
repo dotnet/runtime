@@ -30,6 +30,7 @@ namespace Internal.JitInterface
         ARM64_Vector64 = InstructionSet_ARM64.Vector64,
         ARM64_Vector128 = InstructionSet_ARM64.Vector128,
         ARM64_Dczva = InstructionSet_ARM64.Dczva,
+        ARM64_Rcpc = InstructionSet_ARM64.Rcpc,
         ARM64_ArmBase_Arm64 = InstructionSet_ARM64.ArmBase_Arm64,
         ARM64_AdvSimd_Arm64 = InstructionSet_ARM64.AdvSimd_Arm64,
         ARM64_Aes_Arm64 = InstructionSet_ARM64.Aes_Arm64,
@@ -38,7 +39,6 @@ namespace Internal.JitInterface
         ARM64_Rdm_Arm64 = InstructionSet_ARM64.Rdm_Arm64,
         ARM64_Sha1_Arm64 = InstructionSet_ARM64.Sha1_Arm64,
         ARM64_Sha256_Arm64 = InstructionSet_ARM64.Sha256_Arm64,
-        ARM64_Rcpc = InstructionSet_ARM64.Rcpc,
         X64_X86Base = InstructionSet_X64.X86Base,
         X64_SSE = InstructionSet_X64.SSE,
         X64_SSE2 = InstructionSet_X64.SSE2,
@@ -129,15 +129,15 @@ namespace Internal.JitInterface
         Vector64 = 10,
         Vector128 = 11,
         Dczva = 12,
-        ArmBase_Arm64 = 13,
-        AdvSimd_Arm64 = 14,
-        Aes_Arm64 = 15,
-        Crc32_Arm64 = 16,
-        Dp_Arm64 = 17,
-        Rdm_Arm64 = 18,
-        Sha1_Arm64 = 19,
-        Sha256_Arm64 = 20,
-        Rcpc = 21,
+        Rcpc = 13,
+        ArmBase_Arm64 = 14,
+        AdvSimd_Arm64 = 15,
+        Aes_Arm64 = 16,
+        Crc32_Arm64 = 17,
+        Dp_Arm64 = 18,
+        Rdm_Arm64 = 19,
+        Sha1_Arm64 = 20,
+        Sha256_Arm64 = 21,
     }
 
     public enum InstructionSet_X64
@@ -742,7 +742,7 @@ namespace Internal.JitInterface
                     yield return new InstructionSetInfo("Vector64", "", InstructionSet.ARM64_Vector64, false);
                     yield return new InstructionSetInfo("Vector128", "", InstructionSet.ARM64_Vector128, false);
                     yield return new InstructionSetInfo("Dczva", "", InstructionSet.ARM64_Dczva, false);
-                    yield return new InstructionSetInfo("Rcpc", "", InstructionSet.ARM64_Rcpc, false);
+                    yield return new InstructionSetInfo("rcpc", "", InstructionSet.ARM64_Rcpc, true);
                     break;
 
                 case TargetArchitecture.X64:

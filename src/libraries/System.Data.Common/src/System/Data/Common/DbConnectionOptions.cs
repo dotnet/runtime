@@ -8,7 +8,7 @@ using System.Text;
 
 namespace System.Data.Common
 {
-    internal partial class DbConnectionOptions
+    internal sealed partial class DbConnectionOptions
     {
         // instances of this class are intended to be immutable, i.e readonly
         // used by pooling classes so it is easier to verify correctness
@@ -127,7 +127,7 @@ namespace System.Data.Common
             }
         }
 
-        protected internal virtual string Expand() => _usersConnectionString;
+        internal string Expand() => _usersConnectionString;
 
         internal string ExpandKeyword(string keyword, string replacementValue)
         {

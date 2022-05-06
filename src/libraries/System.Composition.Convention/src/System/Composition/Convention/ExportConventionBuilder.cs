@@ -38,8 +38,13 @@ namespace System.Composition.Convention
         /// </summary>
         /// <param name="type">The contract type.</param>
         /// <returns>An export builder allowing further configuration.</returns>
-        public ExportConventionBuilder AsContractType(Type type!!)
+        public ExportConventionBuilder AsContractType(Type type)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             _contractType = type;
             return this;
         }
@@ -49,8 +54,13 @@ namespace System.Composition.Convention
         /// </summary>
         /// <param name="contractName">The contract name.</param>
         /// <returns>An export builder allowing further configuration.</returns>
-        public ExportConventionBuilder AsContractName(string contractName!!)
+        public ExportConventionBuilder AsContractName(string contractName)
         {
+            if (contractName is null)
+            {
+                throw new ArgumentNullException(nameof(contractName));
+            }
+
             if (contractName.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(contractName)), nameof(contractName));
@@ -64,8 +74,13 @@ namespace System.Composition.Convention
         /// </summary>
         /// <param name="getContractNameFromPartType">A Func to retrieve the contract name from the part typeThe contract name.</param>
         /// <returns>An export builder allowing further configuration.</returns>
-        public ExportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType!!)
+        public ExportConventionBuilder AsContractName(Func<Type, string> getContractNameFromPartType)
         {
+            if (getContractNameFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getContractNameFromPartType));
+            }
+
             _getContractNameFromPartType = getContractNameFromPartType;
             return this;
         }
@@ -76,8 +91,13 @@ namespace System.Composition.Convention
         /// <param name="name">The name of the metadata item.</param>
         /// <param name="value">The value of the metadata item.</param>
         /// <returns>An export builder allowing further configuration.</returns>
-        public ExportConventionBuilder AddMetadata(string name!!, object value)
+        public ExportConventionBuilder AddMetadata(string name, object value)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));
@@ -96,8 +116,17 @@ namespace System.Composition.Convention
         /// <param name="name">The name of the metadata item.</param>
         /// <param name="getValueFromPartType">A function that calculates the metadata value based on the type.</param>
         /// <returns>An export builder allowing further configuration.</returns>
-        public ExportConventionBuilder AddMetadata(string name!!, Func<Type, object> getValueFromPartType!!)
+        public ExportConventionBuilder AddMetadata(string name, Func<Type, object> getValueFromPartType)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+            if (getValueFromPartType is null)
+            {
+                throw new ArgumentNullException(nameof(getValueFromPartType));
+            }
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Format(SR.ArgumentException_EmptyString, nameof(name)), nameof(name));

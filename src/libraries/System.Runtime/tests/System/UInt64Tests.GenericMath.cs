@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Globalization;
-using System.Runtime.Versioning;
 using Xunit;
 
 namespace System.Tests
@@ -114,6 +113,16 @@ namespace System.Tests
             Assert.Equal((ulong)0x0000000000000000, BinaryIntegerHelper<ulong>.TrailingZeroCount((ulong)0x7FFFFFFFFFFFFFFF));
             Assert.Equal((ulong)0x000000000000003F, BinaryIntegerHelper<ulong>.TrailingZeroCount((ulong)0x8000000000000000));
             Assert.Equal((ulong)0x0000000000000000, BinaryIntegerHelper<ulong>.TrailingZeroCount((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void GetShortestBitLengthTest()
+        {
+            Assert.Equal(0x00, BinaryIntegerHelper<ulong>.GetShortestBitLength((ulong)0x0000000000000000));
+            Assert.Equal(0x01, BinaryIntegerHelper<ulong>.GetShortestBitLength((ulong)0x0000000000000001));
+            Assert.Equal(0x3F, BinaryIntegerHelper<ulong>.GetShortestBitLength((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.Equal(0x40, BinaryIntegerHelper<ulong>.GetShortestBitLength((ulong)0x8000000000000000));
+            Assert.Equal(0x40, BinaryIntegerHelper<ulong>.GetShortestBitLength((ulong)0xFFFFFFFFFFFFFFFF));
         }
 
         [Fact]
@@ -1063,6 +1072,47 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void GetByteCountTest()
+        {
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.GetByteCount((ulong)0x0000000000000000));
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.GetByteCount((ulong)0x0000000000000001));
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.GetByteCount((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.GetByteCount((ulong)0x8000000000000000));
+            Assert.Equal(8, BinaryIntegerHelper<ulong>.GetByteCount((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void TryWriteLittleEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[8];
+            int bytesWritten = 0;
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryWriteLittleEndian((ulong)0x0000000000000000, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryWriteLittleEndian((ulong)0x0000000000000001, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryWriteLittleEndian((ulong)0x7FFFFFFFFFFFFFFF, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryWriteLittleEndian((ulong)0x8000000000000000, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<ulong>.TryWriteLittleEndian((ulong)0xFFFFFFFFFFFFFFFF, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+
+            Assert.False(BinaryIntegerHelper<ulong>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+        }
+
+        [Fact]
         public static void op_LeftShiftTest()
         {
             Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_LeftShift((ulong)0x0000000000000000, 1));
@@ -1080,6 +1130,16 @@ namespace System.Tests
             Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
             Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0x8000000000000000, 1));
             Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_RightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
+        }
+
+        [Fact]
+        public static void op_UnsignedRightShiftTest()
+        {
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x3FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x4000000000000000, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, ShiftOperatorsHelper<ulong, ulong>.op_UnsignedRightShift((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]

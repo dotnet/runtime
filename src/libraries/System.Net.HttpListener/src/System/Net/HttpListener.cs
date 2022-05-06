@@ -102,8 +102,10 @@ namespace System.Net
             }
         }
 
-        internal void AddPrefix(string uriPrefix!!)
+        internal void AddPrefix(string uriPrefix)
         {
+            ArgumentNullException.ThrowIfNull(uriPrefix);
+
             string? registeredPrefix;
             try
             {

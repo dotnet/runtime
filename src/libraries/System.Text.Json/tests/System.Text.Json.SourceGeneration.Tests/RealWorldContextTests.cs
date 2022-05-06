@@ -111,6 +111,40 @@ namespace System.Text.Json.SourceGeneration.Tests
             VerifyRepeatedLocation(expected, obj);
         }
 
+        [Theory]
+        [InlineData("0")]
+        [InlineData("false")]
+        [InlineData("\"str\"")]
+        [InlineData("[1,2,3]")]
+        [InlineData("{ \"key\" : \"value\" }")]
+        public void RoundtripJsonDocument(string json)
+        {
+            JsonDocument jsonDocument = JsonDocument.Parse(json);
+
+            string actualJson = JsonSerializer.Serialize(jsonDocument, DefaultContext.JsonDocument);
+            JsonTestHelper.AssertJsonEqual(json, actualJson);
+
+            JsonDocument actualJsonDocument = JsonSerializer.Deserialize(actualJson, DefaultContext.JsonDocument);
+            JsonTestHelper.AssertJsonEqual(jsonDocument.RootElement, actualJsonDocument.RootElement);
+        }
+
+        [Theory]
+        [InlineData("0")]
+        [InlineData("false")]
+        [InlineData("\"str\"")]
+        [InlineData("[1,2,3]")]
+        [InlineData("{ \"key\" : \"value\" }")]
+        public void RoundtripJsonElement(string json)
+        {
+            JsonElement jsonElement = JsonDocument.Parse(json).RootElement;
+
+            string actualJson = JsonSerializer.Serialize(jsonElement, DefaultContext.JsonElement);
+            JsonTestHelper.AssertJsonEqual(json, actualJson);
+
+            JsonElement actualJsonElement = JsonSerializer.Deserialize(actualJson, DefaultContext.JsonElement);
+            JsonTestHelper.AssertJsonEqual(jsonElement, actualJsonElement);
+        }
+
         [Fact]
         public virtual void RoundTripValueTuple()
         {
@@ -737,6 +771,18 @@ namespace System.Text.Json.SourceGeneration.Tests
         }
 
         [Fact]
+        public virtual void PositionalRecord()
+        {
+            string json = JsonSerializer.Serialize(new HighLowTempsRecord(1, 2), DefaultContext.HighLowTempsRecord);
+            Assert.Contains(@"""High"":1", json);
+            Assert.Contains(@"""Low"":2", json);
+
+            HighLowTempsRecord obj = JsonSerializer.Deserialize(json, DefaultContext.HighLowTempsRecord);
+            Assert.Equal(1, obj.High);
+            Assert.Equal(2, obj.Low);
+        }
+
+        [Fact]
         public virtual void EnumAndNullable()
         {
             RunTest(new ClassWithEnumAndNullable() { Day = DayOfWeek.Monday, NullableDay = DayOfWeek.Tuesday });
@@ -924,6 +970,41 @@ namespace System.Text.Json.SourceGeneration.Tests
             // but we can deserialize empty types as we throw only when looking up properties and there are no properties here.
             instance = JsonSerializer.Deserialize(json, DefaultContext.TypeWithDerivedAttribute);
             Assert.NotNull(instance);
+        }
+
+        [Fact]
+        public void PolymorphicClass_Serialization()
+        {
+            PolymorphicClass value = new PolymorphicClass.DerivedClass { Number = 42, Boolean = true };
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Serialize(value, DefaultContext.PolymorphicClass));
+            }
+            else
+            {
+                string expectedJson = @"{""$type"" : ""derivedClass"", ""Number"" : 42, ""Boolean"" : true }";
+                string actualJson = JsonSerializer.Serialize(value, DefaultContext.PolymorphicClass);
+                JsonTestHelper.AssertJsonEqual(expectedJson, actualJson);
+            }
+        }
+
+        [Fact]
+        public void PolymorphicClass_Deserialization()
+        {
+            string json = @"{""$type"" : ""derivedClass"", ""Number"" : 42, ""Boolean"" : true }";
+
+            if (DefaultContext.JsonSourceGenerationMode == JsonSourceGenerationMode.Serialization)
+            {
+                Assert.Throws<InvalidOperationException>(() => JsonSerializer.Deserialize<PolymorphicClass>(json, DefaultContext.PolymorphicClass));
+            }
+            else
+            {
+                PolymorphicClass result = JsonSerializer.Deserialize<PolymorphicClass>(json, DefaultContext.PolymorphicClass);
+                PolymorphicClass.DerivedClass derivedResult = Assert.IsType<PolymorphicClass.DerivedClass>(result);
+                Assert.Equal(42, derivedResult.Number);
+                Assert.True(derivedResult.Boolean);
+            }
         }
     }
 }

@@ -17,8 +17,10 @@ namespace System.Text
             _codePage = codePage;
         }
 
-        public override unsafe int GetByteCount(char[] chars!!, int index, int count)
+        public override unsafe int GetByteCount(char[] chars, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -34,8 +36,10 @@ namespace System.Text
             }
         }
 
-        public override unsafe int GetByteCount(string s!!)
+        public override unsafe int GetByteCount(string s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             if (s.Length == 0)
                 return 0;
 
@@ -45,8 +49,11 @@ namespace System.Text
             }
         }
 
-        public override unsafe int GetBytes(string s!!, int charIndex, int charCount, byte[] bytes!!, int byteIndex)
+        public override unsafe int GetBytes(string s, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
+            ArgumentNullException.ThrowIfNull(s);
+            ArgumentNullException.ThrowIfNull(bytes);
+
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -71,8 +78,11 @@ namespace System.Text
             }
         }
 
-        public override unsafe int GetBytes(char[] chars!!, int charIndex, int charCount, byte[] bytes!!, int byteIndex)
+        public override unsafe int GetBytes(char[] chars, int charIndex, int charCount, byte[] bytes, int byteIndex)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+            ArgumentNullException.ThrowIfNull(bytes);
+
             if (charIndex < 0 || charCount < 0)
                 throw new ArgumentOutOfRangeException(charIndex < 0 ? nameof(charIndex) : nameof(charCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -97,8 +107,10 @@ namespace System.Text
             }
         }
 
-        public override unsafe int GetCharCount(byte[] bytes!!, int index, int count)
+        public override unsafe int GetCharCount(byte[] bytes, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             if (index < 0 || count < 0)
                 throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count), SR.ArgumentOutOfRange_NeedNonNegNum);
 
@@ -114,8 +126,11 @@ namespace System.Text
             }
         }
 
-        public override unsafe int GetChars(byte[] bytes!!, int byteIndex, int byteCount, char[] chars!!, int charIndex)
+        public override unsafe int GetChars(byte[] bytes, int byteIndex, int byteCount, char[] chars, int charIndex)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (byteIndex < 0 || byteCount < 0)
                 throw new ArgumentOutOfRangeException(byteIndex < 0 ? nameof(byteIndex) : nameof(byteCount), SR.ArgumentOutOfRange_NeedNonNegNum);
 

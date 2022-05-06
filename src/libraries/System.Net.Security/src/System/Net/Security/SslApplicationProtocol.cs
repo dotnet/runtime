@@ -39,13 +39,13 @@ namespace System.Net.Security
                 protocol;
         }
 
-        public SslApplicationProtocol(byte[] protocol!!) :
-            this(protocol, copy: true)
+        public SslApplicationProtocol(byte[] protocol) :
+            this(protocol ?? throw new ArgumentNullException(nameof(protocol)), copy: true)
         {
         }
 
-        public SslApplicationProtocol(string protocol!!) :
-            this(s_utf8.GetBytes(protocol), copy: false)
+        public SslApplicationProtocol(string protocol) :
+            this(s_utf8.GetBytes(protocol ?? throw new ArgumentNullException(nameof(protocol))), copy: false)
         {
         }
 

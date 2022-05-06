@@ -1681,7 +1681,7 @@ void Assembler::EmitInstrBrTarget(Instr* instr, _In_ __nullterminated char* labe
     int offset=0;
     if (pLabel == NULL) // branching forward -- no optimization
     {
-        int pcrelsize = 1+(isShort(instr->opcode) ? 1 : 4); //size of the instruction plus argument
+        BYTE pcrelsize = 1+(isShort(instr->opcode) ? 1 : 4); //size of the instruction plus argument
         AddDeferredFixup(label, m_pCurOutputPos+1,
                                        (m_CurPC + pcrelsize), pcrelsize-1);
     }

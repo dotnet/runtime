@@ -407,8 +407,10 @@ namespace System.ComponentModel.Composition.Hosting
             return result;
         }
 
-        private CompositionResult TrySatisfyImports(PartManager partManager, ComposablePart part!!, bool shouldTrackImports)
+        private CompositionResult TrySatisfyImports(PartManager partManager, ComposablePart part, bool shouldTrackImports)
         {
+            ArgumentNullException.ThrowIfNull(part);
+
             var result = CompositionResult.SucceededResult;
 
             // get out if the part is already composed
@@ -682,8 +684,10 @@ namespace System.ComponentModel.Composition.Hosting
             return partManager;
         }
 
-        private EngineContext GetEngineContext(AtomicComposition atomicComposition!!)
+        private EngineContext GetEngineContext(AtomicComposition atomicComposition)
         {
+            ArgumentNullException.ThrowIfNull(atomicComposition);
+
             if (!atomicComposition.TryGetValue(this, true, out EngineContext? engineContext))
             {
                 atomicComposition.TryGetValue(this, false, out EngineContext? parentContext);

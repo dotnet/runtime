@@ -26,8 +26,10 @@ namespace System.Net.Http.Headers
         {
         }
 
-        public ProductInfoHeaderValue(ProductHeaderValue product!!)
+        public ProductInfoHeaderValue(ProductHeaderValue product)
         {
+            ArgumentNullException.ThrowIfNull(product);
+
             _product = product;
         }
 

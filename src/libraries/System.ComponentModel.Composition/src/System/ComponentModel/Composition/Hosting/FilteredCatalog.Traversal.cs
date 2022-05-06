@@ -56,8 +56,10 @@ namespace System.ComponentModel.Composition.Hosting
             return Traverse(new DependentsTraversal(this, importFilter));
         }
 
-        private FilteredCatalog Traverse(IComposablePartCatalogTraversal traversal!!)
+        private FilteredCatalog Traverse(IComposablePartCatalogTraversal traversal)
         {
+            ArgumentNullException.ThrowIfNull(traversal);
+
             // we make sure that the underlyiong catalog cannot change while we are doing the trasversal
             // After thaty traversal is done, the freeze is lifted, and the catalog is free to change, but the changes
             // cannot affect partitioning
@@ -75,8 +77,10 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private static HashSet<ComposablePartDefinition> GetTraversalClosure(IEnumerable<ComposablePartDefinition> parts, IComposablePartCatalogTraversal traversal!!)
+        private static HashSet<ComposablePartDefinition> GetTraversalClosure(IEnumerable<ComposablePartDefinition> parts, IComposablePartCatalogTraversal traversal)
         {
+            ArgumentNullException.ThrowIfNull(traversal);
+
             var traversedParts = new HashSet<ComposablePartDefinition>();
             GetTraversalClosure(parts, traversedParts, traversal);
             return traversedParts;

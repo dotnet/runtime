@@ -472,6 +472,13 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowJsonException_MetadataUnexpectedProperty(ReadOnlySpan<byte> propertyName, ref ReadStack state)
+        {
+            state.Current.JsonPropertyName = propertyName.ToArray();
+            ThrowJsonException(SR.Format(SR.MetadataUnexpectedProperty));
+        }
+
+        [DoesNotReturn]
         public static void ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties()
         {
             ThrowJsonException(SR.MetadataReferenceCannotContainOtherProperties);
@@ -485,10 +492,10 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_MetadataMissingIdBeforeValues(ref ReadStack state, ReadOnlySpan<byte> propertyName)
+        public static void ThrowJsonException_MetadataStandaloneValuesProperty(ref ReadStack state, ReadOnlySpan<byte> propertyName)
         {
             state.Current.JsonPropertyName = propertyName.ToArray();
-            ThrowJsonException(SR.MetadataPreservedArrayPropertyNotFound);
+            ThrowJsonException(SR.MetadataStandaloneValuesProperty);
         }
 
         [DoesNotReturn]
@@ -514,19 +521,25 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowJsonException_MetadataDuplicateTypeProperty()
+        {
+            ThrowJsonException(SR.MetadataDuplicateTypeProperty);
+        }
+
+        [DoesNotReturn]
         public static void ThrowJsonException_MetadataInvalidReferenceToValueType(Type propertyType)
         {
             ThrowJsonException(SR.Format(SR.MetadataInvalidReferenceToValueType, propertyType));
         }
 
         [DoesNotReturn]
-        public static void ThrowJsonException_MetadataPreservedArrayInvalidProperty(ref ReadStack state, Type propertyType, in Utf8JsonReader reader)
+        public static void ThrowJsonException_MetadataInvalidPropertyInArrayMetadata(ref ReadStack state, Type propertyType, in Utf8JsonReader reader)
         {
             state.Current.JsonPropertyName = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan.ToArray();
             string propertyNameAsString = reader.GetString()!;
 
             ThrowJsonException(SR.Format(SR.MetadataPreservedArrayFailed,
-                SR.Format(SR.MetadataPreservedArrayInvalidProperty, propertyNameAsString),
+                SR.Format(SR.MetadataInvalidPropertyInArrayMetadata, propertyNameAsString),
                 SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
         }
 
@@ -537,7 +550,7 @@ namespace System.Text.Json
             state.Current.JsonPropertyName = null;
 
             ThrowJsonException(SR.Format(SR.MetadataPreservedArrayFailed,
-                SR.MetadataPreservedArrayPropertyNotFound,
+                SR.MetadataStandaloneValuesProperty,
                 SR.Format(SR.DeserializeUnableToConvertValue, propertyType)));
         }
 
@@ -560,14 +573,10 @@ namespace System.Text.Json
             ref ReadStack state)
         {
 
-            MetadataPropertyName name = JsonSerializer.GetMetadataPropertyName(propertyName);
-            if (name == MetadataPropertyName.Id)
+            MetadataPropertyName name = JsonSerializer.GetMetadataPropertyName(propertyName, state.Current.BaseJsonTypeInfo.PolymorphicTypeResolver);
+            if (name != 0)
             {
-                ThrowJsonException_MetadataIdIsNotFirstProperty(propertyName, ref state);
-            }
-            else if (name == MetadataPropertyName.Ref)
-            {
-                ThrowJsonException_MetadataReferenceObjectCannotContainOtherProperties(propertyName, ref state);
+                ThrowJsonException_MetadataUnexpectedProperty(propertyName, ref state);
             }
             else
             {
@@ -618,6 +627,72 @@ namespace System.Text.Json
         public static void ThrowMissingMemberException_MissingFSharpCoreMember(string missingFsharpCoreMember)
         {
             throw new MissingMemberException(SR.Format(SR.MissingFSharpCoreMember, missingFsharpCoreMember));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_BaseConverterDoesNotSupportMetadata(Type derivedType)
+        {
+            throw new NotSupportedException(SR.Format(SR.Polymorphism_DerivedConverterDoesNotSupportMetadata, derivedType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_DerivedConverterDoesNotSupportMetadata(Type derivedType)
+        {
+            throw new NotSupportedException(SR.Format(SR.Polymorphism_DerivedConverterDoesNotSupportMetadata, derivedType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_RuntimeTypeNotSupported(Type baseType, Type runtimeType)
+        {
+            throw new NotSupportedException(SR.Format(SR.Polymorphism_RuntimeTypeNotSupported, runtimeType, baseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowNotSupportedException_RuntimeTypeDiamondAmbiguity(Type baseType, Type runtimeType, Type derivedType1, Type derivedType2)
+        {
+            throw new NotSupportedException(SR.Format(SR.Polymorphism_RuntimeTypeDiamondAmbiguity, runtimeType, derivedType1, derivedType2, baseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeDoesNotSupportPolymorphism(Type baseType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_TypeDoesNotSupportPolymorphism, baseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_DerivedTypeNotSupported(Type baseType, Type derivedType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_DerivedTypeIsNotSupported, derivedType, baseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_DerivedTypeIsAlreadySpecified(Type baseType, Type derivedType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_DerivedTypeIsAlreadySpecified, baseType, derivedType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_TypeDicriminatorIdIsAlreadySpecified(Type baseType, string typeDiscriminatorId)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_TypeDicriminatorIdIsAlreadySpecified, baseType, typeDiscriminatorId));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_InvalidCustomTypeDiscriminatorPropertyName()
+        {
+            throw new InvalidOperationException(SR.Polymorphism_InvalidCustomTypeDiscriminatorPropertyName);
+        }
+
+        [DoesNotReturn]
+        public static void ThrowInvalidOperationException_PolymorphicTypeConfigurationDoesNotSpecifyDerivedTypes(Type baseType)
+        {
+            throw new InvalidOperationException(SR.Format(SR.Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes, baseType));
+        }
+
+        [DoesNotReturn]
+        public static void ThrowJsonException_UnrecognizedTypeDiscriminator(string typeDiscriminatorId)
+        {
+            ThrowJsonException(SR.Format(SR.Polymorphism_UnrecognizedTypeDiscriminator, typeDiscriminatorId));
         }
     }
 }

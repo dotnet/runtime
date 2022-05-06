@@ -28,9 +28,11 @@ namespace System.ComponentModel
         /// name of the editor.
         /// </summary>
         public EditorAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName!!,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string? baseTypeName)
         {
+            ArgumentNullException.ThrowIfNull(typeName);
+
             EditorTypeName = typeName;
             EditorBaseTypeName = baseTypeName;
         }
@@ -39,9 +41,12 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.EditorAttribute'/> class.
         /// </summary>
         public EditorAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName!!,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type baseType!!)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] string typeName,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type baseType)
         {
+            ArgumentNullException.ThrowIfNull(typeName);
+            ArgumentNullException.ThrowIfNull(baseType);
+
             EditorTypeName = typeName;
             EditorBaseTypeName = baseType.AssemblyQualifiedName;
         }
@@ -50,9 +55,12 @@ namespace System.ComponentModel
         /// Initializes a new instance of the <see cref='System.ComponentModel.EditorAttribute'/> class.
         /// </summary>
         public EditorAttribute(
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type!!,
-            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type baseType!!)
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type,
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type baseType)
         {
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(baseType);
+
             EditorTypeName = type.AssemblyQualifiedName!;
             EditorBaseTypeName = baseType.AssemblyQualifiedName;
         }

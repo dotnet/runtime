@@ -3551,6 +3551,250 @@ namespace System.Runtime.Intrinsics
             return result;
         }
 
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<byte> Shuffle(Vector256<byte> vector, Vector256<byte> indices)
+        {
+            Unsafe.SkipInit(out Vector256<byte> result);
+
+            for (int index = 0; index < Vector256<byte>.Count; index++)
+            {
+                byte selectedIndex = indices.GetElementUnsafe(index);
+                byte selectedValue = 0;
+
+                if (selectedIndex < Vector256<byte>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<sbyte> Shuffle(Vector256<sbyte> vector, Vector256<sbyte> indices)
+        {
+            Unsafe.SkipInit(out Vector256<sbyte> result);
+
+            for (int index = 0; index < Vector256<sbyte>.Count; index++)
+            {
+                byte selectedIndex = (byte)indices.GetElementUnsafe(index);
+                sbyte selectedValue = 0;
+
+                if (selectedIndex < Vector256<sbyte>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<short> Shuffle(Vector256<short> vector, Vector256<short> indices)
+        {
+            Unsafe.SkipInit(out Vector256<short> result);
+
+            for (int index = 0; index < Vector256<short>.Count; index++)
+            {
+                ushort selectedIndex = (ushort)indices.GetElementUnsafe(index);
+                short selectedValue = 0;
+
+                if (selectedIndex < Vector256<short>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<ushort> Shuffle(Vector256<ushort> vector, Vector256<ushort> indices)
+        {
+            Unsafe.SkipInit(out Vector256<ushort> result);
+
+            for (int index = 0; index < Vector256<ushort>.Count; index++)
+            {
+                ushort selectedIndex = indices.GetElementUnsafe(index);
+                ushort selectedValue = 0;
+
+                if (selectedIndex < Vector256<ushort>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe(selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<int> Shuffle(Vector256<int> vector, Vector256<int> indices)
+        {
+            Unsafe.SkipInit(out Vector256<int> result);
+
+            for (int index = 0; index < Vector256<int>.Count; index++)
+            {
+                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
+                int selectedValue = 0;
+
+                if (selectedIndex < Vector256<int>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<uint> Shuffle(Vector256<uint> vector, Vector256<uint> indices)
+        {
+            Unsafe.SkipInit(out Vector256<uint> result);
+
+            for (int index = 0; index < Vector256<uint>.Count; index++)
+            {
+                uint selectedIndex = indices.GetElementUnsafe(index);
+                uint selectedValue = 0;
+
+                if (selectedIndex < Vector256<uint>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<float> Shuffle(Vector256<float> vector, Vector256<int> indices)
+        {
+            Unsafe.SkipInit(out Vector256<float> result);
+
+            for (int index = 0; index < Vector256<float>.Count; index++)
+            {
+                uint selectedIndex = (uint)indices.GetElementUnsafe(index);
+                float selectedValue = 0;
+
+                if (selectedIndex < Vector256<float>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<long> Shuffle(Vector256<long> vector, Vector256<long> indices)
+        {
+            Unsafe.SkipInit(out Vector256<long> result);
+
+            for (int index = 0; index < Vector256<long>.Count; index++)
+            {
+                ulong selectedIndex = (ulong)indices.GetElementUnsafe(index);
+                long selectedValue = 0;
+
+                if (selectedIndex < (uint)Vector256<long>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        [CLSCompliant(false)]
+        public static Vector256<ulong> Shuffle(Vector256<ulong> vector, Vector256<ulong> indices)
+        {
+            Unsafe.SkipInit(out Vector256<ulong> result);
+
+            for (int index = 0; index < Vector256<ulong>.Count; index++)
+            {
+                ulong selectedIndex = indices.GetElementUnsafe(index);
+                ulong selectedValue = 0;
+
+                if (selectedIndex < (uint)Vector256<ulong>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
+        /// <summary>Creates a new vector by selecting values from an input vector using a set of indices.</summary>
+        /// <param name="vector">The input vector from which values are selected.</param>
+        /// <param name="indices">The per-element indices used to select a value from <paramref name="vector" />.</param>
+        /// <returns>A new vector containing the values from <paramref name="vector" /> selected by the given <paramref name="indices" />.</returns>
+        [Intrinsic]
+        public static Vector256<double> Shuffle(Vector256<double> vector, Vector256<long> indices)
+        {
+            Unsafe.SkipInit(out Vector256<double> result);
+
+            for (int index = 0; index < Vector256<double>.Count; index++)
+            {
+                ulong selectedIndex = (ulong)indices.GetElementUnsafe(index);
+                double selectedValue = 0;
+
+                if (selectedIndex < (uint)Vector256<double>.Count)
+                {
+                    selectedValue = vector.GetElementUnsafe((int)selectedIndex);
+                }
+                result.SetElementUnsafe(index, selectedValue);
+            }
+
+            return result;
+        }
+
         /// <summary>Computes the square root of a vector on a per-element basis.</summary>
         /// <param name="vector">The vector whose square root is to be computed.</param>
         /// <typeparam name="T">The type of the elements in the vector.</typeparam>

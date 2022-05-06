@@ -27,8 +27,11 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Constructs the core to use a stored CNG key.
         /// </summary>
-        public CngSymmetricAlgorithmCore(ICngSymmetricAlgorithm outer, string keyName!!, CngProvider provider!!, CngKeyOpenOptions openOptions)
+        public CngSymmetricAlgorithmCore(ICngSymmetricAlgorithm outer, string keyName, CngProvider provider, CngKeyOpenOptions openOptions)
         {
+            ArgumentNullException.ThrowIfNull(keyName);
+            ArgumentNullException.ThrowIfNull(provider);
+
             _outer = outer;
 
             _keyName = keyName;
@@ -83,13 +86,13 @@ namespace System.Security.Cryptography
 
         public void GenerateKey()
         {
-            byte[] key = Helpers.GenerateRandom(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BaseKeySize));
+            byte[] key = RandomNumberGenerator.GetBytes(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BaseKeySize));
             SetKey(key);
         }
 
         public void GenerateIV()
         {
-            byte[] iv = Helpers.GenerateRandom(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize));
+            byte[] iv = RandomNumberGenerator.GetBytes(AsymmetricAlgorithmHelpers.BitsToBytes(_outer.BlockSize));
             _outer.IV = iv;
         }
 
@@ -168,8 +171,10 @@ namespace System.Security.Cryptography
                 encrypting);
         }
 
-        private UniversalCryptoTransform CreateCryptoTransform(byte[] rgbKey!!, byte[]? rgbIV, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
+        private UniversalCryptoTransform CreateCryptoTransform(byte[] rgbKey, byte[]? rgbIV, bool encrypting, PaddingMode padding, CipherMode mode, int feedbackSizeInBits)
         {
+            ArgumentNullException.ThrowIfNull(rgbKey);
+
             ValidateFeedbackSize(mode, feedbackSizeInBits);
             byte[] key = CopyAndValidateKey(rgbKey);
 

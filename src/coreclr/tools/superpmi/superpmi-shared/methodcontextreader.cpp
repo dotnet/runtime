@@ -28,7 +28,7 @@ HANDLE MethodContextReader::OpenFile(const char* inputFile, DWORD flags)
 static std::string to_lower(const std::string& input)
 {
     std::string res = input;
-    std::transform(input.cbegin(), input.cend(), res.begin(), tolower);
+    std::transform(input.cbegin(), input.cend(), res.begin(), [](const char c){ return (char)tolower(c); });
     return res;
 }
 

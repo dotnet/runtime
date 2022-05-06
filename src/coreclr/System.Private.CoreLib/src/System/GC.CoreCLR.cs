@@ -302,8 +302,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _SuppressFinalize(object o);
 
-        public static void SuppressFinalize(object obj!!)
+        public static void SuppressFinalize(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             _SuppressFinalize(obj);
         }
 
@@ -314,8 +316,10 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         private static extern void _ReRegisterForFinalize(object o);
 
-        public static void ReRegisterForFinalize(object obj!!)
+        public static void ReRegisterForFinalize(object obj)
         {
+            ArgumentNullException.ThrowIfNull(obj);
+
             _ReRegisterForFinalize(obj);
         }
 
@@ -617,8 +621,10 @@ namespace System
             }
         }
 
-        internal static void UnregisterMemoryLoadChangeNotification(Action notification!!)
+        internal static void UnregisterMemoryLoadChangeNotification(Action notification)
         {
+            ArgumentNullException.ThrowIfNull(notification);
+
             lock (s_notifications)
             {
                 for (int i = 0; i < s_notifications.Count; ++i)

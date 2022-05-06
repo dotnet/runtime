@@ -156,8 +156,10 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [UnsupportedOSPlatform("browser")]
-        public X509Certificate(string fileName!!, string? password, X509KeyStorageFlags keyStorageFlags)
+        public X509Certificate(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
+            ArgumentNullException.ThrowIfNull(fileName);
+
             ValidateKeyStorageFlags(keyStorageFlags);
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
@@ -166,8 +168,10 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private protected X509Certificate(string fileName!!, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
+        private protected X509Certificate(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
         {
+            ArgumentNullException.ThrowIfNull(fileName);
+
             ValidateKeyStorageFlags(keyStorageFlags);
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
@@ -179,9 +183,11 @@ namespace System.Security.Cryptography.X509Certificates
         [UnsupportedOSPlatform("browser")]
         [CLSCompliantAttribute(false)]
 #pragma warning disable SYSLIB0026
-        public X509Certificate(string fileName!!, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
+        public X509Certificate(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
 #pragma warning restore SYSLIB0026
         {
+            ArgumentNullException.ThrowIfNull(fileName);
+
             ValidateKeyStorageFlags(keyStorageFlags);
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
@@ -191,8 +197,10 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         [UnsupportedOSPlatform("browser")]
-        public X509Certificate(X509Certificate cert!!)
+        public X509Certificate(X509Certificate cert)
         {
+            ArgumentNullException.ThrowIfNull(cert);
+
             if (cert.Pal != null)
             {
                 Pal = CertificatePal.FromOtherCert(cert);

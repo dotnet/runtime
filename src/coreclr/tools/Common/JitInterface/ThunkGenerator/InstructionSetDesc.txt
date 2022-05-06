@@ -105,6 +105,7 @@ instructionset     ,ARM64 ,          ,Atomics ,21 ,Atomics  ,lse
 instructionset     ,ARM64 ,          ,        ,   ,Vector64 ,
 instructionset     ,ARM64 ,          ,        ,   ,Vector128,
 instructionset     ,ARM64 ,          ,        ,   ,Dczva    ,
+instructionset     ,ARM64 ,          ,Rcpc    ,26 ,Rcpc     ,rcpc
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd
@@ -114,7 +115,6 @@ instructionset64bit,ARM64 ,Dp
 instructionset64bit,ARM64 ,Rdm
 instructionset64bit,ARM64 ,Sha1
 instructionset64bit,ARM64 ,Sha256
-instructionset     ,ARM64 ,          ,        ,   ,Rcpc     ,
 
 vectorinstructionset,ARM64,Vector64
 vectorinstructionset,ARM64,Vector128
