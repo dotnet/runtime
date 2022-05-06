@@ -62,7 +62,6 @@ void ExecuteHandlerOnCustomStack(int code, siginfo_t *siginfo, void *context, si
     context2.R4 = (size_t)siginfo;
     context2.R5 = (size_t)context;
     context2.R6 = (size_t)returnPoint;
-    
 
     RtlRestoreContext(&context2, NULL);
 }
