@@ -1437,10 +1437,37 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         await OnSourceFileAdded(sessionId, source, context, token);
                     }
+
+                    if (AutoSetBreakpointOnEntryPoint)
+                    {
+                        var entryPoint = context.store.FindEntryPoint();
+                        if (entryPoint is not null)
+                        {
+                            // FIXME: id
+                            string bpId = "bp://99999";
+                            var sourceFile = entryPoint.Assembly.Sources.Single(sf => sf.SourceId == entryPoint.SourceId);
+                            BreakpointRequest request = new(bpId, JObject.FromObject(new
+                            {
+                                lineNumber = entryPoint.StartLocation.Line,
+                                columnNumber = entryPoint.StartLocation.Column,
+                                url = sourceFile.Url
+                            }));
+                            logger.LogDebug($"Adding bp req {request}");
+                            context.BreakpointRequests[bpId] = request;
+                            request.TryResolve(sourceFile);
+                            if (request.TryResolve(sourceFile))
+                                await SetBreakpoint(sessionId, context.store, request, true, true, token);
+                        }
+                        else
+                        {
+                            logger.LogDebug($"No entrypoint found, for setting automatic breakpoint");
+                        }
+                    }
                 }
             }
             catch (Exception e)
             {
+                logger.LogError($"failed: {e}");
                 context.Source.SetException(e);
             }
 

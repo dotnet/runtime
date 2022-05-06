@@ -435,6 +435,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
 
         internal int TempBreakpointForSetNextIP { get; set; }
+        internal bool FirstBreakpoint { get; set; }
 
         public DebugStore Store
         {
