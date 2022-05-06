@@ -7,7 +7,7 @@
   <ItemGroup>
     <EnabledGenerators Include="LibraryImportGenerator" Condition="'$(EnableLibraryImportGenerator)' == 'true'" />
     <!-- If the current project is not System.Private.CoreLib, we enable the LibraryImportGenerator source generator
-         when the project is a C# source project that either:
+         when the project is a C# source project that:
          - doesn't target the latest TFM or
          - references everything from the targeting pack (OOB) or
          - references System.Private.CoreLib, or
