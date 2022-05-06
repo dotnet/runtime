@@ -88,6 +88,8 @@ namespace System.Text.Json.Serialization.Tests
 
         private static string GetNumberAsString<T>(T number)
         {
+            // Refactored to TypeCode enum switch from Switch expression in C#8
+            // There is active issue https://github.com/dotnet/runtime/issues/68906 on x86 Android 
             switch (Type.GetTypeCode(typeof(T)))
             {
                 case TypeCode.Double:
