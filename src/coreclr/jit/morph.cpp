@@ -11699,8 +11699,11 @@ DONE_MORPHING_CHILDREN:
 #endif
             if (!varTypeIsFloating(tree->gtType))
             {
-                // Codegen for this instruction needs to be able to throw two exceptions:
-                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+                // We do not need to throw if the second operand is a non-(negative one) constant.
+                if (!op2->IsIntegralConst() || op2->IsIntegralConst(-1))
+                {
+                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
+                }
 
                 // We do not need to throw if the second operand is a non-zero constant.
                 if (!op2->IsIntegralConst() || op2->IsIntegralConst(0))
