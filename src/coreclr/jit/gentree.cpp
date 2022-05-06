@@ -1675,6 +1675,23 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, GenTree* node, We
     assert(found && "Could not find arg to insert after in argument list");
 #endif
 
+    return InsertAfterUnchecked(comp, after, node, wellKnownArg);
+}
+
+//---------------------------------------------------------------
+// InsertAfterUnchecked: Create a new argument after another argument, without debug checks.
+//
+// Parameters:
+//   comp         - The compiler.
+//   after        - The existing argument to insert the new argument after.
+//   node         - The IR node for the argument.
+//   wellKnownArg - The kind of argument, if special.
+//
+// Returns:
+//   The created representative for the argument.
+//
+CallArg* CallArgs::InsertAfterUnchecked(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg)
+{
     CallArg* newArg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
     newArg->SetEarlyNode(node);
     newArg->SetNext(after->GetNext());
