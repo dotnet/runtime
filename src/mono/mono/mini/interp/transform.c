@@ -2724,12 +2724,11 @@ interp_inline_method (TransformData *td, MonoMethod *target_method, MonoMethodHe
 			tmp_bb->il_offset = prev_ip - prev_il_code;
 			tmp_bb = tmp_bb->next_bb;
 		}
-		// After inlining, new blocks have been added as continuation to the original 'prev' block.
-		// Once the inlining is complete, we need to mark the original block as emitted as well.
-		// NOTE: There is also a potential problem with:
-		// td->offset_to_bb[td->cdd->il_offset] which will not point to the newly added block (containing inlined call),
-		// but to the original 'prev' block.
-		prev_cbb->already_emitted = TRUE; // FIX ME: this is fishy
+		// At this point, new blocks have been added as continuation to the caller - 'prev' block,
+		// and td->cbb becomes the last inlined block.
+		// Because of this, we need to force-mark the 'prev' block as 'already_emitted', so we do
+		// not lose the information.
+		prev_cbb->already_emitted = TRUE;
 	}
 
 	td->ip = prev_ip;
