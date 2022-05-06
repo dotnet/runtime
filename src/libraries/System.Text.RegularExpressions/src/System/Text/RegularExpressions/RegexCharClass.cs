@@ -54,8 +54,8 @@ namespace System.Text.RegularExpressions
         internal const string NotWordClass = "\u0000\u0000\u000A\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000"; // \W
         internal const string DigitClass = "\u0000\u0000\u0001\u0009"; // \d
         internal const string NotDigitClass = "\u0000\u0000\u0001\uFFF7"; // \D
-        internal const string ControlClass = "\0\0\a\0\u000f\u0010\u001e\u0012\u0011\0"; // \p{C}
-        internal const string NotControlClass = "\0\0\u0007\0\ufff1\ufff0\uffe2\uffee\uffef\0"; // \P{C}
+        internal const string ControlClass = "\0\0\u0001\u000f"; // \p{Cc}
+        internal const string NotControlClass = "\0\0\u0001\ufff1"; // \P{Cc}
         internal const string LetterClass = "\0\0\a\0\u0002\u0004\u0005\u0003\u0001\0"; // \p{L}
         internal const string NotLetterClass = "\0\0\u0007\0\ufffe\ufffc\ufffb\ufffd\uffff\0"; // \P{L}
         internal const string LetterOrDigitClass = "\0\0\b\0\u0002\u0004\u0005\u0003\u0001\0\t"; // [\p{L}\d]
