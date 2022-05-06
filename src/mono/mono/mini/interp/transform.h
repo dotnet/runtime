@@ -128,7 +128,7 @@ struct _InterpBasicBlock {
 	int dead: 1;
 
 	// Mark the block if its code has been emitted
-	gboolean already_emitted;
+	int already_emitted : 1;
 };
 
 typedef enum {
