@@ -6,6 +6,7 @@ using System.IO;
 using Xunit;
 using Xunit.Abstractions;
 using Xunit.Sdk;
+using System.Threading.Tasks;
 
 #nullable enable
 
@@ -23,9 +24,9 @@ namespace Wasm.Build.Tests
         [InlineData("Release")]
         public void BrowserBuildThenPublish(string config)
         {
-            string id = $"{config}_{Path.GetRandomFileName()}";
-            string projectName = $"browser";
-            CreateWasmTemplateProject(id, "wasmbrowser");
+            string id = $"browser_{config}_{Path.GetRandomFileName()}";
+            string projectFile = CreateWasmTemplateProject(id, "wasmbrowser");
+            string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -67,8 +68,8 @@ namespace Wasm.Build.Tests
         public void ConsoleBuildThenPublish(string config)
         {
             string id = $"{config}_{Path.GetRandomFileName()}";
-            string projectName = $"console";
-            CreateWasmTemplateProject(id, "wasmconsole");
+            string projectFile = CreateWasmTemplateProject(id, "wasmconsole");
+            string projectName = Path.GetFileNameWithoutExtension(projectFile);
 
             var buildArgs = new BuildArgs(projectName, config, false, id, null);
             buildArgs = ExpandBuildArgs(buildArgs);

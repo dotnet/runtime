@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 
 namespace Wasm.Build.Tests
 {
-    public class ToolCommand
+    public class ToolCommand : IDisposable
     {
         private string _label;
 
@@ -55,6 +55,18 @@ namespace Wasm.Build.Tests
             return this;
         }
 
+        public ToolCommand WithOutputDataReceived(Action<string?> handler)
+        {
+            OutputDataReceived += (_, args) => handler(args.Data);
+            return this;
+        }
+
+        public ToolCommand WithErrorDataReceived(Action<string?> handler)
+        {
+            ErrorDataReceived += (_, args) => handler(args.Data);
+            return this;
+        }
+
         public virtual CommandResult Execute(params string[] args)
         {
             return Task.Run(async () => await ExecuteAsync(args)).Result;
@@ -74,6 +86,16 @@ namespace Wasm.Build.Tests
             string fullArgs = GetFullArgs(args);
             Console.WriteLine($"[{_label}] Executing (Captured Output) - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
             return Task.Run(async () => await ExecuteAsyncInternal(resolvedCommand, fullArgs)).Result;
+        }
+
+        public virtual void Dispose()
+        {
+            if (CurrentProcess is not null && !CurrentProcess.HasExited)
+            {
+                CurrentProcess.KillTree();
+                CurrentProcess.Dispose();
+                CurrentProcess = null;
+            }
         }
 
         protected virtual string GetFullArgs(params string[] args) => string.Join(" ", args);
@@ -107,7 +129,6 @@ namespace Wasm.Build.Tests
             CurrentProcess.BeginErrorReadLine();
             await completionTask;
 
-            CurrentProcess.WaitForExit();
             RemoveNullTerminator(output);
 
             return new CommandResult(
