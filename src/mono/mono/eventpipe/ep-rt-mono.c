@@ -2915,7 +2915,7 @@ void
 ep_rt_bulk_type_event_logger_free (BulkTypeEventLogger *type_logger);
 
 static
-int
+size_t
 write_event_buffer (
 	const uint8_t *val,
 	size_t size,
@@ -2923,28 +2923,28 @@ write_event_buffer (
 	char **buf_next);
 
 static
-int
+size_t
 write_event_buffer_int8 (
 	int8_t val,
 	char *buf_start,
 	char **buf_next);
 
 static
-int
+size_t
 write_event_buffer_int16 (
 	int16_t val,
 	char *buf_start,
 	char **buf_next);
 
 static
-int
+size_t
 write_event_buffer_int32 (
 	int32_t val,
 	char *buf_start,
 	char **buf_next);
 
 static
-int
+size_t
 write_event_buffer_int64 (
 	int64_t val,
 	char *buf_start,
@@ -3032,7 +3032,7 @@ ep_rt_bulk_type_event_logger_free (BulkTypeEventLogger *type_logger)
 }
 
 static
-int
+size_t
 write_event_buffer (
 	const uint8_t *val,
 	size_t size,
@@ -3045,7 +3045,7 @@ write_event_buffer (
 }
 
 static
-int
+size_t
 write_event_buffer_int8 (
 	int8_t val,
 	char *buf_start,
@@ -3055,7 +3055,7 @@ write_event_buffer_int8 (
 }
 
 static
-int
+size_t
 write_event_buffer_int16 (
 	int16_t val,
 	char *buf_start,
@@ -3065,7 +3065,7 @@ write_event_buffer_int16 (
 }
 
 static
-int
+size_t
 write_event_buffer_int32 (
 	int32_t val,
 	char *buf_start,
@@ -3075,7 +3075,7 @@ write_event_buffer_int32 (
 }
 
 static
-int
+size_t
 write_event_buffer_int64 (
 	int64_t val,
 	char *buf_start,
@@ -3100,7 +3100,7 @@ ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *type_logger)
 
 	uint16_t clr_instance_id = clr_instance_get_id ();
 
-	uint32_t values_element_size = 0;
+	size_t values_element_size = 0;
 
 	char *ptr = (char *)type_logger->bulk_type_event_buffer;
 

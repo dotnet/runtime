@@ -53,7 +53,7 @@ def generateMethodSignatureWrite(eventName, template, extern, runtimeFlavor):
 
             if paramName in template.structs:
                 sig_pieces.append(
-                    "%sint %s_ElementSize,\n" %
+                    "%ssize_t %s_ElementSize,\n" %
                     (lindent, paramName))
 
             sig_pieces.append(lindent)
@@ -262,10 +262,10 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
         parameter = fnSig.getParam(paramName)
 
         if paramName in template.structs:
-            size = "(int)%s_ElementSize * (int)%s" % (
+            size = "(size_t)%s_ElementSize * (size_t)%s" % (
                 paramName, parameter.prop)
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
-                size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
+                size = "(size_t)(%s)" % specialCaseSizes[template.name][paramName]
             if runtimeFlavor.mono:
                 pack_list.append(
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
@@ -277,11 +277,11 @@ def generateWriteEventBody(template, providerName, eventName, runtimeFlavor):
                     (paramName, size))
                 emittedWriteToBuffer = True
         elif paramName in template.arrays:
-            size = "sizeof(%s) * (int)%s" % (
+            size = "sizeof(%s) * (size_t)%s" % (
                 getLttngDataTypeMapping(runtimeFlavor)[parameter.winType],
                 parameter.prop)
             if template.name in specialCaseSizes and paramName in specialCaseSizes[template.name]:
-                size = "(int)(%s)" % specialCaseSizes[template.name][paramName]
+                size = "(size_t)(%s)" % specialCaseSizes[template.name][paramName]
             if runtimeFlavor.mono:
                 pack_list.append(
                     "    success &= write_buffer((const uint8_t *)%s, %s, &buffer, &offset, &size, &fixedBuffer);" %
