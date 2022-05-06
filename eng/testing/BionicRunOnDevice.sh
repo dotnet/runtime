@@ -60,4 +60,8 @@ fi
 # for Bionic, we need to override the value another way
 export HOME=$currentDirectory
 cd $currentDirectory
-$runtimeExe exec --runtimeconfig ${currentTest}.runtimeconfig.json --depsfile ${currentTest}.deps.json xunit.console.dll ${currentTest}.dll -xml testResults.xml -nologo -nocolor -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing
+# Sometimes the depsfile doesn't exist, so only conditionally try to pass it
+if [ -e ${currentTest}.deps.json ]; then
+	depsFileArg="--depsfile ${currentTest}.deps.json"
+fi
+$runtimeExe exec --runtimeconfig ${currentTest}.runtimeconfig.json ${depsFileArg} xunit.console.dll ${currentTest}.dll -xml testResults.xml -nologo -nocolor -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing
