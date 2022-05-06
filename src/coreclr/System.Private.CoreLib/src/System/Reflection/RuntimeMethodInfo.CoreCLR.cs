@@ -351,7 +351,7 @@ namespace System.Reflection
                 StackAllocedArguments argStorage = default;
                 Span<object?> copyOfParameters = new(ref argStorage._arg0, 1);
                 ReadOnlySpan<object?> parameters = new(in parameter);
-                Span<bool> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
+                Span<ParameterCopyBackAction> shouldCopyBackParameters = new(ref argStorage._copyBack0, 1);
 
                 StackAllocatedByRefs byrefStorage = default;
                 IntPtr* pByRefStorage = (IntPtr*)&byrefStorage;

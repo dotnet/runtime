@@ -3510,7 +3510,7 @@ namespace System
         /// <returns>True if <paramref name="value"/> is a value type, False otherwise</returns>
         internal bool CheckValue(
             ref object? value,
-            ref bool copyBack,
+            ref ParameterCopyBackAction copyBack,
             Binder? binder,
             CultureInfo? culture,
             BindingFlags invokeAttr)
@@ -3555,7 +3555,7 @@ namespace System
                     value = binder.ChangeType(value, this, culture);
                     if (IsInstanceOfType(value))
                     {
-                        copyBack = true;
+                        copyBack = ParameterCopyBackAction.Copy;
                         return IsValueType; // Note the call to IsValueType, not the variable.
                     }
 
@@ -3581,13 +3581,13 @@ namespace System
 
         private CheckValueStatus TryChangeType(
             ref object? value,
-            out bool copyBack,
+            out ParameterCopyBackAction copyBack,
             out bool isValueType)
         {
             RuntimeType? sigElementType;
             if (RuntimeTypeHandle.TryGetByRefElementType(this, out sigElementType))
             {
-                copyBack = true;
+                copyBack = ParameterCopyBackAction.Copy;
                 Debug.Assert(!sigElementType.IsGenericParameter);
 
                 if (sigElementType.IsInstanceOfType(value))
@@ -3599,6 +3599,7 @@ namespace System
                         {
                             // Pass as a true boxed Nullable<T>, not as a T or null.
                             value = RuntimeMethodHandle.ReboxToNullable(value, sigElementType);
+                            copyBack = ParameterCopyBackAction.CopyNullable;
                         }
                         else
                         {
@@ -3626,6 +3627,7 @@ namespace System
 
                     // Allocate default<T>.
                     value = AllocateValueType(sigElementType, value: null);
+                    copyBack = sigElementType.IsNullableOfT ? ParameterCopyBackAction.CopyNullable : ParameterCopyBackAction.Copy;
                     return CheckValueStatus.Success;
                 }
 
@@ -3635,7 +3637,7 @@ namespace System
 
             if (value == null)
             {
-                copyBack = false;
+                copyBack = ParameterCopyBackAction.None;
                 isValueType = RuntimeTypeHandle.IsValueType(this);
                 if (!isValueType)
                 {
@@ -3665,7 +3667,8 @@ namespace System
 
                 if (!CanValueSpecialCast(srcType, this))
                 {
-                    isValueType = copyBack = false;
+                    isValueType = false;
+                    copyBack = ParameterCopyBackAction.None;
                     return CheckValueStatus.ArgumentException;
                 }
 
@@ -3684,11 +3687,12 @@ namespace System
                 }
 
                 isValueType = true;
-                copyBack = false;
+                copyBack = ParameterCopyBackAction.None;
                 return CheckValueStatus.Success;
             }
 
-            copyBack = isValueType = false;
+            isValueType = false;
+            copyBack = ParameterCopyBackAction.None;
             return CheckValueStatus.ArgumentException;
         }
 

@@ -143,7 +143,7 @@ namespace System.Reflection
         private protected unsafe void CheckArguments(
             Span<object?> copyOfParameters,
             IntPtr* byrefParameters,
-            Span<bool> shouldCopyBack,
+            Span<ParameterCopyBackAction> shouldCopyBack,
             ReadOnlySpan<object?> parameters,
             RuntimeType[] sigTypes,
             Binder? binder,
@@ -156,7 +156,7 @@ namespace System.Reflection
             ParameterInfo[]? paramInfos = null;
             for (int i = 0; i < parameters.Length; i++)
             {
-                bool copyBackArg = false;
+                ParameterCopyBackAction copyBackArg = default;
                 bool isValueType = false;
                 object? arg = parameters[i];
                 RuntimeType sigType = sigTypes[i];
@@ -182,7 +182,7 @@ namespace System.Reflection
                     else if (sigType.TryByRefFastPath(ref arg, ref isValueType))
                     {
                         // Fast path when the value's type matches the signature type of a byref parameter.
-                        copyBackArg = true;
+                        copyBackArg = ParameterCopyBackAction.Copy;
                     }
                     else if (!ReferenceEquals(arg, Type.Missing))
                     {
@@ -262,11 +262,11 @@ namespace System.Reflection
             private object? _arg2;
             private object? _arg3;
 #pragma warning restore CA1823, CS0169, IDE0051
-            internal bool _copyBack0;
+            internal ParameterCopyBackAction _copyBack0;
 #pragma warning disable CA1823, CS0169, IDE0051 // accessed via 'CheckArguments' ref arithmetic
-            private bool _copyBack1;
-            private bool _copyBack2;
-            private bool _copyBack3;
+            private ParameterCopyBackAction _copyBack1;
+            private ParameterCopyBackAction _copyBack2;
+            private ParameterCopyBackAction _copyBack3;
 #pragma warning restore CA1823, CS0169, IDE0051
         }
 
