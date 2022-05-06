@@ -272,6 +272,16 @@
         <target state="translated">未终止的(?#...)注释。</target>
         <note />
       </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorMessage">
+        <source>The inputs to your RegEx are known at compile-time so you could be using the source generator to boost performance.</source>
+        <target state="new">The inputs to your RegEx are known at compile-time so you could be using the source generator to boost performance.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UseRegexSourceGeneratorTitle">
+        <source>Use the RegEx source generator.</source>
+        <target state="new">Use the RegEx source generator.</target>
+        <note />
+      </trans-unit>
     </body>
   </file>
 </xliff>

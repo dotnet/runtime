@@ -284,4 +284,10 @@
     <value>Regex replacements with substitutions of groups are not supported with RegexOptions.NonBacktracking.</value>
     <comment>{Locked="RegexOptions.NonBacktracking"}</comment>
   </data>
+  <data name="UseRegexSourceGeneratorMessage" xml:space="preserve">
+    <value>The inputs to your RegEx are known at compile-time so you could be using the source generator to boost performance.</value>
+  </data>
+  <data name="UseRegexSourceGeneratorTitle" xml:space="preserve">
+    <value>Use the RegEx source generator.</value>
+  </data>
 </root>
