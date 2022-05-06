@@ -1648,7 +1648,7 @@ namespace System
         /// <returns>Not yet implemented in Mono: True if the value should be considered a value type, False otherwise</returns>
         internal bool CheckValue(
             ref object? value,
-            ref bool copyBack,
+            ref ParameterCopyBackAction copyBack,
             Binder? binder,
             CultureInfo? culture,
             BindingFlags invokeAttr)
@@ -1656,7 +1656,7 @@ namespace System
             // Already fast-pathed by the caller.
             Debug.Assert(!ReferenceEquals(value?.GetType(), this));
 
-            copyBack = true;
+            copyBack = ParameterCopyBackAction.Copy;
 
             CheckValueStatus status = TryConvertToType(ref value);
             if (status == CheckValueStatus.Success)

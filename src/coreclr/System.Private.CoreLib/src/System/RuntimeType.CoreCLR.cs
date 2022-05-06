@@ -3555,7 +3555,17 @@ namespace System
                     value = binder.ChangeType(value, this, culture);
                     if (IsInstanceOfType(value))
                     {
-                        copyBack = ParameterCopyBackAction.Copy;
+                        if (IsNullableOfT)
+                        {
+                            // Pass as a true boxed Nullable<T>, not as a T or null.
+                            value = RuntimeMethodHandle.ReboxToNullable(value, this);
+                            copyBack = ParameterCopyBackAction.CopyNullable;
+                        }
+                        else
+                        {
+                            copyBack = ParameterCopyBackAction.Copy;
+                        }
+
                         return IsValueType; // Note the call to IsValueType, not the variable.
                     }
 
