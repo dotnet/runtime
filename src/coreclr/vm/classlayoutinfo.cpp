@@ -148,7 +148,7 @@ namespace
             LayoutRawFieldInfo* pfwalk = *pSortWalk;
             RawFieldPlacementInfo* placementInfo = &pfwalk->m_placement;
 
-            BYTE alignmentRequirement = placementInfo->m_alignment;
+            BYTE alignmentRequirement = (BYTE)placementInfo->m_alignment;
 
             alignmentRequirement = min(alignmentRequirement, packingSize);
 

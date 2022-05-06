@@ -543,6 +543,9 @@ int __cdecl main(int argc, char* argv[])
 
                     totalBaseMetrics.NumDiffedCodeBytes += baseMetrics.NumCodeBytes;
                     totalDiffMetrics.NumDiffedCodeBytes += diffMetrics.NumCodeBytes;
+
+                    totalBaseMetrics.NumDiffExecutedInstructions += baseMetrics.NumExecutedInstructions;
+                    totalDiffMetrics.NumDiffExecutedInstructions += diffMetrics.NumExecutedInstructions;
                 }
             }
         }

@@ -4972,8 +4972,16 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
         }
     }
 
+#ifdef DEBUG
+    // Run this before we potentially tear down dominators.
+    fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
+#endif
+
     // Remove dead blocks
     DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, &Compiler::fgRemoveDeadBlocks);
+
+    // Dominator and reachability sets are no longer valid.
+    fgDomsComputed = false;
 
     // Insert GC Polls
     DoPhase(this, PHASE_INSERT_GC_POLLS, &Compiler::fgInsertGCPolls);
@@ -4983,8 +4991,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     DoPhase(this, PHASE_DETERMINE_FIRST_COLD_BLOCK, &Compiler::fgDetermineFirstColdBlock);
 
 #ifdef DEBUG
-    fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
-
     // Stash the current estimate of the function's size if necessary.
     if (verbose)
     {
@@ -5025,12 +5031,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
 #endif // TARGET_ARM
 
     // Assign registers to variables, etc.
-
-    ///////////////////////////////////////////////////////////////////////////////
-    // Dominator and reachability sets are no longer valid. They haven't been
-    // maintained up to here, and shouldn't be used (unless recomputed).
-    ///////////////////////////////////////////////////////////////////////////////
-    fgDomsComputed = false;
 
     // Create LinearScan before Lowering, so that Lowering can call LinearScan methods
     // for determining whether locals are register candidates and (for xarch) whether
@@ -5536,7 +5536,7 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
     compFrameInfo = {0};
 #endif
 
-    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_CORERT_ABI));
+    virtualStubParamInfo = new (this, CMK_Unknown) VirtualStubParamInfo(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
 
     // compMatchedVM is set to true if both CPU/ABI and OS are matching the execution engine requirements
     //
@@ -5585,24 +5585,163 @@ int Compiler::compCompile(CORINFO_MODULE_HANDLE classPtr,
 
     if (!info.compMatchedVM)
     {
-#if defined(TARGET_ARM)
+        CORINFO_InstructionSetFlags instructionSetFlags;
 
-// Currently nothing needs to be done. There are no ARM flags that conflict with other flags.
+        // We need to assume, by default, that all flags coming from the VM are invalid.
+        instructionSetFlags.Reset();
 
-#endif // defined(TARGET_ARM)
+// We then add each available instruction set for the target architecture provided
+// that the corresponding JitConfig switch hasn't explicitly asked for it to be
+// disabled. This allows us to default to "everything" supported for altjit scenarios
+// while also still allowing instruction set opt-out providing users with the ability
+// to, for example, see and debug ARM64 codegen for any desired CPU configuration without
+// needing to have the hardware in question.
 
 #if defined(TARGET_ARM64)
+        if (JitConfig.EnableHWIntrinsic() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_ArmBase);
+        }
 
-        // The x86/x64 architecture capabilities flags overlap with the ARM64 ones. Set a reasonable architecture
-        // target default. Currently this is disabling all ARM64 architecture features except FP and SIMD, but this
-        // should be altered to possibly enable all of them, when they are known to all work.
+        if (JitConfig.EnableArm64AdvSimd() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AdvSimd);
+        }
 
-        CORINFO_InstructionSetFlags defaultArm64Flags;
-        defaultArm64Flags.AddInstructionSet(InstructionSet_ArmBase);
-        defaultArm64Flags.AddInstructionSet(InstructionSet_AdvSimd);
-        defaultArm64Flags.Set64BitInstructionSetVariants();
-        compileFlags->SetInstructionSetFlags(defaultArm64Flags);
-#endif // defined(TARGET_ARM64)
+        if (JitConfig.EnableArm64Aes() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Aes);
+        }
+
+        if (JitConfig.EnableArm64Crc32() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Crc32);
+        }
+
+        if (JitConfig.EnableArm64Dp() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Dp);
+        }
+
+        if (JitConfig.EnableArm64Rdm() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Rdm);
+        }
+
+        if (JitConfig.EnableArm64Sha1() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sha1);
+        }
+
+        if (JitConfig.EnableArm64Sha256() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Sha256);
+        }
+
+        if (JitConfig.EnableArm64Atomics() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Atomics);
+        }
+
+        if (JitConfig.EnableArm64Dczva() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_Dczva);
+        }
+#elif defined(TARGET_XARCH)
+        if (JitConfig.EnableHWIntrinsic() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_X86Base);
+        }
+
+        if (JitConfig.EnableSSE() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE);
+        }
+
+        if (JitConfig.EnableSSE2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE2);
+        }
+
+        if ((JitConfig.EnableSSE3() != 0) && (JitConfig.EnableSSE3_4() != 0))
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE3);
+        }
+
+        if (JitConfig.EnableSSSE3() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSSE3);
+        }
+
+        if (JitConfig.EnableSSE41() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE41);
+        }
+
+        if (JitConfig.EnableSSE42() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_SSE42);
+        }
+
+        if (JitConfig.EnableAVX() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX);
+        }
+
+        if (JitConfig.EnableAVX2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVX2);
+        }
+
+        if (JitConfig.EnableAES() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AES);
+        }
+
+        if (JitConfig.EnableBMI1() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_BMI1);
+        }
+
+        if (JitConfig.EnableBMI2() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_BMI2);
+        }
+
+        if (JitConfig.EnableFMA() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_FMA);
+        }
+
+        if (JitConfig.EnableLZCNT() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_LZCNT);
+        }
+
+        if (JitConfig.EnablePCLMULQDQ() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_PCLMULQDQ);
+        }
+
+        if (JitConfig.EnablePOPCNT() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_POPCNT);
+        }
+
+        if (JitConfig.EnableAVXVNNI() != 0)
+        {
+            instructionSetFlags.AddInstructionSet(InstructionSet_AVXVNNI);
+        }
+#endif
+
+        // These calls are important and explicitly ordered to ensure that the flags are correct in
+        // the face of missing or removed instruction sets. Without them, we might end up with incorrect
+        // downstream checks.
+
+        instructionSetFlags.Set64BitInstructionSetVariants();
+        instructionSetFlags = EnsureInstructionSetFlagsAreValid(instructionSetFlags);
+
+        compileFlags->SetInstructionSetFlags(instructionSetFlags);
     }
 
     compMaxUncheckedOffsetForNullObject = eeGetEEInfo()->maxUncheckedOffsetForNullObject;
@@ -9215,6 +9354,10 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[FLD_VOLATILE]");
                 }
+                if (tree->gtFlags & GTF_FLD_TGT_HEAP)
+                {
+                    chars += printf("[FLD_TGT_HEAP]");
+                }
                 break;
 
             case GT_INDEX:
@@ -9238,13 +9381,13 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 {
                     chars += printf("[IND_VOLATILE]");
                 }
-                if (tree->gtFlags & GTF_IND_TGTANYWHERE)
-                {
-                    chars += printf("[IND_TGTANYWHERE]");
-                }
                 if (tree->gtFlags & GTF_IND_TGT_NOT_HEAP)
                 {
                     chars += printf("[IND_TGT_NOT_HEAP]");
+                }
+                if (tree->gtFlags & GTF_IND_TGT_HEAP)
+                {
+                    chars += printf("[IND_TGT_HEAP]");
                 }
                 if (tree->gtFlags & GTF_IND_TLS_REF)
                 {
@@ -9265,14 +9408,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
                 if (tree->gtFlags & GTF_IND_NONNULL)
                 {
                     chars += printf("[IND_NONNULL]");
-                }
-                break;
-
-            case GT_CLS_VAR:
-
-                if (tree->gtFlags & GTF_CLS_VAR_ASG_LHS)
-                {
-                    chars += printf("[CLS_VAR_ASG_LHS]");
                 }
                 break;
 
@@ -9684,10 +9819,6 @@ void cTreeFlags(Compiler* comp, GenTree* tree)
         if (tree->gtFlags & GTF_UNSIGNED)
         {
             chars += printf("[SMALL_UNSIGNED]");
-        }
-        if (tree->gtFlags & GTF_LATE_ARG)
-        {
-            chars += printf("[SMALL_LATE_ARG]");
         }
         if (tree->gtFlags & GTF_SPILL)
         {

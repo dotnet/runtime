@@ -3309,7 +3309,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HAND
 //
 // Returns:
 //    Number of bytes needed on the frame for such a local.
-
+//
 unsigned Compiler::lvaLclSize(unsigned varNum)
 {
     assert(varNum < lvaCount);
@@ -4548,8 +4548,8 @@ void Compiler::lvaMarkLocalVars()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-    // PSPSym and LocAllocSPvar are not used by the CoreRT ABI
-    if (!IsTargetAbi(CORINFO_CORERT_ABI))
+    // PSPSym and LocAllocSPvar are not used by the NativeAOT ABI
+    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
 #if defined(FEATURE_EH_FUNCLETS)
         if (ehNeedsPSPSym())

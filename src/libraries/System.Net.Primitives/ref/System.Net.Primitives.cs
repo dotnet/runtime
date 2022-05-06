@@ -81,9 +81,9 @@ namespace System.Net
         public void Add(System.Net.CookieCollection cookies) { }
         public void Add(System.Uri uri, System.Net.Cookie cookie) { }
         public void Add(System.Uri uri, System.Net.CookieCollection cookies) { }
+        public System.Net.CookieCollection GetAllCookies() { throw null; }
         public string GetCookieHeader(System.Uri uri) { throw null; }
         public System.Net.CookieCollection GetCookies(System.Uri uri) { throw null; }
-        public System.Net.CookieCollection GetAllCookies() { throw null; }
         public void SetCookies(System.Uri uri, string cookieHeader) { }
     }
     public partial class CookieException : System.FormatException, System.Runtime.Serialization.ISerializable
@@ -232,7 +232,7 @@ namespace System.Net
         public IPAddress(long newAddress) { }
         public IPAddress(System.ReadOnlySpan<byte> address) { }
         public IPAddress(System.ReadOnlySpan<byte> address, long scopeid) { }
-        [System.ObsoleteAttribute("IPAddress.Address is address family dependent and has been deprecated. Use IPAddress.Equals to perform comparisons.")]
+        [System.ObsoleteAttribute("IPAddress.Address is address family dependent and has been deprecated. Use IPAddress.Equals to perform comparisons instead.")]
         public long Address { get { throw null; } set { } }
         public System.Net.Sockets.AddressFamily AddressFamily { get { throw null; } }
         public bool IsIPv4MappedToIPv6 { get { throw null; } }
@@ -516,11 +516,11 @@ namespace System.Security.Authentication
         Ssl2 = 12,
         [System.ObsoleteAttribute("SslProtocols.Ssl3 has been deprecated and is not supported.")]
         Ssl3 = 48,
-        [System.ObsoleteAttribute("TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults.", DiagnosticId = "SYSLIB0039", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults.", DiagnosticId="SYSLIB0039", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         Tls = 192,
         [System.ObsoleteAttribute("SslProtocols.Default has been deprecated and is not supported.")]
         Default = 240,
-        [System.ObsoleteAttribute("TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults.", DiagnosticId = "SYSLIB0039", UrlFormat = "https://aka.ms/dotnet-warnings/{0}")]
+        [System.ObsoleteAttribute("TLS versions 1.0 and 1.1 have known vulnerabilities and are not recommended. Use a newer TLS version instead, or use SslProtocols.None to defer to OS defaults.", DiagnosticId="SYSLIB0039", UrlFormat="https://aka.ms/dotnet-warnings/{0}")]
         Tls11 = 768,
         Tls12 = 3072,
         Tls13 = 12288,
@@ -530,8 +530,8 @@ namespace System.Security.Authentication.ExtendedProtection
 {
     public abstract partial class ChannelBinding : Microsoft.Win32.SafeHandles.SafeHandleZeroOrMinusOneIsInvalid
     {
-        protected ChannelBinding() : base(default(bool)) { }
-        protected ChannelBinding(bool ownsHandle) : base(default(bool)) { }
+        protected ChannelBinding() : base (default(bool)) { }
+        protected ChannelBinding(bool ownsHandle) : base (default(bool)) { }
         public abstract int Size { get; }
     }
     public enum ChannelBindingKind

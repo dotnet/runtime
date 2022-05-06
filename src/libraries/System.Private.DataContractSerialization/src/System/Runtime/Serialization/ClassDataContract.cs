@@ -1624,20 +1624,5 @@ namespace System.Runtime.Serialization
                 this.MemberNamespaces[i] = ns;
             }
         }
-
-        internal Type UnadaptedClassType
-        {
-            get
-            {
-                if (IsKeyValuePairAdapter)
-                {
-                    return Globals.TypeOfKeyValuePair.MakeGenericType(KeyValuePairGenericArguments);
-                }
-                else
-                {
-                    return UnderlyingType;
-                }
-            }
-        }
     }
 }

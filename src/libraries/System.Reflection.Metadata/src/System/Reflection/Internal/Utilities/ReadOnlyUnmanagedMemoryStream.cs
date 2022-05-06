@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 
 namespace System.Reflection.Internal
 {
-    internal unsafe sealed class ReadOnlyUnmanagedMemoryStream : Stream
+    internal sealed unsafe class ReadOnlyUnmanagedMemoryStream : Stream
     {
         private readonly byte* _data;
         private readonly int _length;

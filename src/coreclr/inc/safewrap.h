@@ -95,8 +95,6 @@ public:
     }
 };
 
-// Read a REG_SZ (null-terminated string) value from the registry.  Throws.
-void ClrRegReadString(HKEY hKey, const SString & szValueName, SString & value);
 
 /* --------------------------------------------------------------------------- *
  * Simple wrapper around RegisterEventSource/ReportEvent/DeregisterEventSource

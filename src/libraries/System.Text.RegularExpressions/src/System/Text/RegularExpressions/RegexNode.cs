@@ -2719,22 +2719,8 @@ namespace System.Text.RegularExpressions
         /// <summary>Gets whether the node is a Notone/Notoneloop/Notoneloopatomic/Notonelazy node.</summary>
         public bool IsNotoneFamily => Kind is RegexNodeKind.Notone or RegexNodeKind.Notoneloop or RegexNodeKind.Notoneloopatomic or RegexNodeKind.Notonelazy;
 
-        /// <summary>Gets whether this node is contained inside of a loop.</summary>
-        public bool IsInLoop()
-        {
-            for (RegexNode? parent = Parent; parent is not null; parent = parent.Parent)
-            {
-                if (parent.Kind is RegexNodeKind.Loop or RegexNodeKind.Lazyloop)
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
 #if DEBUG
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage] // Used only for debugging assistance
         public override string ToString()
         {
             RegexNode? curNode = this;
@@ -2767,7 +2753,7 @@ namespace System.Text.RegularExpressions
             return sb.ToString();
         }
 
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage] // Used only for debugging assistance
         private string Describe()
         {
             var sb = new StringBuilder(Kind.ToString());

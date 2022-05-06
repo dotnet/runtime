@@ -205,6 +205,12 @@ namespace System
         public override unsafe string ToString()
         {
             ReadOnlySpan<byte> span = _bytes.Span;
+
+            if (span.IsEmpty)
+            {
+                return string.Empty;
+            }
+
             fixed (byte* ptr = span)
             {
                 return Encoding.UTF8.GetString(ptr, span.Length);

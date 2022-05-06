@@ -174,7 +174,7 @@ namespace System
             if (!Uri.CheckSchemeName(schemeName))
                 throw new ArgumentOutOfRangeException(nameof(schemeName));
 
-            if ((defaultPort >= 0xFFFF || defaultPort < 0) && defaultPort != -1)
+            if ((defaultPort > 0xFFFF || defaultPort < 0) && defaultPort != -1)
                 throw new ArgumentOutOfRangeException(nameof(defaultPort));
 
             schemeName = schemeName.ToLowerInvariant();

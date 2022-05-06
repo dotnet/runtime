@@ -27,7 +27,7 @@ namespace System.Threading
 {
     #region class _IOCompletionCallback
 
-    internal unsafe partial class _IOCompletionCallback
+    internal sealed unsafe partial class _IOCompletionCallback
     {
         // call back helper
         internal static void PerformIOCompletionCallback(uint errorCode, uint numBytes, NativeOverlapped* pNativeOverlapped)

@@ -215,7 +215,6 @@ static const Entry s_sysNative[] =
     DllImportEntry(SystemNative_GetProcessPath)
     DllImportEntry(SystemNative_GetNonCryptographicallySecureRandomBytes)
     DllImportEntry(SystemNative_GetCryptographicallySecureRandomBytes)
-    DllImportEntry(SystemNative_GetUnixName)
     DllImportEntry(SystemNative_GetUnixRelease)
     DllImportEntry(SystemNative_GetUnixVersion)
     DllImportEntry(SystemNative_GetOSArchitecture)

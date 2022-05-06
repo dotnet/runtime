@@ -1531,7 +1531,7 @@ namespace System
         #endregion
     }
 
-    internal unsafe class Signature
+    internal sealed unsafe class Signature
     {
         #region Definitions
         internal enum MdSigCallingConvention : byte

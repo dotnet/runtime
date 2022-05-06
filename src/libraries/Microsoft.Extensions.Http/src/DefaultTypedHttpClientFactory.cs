@@ -33,7 +33,7 @@ namespace Microsoft.Extensions.Http
         // The Cache should be registered as a singleton, so it that it can
         // act as a cache for the Activator. This allows the outer class to be registered
         // as a transient, so that it doesn't close over the application root service provider.
-        public class Cache
+        public sealed class Cache
         {
             private static readonly Func<ObjectFactory> _createActivator = () => ActivatorUtilities.CreateFactory(typeof(TClient), new Type[] { typeof(HttpClient), });
 

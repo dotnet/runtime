@@ -384,7 +384,7 @@ namespace R2RDump
                     OperatingSystem.NetBSD => TargetOS.FreeBSD,
                     _ => throw new NotImplementedException(r2r.OperatingSystem.ToString()),
                 };
-                TargetDetails details = new TargetDetails(architecture, os, TargetAbi.CoreRT);
+                TargetDetails details = new TargetDetails(architecture, os, TargetAbi.NativeAot);
 
                 if (_options.CreatePDB)
                 {

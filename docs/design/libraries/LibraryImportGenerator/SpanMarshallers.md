@@ -1,6 +1,6 @@
 # Support for Marshalling `(ReadOnly)Span<T>`
 
-As part of the exit criteria for the DllImportGenerator experiment, we have decided to introduce support for marshalling `System.Span<T>` and `System.ReadOnlySpan<T>` into the DllImportGenerator-generated stubs. This document describes design decisions made during the implementation of these marshallers.
+As part of the exit criteria for the LibraryImportGenerator experiment, we have decided to introduce support for marshalling `System.Span<T>` and `System.ReadOnlySpan<T>` into the LibraryImportGenerator-generated stubs. This document describes design decisions made during the implementation of these marshallers.
 
 ## Design 1: "Intrinsic" support for `(ReadOnly)Span<T>`
 

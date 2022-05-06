@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Logging
         private volatile bool _disposed;
         private IDisposable? _changeTokenRegistration;
         private LoggerFilterOptions _filterOptions;
-        private LoggerFactoryScopeProvider? _scopeProvider;
+        private IExternalScopeProvider? _scopeProvider;
         private LoggerFactoryOptions _factoryOptions;
 
         /// <summary>
@@ -62,8 +62,21 @@ namespace Microsoft.Extensions.Logging
         /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
         /// <param name="filterOption">The filter option to use.</param>
         /// <param name="options">The <see cref="LoggerFactoryOptions"/>.</param>
-        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions>? options = null)
+        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions>? options) : this(providers, filterOption, options, null)
         {
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="LoggerFactory"/> instance.
+        /// </summary>
+        /// <param name="providers">The providers to use in producing <see cref="ILogger"/> instances.</param>
+        /// <param name="filterOption">The filter option to use.</param>
+        /// <param name="options">The <see cref="LoggerFactoryOptions"/>.</param>
+        /// <param name="scopeProvider">The <see cref="IExternalScopeProvider"/>.</param>
+        public LoggerFactory(IEnumerable<ILoggerProvider> providers, IOptionsMonitor<LoggerFilterOptions> filterOption, IOptions<LoggerFactoryOptions>? options = null, IExternalScopeProvider? scopeProvider = null)
+        {
+            _scopeProvider = scopeProvider;
+
             _factoryOptions = options == null || options.Value == null ? new LoggerFactoryOptions() : options.Value;
 
             const ActivityTrackingOptions ActivityTrackingOptionsMask = ~(ActivityTrackingOptions.SpanId | ActivityTrackingOptions.TraceId | ActivityTrackingOptions.ParentId |
