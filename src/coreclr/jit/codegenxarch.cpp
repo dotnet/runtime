@@ -4243,9 +4243,8 @@ void CodeGen::genCodeForArrIndex(GenTreeArrIndex* arrIndex)
     regNumber indexReg = genConsumeReg(indexNode);
     regNumber tgtReg   = arrIndex->GetRegNum();
 
-    unsigned  dim      = arrIndex->gtCurrDim;
-    unsigned  rank     = arrIndex->gtArrRank;
-    var_types elemType = arrIndex->gtArrElemType;
+    unsigned dim  = arrIndex->gtCurrDim;
+    unsigned rank = arrIndex->gtArrRank;
 
     noway_assert(tgtReg != REG_NA);
 
@@ -4286,9 +4285,8 @@ void CodeGen::genCodeForArrOffset(GenTreeArrOffs* arrOffset)
     regNumber tgtReg = arrOffset->GetRegNum();
     assert(tgtReg != REG_NA);
 
-    unsigned  dim      = arrOffset->gtCurrDim;
-    unsigned  rank     = arrOffset->gtArrRank;
-    var_types elemType = arrOffset->gtArrElemType;
+    unsigned dim  = arrOffset->gtCurrDim;
+    unsigned rank = arrOffset->gtArrRank;
 
     // First, consume the operands in the correct order.
     regNumber offsetReg = REG_NA;

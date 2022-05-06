@@ -8432,8 +8432,7 @@ GenTree* Compiler::gtCloneExpr(
             case GT_ARR_INDEX:
                 copy = new (this, GT_ARR_INDEX)
                     GenTreeArrIndex(tree->TypeGet(), tree->AsArrIndex()->ArrObj(), tree->AsArrIndex()->IndexExpr(),
-                                    tree->AsArrIndex()->gtCurrDim, tree->AsArrIndex()->gtArrRank,
-                                    tree->AsArrIndex()->gtArrElemType);
+                                    tree->AsArrIndex()->gtCurrDim, tree->AsArrIndex()->gtArrRank);
                 break;
 
             case GT_QMARK:
@@ -8612,19 +8611,18 @@ GenTree* Compiler::gtCloneExpr(
             }
             copy = new (this, GT_ARR_ELEM)
                 GenTreeArrElem(arrElem->TypeGet(), gtCloneExpr(arrElem->gtArrObj, addFlags, deepVarNum, deepVarVal),
-                               arrElem->gtArrRank, arrElem->gtArrElemSize, arrElem->gtArrElemType, &inds[0]);
+                               arrElem->gtArrRank, arrElem->gtArrElemSize, &inds[0]);
         }
         break;
 
         case GT_ARR_OFFSET:
         {
-            copy = new (this, GT_ARR_OFFSET)
-                GenTreeArrOffs(tree->TypeGet(),
-                               gtCloneExpr(tree->AsArrOffs()->gtOffset, addFlags, deepVarNum, deepVarVal),
-                               gtCloneExpr(tree->AsArrOffs()->gtIndex, addFlags, deepVarNum, deepVarVal),
-                               gtCloneExpr(tree->AsArrOffs()->gtArrObj, addFlags, deepVarNum, deepVarVal),
-                               tree->AsArrOffs()->gtCurrDim, tree->AsArrOffs()->gtArrRank,
-                               tree->AsArrOffs()->gtArrElemType);
+            GenTreeArrOffs* arrOffs = tree->AsArrOffs();
+            copy                    = new (this, GT_ARR_OFFSET)
+                GenTreeArrOffs(tree->TypeGet(), gtCloneExpr(arrOffs->gtOffset, addFlags, deepVarNum, deepVarVal),
+                               gtCloneExpr(arrOffs->gtIndex, addFlags, deepVarNum, deepVarVal),
+                               gtCloneExpr(arrOffs->gtArrObj, addFlags, deepVarNum, deepVarVal), arrOffs->gtCurrDim,
+                               arrOffs->gtArrRank);
         }
         break;
 

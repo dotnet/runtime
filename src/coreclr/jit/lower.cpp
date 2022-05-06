@@ -261,7 +261,7 @@ GenTree* Lowering::LowerNode(GenTree* node)
 #endif // TARGET_XARCH
 
         case GT_ARR_ELEM:
-            return LowerArrElem(node);
+            return LowerArrElem(node->AsArrElem());
 
         case GT_ARR_OFFSET:
             ContainCheckArrOffset(node->AsArrOffs());
@@ -6200,40 +6200,39 @@ void Lowering::WidenSIMD12IfNecessary(GenTreeLclVarCommon* node)
 //
 // Notes:
 //    This performs the following lowering.  We start with a node of the form:
-//          /--*  <arrObj>
-//          +--*  <index0>
-//          +--*  <index1>
-//       /--*  arrMD&[,]
+//          /--*  <arrObj> ref
+//          +--*  <index0> int
+//          +--*  <index1> int
+//       /--*  ARR_ELEM[,] byref
 //
 //    First, we create temps for arrObj if it is not already a lclVar, and for any of the index
 //    expressions that have side-effects.
 //    We then transform the tree into:
-//                      <offset is null - no accumulated offset for the first index>
+//
+//                         <offset is null - no accumulated offset for the first index>
 //                   /--*  <arrObj>
 //                   +--*  <index0>
-//                /--*  ArrIndex[i, ]
+//                /--*  ARR_INDEX[i, ]
 //                +--*  <arrObj>
-//             /--|  arrOffs[i, ]
+//             /--|  ARR_OFFSET[i, ]
 //             |  +--*  <arrObj>
 //             |  +--*  <index1>
-//             +--*  ArrIndex[*,j]
+//             +--*  ARR_INDEX[*,j]
 //             +--*  <arrObj>
-//          /--|  arrOffs[*,j]
+//          /--|  ARR_OFFSET[*,j]
 //          +--*  lclVar NewTemp
 //       /--*  lea (scale = element size, offset = offset of first element)
 //
-//    The new stmtExpr may be omitted if the <arrObj> is a lclVar.
-//    The new stmtExpr may be embedded if the <arrObj> is not the first tree in linear order for
-//    the statement containing the original arrMD.
-//    Note that the arrMDOffs is the INDEX of the lea, but is evaluated before the BASE (which is the second
+//    1. The new stmtExpr may be omitted if the <arrObj> is a lclVar.
+//    2. The new stmtExpr may be embedded if the <arrObj> is not the first tree in linear order for
+//    the statement containing the original ARR_ELEM.
+//    3. Note that the arrMDOffs is the INDEX of the lea, but is evaluated before the BASE (which is the second
 //    reference to NewTemp), because that provides more accurate lifetimes.
-//    There may be 1, 2 or 3 dimensions, with 1, 2 or 3 arrMDIdx nodes, respectively.
+//    4. There may be 1, 2 or 3 dimensions, with 1, 2 or 3 ARR_INDEX nodes, respectively.
 //
-GenTree* Lowering::LowerArrElem(GenTree* node)
+GenTree* Lowering::LowerArrElem(GenTreeArrElem* arrElem)
 {
-    // This will assert if we don't have an ArrElem node
-    GenTreeArrElem*     arrElem = node->AsArrElem();
-    const unsigned char rank    = arrElem->gtArrRank;
+    const unsigned char rank = arrElem->gtArrRank;
 
     JITDUMP("Lowering ArrElem\n");
     JITDUMP("============\n");
@@ -6276,16 +6275,16 @@ GenTree* Lowering::LowerArrElem(GenTree* node)
         }
 
         // Next comes the GT_ARR_INDEX node.
-        GenTreeArrIndex* arrMDIdx = new (comp, GT_ARR_INDEX)
-            GenTreeArrIndex(TYP_INT, idxArrObjNode, indexNode, dim, rank, arrElem->gtArrElemType);
+        GenTreeArrIndex* arrMDIdx =
+            new (comp, GT_ARR_INDEX) GenTreeArrIndex(TYP_INT, idxArrObjNode, indexNode, dim, rank);
         arrMDIdx->gtFlags |= ((idxArrObjNode->gtFlags | indexNode->gtFlags) & GTF_ALL_EFFECT);
         BlockRange().InsertBefore(insertionPoint, arrMDIdx);
 
         GenTree* offsArrObjNode = comp->gtClone(arrObjNode);
         BlockRange().InsertBefore(insertionPoint, offsArrObjNode);
 
-        GenTreeArrOffs* arrOffs = new (comp, GT_ARR_OFFSET)
-            GenTreeArrOffs(TYP_I_IMPL, prevArrOffs, arrMDIdx, offsArrObjNode, dim, rank, arrElem->gtArrElemType);
+        GenTreeArrOffs* arrOffs =
+            new (comp, GT_ARR_OFFSET) GenTreeArrOffs(TYP_I_IMPL, prevArrOffs, arrMDIdx, offsArrObjNode, dim, rank);
         arrOffs->gtFlags |= ((prevArrOffs->gtFlags | arrMDIdx->gtFlags | offsArrObjNode->gtFlags) & GTF_ALL_EFFECT);
         BlockRange().InsertBefore(insertionPoint, arrOffs);
 
@@ -6946,7 +6945,7 @@ void Lowering::ContainCheckArrOffset(GenTreeArrOffs* node)
     // we don't want to generate code for this
     if (node->gtOffset->IsIntegralConst(0))
     {
-        MakeSrcContained(node, node->AsArrOffs()->gtOffset);
+        MakeSrcContained(node, node->gtOffset);
     }
 }
 
@@ -6959,7 +6958,7 @@ void Lowering::ContainCheckArrOffset(GenTreeArrOffs* node)
 void Lowering::ContainCheckLclHeap(GenTreeOp* node)
 {
     assert(node->OperIs(GT_LCLHEAP));
-    GenTree* size = node->AsOp()->gtOp1;
+    GenTree* size = node->gtOp1;
     if (size->IsCnsIntOrI())
     {
         MakeSrcContained(node, size);

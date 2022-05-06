@@ -6518,13 +6518,12 @@ struct GenTreeArrElem : public GenTree
                                  // It stores the size of array elements WHEN it can fit
                                  // into an "unsigned char".
                                  // This has caused VSW 571394.
-    var_types gtArrElemType;     // The array element type
 
     // Requires that "inds" is a pointer to an array of "rank" nodes for the indices.
-    GenTreeArrElem(
-        var_types type, GenTree* arr, unsigned char rank, unsigned char elemSize, var_types elemType, GenTree** inds)
-        : GenTree(GT_ARR_ELEM, type), gtArrObj(arr), gtArrRank(rank), gtArrElemSize(elemSize), gtArrElemType(elemType)
+    GenTreeArrElem(var_types type, GenTree* arr, unsigned char rank, unsigned char elemSize, GenTree** inds)
+        : GenTree(GT_ARR_ELEM, type), gtArrObj(arr), gtArrRank(rank), gtArrElemSize(elemSize)
     {
+        assert(rank <= ArrLen(gtArrInds));
         gtFlags |= (arr->gtFlags & GTF_ALL_EFFECT);
         for (unsigned char i = 0; i < rank; i++)
         {
@@ -6543,7 +6542,7 @@ struct GenTreeArrElem : public GenTree
 //--------------------------------------------
 //
 // GenTreeArrIndex (gtArrIndex): Expression to bounds-check the index for one dimension of a
-//    multi-dimensional or non-zero-based array., and compute the effective index
+//    multi-dimensional or non-zero-based array, and compute the effective index
 //    (i.e. subtracting the lower bound).
 //
 // Notes:
@@ -6562,7 +6561,7 @@ struct GenTreeArrElem : public GenTree
 //                +--*  ArrLen[i, ]    (either generalize GT_ARR_LENGTH or add a new node)
 //                +--*  <index0>
 //             +--* ArrIndex[i, ]
-//    Which could, for example, be optimized to the following when known to be within bounds:
+//    which could, for example, be optimized to the following when known to be within bounds:
 //                /--*  TempForLowerBoundDim0
 //                +--*  <index0>
 //             +--* - (GT_SUB)
@@ -6579,20 +6578,11 @@ struct GenTreeArrIndex : public GenTreeOp
     {
         return gtOp2;
     }
-    unsigned char gtCurrDim;     // The current dimension
-    unsigned char gtArrRank;     // Rank of the array
-    var_types     gtArrElemType; // The array element type
+    unsigned char gtCurrDim; // The current dimension
+    unsigned char gtArrRank; // Rank of the array
 
-    GenTreeArrIndex(var_types     type,
-                    GenTree*      arrObj,
-                    GenTree*      indexExpr,
-                    unsigned char currDim,
-                    unsigned char arrRank,
-                    var_types     elemType)
-        : GenTreeOp(GT_ARR_INDEX, type, arrObj, indexExpr)
-        , gtCurrDim(currDim)
-        , gtArrRank(arrRank)
-        , gtArrElemType(elemType)
+    GenTreeArrIndex(var_types type, GenTree* arrObj, GenTree* indexExpr, unsigned char currDim, unsigned char arrRank)
+        : GenTreeOp(GT_ARR_INDEX, type, arrObj, indexExpr), gtCurrDim(currDim), gtArrRank(arrRank)
     {
         gtFlags |= GTF_EXCEPT;
     }
@@ -6636,31 +6626,24 @@ protected:
 //
 struct GenTreeArrOffs : public GenTree
 {
-    GenTree* gtOffset;           // The accumulated offset for lower dimensions - must be TYP_I_IMPL, and
-                                 // will either be a CSE temp, the constant 0, or another GenTreeArrOffs node.
-    GenTree* gtIndex;            // The effective index for the current dimension - must be non-negative
-                                 // and can be any expression (though it is likely to be either a GenTreeArrIndex,
-                                 // node, a lclVar, or a constant).
-    GenTree* gtArrObj;           // The array object - may be any expression producing an Array reference,
-                                 // but is likely to be a lclVar.
-    unsigned char gtCurrDim;     // The current dimension
-    unsigned char gtArrRank;     // Rank of the array
-    var_types     gtArrElemType; // The array element type
+    GenTree* gtOffset;       // The accumulated offset for lower dimensions - must be TYP_I_IMPL, and
+                             // will either be a CSE temp, the constant 0, or another GenTreeArrOffs node.
+    GenTree* gtIndex;        // The effective index for the current dimension - must be non-negative
+                             // and can be any expression (though it is likely to be either a GenTreeArrIndex,
+                             // node, a lclVar, or a constant).
+    GenTree* gtArrObj;       // The array object - may be any expression producing an Array reference,
+                             // but is likely to be a lclVar.
+    unsigned char gtCurrDim; // The current dimension
+    unsigned char gtArrRank; // Rank of the array
 
-    GenTreeArrOffs(var_types     type,
-                   GenTree*      offset,
-                   GenTree*      index,
-                   GenTree*      arrObj,
-                   unsigned char currDim,
-                   unsigned char rank,
-                   var_types     elemType)
+    GenTreeArrOffs(
+        var_types type, GenTree* offset, GenTree* index, GenTree* arrObj, unsigned char currDim, unsigned char rank)
         : GenTree(GT_ARR_OFFSET, type)
         , gtOffset(offset)
         , gtIndex(index)
         , gtArrObj(arrObj)
         , gtCurrDim(currDim)
         , gtArrRank(rank)
-        , gtArrElemType(elemType)
     {
         assert(index->gtFlags & GTF_EXCEPT);
         gtFlags |= GTF_EXCEPT;
