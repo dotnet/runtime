@@ -13,6 +13,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XUnitExtensions;
+using Microsoft.DotNet.RemoteExecutor;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -2012,6 +2013,20 @@ namespace System.Net.Http.Functional.Tests
 
             request = new HttpRequestMessage(HttpMethod.Get, new Uri("foo://foo.bar"));
             await Assert.ThrowsAsync<NotSupportedException>(() => invoker.SendAsync(request, CancellationToken.None));
+        }
+
+        [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public void AppContextSetData_SetDefaultMaxConnectionsPerServer(bool asInt)
+        {
+            RemoteExecutor.Invoke((asInt) =>
+            {
+                object data = asInt == "true" ? 1 : "1";
+                AppContext.SetData("System.Net.Http.HttpHandlerDefaults.DefaultMaxConnectionsPerServer", data);
+                var handler = CreateHttpClientHandler();
+                Assert.Equal(1, handler.MaxConnectionsPerServer);
+            }, asInt.ToString());
         }
     }
 }

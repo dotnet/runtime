@@ -74,7 +74,7 @@ namespace System.Net.Http
         private WindowsProxyUsePolicy _windowsProxyUsePolicy = WindowsProxyUsePolicy.UseWinHttpProxy;
         private ICredentials? _defaultProxyCredentials;
         private IWebProxy? _proxy;
-        private int _maxConnectionsPerServer = int.MaxValue;
+        private int _maxConnectionsPerServer = HttpHandlerDefaults.DefaultMaxConnectionsPerServer;
         private TimeSpan _sendTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveHeadersTimeout = TimeSpan.FromSeconds(30);
         private TimeSpan _receiveDataTimeout = TimeSpan.FromSeconds(30);
