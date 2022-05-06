@@ -2100,7 +2100,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
             resultVN = EvalUsingMathIdentity(typ, func, arg0VN, arg1VN);
 
             // Do we have a valid resultVN?
-            if ((resultVN == NoVN) || (TypeOfVN(resultVN) != typ))
+            if ((resultVN == NoVN) || (genActualType(TypeOfVN(resultVN)) != genActualType(typ)))
             {
                 // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN')
                 //
@@ -2952,6 +2952,11 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
         return EvalCastForConstantArgs(typ, func, arg0VN, arg1VN);
     }
 
+    if (func == VNF_BitCast)
+    {
+        return EvalBitCastForConstantArgs(typ, arg0VN);
+    }
+
     var_types arg0VNtyp = TypeOfVN(arg0VN);
     var_types arg1VNtyp = TypeOfVN(arg1VN);
 
@@ -3417,6 +3422,90 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
 }
 
 //------------------------------------------------------------------------
+// EvalBitCastForConstantArgs: Evaluate "BitCast(const)".
+//
+// Arguments:
+//    dstType - The target type
+//    arg0VN  - VN of the argument (must be a constant)
+//
+// Return Value:
+//    The constant VN representing "BitCast<dstType>(arg0VN)".
+//
+ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum arg0VN)
+{
+    // Handles - when generating relocatable code - don't represent their final
+    // values, so we'll not fold bitcasts from them (always, for simplicity).
+    assert(!IsVNHandle(arg0VN));
+
+    var_types srcType = TypeOfVN(arg0VN);
+    assert((genTypeSize(srcType) == genTypeSize(dstType)) || (varTypeIsSmall(dstType) && (srcType == TYP_INT)));
+
+    union {
+        int           Int;
+        int64_t       Long;
+        target_size_t IntPtr;
+        float         Float;
+        double        Double;
+    } srcValue{};
+
+    switch (srcType)
+    {
+        case TYP_INT:
+            srcValue.Int = ConstantValue<int>(arg0VN);
+            break;
+        case TYP_LONG:
+            srcValue.Long = ConstantValue<int64_t>(arg0VN);
+            break;
+        case TYP_BYREF:
+            srcValue.IntPtr = ConstantValue<target_size_t>(arg0VN);
+            break;
+        case TYP_REF:
+            noway_assert(arg0VN == VNForNull());
+            srcValue.IntPtr = 0;
+            break;
+        case TYP_FLOAT:
+            srcValue.Float = ConstantValue<float>(arg0VN);
+            break;
+        case TYP_DOUBLE:
+            srcValue.Double = ConstantValue<double>(arg0VN);
+            break;
+        default:
+            unreached();
+    }
+
+    // "BitCast<small type>" has the semantic of only changing the upper bits (without truncation).
+    if (varTypeIsSmall(dstType))
+    {
+        assert(FitsIn(varTypeToSigned(dstType), srcValue.Int) || FitsIn(varTypeToUnsigned(dstType), srcValue.Int));
+    }
+
+    switch (dstType)
+    {
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            return VNForIntCon(static_cast<uint8_t>(srcValue.Int));
+        case TYP_BYTE:
+            return VNForIntCon(static_cast<int8_t>(srcValue.Int));
+        case TYP_USHORT:
+            return VNForIntCon(static_cast<uint16_t>(srcValue.Int));
+        case TYP_SHORT:
+            return VNForIntCon(static_cast<int16_t>(srcValue.Int));
+        case TYP_INT:
+            return VNForIntCon(srcValue.Int);
+        case TYP_LONG:
+            return VNForLongCon(srcValue.Long);
+        case TYP_BYREF:
+            return VNForByrefCon(srcValue.IntPtr);
+        case TYP_FLOAT:
+            return VNForFloatCon(srcValue.Float);
+        case TYP_DOUBLE:
+            return VNForDoubleCon(srcValue.Double);
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
 // VNEvalCanFoldBinaryFunc: Can the given binary function be constant-folded?
 //
 // Arguments:
@@ -3493,6 +3582,13 @@ bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNu
             case VNF_Cast:
             case VNF_CastOvf:
                 if ((type != TYP_I_IMPL) && IsVNHandle(arg0VN))
+                {
+                    return false;
+                }
+                break;
+
+            case VNF_BitCast:
+                if (!varTypeIsArithmetic(type) || IsVNHandle(arg0VN))
                 {
                     return false;
                 }
@@ -4280,30 +4376,9 @@ ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType,
 
     if (typeOfValue != indType)
     {
-        if ((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT))
-        {
-            value = VNForBitCast(value, indType);
-        }
-        else
-        {
-            assert(genTypeSize(indType) == indSize);
+        assert((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT) || (genTypeSize(indType) == indSize));
 
-            // TODO-PhysicalVN: remove this pessimization.
-            if (varTypeIsSIMD(indType))
-            {
-                JITDUMP("    *** Mismatched types in VNForLoadStoreBitcast (indType is SIMD)\n");
-                value = VNForExpr(m_pComp->compCurBB, indType);
-            }
-            else if (!varTypeIsFloating(typeOfValue) && !varTypeIsFloating(indType))
-            {
-                // TODO-PhysicalVN: implement constant folding for bitcasts and remove this special case.
-                value = VNForCast(value, indType, TypeOfVN(value));
-            }
-            else
-            {
-                value = VNForBitCast(value, indType);
-            }
-        }
+        value = VNForBitCast(value, indType);
 
         JITDUMP("    VNForLoadStoreBitcast returns ");
         JITDUMPEXEC(m_pComp->vnPrint(value, 1));
@@ -9634,9 +9709,7 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
 
     assert((castToType != TYP_STRUCT) || (srcType != TYP_STRUCT));
 
-    // TODO-PhysicalVN: implement proper constant folding for BitCast.
-    if ((srcVNFunc.m_func == VNF_ZeroObj) ||
-        ((castToType != TYP_STRUCT) && (srcType != TYP_STRUCT) && (srcVN == VNZeroForType(srcType))))
+    if (srcVNFunc.m_func == VNF_ZeroObj)
     {
         return VNZeroForType(castToType);
     }
