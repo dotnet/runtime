@@ -11716,8 +11716,11 @@ DONE_MORPHING_CHILDREN:
 #ifdef TARGET_LOONGARCH64
         case GT_UMOD:
 #endif
-            // Codegen for this instruction needs to be able to throw one exception:
-            fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+            // We do not need to throw if the second operand is a non-zero constant.
+            if (!op2->IsIntegralConst() || op2->IsIntegralConst(0))
+            {
+                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+            }
             break;
 
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
