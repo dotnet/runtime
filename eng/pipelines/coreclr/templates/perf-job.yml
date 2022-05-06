@@ -218,6 +218,20 @@ jobs:
           displayName: 'iOS Sample App LLVM'
       - template: /eng/pipelines/common/download-artifact-step.yml
         parameters:
+          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/nollvmzip
+          cleanUnpackFolder: false
+          artifactFileName: 'iOSSampleAppNoLLVMZip.tar.gz'
+          artifactName: 'iOSSampleAppNoLLVMZip'
+          displayName: 'iOS Sample App NoLLVM Zip'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
+          unpackFolder: $(Build.SourcesDirectory)/iosHelloWorld/llvmzip
+          cleanUnpackFolder: false
+          artifactFileName: 'iOSSampleAppLLVM.tar.gz'
+          artifactName: 'iOSSampleAppLLVMZip'
+          displayName: 'iOS Sample App LLVM Zip'
+      - template: /eng/pipelines/common/download-artifact-step.yml
+        parameters:
           unpackFolder: $(Build.SourcesDirectory)/MauiiOSDefaultIPA
           cleanUnpackFolder: false
           artifactFileName: 'MauiiOSDefaultIPA.tar.gz'

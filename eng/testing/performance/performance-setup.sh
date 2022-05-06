@@ -352,10 +352,12 @@ fi
 if [[ "$iosmono" == "true" ]]; then
     if [[ "$iosllvmbuild" == "True" ]]; then
         # LLVM Mono .app
-        mkdir -p $payload_directory/iosHelloWorld/llvm && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/llvm $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorldZip/llvmzip && cp -rv $source_directory/iosHelloWorld/llvmzip $payload_directory/iosHelloWorldZip
     else
         # NoLLVM Mono .app, Maui iOS IPA, Maui Maccatalyst, Maui iOS Podcast IPA
-        mkdir -p $payload_directory/iosHelloWorld/nollvm && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorld && cp -rv $source_directory/iosHelloWorld/nollvm $payload_directory/iosHelloWorld
+        mkdir -p $payload_directory/iosHelloWorldZip/nollvmzip && cp -rv $source_directory/iosHelloWorldZip/nollvmzip $payload_directory/iosHelloWorldZip
         mkdir -p $payload_directory/MauiMacCatalystDefault && cp -rv $source_directory/MauiMacCatalystDefault/MauiMacCatalystDefault.app $payload_directory/MauiMacCatalystDefault
         cp -v $source_directory/MauiiOSDefaultIPA/MauiiOSDefault.ipa $payload_directory/MauiiOSDefault.ipa
         cp -v $source_directory/MauiiOSPodcastIPA/MauiiOSPodcast.ipa $payload_directory/MauiiOSPodcast.ipa

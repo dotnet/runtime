@@ -57,6 +57,23 @@ steps:
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
+        includeRootFolder: true
+        archiveType: zip
+        replaceExistingArchive: false
+        archiveFile: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/iOSSampleAppNoLLVMArchive.zip
+        displayName: Zip iOS Sample App NoLLVM
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/iOSSampleAppNoLLVMArchive.zip
+        includeRootFolder: true
+        displayName: iOS Sample App NoLLVM Zip
+        artifactName: iOSSampleAppNoLLVMZip
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
     - script: rm -r -f $(Build.SourcesDirectory)/src/mono/sample/iOS/bin
       workingDirectory: $(Build.SourcesDirectory)/src/mono/sample/iOS
       displayName: Clean bindir
@@ -77,6 +94,23 @@ steps:
         includeRootFolder: true
         displayName: iOS Sample App LLVM
         artifactName: iOSSampleAppLLVM
+        archiveExtension: '.tar.gz'
+        archiveType: tar
+        tarCompression: gz
+    - task: ArchiveFiles@2
+      inputs:
+        rootFolderOrFile: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/HelloiOS.app
+        includeRootFolder: true
+        archiveType: zip
+        replaceExistingArchive: false
+        archiveFile: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/iOSSampleAppLLVMArchive.zip
+        displayName: Zip iOS Sample App LLVM
+    - template: /eng/pipelines/common/upload-artifact-step.yml
+      parameters:
+        rootFolder: $(Build.SourcesDirectory)/src/mono/sample/iOS/bin/ios-arm64/publish/app/HelloiOS/Release-iphoneos/iOSSampleAppLLVMArchive.zip
+        includeRootFolder: true
+        displayName: iOS Sample App LLVM Zip
+        artifactName: iOSSampleAppLLVMZip
         archiveExtension: '.tar.gz'
         archiveType: tar
         tarCompression: gz
