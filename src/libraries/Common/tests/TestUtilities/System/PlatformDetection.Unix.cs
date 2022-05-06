@@ -32,7 +32,7 @@ namespace System
         public static bool IsSLES => IsDistroAndVersion("sles");
         public static bool IsTizen => IsDistroAndVersion("tizen");
         public static bool IsFedora => IsDistroAndVersion("fedora");
-        public static bool IsBionic => IsLinuxBionic();
+        public static bool IsLinuxBionic => IsBionic();
 
         // OSX family
         public static bool IsOSXLike => IsOSX || IsiOS || IstvOS || IsMacCatalyst;
@@ -177,7 +177,7 @@ namespace System
         /// <summary>
         /// Assume that Android environment variables but Linux OS mean Android libc
         /// </summary>
-        private static bool IsLinuxBionic()
+        private static bool IsBionic()
         {
             if (IsLinux)
             {
