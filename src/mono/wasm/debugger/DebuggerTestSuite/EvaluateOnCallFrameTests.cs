@@ -1139,6 +1139,41 @@ namespace DebuggerTests
                    ("test.listToLinq.ToList()", TObject("System.Collections.Generic.List<int>", description: "Count = 11"))
                    );
             });
-    }
 
+        [Fact]
+        public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitives() =>  await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.PrimitiveTypeMethods:Evaluate'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("test.propInt.ToString()", TString("12")),
+                    ("test.propUint.ToString()", TString("12")),
+                    ("test.propLong.ToString()", TString("12")),
+                    ("test.propUlong.ToString()", TString("12")),
+                //    ("test.propFloat.ToString()", TString("1.2345678")), // is comma, should be dot, fixed in PR #66979
+                //    ("test.propDouble.ToString()", TString("1.2345678910111213")), // is comma, should be dot
+                    ("test.propBool.ToString()", TString("True")),
+                    ("test.propChar.ToString()", TString("X")),
+                    ("test.propString.ToString()", TString("s_t_r")),
+                    ("test.propString.Split('*', 3, System.StringSplitOptions.RemoveEmptyEntries)", TObject("System.String[]")),
+                    ("test.propString.EndsWith('r')", TBool(true)),
+                    ("test.propString.StartsWith('S')", TBool(false)),
+                    ("localInt.ToString()", TString("2")),
+                    ("localUint.ToString()", TString("2")),
+                    ("localLong.ToString()", TString("2")),
+                    ("localUlong.ToString()", TString("2")),
+                //    ("localFloat.ToString()", TString("0.2345678")), // is comma, should be dot
+                //    ("localDouble.ToString()", TString("0.2345678910111213")), // is comma, should be dot
+                    ("localBool.ToString()", TString("False")),
+                    ("localBool.GetHashCode()", TNumber(0)),
+                    ("localBool.GetTypeCode()", TObject("System.TypeCode", "Boolean")),
+                    ("localChar.ToString()", TString("Y")),
+                    ("localString.ToString()", TString("S*T*R")),
+                    ("localString.Split('*', 3, System.StringSplitOptions.TrimEntries)", TObject("System.String[]")),
+                    ("localString.EndsWith('r')", TBool(false)),
+                    ("localString.StartsWith('S')", TBool(true)));
+             });
+    }
 }
