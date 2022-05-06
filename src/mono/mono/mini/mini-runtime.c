@@ -4941,7 +4941,7 @@ register_icalls (void)
 	register_icall (mono_helper_newobj_mscorlib, mono_icall_sig_object_int, FALSE);
 	register_icall (mono_value_copy_internal, mono_icall_sig_void_ptr_ptr_ptr, FALSE);
 	register_icall (mono_object_castclass_unbox, mono_icall_sig_object_object_ptr, FALSE);
-	register_icall (mono_break, NULL, TRUE);
+	register_icall (mono_break, mono_icall_sig_void, TRUE);
 	register_icall (mono_create_corlib_exception_0, mono_icall_sig_object_int, TRUE);
 	register_icall (mono_create_corlib_exception_1, mono_icall_sig_object_int_object, TRUE);
 	register_icall (mono_create_corlib_exception_2, mono_icall_sig_object_int_object_object, TRUE);
