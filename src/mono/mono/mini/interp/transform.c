@@ -7438,9 +7438,9 @@ retry_code_gen:
 			interp_add_ins (td, MINT_NOP);
 	}
 
-	// Mark the last block with emitting information
+	// Mark the last block with emitting information (if not already marked)
 	// and retry code generation if there was any skipped block.
-	td->cbb->already_emitted = emitting;
+	td->cbb->already_emitted |= emitting;
 	if (skipped_bbs_present) {
 		// Reset the instruction, stack pointer, bbs and flags for the next pass
 		td->ip = header->code;
