@@ -2039,7 +2039,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				return ins;
 			}
 		}
-	}		
+	}
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (cfg->opt & MONO_OPT_SIMD) {
