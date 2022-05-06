@@ -27,11 +27,11 @@ namespace Internal.TypeSystem
         /// <summary>
         /// Cross-platform console model
         /// </summary>
-        CoreRT,
+        NativeAot,
         /// <summary>
         /// model for armel execution model
         /// </summary>
-        CoreRTArmel,
+        NativeAotArmel,
         /// <summary>
         /// Jit runtime ABI
         /// </summary>

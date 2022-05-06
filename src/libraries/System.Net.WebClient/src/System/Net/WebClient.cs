@@ -278,8 +278,10 @@ namespace System.Net
         public byte[] DownloadData(string address) =>
             DownloadData(GetUri(address));
 
-        public byte[] DownloadData(Uri address!!)
+        public byte[] DownloadData(Uri address)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             StartOperation();
             try
             {
@@ -316,8 +318,11 @@ namespace System.Net
         public void DownloadFile(string address, string fileName) =>
             DownloadFile(GetUri(address), fileName);
 
-        public void DownloadFile(Uri address!!, string fileName!!)
+        public void DownloadFile(Uri address, string fileName)
         {
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(fileName);
+
             WebRequest? request = null;
             FileStream? fs = null;
             bool succeeded = false;
@@ -352,8 +357,10 @@ namespace System.Net
         public Stream OpenRead(string address) =>
             OpenRead(GetUri(address));
 
-        public Stream OpenRead(Uri address!!)
+        public Stream OpenRead(Uri address)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             WebRequest? request = null;
             StartOperation();
             try
@@ -383,8 +390,10 @@ namespace System.Net
         public Stream OpenWrite(string address, string? method) =>
             OpenWrite(GetUri(address), method);
 
-        public Stream OpenWrite(Uri address!!, string? method)
+        public Stream OpenWrite(Uri address, string? method)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             method ??= MapToDefaultMethod(address);
 
             WebRequest? request = null;
@@ -419,8 +428,11 @@ namespace System.Net
         public byte[] UploadData(string address, string? method, byte[] data) =>
             UploadData(GetUri(address), method, data);
 
-        public byte[] UploadData(Uri address!!, string? method, byte[] data!!)
+        public byte[] UploadData(Uri address, string? method, byte[] data)
         {
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
+
             method ??= MapToDefaultMethod(address);
 
             StartOperation();
@@ -535,8 +547,11 @@ namespace System.Net
         public byte[] UploadFile(string address, string? method, string fileName) =>
             UploadFile(GetUri(address), method, fileName);
 
-        public byte[] UploadFile(Uri address!!, string? method, string fileName!!)
+        public byte[] UploadFile(Uri address, string? method, string fileName)
         {
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(fileName);
+
             method ??= MapToDefaultMethod(address);
 
             FileStream? fs = null;
@@ -603,8 +618,11 @@ namespace System.Net
         public byte[] UploadValues(string address, string? method, NameValueCollection data) =>
             UploadValues(GetUri(address), method, data);
 
-        public byte[] UploadValues(Uri address!!, string? method, NameValueCollection data!!)
+        public byte[] UploadValues(Uri address, string? method, NameValueCollection data)
         {
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
+
             method ??= MapToDefaultMethod(address);
 
             WebRequest? request = null;
@@ -637,8 +655,11 @@ namespace System.Net
         public string UploadString(string address, string? method, string data) =>
             UploadString(GetUri(address), method, data);
 
-        public string UploadString(Uri address!!, string? method, string data!!)
+        public string UploadString(Uri address, string? method, string data)
         {
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
+
             method ??= MapToDefaultMethod(address);
 
             StartOperation();
@@ -658,8 +679,10 @@ namespace System.Net
         public string DownloadString(string address) =>
             DownloadString(GetUri(address));
 
-        public string DownloadString(Uri address!!)
+        public string DownloadString(Uri address)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             StartOperation();
             try
             {
@@ -746,8 +769,10 @@ namespace System.Net
             }
         }
 
-        private Uri GetUri(string address!!)
+        private Uri GetUri(string address)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             Uri? uri;
             if (_baseAddress != null)
             {
@@ -764,8 +789,10 @@ namespace System.Net
             return GetUri(uri);
         }
 
-        private Uri GetUri(Uri address!!)
+        private Uri GetUri(Uri address)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             Uri? uri = address;
 
             if (!address.IsAbsoluteUri && _baseAddress != null && !Uri.TryCreate(_baseAddress, address, out uri))
@@ -1258,8 +1285,10 @@ namespace System.Net
         public void OpenReadAsync(Uri address) =>
             OpenReadAsync(address, null);
 
-        public void OpenReadAsync(Uri address!!, object? userToken)
+        public void OpenReadAsync(Uri address, object? userToken)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
             {
@@ -1294,8 +1323,10 @@ namespace System.Net
         public void OpenWriteAsync(Uri address, string? method) =>
             OpenWriteAsync(address, method, null);
 
-        public void OpenWriteAsync(Uri address!!, string? method, object? userToken)
+        public void OpenWriteAsync(Uri address, string? method, object? userToken)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
@@ -1351,8 +1382,10 @@ namespace System.Net
         public void DownloadStringAsync(Uri address) =>
             DownloadStringAsync(address, null);
 
-        public void DownloadStringAsync(Uri address!!, object? userToken)
+        public void DownloadStringAsync(Uri address, object? userToken)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
             {
@@ -1375,8 +1408,10 @@ namespace System.Net
         public void DownloadDataAsync(Uri address) =>
             DownloadDataAsync(address, null);
 
-        public void DownloadDataAsync(Uri address!!, object? userToken)
+        public void DownloadDataAsync(Uri address, object? userToken)
         {
+            ArgumentNullException.ThrowIfNull(address);
+
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
             {
@@ -1399,8 +1434,11 @@ namespace System.Net
         public void DownloadFileAsync(Uri address, string fileName) =>
             DownloadFileAsync(address, fileName, null);
 
-        public void DownloadFileAsync(Uri address!!, string fileName!!, object? userToken)
+        public void DownloadFileAsync(Uri address, string fileName, object? userToken)
         {
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(fileName);
+
             FileStream? fs = null;
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
             try
@@ -1422,8 +1460,11 @@ namespace System.Net
         public void UploadStringAsync(Uri address, string? method, string data) =>
             UploadStringAsync(address, method, data, null);
 
-        public void UploadStringAsync(Uri address!!, string? method, string data!!, object? userToken)
+        public void UploadStringAsync(Uri address, string? method, string data, object? userToken)
         {
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
+
             method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
@@ -1468,8 +1509,11 @@ namespace System.Net
         public void UploadDataAsync(Uri address, string? method, byte[] data) =>
             UploadDataAsync(address, method, data, null);
 
-        public void UploadDataAsync(Uri address!!, string? method, byte[] data!!, object? userToken)
+        public void UploadDataAsync(Uri address, string? method, byte[] data, object? userToken)
         {
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
+
             method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);
@@ -1504,8 +1548,11 @@ namespace System.Net
         public void UploadFileAsync(Uri address, string? method, string fileName) =>
             UploadFileAsync(address, method, fileName, null);
 
-        public void UploadFileAsync(Uri address!!, string? method, string fileName!!, object? userToken)
+        public void UploadFileAsync(Uri address, string? method, string fileName, object? userToken)
         {
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(fileName);
+
             method ??= MapToDefaultMethod(address);
 
             FileStream? fs = null;
@@ -1538,8 +1585,11 @@ namespace System.Net
         public void UploadValuesAsync(Uri address, string? method, NameValueCollection data) =>
             UploadValuesAsync(address, method, data, null);
 
-        public void UploadValuesAsync(Uri address!!, string? method, NameValueCollection data!!, object? userToken)
+        public void UploadValuesAsync(Uri address, string? method, NameValueCollection data, object? userToken)
         {
+            ArgumentNullException.ThrowIfNull(address);
+            ArgumentNullException.ThrowIfNull(data);
+
             method ??= MapToDefaultMethod(address);
 
             AsyncOperation asyncOp = StartAsyncOperation(userToken);

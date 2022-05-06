@@ -583,7 +583,7 @@ GenTreeStrCon* Compiler::impGetStrConFromSpan(GenTree* span)
         if ((ni == NI_System_MemoryExtensions_AsSpan) || (ni == NI_System_String_op_Implicit))
         {
             assert(argCall->gtArgs.CountArgs() == 1);
-            GenTree* arg = argCall->gtArgs.GetArgByIndex(0)->GetEarlyNode();
+            GenTree* arg = argCall->gtArgs.GetArgByIndex(0)->GetNode();
             if (arg->OperIs(GT_CNS_STR))
             {
                 return arg->AsStrCon();

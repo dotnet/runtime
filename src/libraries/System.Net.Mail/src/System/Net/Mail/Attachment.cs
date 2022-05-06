@@ -82,8 +82,10 @@ namespace System.Net.Mail
             _part.SetContent(stream, null, mediaType);
         }
 
-        internal void SetContentFromString(string content!!, ContentType? contentType)
+        internal void SetContentFromString(string content, ContentType? contentType)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             _part.Stream?.Close();
 
             Encoding encoding;
@@ -116,8 +118,10 @@ namespace System.Net.Mail
             }
         }
 
-        internal void SetContentFromString(string content!!, Encoding? encoding, string? mediaType)
+        internal void SetContentFromString(string content, Encoding? encoding, string? mediaType)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             _part.Stream?.Close();
 
             if (string.IsNullOrEmpty(mediaType))

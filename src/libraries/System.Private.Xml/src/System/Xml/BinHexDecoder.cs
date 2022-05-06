@@ -37,8 +37,10 @@ namespace System.Xml
             }
         }
 
-        internal override int Decode(char[] chars!!, int startPos, int len)
+        internal override int Decode(char[] chars, int startPos, int len)
         {
+            ArgumentNullException.ThrowIfNull(chars);
+
             if (len < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(len));
@@ -65,8 +67,10 @@ namespace System.Xml
             return charsDecoded;
         }
 
-        internal override int Decode(string str!!, int startPos, int len)
+        internal override int Decode(string str, int startPos, int len)
         {
+            ArgumentNullException.ThrowIfNull(str);
+
             if (len < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(len));

@@ -73,8 +73,10 @@ namespace System.Collections
         **
         ** Exceptions: ArgumentException if bytes == null.
         =========================================================================*/
-        public BitArray(byte[] bytes!!)
+        public BitArray(byte[] bytes)
         {
+            ArgumentNullException.ThrowIfNull(bytes);
+
             // this value is chosen to prevent overflow when computing m_length.
             // m_length is of type int32 and is exposed as a property, so
             // type of m_length can't be changed to accommodate.
@@ -120,8 +122,10 @@ namespace System.Collections
         private const uint Vector128IntCount = 4;
         private const uint Vector256ByteCount = 32;
         private const uint Vector256IntCount = 8;
-        public unsafe BitArray(bool[] values!!)
+        public unsafe BitArray(bool[] values)
         {
+            ArgumentNullException.ThrowIfNull(values);
+
             m_array = new int[GetInt32ArrayLengthFromBitLength(values.Length)];
             m_length = values.Length;
 
@@ -186,8 +190,10 @@ namespace System.Collections
         **
         ** Exceptions: ArgumentException if values == null.
         =========================================================================*/
-        public BitArray(int[] values!!)
+        public BitArray(int[] values)
         {
+            ArgumentNullException.ThrowIfNull(values);
+
             // this value is chosen to prevent overflow when computing m_length
             if (values.Length > int.MaxValue / BitsPerInt32)
             {
@@ -206,8 +212,10 @@ namespace System.Collections
         **
         ** Exceptions: ArgumentException if bits == null.
         =========================================================================*/
-        public BitArray(BitArray bits!!)
+        public BitArray(BitArray bits)
         {
+            ArgumentNullException.ThrowIfNull(bits);
+
             int arrayLength = GetInt32ArrayLengthFromBitLength(bits.m_length);
 
             m_array = new int[arrayLength];
@@ -300,8 +308,10 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray And(BitArray value!!)
+        public unsafe BitArray And(BitArray value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
             // buggy code concurrently mutating these instances in a way that could cause memory corruption,
             // we snapshot the arrays from both and then operate only on those snapshots, while also validating
@@ -364,8 +374,10 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray Or(BitArray value!!)
+        public unsafe BitArray Or(BitArray value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
             // buggy code concurrently mutating these instances in a way that could cause memory corruption,
             // we snapshot the arrays from both and then operate only on those snapshots, while also validating
@@ -428,8 +440,10 @@ namespace System.Collections
         ** Exceptions: ArgumentException if value == null or
         **             value.Length != this.Length.
         =========================================================================*/
-        public unsafe BitArray Xor(BitArray value!!)
+        public unsafe BitArray Xor(BitArray value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             // This method uses unsafe code to manipulate data in the BitArrays.  To avoid issues with
             // buggy code concurrently mutating these instances in a way that could cause memory corruption,
             // we snapshot the arrays from both and then operate only on those snapshots, while also validating
@@ -707,8 +721,10 @@ namespace System.Collections
             }
         }
 
-        public unsafe void CopyTo(Array array!!, int index)
+        public unsafe void CopyTo(Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
 

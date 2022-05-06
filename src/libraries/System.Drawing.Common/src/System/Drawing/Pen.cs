@@ -511,6 +511,8 @@ namespace System.Drawing
         /// </summary>
         public void MultiplyTransform(Matrix matrix, MatrixOrder order)
         {
+            ArgumentNullException.ThrowIfNull(matrix);
+
             if (matrix.NativeMatrix == IntPtr.Zero)
             {
                 // Disposed matrices should result in a no-op.

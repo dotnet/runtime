@@ -6,6 +6,9 @@ namespace System.Drawing.Imaging
     using System.Diagnostics;
     using System.Runtime.CompilerServices;
     using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
     [StructLayout(LayoutKind.Sequential, Pack = 8)]
     internal sealed class MetafileHeaderWmf

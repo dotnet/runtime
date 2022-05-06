@@ -222,8 +222,10 @@ namespace System.Reflection.Emit
             return GetTypeRef(new QCallModule(ref thisModule), typeName, new QCallModule(ref refedRuntimeModule), tkResolution);
         }
 
-        internal int InternalGetConstructorToken(ConstructorInfo con!!, bool usingRef)
+        internal int InternalGetConstructorToken(ConstructorInfo con, bool usingRef)
         {
+            ArgumentNullException.ThrowIfNull(con);
+
             // Helper to get constructor token. If usingRef is true, we will never use the def token
             int tr;
             int mr;
@@ -931,8 +933,10 @@ namespace System.Reflection.Emit
             return GetTypeTokenInternal(type, getGenericDefinition: true);
         }
 
-        private int GetTypeTokenWorkerNoLock(Type type!!, bool getGenericDefinition)
+        private int GetTypeTokenWorkerNoLock(Type type, bool getGenericDefinition)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             // Return a token for the class relative to the Module.  Tokens
             // are used to indentify objects when the objects are used in IL
             // instructions.  Tokens are always relative to the Module.  For example,
@@ -991,8 +995,10 @@ namespace System.Reflection.Emit
         //   1. GetMethodToken
         //   2. ldtoken (see ILGenerator)
         // For all other occasions we should return the method on the generic type instantiated on the formal parameters.
-        private int GetMethodTokenNoLock(MethodInfo method!!, bool getGenericTypeDefinition)
+        private int GetMethodTokenNoLock(MethodInfo method, bool getGenericTypeDefinition)
         {
+            ArgumentNullException.ThrowIfNull(method);
+
             // Return a MemberRef token if MethodInfo is not defined in this module. Or
             // return the MethodDef token.
             int tr;
@@ -1219,8 +1225,10 @@ namespace System.Reflection.Emit
             }
         }
 
-        private int GetFieldTokenNoLock(FieldInfo field!!)
+        private int GetFieldTokenNoLock(FieldInfo field)
         {
+            ArgumentNullException.ThrowIfNull(field);
+
             int tr;
             int mr;
 
@@ -1292,16 +1300,20 @@ namespace System.Reflection.Emit
             return mr;
         }
 
-        internal int GetStringConstant(string str!!)
+        internal int GetStringConstant(string str)
         {
+            ArgumentNullException.ThrowIfNull(str);
+
             // Returns a token representing a String constant.  If the string
             // value has already been defined, the existing token will be returned.
             ModuleBuilder thisModule = this;
             return GetStringConstant(new QCallModule(ref thisModule), str, str.Length);
         }
 
-        internal int GetSignatureToken(SignatureHelper sigHelper!!)
+        internal int GetSignatureToken(SignatureHelper sigHelper)
         {
+            ArgumentNullException.ThrowIfNull(sigHelper);
+
             // Define signature token given a signature helper. This will define a metadata
             // token for the signature described by SignatureHelper.
             // Get the signature in byte form.
@@ -1310,8 +1322,10 @@ namespace System.Reflection.Emit
             return TypeBuilder.GetTokenFromSig(new QCallModule(ref thisModule), sigBytes, sigLength);
         }
 
-        internal int GetSignatureToken(byte[] sigBytes!!, int sigLength)
+        internal int GetSignatureToken(byte[] sigBytes, int sigLength)
         {
+            ArgumentNullException.ThrowIfNull(sigBytes);
+
             byte[] localSigBytes = new byte[sigBytes.Length];
             Buffer.BlockCopy(sigBytes, 0, localSigBytes, 0, sigBytes.Length);
 
@@ -1323,8 +1337,11 @@ namespace System.Reflection.Emit
 
         #region Other
 
-        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
             TypeBuilder.DefineCustomAttribute(
                 this,
                 1,                                          // This is hard coding the module token to 1
@@ -1332,8 +1349,10 @@ namespace System.Reflection.Emit
                 binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
             customBuilder.CreateCustomAttribute(this, 1);   // This is hard coding the module token to 1
         }
 

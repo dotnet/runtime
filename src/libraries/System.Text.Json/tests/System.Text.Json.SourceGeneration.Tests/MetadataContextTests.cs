@@ -29,6 +29,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(byte[]), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(string), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof((string Label1, int Label2, bool)), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(JsonDocument), GenerationMode = JsonSourceGenerationMode.Metadata)]
+    [JsonSerializable(typeof(JsonElement), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties), GenerationMode = JsonSourceGenerationMode.Metadata)]
     [JsonSerializable(typeof(ClassWithCustomConverter), GenerationMode = JsonSourceGenerationMode.Metadata)]
@@ -79,6 +81,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.String.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.JsonDocument.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.JsonElement.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithEnumAndNullable.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithNullableProperties.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.ClassWithCustomConverter.SerializeHandler);
@@ -95,6 +99,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.PersonStruct.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.TypeWithValidationAttributes.SerializeHandler);
             Assert.Null(MetadataWithPerTypeAttributeContext.Default.TypeWithDerivedAttribute.SerializeHandler);
+            Assert.Null(MetadataWithPerTypeAttributeContext.Default.PolymorphicClass.SerializeHandler);
         }
     }
 
@@ -121,6 +126,8 @@ namespace System.Text.Json.SourceGeneration.Tests
     [JsonSerializable(typeof(byte[]))]
     [JsonSerializable(typeof(string))]
     [JsonSerializable(typeof((string Label1, int Label2, bool)))]
+    [JsonSerializable(typeof(JsonDocument))]
+    [JsonSerializable(typeof(JsonElement))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithEnumAndNullable))]
     [JsonSerializable(typeof(RealWorldContextTests.ClassWithNullableProperties))]
     [JsonSerializable(typeof(ClassWithCustomConverter))]
@@ -194,6 +201,8 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.SampleEnum.SerializeHandler);
             Assert.Null(MetadataContext.Default.String.SerializeHandler);
             Assert.Null(MetadataContext.Default.ValueTupleStringInt32Boolean.SerializeHandler);
+            Assert.Null(MetadataContext.Default.JsonDocument.SerializeHandler);
+            Assert.Null(MetadataContext.Default.JsonElement.SerializeHandler);
             Assert.Null(MetadataContext.Default.ClassWithEnumAndNullable.SerializeHandler);
             Assert.Null(MetadataContext.Default.ClassWithNullableProperties.SerializeHandler);
             Assert.Null(MetadataContext.Default.ClassWithCustomConverter.SerializeHandler);
@@ -210,6 +219,7 @@ namespace System.Text.Json.SourceGeneration.Tests
             Assert.Null(MetadataContext.Default.PersonStruct.SerializeHandler);
             Assert.Null(MetadataContext.Default.TypeWithValidationAttributes.SerializeHandler);
             Assert.Null(MetadataContext.Default.TypeWithDerivedAttribute.SerializeHandler);
+            Assert.Null(MetadataContext.Default.PolymorphicClass.SerializeHandler);
         }
 
         [Fact]

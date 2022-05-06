@@ -135,8 +135,14 @@ namespace System.Linq.Expressions
         /// <returns>A <see cref="NewExpression"/> that has the <see cref="NodeType"/> property equal to <see cref="ExpressionType.New"/> and the <see cref="NewExpression.Constructor"/> and <see cref="NewExpression.Arguments"/> properties set to the specified value.</returns>
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression>? arguments)
         {
-            ContractUtils.RequiresNotNull(constructor, nameof(constructor));
-            ContractUtils.RequiresNotNull(constructor.DeclaringType!, nameof(constructor) + "." + nameof(constructor.DeclaringType));
+            ArgumentNullException.ThrowIfNull(constructor);
+            ArgumentNullException.ThrowIfNull(constructor.DeclaringType, nameof(constructor));
+            if (constructor.DeclaringType is null)
+            {
+#pragma warning disable CA2208
+                throw new ArgumentNullException($"{nameof(constructor)}.{nameof(constructor.DeclaringType)}");
+#pragma warning restore CA2208
+            }
             TypeUtils.ValidateType(constructor.DeclaringType!, nameof(constructor), allowByRef: true, allowPointer: true);
             ValidateConstructor(constructor, nameof(constructor));
             ReadOnlyCollection<Expression> argList = arguments.ToReadOnly();
@@ -155,8 +161,13 @@ namespace System.Linq.Expressions
         [RequiresUnreferencedCode(PropertyFromAccessorRequiresUnreferencedCode)]
         public static NewExpression New(ConstructorInfo constructor, IEnumerable<Expression>? arguments, IEnumerable<MemberInfo>? members)
         {
-            ContractUtils.RequiresNotNull(constructor, nameof(constructor));
-            ContractUtils.RequiresNotNull(constructor.DeclaringType!, nameof(constructor) + "." + nameof(constructor.DeclaringType));
+            ArgumentNullException.ThrowIfNull(constructor);
+            if (constructor.DeclaringType is null)
+            {
+#pragma warning disable CA2208
+                throw new ArgumentNullException($"{nameof(constructor)}.{nameof(constructor.DeclaringType)}");
+#pragma warning restore CA2208
+            }
             TypeUtils.ValidateType(constructor.DeclaringType!, nameof(constructor), allowByRef: true, allowPointer: true);
             ValidateConstructor(constructor, nameof(constructor));
             ReadOnlyCollection<MemberInfo> memberList = members.ToReadOnly();
@@ -186,7 +197,7 @@ namespace System.Linq.Expressions
         public static NewExpression New(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)] Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             if (type == typeof(void))
             {
                 throw Error.ArgumentCannotBeOfTypeVoid(nameof(type));

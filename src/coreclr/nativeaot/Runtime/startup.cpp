@@ -266,7 +266,8 @@ bool DetectCPUFeatures()
 
     if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
     {
-        return false;
+        PalPrintFatalError("\nThe required instruction sets are not supported by the current CPU.\n");
+        RhFailFast();
     }
 #endif // HOST_X86|| HOST_AMD64 || HOST_ARM64
 

@@ -3,6 +3,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
 internal static partial class Interop
 {
@@ -85,7 +88,7 @@ internal static partial class Interop
         /// information about the capabilities of the device.</param>
         /// <param name="cbwoc">Size, in bytes, of the WAVEOUTCAPS structure.</param>
         /// <returns>MMSYSERR</returns>
-        [LibraryImport(Libraries.WinMM)]
+        [LibraryImport(Libraries.WinMM, EntryPoint = "waveOutGetDevCapsW")]
         internal static partial MMSYSERR waveOutGetDevCaps(IntPtr uDeviceID, ref WAVEOUTCAPS caps, int cbwoc);
     }
 }

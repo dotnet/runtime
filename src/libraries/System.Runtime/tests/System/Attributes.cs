@@ -295,10 +295,27 @@ namespace System.Tests
             GenericAttributesTestHelper<DateTime?>(t => Attribute.GetCustomAttributes(@event, t));
         }
 
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/56887", TestRuntimes.Mono)]
+        public static void GetCustomAttributesOnOpenGenericTypeRetrievesDerivedAttributes()
+        {
+            Attribute[] attributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<>));
+            Assert.Equal(3, attributes.Length);
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(DerivesFromGenericAttribute)));
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(GenericAttribute<bool>)));
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(GenericAttribute<string>)));
+
+            attributes = Attribute.GetCustomAttributes(typeof(HasGenericAttribute), typeof(GenericAttribute<bool>));
+            Assert.Equal(2, attributes.Length);
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(DerivesFromGenericAttribute)));
+            Assert.Equal(1, attributes.Count(a => a.GetType() == typeof(GenericAttribute<bool>)));
+        }
+
         private static void GenericAttributesTestHelper<TGenericParameter>(Func<Type, Attribute[]> getCustomAttributes)
         {
             Attribute[] openGenericAttributes = getCustomAttributes(typeof(GenericAttribute<>));
-            Assert.Empty(openGenericAttributes);
+            Assert.True(openGenericAttributes.Length >= 1);
+            Assert.Equal(1, openGenericAttributes.OfType<GenericAttribute<TGenericParameter>>().Count());
 
             Attribute[] closedGenericAttributes = getCustomAttributes(typeof(GenericAttribute<TGenericParameter>));
             Assert.Equal(1, closedGenericAttributes.Length);
@@ -911,11 +928,18 @@ namespace System.Tests
     [Nameable]
     public class ExampleWithAttribute { }
 
+    [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
     public class GenericAttribute<T> : Attribute
     {
     }
 
+    public class DerivesFromGenericAttribute : GenericAttribute<bool>
+    {
+    }
+
+    [DerivesFromGeneric]
     [GenericAttribute<string>]
+    [GenericAttribute<bool>]
     public class HasGenericAttribute
     {
         [GenericAttribute<TimeSpan>]

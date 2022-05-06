@@ -614,7 +614,12 @@ void StubPrecode::StaticInitialize()
 #else
     _ASSERTE(((BYTE*)StubPrecodeCode_End - (BYTE*)StubPrecodeCode) <= StubPrecode::CodeSize);
 #endif
+#ifdef TARGET_LOONGARCH64
+    _ASSERTE(((*((short*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) >> 5) == StubPrecode::Type);
+#else
     _ASSERTE((*((BYTE*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) == StubPrecode::Type);
+#endif
+
 }
 
 void StubPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX)
@@ -721,7 +726,11 @@ void FixupPrecode::StaticInitialize()
 #else
     _ASSERTE((BYTE*)FixupPrecodeCode_End - (BYTE*)FixupPrecodeCode <= FixupPrecode::CodeSize);
 #endif
+#ifdef TARGET_LOONGARCH64
+    _ASSERTE(((*((short*)PCODEToPINSTR((PCODE)StubPrecodeCode) + OFFSETOF_PRECODE_TYPE)) >> 5) == StubPrecode::Type);
+#else
     _ASSERTE(*((BYTE*)PCODEToPINSTR((PCODE)FixupPrecodeCode) + OFFSETOF_PRECODE_TYPE) == FixupPrecode::Type);
+#endif
 }
 
 void FixupPrecode::GenerateCodePage(BYTE* pageBase, BYTE* pageBaseRX)

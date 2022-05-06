@@ -290,7 +290,7 @@ namespace System.Drawing
             int SaveAsFile(IntPtr pstm, int fSaveMemCopy, int* pcbSize);
         }
 
-        private class PictureWrapper : IPicture
+        private sealed class PictureWrapper : IPicture
         {
             private readonly IntPtr _wrappedInstance;
 

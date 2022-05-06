@@ -630,7 +630,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         if (state.GcStaticEEType != IntPtr.Zero)
                         {
-                            // CoreRT Abi uses managed heap-allocated GC statics
+                            // Statics are allocated on GC heap
                             object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticEEType)->ToRuntimeTypeHandle());
                             gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
 

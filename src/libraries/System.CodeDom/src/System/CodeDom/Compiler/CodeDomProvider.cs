@@ -86,15 +86,25 @@ namespace System.CodeDom.Compiler
             return compilerInfo;
         }
 
-        private static CompilerInfo GetCompilerInfoForLanguageNoThrow(string language!!)
+        private static CompilerInfo GetCompilerInfoForLanguageNoThrow(string language)
         {
+            if (language is null)
+            {
+                throw new ArgumentNullException(nameof(language));
+            }
+
             CompilerInfo value;
             s_compilerLanguages.TryGetValue(language.Trim(), out value);
             return value;
         }
 
-        private static CompilerInfo GetCompilerInfoForExtensionNoThrow(string extension!!)
+        private static CompilerInfo GetCompilerInfoForExtensionNoThrow(string extension)
         {
+            if (extension is null)
+            {
+                throw new ArgumentNullException(nameof(extension));
+            }
+
             CompilerInfo value;
             s_compilerExtensions.TryGetValue(extension.Trim(), out value);
             return value;

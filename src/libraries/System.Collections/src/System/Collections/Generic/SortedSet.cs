@@ -80,9 +80,11 @@ namespace System.Collections.Generic
 
         public SortedSet(IEnumerable<T> collection) : this(collection, Comparer<T>.Default) { }
 
-        public SortedSet(IEnumerable<T> collection!!, IComparer<T>? comparer)
+        public SortedSet(IEnumerable<T> collection, IComparer<T>? comparer)
             : this(comparer)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+
             // These are explicit type checks in the mold of HashSet. It would have worked better with
             // something like an ISorted<T> interface. (We could make this work for SortedList.Keys, etc.)
             SortedSet<T>? sortedSet = collection as SortedSet<T>;
@@ -505,8 +507,10 @@ namespace System.Collections.Generic
 
         public void CopyTo(T[] array, int index) => CopyTo(array, index, Count);
 
-        public void CopyTo(T[] array!!, int index, int count)
+        public void CopyTo(T[] array, int index, int count)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_NeedNonNegNum);
@@ -536,8 +540,10 @@ namespace System.Collections.Generic
             });
         }
 
-        void ICollection.CopyTo(Array array!!, int index)
+        void ICollection.CopyTo(Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
@@ -843,8 +849,10 @@ namespace System.Collections.Generic
 
         #region ISet members
 
-        public void UnionWith(IEnumerable<T> other!!)
+        public void UnionWith(IEnumerable<T> other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             SortedSet<T>? asSorted = other as SortedSet<T>;
             TreeSubSet? treeSubset = this as TreeSubSet;
 
@@ -981,8 +989,10 @@ namespace System.Collections.Generic
             return root;
         }
 
-        public virtual void IntersectWith(IEnumerable<T> other!!)
+        public virtual void IntersectWith(IEnumerable<T> other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (Count == 0)
                 return;
 
@@ -1061,8 +1071,10 @@ namespace System.Collections.Generic
             }
         }
 
-        public void ExceptWith(IEnumerable<T> other!!)
+        public void ExceptWith(IEnumerable<T> other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (count == 0)
                 return;
 
@@ -1097,8 +1109,10 @@ namespace System.Collections.Generic
             }
         }
 
-        public void SymmetricExceptWith(IEnumerable<T> other!!)
+        public void SymmetricExceptWith(IEnumerable<T> other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (Count == 0)
             {
                 UnionWith(other);
@@ -1162,8 +1176,10 @@ namespace System.Collections.Generic
             }
         }
 
-        public bool IsSubsetOf(IEnumerable<T> other!!)
+        public bool IsSubsetOf(IEnumerable<T> other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (Count == 0)
             {
                 return true;
@@ -1195,8 +1211,10 @@ namespace System.Collections.Generic
             return true;
         }
 
-        public bool IsProperSubsetOf(IEnumerable<T> other!!)
+        public bool IsProperSubsetOf(IEnumerable<T> other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (other is ICollection c)
             {
                 if (Count == 0)
@@ -1217,8 +1235,10 @@ namespace System.Collections.Generic
             return result.UniqueCount == Count && result.UnfoundCount > 0;
         }
 
-        public bool IsSupersetOf(IEnumerable<T> other!!)
+        public bool IsSupersetOf(IEnumerable<T> other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (other is ICollection c && c.Count == 0)
                 return true;
 
@@ -1242,8 +1262,10 @@ namespace System.Collections.Generic
             return ContainsAllElements(other);
         }
 
-        public bool IsProperSupersetOf(IEnumerable<T> other!!)
+        public bool IsProperSupersetOf(IEnumerable<T> other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (Count == 0)
                 return false;
 
@@ -1272,8 +1294,10 @@ namespace System.Collections.Generic
             return result.UniqueCount < Count && result.UnfoundCount == 0;
         }
 
-        public bool SetEquals(IEnumerable<T> other!!)
+        public bool SetEquals(IEnumerable<T> other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             SortedSet<T>? asSorted = other as SortedSet<T>;
             if (asSorted != null && HasEqualComparer(asSorted))
             {
@@ -1298,8 +1322,10 @@ namespace System.Collections.Generic
             return result.UniqueCount == Count && result.UnfoundCount == 0;
         }
 
-        public bool Overlaps(IEnumerable<T> other!!)
+        public bool Overlaps(IEnumerable<T> other)
         {
+            ArgumentNullException.ThrowIfNull(other);
+
             if (Count == 0)
                 return false;
 
@@ -1405,8 +1431,10 @@ namespace System.Collections.Generic
             return result;
         }
 
-        public int RemoveWhere(Predicate<T> match!!)
+        public int RemoveWhere(Predicate<T> match)
         {
+            ArgumentNullException.ThrowIfNull(match);
+
             List<T> matches = new List<T>(this.Count);
 
             BreadthFirstTreeWalk(n =>
@@ -1508,8 +1536,10 @@ namespace System.Collections.Generic
 
         void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context) => GetObjectData(info, context);
 
-        protected virtual void GetObjectData(SerializationInfo info!!, StreamingContext context)
+        protected virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             info.AddValue(CountName, count); // This is the length of the bucket array.
             info.AddValue(ComparerName, comparer, typeof(IComparer<T>));
             info.AddValue(VersionName, version);
