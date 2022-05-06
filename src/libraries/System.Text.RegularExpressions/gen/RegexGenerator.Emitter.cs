@@ -824,12 +824,26 @@ namespace System.Text.RegularExpressions.Generator
 
                         if (setsToUse > 1)
                         {
-                            using (EmitBlock(writer, $"if (i >= span.Length - {minRequiredLength - 1})"))
+                            // Of the remaining sets we're going to check, find the maximum distance of any of them.
+                            // If it's further than the primary set we checked, we need a bounds check.
+                            int maxDistance = sets[1].Distance;
+                            for (int i = 2; i < setsToUse; i++)
                             {
-                                noMatchFoundLabelNeeded = true;
-                                Goto(NoMatchFound);
+                                maxDistance = Math.Max(maxDistance, sets[i].Distance);
                             }
-                            writer.WriteLine();
+                            if (maxDistance > primarySet.Distance)
+                            {
+                                int numRemainingSets = setsToUse - 1;
+                                writer.WriteLine($"// The primary set being searched for was found. {numRemainingSets} more set{(numRemainingSets > 1 ? "s" : "")} will be checked so as");
+                                writer.WriteLine($"// to minimize the number of places TryMatchAtCurrentPosition is run unnecessarily.");
+                                writer.WriteLine($"// Make sure {(numRemainingSets > 1 ? "they fit" : "it fits")} in the remainder of the input.");
+                                using (EmitBlock(writer, $"if ((uint)(i + {maxDistance}) >= span.Length)"))
+                                {
+                                    noMatchFoundLabelNeeded = true;
+                                    Goto(NoMatchFound);
+                                }
+                                writer.WriteLine();
+                            }
                         }
                     }
                     else
@@ -4256,6 +4270,51 @@ namespace System.Text.RegularExpressions.Generator
                     AddIsWordCharHelper(requiredHelpers);
                     negate ^= charClass == RegexCharClass.NotWordClass;
                     return $"{(negate ? "!" : "")}{HelpersTypeName}.IsWordChar({chExpr})";
+
+                case RegexCharClass.ControlClass:
+                case RegexCharClass.NotControlClass:
+                    negate ^= charClass == RegexCharClass.NotControlClass;
+                    return $"{(negate ? "!" : "")}char.IsControl({chExpr})";
+
+                case RegexCharClass.LetterClass:
+                case RegexCharClass.NotLetterClass:
+                    negate ^= charClass == RegexCharClass.NotLetterClass;
+                    return $"{(negate ? "!" : "")}char.IsLetter({chExpr})";
+
+                case RegexCharClass.LetterOrDigitClass:
+                case RegexCharClass.NotLetterOrDigitClass:
+                    negate ^= charClass == RegexCharClass.NotLetterOrDigitClass;
+                    return $"{(negate ? "!" : "")}char.IsLetterOrDigit({chExpr})";
+
+                case RegexCharClass.LowerClass:
+                case RegexCharClass.NotLowerClass:
+                    negate ^= charClass == RegexCharClass.NotLowerClass;
+                    return $"{(negate ? "!" : "")}char.IsLower({chExpr})";
+
+                case RegexCharClass.UpperClass:
+                case RegexCharClass.NotUpperClass:
+                    negate ^= charClass == RegexCharClass.NotUpperClass;
+                    return $"{(negate ? "!" : "")}char.IsUpper({chExpr})";
+
+                case RegexCharClass.NumberClass:
+                case RegexCharClass.NotNumberClass:
+                    negate ^= charClass == RegexCharClass.NotNumberClass;
+                    return $"{(negate ? "!" : "")}char.IsNumber({chExpr})";
+
+                case RegexCharClass.PunctuationClass:
+                case RegexCharClass.NotPunctuationClass:
+                    negate ^= charClass == RegexCharClass.NotPunctuationClass;
+                    return $"{(negate ? "!" : "")}char.IsPunctuation({chExpr})";
+
+                case RegexCharClass.SeparatorClass:
+                case RegexCharClass.NotSeparatorClass:
+                    negate ^= charClass == RegexCharClass.NotSeparatorClass;
+                    return $"{(negate ? "!" : "")}char.IsSeparator({chExpr})";
+
+                case RegexCharClass.SymbolClass:
+                case RegexCharClass.NotSymbolClass:
+                    negate ^= charClass == RegexCharClass.NotSymbolClass;
+                    return $"{(negate ? "!" : "")}char.IsSymbol({chExpr})";
             }
 
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.

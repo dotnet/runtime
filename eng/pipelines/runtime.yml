@@ -858,6 +858,7 @@ jobs:
     platforms:
     - Linux_arm
     - windows_x86
+    - windows_arm64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:
@@ -868,23 +869,6 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_coreclr.containsChange'], true),
           eq(dependencies.evaluate_paths.outputs['SetPathVars_runtimetests.containsChange'], true),
           eq(variables['isRollingBuild'], true))
-          
-#
-# CoreCLR Test execution on Windows ARM64 using live libraries for rolling.
-# TODO: move to PR testing in the bracket above once https://github.com/dotnet/runtime/issues/68626 is closed
-#
-- template: /eng/pipelines/common/platform-matrix.yml
-  parameters:
-    jobTemplate: /eng/pipelines/common/templates/runtimes/run-test-job.yml
-    buildConfig: checked
-    platforms:
-    - windows_arm64
-    helixQueueGroup: pr
-    helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
-    jobParameters:
-      testGroup: innerloop
-      liveLibrariesBuildConfig: Release
-      condition: eq(variables['isRollingBuild'], true)
 
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
