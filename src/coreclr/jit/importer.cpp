@@ -16060,6 +16060,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             }
 
             case CEE_REFANYVAL:
+            {
 
                 // get the class handle and make a ICON node out of it
 
@@ -16078,11 +16079,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impNormStructVal(op1, impGetRefAnyClass(), (unsigned)CHECK_SPILL_ALL);
 
                 // Call helper GETREFANY(classHandle, op1);
-                op1 = gtNewHelperCallNode(CORINFO_HELP_GETREFANY, TYP_BYREF, op2, op1);
+                GenTreeCall* helperCall   = gtNewHelperCallNode(CORINFO_HELP_GETREFANY, TYP_BYREF);
+                NewCallArg   clsHandleArg = NewCallArg::Primitive(op2);
+                NewCallArg   typedRefArg  = NewCallArg::Struct(op1, TYP_STRUCT, impGetRefAnyClass());
+                helperCall->gtArgs.PushFront(this, clsHandleArg, typedRefArg);
+                helperCall->gtFlags |= (op1->gtFlags | op2->gtFlags) & GTF_ALL_EFFECT;
+                op1 = helperCall;
 
                 impPushOnStack(op1, tiRetVal);
                 break;
-
+            }
             case CEE_REFANYTYPE:
 
                 op1 = impPopStack().val;

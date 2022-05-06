@@ -1178,6 +1178,8 @@ void NewCallArg::ValidateTypes()
 
     if (varTypeIsStruct(SignatureType))
     {
+        assert(SignatureClsHnd != NO_CLASS_HANDLE);
+
         Compiler*            comp   = JitTls::GetCompiler();
         CORINFO_CLASS_HANDLE clsHnd = comp->gtGetStructHandleIfPresent(Node);
         assert((clsHnd == nullptr) || (SignatureClsHnd == clsHnd) ||

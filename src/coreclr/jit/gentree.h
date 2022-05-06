@@ -4221,6 +4221,7 @@ struct NewCallArg
 
     static NewCallArg Struct(GenTree* node, var_types type, CORINFO_CLASS_HANDLE clsHnd)
     {
+        assert(varTypeIsStruct(node) && varTypeIsStruct(type));
         NewCallArg arg;
         arg.Node            = node;
         arg.SignatureType   = type;
@@ -4231,6 +4232,7 @@ struct NewCallArg
 
     static NewCallArg Primitive(GenTree* node, var_types type = TYP_UNDEF)
     {
+        assert(!varTypeIsStruct(node) && !varTypeIsStruct(type));
         NewCallArg arg;
         arg.Node          = node;
         arg.SignatureType = type == TYP_UNDEF ? node->TypeGet() : type;
