@@ -16,37 +16,23 @@ namespace System.Runtime.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/31853", TestRuntimes.Mono)]
         public void ProfileOptimization_CheckFileExists(bool stopProfile)
         {
-            // Don't put this file into the normal per-test directory, because
-            // when RemoteExecutor.Invoke returns, it disposes this class and deletes
-            // that directory. Instead just put it in temp and delete it manually after.
-            string profileFile = Path.Combine(Path.GetTempPath(), GetTestFileName());
+            string profileFile = GetTestFilePath(); // full path, to exercise SetProfileRoot
 
-            try
+            RemoteExecutor.Invoke((_profileFile, _stopProfile) =>
             {
-                RemoteExecutor.Invoke((_profileFile, _stopProfile) =>
+                // Perform the test work
+                ProfileOptimization.SetProfileRoot(Path.GetDirectoryName(_profileFile));
+                ProfileOptimization.StartProfile(Path.GetFileName(_profileFile));
+
+                if (bool.Parse(_stopProfile))
                 {
-                    // Perform the test work
-                    ProfileOptimization.SetProfileRoot(Path.GetDirectoryName(_profileFile));
-                    ProfileOptimization.StartProfile(Path.GetFileName(_profileFile));
-
-                    if (bool.Parse(_stopProfile))
-                    {
-                        ProfileOptimization.StartProfile(null);
-                        CheckProfileFileExists(_profileFile);
-                    }
-
-                }, profileFile, stopProfile.ToString()).Dispose();
-
-                CheckProfileFileExists(profileFile);
-            }
-            finally
-            {
-                try
-                {
-                    File.Delete(profileFile);
+                    ProfileOptimization.StartProfile(null);
+                    CheckProfileFileExists(_profileFile);
                 }
-                catch {}
-            }
+
+            }, profileFile, stopProfile.ToString()).Dispose();
+
+            CheckProfileFileExists(profileFile);
         }
 
         static void CheckProfileFileExists(string profileFile)
