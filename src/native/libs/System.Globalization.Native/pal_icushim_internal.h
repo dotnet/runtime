@@ -53,15 +53,6 @@
 #include "pal_compiler.h"
 
 #if !defined(STATIC_ICU)
-// ucol_setVariableTop is a deprecated function on the newer ICU versions and ucol_setMaxVariable should be used instead.
-// As can run against ICU versions which not supported ucol_setMaxVariable, we'll dynamically try to get the pointer to ucol_setVariableTop
-// when we couldn't get a pointer to ucol_setMaxVariable.
-typedef uint32_t (U_EXPORT2 *ucol_setVariableTop_func)(UCollator* coll, const UChar* varTop, int32_t len, UErrorCode* status);
-extern ucol_setVariableTop_func ucol_setVariableTop_ptr;
-
-// ucol_safeClone is deprecated in ICU version 71. We have to handle it manually to avoid getting a build break when referencing it in the code.
-typedef UCollator* (U_EXPORT2 *ucol_safeClone_func)(const UCollator* coll, void* stackBuffer, int32_t* pBufferSize, UErrorCode* status);
-extern ucol_safeClone_func ucol_safeClone_ptr;
 
 #if !defined(TARGET_ANDROID)
 // (U_ICU_VERSION_MAJOR_NUM < 52)
@@ -75,7 +66,24 @@ U_CAPI int32_t U_EXPORT2 ucal_getWindowsTimeZoneID(const UChar* id, int32_t len,
 // The following API is not supported in the ICU versions less than 71. We need to define it manually.
 // We have to do runtime check before using the pointers to this API. That is why these are listed in the FOR_ALL_OPTIONAL_ICU_FUNCTIONS list.
 U_CAPI UCollator* U_EXPORT2 ucol_clone(const UCollator* coll, UErrorCode* status);
-#endif
+
+// ucol_setVariableTop is a deprecated function on the newer ICU versions and ucol_setMaxVariable should be used instead.
+// As can run against ICU versions which not supported ucol_setMaxVariable, we'll dynamically try to get the pointer to ucol_setVariableTop
+// when we couldn't get a pointer to ucol_setMaxVariable.
+typedef uint32_t (U_EXPORT2 *ucol_setVariableTop_func)(UCollator* coll, const UChar* varTop, int32_t len, UErrorCode* status);
+
+// ucol_safeClone is deprecated in ICU version 71. We have to handle it manually to avoid getting a build break when referencing it in the code.
+typedef UCollator* (U_EXPORT2 *ucol_safeClone_func)(const UCollator* coll, void* stackBuffer, int32_t* pBufferSize, UErrorCode* status);
+
+#else // !defined(TARGET_ANDROID)
+
+typedef uint32_t (*ucol_setVariableTop_func)(UCollator* coll, const UChar* varTop, int32_t len, UErrorCode* status);
+typedef UCollator* (*ucol_safeClone_func)(const UCollator* coll, void* stackBuffer, int32_t* pBufferSize, UErrorCode* status);
+
+#endif // !defined(TARGET_ANDROID)
+
+extern ucol_setVariableTop_func ucol_setVariableTop_ptr;
+extern ucol_safeClone_func ucol_safeClone_ptr;
 
 // List of all functions from the ICU libraries that are used in the System.Globalization.Native.so
 #define FOR_ALL_UNCONDITIONAL_ICU_FUNCTIONS \
