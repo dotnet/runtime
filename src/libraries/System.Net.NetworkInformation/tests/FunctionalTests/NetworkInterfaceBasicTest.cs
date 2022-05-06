@@ -218,7 +218,8 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Linux & ~TestPlatforms.LinuxBionic)]  // Some APIs are not supported on Linux
+        [PlatformSpecific(TestPlatforms.Linux)]  // Some APIs are not supported on Linux
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal /proc")]
         public void BasicTest_GetIPInterfaceStatistics_Success_Linux()
         {
             foreach (NetworkInterface nic in NetworkInterface.GetAllNetworkInterfaces())

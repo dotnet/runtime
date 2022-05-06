@@ -12,7 +12,8 @@ using Xunit.Abstractions;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    [PlatformSpecific(TestPlatforms.Linux & ~TestPlatforms.LinuxBionic)]
+    [PlatformSpecific(TestPlatforms.Linux)]
+    [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal /proc")]
     public class IPInterfacePropertiesTest_Linux
     {
         private readonly ITestOutputHelper _log;

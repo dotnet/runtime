@@ -141,7 +141,8 @@ namespace System.IO.Compression.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.LinuxBionic & ~TestPlatforms.Browser & ~TestPlatforms.tvOS & ~TestPlatforms.iOS)]
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser & ~TestPlatforms.tvOS & ~TestPlatforms.iOS)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "Bionic is not normal Linux, has no normal file permissions")]
         public async Task CanZipNamedPipe()
         {
             string destPath = Path.Combine(TestDirectory, "dest.zip");
