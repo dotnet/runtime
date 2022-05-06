@@ -2039,11 +2039,7 @@ mini_emit_inst_for_method (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 				return ins;
 			}
 		}
-	}
-	if (!strcmp(cmethod->name, "Min") && !strcmp(cmethod_klass_name, "Vector128")){
-		printf ("mini_emit_inst_for Min\n");
-	}
-		
+	}		
 
 #ifdef MONO_ARCH_SIMD_INTRINSICS
 	if (cfg->opt & MONO_OPT_SIMD) {

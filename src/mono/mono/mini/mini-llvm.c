@@ -1542,9 +1542,6 @@ sig_to_llvm_sig_full (EmitContext *ctx, MonoMethodSignature *sig, LLVMCallInfo *
 	gboolean vretaddr = FALSE;
 	MonoType *rtype;
 
-	if (strstr(ctx->method_name, "test") != NULL)
-		printf("~~~Reached sig_to_llvm_sig_full for test\n");
-
 	if (!cinfo)
 		return sig_to_llvm_sig_no_cinfo (ctx, sig);
 
@@ -3835,9 +3832,6 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 
 	names = g_new (char *, sig->param_count);
 	mono_method_get_param_names (cfg->method, (const char **) names);
-
-	if (strstr(ctx->method_name, "test") != NULL)
-		printf("~~~Reached emit_entry_bb for test\n");
 
 	for (int i = 0; i < sig->param_count; ++i) {
 		LLVMArgInfo *ainfo = &linfo->args [i + sig->hasthis];
@@ -11620,9 +11614,6 @@ emit_method_inner (EmitContext *ctx)
 
 	sig = mono_method_signature_internal (cfg->method);
 	ctx->sig = sig;
-
-	if (strstr(ctx->method_name, "test") != NULL)
-		printf("~~~Reached emit_method_inner for test\n");
 
 	linfo = get_llvm_call_info (cfg, sig);
 	ctx->linfo = linfo;
