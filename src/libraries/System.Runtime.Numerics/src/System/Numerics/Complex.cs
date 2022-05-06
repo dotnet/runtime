@@ -908,7 +908,7 @@ namespace System.Numerics
         //
 
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        static Complex IMultiplyOperators<Complex, Complex, Complex>.operator checked *(Complex left, Complex right) => left* right;
+        static Complex IMultiplyOperators<Complex, Complex, Complex>.operator checked *(Complex left, Complex right) => left * right;
 
         //
         // INumberBase
