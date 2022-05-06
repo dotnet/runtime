@@ -242,7 +242,7 @@ void MorphInitBlockHelper::PrepareDst()
         }
 
         noway_assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
-        if (dstAddr->DefinesLocalAddr(m_comp, /* width */ 0, &m_dstLclNode, /* pIsEntire */ nullptr, &m_dstAddOff))
+        if (dstAddr->DefinesLocalAddr(&m_dstLclNode, &m_dstAddOff))
         {
             // Note that lclNode can be a field, like `BLK<4> struct(ADD(ADDR(LCL_FLD int), CNST_INT))`.
             m_dstAddOff = m_dstAddOff - m_dstLclNode->GetLclOffs();
@@ -589,7 +589,7 @@ void MorphCopyBlockHelper::PrepareSrc()
     }
     else if (m_src->OperIsIndir())
     {
-        if (m_src->AsOp()->gtOp1->DefinesLocalAddr(m_comp, /* width */ 0, &m_srcLclNode, /* pIsEntire */ nullptr, &m_srcAddOff))
+        if (m_src->AsOp()->gtOp1->DefinesLocalAddr(&m_srcLclNode, &m_srcAddOff))
         {
             m_srcAddOff = m_srcAddOff - m_srcLclNode->GetLclOffs();
             m_srcLclNum = m_srcLclNode->GetLclNum();

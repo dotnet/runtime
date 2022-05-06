@@ -1909,15 +1909,12 @@ public:
     // is not the same size as the type of the GT_LCL_VAR.
     bool IsPartialLclFld(Compiler* comp);
 
-    // Returns "true" iff "this" defines a local variable.  Requires "comp" to be the
-    // current compilation.  If returns "true", sets "*pLclVarTree" to the
-    // tree for the local that is defined, and, if "pIsEntire" is non-null, sets "*pIsEntire" to
-    // true or false, depending on whether the assignment writes to the entirety of the local
-    // variable, or just a portion of it.
     bool DefinesLocal(Compiler*             comp,
                       GenTreeLclVarCommon** pLclVarTree,
                       bool*                 pIsEntire = nullptr,
                       ssize_t*              pOffset   = nullptr);
+
+    bool DefinesLocalAddr(GenTreeLclVarCommon** pLclVarTree, ssize_t* pOffset = nullptr);
 
     const GenTreeLclVarCommon* IsLocalAddrExpr() const;
     GenTreeLclVarCommon*       IsLocalAddrExpr()
@@ -1939,14 +1936,6 @@ public:
     bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq, ssize_t* pOffset);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
-
-    // Assumes that "this" occurs in a context where it is being dereferenced as the LHS of an assignment-like
-    // statement (assignment, initblk, or copyblk).  The "width" should be the number of bytes copied by the
-    // operation.  Returns "true" if "this" is an address of (or within)
-    // a local variable; sets "*pLclVarTree" to that local variable instance; and, if "pIsEntire" is non-null,
-    // sets "*pIsEntire" to true if this assignment writes the full width of the local.
-    bool DefinesLocalAddr(
-        Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset = nullptr);
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily

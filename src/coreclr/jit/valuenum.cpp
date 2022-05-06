@@ -8103,7 +8103,6 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             bool      argIsVNFunc = vnStore->GetVNFunc(vnStore->VNNormalValue(argVN), &funcApp);
 
             GenTreeLclVarCommon* lclVarTree = nullptr;
-            bool                 isEntire   = false;
             ssize_t              offset     = 0;
             unsigned             storeSize  = lhs->AsIndir()->Size();
             GenTree*             baseAddr   = nullptr;
@@ -8126,7 +8125,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
                 assert(fldSeq != FieldSeqStore::NotAField());
                 fgValueNumberFieldStore(tree, baseAddr, fldSeq, offset, storeSize, rhsVNPair.GetLiberal());
             }
-            else if (arg->DefinesLocalAddr(this, storeSize, &lclVarTree, &isEntire, &offset))
+            else if (arg->DefinesLocalAddr(&lclVarTree, &offset))
             {
                 fgValueNumberLocalStore(tree, lclVarTree, offset, storeSize, rhsVNPair);
             }
@@ -8609,8 +8608,8 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                 {
                     tree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, loadType));
                 }
-                else if (addr->DefinesLocalAddr(this, /* width */ 0, &lclVarTree, /* pIsEntire */ nullptr, &offset) &&
-                         lvaInSsa(lclVarTree->GetLclNum()) && lclVarTree->HasSsaName())
+                else if (addr->DefinesLocalAddr(&lclVarTree, &offset) && lvaInSsa(lclVarTree->GetLclNum()) &&
+                         lclVarTree->HasSsaName())
                 {
                     ValueNumPair lclVNPair = lvaGetDesc(lclVarTree)->GetPerSsaData(lclVarTree->GetSsaNum())->m_vnPair;
                     unsigned     lclSize   = lvaLclExactSize(lclVarTree->GetLclNum());
@@ -9733,11 +9732,10 @@ void Compiler::fgValueNumberCall(GenTreeCall* call)
         LclVarDsc* hiddenArgVarDsc = lvaGetDesc(hiddenArgLclNum);
         unsigned   lclDefSsaNum    = GetSsaNumForLocalVarDef(lclVarTree);
 
+        // TODO-Bug: call "fgValueNumberLocalStore" here, currently this code fails to update
+        // the heap state if the local was address-exposed.
         if (lclDefSsaNum != SsaConfig::RESERVED_SSA_NUM)
         {
-            // TODO-CQ: for now, we assign a simple "new, unique" VN to the whole local. We should
-            // instead look at the field sequence (if one is present) and be more precise if the
-            // store is to a field.
             ValueNumPair newHiddenArgLclVNPair = ValueNumPair();
             newHiddenArgLclVNPair.SetBoth(vnStore->VNForExpr(compCurBB, hiddenArgVarDsc->TypeGet()));
             hiddenArgVarDsc->GetPerSsaData(lclDefSsaNum)->m_vnPair = newHiddenArgLclVNPair;
