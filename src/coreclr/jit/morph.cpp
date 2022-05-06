@@ -11701,7 +11701,12 @@ DONE_MORPHING_CHILDREN:
             {
                 // Codegen for this instruction needs to be able to throw two exceptions:
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
-                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+
+                // We do not need to throw if the second operand is a non-zero constant.
+                if (!op2->IsIntegralConst() || op2->IsIntegralConst(0))
+                {
+                    fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
+                }
             }
             break;
         case GT_UDIV:
