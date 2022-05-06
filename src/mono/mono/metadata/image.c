@@ -2256,10 +2256,8 @@ mono_image_close_except_pools (MonoImage *image)
 
 	g_free (image->filename);
 	image->filename = NULL;
-	if (!debug_assembly_unload) {
+	if (!debug_assembly_unload)
 		g_free (image->guid);
-		image->guid = NULL;
-	}
 
 	return TRUE;
 }
