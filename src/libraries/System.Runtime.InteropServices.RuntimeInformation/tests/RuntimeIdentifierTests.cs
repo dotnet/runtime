@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices.RuntimeInformationTests
             Assert.StartsWith("win", RuntimeInformation.RuntimeIdentifier, StringComparison.OrdinalIgnoreCase);
         }
 
-        [Fact, PlatformSpecific(TestPlatforms.Linux)]
+        [Fact, PlatformSpecific(TestPlatforms.Linux & ~TestPlatforms.LinuxBionic)]
         public void VerifyLinuxRid()
         {
             string expectedOSName = File.ReadAllLines("/etc/os-release")

@@ -110,7 +110,7 @@ namespace System.Globalization.Tests
             AssertExtensions.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentUICulture = null);
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // Windows locale support doesn't rely on LANG variable
+        [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.LinuxBionic)]  // Windows locale support doesn't rely on LANG variable
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("en-US.UTF-8", "en-US")]
         [InlineData("en-US", "en-US")]

@@ -571,6 +571,7 @@ namespace System.Diagnostics.Tests
         }
 
         [ConditionalFact(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
+        [PlatformSpecific(~TestPlatforms.LinuxBionic)] // User groups etc are weird on Bionic
         public void TestCheckChildProcessUserAndGroupIds()
         {
             string userName = GetCurrentRealUserName();

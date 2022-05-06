@@ -12,7 +12,7 @@ using Xunit.Abstractions;
 
 namespace System.Net.NetworkInformation.Tests
 {
-    [PlatformSpecific(TestPlatforms.Linux)]
+    [PlatformSpecific(TestPlatforms.Linux & ~TestPlatforms.LinuxBionic)]
     public class IPInterfacePropertiesTest_Linux
     {
         private readonly ITestOutputHelper _log;
