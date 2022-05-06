@@ -308,7 +308,7 @@ void Rationalizer::SanityCheck()
 
             for (GenTree* const tree : stmt->TreeList())
             {
-                // QMARK and PUT_ARG_TYPE nodes should have been removed before this phase.
+                // QMARK nodes should have been removed before this phase.
                 assert(!tree->OperIs(GT_QMARK));
 
                 if (tree->OperGet() == GT_ASG)

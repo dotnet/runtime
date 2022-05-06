@@ -4047,7 +4047,7 @@ struct CallArgABIInformation
     }
 
     // The handle of the class in the callee signature. May be NO_CLASS_HANDLE
-    // for primitive types (check AbiType).
+    // for primitive types.
     CORINFO_CLASS_HANDLE SignatureClsHnd;
 
     // Count of number of registers that this argument uses. Note that on ARM,
