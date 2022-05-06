@@ -2974,6 +2974,11 @@ namespace System.Numerics
 
             zd.Clear();
 
+            if (negx)
+            {
+                NumericsHelpers.DangerousMakeTwosComplement(xd);
+            }
+
             if (smallShift == 0)
             {
                 int dstIndex = 0;
@@ -3005,9 +3010,19 @@ namespace System.Numerics
                 int carryShift = kcbitUint - smallShift;
 
                 int dstIndex = 0;
-                int srcIndex = xd.Length - digitShift;
+                int srcIndex = 0;
 
-                uint carry = xd[srcIndex - 1] >> carryShift;
+                uint carry = 0;
+
+                if (digitShift == 0)
+                {
+                    carry = xd[^1] >> carryShift;
+                }
+                else
+                {
+                    srcIndex = xd.Length - digitShift;
+                    carry = xd[srcIndex - 1] >> carryShift;
+                }
 
                 do
                 {
@@ -3033,6 +3048,15 @@ namespace System.Numerics
                     dstIndex++;
                     srcIndex++;
                 }
+            }
+
+            if (negx && (int)zd[^1] < 0)
+            {
+                NumericsHelpers.DangerousMakeTwosComplement(zd);
+            }
+            else
+            {
+                negx = false;
             }
 
             var result = new BigInteger(zd, negx);
@@ -3085,10 +3109,15 @@ namespace System.Numerics
 
             zd.Clear();
 
+            if (negx)
+            {
+                NumericsHelpers.DangerousMakeTwosComplement(xd);
+            }
+
             if (smallShift == 0)
             {
-                int dstIndex = zd.Length - digitShift;
-                int srcIndex = 0;
+                int dstIndex = 0;
+                int srcIndex = digitShift;
 
                 do
                 {
@@ -3098,11 +3127,11 @@ namespace System.Numerics
                     dstIndex++;
                     srcIndex++;
                 }
-                while (dstIndex < zd.Length);
+                while (srcIndex < xd.Length);
 
-                dstIndex = 0;
+                srcIndex = 0;
 
-                while (srcIndex < xd.Length)
+                while (dstIndex < zd.Length)
                 {
                     // Copy remaining elements from end of xd to start of zd
                     zd[dstIndex] = xd[srcIndex];
@@ -3115,10 +3144,19 @@ namespace System.Numerics
             {
                 int carryShift = kcbitUint - smallShift;
 
-                int dstIndex = zd.Length - digitShift;
-                int srcIndex = 0;
+                int dstIndex = 0;
+                int srcIndex = digitShift;
 
-                uint carry = xd[srcIndex - 1] >> carryShift;
+                uint carry = 0;
+
+                if (digitShift == 0)
+                {
+                    carry = xd[^1] << carryShift;
+                }
+                else
+                {
+                    carry = xd[srcIndex - 1] << carryShift;
+                }
 
                 do
                 {
@@ -3130,11 +3168,11 @@ namespace System.Numerics
                     dstIndex++;
                     srcIndex++;
                 }
-                while (dstIndex < zd.Length);
+                while (srcIndex < xd.Length);
 
                 srcIndex = 0;
 
-                while (srcIndex < xd.Length)
+                while (dstIndex < zd.Length)
                 {
                     uint part = xd[srcIndex];
 
@@ -3144,6 +3182,15 @@ namespace System.Numerics
                     dstIndex++;
                     srcIndex++;
                 }
+            }
+
+            if (negx && (int)zd[^1] < 0)
+            {
+                NumericsHelpers.DangerousMakeTwosComplement(zd);
+            }
+            else
+            {
+                negx = false;
             }
 
             var result = new BigInteger(zd, negx);
@@ -3226,7 +3273,7 @@ namespace System.Numerics
                 }
             }
 
-            long result = (bits.Length - 1) * 4;
+            long result = (bits.Length - 1) * 32;
 
             if (_sign >= 0)
             {
@@ -3346,7 +3393,7 @@ namespace System.Numerics
                 return 31 ^ uint.LeadingZeroCount((uint)(value._sign | 1));
             }
 
-            return ((value._bits.Length * 4) - 1) ^ uint.LeadingZeroCount(value._bits[^1]);
+            return ((value._bits.Length * 32) - 1) ^ uint.LeadingZeroCount(value._bits[^1]);
         }
 
         //
@@ -3901,9 +3948,13 @@ namespace System.Numerics
                 }
             }
 
-            if (negx)
+            if (negx && (int)zd[^1] < 0)
             {
-                NumericsHelpers.DangerousMakeTwosComplement(zd); // Mutates zd
+                NumericsHelpers.DangerousMakeTwosComplement(zd);
+            }
+            else
+            {
+                negx = false;
             }
 
             result = new BigInteger(zd, negx);
