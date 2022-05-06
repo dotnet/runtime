@@ -292,7 +292,7 @@ namespace System.IO.Compression
                 compressedData = compressed.ToArray();
             }
 
-            // corrupting these bytes goes undetected, skip them
+            // corrupting these bytes goes undetected by gzip, skip them
             int[] byteToSkip = { 3, 4, 5, 6, 7, 8, 9 };
 
             for (int byteToCorrupt = 0; byteToCorrupt < compressedData.Length; byteToCorrupt++)
