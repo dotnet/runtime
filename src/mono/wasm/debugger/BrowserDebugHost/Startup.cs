@@ -10,7 +10,7 @@ using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Hosting.Server.Features;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -24,12 +24,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 {
     internal sealed class Startup
     {
-        // This method gets called by the runtime. Use this method to add services to the container.
-        // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
-        public void ConfigureServices(IServiceCollection services) =>
-            services.AddRouting()
-            .Configure<ProxyOptions>(Configuration);
-
         public Startup(IConfiguration configuration) =>
             Configuration = configuration;
 
@@ -37,9 +31,9 @@ namespace Microsoft.WebAssembly.Diagnostics
 
 #pragma warning disable CA1822
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IOptionsMonitor<ProxyOptions> optionsAccessor, IWebHostEnvironment env, IHostApplicationLifetime applicationLifetime)
+        public void Configure(IApplicationBuilder app, IOptions<ProxyOptions> optionsContainer, ILogger<Startup> logger, IHostApplicationLifetime applicationLifetime)
         {
-            ProxyOptions options = optionsAccessor.CurrentValue;
+            ProxyOptions options = optionsContainer.Value;
 
             if (options.OwnerPid.HasValue)
             {
@@ -54,9 +48,22 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
             }
 
+            applicationLifetime.ApplicationStarted.Register(() =>
+            {
+                string ipAddress = app.ServerFeatures
+                                    .Get<IServerAddressesFeature>()?
+                                    .Addresses?
+                                    .Where(a => a.StartsWith("http:", StringComparison.InvariantCultureIgnoreCase))
+                                    .Select(a => new Uri(a))
+                                    .Select(uri => uri.ToString())
+                                    .FirstOrDefault();
+
+                Console.WriteLine($"{Environment.NewLine}Debug proxy for chrome now listening on {ipAddress}. And expecting chrome at {options.DevToolsUrl}");
+            });
+
             app.UseDeveloperExceptionPage()
                 .UseWebSockets()
-                .UseDebugProxy(options);
+                .UseDebugProxy(logger, options);
         }
 #pragma warning restore CA1822
     }
@@ -90,11 +97,12 @@ namespace Microsoft.WebAssembly.Diagnostics
             return filtered;
         }
 
-        public static IApplicationBuilder UseDebugProxy(this IApplicationBuilder app, ProxyOptions options) =>
-            UseDebugProxy(app, options, MapValues);
+        public static IApplicationBuilder UseDebugProxy(this IApplicationBuilder app, ILogger logger, ProxyOptions options) =>
+            UseDebugProxy(app, logger, options, MapValues);
 
         public static IApplicationBuilder UseDebugProxy(
             this IApplicationBuilder app,
+            ILogger logger,
             ProxyOptions options,
             Func<Dictionary<string, string>, HttpContext, Uri, Dictionary<string, string>> mapFunc)
         {
