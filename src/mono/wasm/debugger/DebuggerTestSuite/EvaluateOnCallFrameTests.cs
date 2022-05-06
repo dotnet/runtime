@@ -506,19 +506,25 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
-               Assert.Contains($"Method 'MyMethodWrong' not found", res.Error["message"]?.Value<string>());
+               Assert.Equal(
+                    $"Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'", 
+                    res.Error["exceptionDetails"]["exception"]["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false);
-               Assert.Contains("Cannot invoke method 'this.objToTest.MyMethod(1)' - too many arguments passed", res.Error["message"]?.Value<string>());
+                Assert.Equal(
+                    "Unable to evaluate method 'MyMethod'. Too many arguments passed.", 
+                    res.Error["exceptionDetails"]["exception"]["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
                Assert.Contains("Unable to evaluate method 'this.CallMethodWithParm(\"1\")'", res.Error["message"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
-               Assert.Contains("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
+               Assert.Equal("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
-               Assert.Contains("Cannot invoke method 'MyMethod'", res.Error["message"]?.Value<string>());
+               Assert.Contains(
+                    "Cannot evaluate '(this.ParmToTestObjException.MyMethod()\n)'", 
+                    res.Error["exceptionDetails"]["exception"]["description"]?.Value<string>());
            });
 
         [Fact]
