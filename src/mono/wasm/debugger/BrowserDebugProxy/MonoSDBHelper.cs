@@ -1430,7 +1430,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 expr = "$\"" + dispAttrStr + "\"";
                 JObject retValue = await resolver.Resolve(expr, token);
                 if (retValue == null)
-                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expr, resolver, token);
+                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expr, resolver, logger, token);
 
                 return retValue?["value"]?.Value<string>();
             }
@@ -1918,6 +1918,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             long initialPos =  /*retDebuggerCmdReader == null ? 0 : */retDebuggerCmdReader.BaseStream.Position;
             ElementType etype = (ElementType)retDebuggerCmdReader.ReadByte();
+            Console.WriteLine($"CreateJObjectForVariableValue {etype}");
             JObject ret = null;
             switch (etype) {
                 case ElementType.I:
