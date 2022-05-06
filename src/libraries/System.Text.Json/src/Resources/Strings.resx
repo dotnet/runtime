@@ -430,13 +430,13 @@
     <value>Invalid leading zero before '{0}'.</value>
   </data>
   <data name="MetadataCannotParsePreservedObjectToImmutable" xml:space="preserve">
-    <value>Cannot parse a JSON object containing metadata properties like '$id' into an array or immutable collection type. Type '{0}'.</value>
+    <value>Cannot parse a JSON object containing metadata properties like '$id' or '$type' into an array or immutable collection type. Type '{0}'.</value>
   </data>
   <data name="MetadataDuplicateIdFound" xml:space="preserve">
     <value>The value of the '$id' metadata property '{0}' conflicts with an existing identifier.</value>
   </data>
   <data name="MetadataIdIsNotFirstProperty" xml:space="preserve">
-    <value>The metadata property '$id' must be the first property in the JSON object.</value>
+    <value>The metadata property '$id' must be the first reference preservation property in the JSON object.</value>
   </data>
   <data name="MetadataInvalidReferenceToValueType" xml:space="preserve">
     <value>Invalid reference to value type '{0}'.</value>
@@ -449,23 +449,29 @@
 1. {0}
 2. {1}</value>
   </data>
-  <data name="MetadataPreservedArrayInvalidProperty" xml:space="preserve">
-    <value>Invalid property '{0}' found within a JSON object that must only contain metadata properties and the nested JSON array to be preserved.</value>
+  <data name="MetadataInvalidPropertyInArrayMetadata" xml:space="preserve">
+    <value>A JSON object containing metadata for a nested array includes a non-metadata property '{0}'.</value>
   </data>
-  <data name="MetadataPreservedArrayPropertyNotFound" xml:space="preserve">
-    <value>One or more metadata properties, such as '$id' and '$values', were not found within a JSON object that must only contain metadata properties and the nested JSON array to be preserved.</value>
+  <data name="MetadataStandaloneValuesProperty" xml:space="preserve">
+    <value>A '$values' metadata property must always be preceded by other metadata properties, such as '$id' or '$type'.</value>
   </data>
   <data name="MetadataReferenceCannotContainOtherProperties" xml:space="preserve">
     <value>A JSON object that contains a '$ref' metadata property must not contain any other properties.</value>
   </data>
   <data name="MetadataReferenceNotFound" xml:space="preserve">
-    <value>Reference '{0}' not found.</value>
+    <value>Reference '{0}' was not found.</value>
   </data>
   <data name="MetadataValueWasNotString" xml:space="preserve">
-    <value>The '$id' and '$ref' metadata properties must be JSON strings. Current token type is '{0}'.</value>
+    <value>The '$id', '$ref' or '$type' metadata properties must be JSON strings. Current token type is '{0}'.</value>
   </data>
   <data name="MetadataInvalidPropertyWithLeadingDollarSign" xml:space="preserve">
-    <value>Properties that start with '$' are not allowed on preserve mode, either escape the character or turn off preserve references by setting ReferenceHandler to null.</value>
+    <value>Properties that start with '$' are not allowed in types that support metadata. Either escape the character or disable reference preservation and polymorphic deserialization.</value>
+  </data>
+  <data name="MetadataUnexpectedProperty" xml:space="preserve">
+    <value>The metadata property is either not supported by the type or is not the first property in the deserialized JSON object.</value>
+  </data>
+  <data name="MetadataDuplicateTypeProperty" xml:space="preserve">
+    <value>Deserialized object contains a duplicate type discriminator metadata property.</value>
   </data>
   <data name="MultipleMembersBindWithConstructorParameter" xml:space="preserve">
     <value>Members '{0}' and '{1}' on type '{2}' cannot both bind with parameter '{3}' in the deserialization constructor.</value>
@@ -610,5 +616,38 @@
   </data>
   <data name="NoMetadataForTypeCtorParams" xml:space="preserve">
     <value>'JsonSerializerContext' '{0}' did not provide constructor parameter metadata for type '{1}'.</value>
+  </data>
+  <data name="Polymorphism_BaseConverterDoesNotSupportMetadata" xml:space="preserve">
+    <value>The converter for polymorphic type '{0}' does not support metadata writes or reads.</value>
+  </data>
+  <data name="Polymorphism_DerivedConverterDoesNotSupportMetadata" xml:space="preserve">
+    <value>The converter for derived type '{0}' does not support metadata writes or reads.</value>
+  </data>
+  <data name="Polymorphism_TypeDoesNotSupportPolymorphism" xml:space="preserve">
+    <value>Specified type '{0}' does not support polymorphism. Polymorphic types cannot be structs, sealed types, generic types or System.Object.</value>
+  </data>
+  <data name="Polymorphism_DerivedTypeIsNotSupported" xml:space="preserve">
+    <value>Specified type '{0}' is not a supported derived type for the polymorphic type '{1}'. Derived types must be assignable to the base type, must not be generic and cannot be abstact classes or interfaces unless 'JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor' is specified.</value>
+  </data>
+  <data name="Polymorphism_DerivedTypeIsAlreadySpecified" xml:space="preserve">
+    <value>The polymorphic type '{0}' has already specified derived type '{1}'.</value>
+  </data>
+  <data name="Polymorphism_TypeDicriminatorIdIsAlreadySpecified" xml:space="preserve">
+    <value>The polymorphic type '{0}' has already specified a type discriminator '{1}'.</value>
+  </data>
+  <data name="Polymorphism_InvalidCustomTypeDiscriminatorPropertyName" xml:space="preserve">
+    <value>The metadata property names '$id', '$ref', and '$values' are reserved and cannot be used as custom type discriminator property names.</value>
+  </data>
+  <data name="Polymorphism_ConfigurationDoesNotSpecifyDerivedTypes" xml:space="preserve">
+    <value>Polymorphic configuration for type '{0}' should specify at least one derived type.</value>
+  </data>
+  <data name="Polymorphism_UnrecognizedTypeDiscriminator" xml:space="preserve">
+    <value>Read unrecognized type discriminator id '{0}'.</value>
+  </data>
+  <data name="Polymorphism_RuntimeTypeNotSupported" xml:space="preserve">
+    <value>Runtime type '{0}' is not supported by polymorphic type '{1}'.</value>
+  </data>
+  <data name="Polymorphism_RuntimeTypeDiamondAmbiguity" xml:space="preserve">
+    <value>Runtime type '{0}' has a diamond ambiguity between derived types '{1}' and '{2}' of polymorphic type '{3}'. Consider either removing one of the derived types or removing the 'JsonUnknownDerivedTypeHandling.FallbackToNearestAncestor' setting.</value>
   </data>
 </root>

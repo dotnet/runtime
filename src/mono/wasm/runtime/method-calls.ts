@@ -13,7 +13,7 @@ import { mono_array_root_to_js_array, unbox_mono_obj_root } from "./cs-to-js";
 import { get_js_obj, mono_wasm_get_jsobj_from_js_handle } from "./gc-handles";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore used by unsafe export
-import { js_array_to_mono_array, _js_to_mono_obj_unsafe, js_to_mono_obj_root } from "./js-to-cs";
+import { js_array_to_mono_array, js_to_mono_obj_root } from "./js-to-cs";
 import {
     mono_bind_method,
     Converter, _compile_converter_for_marshal_string,
@@ -301,17 +301,21 @@ export function mono_call_assembly_entry_point(assembly: string, args?: any[], s
     return mono_bind_assembly_entry_point(assembly, signature)(...args);
 }
 
-export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: MonoString, args: MonoArray, is_exception: Int32Ptr): any {
-    const argsRoot = mono_wasm_new_root(args), nameRoot = mono_wasm_new_root(method_name);
+export function mono_wasm_invoke_js_with_args_ref(js_handle: JSHandle, method_name: MonoStringRef, args: MonoObjectRef, is_exception: Int32Ptr, result_address: MonoObjectRef): any {
+    const argsRoot = mono_wasm_new_external_root<MonoArray>(args), 
+        nameRoot = mono_wasm_new_external_root<MonoString>(method_name),
+        resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const js_name = conv_string_root(nameRoot);
         if (!js_name || (typeof (js_name) !== "string")) {
-            return wrap_error(is_exception, "ERR12: Invalid method name object @" + nameRoot.value);
+            wrap_error_root(is_exception, "ERR12: Invalid method name object @" + nameRoot.value, resultRoot);
+            return;
         }
 
         const obj = get_js_obj(js_handle);
         if (!obj) {
-            return wrap_error(is_exception, "ERR13: Invalid JS object handle '" + js_handle + "' while invoking '" + js_name + "'");
+            wrap_error_root(is_exception, "ERR13: Invalid JS object handle '" + js_handle + "' while invoking '" + js_name + "'", resultRoot);
+            return;
         }
 
         const js_args = mono_array_root_to_js_array(argsRoot);
@@ -322,15 +326,14 @@ export function mono_wasm_invoke_js_with_args(js_handle: JSHandle, method_name: 
                 throw new Error("Method: '" + js_name + "' not found for: '" + Object.prototype.toString.call(obj) + "'");
             const res = m.apply(obj, js_args);
 
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-ignore caller is unsafe also
-            return _js_to_mono_obj_unsafe(true, res);
+            js_to_mono_obj_root(res, resultRoot, true);
         } catch (ex) {
-            return wrap_error(is_exception, ex);
+            wrap_error_root(is_exception, ex, resultRoot);
         }
     } finally {
         argsRoot.release();
         nameRoot.release();
+        resultRoot.release();
     }
 }
 
@@ -617,11 +620,15 @@ export function mono_wasm_invoke_js(code: MonoString, is_exception: Int32Ptr): M
 // Compiles a JavaScript function from the function data passed.
 // Note: code snippet is not a function definition. Instead it must create and return a function instance.
 // code like `return function() { App.call_test_method(); };`
-export function mono_wasm_compile_function(code: MonoString, is_exception: Int32Ptr): MonoObject {
-    if (code === MonoStringNull)
-        return MonoStringNull;
+export function mono_wasm_compile_function_ref(code: MonoStringRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
+    const codeRoot = mono_wasm_new_external_root<MonoString>(code),
+        resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
 
-    const js_code = conv_string(code);
+    const js_code = conv_string_root(codeRoot);
+    if (!js_code) {
+        js_to_mono_obj_root(MonoStringNull, resultRoot, true);
+        return;
+    }
 
     try {
         const closure = {
@@ -630,13 +637,16 @@ export function mono_wasm_compile_function(code: MonoString, is_exception: Int32
         const fn_body_template = `const {Module, MONO, BINDING, INTERNAL} = __closure; ${js_code} ;`;
         const fn_defn = new Function("__closure", fn_body_template);
         const res = fn_defn(closure);
-        if (!res || typeof res !== "function")
-            return wrap_error(is_exception, "Code must return an instance of a JavaScript function. Please use `return` statement to return a function.");
+        if (!res || typeof res !== "function") {
+            wrap_error_root(is_exception, "Code must return an instance of a JavaScript function. Please use `return` statement to return a function.", resultRoot);
+            return;
+        }
         Module.setValue(is_exception, 0, "i32");
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore caller is unsafe also
-        return _js_to_mono_obj_unsafe(true, res);
+
+        js_to_mono_obj_root(res, resultRoot, true);
     } catch (ex) {
-        return wrap_error(is_exception, ex);
+        wrap_error_root(is_exception, ex, resultRoot);
+    } finally {
+        resultRoot.release();
     }
 }

@@ -55,6 +55,18 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<double>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<IntPtr>() };
             yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers<UIntPtr>() };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("byte*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("sbyte*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("short*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("ushort*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("int*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("uint*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("long*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("ulong*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("float*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("double*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("System.IntPtr*", "unsafe") };
+            yield return new[] { CodeSnippets.MarshalAsArrayParametersAndModifiers("System.UIntPtr*", "unsafe") };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<byte>(isByRef: false) };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<sbyte>(isByRef: false) };
             yield return new[] { CodeSnippets.MarshalAsArrayParameterWithSizeParam<short>(isByRef: false) };
@@ -82,7 +94,6 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf8) };
 
             // StringMarshallingCustomType
-            yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<char>() };
             yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<string>() };
 
             // MarshalAs
@@ -103,8 +114,8 @@ namespace LibraryImportGenerator.UnitTests
 
             // [In, Out] attributes
             // By value non-blittable array
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out", CodeSnippets.DisableRuntimeMarshalling + CodeSnippets.BasicNonBlittableUserDefinedType) };
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out", CodeSnippets.DisableRuntimeMarshalling + CodeSnippets.BasicNonBlittableUserDefinedType) };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out", CodeSnippets.UseCustomTypeMarshaller + CodeSnippets.BasicNonBlittableUserDefinedType) };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out", CodeSnippets.UseCustomTypeMarshaller + CodeSnippets.BasicNonBlittableUserDefinedType) };
 
             // Enums
             yield return new[] { CodeSnippets.EnumParameters };
@@ -284,7 +295,7 @@ namespace LibraryImportGenerator.UnitTests
                 yield return new object[] { code, TestTargetFramework.Framework, false };
             }
 
-            // Confirm that all unsupported target frameworks fallback to a forwarder.
+            // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
                 string code = CodeSnippets.BasicParametersAndModifiers<byte[]>(CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
@@ -293,9 +304,18 @@ namespace LibraryImportGenerator.UnitTests
                 yield return new object[] { code, TestTargetFramework.Framework, true };
             }
 
-            // Confirm that all unsupported target frameworks fallback to a forwarder.
+            // Confirm that all unsupported target frameworks fall back to a forwarder.
             {
                 string code = CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf16, CodeSnippets.LibraryImportAttributeDeclaration);
+                yield return new object[] { code, TestTargetFramework.Net5, true };
+                yield return new object[] { code, TestTargetFramework.Core, true };
+                yield return new object[] { code, TestTargetFramework.Standard, true };
+                yield return new object[] { code, TestTargetFramework.Framework, true };
+            }
+
+            // Confirm that if support is missing for any type (like arrays), we fall back to a forwarder even if other types are supported.
+            {
+                string code = CodeSnippets.BasicReturnAndParameterByValue("System.Runtime.InteropServices.SafeHandle", "int[]", CodeSnippets.LibraryImportAttributeDeclaration);
                 yield return new object[] { code, TestTargetFramework.Net5, true };
                 yield return new object[] { code, TestTargetFramework.Core, true };
                 yield return new object[] { code, TestTargetFramework.Standard, true };

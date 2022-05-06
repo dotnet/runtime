@@ -575,8 +575,10 @@ namespace System.Xml.Schema
             }
         }
 
-        internal override Exception? TryParseValue(object value!!, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
+        internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             Exception? exception;
             typedValue = null;
 
@@ -1035,8 +1037,10 @@ namespace System.Xml.Schema
         }
         internal DatatypeImplementation ItemType { get { return _itemType; } }
 
-        internal override Exception? TryParseValue(object value!!, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
+        internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? namespaceResolver, out object? typedValue)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             Exception? exception;
             string? s = value as string;
             typedValue = null;
@@ -1294,8 +1298,10 @@ namespace System.Xml.Schema
             return exception;
         }
 
-        internal override Exception? TryParseValue(object value!!, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
+        internal override Exception? TryParseValue(object value, XmlNameTable? nameTable, IXmlNamespaceResolver? nsmgr, out object? typedValue)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             Exception? exception;
             typedValue = null;
             string? s = value as string;

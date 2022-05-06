@@ -1813,11 +1813,8 @@ private:
         int count = 0;
         while (seg_start)
         {
-            // If we find this many segments, something is seriously wrong.
-            if (count++ > 4096)
-                break;
-
             seg_start = seg_start->next;
+            count++;
         }
 
         return count;

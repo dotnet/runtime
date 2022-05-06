@@ -453,9 +453,7 @@ namespace Internal.Runtime.TypeLoader
                     pEEType->OptionalFieldsPtr = (byte*)pEEType + cbEEType;
                     optionalFields.WriteToEEType(pEEType, cbOptionalFieldsSize);
 
-#if !PROJECTN
                     pEEType->PointerToTypeManager = PermanentAllocatedMemoryBlobs.GetPointerToIntPtr(moduleInfo.Handle.GetIntPtrUNSAFE());
-#endif
                     pEEType->DynamicModule = dynamicModulePtr;
 
                     // Copy VTable entries from template type
@@ -632,7 +630,7 @@ namespace Internal.Runtime.TypeLoader
                     {
                         if (state.GcStaticEEType != IntPtr.Zero)
                         {
-                            // CoreRT Abi uses managed heap-allocated GC statics
+                            // Statics are allocated on GC heap
                             object obj = RuntimeAugments.NewObject(((MethodTable*)state.GcStaticEEType)->ToRuntimeTypeHandle());
                             gcStaticData = RuntimeAugments.RhHandleAlloc(obj, GCHandleType.Normal);
 

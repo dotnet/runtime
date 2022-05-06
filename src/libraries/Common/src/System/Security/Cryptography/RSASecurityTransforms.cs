@@ -207,8 +207,11 @@ namespace System.Security.Cryptography
                 base.ImportEncryptedPkcs8PrivateKey(password, source, out bytesRead);
             }
 
-            public override byte[] Encrypt(byte[] data!!, RSAEncryptionPadding padding!!)
+            public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
             {
+                ArgumentNullException.ThrowIfNull(data);
+                ArgumentNullException.ThrowIfNull(padding);
+
                 ThrowIfDisposed();
 
                 // The size of encrypt is always the keysize (in ceiling-bytes)
@@ -225,8 +228,10 @@ namespace System.Security.Cryptography
                 return output;
             }
 
-            public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding!!, out int bytesWritten)
+            public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
+                ArgumentNullException.ThrowIfNull(padding);
+
                 ThrowIfDisposed();
 
                 int rsaSize = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
@@ -289,8 +294,11 @@ namespace System.Security.Cryptography
                     out bytesWritten);
             }
 
-            public override byte[] Decrypt(byte[] data!!, RSAEncryptionPadding padding!!)
+            public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
             {
+                ArgumentNullException.ThrowIfNull(data);
+                ArgumentNullException.ThrowIfNull(padding);
+
                 SecKeyPair keys = GetKeys();
 
                 if (keys.PrivateKey == null)
@@ -308,8 +316,10 @@ namespace System.Security.Cryptography
                 return Interop.AppleCrypto.RsaDecrypt(keys.PrivateKey, data, padding);
             }
 
-            public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding!!, out int bytesWritten)
+            public override bool TryDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
+                ArgumentNullException.ThrowIfNull(padding);
+
                 SecKeyPair keys = GetKeys();
 
                 if (keys.PrivateKey == null)
@@ -483,11 +493,14 @@ namespace System.Security.Cryptography
             }
 
             public override bool VerifyHash(
-                byte[] hash!!,
-                byte[] signature!!,
+                byte[] hash,
+                byte[] signature,
                 HashAlgorithmName hashAlgorithm,
                 RSASignaturePadding padding)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentNullException.ThrowIfNull(signature);
+
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature, hashAlgorithm, padding);
             }
 

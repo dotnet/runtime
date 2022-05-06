@@ -73,8 +73,11 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] Decrypt(byte[] data!!, RSAEncryptionPadding padding!!)
+            public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
             {
+                ArgumentNullException.ThrowIfNull(data);
+                ArgumentNullException.ThrowIfNull(padding);
+
                 Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
@@ -104,9 +107,11 @@ namespace System.Security.Cryptography
             public override bool TryDecrypt(
                 ReadOnlySpan<byte> data,
                 Span<byte> destination,
-                RSAEncryptionPadding padding!!,
+                RSAEncryptionPadding padding,
                 out int bytesWritten)
             {
+                ArgumentNullException.ThrowIfNull(padding);
+
                 Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
@@ -233,8 +238,11 @@ namespace System.Security.Cryptography
                 }
             }
 
-            public override byte[] Encrypt(byte[] data!!, RSAEncryptionPadding padding!!)
+            public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
             {
+                ArgumentNullException.ThrowIfNull(data);
+                ArgumentNullException.ThrowIfNull(padding);
+
                 Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
@@ -257,8 +265,10 @@ namespace System.Security.Cryptography
                 return buf;
             }
 
-            public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding!!, out int bytesWritten)
+            public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
             {
+                ArgumentNullException.ThrowIfNull(padding);
+
                 Interop.AndroidCrypto.RsaPadding rsaPadding = GetInteropPadding(padding, out RsaPaddingProcessor? oaepProcessor);
                 SafeRsaHandle key = GetKey();
 
@@ -760,11 +770,14 @@ namespace System.Security.Cryptography
             }
 
             public override bool VerifyHash(
-                byte[] hash!!,
-                byte[] signature!!,
+                byte[] hash,
+                byte[] signature,
                 HashAlgorithmName hashAlgorithm,
                 RSASignaturePadding padding)
             {
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentNullException.ThrowIfNull(signature);
+
                 return VerifyHash(new ReadOnlySpan<byte>(hash), new ReadOnlySpan<byte>(signature), hashAlgorithm, padding);
             }
 

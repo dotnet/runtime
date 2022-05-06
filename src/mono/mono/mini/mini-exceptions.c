@@ -966,7 +966,7 @@ mono_exception_stackframe_obj_walk (MonoStackFrame *captured_frame, MonoExceptio
 	if (!captured_frame)
 		return TRUE;
 
-	gpointer ip = (gpointer) (captured_frame->method_address + captured_frame->native_offset);
+	gpointer ip = GINT_TO_POINTER (captured_frame->method_address + captured_frame->native_offset);
 	MonoJitInfo *ji = mono_jit_info_table_find_internal (ip, TRUE, TRUE);
 
 	// Other domain maybe?
@@ -974,7 +974,7 @@ mono_exception_stackframe_obj_walk (MonoStackFrame *captured_frame, MonoExceptio
 		return FALSE;
 	MonoMethod *method = jinfo_get_method (ji);
 
-	gboolean r = func (method, (gpointer) captured_frame->method_address, captured_frame->native_offset, TRUE, user_data);
+	gboolean r = func (method, GINT_TO_POINTER (captured_frame->method_address), captured_frame->native_offset, TRUE, user_data);
 	if (r)
 		return TRUE;
 
@@ -2214,14 +2214,14 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 	if (!resume) {
 		MonoContext ctx_cp = *ctx;
 		if (mono_trace_is_enabled ()) {
-			ERROR_DECL (error);
+			error_init_reuse (error);
 			MonoMethod *system_exception_get_message = mono_class_get_method_from_name_checked (mono_defaults.exception_class, "get_Message", 0, 0, error);
 			mono_error_cleanup (error);
-			error_init (error);
 			MonoMethod *get_message = system_exception_get_message == NULL ? NULL : mono_object_get_virtual_method_internal (obj, system_exception_get_message);
 			MonoObject *message;
 			const char *type_name = m_class_get_name (mono_object_class (mono_ex));
 			char *msg = NULL;
+			error_init_reuse (error);
 			if (get_message == NULL) {
 				message = NULL;
 			} else if (!strcmp (type_name, "OutOfMemoryException") || !strcmp (type_name, "StackOverflowException")) {
@@ -2317,6 +2317,7 @@ mono_handle_exception_internal (MonoContext *ctx, MonoObject *obj, gboolean resu
 			first_filter_idx = jit_tls->resume_state.first_filter_idx;
 			filter_idx = jit_tls->resume_state.filter_idx;
 			in_interp = FALSE;
+			frame.native_offset = 0;
 		} else {
 			unwind_res = unwinder_unwind_frame (&unwinder, jit_tls, NULL, ctx, &new_ctx, NULL, &lmf, NULL, &frame);
 			if (!unwind_res) {
@@ -3261,6 +3262,7 @@ mono_thread_state_init_from_sigctx (MonoThreadUnwindState *ctx, void *sigctx)
 	return TRUE;
 }
 
+MONO_DISABLE_WARNING(4740) /* flow in or out of inline asm code suppresses global optimization, x86 only */
 void
 mono_thread_state_init (MonoThreadUnwindState *ctx)
 {
@@ -3268,6 +3270,8 @@ mono_thread_state_init (MonoThreadUnwindState *ctx)
 
 #if defined(MONO_CROSS_COMPILE)
 	ctx->valid = FALSE; //A cross compiler doesn't need to suspend.
+#elif defined(HOST_WASM)
+   MONO_INIT_CONTEXT_FROM_FUNC (&(ctx->ctx), mono_thread_state_init);
 #elif defined(HOST_WASI)
 	// TODO: For WASI, we need to review how thread state is initialized
 #elif MONO_ARCH_HAS_MONO_CONTEXT
@@ -3281,7 +3285,7 @@ mono_thread_state_init (MonoThreadUnwindState *ctx)
 	ctx->unwind_data [MONO_UNWIND_DATA_JIT_TLS] = thread ? thread->jit_data : NULL;
 	ctx->valid = TRUE;
 }
-
+MONO_RESTORE_WARNING
 
 gboolean
 mono_thread_state_init_from_monoctx (MonoThreadUnwindState *ctx, MonoContext *mctx)
@@ -3409,7 +3413,7 @@ mono_install_ftnptr_eh_callback (MonoFtnPtrEHCallback callback)
  */
 
 static void
-throw_exception (MonoObject *ex, gboolean rethrow)
+llvmonly_setup_exception (MonoObject *ex, gboolean rethrow)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -3426,8 +3430,11 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 	else
 		mono_ex = (MonoException*)ex;
 
-	// Note: Not pinned
-	jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)mono_ex, FALSE);
+	if (jit_tls->thrown_exc)
+		/* Already set in mini_llvmonly_throw_corlib_exception () */
+		mono_gchandle_set_target (jit_tls->thrown_exc, (MonoObject*)mono_ex);
+	else
+		jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)mono_ex, TRUE);
 
 	if (!rethrow) {
 #ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
@@ -3450,15 +3457,6 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 		g_list_free (trace);
 #endif
 	}
-
-	if (rethrow) {
-		MonoContext ctx;
-		MonoJitInfo *out_ji;
-		memset (&ctx, 0, sizeof (MonoContext));
-
-		mono_handle_exception_internal (&ctx, ex, FALSE, &out_ji);
-		mono_llvm_cpp_throw_exception ();
-	}
 }
 
 void
@@ -3478,7 +3476,7 @@ mini_llvmonly_throw_exception (MonoObject *ex)
 
 	mono_handle_exception (&ctx, (MonoObject*)ex);
 
-	throw_exception (ex, FALSE);
+	llvmonly_setup_exception (ex, FALSE);
 
 	/* Unwind back to either an AOTed frame or to the interpreter */
 	mono_llvm_cpp_throw_exception ();
@@ -3487,16 +3485,26 @@ mini_llvmonly_throw_exception (MonoObject *ex)
 void
 mini_llvmonly_rethrow_exception (MonoObject *ex)
 {
-	throw_exception (ex, TRUE);
+	llvmonly_setup_exception (ex, TRUE);
+
+	MonoContext ctx;
+	MonoJitInfo *out_ji;
+	memset (&ctx, 0, sizeof (MonoContext));
+
+	mono_handle_exception_internal (&ctx, ex, FALSE, &out_ji);
+
+	mono_llvm_cpp_throw_exception ();
 }
 
 void
 mini_llvmonly_throw_corlib_exception (guint32 ex_token_index)
 {
 	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	MonoException *ex;
 
 	ex = mono_exception_from_token (m_class_get_image (mono_defaults.exception_class), ex_token);
+	jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)ex, FALSE);
 
 	mini_llvmonly_throw_exception ((MonoObject*)ex);
 }

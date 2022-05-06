@@ -69,6 +69,8 @@ static LONG CALLBACK seh_unhandled_exception_filter(EXCEPTION_POINTERS* ep)
 	return EXCEPTION_CONTINUE_SEARCH;
 }
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 #if HAVE_API_SUPPORT_WIN32_RESET_STKOFLW
 static gpointer
 get_win32_restore_stack (void)
@@ -123,6 +125,8 @@ get_win32_restore_stack (void)
 	return NULL;
 }
 #endif /* HAVE_API_SUPPORT_WIN32_RESET_STKOFLW */
+
+MONO_RESTORE_WARNING
 
 /*
  * Unhandled Exception Filter
@@ -230,6 +234,8 @@ void win32_seh_set_handler(int type, MonoW32ExceptionHandler handler)
 #endif /* TARGET_WIN32 */
 
 #ifndef DISABLE_JIT
+
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 /*
  * mono_arch_get_restore_context:
  *
@@ -372,6 +378,9 @@ mono_arch_get_call_filter (MonoTrampInfo **info, gboolean aot)
 
 	return start;
 }
+
+MONO_RESTORE_WARNING
+
 #endif /* !DISABLE_JIT */
 
 /*
@@ -441,6 +450,9 @@ mono_amd64_resume_unwind (guint64 dummy1, guint64 dummy2, guint64 dummy3, guint6
 }
 
 #ifndef DISABLE_JIT
+
+MONO_DISABLE_WARNING(4127)
+
 /*
  * get_throw_trampoline:
  *
@@ -561,6 +573,8 @@ get_throw_trampoline (MonoTrampInfo **info, gboolean rethrow, gboolean corlib, g
 
 	return start;
 }
+
+MONO_RESTORE_WARNING
 
 /**
  * mono_arch_get_throw_exception:

@@ -53,10 +53,8 @@ namespace ILCompiler
             _instructionSetMap = new Dictionary<string, InstructionSet>();
             foreach (var instructionSetInfo in InstructionSetFlags.ArchitectureToValidInstructionSets(TypeSystemContext.Target.Architecture))
             {
-                if (!instructionSetInfo.Specifiable)
-                    continue;
-
-                _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
+                if (instructionSetInfo.ManagedName != "")
+                    _instructionSetMap.Add(instructionSetInfo.ManagedName, instructionSetInfo.InstructionSet);
             }
 
             _profileDataManager = profileDataManager;
@@ -231,7 +229,7 @@ namespace ILCompiler
                 if (!InstructionSetSupport.IsInstructionSetSupported(instructionSet)
                     && InstructionSetSupport.OptimisticFlags.HasInstructionSet(instructionSet))
                 {
-                    return HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags);
+                    return HardwareIntrinsicHelpers.EmitIsSupportedIL(method, _hardwareIntrinsicFlags, instructionSet);
                 }
             }
 

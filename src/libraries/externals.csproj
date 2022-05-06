@@ -9,7 +9,7 @@
     <BinPlaceNative>true</BinPlaceNative>
     <BinPlaceRuntime>false</BinPlaceRuntime>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <UseLiveBuiltDotNetHost Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'armv6'">true</UseLiveBuiltDotNetHost>
+    <UseLiveBuiltDotNetHost Condition="'$(DotNetBuildFromSource)' == 'true' or '$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'armv6'">true</UseLiveBuiltDotNetHost>
   </PropertyGroup>
 
   <PropertyGroup>

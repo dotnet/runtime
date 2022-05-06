@@ -16,9 +16,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {1781A471-82F3-4159-8D0F-B3B5A9FF1BB6}
-.namespace JitTest
+.namespace JitTest_array3_refany_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
     .method private hidebysig static unsigned int64 MyGet(refany,int32,int32) il managed
@@ -93,14 +93,14 @@
       IL_002e:  ldloc.s    V_4
       
       
-      IL_0030:  call  unsigned int64 JitTest.Test::MyGet(	refany,
+      IL_0030:  call  unsigned int64 JitTest_array3_refany_il.Test::MyGet(	refany,
       														int32,
                                                             int32)
       IL_0035:  ldc.i4.1
       IL_0036:  conv.i8
       IL_0037:  sub
 
-      			call  void JitTest.Test::MySet(refany,int32,int32,unsigned int64)
+      			call  void JitTest_array3_refany_il.Test::MySet(refany,int32,int32,unsigned int64)
 
       IL_003d:  ldloc.1
       IL_003e:  ldc.i4.1
@@ -121,7 +121,7 @@
       IL_004d:  ret
     } // end of method Test::TestRef
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -196,7 +196,7 @@
       IL_004d:  stloc.0
       IL_004e:  ldloca.s   V_0
       IL_0050:  mkrefany   unsigned int64[1000...,1000...]
-      IL_0055:  call       void JitTest.Test::TestRef(typedref)
+      IL_0055:  call       void JitTest_array3_refany_il.Test::TestRef(typedref)
       IL_005a:  ldc.i4.0
       IL_005b:  stloc.1
       IL_005c:  br.s       IL_0082
@@ -264,6 +264,6 @@
 
   } // end of class Test
 
-} // end of namespace JitTest
+} // end of namespace JitTest_array3_refany_il
 
 //*********** DISASSEMBLY COMPLETE ***********************

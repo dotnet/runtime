@@ -149,6 +149,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	}
 	fprintf (ofd, ":\n");
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 	if (emit_debug_info && cfg != NULL) {
 		MonoBasicBlock *bb;
 
@@ -182,6 +184,8 @@ mono_disassemble_code (MonoCompile *cfg, guint8 *code, int size, char *id)
 	}
 	fprintf (ofd, "\n");
 	fclose (ofd);
+
+MONO_RESTORE_WARNING
 
 #ifdef __APPLE__
 #ifdef __ppc64__

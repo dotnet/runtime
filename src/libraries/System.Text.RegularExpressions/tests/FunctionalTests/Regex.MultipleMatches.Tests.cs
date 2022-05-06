@@ -9,7 +9,7 @@ using System.Runtime.CompilerServices;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexMultipleMatchTests
+    public partial class RegexMultipleMatchTests
     {
         [Theory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]

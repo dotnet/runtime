@@ -3695,7 +3695,7 @@ namespace System.Configuration
                 StringUtil.StartsWithOrdinal(name, "lock");
         }
 
-        protected class ConfigRecordStreamInfo
+        protected sealed class ConfigRecordStreamInfo
         {
             private HybridDictionary _streamInfos;
 

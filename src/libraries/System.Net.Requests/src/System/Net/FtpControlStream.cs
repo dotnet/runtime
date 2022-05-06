@@ -76,7 +76,7 @@ namespace System.Net
         private static readonly AsyncCallback s_connectCallbackDelegate = new AsyncCallback(ConnectCallback);
         private static readonly AsyncCallback s_SSLHandshakeCallback = new AsyncCallback(SSLHandshakeCallback);
 
-        internal FtpControlStream(TcpClient client)
+        internal FtpControlStream(NetworkStream client)
             : base(client)
         {
         }

@@ -244,7 +244,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // The jmp can be a NOP if we're going to the next block.
     // If we're generating code for the main function (not a funclet), and there is no localloc,
     // then RSP at this point is the same value as that stored in the PSPSym. So just copy RSP
-    // instead of loading the PSPSym in this case, or if PSPSym is not used (CoreRT ABI).
+    // instead of loading the PSPSym in this case, or if PSPSym is not used (NativeAOT ABI).
 
     if ((compiler->lvaPSPSym == BAD_VAR_NUM) ||
         (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT)))
@@ -577,6 +577,11 @@ void CodeGen::genCodeForBswap(GenTree* tree)
     {
         // 16-bit byte swaps use "ror reg.16, 8"
         inst_RV_IV(INS_ror_N, targetReg, 8 /* val */, emitAttr::EA_2BYTE);
+
+        if (!genCanOmitNormalizationForBswap16(tree))
+        {
+            GetEmitter()->emitIns_Mov(INS_movzx, EA_2BYTE, targetReg, targetReg, /* canSkip */ false);
+        }
     }
 
     genProduceReg(tree);
@@ -3502,7 +3507,6 @@ void CodeGen::genStructPutArgPush(GenTreePutArgStk* putArgNode)
     const unsigned byteSize = putArgNode->GetStackByteSize();
     assert((byteSize % TARGET_POINTER_SIZE == 0) && ((byteSize < XMM_REGSIZE_BYTES) || layout->HasGCPtr()));
     const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
-    assert(putArgNode->gtNumSlots == numSlots);
 
     for (int i = numSlots - 1; i >= 0; --i)
     {
@@ -3552,7 +3556,6 @@ void CodeGen::genStructPutArgPartialRepMovs(GenTreePutArgStk* putArgNode)
     const unsigned byteSize = putArgNode->GetStackByteSize();
     assert(byteSize % TARGET_POINTER_SIZE == 0);
     const unsigned numSlots = byteSize / TARGET_POINTER_SIZE;
-    assert(putArgNode->gtNumSlots == numSlots);
 
     // No need to disable GC the way COPYOBJ does. Here the refs are copied in atomic operations always.
     for (unsigned i = 0; i < numSlots;)
@@ -5013,7 +5016,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
 
     assert(!varTypeIsFloating(targetType) || (genTypeSize(targetType) == genTypeSize(data->TypeGet())));
 
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
         // data and addr must be in registers.
@@ -5026,14 +5029,14 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
 
         // At this point, we should not have any interference.
-        // That is, 'data' must not be in REG_ARG_0, as that is where 'addr' must go.
-        noway_assert(data->GetRegNum() != REG_ARG_0);
+        // That is, 'data' must not be in REG_WRITE_BARRIER_DST, as that is where 'addr' must go.
+        noway_assert(data->GetRegNum() != REG_WRITE_BARRIER_DST);
 
-        // addr goes in REG_ARG_0
-        genCopyRegIfNeeded(addr, REG_ARG_0);
+        // addr goes in REG_WRITE_BARRIER_DST
+        genCopyRegIfNeeded(addr, REG_WRITE_BARRIER_DST);
 
-        // data goes in REG_ARG_1
-        genCopyRegIfNeeded(data, REG_ARG_1);
+        // data goes in REG_WRITE_BARRIER_SRC
+        genCopyRegIfNeeded(data, REG_WRITE_BARRIER_SRC);
 
         genGCWriteBarrier(tree, writeBarrierForm);
     }
@@ -5266,14 +5269,14 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
     noway_assert(regToHelper[1][REG_EDI] == CORINFO_HELP_CHECKED_ASSIGN_REF_EDI);
 
     regNumber reg = data->GetRegNum();
-    noway_assert((reg != REG_ESP) && (reg != REG_WRITE_BARRIER));
+    noway_assert((reg != REG_ESP) && (reg != REG_OPTIMIZED_WRITE_BARRIER_DST));
 
     // Generate the following code:
     //            lea     edx, addr
     //            call    write_barrier_helper_reg
 
-    // addr goes in REG_ARG_0
-    genCopyRegIfNeeded(addr, REG_WRITE_BARRIER);
+    // addr goes in REG_OPTIMIZED_WRITE_BARRIER_DST
+    genCopyRegIfNeeded(addr, REG_OPTIMIZED_WRITE_BARRIER_DST);
 
     unsigned tgtAnywhere = 0;
     if (writeBarrierForm != GCInfo::WBF_BarrierUnchecked)
@@ -5281,10 +5284,8 @@ bool CodeGen::genEmitOptimizedGCWriteBarrier(GCInfo::WriteBarrierForm writeBarri
         tgtAnywhere = 1;
     }
 
-    // We might want to call a modified version of genGCWriteBarrier() to get the benefit of
-    // the FEATURE_COUNT_GC_WRITE_BARRIERS code there, but that code doesn't look like it works
-    // with rationalized RyuJIT IR. So, for now, just emit the helper call directly here.
-
+    // Here we might want to call a modified version of genGCWriteBarrier() to get the benefit
+    // of the FEATURE_COUNT_GC_WRITE_BARRIERS code. For now, just emit the helper call directly.
     genEmitHelperCall(regToHelper[tgtAnywhere][reg],
                       0,           // argSize
                       EA_PTRSIZE); // retSize
@@ -5322,14 +5323,12 @@ void CodeGen::genCall(GenTreeCall* call)
     }
 
     // Consume all the arg regs
-    for (GenTreeCall::Use& use : call->LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        GenTree* argNode = use.GetNode();
+        CallArgABIInformation& abiInfo = arg.AbiInfo;
+        GenTree*               argNode = arg.GetLateNode();
 
-        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, argNode->gtSkipReloadOrCopy());
-        assert(curArgTabEntry);
-
-        if (curArgTabEntry->GetRegNum() == REG_STK)
+        if (abiInfo.GetRegNum() == REG_STK)
         {
             continue;
         }
@@ -5343,7 +5342,7 @@ void CodeGen::genCall(GenTreeCall* call)
             {
                 GenTree* putArgRegNode = use.GetNode();
                 assert(putArgRegNode->gtOper == GT_PUTARG_REG);
-                regNumber argReg = curArgTabEntry->GetRegNum(regIndex++);
+                regNumber argReg = abiInfo.GetRegNum(regIndex++);
 
                 genConsumeReg(putArgRegNode);
 
@@ -5356,7 +5355,7 @@ void CodeGen::genCall(GenTreeCall* call)
         else
 #endif // UNIX_AMD64_ABI
         {
-            regNumber argReg = curArgTabEntry->GetRegNum();
+            regNumber argReg = abiInfo.GetRegNum();
             genConsumeReg(argNode);
             inst_Mov_Extend(argNode->TypeGet(), /* srcInReg */ false, argReg, argNode->GetRegNum(), /* canSkip */ true,
                             emitActualTypeSize(TYP_I_IMPL));
@@ -5378,18 +5377,16 @@ void CodeGen::genCall(GenTreeCall* call)
     // The call will pop its arguments.
     // for each putarg_stk:
     target_ssize_t stackArgBytes = 0;
-    for (GenTreeCall::Use& use : call->Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
-        GenTree* arg = use.GetNode();
-        if (arg->OperIs(GT_PUTARG_STK) && ((arg->gtFlags & GTF_LATE_ARG) == 0))
+        GenTree* argNode = arg.GetEarlyNode();
+        if (argNode->OperIs(GT_PUTARG_STK) && (arg.GetLateNode() == nullptr))
         {
-            GenTree* source = arg->AsPutArgStk()->gtGetOp1();
-            unsigned size   = arg->AsPutArgStk()->GetStackByteSize();
+            GenTree* source = argNode->AsPutArgStk()->gtGetOp1();
+            unsigned size   = argNode->AsPutArgStk()->GetStackByteSize();
             stackArgBytes += size;
 #ifdef DEBUG
-            fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
-            assert(curArgTabEntry != nullptr);
-            assert(size == (curArgTabEntry->numSlots * TARGET_POINTER_SIZE));
+            assert(size == arg.AbiInfo.ByteSize);
 #ifdef FEATURE_PUT_STRUCT_ARG_STK
             if (!source->OperIs(GT_FIELD_LIST) && (source->TypeGet() == TYP_STRUCT))
             {
@@ -5401,7 +5398,7 @@ void CodeGen::genCall(GenTreeCall* call)
                 // Note that on x64/ux this will be handled by unrolling in genStructPutArgUnroll.
                 assert((argBytes == obj->GetLayout()->GetSize()) || obj->Addr()->IsLocalAddrExpr());
 #endif // TARGET_X86
-                assert((curArgTabEntry->numSlots * TARGET_POINTER_SIZE) == argBytes);
+                assert(arg.AbiInfo.ByteSize == argBytes);
             }
 #endif // FEATURE_PUT_STRUCT_ARG_STK
 #endif // DEBUG
@@ -7551,17 +7548,17 @@ void CodeGen::genAlignStackBeforeCall(GenTreeCall* call)
 #if defined(UNIX_X86_ABI)
 
     // Have we aligned the stack yet?
-    if (!call->fgArgInfo->IsStkAlignmentDone())
+    if (!call->gtArgs.IsStkAlignmentDone())
     {
         // We haven't done any stack alignment yet for this call.  We might need to create
         // an alignment adjustment, even if this function itself doesn't have any stack args.
         // This can happen if this function call is part of a nested call sequence, and the outer
         // call has already pushed some arguments.
 
-        unsigned stkLevel = genStackLevel + call->fgArgInfo->GetStkSizeBytes();
-        call->fgArgInfo->ComputeStackAlignment(stkLevel);
+        unsigned stkLevel = genStackLevel + call->gtArgs.GetStkSizeBytes();
+        call->gtArgs.ComputeStackAlignment(stkLevel);
 
-        unsigned padStkAlign = call->fgArgInfo->GetStkAlign();
+        unsigned padStkAlign = call->gtArgs.GetStkAlign();
         if (padStkAlign != 0)
         {
             // Now generate the alignment
@@ -7570,7 +7567,7 @@ void CodeGen::genAlignStackBeforeCall(GenTreeCall* call)
             AddNestedAlignment(padStkAlign);
         }
 
-        call->fgArgInfo->SetStkAlignmentDone();
+        call->gtArgs.SetStkAlignmentDone();
     }
 
 #endif // UNIX_X86_ABI
@@ -7593,7 +7590,7 @@ void CodeGen::genRemoveAlignmentAfterCall(GenTreeCall* call, unsigned bias)
 #if defined(TARGET_X86)
 #if defined(UNIX_X86_ABI)
     // Put back the stack pointer if there was any padding for stack alignment
-    unsigned padStkAlign  = call->fgArgInfo->GetStkAlign();
+    unsigned padStkAlign  = call->gtArgs.GetStkAlign();
     unsigned padStkAdjust = padStkAlign + bias;
 
     if (padStkAdjust != 0)
@@ -7965,12 +7962,12 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* putArgStk)
         // Get argument offset on stack.
         // Here we cross check that argument offset hasn't changed from lowering to codegen since
         // we are storing arg slot number in GT_PUTARG_STK node in lowering phase.
-        unsigned       argOffset      = putArgStk->getArgOffset();
+        unsigned argOffset = putArgStk->getArgOffset();
 
 #ifdef DEBUG
-        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(putArgStk->gtCall, putArgStk);
-        assert(curArgTabEntry != nullptr);
-        assert(argOffset == curArgTabEntry->slotNum * TARGET_POINTER_SIZE);
+        CallArg* callArg   = putArgStk->gtCall->gtArgs.FindByNode(putArgStk);
+        assert(callArg != nullptr);
+        assert(argOffset == callArg->AbiInfo.ByteOffset);
 #endif
 
         if (data->isContainedIntOrIImmed())
@@ -9927,7 +9924,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *      ~  possible 8 byte pad  ~
  *      ~     for alignment     ~
  *      |-----------------------|
- *      |        PSP slot       | // Omitted in CoreRT ABI
+ *      |        PSP slot       | // Omitted in NativeAOT ABI
  *      |-----------------------|
  *      |   Outgoing arg space  | // this only exists if the function makes a call
  *      |-----------------------| <---- Initial SP
@@ -9998,7 +9995,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // If there is no PSPSym (CoreRT ABI), we are done.
+    // If there is no PSPSym (NativeAOT ABI), we are done.
     if (compiler->lvaPSPSym == BAD_VAR_NUM)
     {
         return;

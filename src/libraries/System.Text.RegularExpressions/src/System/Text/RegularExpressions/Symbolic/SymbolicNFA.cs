@@ -9,7 +9,7 @@ using System.Diagnostics;
 namespace System.Text.RegularExpressions.Symbolic
 {
     /// <summary>Represents the exploration of a symbolic regex as a symbolic NFA</summary>
-    internal sealed class SymbolicNFA<TSet> where TSet : IComparable<TSet>
+    internal sealed class SymbolicNFA<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         private readonly ISolver<TSet> _solver;
         private readonly Transition[] _transitionFunction;
@@ -160,11 +160,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public IEnumerable<(TSet, SymbolicRegexNode<TSet>?, int)> EnumeratePaths(int sourceState) =>
             _transitionFunction[sourceState].EnumeratePaths(_solver, _solver.Full);
-
-        /// <summary>
-        /// TODO: Explore an unexplored state on transition further.
-        /// </summary>
-        public static void ExploreState(int state) => new NotImplementedException();
 
         public static SymbolicNFA<TSet> Explore(SymbolicRegexNode<TSet> root, int bound)
         {

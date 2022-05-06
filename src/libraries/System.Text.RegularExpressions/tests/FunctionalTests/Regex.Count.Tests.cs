@@ -8,7 +8,7 @@ using Xunit;
 
 namespace System.Text.RegularExpressions.Tests
 {
-    public class RegexCountTests
+    public partial class RegexCountTests
     {
         [Theory]
         [MemberData(nameof(Count_ReturnsExpectedCount_TestData))]

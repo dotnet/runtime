@@ -154,8 +154,11 @@ namespace System.Reflection.Emit
             TypeBuilder.SetConstantValue(m_typeBuilder.GetModuleBuilder(), m_fieldTok, m_fieldType, defaultValue);
         }
 
-        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
             ModuleBuilder module = (m_typeBuilder.Module as ModuleBuilder)!;
 
             m_typeBuilder.ThrowIfCreated();
@@ -164,8 +167,10 @@ namespace System.Reflection.Emit
                 m_fieldTok, module.GetConstructorToken(con), binaryAttribute);
         }
 
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
             m_typeBuilder.ThrowIfCreated();
 
             ModuleBuilder? module = m_typeBuilder.Module as ModuleBuilder;

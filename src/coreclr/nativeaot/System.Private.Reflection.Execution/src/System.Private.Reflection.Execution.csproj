@@ -25,7 +25,6 @@
     <Compile Include="Internal\Reflection\Execution\ReflectionExecution.cs" />
     <Compile Include="Internal\Reflection\Execution\ReflectionDomainSetupImplementation.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.cs" />
-    <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Interop.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.Runtime.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MappingTables.cs" />
     <Compile Include="Internal\Reflection\Execution\ExecutionEnvironmentImplementation.MetadataTable.cs" />

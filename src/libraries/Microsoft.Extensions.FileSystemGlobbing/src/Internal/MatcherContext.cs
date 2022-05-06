@@ -22,7 +22,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
         private readonly List<FilePatternMatch> _files;
 
         private readonly HashSet<string> _declaredLiteralFolderSegmentInString;
-        private readonly HashSet<LiteralPathSegment> _declaredLiteralFolderSegments = new HashSet<LiteralPathSegment>();
         private readonly HashSet<LiteralPathSegment> _declaredLiteralFileSegments = new HashSet<LiteralPathSegment>();
 
         private bool _declaredParentPathSegment;
@@ -126,7 +125,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
         private void Declare()
         {
             _declaredLiteralFileSegments.Clear();
-            _declaredLiteralFolderSegments.Clear();
             _declaredParentPathSegment = false;
             _declaredWildcardPathSegment = false;
 
@@ -146,7 +144,6 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal
                 }
                 else
                 {
-                    _declaredLiteralFolderSegments.Add(literalSegment);
                     _declaredLiteralFolderSegmentInString.Add(literalSegment.Value);
                 }
             }

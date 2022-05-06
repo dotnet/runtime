@@ -3,8 +3,11 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-internal class FloatOvfToInt
+namespace Test_FloatOvfToInt2
+{
+public class FloatOvfToInt
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
     public static bool BreakUpFlow() => false;
@@ -887,10 +890,12 @@ internal class FloatOvfToInt
         return res;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         int res = TestValues();
         Console.WriteLine("Test " + (res == 100 ? "passed" : "failed"));
         return res;
     }
+}
 }

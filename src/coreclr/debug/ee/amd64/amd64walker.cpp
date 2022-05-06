@@ -486,9 +486,9 @@ static bool IsWrite(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bo
     return isWrite;
 }
 
-static int opSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
+static uint8_t opSize(Amd64InstrDecode::InstrForm form, int pp, bool W, bool L, bool fPrefix66)
 {
-    int opSize = 0;
+    uint8_t opSize = 0;
     bool P = !((pp == 1) || fPrefix66);
     switch (form)
     {

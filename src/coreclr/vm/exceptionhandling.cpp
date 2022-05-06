@@ -21,12 +21,12 @@
 #define USE_CURRENT_CONTEXT_IN_FILTER
 #endif // TARGET_X86
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 // ARM/ARM64 uses Caller-SP to locate PSPSym in the funclet frame.
 #define USE_CALLER_SP_IN_FUNCLET
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_X86)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_X86) || defined(TARGET_LOONGARCH64)
 #define ADJUST_PC_UNWOUND_TO_CALL
 #define STACK_RANGE_BOUNDS_ARE_CALLER_SP
 #define USE_FUNCLET_CALL_HELPER
@@ -35,7 +35,7 @@
 //
 // For x86/Linux, RtlVirtualUnwind sets EstablisherFrame as Caller-SP.
 #define ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
-#endif // TARGET_ARM || TARGET_ARM64 || TARGET_X86
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_X86 || TARGET_LOONGARCH64
 
 #ifndef TARGET_UNIX
 void NOINLINE
@@ -528,6 +528,19 @@ void ExceptionTracker::UpdateNonvolatileRegisters(CONTEXT *pContextRecord, REGDI
     UPDATEREG(X28);
     UPDATEREG(Fp);
 
+#elif defined(TARGET_LOONGARCH64)
+
+    UPDATEREG(S0);
+    UPDATEREG(S1);
+    UPDATEREG(S2);
+    UPDATEREG(S3);
+    UPDATEREG(S4);
+    UPDATEREG(S5);
+    UPDATEREG(S6);
+    UPDATEREG(S7);
+    UPDATEREG(S8);
+    UPDATEREG(Fp);
+
 #else
     PORTABILITY_ASSERT("ExceptionTracker::UpdateNonvolatileRegisters");
 #endif
@@ -808,6 +821,8 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
         // On ARM & ARM64, we save off the original PC in Lr. This is the same as done
         // in HandleManagedFault for H/W generated exceptions.
         pContextRecord->Lr = uResumePC;
+#elif defined(TARGET_LOONGARCH64)
+        pContextRecord->Ra = uResumePC;
 #endif
 
         uResumePC = uAbortAddr;
@@ -1470,10 +1485,10 @@ void ExceptionTracker::InitializeCrawlFrame(CrawlFrame* pcfThisFrame, Thread* pT
     }
     else
     {
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
         // See the comment above the call to InitRegDisplay for this assertion.
         _ASSERTE(pDispatcherContext->ControlPc == GetIP(pDispatcherContext->ContextRecord));
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
 #ifdef ESTABLISHER_FRAME_ADDRESS_IS_CALLER_SP
         // Simply setup the callerSP during the second pass in the caller context.
@@ -3249,6 +3264,8 @@ static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextReco
     return (UINT_PTR*)&(pContextRecord->R4);
 #elif defined(TARGET_ARM64)
     return (UINT_PTR*)&(pContextRecord->X19);
+#elif defined(TARGET_LOONGARCH64)
+    return (UINT_PTR*)&(pContextRecord->S0);
 #elif defined(TARGET_X86)
     return (UINT_PTR*)&(pContextRecord->Edi);
 #else
@@ -3259,7 +3276,7 @@ static inline UINT_PTR *GetFirstNonVolatileRegisterAddress(PCONTEXT pContextReco
 
 static inline TADDR GetFrameRestoreBase(PCONTEXT pContextRecord)
 {
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     return GetSP(pContextRecord);
 #elif defined(TARGET_X86)
     return pContextRecord->Ebp;
@@ -5284,8 +5301,8 @@ BOOL HandleHardwareException(PAL_SEHException* ex)
         Thread *pThread = GetThreadNULLOk();
         if (pThread != NULL && g_pDebugInterface != NULL)
         {
-#if (defined(TARGET_ARM) || defined(TARGET_ARM64))
-            // On ARM and ARM64 exception point to the break instruction.
+#if (defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64))
+            // On ARM and ARM64 and LOONGARCH64 exception point to the break instruction.
             // See https://static.docs.arm.com/ddi0487/db/DDI0487D_b_armv8_arm.pdf#page=6916&zoom=100,0,152
             // at aarch64/exceptions/debug/AArch64.SoftwareBreakpoint
             // However, the rest of the code expects that it points to an instruction after the break.
@@ -5500,7 +5517,7 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
 
     pDispatcherContext->ControlPc             = (UINT_PTR) GetIP(pDispatcherContext->ContextRecord);
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     // Since this routine is used to fixup contexts for async exceptions,
     // clear the CONTEXT_UNWOUND_TO_CALL flag since, semantically, frames
     // where such exceptions have happened do not have callsites. On a similar
@@ -5523,12 +5540,15 @@ void FixupDispatcherContext(DISPATCHER_CONTEXT* pDispatcherContext, CONTEXT* pCo
 #ifdef TARGET_ARM
     // But keep the architecture flag set (its part of CONTEXT_DEBUG_REGISTERS)
     pDispatcherContext->ContextRecord->ContextFlags |= CONTEXT_ARM;
+#elif defined(TARGET_LOONGARCH64)
+    // But keep the architecture flag set (its part of CONTEXT_DEBUG_REGISTERS)
+    pDispatcherContext->ContextRecord->ContextFlags |= CONTEXT_LOONGARCH64;
 #else // TARGET_ARM64
     // But keep the architecture flag set (its part of CONTEXT_DEBUG_REGISTERS)
     pDispatcherContext->ContextRecord->ContextFlags |= CONTEXT_ARM64;
 #endif // TARGET_ARM
 
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
     INDEBUG(pDispatcherContext->FunctionEntry = (PT_RUNTIME_FUNCTION)INVALID_POINTER_CD);
     INDEBUG(pDispatcherContext->ImageBase     = INVALID_POINTER_CD);
