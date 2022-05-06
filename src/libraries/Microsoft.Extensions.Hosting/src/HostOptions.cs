@@ -39,10 +39,24 @@ namespace Microsoft.Extensions.Hosting
         internal void Initialize(IConfiguration configuration)
         {
             var timeoutSeconds = configuration["shutdownTimeoutSeconds"];
-            if (!string.IsNullOrEmpty(timeoutSeconds)
+            if (!string.IsNullOrWhiteSpace(timeoutSeconds)
                 && int.TryParse(timeoutSeconds, NumberStyles.None, CultureInfo.InvariantCulture, out var seconds))
             {
                 ShutdownTimeout = TimeSpan.FromSeconds(seconds);
+            }
+
+            var backgroundServiceStopBehavior = configuration["backgroundServiceStopBehavior"];
+            if (!string.IsNullOrWhiteSpace(backgroundServiceStopBehavior)
+                && Enum.TryParse<BackgroundServiceStopBehavior>(backgroundServiceStopBehavior, out var stopBehavior))
+            {
+                BackgroundServiceStopBehavior = stopBehavior;
+            }
+
+            var backgroundServiceExceptionBehavior = configuration["backgroundServiceExceptionBehavior"];
+            if (!string.IsNullOrWhiteSpace(backgroundServiceExceptionBehavior)
+                && Enum.TryParse<BackgroundServiceExceptionBehavior>(backgroundServiceExceptionBehavior, out var exceptionBehavior))
+            {
+                BackgroundServiceExceptionBehavior = exceptionBehavior;
             }
         }
     }

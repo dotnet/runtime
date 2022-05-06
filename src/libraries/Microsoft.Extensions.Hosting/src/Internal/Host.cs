@@ -120,15 +120,17 @@ namespace Microsoft.Extensions.Hosting.Internal
                 // Trigger IHostApplicationLifetime.ApplicationStopping
                 _applicationLifetime.StopApplication();
 
-                IList<Exception> exceptions = new List<Exception>();
-                if (_hostedServices != null) // Started?
+                List<Exception> exceptions = new List<Exception>();
+                if (_hostedServices?.Any() == true) // Started?
                 {
-                    Queue<Task> tasks = new Queue<Task>();
-                    foreach (IHostedService hostedService in _hostedServices.Reverse())
+                    // Ensure hosted services are stopped in FILO order
+                    IEnumerable<IHostedService> hostedServices = _hostedServices.Reverse();
+
+                    switch (_options.BackgroundServiceStopBehavior)
                     {
-                        switch (_options.BackgroundServiceStopBehavior)
-                        {
-                            case BackgroundServiceStopBehavior.Sequential:
+                        case BackgroundServiceStopBehavior.Sequential:
+                            foreach (IHostedService hostedService in hostedServices)
+                            {
                                 try
                                 {
                                     await hostedService.StopAsync(token).ConfigureAwait(false);
@@ -137,24 +139,21 @@ namespace Microsoft.Extensions.Hosting.Internal
                                 {
                                     exceptions.Add(ex);
                                 }
-                                break;
-                            case BackgroundServiceStopBehavior.Asynchronous:
-                            default:
-                                tasks.Enqueue(hostedService.StopAsync(token));
-                                break;
-                        }
-                    }
+                            }
+                            break;
+                        case BackgroundServiceStopBehavior.Asynchronous:
+                        default:
+                            Task tasks = Task.WhenAll(hostedServices.Select(async service => await service.StopAsync(token).ConfigureAwait(false)));
 
-                    foreach (Task task in tasks)
-                    {
-                        try
-                        {
-                            await task.ConfigureAwait(false);
-                        }
-                        catch (Exception ex)
-                        {
-                            exceptions.Add(ex);
-                        }
+                            try
+                            {
+                                await tasks.ConfigureAwait(false);
+                            }
+                            catch (Exception ex)
+                            {
+                                exceptions.AddRange(tasks.Exception?.InnerExceptions?.ToArray() ?? new[] { ex });
+                            }
+                            break;
                     }
                 }
 

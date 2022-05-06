@@ -14,8 +14,10 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.UserSecrets;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
+using Moq;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Tests
@@ -32,6 +34,85 @@ namespace Microsoft.Extensions.Hosting.Tests
             cts.Cancel();
             Assert.True(cts.Token.IsCancellationRequested);
             await host.StopAsync(cts.Token);
+        }
+
+        public static IEnumerable<object[]> StopAsync_ValidBackgroundServiceStopBehavior_TestCases
+        {
+            get
+            {
+                foreach (BackgroundServiceStopBehavior stopBehavior in Enum.GetValues(typeof(BackgroundServiceStopBehavior)))
+                {
+                    foreach (int hostedServiceCount in new[] { 0, 1, 10 })
+                    {
+                        yield return new object[] { stopBehavior, hostedServiceCount };
+                    }
+                }
+            }
+        }
+        [Theory]
+        [MemberData(nameof(StopAsync_ValidBackgroundServiceStopBehavior_TestCases))]
+        public async Task StopAsync_ValidBackgroundServiceStopBehavior(BackgroundServiceStopBehavior stopBehavior, int hostedServiceCount)
+        {
+            var callOrder = hostedServiceCount;
+            var hostedServices = new Mock<BackgroundService>[hostedServiceCount];
+            var executionCount = 0;
+
+            for (int i = 0; i < hostedServiceCount; i++)
+            {
+                var index = i;
+                var service = new Mock<BackgroundService>();
+                service.Setup(y => y.StopAsync(It.IsAny<CancellationToken>()))
+                    .Callback(() =>
+                    {
+                        // Ensures that IHostedService instances are stopped in FILO order
+                        Assert.Equal(index, --callOrder);
+                    })
+                    .Returns(async () =>
+                    {
+                        if (stopBehavior.Equals(BackgroundServiceStopBehavior.Asynchronous) && hostedServiceCount > 1)
+                        {
+                            // Basically this will force all IHostedService instances to have StopAsync called before any one completes
+                            executionCount++;
+                            int waitCount = 0;
+
+                            while (executionCount < hostedServiceCount && waitCount++ < 20)
+                            {
+                                await Task.Delay(10).ConfigureAwait(false);
+                            }
+
+                            // This will ensure that we truly are stopping all services asynchronously
+                            Assert.Equal(hostedServiceCount, executionCount);
+                        }
+                    })
+                    .Verifiable();
+
+                hostedServices[index] = service;
+            }
+
+            var builder = new HostBuilder();
+            using var host = Host.CreateDefaultBuilder().ConfigureHostConfiguration(configBuilder =>
+            {
+                configBuilder.AddInMemoryCollection(new KeyValuePair<string, string>[]
+                {
+                    new KeyValuePair<string, string>("backgroundServiceStopBehavior", stopBehavior.ToString())
+                });
+            }).ConfigureServices(configurer =>
+            {
+                for (int i = 0; i < hostedServiceCount; i++)
+                {
+                    var index = i;
+                    configurer.Add(ServiceDescriptor.Singleton<IHostedService>(hostedServices[index].Object));
+                }
+            }).Build();
+
+            await host.StartAsync();
+
+            await host.StopAsync(CancellationToken.None);
+
+            foreach (var service in hostedServices)
+            {
+                service.Verify();
+            }
         }
 
         [Fact]
