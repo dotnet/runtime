@@ -15,8 +15,8 @@
 // actually points to a tuple <method pointer, instantiation argument> where
 // instantiationArgument is a hidden first argument required by method pointer.
 //
-// Fat pointers are used in CoreRT as a replacement for instantiating stubs,
-// because CoreRT can't generate stubs in runtime.
+// Fat pointers are used in NativeAOT as a replacement for instantiating stubs,
+// because NativeAOT can't generate stubs in runtime.
 //
 // The JIT is responsible for emitting code to check the bit at runtime, branching
 // to one of two call sites.

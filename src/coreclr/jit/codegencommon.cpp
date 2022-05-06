@@ -2239,7 +2239,7 @@ void CodeGen::genReportEH()
 
     unsigned XTnum;
 
-    bool isCoreRTABI = compiler->IsTargetAbi(CORINFO_CORERT_ABI);
+    bool isNativeAOT = compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 
     unsigned EHCount = compiler->compHndBBtabCount;
 
@@ -2249,8 +2249,8 @@ void CodeGen::genReportEH()
     unsigned duplicateClauseCount = 0;
     unsigned enclosingTryIndex;
 
-    // Duplicate clauses are not used by CoreRT ABI
-    if (!isCoreRTABI)
+    // Duplicate clauses are not used by NativeAOT ABI
+    if (!isNativeAOT)
     {
         for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
         {
@@ -2268,8 +2268,8 @@ void CodeGen::genReportEH()
 #if FEATURE_EH_CALLFINALLY_THUNKS
     unsigned clonedFinallyCount = 0;
 
-    // Duplicate clauses are not used by CoreRT ABI
-    if (!isCoreRTABI)
+    // Duplicate clauses are not used by NativeAOT ABI
+    if (!isNativeAOT)
     {
         // We don't keep track of how many cloned finally there are. So, go through and count.
         // We do a quick pass first through the EH table to see if there are any try/finally
@@ -2349,9 +2349,9 @@ void CodeGen::genReportEH()
 
         CORINFO_EH_CLAUSE_FLAGS flags = ToCORINFO_EH_CLAUSE_FLAGS(HBtab->ebdHandlerType);
 
-        if (isCoreRTABI && (XTnum > 0))
+        if (isNativeAOT && (XTnum > 0))
         {
-            // For CoreRT, CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
+            // For NativeAOT, CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
             // try block as the previous one. The runtime cannot reliably infer this information from
             // native code offsets because of different try blocks can have same offsets. Alternative
             // solution to this problem would be inserting extra nops to ensure that different try

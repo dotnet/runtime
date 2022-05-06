@@ -3715,7 +3715,7 @@ namespace System.Diagnostics.Tracing
 #endif
         private static int GetHelperCallFirstArg(MethodInfo method)
         {
-#if !CORERT
+#if !NATIVEAOT
             // Currently searches for the following pattern
             //
             // ...     // CAN ONLY BE THE INSTRUCTIONS BELOW
