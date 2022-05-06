@@ -5687,7 +5687,7 @@ retry_code_gen:
 					td->last_ins->flags |= INTERP_INST_FLAG_PROTECTED_NEWOBJ;
 				// Parameters and this pointer are popped of the stack. The return value remains
 				td->sp -= csignature->param_count + 1;
-				// Save the arguments for the call
+				 // Save the arguments for the call
 				int *call_args = (int*) mono_mempool_alloc (td->mempool, (csignature->param_count + 2) * sizeof (int));
 				for (int i = 0; i < csignature->param_count + 1; i++)
 					call_args [i] = td->sp [i].local;
@@ -6797,7 +6797,7 @@ retry_code_gen:
 		}
 		case MONO_CUSTOM_PREFIX:
 			++td->ip;
-				switch (*td->ip) {
+		        switch (*td->ip) {
 				case CEE_MONO_RETHROW:
 					CHECK_STACK (td, 1);
 					interp_add_ins (td, MINT_MONO_RETHROW);
@@ -7161,11 +7161,11 @@ retry_code_gen:
 					 *    newobj Delegate::.ctor
 					 */
 					if (next_ip < end &&
-						*next_ip == CEE_NEWOBJ &&
-						((ctor_method = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error))) &&
-						is_ok (error) &&
-						m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class &&
-						!strcmp (ctor_method->name, ".ctor")) {
+					    *next_ip == CEE_NEWOBJ &&
+					    ((ctor_method = interp_get_method (method, read32 (next_ip + 1), image, generic_context, error))) &&
+					    is_ok (error) &&
+					    m_class_get_parent (ctor_method->klass) == mono_defaults.multicastdelegate_class &&
+					    !strcmp (ctor_method->name, ".ctor")) {
 						mono_error_set_not_supported (error, "Cannot create delegate from method with UnmanagedCallersOnlyAttribute");
 						goto exit;
 					}
