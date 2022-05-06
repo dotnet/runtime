@@ -15978,8 +15978,8 @@ GenTree* Compiler::fgInitThisClass()
     else
     {
 #ifdef FEATURE_READYTORUN
-        // Only CoreRT understands CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE. Don't do this on CoreCLR.
-        if (opts.IsReadyToRun() && IsTargetAbi(CORINFO_CORERT_ABI))
+        // Only NativeAOT understands CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE. Don't do this on CoreCLR.
+        if (opts.IsReadyToRun() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             CORINFO_RESOLVED_TOKEN resolvedToken;
             memset(&resolvedToken, 0, sizeof(resolvedToken));

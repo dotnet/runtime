@@ -912,7 +912,7 @@ namespace Internal.TypeSystem
             if ((targetArch != TargetArchitecture.ARM) && (targetArch != TargetArchitecture.ARM64))
                 return NotHA;
 
-            if (type.Context.Target.Abi == TargetAbi.CoreRTArmel)
+            if (type.Context.Target.Abi == TargetAbi.NativeAotArmel)
                 return NotHA;
 
             MetadataType metadataType = (MetadataType)type;

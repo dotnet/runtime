@@ -3181,7 +3181,7 @@ GenTree* Compiler::impImplicitR4orR8Cast(GenTree* tree, var_types dstTyp)
 //      call InitializeArray
 //    The lower bounds need not be constant except when the array rank is 1.
 //    The function recognizes all kinds of arrays thus enabling a small runtime
-//    such as CoreRT to skip providing an implementation for InitializeArray.
+//    such as NativeAOT to skip providing an implementation for InitializeArray.
 
 GenTree* Compiler::impInitializeArrayIntrinsic(CORINFO_SIG_INFO* sig)
 {
@@ -3789,7 +3789,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
         // CreateSpan must be expanded for NativeAOT
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan:
         case NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray:
-            mustExpand |= IsTargetAbi(CORINFO_CORERT_ABI);
+            mustExpand |= IsTargetAbi(CORINFO_NATIVEAOT_ABI);
             break;
 
         case NI_Internal_Runtime_MethodTable_Of:
@@ -3966,7 +3966,7 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Activator_DefaultConstructorOf:
             case NI_System_EETypePtr_EETypePtrOf:
             {
-                assert(IsTargetAbi(CORINFO_CORERT_ABI)); // Only CoreRT supports it.
+                assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI)); // Only NativeAOT supports it.
                 CORINFO_RESOLVED_TOKEN resolvedToken;
                 resolvedToken.tokenContext = impTokenLookupContextHandle;
                 resolvedToken.tokenScope   = info.compScopeHnd;
@@ -6820,8 +6820,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
         NO_WAY("Virtual call to a function added via EnC is not supported");
     }
 
-    // CoreRT generic virtual method
-    if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
+    // NativeAOT generic virtual method
+    if ((pCallInfo->sig.sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         GenTree* runtimeMethodHandle =
             impLookupToTree(pResolvedToken, &pCallInfo->codePointerLookup, GTF_ICON_METHOD_HDL, pCallInfo->hMethod);
@@ -6840,8 +6840,8 @@ GenTree* Compiler::impImportLdvirtftn(GenTree*                thisPtr,
             return call;
         }
 
-        // We need a runtime lookup. CoreRT has a ReadyToRun helper for that too.
-        if (IsTargetAbi(CORINFO_CORERT_ABI))
+        // We need a runtime lookup. NativeAOT has a ReadyToRun helper for that too.
+        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             GenTree* ctxTree = getRuntimeContextTree(pCallInfo->codePointerLookup.lookupKind.runtimeLookupKind);
 
@@ -7639,8 +7639,8 @@ bool Compiler::impCanPInvokeInlineCallSite(BasicBlock* block)
         return false;
     }
 
-    // The remaining limitations do not apply to CoreRT
-    if (IsTargetAbi(CORINFO_CORERT_ABI))
+    // The remaining limitations do not apply to NativeAOT
+    if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
         return true;
     }
@@ -7754,9 +7754,9 @@ void Compiler::impCheckForPInvokeCall(
     }
     optNativeCallCount++;
 
-    if (methHnd == nullptr && (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) || IsTargetAbi(CORINFO_CORERT_ABI)))
+    if (methHnd == nullptr && (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) || IsTargetAbi(CORINFO_NATIVEAOT_ABI)))
     {
-        // PInvoke in CoreRT ABI must be always inlined. Non-inlineable CALLI cases have been
+        // PInvoke in NativeAOT ABI must be always inlined. Non-inlineable CALLI cases have been
         // converted to regular method calls earlier using convertPInvokeCalliToCall.
 
         // PInvoke CALLI in IL stubs must be inlined
@@ -7770,8 +7770,8 @@ void Compiler::impCheckForPInvokeCall(
         }
 
         // Legal PInvoke CALL in PInvoke IL stubs must be inlined to avoid infinite recursive
-        // inlining in CoreRT. Skip the ambient conditions checks and profitability checks.
-        if (!IsTargetAbi(CORINFO_CORERT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
+        // inlining in NativeAOT. Skip the ambient conditions checks and profitability checks.
+        if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI) || (info.compFlags & CORINFO_FLG_PINVOKE) == 0)
         {
             if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_IL_STUB) && opts.ShouldUsePInvokeHelpers())
             {
@@ -8704,7 +8704,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
     if (opcode == CEE_CALLI)
     {
-        if (IsTargetAbi(CORINFO_CORERT_ABI))
+        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             // See comment in impCheckForPInvokeCall
             BasicBlock* block = compIsForInlining() ? impInlineInfo->iciBlock : compCurBB;
@@ -9012,9 +9012,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 call->AsCall()->gtCallAddr = fptr;
                 call->gtFlags |= GTF_EXCEPT | (fptr->gtFlags & GTF_GLOB_EFFECT);
 
-                if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_CORERT_ABI))
+                if ((sig->sigInst.methInstCount != 0) && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
                 {
-                    // CoreRT generic virtual method: need to handle potential fat function pointers
+                    // NativeAOT generic virtual method: need to handle potential fat function pointers
                     addFatPointerCandidate(call->AsCall());
                 }
 #ifdef FEATURE_READYTORUN
@@ -9991,7 +9991,7 @@ DONE_CALL:
                     // Such form allows to find statements with fat calls without walking through whole trees
                     // and removes problems with cutting trees.
                     assert(!bIntrinsicImported);
-                    assert(IsTargetAbi(CORINFO_CORERT_ABI));
+                    assert(IsTargetAbi(CORINFO_NATIVEAOT_ABI));
                     if (call->OperGet() != GT_LCL_VAR) // can be already converted by impFixupCallStructReturn.
                     {
                         unsigned   calliSlot  = lvaGrabTemp(true DEBUGARG("calli"));
