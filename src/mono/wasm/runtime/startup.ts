@@ -56,7 +56,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
         const chan = LibraryChannel.create(1024);
         // // eslint-disable-next-line no-debugger
         // debugger;
-        const worker = new Worker("dotnet-crypto-worker.js");
+        const worker = new Worker("dotnet-crypto-worker.ts");
         (globalThis as any).mono_wasm_crypto = {
             channel: chan,
             worker: worker,

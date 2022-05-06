@@ -180,7 +180,7 @@
       <LibrariesRuntimeFiles Condition="'$(TargetOS)' == 'Browser'"
                              Include="
         $(LibrariesNativeArtifactsPath)dotnet.js;
-        $(LibrariesNativeArtifactsPath)src\dotnet-crypto-worker.js;
+        $(LibrariesNativeArtifactsPath)src\dotnet-crypto-worker.ts;
         $(LibrariesNativeArtifactsPath)dotnet.d.ts;
         $(LibrariesNativeArtifactsPath)package.json;
         $(LibrariesNativeArtifactsPath)dotnet.wasm;
