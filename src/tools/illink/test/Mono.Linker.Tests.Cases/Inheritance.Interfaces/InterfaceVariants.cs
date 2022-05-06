@@ -45,7 +45,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 			internal class InterfaceMethodUsedThroughInterface : IStaticInterfaceUsed
 			{
 				[Kept]
-				[KeptOverride (typeof (IStaticInterfaceUsed))]
 				public static void StaticMethodUsedThroughInterface ()
 				{
 				}
@@ -57,7 +56,6 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 			internal class InterfaceMethodUnused : IStaticInterfaceUsed
 			{
 				[Kept]
-				[KeptOverride (typeof (IStaticInterfaceUsed))]
 				public static void StaticMethodUsedThroughInterface ()
 				{
 				}
@@ -73,33 +71,41 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces
 			// The interface methods themselves are not used, but the implementation of these methods is
 			internal interface IStaticInterfaceMethodUnused
 			{
+				// Can be removed with Static Interface trimming optimization
+				[Kept]
 				static abstract void InterfaceUsedMethodNot ();
 			}
 
-			// The interface methods themselves are not used, but the implementation of these methods is
+			// Can be removed with Static Interface Trimming
+			[Kept]
 			internal interface IStaticInterfaceUnused
 			{
+				// Can be removed with Static Interface Trimming
+				[Kept]
 				static abstract void InterfaceAndMethodNoUsed ();
 			}
 
 			[Kept]
+			[KeptInterface (typeof (IStaticInterfaceUnused))]
+			[KeptInterface (typeof (IStaticInterfaceMethodUnused))]
 			internal class InterfaceMethodUsedThroughImplementation : IStaticInterfaceMethodUnused, IStaticInterfaceUnused
 			{
 				[Kept]
-				[RemovedOverride (typeof (IStaticInterfaceMethodUnused))]
 				public static void InterfaceUsedMethodNot () { }
 
 				[Kept]
-				[RemovedOverride (typeof (IStaticInterfaceUnused))]
 				public static void InterfaceAndMethodNoUsed () { }
 			}
 
 			[Kept]
 			[KeptInterface (typeof (IStaticInterfaceMethodUnused))]
+			[KeptInterface (typeof (IStaticInterfaceUnused))]
 			internal class InterfaceMethodUnused : IStaticInterfaceMethodUnused, IStaticInterfaceUnused
 			{
+				[Kept]
 				public static void InterfaceUsedMethodNot () { }
 
+				[Kept]
 				public static void InterfaceAndMethodNoUsed () { }
 			}
 
