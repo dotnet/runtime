@@ -1,14 +1,23 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Quic;
+using System.Runtime.InteropServices;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal sealed class SafeMsQuicListenerHandle : MsQuicSafeHandle
+    internal sealed class SafeMsQuicListenerHandle : SafeHandle
     {
-        public unsafe SafeMsQuicListenerHandle(QUIC_HANDLE* handle)
-            : base(handle, ptr => MsQuicApi.Api.ApiTable->ListenerClose((QUIC_HANDLE*)ptr), SafeHandleType.Listener)
+        public override bool IsInvalid => handle == IntPtr.Zero;
+
+        public SafeMsQuicListenerHandle()
+            : base(IntPtr.Zero, ownsHandle: true)
         { }
+
+        protected override bool ReleaseHandle()
+        {
+            MsQuicApi.Api.ListenerCloseDelegate(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
     }
 }

@@ -3513,8 +3513,8 @@ public:
     // Returns underlying type of handles returned by ldtoken instruction
     var_types GetRuntimeHandleUnderlyingType()
     {
-        // RuntimeTypeHandle is backed by raw pointer on CoreRT and by object reference on other runtimes
-        return IsTargetAbi(CORINFO_CORERT_ABI) ? TYP_I_IMPL : TYP_REF;
+        // RuntimeTypeHandle is backed by raw pointer on NativeAOT and by object reference on other runtimes
+        return IsTargetAbi(CORINFO_NATIVEAOT_ABI) ? TYP_I_IMPL : TYP_REF;
     }
 
     void impDevirtualizeCall(GenTreeCall*            call,
@@ -3550,8 +3550,9 @@ protected:
     void impResolveToken(const BYTE* addr, CORINFO_RESOLVED_TOKEN* pResolvedToken, CorInfoTokenKind kind);
 
     void impPushOnStack(GenTree* tree, typeInfo ti);
-    void        impPushNullObjRefOnStack();
-    StackEntry  impPopStack();
+    void       impPushNullObjRefOnStack();
+    StackEntry impPopStack();
+    void impPopStack(unsigned n);
     StackEntry& impStackTop(unsigned n = 0);
     unsigned impStackHeight();
 
@@ -3908,11 +3909,11 @@ private:
                 ((opcode >= CEE_STLOC_0) && (opcode <= CEE_STLOC_3)));
     }
 
-    void impPopCallArgs(unsigned count, CORINFO_SIG_INFO* sig, GenTreeCall* call);
+    void impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call);
 
     bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType) const;
 
-    void impPopReverseCallArgs(unsigned count, CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount = 0);
+    void impPopReverseCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount);
 
     //---------------- Spilling the importer stack ----------------------------
 
@@ -4699,40 +4700,25 @@ public:
     // tree node).
     void fgValueNumber();
 
-    // Computes new GcHeap VN via the assignment H[elemTypeEq][arrVN][inx][fldSeq] = rhsVN.
-    // Assumes that "elemTypeEq" is the (equivalence class rep) of the array element type.
-    // The 'indType' is the indirection type of the lhs of the assignment and will typically
-    // match the element type of the array or fldSeq.  When this type doesn't match
-    // or if the fldSeq is 'NotAField' we invalidate the array contents H[elemTypeEq][arrVN]
-    //
-    ValueNum fgValueNumberArrIndexAssign(CORINFO_CLASS_HANDLE elemTypeEq,
-                                         ValueNum             arrVN,
-                                         ValueNum             inxVN,
-                                         FieldSeqNode*        fldSeq,
-                                         ValueNum             rhsVN,
-                                         var_types            indType);
+    void fgValueNumberLocalStore(GenTree*             storeNode,
+                                 GenTreeLclVarCommon* lclDefNode,
+                                 ssize_t              offset,
+                                 unsigned             storeSize,
+                                 ValueNumPair         value,
+                                 bool                 normalize = true);
 
-    // Requires that "tree" is a GT_IND marked as an array index, and that its address argument
-    // has been parsed to yield the other input arguments.  If evaluation of the address
-    // can raise exceptions, those should be captured in the exception set "addrXvnp".
-    // Assumes that "elemTypeEq" is the (equivalence class rep) of the array element type.
-    // Marks "tree" with the VN for H[elemTypeEq][arrVN][inx][fldSeq] (for the liberal VN; a new unique
-    // VN for the conservative VN.)  Also marks the tree's argument as the address of an array element.
-    // The type tree->TypeGet() will typically match the element type of the array or fldSeq.
-    // When this type doesn't match or if the fldSeq is 'NotAField' we return a new unique VN
-    //
-    ValueNum fgValueNumberArrIndexVal(GenTree*             tree,
-                                      CORINFO_CLASS_HANDLE elemTypeEq,
-                                      ValueNum             arrVN,
-                                      ValueNum             inxVN,
-                                      ValueNumPair         addrXvnp,
-                                      FieldSeqNode*        fldSeq);
+    void fgValueNumberArrayElemLoad(GenTree* loadTree, VNFuncApp* addrFunc);
 
-    // Requires "funcApp" to be a VNF_PtrToArrElem, and "addrXvnp" to represent the exception set thrown
-    // by evaluating the array index expression "tree".  Returns the value number resulting from
-    // dereferencing the array in the current GcHeap state.  If "tree" is non-null, it must be the
-    // "GT_IND" that does the dereference, and it is given the returned value number.
-    ValueNum fgValueNumberArrIndexVal(GenTree* tree, VNFuncApp* funcApp, ValueNumPair addrXvnp);
+    void fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFunc, unsigned storeSize, ValueNum value);
+
+    void fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset);
+
+    void fgValueNumberFieldStore(GenTree*      storeNode,
+                                 GenTree*      baseAddr,
+                                 FieldSeqNode* fieldSeq,
+                                 ssize_t       offset,
+                                 unsigned      storeSize,
+                                 ValueNum      value);
 
     // Compute the value number for a byref-exposed load of the given type via the given pointerVN.
     ValueNum fgValueNumberByrefExposedLoad(var_types type, ValueNum pointerVN);
@@ -6750,7 +6736,7 @@ public:
 #define OMF_HAS_EXPRUNTIMELOOKUP 0x00000080 // Method contains a runtime lookup to an expandable dictionary.
 #define OMF_HAS_PATCHPOINT 0x00000100       // Method contains patchpoints
 #define OMF_NEEDS_GCPOLLS 0x00000200        // Method needs GC polls
-#define OMF_HAS_FROZEN_STRING 0x00000400    // Method has a frozen string (REF constant int), currently only on CoreRT.
+#define OMF_HAS_FROZEN_STRING 0x00000400 // Method has a frozen string (REF constant int), currently only on NativeAOT.
 #define OMF_HAS_PARTIAL_COMPILATION_PATCHPOINT 0x00000800 // Method contains partial compilation patchpoints
 #define OMF_HAS_TAILCALL_SUCCESSOR 0x00001000             // Method has potential tail call in a non BBJ_RETURN block
 
@@ -7504,13 +7490,13 @@ public:
     class VirtualStubParamInfo
     {
     public:
-        VirtualStubParamInfo(bool isCoreRTABI)
+        VirtualStubParamInfo(bool isNativeAOT)
         {
 #if defined(TARGET_X86)
             reg     = REG_EAX;
             regMask = RBM_EAX;
 #elif defined(TARGET_AMD64)
-            if (isCoreRTABI)
+            if (isNativeAOT)
             {
                 reg     = REG_R10;
                 regMask = RBM_R10;
@@ -7521,7 +7507,7 @@ public:
                 regMask = RBM_R11;
             }
 #elif defined(TARGET_ARM)
-            if (isCoreRTABI)
+            if (isNativeAOT)
             {
                 reg     = REG_R12;
                 regMask = RBM_R12;
@@ -7567,7 +7553,7 @@ public:
     bool generateCFIUnwindCodes()
     {
 #if defined(FEATURE_CFI_SUPPORT)
-        return TargetOS::IsUnix && IsTargetAbi(CORINFO_CORERT_ABI);
+        return TargetOS::IsUnix && IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 #else
         return false;
 #endif
@@ -10448,7 +10434,7 @@ public:
     //
     // One exception above is that "op1" is a node of type "TYP_REF" where "op1" is a GT_LCL_VAR.
     // This happens when System.Object vtable pointer is a regular field at offset 0 in System.Private.CoreLib in
-    // CoreRT. Such case is handled same as the default case.
+    // NativeAOT. Such case is handled same as the default case.
     void fgAddFieldSeqForZeroOffset(GenTree* op1, FieldSeqNode* fieldSeq);
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];

@@ -20728,7 +20728,7 @@ void gc_heap::gc1()
 #endif //BACKGROUND_GC
     {
 #ifndef FEATURE_REDHAWK
-        // GCToEEInterface::IsGCThread() always returns false on CoreRT, but this assert is useful in CoreCLR.
+        // GCToEEInterface::IsGCThread() always returns false on NativeAOT, but this assert is useful in CoreCLR.
         assert(GCToEEInterface::IsGCThread());
 #endif // FEATURE_REDHAWK
         adjust_ephemeral_limits();

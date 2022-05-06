@@ -243,9 +243,10 @@ private:
 
     uintptr_t     m_fieldHandleAndKind;
     FieldSeqNode* m_next;
+    size_t        m_offset;
 
 public:
-    FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, FieldKind fieldKind);
+    FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, size_t offset, FieldKind fieldKind);
 
     FieldKind GetKind() const
     {
@@ -266,6 +267,18 @@ public:
     FieldSeqNode* GetNext() const
     {
         return m_next;
+    }
+
+    //------------------------------------------------------------------------
+    // GetOffset: Retrieve "the offset" for the field this node represents.
+    //
+    // For statics with a known (constant) address it will be the value of that address.
+    // For boxed statics, it will be TARGET_POINTER_SIZE (the method table pointer size).
+    // For other fields, it will be equal to the value "getFieldOffset" would return.
+    //
+    size_t GetOffset() const
+    {
+        return m_offset;
     }
 
     bool IsStaticField() const
@@ -290,7 +303,8 @@ public:
 
     // Make sure this provides methods that allow it to be used as a KeyFuncs type in JitHashTable.
     // Note that there is a one-to-one relationship between the field handle and the field kind, so
-    // we do not need to mask away the latter for comparison purposes.
+    // we do not need to mask away the latter for comparison purposes. Likewise, we do not need to
+    // include the offset.
     static int GetHashCode(FieldSeqNode fsn)
     {
         return static_cast<int>(fsn.m_fieldHandleAndKind) ^ static_cast<int>(reinterpret_cast<intptr_t>(fsn.m_next));
@@ -317,6 +331,7 @@ public:
 
     // Returns the (canonical in the store) singleton field sequence for the given handle.
     FieldSeqNode* CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
+                                  size_t                  offset,
                                   FieldSeqNode::FieldKind fieldKind = FieldSeqNode::FieldKind::Instance);
 
     // This is a special distinguished FieldSeqNode indicating that a constant does *not*
@@ -1904,7 +1919,10 @@ public:
     // tree for the local that is defined, and, if "pIsEntire" is non-null, sets "*pIsEntire" to
     // true or false, depending on whether the assignment writes to the entirety of the local
     // variable, or just a portion of it.
-    bool DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire = nullptr);
+    bool DefinesLocal(Compiler*             comp,
+                      GenTreeLclVarCommon** pLclVarTree,
+                      bool*                 pIsEntire = nullptr,
+                      ssize_t*              pOffset   = nullptr);
 
     bool IsLocalAddrExpr(Compiler*             comp,
                          GenTreeLclVarCommon** pLclVarTree,
@@ -1934,7 +1952,7 @@ public:
     // Determine whether this tree is a basic block profile count update.
     bool IsBlockProfileUpdate();
 
-    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
+    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq, ssize_t* pOffset);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
 
@@ -1943,7 +1961,8 @@ public:
     // operation.  Returns "true" if "this" is an address of (or within)
     // a local variable; sets "*pLclVarTree" to that local variable instance; and, if "pIsEntire" is non-null,
     // sets "*pIsEntire" to true if this assignment writes the full width of the local.
-    bool DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire);
+    bool DefinesLocalAddr(
+        Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset = nullptr);
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
@@ -3524,6 +3543,8 @@ public:
         m_fieldSeq = fieldSeq;
     }
 
+    unsigned GetSize() const;
+
 #ifdef TARGET_ARM
     bool IsOffsetMisaligned() const;
 #endif // TARGET_ARM
@@ -3724,10 +3745,10 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_R2R_REL_INDIRECT        = 0x00002000, // ready to run call is indirected through a relative address
     GTF_CALL_M_DOES_NOT_RETURN         = 0x00004000, // call does not return
     GTF_CALL_M_WRAPPER_DELEGATE_INV    = 0x00008000, // call is in wrapper delegate
-    GTF_CALL_M_FAT_POINTER_CHECK       = 0x00010000, // CoreRT managed calli needs transformation, that checks
+    GTF_CALL_M_FAT_POINTER_CHECK       = 0x00010000, // NativeAOT managed calli needs transformation, that checks
                                                      // special bit in calli address. If it is set, then it is necessary
                                                      // to restore real function address and load hidden argument
-                                                     // as the first argument for calli. It is CoreRT replacement for instantiating
+                                                     // as the first argument for calli. It is NativeAOT replacement for instantiating
                                                      // stubs, because executable code cannot be generated at runtime.
     GTF_CALL_M_HELPER_SPECIAL_DCE      = 0x00020000, // this helper call can be removed if it is part of a comma and
                                                      // the comma result is unused.
@@ -4339,6 +4360,10 @@ public:
     CallArg* PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
     CallArg* PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
     CallArg* InsertAfter(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    CallArg* InsertAfterUnchecked(Compiler*    comp,
+                                  CallArg*     after,
+                                  GenTree*     node,
+                                  WellKnownArg wellKnownArg = WellKnownArg::None);
     CallArg* InsertInstParam(Compiler* comp, GenTree* node);
     CallArg* InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
     void PushLateBack(CallArg* arg);
@@ -6525,6 +6550,8 @@ struct GenTreeIndir : public GenTreeOp
     GenTree* Index();
     unsigned Scale();
     ssize_t  Offset();
+
+    unsigned Size() const;
 
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data) : GenTreeOp(oper, type, addr, data)
     {
