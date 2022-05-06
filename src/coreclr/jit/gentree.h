@@ -4397,9 +4397,7 @@ public:
     CallArg* PushFront(Compiler* comp, const NewCallArg& arg);
     CallArg* PushBack(Compiler* comp, const NewCallArg& arg);
     CallArg* InsertAfter(Compiler* comp, CallArg* after, const NewCallArg& arg);
-    CallArg* InsertAfterUnchecked(Compiler*    comp,
-                                  CallArg*     after,
-                                  const NewCallArg& arg);
+    CallArg* InsertAfterUnchecked(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertInstParam(Compiler* comp, GenTree* node);
     CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void PushLateBack(CallArg* arg);

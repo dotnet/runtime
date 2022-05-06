@@ -1694,16 +1694,14 @@ CallArg* CallArgs::InsertAfter(Compiler* comp, CallArg* after, const NewCallArg&
 // Parameters:
 //   comp         - The compiler.
 //   after        - The existing argument to insert the new argument after.
-//   node         - The IR node for the argument.
-//   wellKnownArg - The kind of argument, if special.
+//   arg          - The builder for the new arg.
 //
 // Returns:
 //   The created representative for the argument.
 //
-CallArg* CallArgs::InsertAfterUnchecked(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg)
+CallArg* CallArgs::InsertAfterUnchecked(Compiler* comp, CallArg* after, const NewCallArg& arg)
 {
-    CallArg* newArg = new (comp, CMK_CallArgs) CallArg(wellKnownArg);
-    newArg->SetEarlyNode(node);
+    CallArg* newArg = new (comp, CMK_CallArgs) CallArg(arg);
     newArg->SetNext(after->GetNext());
     after->SetNext(newArg);
     AddedWellKnownArg(arg.WellKnownArg);
