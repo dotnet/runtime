@@ -181,7 +181,7 @@ namespace System
         {
             if (IsLinux)
             {
-                if !(String.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDROID_STORAGE")))
+                if (!String.IsNullOrEmpty(Environment.GetEnvironmentVariable("ANDROID_STORAGE")))
                 {
                     return true;
                 }
