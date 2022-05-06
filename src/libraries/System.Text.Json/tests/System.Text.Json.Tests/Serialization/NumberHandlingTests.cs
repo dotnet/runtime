@@ -93,11 +93,14 @@ namespace System.Text.Json.Serialization.Tests
             switch (Type.GetTypeCode(typeof(T)))
             {
                 case TypeCode.Double:
-                    return Convert.ToDouble(number).ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
+                double doubleNumber = (double)(object)number;
+                    return doubleNumber.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
                 case TypeCode.Single:
-                    return Convert.ToSingle(number).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
+                float floatNumber = (float)(object)number;
+                    return floatNumber.ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
                 case TypeCode.Decimal:
-                    return Convert.ToDecimal(number).ToString(CultureInfo.InvariantCulture);
+                decimal decimalNumber = (decimal)(object)number;
+                    return decimalNumber.ToString(CultureInfo.InvariantCulture);
                 default:
                     return number.ToString();
             }
