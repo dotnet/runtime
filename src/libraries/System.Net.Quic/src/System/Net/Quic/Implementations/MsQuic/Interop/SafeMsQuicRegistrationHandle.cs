@@ -1,14 +1,23 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Quic;
+using System.Runtime.InteropServices;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal sealed class SafeMsQuicRegistrationHandle : MsQuicSafeHandle
+    internal sealed class SafeMsQuicRegistrationHandle : SafeHandle
     {
-        public unsafe SafeMsQuicRegistrationHandle(QUIC_HANDLE* handle)
-            : base(handle, ptr => MsQuicApi.Api.ApiTable->RegistrationClose((QUIC_HANDLE*)ptr), SafeHandleType.Registration)
+        public override bool IsInvalid => handle == IntPtr.Zero;
+
+        public SafeMsQuicRegistrationHandle()
+            : base(IntPtr.Zero, ownsHandle: true)
         { }
+
+        protected override bool ReleaseHandle()
+        {
+            MsQuicApi.Api.RegistrationCloseDelegate(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
     }
 }
