@@ -6,6 +6,8 @@ The `unusedinterfaces` optimization controls whether or not trimmin may remove t
 
 ## Static abstract interface methods
 
+Note this behavior was removed in https://github.com/dotnet/linker/pull/2784 and will be reimplemented later.
+
 The linker's behavior for methods declared on interfaces as `static abstract` like below are defined in the following cases using the example interface and class below:
 
 ```C#
