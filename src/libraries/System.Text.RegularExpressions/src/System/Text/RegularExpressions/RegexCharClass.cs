@@ -48,12 +48,30 @@ namespace System.Text.RegularExpressions
         private const string WordCategories = "\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
         private const string NotWordCategories = "\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
 
-        internal const string SpaceClass = "\u0000\u0000\u0001\u0064";
-        internal const string NotSpaceClass = "\u0000\u0000\u0001\uFF9C";
-        internal const string WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000";
-        internal const string NotWordClass = "\u0000\u0000\u000A\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000";
-        internal const string DigitClass = "\u0000\u0000\u0001\u0009";
-        internal const string NotDigitClass = "\u0000\u0000\u0001\uFFF7";
+        internal const string SpaceClass = "\u0000\u0000\u0001\u0064"; // \s
+        internal const string NotSpaceClass = "\u0000\u0000\u0001\uFF9C"; // \S
+        internal const string WordClass = "\u0000\u0000\u000A\u0000\u0002\u0004\u0005\u0003\u0001\u0006\u0009\u0013\u0000"; // \w
+        internal const string NotWordClass = "\u0000\u0000\u000A\u0000\uFFFE\uFFFC\uFFFB\uFFFD\uFFFF\uFFFA\uFFF7\uFFED\u0000"; // \W
+        internal const string DigitClass = "\u0000\u0000\u0001\u0009"; // \d
+        internal const string NotDigitClass = "\u0000\u0000\u0001\uFFF7"; // \D
+        internal const string ControlClass = "\0\0\a\0\u000f\u0010\u001e\u0012\u0011\0"; // \p{C}
+        internal const string NotControlClass = "\0\0\u0007\0\ufff1\ufff0\uffe2\uffee\uffef\0"; // \P{C}
+        internal const string LetterClass = "\0\0\a\0\u0002\u0004\u0005\u0003\u0001\0"; // \p{L}
+        internal const string NotLetterClass = "\0\0\u0007\0\ufffe\ufffc\ufffb\ufffd\uffff\0"; // \P{L}
+        internal const string LetterOrDigitClass = "\0\0\b\0\u0002\u0004\u0005\u0003\u0001\0\t"; // [\p{L}\d]
+        internal const string NotLetterOrDigitClass = "\u0001\0\b\0\u0002\u0004\u0005\u0003\u0001\0\t"; // [^\p{L}\d]
+        internal const string LowerClass = "\0\0\u0001\u0002"; // \p{Ll}
+        internal const string NotLowerClass = "\0\0\u0001\ufffe"; // \P{Ll}
+        internal const string UpperClass = "\0\0\u0001\u0001"; // \p{Lu}
+        internal const string NotUpperClass = "\0\0\u0001\uffff"; // \P{Lu}
+        internal const string NumberClass = "\0\0\u0005\0\t\n\v\0"; // \p{N}
+        internal const string NotNumberClass = "\0\0\u0005\0\ufff7\ufff6\ufff5\0"; // \P{N}
+        internal const string PunctuationClass = "\0\0\t\0\u0013\u0014\u0016\u0019\u0015\u0018\u0017\0"; // \p{P}
+        internal const string NotPunctuationClass = "\0\0\u0009\0\uffed\uffec\uffea\uffe7\uffeb\uffe8\uffe9\0"; // \P{P}
+        internal const string SeparatorClass = "\0\0\u0005\0\r\u000e\f\0"; // \p{Z}
+        internal const string NotSeparatorClass = "\0\0\u0005\0\ufff3\ufff2\ufff4\0"; // \P{Z}
+        internal const string SymbolClass = "\0\0\u0006\0\u001b\u001c\u001a\u001d\0"; // \p{S}
+        internal const string NotSymbolClass = "\0\0\u0006\0\uffe5\uffe4\uffe6\uffe3\0"; // \P{S}
 
         private const string ECMASpaceRanges = "\u0009\u000E\u0020\u0021";
         private const string NotECMASpaceRanges = "\0\u0009\u000E\u0020\u0021";

@@ -1215,15 +1215,18 @@ AGAIN:
                 break;
             }
 
-            if (op1->AsOp()->gtOp2->IsIntCnsFitsInI32() &&
-                FitsIn<INT32>(cns + op1->AsOp()->gtOp2->AsIntCon()->gtIconVal))
+            if (op1->AsOp()->gtOp2->IsIntCnsFitsInI32())
             {
-                cns += op1->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                op1 = op1->AsOp()->gtOp1;
+                GenTreeIntCon* addConst = op1->AsOp()->gtOp2->AsIntCon();
 
-                goto AGAIN;
+                if (addConst->ImmedValCanBeFolded(compiler, GT_ADD) && FitsIn<INT32>(cns + addConst->IconValue()))
+                {
+                    cns += addConst->IconValue();
+                    op1 = op1->AsOp()->gtOp1;
+
+                    goto AGAIN;
+                }
             }
-
             break;
 
         case GT_MUL:
@@ -1295,15 +1298,18 @@ AGAIN:
                 break;
             }
 
-            if (op2->AsOp()->gtOp2->IsIntCnsFitsInI32() &&
-                FitsIn<INT32>(cns + op2->AsOp()->gtOp2->AsIntCon()->gtIconVal))
+            if (op2->AsOp()->gtOp2->IsIntCnsFitsInI32())
             {
-                cns += op2->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                op2 = op2->AsOp()->gtOp1;
+                GenTreeIntCon* addConst = op2->AsOp()->gtOp2->AsIntCon();
+
+                if (addConst->ImmedValCanBeFolded(compiler, GT_ADD) && FitsIn<INT32>(cns + addConst->IconValue()))
+                {
+                    cns += addConst->IconValue();
+                    op2 = op2->AsOp()->gtOp1;
+                }
 
                 goto AGAIN;
             }
-
             break;
 
         case GT_MUL:

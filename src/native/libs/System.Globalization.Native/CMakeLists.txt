@@ -60,6 +60,10 @@ set(NATIVEGLOBALIZATION_SOURCES
     pal_icushim.c
 )
 
+if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+    set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_locale.m)
+endif()
+
 # time zone names are filtered out of icu data for the browser and associated functionality is disabled
 if (NOT CLR_CMAKE_TARGET_BROWSER)
     set(NATIVEGLOBALIZATION_SOURCES ${NATIVEGLOBALIZATION_SOURCES} pal_timeZoneInfo.c)
@@ -76,6 +80,11 @@ endif()
 include_directories("../Common")
 
 if (GEN_SHARED_LIB)
+    if (CLR_CMAKE_TARGET_OSX OR CLR_CMAKE_TARGET_MACCATALYST OR  CLR_CMAKE_TARGET_IOS OR CLR_CMAKE_TARGET_TVOS)
+        include(CMakeFindFrameworks)
+        find_library(FOUNDATION Foundation REQUIRED)
+    endif()
+
     add_library(System.Globalization.Native
         SHARED
         ${NATIVEGLOBALIZATION_SOURCES}
@@ -84,11 +93,11 @@ if (GEN_SHARED_LIB)
 
     target_link_libraries(System.Globalization.Native
         dl
+        ${FOUNDATION}
     )
 
     install_with_stripped_symbols (System.Globalization.Native PROGRAMS .)
 endif()
-
 
 add_library(System.Globalization.Native-Static
     STATIC
