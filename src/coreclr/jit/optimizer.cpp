@@ -9586,9 +9586,6 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 
     for (BasicBlock* const auxBlock : loop.LoopBlocks())
     {
-        // auxBlock should be either part of this loop or one of the child loop.
-        assert(auxBlock->bbNatLoopNum >= loopNum);
-
         if (auxBlock->bbNatLoopNum == loopNum)
         {
             JITDUMP("Resetting loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", auxBlock->bbNum,
@@ -9615,7 +9612,6 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
     }
 
     loop.lpFlags |= LPFLG_REMOVED;
-
 
 #ifdef DEBUG
     if (optAnyChildNotRemoved(loopNum))
