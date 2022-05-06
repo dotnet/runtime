@@ -97,9 +97,14 @@
         <target state="translated">명시적 마샬링 정보가 없는 마샬링 bool은 지원되지 않습니다. 'MarshalUsingAttribute' 또는 'MarshalAsAttribute'를 지정하세요.</target>
         <note />
       </trans-unit>
-      <trans-unit id="MarshallingCharAsSpecifiedCharSetNotSupported">
-        <source>Marshalling char with 'CharSet.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
-        <target state="translated">'CharSet.{0}'을(를) 사용한 마샬링 문자는 지원되지 않습니다. 대신 char 형식을 원하는 바이트 표현으로 수동으로 변환하고 소스 생성 P/Invoke에 전달하세요.</target>
+      <trans-unit id="MarshallingCharAsSpecifiedStringMarshallingNotSupported">
+        <source>Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</source>
+        <target state="new">Marshalling char with 'StringMarshalling.{0}' is not supported. Instead, manually convert the char type to the desired byte representation and pass to the source-generated P/Invoke.</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallingCharAsStringMarshallingCustomNotSupported">
+        <source>Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</source>
+        <target state="new">Marshalling char with 'StringMarshalling.Custom' is not supported. To use a custom type marshaller, specify 'MarshalUsingAttribute'.</target>
         <note />
       </trans-unit>
       <trans-unit id="MarshallingStringOrCharAsUndefinedNotSupported">

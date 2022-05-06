@@ -150,7 +150,7 @@ namespace System.Resources
     // into smaller chunks, each of size sqrt(n), would be substantially better for
     // resource files containing thousands of resources.
     //
-#if CORERT
+#if NATIVEAOT
     public  // On CoreRT, this must be public to prevent it from getting reflection blocked.
 #else
     internal
