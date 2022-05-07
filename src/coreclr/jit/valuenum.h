@@ -1132,7 +1132,7 @@ private:
 
         bool operator==(const VNDefFuncApp& y) const
         {
-            bool result = true;
+            bool result = m_func == y.m_func;
             // Intentionally written without early-out or MSVC cannot unroll this.
             for (size_t i = 0; i < NumArgs; i++)
             {
