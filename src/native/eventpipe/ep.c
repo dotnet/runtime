@@ -792,12 +792,17 @@ get_next_config_value (const ep_char8_t *data, const ep_char8_t **start, const e
 	EP_ASSERT (end != NULL);
 
 	*start = data;
-	while (*data != '\0' && *data != ':')
+	while (*data != '\0' && *data != ',' && *data != ':')
 		data++;
 
 	*end = data;
 
-	return *data != '\0' ? ++data : NULL;
+	if (*data == '\0')
+		return NULL;
+	else if (*data == ',')
+		return data;
+	else
+		return ++data;
 }
 
 static
