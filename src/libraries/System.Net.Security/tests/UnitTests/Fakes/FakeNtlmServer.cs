@@ -63,13 +63,11 @@ namespace System.Net.Security
         // Fixed server challenge (same value as in Protocol Examples section of the specification)
         private byte[] _serverChallenge = new byte[] { 0x01, 0x23, 0x45, 0x67, 0x89, 0xab, 0xcd, 0xef };
 
-        private static ReadOnlySpan<byte> NtlmHeader => new byte[] {
-            (byte)'N', (byte)'T', (byte)'L', (byte)'M',
-            (byte)'S', (byte)'S', (byte)'P', 0 };
-        private static byte[] ClientSigningKeyMagic = Encoding.ASCII.GetBytes("session key to client-to-server signing key magic constant\0");
-        private static byte[] ServerSigningKeyMagic = Encoding.ASCII.GetBytes("session key to server-to-client signing key magic constant\0");
-        private static byte[] ClientSealingKeyMagic = Encoding.ASCII.GetBytes("session key to client-to-server sealing key magic constant\0");
-        private static byte[] ServerSealingKeyMagic = Encoding.ASCII.GetBytes("session key to server-to-client sealing key magic constant\0");
+        private static ReadOnlySpan<byte> NtlmHeader => "NTLMSSP\0"u8;
+        private static ReadOnlySpan<byte> ClientSigningKeyMagic => "session key to client-to-server signing key magic constant\0"u8;
+        private static ReadOnlySpan<byte> ServerSigningKeyMagic => "session key to server-to-client signing key magic constant\0"u8;
+        private static ReadOnlySpan<byte> ClientSealingKeyMagic => "session key to client-to-server sealing key magic constant\0"u8;
+        private static ReadOnlySpan<byte> ServerSealingKeyMagic => "session key to server-to-client sealing key magic constant\0"u8;
 
         private enum MessageType : uint
         {

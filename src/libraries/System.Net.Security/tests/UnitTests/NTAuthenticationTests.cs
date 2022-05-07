@@ -18,7 +18,7 @@ namespace System.Net.Security.Tests
 
         private static NetworkCredential s_testCredentialRight = new NetworkCredential("rightusername", "rightpassword");
         private static NetworkCredential s_testCredentialWrong = new NetworkCredential("rightusername", "wrongpassword");
-        private static byte[] s_Hello = new byte[] { (byte)'H', (byte)'e', (byte)'l', (byte)'l', (byte)'o' };
+        private static byte[] s_Hello => "Hello"u8;
 
         [Fact]
         public void NtlmProtocolExampleTest()
