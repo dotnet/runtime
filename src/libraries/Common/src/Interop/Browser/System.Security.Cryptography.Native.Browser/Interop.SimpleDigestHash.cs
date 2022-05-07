@@ -9,6 +9,7 @@ internal static partial class Interop
 {
     internal static partial class BrowserCrypto
     {
+        // These values are also defined in the pal_crypto_webworker header file, and utilized in the dotnet-crypto-worker in the wasm runtime.
         internal enum SimpleDigest
         {
             Sha1,

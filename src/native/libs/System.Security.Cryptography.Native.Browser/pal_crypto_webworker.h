@@ -5,6 +5,8 @@
 
 #include <stdint.h>
 
+// These values are also defined in the System.Security.Cryptography library's
+// browser-crypto implementation, and utilized in the dotnet-crypto-worker in the wasm runtime.
 enum simple_digest
 {
     sd_sha_1,

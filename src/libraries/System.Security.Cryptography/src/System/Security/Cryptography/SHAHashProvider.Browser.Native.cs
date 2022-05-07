@@ -12,9 +12,9 @@ namespace Internal.Cryptography
 {
     internal sealed class SHANativeHashProvider : HashProvider
     {
-        private readonly int hashSizeInBytes;
-        private readonly SimpleDigest impl;
-        private MemoryStream? buffer;
+        private readonly int _hashSizeInBytes;
+        private readonly SimpleDigest _impl;
+        private MemoryStream? _buffer;
 
         public SHANativeHashProvider(string hashAlgorithmId)
         {
@@ -23,20 +23,20 @@ namespace Internal.Cryptography
             switch (hashAlgorithmId)
             {
                 case HashAlgorithmNames.SHA1:
-                    impl = SimpleDigest.Sha1;
-                    hashSizeInBytes = 20;
+                    _impl = SimpleDigest.Sha1;
+                    _hashSizeInBytes = 20;
                     break;
                 case HashAlgorithmNames.SHA256:
-                    impl = SimpleDigest.Sha256;
-                    hashSizeInBytes = 32;
+                    _impl = SimpleDigest.Sha256;
+                    _hashSizeInBytes = 32;
                     break;
                 case HashAlgorithmNames.SHA384:
-                    impl = SimpleDigest.Sha384;
-                    hashSizeInBytes = 48;
+                    _impl = SimpleDigest.Sha384;
+                    _hashSizeInBytes = 48;
                     break;
                 case HashAlgorithmNames.SHA512:
-                    impl = SimpleDigest.Sha512;
-                    hashSizeInBytes = 64;
+                    _impl = SimpleDigest.Sha512;
+                    _hashSizeInBytes = 64;
                     break;
                 default:
                     throw new CryptographicException(SR.Format(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithmId));
@@ -45,28 +45,28 @@ namespace Internal.Cryptography
 
         public override void AppendHashData(ReadOnlySpan<byte> data)
         {
-            buffer ??= new MemoryStream(1000);
-            buffer.Write(data);
+            _buffer ??= new MemoryStream(1000);
+            _buffer.Write(data);
         }
 
         public override int FinalizeHashAndReset(Span<byte> destination)
         {
             GetCurrentHash(destination);
-            buffer = null;
+            _buffer = null;
 
-            return hashSizeInBytes;
+            return _hashSizeInBytes;
         }
 
         public override int GetCurrentHash(Span<byte> destination)
         {
-            Debug.Assert(destination.Length >= hashSizeInBytes);
+            Debug.Assert(destination.Length >= _hashSizeInBytes);
 
             byte[] srcArray = Array.Empty<byte>();
             int srcLength = 0;
-            if (buffer != null)
+            if (_buffer != null)
             {
-                srcArray = buffer.GetBuffer();
-                srcLength = (int)buffer.Length;
+                srcArray = _buffer.GetBuffer();
+                srcLength = (int)_buffer.Length;
             }
 
             unsafe
@@ -74,15 +74,15 @@ namespace Internal.Cryptography
                 fixed (byte* src = srcArray)
                 fixed (byte* dest = destination)
                 {
-                    int res = Interop.BrowserCrypto.SimpleDigestHash(impl, src, srcLength, dest, destination.Length);
+                    int res = Interop.BrowserCrypto.SimpleDigestHash(_impl, src, srcLength, dest, destination.Length);
                     Debug.Assert(res != 0);
                 }
             }
 
-            return hashSizeInBytes;
+            return _hashSizeInBytes;
         }
 
-        public override int HashSizeInBytes => hashSizeInBytes;
+        public override int HashSizeInBytes => _hashSizeInBytes;
 
         public override void Dispose(bool disposing)
         {
@@ -90,7 +90,7 @@ namespace Internal.Cryptography
 
         public override void Reset()
         {
-            buffer = null;
+            _buffer = null;
         }
     }
 }

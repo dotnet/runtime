@@ -51,11 +51,9 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     }
 
     console.debug ("MONO_WASM: Initialize WebWorkers");
-
-    if (ENVIRONMENT_IS_WEB && typeof SharedArrayBuffer !== "undefined") {
-        const chan = LibraryChannel.create(1024);
-        // // eslint-disable-next-line no-debugger
-        // debugger;
+    // Consider the can_call_digest check in the pal_crypto_webworker when updating this check.
+    if (ENVIRONMENT_IS_WEB && typeof crypto.subtle === "undefined" && typeof SharedArrayBuffer !== "undefined") {
+        const chan = LibraryChannel.create(1024); // 1024 is the buffer size in char units.
         const worker = new Worker("dotnet-crypto-worker.ts");
         (globalThis as any).mono_wasm_crypto = {
             channel: chan,
@@ -321,7 +319,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         const moduleExt = Module as DotnetModule;
 
-        if (!Module.disableDotnet6Compatibility && Module.exports){
+        if (!Module.disableDotnet6Compatibility && Module.exports) {
             // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
             // Useful to export IDBFS or other similar types generally exposed as 
             // global types when emscripten is not modularized.

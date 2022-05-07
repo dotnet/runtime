@@ -27,8 +27,7 @@ const CryptoWebWorkerLib = {
         can_call_digest: function () {
             if (typeof globalThis.mono_wasm_crypto === "undefined" ||
                 typeof globalThis.mono_wasm_crypto.channel === "undefined" ||
-                typeof globalThis.mono_wasm_crypto.worker === "undefined" ||
-                typeof SharedArrayBuffer === "undefined") {
+                typeof globalThis.mono_wasm_crypto.worker === "undefined") {
                 return 0;
             }
 
