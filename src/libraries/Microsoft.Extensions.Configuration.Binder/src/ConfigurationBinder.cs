@@ -737,12 +737,12 @@ namespace Microsoft.Extensions.Configuration
         [RequiresUnreferencedCode(PropertyTrimmingWarningMessage)]
         private static object? BindParameter(ParameterInfo parameter, IConfiguration config, BinderOptions options)
         {
-            string parameterName = property.Name!;
+            string parameterName = parameter.Name!;
 
             var propertyBindingPoint = new BindingPoint(initialValue: config.GetSection(parameterName).Value, isReadOnly: false);
 
             BindInstance(
-                property.ParameterType,
+                parameter.ParameterType,
                 propertyBindingPoint,
                 config.GetSection(parameterName),
                 options);
