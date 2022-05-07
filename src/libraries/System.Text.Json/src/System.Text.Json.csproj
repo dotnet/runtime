@@ -22,6 +22,7 @@ System.Text.Json.Nodes.JsonNode
 System.Text.Json.Nodes.JsonArray
 System.Text.Json.Nodes.JsonObject
 System.Text.Json.Nodes.JsonValue</PackageDescription>
+    <PackageReadmeFile>readme.md</PackageReadmeFile>
   </PropertyGroup>
 
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
@@ -319,6 +320,7 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
     <Compile Include="System\Text\Json\Writer\Utf8JsonWriter.WriteValues.UnsignedNumber.cs" />
     <Compile Include="System\ReflectionExtensions.cs" />
     <Compile Include="$(CommonPath)System\Obsoletions.cs" Link="Common\System\Obsoletions.cs" />
+    <None Include="readme.md" Pack="true" PackagePath="\"/>
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
