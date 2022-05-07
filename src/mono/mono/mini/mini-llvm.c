@@ -3900,8 +3900,8 @@ emit_entry_bb (EmitContext *ctx, LLVMBuilderRef builder)
 		case LLVMArgVtypeInSIMDReg: {
 			LLVMValueRef arg = LLVMGetParam (ctx->lmethod, pindex);
 
-			ctx->addresses [reg] = build_alloca (ctx, ainfo->type);
-			LLVMBuildStore (builder, arg, convert (ctx, ctx->addresses [reg], LLVMPointerType (LLVMTypeOf (arg), 0)));
+			ctx->addresses [reg] = build_alloca_address (ctx, ainfo->type);
+			LLVMBuildStore (builder, arg, convert (ctx, ctx->addresses [reg]->value, LLVMPointerType (LLVMTypeOf (arg), 0)));
 			break;
 		}
 		case LLVMArgVtypeByVal: {
@@ -4551,7 +4551,7 @@ process_call (EmitContext *ctx, MonoBasicBlock *bb, LLVMBuilderRef *builder_ref,
 			break;
 		}
 		case LLVMArgVtypeInSIMDReg: {
-			args [pindex] = LLVMBuildLoad (ctx->builder, addresses [reg], "load_param");
+			args [pindex] = LLVMBuildLoad2 (ctx->builder, addresses [reg]->type, addresses [reg]->value, "load_param");
 			break;
 		}
 		case LLVMArgVtypeByVal:
