@@ -167,13 +167,8 @@ namespace System.IO.Pipelines
         }
 
 #if NETCOREAPP
-        public override ValueTask CompleteAsync(Exception? exception = null)
-        {
-            if (CompleteAndGetNeedsDispose())
-            {
-                return InnerStream.DisposeAsync();
-            }
-        }
+        public override ValueTask CompleteAsync(Exception? exception = null) =>
+            CompleteAndGetNeedsDispose() ? InnerStream.DisposeAsync() : default;
 #endif
 
         private bool CompleteAndGetNeedsDispose()
