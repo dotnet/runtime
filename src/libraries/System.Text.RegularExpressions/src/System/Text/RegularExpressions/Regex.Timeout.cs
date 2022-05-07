@@ -44,6 +44,7 @@ namespace System.Text.RegularExpressions
         internal static readonly TimeSpan s_defaultMatchTimeout = InitDefaultMatchTimeout();
 
         /// <summary>Timeout for the execution of this <see cref="Regex"/>.</summary>
+        /// <remarks>This value should not be changed after construction. Any such changes may not be respected by the implementation.</remarks>
         protected internal TimeSpan internalMatchTimeout;
 
         /// <summary>Gets the timeout interval of the current instance.</summary>

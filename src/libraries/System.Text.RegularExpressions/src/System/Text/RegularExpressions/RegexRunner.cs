@@ -65,7 +65,7 @@ namespace System.Text.RegularExpressions
         private protected RegexRunnerMode _mode;   // the mode in which the runner is currently operating
 
         private int _timeout;                      // timeout in milliseconds
-        private bool _checkTimeout;
+        private int _checkTimeout = -1;            // -1 if not yet initialized, 0 if initialized and there's no timeout, 1 if there's an initialized timeout
         private long _timeoutOccursAt;
 
         protected RegexRunner() { }
@@ -111,73 +111,84 @@ namespace System.Text.RegularExpressions
             InternalScan(runregex!, beginning, beginning + text.Length);
         }
 
-        // TODO https://github.com/dotnet/runtime/issues/62573: Obsolete this.
+        // TODO https://github.com/dotnet/runtime/issues/62573: Obsolete this and make the method throw PlatformNotSupportedException.
         protected Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick) =>
             Scan(regex, text, textbeg, textend, textstart, prevlen, quick, regex.MatchTimeout);
 
-        // TODO https://github.com/dotnet/runtime/issues/62573: Obsolete this.
+        // TODO https://github.com/dotnet/runtime/issues/62573: Obsolete this and make the method throw PlatformNotSupportedException.
         /// <summary>
         /// This method's body is only kept since it is a protected member that could be called by someone outside
         /// the assembly.
         /// </summary>
         protected internal Match? Scan(Regex regex, string text, int textbeg, int textend, int textstart, int prevlen, bool quick, TimeSpan timeout)
         {
-            InitializeTimeout(timeout);
-
-            RegexRunnerMode mode = quick ? RegexRunnerMode.ExistenceRequired : RegexRunnerMode.FullMatchRequired;
-
-            // We set runtext before calling InitializeForScan so that runmatch object is initialized with the text
-            runtext = text;
-
-            InitializeForScan(regex, text, textstart, mode);
-
-            // InitializeForScan will default runtextstart and runtextend to 0 and length of string
-            // since it is configured to work over a sliced portion of text so we adjust those values.
-            runtextstart = textstart;
-            runtextend = textend;
-
-            // Configure the additional value to "bump" the position along each time we loop around
-            // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
-            // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
-            // by -1 and stop at textbeg.
-            int bump = 1, stoppos = textend;
-            if (regex.RightToLeft)
+            // In all other uses of the runner, the timeout is provided at construction time, whereas here,
+            // it's provided via an argument.  To handle that, we need to reset _checkTimeout to uninitialized on both
+            // entry and exit from the method, or else we might cache info for the wrong timeout, since all other uses
+            // assume that the timeout value doesn't change between invocations.
+            try
             {
-                bump = -1;
-                stoppos = textbeg;
-            }
+                _checkTimeout = -1;
+                InitializeTimeout(timeout);
 
-            // If previous match was empty or failed, advance by one before matching.
-            if (prevlen == 0)
-            {
-                if (textstart == stoppos)
+                RegexRunnerMode mode = quick ? RegexRunnerMode.ExistenceRequired : RegexRunnerMode.FullMatchRequired;
+
+                // We set runtext before calling InitializeForScan so that runmatch object is initialized with the text
+                runtext = text;
+
+                InitializeForScan(regex, text, textstart, mode);
+
+                // InitializeForScan will default runtextstart and runtextend to 0 and length of string
+                // since it is configured to work over a sliced portion of text so we adjust those values.
+                runtextstart = textstart;
+                runtextend = textend;
+
+                // Configure the additional value to "bump" the position along each time we loop around
+                // to call FindFirstChar again, as well as the stopping position for the loop.  We generally
+                // bump by 1 and stop at textend, but if we're examining right-to-left, we instead bump
+                // by -1 and stop at textbeg.
+                int bump = 1, stoppos = textend;
+                if (regex.RightToLeft)
                 {
-                    return Match.Empty;
+                    bump = -1;
+                    stoppos = textbeg;
                 }
 
-                runtextpos += bump;
-            }
-
-            Match match = InternalScan(regex, textbeg, textend);
-            runtext = null; //drop reference
-
-            if (match.FoundMatch)
-            {
-                if (quick)
+                // If previous match was empty or failed, advance by one before matching.
+                if (prevlen == 0)
                 {
-                    return null;
+                    if (textstart == stoppos)
+                    {
+                        return Match.Empty;
+                    }
+
+                    runtextpos += bump;
                 }
 
-                runmatch = null;
-                match.Tidy(runtextpos, 0, mode);
+                Match match = InternalScan(regex, textbeg, textend);
+                runtext = null; //drop reference
+
+                if (match.FoundMatch)
+                {
+                    if (quick)
+                    {
+                        return null;
+                    }
+
+                    runmatch = null;
+                    match.Tidy(runtextpos, 0, mode);
+                }
+                else
+                {
+                    runmatch!.Text = null;
+                }
+
+                return match;
             }
-            else
+            finally
             {
-                runmatch!.Text = null;
+                _checkTimeout = -1;
             }
-
-            return match;
-
         }
 
         private Match InternalScan(Regex regex, int textbeg, int textend)
@@ -289,16 +300,33 @@ namespace System.Text.RegularExpressions
 
         internal void InitializeTimeout(TimeSpan timeout)
         {
-            // Handle timeout argument
-            _checkTimeout = false;
-            if (Regex.InfiniteMatchTimeout != timeout)
+            // _checkTimeout is initialized to -1.  Upon first use of the runner, the timeout value (which doesn't change between executions)
+            // is checked to see whether it's infinite, in which case _checkTimeout transitions to 0, or non-infinite, in which case
+            // _checkTimeout transitions to 1 and _timeout is initialized based on timeout.  At that point, if _checkTimeout is 1,
+            // _timeoutOccursAt is initialized based on _timeout and Environment.TickCount64. (Note that internalMatchTimeout that's passed
+            // into this method is a protected field on Regex, and thus a custom Regex implementation could change the value of that field
+            // between invocations.  However, that is an unsupported use, and any derived implementation that wants to mess with the
+            // how the Regex behaves has many ways to do so, including overriding its factory to completely replace the implementation.)
+            if (_checkTimeout != 0)
             {
                 ConfigureTimeout(timeout);
 
                 void ConfigureTimeout(TimeSpan timeout)
                 {
-                    _checkTimeout = true;
-                    _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
+                    if (_checkTimeout < 0)
+                    {
+                        if (timeout == Regex.InfiniteMatchTimeout)
+                        {
+                            _checkTimeout = 0;
+                            return;
+                        }
+
+                        _checkTimeout = 1;
+                        _timeout = (int)(timeout.TotalMilliseconds + 0.5); // Round;
+                    }
+
+                    Debug.Assert(_checkTimeout == 1, $"Expected {nameof(_checkTimeout)} == 1, got {_checkTimeout}");
+                    Debug.Assert(_timeout != 0, $"Expected non-zero timeout");
                     _timeoutOccursAt = Environment.TickCount64 + _timeout;
                 }
             }
@@ -307,8 +335,9 @@ namespace System.Text.RegularExpressions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         protected internal void CheckTimeout()
         {
-            if (_checkTimeout && Environment.TickCount64 >= _timeoutOccursAt)
+            if (_checkTimeout != 0 && Environment.TickCount64 >= _timeoutOccursAt)
             {
+                Debug.Assert(_checkTimeout == 1, $"{_checkTimeout}");
                 ThrowRegexTimeout();
             }
 
