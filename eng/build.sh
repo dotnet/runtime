@@ -382,7 +382,8 @@ while [[ $# > 0 ]]; do
       ;;
 
      -clang*)
-      arguments="$arguments /p:Compiler=$opt"
+      compiler="${opt/#-/}" # -clang-9 => clang-9 or clang-9 => (unchanged)
+      arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
       ;;
 
@@ -396,7 +397,8 @@ while [[ $# > 0 ]]; do
       ;;
 
      -gcc*)
-      arguments="$arguments /p:Compiler=$opt"
+      compiler="${opt/#-/}" # -gcc-9 => gcc-9 or gcc-9 => (unchanged)
+      arguments="$arguments /p:Compiler=$compiler /p:CppCompilerAndLinker=$compiler"
       shift 1
       ;;
 
