@@ -2741,6 +2741,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif // TARGET_ARM
 
         arg.AbiInfo          = CallArgABIInformation();
+        arg.AbiInfo.ArgType  = argx->TypeGet();
         arg.AbiInfo.IsStruct = isStructArg;
 
         if (isRegArg)
