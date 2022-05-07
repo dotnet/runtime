@@ -83,7 +83,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
 
     if (dwFlags == LCMAP_UPPERCASE)
     {
-        wTmp =
+        wTmp = (WCHAR)
 #ifdef SELF_NO_HOST
             toupper(wc);
 #else
@@ -93,7 +93,7 @@ static WCHAR MapChar(WCHAR wc, DWORD dwFlags)
     else
     {
         _ASSERTE(dwFlags == LCMAP_LOWERCASE);
-        wTmp =
+        wTmp = (WCHAR)
 #ifdef SELF_NO_HOST
             tolower(wc);
 #else

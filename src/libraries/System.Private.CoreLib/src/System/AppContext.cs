@@ -136,7 +136,7 @@ namespace System
             }
         }
 
-#if !CORERT
+#if !NATIVEAOT
         internal static unsafe void Setup(char** pNames, char** pValues, int count)
         {
             Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");

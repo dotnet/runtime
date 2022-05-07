@@ -4,45 +4,45 @@
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace System.Runtime.InteropServices
+namespace System.Runtime.InteropServices.Marshalling
 {
     /// <summary>
-    /// Marshaller for arrays
+    /// Marshaller for arrays of pointers
     /// </summary>
-    /// <typeparam name="T">Array element type</typeparam>
+    /// <typeparam name="T">Array element pointer type</typeparam>
     [CLSCompliant(false)]
-    [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder[]),
+    [CustomTypeMarshaller(typeof(CustomTypeMarshallerAttribute.GenericPlaceholder*[]),
         CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
         Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-    public unsafe ref struct ArrayMarshaller<T>
+    public unsafe ref struct PointerArrayMarshaller<T> where T : unmanaged
     {
         private readonly int _sizeOfNativeElement;
 
-        private T[]? _managedArray;
+        private T*[]? _managedArray;
         private IntPtr _allocatedMemory;
         private Span<byte> _span;
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ArrayMarshaller{T}"/>.
+        /// Initializes a new instance of the <see cref="PointerArrayMarshaller{T}"/>.
         /// </summary>
         /// <param name="sizeOfNativeElement">Size of the native element in bytes.</param>
-        public ArrayMarshaller(int sizeOfNativeElement)
+        public PointerArrayMarshaller(int sizeOfNativeElement)
             : this()
         {
             _sizeOfNativeElement = sizeOfNativeElement;
         }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ArrayMarshaller{T}"/>.
+        /// Initializes a new instance of the <see cref="PointerArrayMarshaller{T}"/>.
         /// </summary>
         /// <param name="array">Array to be marshalled.</param>
         /// <param name="sizeOfNativeElement">Size of the native element in bytes.</param>
-        public ArrayMarshaller(T[]? array, int sizeOfNativeElement)
+        public PointerArrayMarshaller(T*[]? array, int sizeOfNativeElement)
             : this(array, Span<byte>.Empty, sizeOfNativeElement)
         { }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ArrayMarshaller{T}"/>.
+        /// Initializes a new instance of the <see cref="PointerArrayMarshaller{T}"/>.
         /// </summary>
         /// <param name="array">Array to be marshalled.</param>
         /// <param name="buffer">Buffer that may be used for marshalling.</param>
@@ -52,7 +52,7 @@ namespace System.Runtime.InteropServices
         /// on the managed heap or it should be pinned.
         /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
         /// </remarks>
-        public ArrayMarshaller(T[]? array, Span<byte> buffer, int sizeOfNativeElement)
+        public PointerArrayMarshaller(T*[]? array, Span<byte> buffer, int sizeOfNativeElement)
         {
             _allocatedMemory = default;
             _sizeOfNativeElement = sizeOfNativeElement;
@@ -85,7 +85,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.In"/>
         /// </remarks>
-        public ReadOnlySpan<T> GetManagedValuesSource() => _managedArray;
+        public ReadOnlySpan<IntPtr> GetManagedValuesSource() => Unsafe.As<IntPtr[]>(_managedArray);
 
         /// <summary>
         /// Gets a span that points to the memory where the unmarshalled managed values of the array should be stored.
@@ -95,7 +95,14 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
         /// </remarks>
-        public Span<T> GetManagedValuesDestination(int length) => _allocatedMemory == IntPtr.Zero ? null : _managedArray = new T[length];
+        public Span<IntPtr> GetManagedValuesDestination(int length)
+        {
+            if (_allocatedMemory == IntPtr.Zero)
+                return null;
+
+            _managedArray = new T*[length];
+            return Unsafe.As<IntPtr[]>(_managedArray);
+        }
 
         /// <summary>
         /// Returns a span that points to the memory where the native values of the array are stored after the native call.
@@ -107,7 +114,11 @@ namespace System.Runtime.InteropServices
         /// </remarks>
         public ReadOnlySpan<byte> GetNativeValuesSource(int length)
         {
-            return _allocatedMemory == IntPtr.Zero ? default : _span = new Span<byte>((void*)_allocatedMemory, length * _sizeOfNativeElement);
+            if (_allocatedMemory == IntPtr.Zero)
+                return default;
+
+            _span = new Span<byte>((void*)_allocatedMemory, length * _sizeOfNativeElement);
+            return _span;
         }
 
         /// <summary>
@@ -139,10 +150,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public void FromNativeValue(byte* value)
-        {
-            _allocatedMemory = (IntPtr)value;
-        }
+        public void FromNativeValue(byte* value) => _allocatedMemory = (IntPtr)value;
 
         /// <summary>
         /// Returns the managed array.
@@ -150,7 +158,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerDirection.Out"/>
         /// </remarks>
-        public T[]? ToManaged() => _managedArray;
+        public T*[]? ToManaged() => _managedArray;
 
         /// <summary>
         /// Frees native resources.

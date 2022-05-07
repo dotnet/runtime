@@ -603,6 +603,14 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 #endif
 }
 
+static
+inline
+ep_char8_t *
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
+{
+	return (ep_char8_t *)mono_atomic_cas_ptr ((volatile gpointer *)target, (gpointer)value, (gpointer)expected);
+}
+
 /*
  * EventPipe.
  */

@@ -308,8 +308,11 @@ namespace System.Reflection.Tests
                 Assert.Throws<System.BadImageFormatException>(() => AssemblyName.GetAssemblyName(tempFile.Path));
             }
 
-            Assembly a = typeof(AssemblyNameTests).Assembly;
-            Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
+            if (!PlatformDetection.IsNativeAot)
+            {
+                Assembly a = typeof(AssemblyNameTests).Assembly;
+                Assert.Equal(new AssemblyName(a.FullName).ToString(), AssemblyName.GetAssemblyName(AssemblyPathHelper.GetAssemblyLocation(a)).ToString());
+            }
         }
 
         [Fact]
@@ -371,7 +374,7 @@ namespace System.Reflection.Tests
             Assert.Equal(assemblyName.Name.Length, assemblyName.FullName.IndexOf(','));
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsAssemblyLoadingSupported))]
         public void EmptyFusionLog()
         {
             FileNotFoundException fnfe = Assert.Throws<FileNotFoundException>(() => Assembly.LoadFrom(@"\non\existent\file.dll"));

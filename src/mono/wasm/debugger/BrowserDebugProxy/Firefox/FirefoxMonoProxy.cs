@@ -8,6 +8,7 @@ using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using BrowserDebugProxy;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
@@ -154,8 +155,6 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     return SendCommandInternal(msgId, "", res, token);
                 return null;
             }
-            //{"type":"evaluationResult","resultID":"1634575904746-0","hasException":false,"input":"ret = 10","result":10,"startTime":1634575904746,"timestamp":1634575904748,"from":"server1.conn21.child10/consoleActor2"}
-
             return null;
         }
         catch (Exception ex)
@@ -472,7 +471,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     var to = args?["to"].Value<string>().Replace("propertyIterator", "");
                     if (!DotnetObjectId.TryParse(to, out DotnetObjectId objectId))
                         return false;
-                    var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
+                    var res = await RuntimeGetObjectMembers(sessionId, objectId, args, token);
                     var variables = ConvertToFirefoxContent(res);
                     var o = JObject.FromObject(new
                     {
@@ -521,7 +520,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     //{"iterator":{"type":"propertyIterator","actor":"server1.conn19.child63/propertyIterator73","count":3},"from":"server1.conn19.child63/obj71"}
                     if (!DotnetObjectId.TryParse(args?["to"], out DotnetObjectId objectId))
                         return false;
-                    var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
+                    var res = await RuntimeGetObjectMembers(sessionId, objectId, args, token);
                     var variables = ConvertToFirefoxContent(res);
                     var o = JObject.FromObject(new
                     {
@@ -547,7 +546,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     if (ctx.CallStack == null)
                         return false;
                     Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == objectId.Value);
-                    var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
+                    var res = await RuntimeGetObjectMembers(sessionId, objectId, args, token);
                     var variables = ConvertToFirefoxContent(res);
                     var o = JObject.FromObject(new
                     {
@@ -701,11 +700,12 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return o;
     }
 
-    private static JObject ConvertToFirefoxContent(ValueOrError<JToken> res)
+    private static JObject ConvertToFirefoxContent(ValueOrError<GetMembersResult> res)
     {
         JObject variables = new JObject();
         //TODO check if res.Error and do something
-        foreach (var variable in res.Value)
+        var resVars = res.Value.Flatten();
+        foreach (var variable in resVars)
         {
             JObject variableDesc;
             if (variable["get"] != null)

@@ -645,14 +645,14 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     if (TargetOS::IsUnix && TargetArchitecture::IsArm32)
     {
         // Force using an inlined jumping instead switch table generation.
-        // Switch jump table is generated with incorrect values in CoreRT case,
+        // Switch jump table is generated with incorrect values in NativeAOT case,
         // so any large switch will crash after loading to PC any such value.
         // I think this is due to the fact that we use absolute addressing
-        // instead of relative. But in CoreRT is used as a rule relative
+        // instead of relative. But in NativeAOT is used as a rule relative
         // addressing when we generate an executable.
         // See also https://github.com/dotnet/runtime/issues/8683
         // Also https://github.com/dotnet/coreclr/pull/13197
-        useJumpSequence = useJumpSequence || comp->IsTargetAbi(CORINFO_CORERT_ABI);
+        useJumpSequence = useJumpSequence || comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
     }
 
     // If we originally had 2 unique successors, check to see whether there is a unique
@@ -3836,7 +3836,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 #endif // FEATURE_SIMD
                 // importer has a separate mechanism to retype calls to helpers,
                 // keep it for now.
-                assert(user->TypeIs(TYP_REF) || (user->TypeIs(TYP_I_IMPL) && comp->IsTargetAbi(CORINFO_CORERT_ABI)));
+                assert(user->TypeIs(TYP_REF) || (user->TypeIs(TYP_I_IMPL) && comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI)));
                 assert(call->IsHelperCall());
                 assert(returnType == user->TypeGet());
                 break;

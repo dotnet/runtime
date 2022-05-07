@@ -386,6 +386,16 @@ namespace DebuggerTests
             Assert.Equal(value, val);
         }
 
+        internal void CheckContainsJObject(JToken locals, JToken comparedTo, string name)
+        {
+            var val = GetAndAssertObjectWithName(locals, name);
+            JObject refValue = (JObject)val["value"];
+            refValue?.Property("objectId")?.Remove();
+            JObject comparedToValue = (JObject)comparedTo["value"];
+            comparedToValue?.Property("objectId")?.Remove();
+            Assert.Equal(val, comparedTo);
+        }
+
         internal async Task<JToken> CheckValueType(JToken locals, string name, string class_name, string description=null)
         {
             var l = GetAndAssertObjectWithName(locals, name);
@@ -738,20 +748,21 @@ namespace DebuggerTests
 
                 Assert.True(actual_obj != null, $"[{label}] not value found for property named '{exp_name}'");
 
-                var actual_val = actual_obj["value"];
                 if (exp_val.Type == JTokenType.Array)
                 {
-                    var actual_props = await GetProperties(actual_val["objectId"]?.Value<string>());
+                    var actual_props = await GetProperties(actual_obj["value"]["objectId"]?.Value<string>());
                     await CheckProps(actual_props, exp_val, $"{label}-{exp_name}");
                 }
                 else if (exp_val["__custom_type"] != null && exp_val["__custom_type"]?.Value<string>() == "getter")
                 {
                     // hack: for getters, actual won't have a .value
+                    // are we doing it on purpose? Why? CHECK if properties are displayed in Browser/VS, if not revert the value field here
+                    // we should be leaving properties, not their backing fields
                     await CheckCustomType(actual_obj, exp_val, $"{label}#{exp_name}");
                 }
                 else
                 {
-                    await CheckValue(actual_val, exp_val, $"{label}#{exp_name}");
+                    await CheckValue(actual_obj["value"], exp_val, $"{label}#{exp_name}");
                 }
             }
         }

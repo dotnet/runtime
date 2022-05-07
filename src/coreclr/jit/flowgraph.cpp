@@ -1137,7 +1137,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
 #ifdef FEATURE_READYTORUN
     if (opts.IsReadyToRun())
     {
-        if (IsTargetAbi(CORINFO_CORERT_ABI))
+        if (IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             if (ldftnToken != nullptr)
             {
@@ -1168,7 +1168,7 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             }
             else
             {
-                JITDUMP("not optimized, CORERT no ldftnToken\n");
+                JITDUMP("not optimized, NATIVEAOT no ldftnToken\n");
             }
         }
         // ReadyToRun has this optimization for a non-virtual function pointers only for now.

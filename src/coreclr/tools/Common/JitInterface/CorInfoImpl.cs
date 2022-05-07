@@ -3809,7 +3809,7 @@ namespace Internal.JitInterface
                 flags.Set(CorJitFlag.CORJIT_FLAG_MIN_OPT);
             }
 
-            if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.CoreRTArmel)
+            if (this.MethodBeingCompiled.Context.Target.Abi == TargetAbi.NativeAotArmel)
             {
                 flags.Set(CorJitFlag.CORJIT_FLAG_SOFTFP_ABI);
             }
