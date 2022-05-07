@@ -738,8 +738,6 @@ bool Thread::InternalHijack(PAL_LIMITED_CONTEXT * pSuspendCtx, void * pvHijackTa
     {
         frameIterator.CalculateCurrentMethodState();
 
-        frameIterator.GetCodeManager()->UnsynchronizedHijackMethodLoops(frameIterator.GetMethodInfo());
-
         PTR_PTR_VOID ppvRetAddrLocation;
         GCRefKind retValueKind;
 

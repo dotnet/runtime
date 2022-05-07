@@ -8781,7 +8781,7 @@ void CEEInfo::expandRawHandleIntrinsic(
     CORINFO_GENERICHANDLE_RESULT *  pResult)
 {
     LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();      // only called with CoreRT.
+    UNREACHABLE();      // only called with NativeAOT.
 }
 
 /*********************************************************************/

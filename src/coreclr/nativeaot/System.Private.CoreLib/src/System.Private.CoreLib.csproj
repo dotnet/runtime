@@ -376,7 +376,7 @@
       <Link>Internal\Runtime\LowLevelStringConverter.cs</Link>
     </Compile>
   </ItemGroup>
-  <!-- For now, link Runtime.Base into System.Private.CoreLib for CoreRT until there is proper multifile build -->
+  <!-- For now, link Runtime.Base into System.Private.CoreLib until there is proper multifile build -->
   <PropertyGroup>
     <InPlaceRuntime>true</InPlaceRuntime>
   </PropertyGroup>
