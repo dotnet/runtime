@@ -170,7 +170,7 @@ typedef struct {
 	int start_offset;
 	int end_offset;
 	/*
-	 * The offset relative to frame_offset where the the memory described by the GC maps
+	 * The offset relative to frame_offset where the memory described by the GC maps
 	 * begins.
 	 */
 	int map_offset;

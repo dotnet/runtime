@@ -161,7 +161,7 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             const string Pattern = @"(\w+)\s(\1)";
-            const string Input = "He said that that was the the correct answer.";
+            const string Input = "He said that that was the correct answer.";
 
             Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 
@@ -193,7 +193,7 @@ namespace System.Text.RegularExpressions.Tests
             }
 
             const string Pattern = @"(?<duplicateWord>\w+)\s\k<duplicateWord>\W(?<nextWord>\w+)";
-            const string Input = "He said that that was the the correct answer.";
+            const string Input = "He said that that was the correct answer.";
 
             Regex r = await RegexHelpers.GetRegexAsync(engine, Pattern, RegexOptions.IgnoreCase);
 

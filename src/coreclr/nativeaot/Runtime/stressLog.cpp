@@ -71,7 +71,7 @@ unsigned __int64 getTimeStamp() {
 #endif // HOST_X86 else
 
 /*********************************************************************************/
-/* Get the the frequency corresponding to 'getTimeStamp'.  For non-x86
+/* Get the frequency corresponding to 'getTimeStamp'.  For non-x86
    architectures, this is just the performance counter frequency.
 */
 unsigned __int64 getTickFrequency()
