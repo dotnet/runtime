@@ -2895,53 +2895,6 @@ bool ValueNumStore::SelectIsBeingEvaluatedRecursively(ValueNum map, ValueNum ind
     return false;
 }
 
-// Specialized here as MSVC does not do well with naive version with loop.
-template <>
-bool ValueNumStore::VNDefFuncApp<1>::operator==(const ValueNumStore::VNDefFuncApp<1>& y) const
-{
-    return m_func == y.m_func && m_args[0] == y.m_args[0];
-}
-
-template <>
-bool ValueNumStore::VNDefFuncApp<2>::operator==(const ValueNumStore::VNDefFuncApp<2>& y) const
-{
-    return m_func == y.m_func && m_args[0] == y.m_args[0] && m_args[1] == y.m_args[1];
-}
-
-template <>
-bool ValueNumStore::VNDefFuncApp<3>::operator==(const ValueNumStore::VNDefFuncApp<3>& y) const
-{
-    return m_func == y.m_func && m_args[0] == y.m_args[0] && m_args[1] == y.m_args[1] && m_args[2] == y.m_args[2];
-}
-
-template <>
-bool ValueNumStore::VNDefFuncApp<4>::operator==(const ValueNumStore::VNDefFuncApp<4>& y) const
-{
-    return m_func == y.m_func && m_args[0] == y.m_args[0] && m_args[1] == y.m_args[1] && m_args[2] == y.m_args[2] &&
-           m_args[3] == y.m_args[3];
-}
-
-template <>
-unsigned ValueNumStore::VNDefFuncAppKeyFuncs<1>::GetHashCode(const ValueNumStore::VNDefFuncApp<1>& val)
-{
-    return (val.m_func << 24) + val.m_args[0];
-}
-template <>
-unsigned ValueNumStore::VNDefFuncAppKeyFuncs<2>::GetHashCode(const ValueNumStore::VNDefFuncApp<2>& val)
-{
-    return (val.m_func << 24) + (val.m_args[0] << 8) + val.m_args[1];
-}
-template <>
-unsigned ValueNumStore::VNDefFuncAppKeyFuncs<3>::GetHashCode(const ValueNumStore::VNDefFuncApp<3>& val)
-{
-    return (val.m_func << 24) + (val.m_args[0] << 16) + (val.m_args[1] << 8) + val.m_args[2];
-}
-template <>
-unsigned ValueNumStore::VNDefFuncAppKeyFuncs<4>::GetHashCode(const ValueNumStore::VNDefFuncApp<4>& val)
-{
-    return (val.m_func << 24) + (val.m_args[0] << 16) + (val.m_args[1] << 8) + val.m_args[2] + (val.m_args[3] << 12);
-}
-
 #ifdef DEBUG
 bool ValueNumStore::FixedPointMapSelsTopHasValue(ValueNum map, ValueNum index)
 {
