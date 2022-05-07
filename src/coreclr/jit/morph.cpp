@@ -2002,8 +2002,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         {
             GenTree* stubAddrArg = comp->fgGetStubAddrArg(call);
             // And push the stub address onto the list of arguments
-            InsertAfterThisOrFirst(comp, NewCallArg::Primitive(stubAddrArg, stubAddrArg->TypeGet())
-                                             .WellKnown(WellKnownArg::VirtualStubCell));
+            NewCallArg stubAddrNewArg = NewCallArg::Primitive(stubAddrArg).WellKnown(WellKnownArg::VirtualStubCell);
+            InsertAfterThisOrFirst(comp, stubAddrNewArg);
         }
         else
         {

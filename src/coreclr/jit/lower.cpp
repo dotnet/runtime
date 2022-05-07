@@ -2380,8 +2380,8 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 #ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
             // Now insert the call target as an extra argument.
             //
-            CallArg* targetArg = call->gtArgs.PushBack(comp, NewCallArg::Primitive(callTarget, callTarget->TypeGet())
-                                                                 .WellKnown(WellKnownArg::DispatchIndirectCallTarget));
+            NewCallArg callTargetNewArg = NewCallArg::Primitive(callTarget).WellKnown(WellKnownArg::DispatchIndirectCallTarget);
+            CallArg* targetArg = call->gtArgs.PushBack(comp, callTargetNewArg);
             targetArg->SetEarlyNode(nullptr);
             targetArg->SetLateNode(callTarget);
             call->gtArgs.PushLateBack(targetArg);
@@ -4340,11 +4340,12 @@ void Lowering::InsertPInvokeMethodProlog()
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
     GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
 
-    call->gtArgs.PushBack(comp, NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame));
+    NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
+    call->gtArgs.PushBack(comp, frameAddrArg);
 // for x86/arm32 don't pass the secretArg.
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    call->gtArgs.PushBack(comp, NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM), TYP_I_IMPL)
-                                    .WellKnown(WellKnownArg::SecretStubParam));
+    NewCallArg stubParamArg = NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM)).WellKnown(WellKnownArg::SecretStubParam);
+    call->gtArgs.PushBack(comp, stubParamArg);
 #endif
 
     // some sanity checks on the frame list root vardsc
