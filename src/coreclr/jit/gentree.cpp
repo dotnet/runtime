@@ -11342,7 +11342,7 @@ void Compiler::gtDispTree(GenTree*     tree,
 
     if (IsUninitialized(tree))
     {
-        /* Value used to initalize nodes */
+        /* Value used to initialize nodes */
         printf("Uninitialized tree node!\n");
         return;
     }
@@ -12492,7 +12492,7 @@ GenTree* Compiler::gtFoldExprCall(GenTreeCall* call)
 //    An alternative tree if folding happens.
 //
 // Notes:
-//    If either operand is known to be a a RuntimeType, then the type
+//    If either operand is known to be a RuntimeType, then the type
 //    equality methods will simply check object identity and so we can
 //    fold the call into a simple compare of the call's operands.
 
@@ -13430,7 +13430,7 @@ GenTree* Compiler::gtFoldBoxNullable(GenTree* tree)
 //    This can be useful when the only part of the box that is "live"
 //    is its type.
 //
-//    If removal fails, is is possible that a subsequent pass may be
+//    If removal fails, it is possible that a subsequent pass may be
 //    able to optimize.  Blocking side effects may now be minimized
 //    (null or bounds checks might have been removed) or might be
 //    better known (inline return placeholder updated with the actual

@@ -347,17 +347,17 @@ namespace ILCompiler
 
         private IReadOnlyCollection<MethodDesc> CreateInitializerList(CompilerTypeSystemContext context)
         {
-            List<ModuleDesc> assembliesWithInitalizers = new List<ModuleDesc>();
+            List<ModuleDesc> assembliesWithInitializers = new List<ModuleDesc>();
 
             // Build a list of assemblies that have an initializer that needs to run before
             // any user code runs.
             foreach (string initAssemblyName in _initAssemblies)
             {
                 ModuleDesc assembly = context.ResolveAssembly(new AssemblyName(initAssemblyName), throwIfNotFound: true);
-                assembliesWithInitalizers.Add(assembly);
+                assembliesWithInitializers.Add(assembly);
             }
 
-            var libraryInitializers = new LibraryInitializers(context, assembliesWithInitalizers);
+            var libraryInitializers = new LibraryInitializers(context, assembliesWithInitializers);
 
             List<MethodDesc> initializerList = new List<MethodDesc>(libraryInitializers.LibraryInitializerMethods);
 
@@ -537,7 +537,7 @@ namespace ILCompiler
             var simdVectorLength = instructionSetSupport.GetVectorTSimdVector();
             var targetAbi = TargetAbi.NativeAot;
             var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, targetAbi, simdVectorLength);
-            CompilerTypeSystemContext typeSystemContext = 
+            CompilerTypeSystemContext typeSystemContext =
                 new CompilerTypeSystemContext(targetDetails, genericsMode, supportsReflection ? DelegateFeature.All : 0, _maxGenericCycle);
 
             //
@@ -546,7 +546,7 @@ namespace ILCompiler
             //
             // See: https://github.com/dotnet/corert/issues/2785
             //
-            // When we undo this this hack, replace this foreach with
+            // When we undo this hack, replace the foreach with
             //  typeSystemContext.InputFilePaths = _inputFilePaths;
             //
             Dictionary<string, string> inputFilePaths = new Dictionary<string, string>();

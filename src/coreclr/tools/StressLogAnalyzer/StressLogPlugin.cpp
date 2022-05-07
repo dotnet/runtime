@@ -591,7 +591,7 @@ void Usage()
     printf("\n");
     printf(" -l:<level1>,<level2>,... : print messages at dprint level1,level2,...\n");
     printf("\n");
-    printf(" -g:<gc_index>: only print messages occuring during GC#gc_index\n");
+    printf(" -g:<gc_index>: only print messages occurring during GC#gc_index\n");
     printf(" -g:<gc_index1>-<gc_index_2>: as above, for a range of GC indices\n");
     printf("\n");
     printf(" -f: print the raw format strings along with the message\n");

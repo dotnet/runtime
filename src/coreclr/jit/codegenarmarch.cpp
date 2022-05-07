@@ -974,7 +974,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             }
 
             // If we have an HFA we can't have any GC pointers,
-            // if not then the max size for the the struct is 16 bytes
+            // if not then the max size for the struct is 16 bytes
             if (isHfa)
             {
                 noway_assert(!layout->HasGCPtr());

@@ -518,7 +518,7 @@ namespace Internal.JitInterface
         //     but need to insert a callout to the VM to ask during runtime
         //     whether to raise a verification or not (if the method is unverifiable).
         CORINFO_VERIFICATION_DONT_JIT = 3,    // Cannot skip verification during jit time,
-        //     but do not jit the method if is is unverifiable.
+        //     but do not jit the method if it is unverifiable.
     }
 
     public enum CorInfoInitClassResult

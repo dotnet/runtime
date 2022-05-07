@@ -177,7 +177,7 @@ GC.
 ## Outstanding Questions
 
 How can we provide the most useful error message when a standalone GC fails to load? In the past it has been difficult
-to determine what preciscely has gone wrong with `coreclr_initialize` returns a HRESULT and no indication of what occured.
+to determine what preciscely has gone wrong with `coreclr_initialize` returns a HRESULT and no indication of what occurred.
 
 Same question for the DAC - Is `E_FAIL` the best we can do? If we could define our own error for DAC/GC version
 mismatches, that would be nice; however, that is technically a breaking change in the DAC.

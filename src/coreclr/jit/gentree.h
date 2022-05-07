@@ -8046,7 +8046,7 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 }
 
 //-------------------------------------------------------------------
-// IsIntegralConstVector: returns true if this this is a SIMD vector
+// IsIntegralConstVector: returns true if this is an SIMD vector
 // with all its elements equal to an integral constant.
 //
 // Arguments:
@@ -8105,8 +8105,8 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal) const
 }
 
 //-------------------------------------------------------------------
-// IsSIMDZero: returns true if this this is a SIMD vector
-// with all its elements equal to zero.
+// IsSIMDZero: returns true if this is an SIMD vector with all its
+// elements equal to zero.
 //
 // Returns:
 //     True if this represents an integral const SIMD vector.

@@ -67,7 +67,7 @@ namespace System.Net.NetworkInformation
                     }
                 }
 
-                // Executing user callbacks if Availability Change event occured.
+                // Executing user callbacks if Availability Change event occurred.
                 if (availabilityChangedSubscribers != null)
                 {
                     bool isAvailable = s_isAvailable;
