@@ -8607,18 +8607,20 @@ void CallArgs::InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc co
     CallArg** tail = &m_head;
     for (CallArg& arg : other->Args())
     {
-        CallArg* carg        = new (comp, CMK_CallArgs) CallArg();
-        carg->m_earlyNode    = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
-        carg->m_lateNode     = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
-        carg->m_wellKnownArg = arg.m_wellKnownArg;
-        carg->m_needTmp      = arg.m_needTmp;
-        carg->m_needPlace    = arg.m_needPlace;
-        carg->m_isTmp        = arg.m_isTmp;
-        carg->m_processed    = arg.m_processed;
-        carg->m_tmpNum       = arg.m_tmpNum;
-        carg->AbiInfo        = arg.AbiInfo;
-        *tail                = carg;
-        tail                 = &carg->m_next;
+        CallArg* carg           = new (comp, CMK_CallArgs) CallArg();
+        carg->m_earlyNode       = arg.m_earlyNode != nullptr ? copyNode(arg.m_earlyNode) : nullptr;
+        carg->m_lateNode        = arg.m_lateNode != nullptr ? copyNode(arg.m_lateNode) : nullptr;
+        carg->m_signatureClsHnd = arg.m_signatureClsHnd;
+        carg->m_tmpNum          = arg.m_tmpNum;
+        carg->m_signatureType   = arg.m_signatureType;
+        carg->m_wellKnownArg    = arg.m_wellKnownArg;
+        carg->m_needTmp         = arg.m_needTmp;
+        carg->m_needPlace       = arg.m_needPlace;
+        carg->m_isTmp           = arg.m_isTmp;
+        carg->m_processed       = arg.m_processed;
+        carg->AbiInfo           = arg.AbiInfo;
+        *tail                   = carg;
+        tail                    = &carg->m_next;
     }
 
     // Now copy late pointers. Note that these may not come in order.

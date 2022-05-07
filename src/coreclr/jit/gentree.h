@@ -4017,8 +4017,7 @@ const char* getWellKnownArgName(WellKnownArg arg);
 struct CallArgABIInformation
 {
     CallArgABIInformation()
-        : SignatureClsHnd(NO_CLASS_HANDLE)
-        , NumRegs(0)
+        : NumRegs(0)
         , ByteOffset(0)
         , ByteSize(0)
         , ByteAlignment(0)
@@ -4029,7 +4028,7 @@ struct CallArgABIInformation
 #ifdef TARGET_LOONGARCH64
         , StructFloatFieldType()
 #endif
-        , AbiType(TYP_UNDEF)
+        , ArgType(TYP_UNDEF)
         , IsBackFilled(false)
         , IsStruct(false)
         , PassedByRef(false)
@@ -4046,10 +4045,12 @@ struct CallArgABIInformation
         }
     }
 
-    // The handle of the class in the callee signature. May be NO_CLASS_HANDLE
-    // for primitive types.
-    CORINFO_CLASS_HANDLE SignatureClsHnd;
+private:
+    // The registers to use when passing this argument, set to REG_STK for
+    // arguments passed on the stack
+    regNumberSmall RegNums[MAX_ARG_REG_COUNT];
 
+public:
     // Count of number of registers that this argument uses. Note that on ARM,
     // if we have a double hfa, this reflects the number of DOUBLE registers.
     unsigned NumRegs;
@@ -4070,17 +4071,13 @@ struct CallArgABIInformation
     // e.g  `struct {int a; float b;}` passed by an integer register and a float register.
     var_types StructFloatFieldType[2];
 #endif
-private:
-    // The registers to use when passing this argument, set to REG_STK for
-    // arguments passed on the stack
-    regNumberSmall RegNums[MAX_ARG_REG_COUNT];
-
-public:
-    // The ABI type of this argument. This is generally the signature type of
-    // the argument, but when a struct is passed as a primitive type,
-    // AddFinalArgsAndDetermineABIInfo changes it to that type. Note that if a
-    // struct is passed by reference this will still be the struct type.
-    var_types AbiType : 5;
+    // The type used to pass this argument. This is generally the original
+    // argument type, but when a struct is passed as a scalar type, this is
+    // that type. Note that if a struct is passed by reference, this will still
+    // be the struct type.
+    // TODO-ARGS: Reconsider whether we need this, it does not make much sense
+    // to have this instead of using just the type of the arg node.
+    var_types ArgType : 5;
     // True when the argument fills a register slot skipped due to alignment
     // requirements of previous arguments.
     bool IsBackFilled : 1;
@@ -4253,23 +4250,27 @@ class CallArg
 {
     friend class CallArgs;
 
-    GenTree*     m_earlyNode;
-    GenTree*     m_lateNode;
-    CallArg*     m_next;
-    CallArg*     m_lateNext;
-    WellKnownArg m_wellKnownArg : 5;
+    GenTree* m_earlyNode;
+    GenTree* m_lateNode;
+    CallArg* m_next;
+    CallArg* m_lateNext;
 
+    // The class handle for the signature type (when varTypeIsStruct(SignatureType)).
+    CORINFO_CLASS_HANDLE m_signatureClsHnd;
+    // The LclVar number if we had to force evaluation of this arg.
+    unsigned m_tmpNum;
+    // The type of the argument in the signature.
+    var_types m_signatureType;
+    // The type of well-known argument this is.
+    WellKnownArg m_wellKnownArg : 5;
     // True when we force this argument's evaluation into a temp LclVar.
     bool m_needTmp : 1;
     // True when we must replace this argument with a placeholder node.
     bool m_needPlace : 1;
-    // True when we setup a temp LclVar for this argument due to size issues
-    // with the struct.
+    // True when we setup a temp LclVar for this argument.
     bool m_isTmp : 1;
     // True when we have decided the evaluation order for this argument in LateArgs
     bool m_processed : 1;
-    // The LclVar number if we had to force evaluation of this arg
-    unsigned m_tmpNum;
 
 private:
     CallArg()
@@ -4277,12 +4278,14 @@ private:
         , m_lateNode(nullptr)
         , m_next(nullptr)
         , m_lateNext(nullptr)
+        , m_signatureClsHnd(NO_CLASS_HANDLE)
+        , m_tmpNum(BAD_VAR_NUM)
+        , m_signatureType(TYP_UNDEF)
         , m_wellKnownArg(WellKnownArg::None)
         , m_needTmp(false)
         , m_needPlace(false)
         , m_isTmp(false)
         , m_processed(false)
-        , m_tmpNum(BAD_VAR_NUM)
     {
     }
 
@@ -4291,10 +4294,10 @@ public:
 
     CallArg(const NewCallArg& arg) : CallArg()
     {
-        m_earlyNode             = arg.Node;
-        m_wellKnownArg          = arg.WellKnownArg;
-        AbiInfo.AbiType         = arg.SignatureType;
-        AbiInfo.SignatureClsHnd = arg.SignatureClsHnd;
+        m_earlyNode       = arg.Node;
+        m_wellKnownArg    = arg.WellKnownArg;
+        m_signatureType   = arg.SignatureType;
+        m_signatureClsHnd = arg.SignatureClsHnd;
     }
 
     CallArg(const CallArg&) = delete;
@@ -4313,6 +4316,8 @@ public:
     CallArg*& LateNextRef() { return m_lateNext; }
     CallArg* GetLateNext() { return m_lateNext; }
     void SetLateNext(CallArg* lateNext) { m_lateNext = lateNext; }
+    CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureClsHnd; }
+    var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
     bool IsTemp() { return m_isTmp; }
     // clang-format on

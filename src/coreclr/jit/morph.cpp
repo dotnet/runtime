@@ -636,7 +636,7 @@ const char* getWellKnownArgName(WellKnownArg arg)
 void CallArg::Dump(Compiler* comp)
 {
     printf("CallArg[[%06u].%s", comp->dspTreeID(GetNode()), GenTree::OpName(GetNode()->OperGet()));
-    printf(" %s", varTypeName(AbiInfo.AbiType));
+    printf(" %s", varTypeName(m_signatureType));
     printf(" (%s)", AbiInfo.PassedByRef ? "By ref" : "By value");
     if (AbiInfo.GetRegNum() != REG_STK)
     {
@@ -2327,7 +2327,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         if (!isStructArg)
         {
             size     = 1; // On AMD64, all primitives fit in a single (64-bit) 'slot'
-            byteSize = genTypeSize(arg.AbiInfo.AbiType);
+            byteSize = genTypeSize(arg.GetSignatureType());
         }
         else
         {
@@ -2339,7 +2339,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         size = 1; // On AMD64 Windows, all args fit in a single (64-bit) 'slot'
         if (!isStructArg)
         {
-            byteSize = genTypeSize(arg.AbiInfo.AbiType);
+            byteSize = genTypeSize(arg.GetSignatureType());
         }
 
 #endif // UNIX_AMD64_ABI
@@ -2374,7 +2374,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         else
         {
             size     = 1; // Otherwise, all primitive types fit in a single (64-bit) 'slot'
-            byteSize = genTypeSize(arg.AbiInfo.AbiType);
+            byteSize = genTypeSize(arg.GetSignatureType());
         }
 #elif defined(TARGET_ARM) || defined(TARGET_X86)
         if (isStructArg)
@@ -2387,7 +2387,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // The typical case.
             // Long/double type argument(s) will be modified as needed in Lowering.
             size     = genTypeStSz(argx->gtType);
-            byteSize = genTypeSize(arg.AbiInfo.AbiType);
+            byteSize = genTypeSize(arg.GetSignatureType());
         }
 #else
 #error Unsupported or unset target architecture
@@ -2477,7 +2477,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // Arm64 Apple has a special ABI for passing small size arguments on stack,
             // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
             // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-            argAlignBytes = comp->eeGetArgSizeAlignment(arg.AbiInfo.AbiType, isFloatHfa);
+            argAlignBytes = comp->eeGetArgSizeAlignment(arg.GetSignatureType(), isFloatHfa);
         }
 
 #ifdef TARGET_LOONGARCH64
@@ -2740,7 +2740,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         }
 #endif // TARGET_ARM
 
-        arg.AbiInfo          = {};
+        arg.AbiInfo          = CallArgABIInformation();
         arg.AbiInfo.IsStruct = isStructArg;
 
         if (isRegArg)
@@ -2960,11 +2960,11 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         if (arg.AbiInfo.IsStruct)
         {
             arg.AbiInfo.PassedByRef = passStructByRef;
-            arg.AbiInfo.AbiType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
+            arg.AbiInfo.ArgType     = (structBaseType == TYP_UNKNOWN) ? argx->TypeGet() : structBaseType;
         }
         else
         {
-            arg.AbiInfo.AbiType = argx->TypeGet();
+            arg.AbiInfo.ArgType = argx->TypeGet();
         }
 
         argIndex++;
@@ -3164,7 +3164,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
                 assert(originalSize == info.compCompHnd->getClassSize(objClass));
             }
             unsigned  roundupSize    = (unsigned)roundUp(originalSize, TARGET_POINTER_SIZE);
-            var_types structBaseType = arg.AbiInfo.AbiType;
+            var_types structBaseType = arg.AbiInfo.ArgType;
 
             // First, handle the case where the argument is passed by reference.
             if (arg.AbiInfo.PassedByRef)
@@ -3446,7 +3446,7 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             }
         }
 #ifdef TARGET_ARM
-        else if ((arg.AbiInfo.AbiType == TYP_LONG) || (arg.AbiInfo.AbiType == TYP_DOUBLE))
+        else if ((arg.AbiInfo.ArgType == TYP_LONG) || (arg.AbiInfo.ArgType == TYP_DOUBLE))
         {
             assert((arg.AbiInfo.NumRegs == 2) || (arg.AbiInfo.GetStackSlotsNumber() == 2));
         }
@@ -6444,7 +6444,7 @@ bool Compiler::fgCallHasMustCopyByrefParameter(GenTreeCall* callee)
                                     // will transiently retype all simple address-of implicit parameter args as
                                     // TYP_I_IMPL.
                                     //
-                                    if ((arg2.AbiInfo.AbiType == TYP_BYREF) || (arg2.AbiInfo.AbiType == TYP_I_IMPL))
+                                    if ((arg2.AbiInfo.ArgType == TYP_BYREF) || (arg2.AbiInfo.ArgType == TYP_I_IMPL))
                                     {
                                         JITDUMP("...arg is a byref, must run an alias check\n");
                                         bool checkExposure = true;
@@ -7448,7 +7448,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
 
         // During rationalization tmp="this" and null check will be materialized
         // in the right execution order.
-        call->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr, thisArg->AbiInfo.AbiType));
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr, thisArg->GetSignatureType()));
         call->gtArgs.Remove(thisArg);
     }
 
@@ -8022,7 +8022,7 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
         // During rationalization tmp="this" and null check will
         // materialize as embedded stmts in right execution order.
         assert(thisPtr != nullptr);
-        call->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr, thisArg->AbiInfo.AbiType));
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr, thisArg->GetSignatureType()));
         call->gtArgs.Remove(thisArg);
     }
 

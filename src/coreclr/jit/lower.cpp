@@ -2380,14 +2380,15 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 #ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
             // Now insert the call target as an extra argument.
             //
-            NewCallArg callTargetNewArg = NewCallArg::Primitive(callTarget).WellKnown(WellKnownArg::DispatchIndirectCallTarget);
+            NewCallArg callTargetNewArg =
+                NewCallArg::Primitive(callTarget).WellKnown(WellKnownArg::DispatchIndirectCallTarget);
             CallArg* targetArg = call->gtArgs.PushBack(comp, callTargetNewArg);
             targetArg->SetEarlyNode(nullptr);
             targetArg->SetLateNode(callTarget);
             call->gtArgs.PushLateBack(targetArg);
 
             // Set up ABI information for this arg.
-            targetArg->AbiInfo.AbiType = callTarget->TypeGet();
+            targetArg->AbiInfo.ArgType = callTarget->TypeGet();
             targetArg->AbiInfo.SetRegNum(0, REG_DISPATCH_INDIRECT_CALL_ADDR);
             targetArg->AbiInfo.NumRegs = 1;
             targetArg->AbiInfo.SetByteSize(TARGET_POINTER_SIZE, TARGET_POINTER_SIZE, false, false);
@@ -4344,7 +4345,8 @@ void Lowering::InsertPInvokeMethodProlog()
     call->gtArgs.PushBack(comp, frameAddrArg);
 // for x86/arm32 don't pass the secretArg.
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    NewCallArg stubParamArg = NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM)).WellKnown(WellKnownArg::SecretStubParam);
+    NewCallArg stubParamArg =
+        NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM)).WellKnown(WellKnownArg::SecretStubParam);
     call->gtArgs.PushBack(comp, stubParamArg);
 #endif
 
