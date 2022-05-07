@@ -1917,9 +1917,6 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_18295/**">
             <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_23411/**">
-            <Issue>https://github.com/dotnet/runtime/issues/34196</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_23791/**">
             <Issue>https://github.com/dotnet/runtime/issues/34385</Issue>
         </ExcludeList>
@@ -2723,6 +2720,12 @@
             <Issue>needs triage</Issue>
         </ExcludeList>
         <!-- End interpreter issues -->
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' != 'monointerpreter' ">
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Regression/JitBlue/GitHub_23411/**">
+            <Issue>https://github.com/dotnet/runtime/issues/68905</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <ItemGroup Condition="'$(RuntimeFlavor)' == 'mono' and '$(RuntimeVariant)' == 'llvmaot' ">
