@@ -1022,18 +1022,29 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
     JITDUMP("------------------------------------------------------------\n");
     JITDUMP("Deriving cloning conditions for " FMT_LP "\n", loopNum);
 
-    LoopDsc*                         loop     = &optLoopTable[loopNum];
-    JitExpandArrayStack<LcOptInfo*>* optInfos = context->GetLoopOptInfo(loopNum);
+    LoopDsc*                         loop             = &optLoopTable[loopNum];
+    JitExpandArrayStack<LcOptInfo*>* optInfos         = context->GetLoopOptInfo(loopNum);
+    bool                             isIncreasingLoop = loop->lpIsIncreasingLoop();
+    assert(isIncreasingLoop || loop->lpIsDecreasingLoop());
 
-    if (GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE))
+    if (GenTree::StaticOperIs(loop->lpTestOper(), GT_LT, GT_LE, GT_GT, GT_GE))
     {
-        // Stride conditions
-        if (loop->lpIterConst() <= 0)
+        // We already know that this is either increasing or decreasing loop and the
+        // stride is (> 0) or (< 0). Here, just take the abs() value and check if it
+        // is beyond the limit.
+        int stride = abs(loop->lpIterConst());
+
+        if (stride >= 58)
         {
-            JITDUMP("> Stride %d is invalid\n", loop->lpIterConst());
+            // Array.MaxLength can have maximum of 0X7FFFFFC7 elements, so make sure
+            // the stride increment doesn't overflow or underflow the index. Hence,
+            // the maximum stride limit is set to
+            // (int.MaxValue - (Array.MaxLength - 1) + 1), which is
+            // (0X7fffffff - 0x7fffffc7 + 2) = 0x3a or 58.
             return false;
         }
 
+        LC_Ident ident;
         // Init conditions
         if (loop->lpFlags & LPFLG_CONST_INIT)
         {
@@ -1044,6 +1055,12 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             {
                 JITDUMP("> Init %d is invalid\n", loop->lpConstInit);
                 return false;
+            }
+
+            if (!isIncreasingLoop)
+            {
+                // For decreasing loop, the init value needs to be checked against the array length
+                ident = LC_Ident(static_cast<unsigned>(loop->lpConstInit), LC_Ident::Const);
             }
         }
         else
@@ -1056,13 +1073,22 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                 return false;
             }
 
-            LC_Condition geZero(GT_GE, LC_Expr(LC_Ident(initLcl, LC_Ident::Var)),
-                                LC_Expr(LC_Ident(0, LC_Ident::Const)));
+            LC_Condition geZero;
+            if (isIncreasingLoop)
+            {
+                geZero = LC_Condition(GT_GE, LC_Expr(LC_Ident(initLcl, LC_Ident::Var)),
+                                      LC_Expr(LC_Ident(0, LC_Ident::Const)));
+            }
+            else
+            {
+                // For decreasing loop, the init value needs to be checked against the array length
+                ident  = LC_Ident(initLcl, LC_Ident::Var);
+                geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident(0, LC_Ident::Const)));
+            }
             context->EnsureConditions(loopNum)->Push(geZero);
         }
 
         // Limit Conditions
-        LC_Ident ident;
         if (loop->lpFlags & LPFLG_CONST_LIMIT)
         {
             int limit = loop->lpConstLimit();
@@ -1071,7 +1097,12 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                 JITDUMP("> limit %d is invalid\n", limit);
                 return false;
             }
-            ident = LC_Ident(static_cast<unsigned>(limit), LC_Ident::Const);
+
+            if (isIncreasingLoop)
+            {
+                // For increasing loop, thelimit value needs to be checked against the array length
+                ident = LC_Ident(static_cast<unsigned>(limit), LC_Ident::Const);
+            }
         }
         else if (loop->lpFlags & LPFLG_VAR_LIMIT)
         {
@@ -1082,8 +1113,18 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
                 return false;
             }
 
-            ident = LC_Ident(limitLcl, LC_Ident::Var);
-            LC_Condition geZero(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident(0, LC_Ident::Const)));
+            LC_Condition geZero;
+            if (isIncreasingLoop)
+            {
+                // For increasing loop, thelimit value needs to be checked against the array length
+                ident  = LC_Ident(limitLcl, LC_Ident::Var);
+                geZero = LC_Condition(GT_GE, LC_Expr(ident), LC_Expr(LC_Ident(0, LC_Ident::Const)));
+            }
+            else
+            {
+                geZero = LC_Condition(GT_GE, LC_Expr(LC_Ident(limitLcl, LC_Ident::Var)),
+                                      LC_Expr(LC_Ident(0, LC_Ident::Const)));
+            }
 
             context->EnsureConditions(loopNum)->Push(geZero);
         }
@@ -1107,15 +1148,22 @@ bool Compiler::optDeriveLoopCloningConditions(unsigned loopNum, LoopCloneContext
             return false;
         }
 
-        // GT_LT loop test: limit <= arrLen
-        // GT_LE loop test: limit < arrLen
+        // Increasing loops
+        // GT_LT loop test: (start < end) ==> (end <= arrLen)
+        // GT_LE loop test: (start <= end) ==> (end < arrLen)
+        //
+        // Decreasing loops
+        // GT_GT loop test: (end > start) ==> (end <= arrLen)
+        // GT_GE loop test: (end >= start) ==> (end < arrLen)
         genTreeOps opLimitCondition;
         switch (loop->lpTestOper())
         {
             case GT_LT:
+            case GT_GT:
                 opLimitCondition = GT_LE;
                 break;
             case GT_LE:
+            case GT_GE:
                 opLimitCondition = GT_LT;
                 break;
             default:
@@ -1603,13 +1651,6 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    // TODO-CQ: CLONE: Mark increasing or decreasing loops.
-    if ((loop.lpIterOper() != GT_ADD) || (loop.lpIterConst() != 1))
-    {
-        JITDUMP("Loop cloning: rejecting loop " FMT_LP ". Loop iteration operator not matching.\n", loopInd);
-        return false;
-    }
-
     if ((loop.lpFlags & LPFLG_CONST_LIMIT) == 0 && (loop.lpFlags & LPFLG_VAR_LIMIT) == 0 &&
         (loop.lpFlags & LPFLG_ARRLEN_LIMIT) == 0)
     {
@@ -1618,8 +1659,12 @@ bool Compiler::optIsLoopClonable(unsigned loopInd)
         return false;
     }
 
-    if (!((GenTree::StaticOperIs(loop.lpTestOper(), GT_LT, GT_LE) && (loop.lpIterOper() == GT_ADD)) ||
-          (GenTree::StaticOperIs(loop.lpTestOper(), GT_GT, GT_GE) && (loop.lpIterOper() == GT_SUB))))
+    // TODO-CQ: Handle other loops like:
+    // - The ones whose limit operator is "==" or "!="
+    // - The incrementing operator is multiple and divide
+    // - The ones that are inverted are not handled here for cases like "i *= 2" because
+    //   they are converted to "i + i".
+    if (!(loop.lpIsIncreasingLoop() || loop.lpIsDecreasingLoop()))
     {
         JITDUMP("Loop cloning: rejecting loop " FMT_LP
                 ". Loop test (%s) doesn't agree with the direction (%s) of the loop.\n",

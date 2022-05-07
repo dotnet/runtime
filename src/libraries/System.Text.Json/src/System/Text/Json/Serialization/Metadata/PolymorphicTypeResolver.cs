@@ -232,7 +232,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// <summary>
         /// Lazy JsonTypeInfo result holder for a derived type.
         /// </summary>
-        private class DerivedJsonTypeInfo
+        private sealed class DerivedJsonTypeInfo
         {
             private volatile JsonTypeInfo? _jsonTypeInfo;
 

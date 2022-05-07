@@ -54,8 +54,13 @@ namespace System.Configuration
         /// <summary>
         /// Convenience overload that takes the owner component and settings key.
         /// </summary>
-        protected ApplicationSettingsBase(IComponent owner!!, string settingsKey) : this(settingsKey)
+        protected ApplicationSettingsBase(IComponent owner, string settingsKey) : this(settingsKey)
         {
+            if (owner is null)
+            {
+                throw new ArgumentNullException(nameof(owner));
+            }
+
             _owner = owner;
 
             if (owner.Site != null)

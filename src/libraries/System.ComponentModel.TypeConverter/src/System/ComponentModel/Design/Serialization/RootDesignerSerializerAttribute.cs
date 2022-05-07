@@ -17,8 +17,11 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public RootDesignerSerializerAttribute(Type serializerType!!, Type baseSerializerType!!, bool reloadable)
+        public RootDesignerSerializerAttribute(Type serializerType, Type baseSerializerType, bool reloadable)
         {
+            ArgumentNullException.ThrowIfNull(serializerType);
+            ArgumentNullException.ThrowIfNull(baseSerializerType);
+
             SerializerTypeName = serializerType.AssemblyQualifiedName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
             Reloadable = reloadable;
@@ -27,8 +30,10 @@ namespace System.ComponentModel.Design.Serialization
         /// <summary>
         /// Creates a new designer serialization attribute.
         /// </summary>
-        public RootDesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType!!, bool reloadable)
+        public RootDesignerSerializerAttribute(string serializerTypeName, Type baseSerializerType, bool reloadable)
         {
+            ArgumentNullException.ThrowIfNull(baseSerializerType);
+
             SerializerTypeName = serializerTypeName;
             SerializerBaseTypeName = baseSerializerType.AssemblyQualifiedName;
             Reloadable = reloadable;

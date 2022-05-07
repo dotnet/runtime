@@ -100,12 +100,12 @@ namespace System.Text.RegularExpressions
                     {
                         if (match.IsMatched(i))
                         {
-                            state.results.Add(match.Groups[i].ToString());
+                            state.results.Add(match.Groups[i].Value);
                         }
                     }
 
                     return --state.count != 0;
-                }, reuseMatchObject: true);
+                }, RegexRunnerMode.FullMatchRequired, reuseMatchObject: true);
 
                 if (state.results.Count == 0)
                 {
@@ -128,12 +128,12 @@ namespace System.Text.RegularExpressions
                     {
                         if (match.IsMatched(i))
                         {
-                            state.results.Add(match.Groups[i].ToString());
+                            state.results.Add(match.Groups[i].Value);
                         }
                     }
 
                     return --state.count != 0;
-                }, reuseMatchObject: true);
+                }, RegexRunnerMode.FullMatchRequired, reuseMatchObject: true);
 
                 if (state.results.Count == 0)
                 {

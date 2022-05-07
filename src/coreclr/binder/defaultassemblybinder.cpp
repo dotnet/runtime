@@ -85,7 +85,7 @@ HRESULT DefaultAssemblyBinder::BindUsingAssemblyName(BINDER_SPACE::AssemblyName 
         if (pManagedAssemblyLoadContext != NULL)
         {
             hr = AssemblyBinderCommon::BindUsingHostAssemblyResolver(pManagedAssemblyLoadContext, pAssemblyName,
-                                                                     NULL, &pCoreCLRFoundAssembly);
+                                                                     NULL, this, &pCoreCLRFoundAssembly);
             if (SUCCEEDED(hr))
             {
                 // We maybe returned an assembly that was bound to a different AssemblyLoadContext instance.
@@ -200,9 +200,9 @@ HRESULT DefaultAssemblyBinder::BindToSystem(BINDER_SPACE::Assembly** ppSystemAss
         {
             _ASSERTE(pAsm != NULL);
             *ppSystemAssembly = pAsm.Extract();
+            (*ppSystemAssembly)->SetBinder(this);
         }
 
-        (*ppSystemAssembly)->SetBinder(this);
     }
     EX_CATCH_HRESULT(hr);
 

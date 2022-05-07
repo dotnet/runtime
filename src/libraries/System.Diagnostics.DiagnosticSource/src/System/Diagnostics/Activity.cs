@@ -1518,7 +1518,7 @@ namespace System.Diagnostics
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
+        internal sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
             private DiagNode<KeyValuePair<string, object?>>? _first;
             private DiagNode<KeyValuePair<string, object?>>? _last;

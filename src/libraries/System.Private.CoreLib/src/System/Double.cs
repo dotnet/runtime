@@ -11,6 +11,7 @@
 **
 ===========================================================*/
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -620,20 +621,20 @@ namespace System
         /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp" />
         public static double Exp(double x) => Math.Exp(x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
-        // public static double ExpM1(double x) => Math.ExpM1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.ExpM1(TSelf)" />
+        public static double ExpM1(double x) => Math.Exp(x) - 1;
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
-        // public static double Exp2(double x) => Math.Exp2(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2(TSelf)" />
+        public static double Exp2(double x) => Math.Pow(2, x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
-        // public static double Exp2M1(double x) => Math.Exp2M1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp2M1(TSelf)" />
+        public static double Exp2M1(double x) => Math.Pow(2, x) - 1;
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
-        // public static double Exp10(double x) => Math.Exp10(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10(TSelf)" />
+        public static double Exp10(double x) => Math.Pow(10, x);
 
-        // /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
-        // public static double Exp10M1(double x) => Math.Exp10M1(x);
+        /// <inheritdoc cref="IExponentialFunctions{TSelf}.Exp10M1(TSelf)" />
+        public static double Exp10M1(double x) => Math.Pow(10, x) - 1;
 
         //
         // IFloatingPoint
@@ -684,6 +685,12 @@ namespace System
             if (destination.Length >= sizeof(short))
             {
                 short exponent = Exponent;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
+                }
+
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
 
                 bytesWritten = sizeof(short);
@@ -708,6 +715,12 @@ namespace System
             if (destination.Length >= sizeof(ulong))
             {
                 ulong significand = Significand;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
+
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
 
                 bytesWritten = sizeof(ulong);
@@ -911,17 +924,17 @@ namespace System
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log(TSelf, TSelf)" />
         public static double Log(double x, double newBase) => Math.Log(x, newBase);
 
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
+        public static double LogP1(double x) => Math.Log(x + 1);
+
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
+        public static double Log2P1(double x) => Math.Log2(x + 1);
+
         /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10(TSelf)" />
         public static double Log10(double x) => Math.Log10(x);
 
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.LogP1(TSelf)" />
-        // public static double LogP1(double x) => Math.LogP1(x);
-
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log2P1(TSelf)" />
-        // public static double Log2P1(double x) => Math.Log2P1(x);
-
-        // /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
-        // public static double Log10P1(double x) => Math.Log10P1(x);
+        /// <inheritdoc cref="ILogarithmicFunctions{TSelf}.Log10P1(TSelf)" />
+        public static double Log10P1(double x) => Math.Log10(x + 1);
 
         //
         // IMinMaxValue
@@ -939,8 +952,6 @@ namespace System
 
         /// <inheritdoc cref="IModulusOperators{TSelf, TOther, TResult}.op_Modulus(TSelf, TOther)" />
         static double IModulusOperators<double, double, double>.operator %(double left, double right) => left % right;
-
-        // static checked double IModulusOperators<double, double, double>.operator %(double left, double right) => checked(left % right);
 
         //
         // IMultiplicativeIdentity

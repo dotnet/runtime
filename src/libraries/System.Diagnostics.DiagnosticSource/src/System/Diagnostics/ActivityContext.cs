@@ -94,8 +94,13 @@ namespace System.Diagnostics
         /// <returns>
         /// The ActivityContext object created from the parsing operation.
         /// </returns>
-        public static ActivityContext Parse(string traceParent!!, string? traceState)
+        public static ActivityContext Parse(string traceParent, string? traceState)
         {
+            if (traceParent is null)
+            {
+                throw new ArgumentNullException(nameof(traceParent));
+            }
+
             if (!Activity.TryConvertIdToContext(traceParent, traceState, isRemote: false, out ActivityContext context))
             {
                 throw new ArgumentException(SR.InvalidTraceParent);

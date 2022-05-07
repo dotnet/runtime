@@ -138,8 +138,13 @@ namespace System.Composition.Hosting.Core
         /// <param name="constraintValue">The value if it is present and of the correct type, otherwise null.</param>
         /// <param name="remainingContract">The contract with the constraint removed if present, otherwise null.</param>
         /// <returns>True if the constraint is present and of the correct type, otherwise false.</returns>
-        public bool TryUnwrapMetadataConstraint<T>(string constraintName!!, out T constraintValue, out CompositionContract remainingContract)
+        public bool TryUnwrapMetadataConstraint<T>(string constraintName, out T constraintValue, out CompositionContract remainingContract)
         {
+            if (constraintName is null)
+            {
+                throw new ArgumentNullException(nameof(constraintName));
+            }
+
             constraintValue = default(T);
             remainingContract = null;
 

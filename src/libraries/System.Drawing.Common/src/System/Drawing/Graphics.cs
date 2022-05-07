@@ -1522,6 +1522,7 @@ namespace System.Drawing
 
         public unsafe void FillClosedCurve(Brush brush, PointF[] points, FillMode fillmode, float tension)
         {
+            ArgumentNullException.ThrowIfNull(brush);
             ArgumentNullException.ThrowIfNull(points);
 
             fixed (PointF* p = points)

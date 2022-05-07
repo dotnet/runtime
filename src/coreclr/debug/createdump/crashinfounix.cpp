@@ -381,7 +381,7 @@ CrashInfo::ReadProcessMemory(void* address, void* buffer, size_t size, size_t* r
         *read = process_vm_readv(m_pid, &local, 1, &remote, 1, 0);
     }
 
-    if (!m_canUseProcVmReadSyscall || (*read == (size_t)-1 && errno == EPERM))
+    if (!m_canUseProcVmReadSyscall || (*read == (size_t)-1 && (errno == EPERM || errno == ENOSYS)))
 #endif
     {
         // If we've failed, avoid going through expensive syscalls

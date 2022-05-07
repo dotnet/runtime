@@ -53,8 +53,8 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        public static CoseSign1Message DecodeSign1(byte[] cborPayload!!)
-            => DecodeCoseSign1Core(new CborReader(cborPayload));
+        public static CoseSign1Message DecodeSign1(byte[] cborPayload)
+            => DecodeCoseSign1Core(new CborReader(cborPayload ?? throw new ArgumentNullException(nameof(cborPayload))));
 
         public static CoseSign1Message DecodeSign1(ReadOnlySpan<byte> cborPayload)
         {

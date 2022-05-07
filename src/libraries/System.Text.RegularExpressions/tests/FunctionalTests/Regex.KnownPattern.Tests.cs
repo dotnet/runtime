@@ -118,10 +118,10 @@ namespace System.Text.RegularExpressions.Tests
                     return false;
                 }
 
+                Regex r = await RegexHelpers.GetRegexAsync(engine, @"(@)(.+)$", RegexOptions.None);
+
                 try
                 {
-                    Regex r = await RegexHelpers.GetRegexAsync(engine, @"(@)(.+)$", RegexOptions.None, TimeSpan.FromMilliseconds(200));
-
                     // Normalize the domain part of the email
                     email = r.Replace(email, match =>
                     {
@@ -134,30 +134,18 @@ namespace System.Text.RegularExpressions.Tests
                         return match.Groups[1].Value + domainName;
                     });
                 }
-                catch (RegexMatchTimeoutException)
-                {
-                    return false;
-                }
                 catch (ArgumentException)
                 {
-                    return false;
+                    return false; // for invalid IDN name with IdnMapping
                 }
 
-                try
-                {
-                    Regex r = await RegexHelpers.GetRegexAsync(
-                        engine,
-                        @"^(?("")("".+?(?<!\\)""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))" +
-                        @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-0-9a-z]*[0-9a-z]*\.)+[a-z0-9][\-a-z0-9]{0,22}[a-z0-9]))$",
-                        RegexOptions.IgnoreCase,
-                        TimeSpan.FromMilliseconds(250));
+                r = await RegexHelpers.GetRegexAsync(
+                    engine,
+                    @"^(?("")("".+?(?<!\\)""@)|(([0-9a-z]((\.(?!\.))|[-!#\$%&'\*\+/=\?\^`\{\}\|~\w])*)(?<=[0-9a-z])@))" +
+                    @"(?(\[)(\[(\d{1,3}\.){3}\d{1,3}\])|(([0-9a-z][-0-9a-z]*[0-9a-z]*\.)+[a-z0-9][\-a-z0-9]{0,22}[a-z0-9]))$",
+                    RegexOptions.IgnoreCase);
 
-                    return r.IsMatch(email);
-                }
-                catch (RegexMatchTimeoutException)
-                {
-                    return false;
-                }
+                return r.IsMatch(email);
             }
         }
 
@@ -752,16 +740,6 @@ namespace System.Text.RegularExpressions.Tests
         // https://docs.microsoft.com/en-us/dotnet/standard/base-types/backtracking-in-regular-expressions#nonbacktracking-subexpression
         [Theory]
         [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/57891")] // takes too long due to backtracking
-        public async Task Docs_Backtracking_WithNestedOptionalQuantifiers_ExcessiveBacktracking(RegexEngine engine)
-        {
-            Regex r = await RegexHelpers.GetRegexAsync(engine, "^(([0-9a-fA-F]{1,4}:)*([0-9a-fA-F]{1,4}))*(::)$");
-            Assert.False(r.IsMatch("b51:4:1DB:9EE1:5:27d60:f44:D4:cd:E:5:0A5:4a:D24:41Ad:"));
-        }
-
-        // https://docs.microsoft.com/en-us/dotnet/standard/base-types/backtracking-in-regular-expressions#nonbacktracking-subexpression
-        [Theory]
-        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
         public async Task Docs_Backtracking_WithNestedOptionalQuantifiers_BacktrackingEliminated(RegexEngine engine)
         {
             const string Input = "b51:4:1DB:9EE1:5:27d60:f44:D4:cd:E:5:0A5:4a:D24:41Ad:";
@@ -794,9 +772,9 @@ namespace System.Text.RegularExpressions.Tests
         }
 
         // https://docs.microsoft.com/en-us/dotnet/standard/base-types/backtracking-in-regular-expressions#lookahead-assertions
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "Doesn't support NonBacktracking")]
         [Theory]
-        [MemberData(nameof(RegexHelpers.AvailableEngines_MemberData), MemberType = typeof(RegexHelpers))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/57891")] // takes too long due to backtracking
+        [InlineData(RegexEngine.NonBacktracking)]
         public async Task Docs_Backtracking_LookaheadAssertions_ExcessiveBacktracking(RegexEngine engine)
         {
             Regex r = await RegexHelpers.GetRegexAsync(engine, @"^(([A-Z]\w*)+\.)*[A-Z]\w*$", RegexOptions.IgnoreCase);

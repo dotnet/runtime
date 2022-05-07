@@ -11,6 +11,7 @@
 #include "dynamicarray.h"
 #include <metamodelpub.h>
 #include "formattype.h"
+#include "readytorun.h"
 
 #define DECLARE_DATA
 #include "dasmenum.hpp"
@@ -94,6 +95,7 @@ BOOL                    g_fThisIsInstanceMethod;
 BOOL                    g_fTryInCode = TRUE;
 
 BOOL                    g_fLimitedVisibility = FALSE;
+BOOL                    g_fR2RNativeManifestMetadata = FALSE;
 BOOL                    g_fHidePub = TRUE;
 BOOL                    g_fHidePriv = TRUE;
 BOOL                    g_fHideFam = TRUE;
@@ -7002,8 +7004,16 @@ void DumpMetaInfo(_In_ __nullterminated const WCHAR* pwzFileName, _In_opt_z_ con
             if(g_pAssemblyImport==NULL) g_pAssemblyImport = GetAssemblyImport(NULL);
             printLine(GUICookie,RstrUTF(IDS_E_MISTART));
             //MDInfo metaDataInfo(g_pPubImport, g_pAssemblyImport, (LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
-            MDInfo metaDataInfo(g_pDisp,(LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
-            metaDataInfo.DisplayMD();
+            if (g_fR2RNativeManifestMetadata)
+            {
+                MDInfo metaDataInfo(g_pDisp, (PBYTE)g_pMetaData, g_cbMetaData, DumpMI, g_ulMetaInfoFilter);
+                metaDataInfo.DisplayMD();
+            }
+            else
+            {
+                MDInfo metaDataInfo(g_pDisp,(LPCWSTR)pwzFileName, DumpMI, g_ulMetaInfoFilter);
+                metaDataInfo.DisplayMD();
+            }
             printLine(GUICookie,RstrUTF(IDS_E_MIEND));
         }
     }
@@ -7447,6 +7457,41 @@ BOOL DumpFile()
     g_tkEntryPoint = VAL32(IMAGE_COR20_HEADER_FIELD(*g_CORHeader, EntryPointToken)); // integration with MetaInfo
 
 
+    if (g_fR2RNativeManifestMetadata)
+    {
+        //if this is a r2r image, use the native metadata.
+        if( !(g_CORHeader->ManagedNativeHeader.Size >= sizeof(READYTORUN_HEADER) ) )
+        {
+            printError( g_pFile, "/r2rnativemetadata only works on non-composite R2R images." );
+            goto exit;
+        }
+        READYTORUN_HEADER * pR2RHeader = NULL;
+        g_pPELoader->getVAforRVA(VAL32(g_CORHeader->ManagedNativeHeader.VirtualAddress), (void**)&pR2RHeader);
+
+        if (pR2RHeader == NULL || pR2RHeader->Signature != READYTORUN_SIGNATURE)
+        {
+            printError( g_pFile, "/r2rnativemetadata only works on non-composite R2R images." );
+            goto exit;
+        }
+
+        g_cbMetaData = 0;
+        READYTORUN_SECTION *pSections = (READYTORUN_SECTION *)((&pR2RHeader->CoreHeader) + 1);
+        for (DWORD iSection = 0; iSection < pR2RHeader->CoreHeader.NumberOfSections; iSection++)
+        {
+            if (pSections[iSection].Type == ReadyToRunSectionType::ManifestMetadata)
+            {
+                g_pPELoader->getVAforRVA(VAL32(pSections[iSection].Section.VirtualAddress), &g_pMetaData);
+                g_cbMetaData = VAL32(pSections[iSection].Section.Size);
+                break;
+            }
+        }
+        if (g_cbMetaData == 0)
+        {
+            printError( g_pFile, "This R2R file does not have an R2R manifest metadata" );
+            goto exit;
+        }
+    }
+    else
     {
     if (g_pPELoader->getVAforRVA(VAL32(g_CORHeader->MetaData.VirtualAddress),&g_pMetaData) == FALSE)
     {

@@ -108,7 +108,6 @@
 #include "proftoeeinterfaceimpl.inl"
 #include "profilinghelper.h"
 #include "profilinghelper.inl"
-#include "eemessagebox.h"
 
 
 #ifdef FEATURE_PROFAPI_ATTACH_DETACH
@@ -1617,9 +1616,9 @@ void ProfilingAPIUtility::TerminateProfiling(ProfilerInfo *pProfilerInfo)
         pProfilerInfo->ResetPerSessionStatus();
 
         pProfilerInfo->curProfStatus.Set(kProfStatusNone);
-        
+
         g_profControlBlock.DeRegisterProfilerInfo(pProfilerInfo);
-        
+
         g_profControlBlock.UpdateGlobalEventMask();
     }
 }

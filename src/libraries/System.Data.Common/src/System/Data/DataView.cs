@@ -1113,16 +1113,10 @@ namespace System.Data
         private static string CreateSortString(PropertyDescriptor property, ListSortDirection direction)
         {
             Debug.Assert(property != null, "property is null");
-            StringBuilder resultString = new StringBuilder();
-            resultString.Append('[');
-            resultString.Append(property.Name);
-            resultString.Append(']');
-            if (ListSortDirection.Descending == direction)
-            {
-                resultString.Append(" DESC");
-            }
 
-            return resultString.ToString();
+            return direction == ListSortDirection.Descending ?
+                $"[{property.Name}] DESC" :
+                $"[{property.Name}]";
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",

@@ -35,10 +35,6 @@ namespace System.Text.Json.Serialization.Tests
             await RunTest<DateOnly>(json);
             await RunTest<TimeOnly>(json);
 #endif
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            await RunTest<IAsyncEnumerable<int>>(json);
-            await RunTest<ClassThatImplementsIAsyncEnumerable>(json);
-#endif
 
             async Task RunTest<T>(string json)
             {
@@ -81,9 +77,6 @@ namespace System.Text.Json.Serialization.Tests
 #if NETCOREAPP
             await RunTest(DateOnly.MaxValue);
             await RunTest(TimeOnly.MinValue);
-#endif
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            await RunTest(new ClassThatImplementsIAsyncEnumerable());
 #endif
 
             async Task RunTest<T>(T value)

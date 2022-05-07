@@ -107,8 +107,10 @@ namespace System.Xml
             _textWriter.Write(lowChar);
         }
 
-        internal void Write(char[] array!!, int offset, int count)
+        internal void Write(char[] array, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (0 > offset)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -442,8 +444,10 @@ namespace System.Xml
             return;
         }
 
-        internal void WriteRaw(char[] array!!, int offset, int count)
+        internal void WriteRaw(char[] array, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (0 > count)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));

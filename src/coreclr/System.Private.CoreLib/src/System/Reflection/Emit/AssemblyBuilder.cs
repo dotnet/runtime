@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Configuration.Assemblies;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
@@ -36,12 +37,14 @@ namespace System.Reflection.Emit
 
         #region Constructor
 
-        internal AssemblyBuilder(AssemblyName name!!,
+        internal AssemblyBuilder(AssemblyName name,
                                  AssemblyBuilderAccess access,
                                  Assembly? callingAssembly,
                                  AssemblyLoadContext? assemblyLoadContext,
                                  IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
@@ -52,22 +55,10 @@ namespace System.Reflection.Emit
                 // know how to set the correct context of the new dynamic assembly.
                 throw new InvalidOperationException();
             }
-            if (assemblyLoadContext == null)
-            {
-                assemblyLoadContext = AssemblyLoadContext.GetLoadContext(callingAssembly);
-            }
-
-            // Clone the name in case the caller modifies it underneath us.
-            name = (AssemblyName)name.Clone();
-
-            RuntimeAssembly? retAssembly = null;
-            CreateDynamicAssembly(ObjectHandleOnStack.Create(ref name),
-                                  (int)access,
-                                  ObjectHandleOnStack.Create(ref assemblyLoadContext),
-                                  ObjectHandleOnStack.Create(ref retAssembly));
-            _internalAssembly = retAssembly!;
 
             _access = access;
+
+            _internalAssembly = CreateDynamicAssembly(assemblyLoadContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly)!, name, access);
 
             // Make sure that ManifestModule is properly initialized
             // We need to do this before setting any CustomAttribute
@@ -115,10 +106,44 @@ namespace System.Reflection.Emit
         }
 
         [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
-        private static partial void CreateDynamicAssembly(ObjectHandleOnStack name,
-                                                         int access,
-                                                         ObjectHandleOnStack assemblyLoadContext,
-                                                         ObjectHandleOnStack retAssembly);
+        private static unsafe partial void CreateDynamicAssembly(ObjectHandleOnStack assemblyLoadContext,
+                                                                 NativeAssemblyNameParts* pAssemblyName,
+                                                                 AssemblyHashAlgorithm hashAlgId,
+                                                                 AssemblyBuilderAccess access,
+                                                                 ObjectHandleOnStack retAssembly);
+
+        private static unsafe RuntimeAssembly CreateDynamicAssembly(AssemblyLoadContext assemblyLoadContext, AssemblyName name, AssemblyBuilderAccess access)
+        {
+            RuntimeAssembly? retAssembly = null;
+
+            byte[]? publicKey = name.GetPublicKey();
+
+            fixed (char* pName = name.Name)
+            fixed (char* pCultureName = name.CultureName)
+            fixed (byte* pPublicKey = publicKey)
+            {
+                NativeAssemblyNameParts nameParts = default;
+
+                nameParts._flags = name.RawFlags;
+                nameParts._pName = pName;
+                nameParts._pCultureName = pCultureName;
+
+                nameParts._pPublicKeyOrToken = pPublicKey;
+                nameParts._cbPublicKeyOrToken = (publicKey != null) ? publicKey.Length : 0;
+
+                nameParts.SetVersion(name.Version, defaultValue: 0);
+
+#pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
+                CreateDynamicAssembly(ObjectHandleOnStack.Create(ref assemblyLoadContext),
+                                  &nameParts,
+                                  name.HashAlgorithm,
+                                  access,
+                                  ObjectHandleOnStack.Create(ref retAssembly));
+#pragma warning restore SYSLIB0037
+            }
+
+            return retAssembly!;
+        }
 
         private static readonly object s_assemblyBuilderLock = new object();
 
@@ -274,8 +299,11 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client decides to form the custom attribute blob themselves.
         /// </summary>
-        public void SetCustomAttribute(ConstructorInfo con!!, byte[] binaryAttribute!!)
+        public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
+
             lock (SyncRoot)
             {
                 TypeBuilder.DefineCustomAttribute(
@@ -289,8 +317,10 @@ namespace System.Reflection.Emit
         /// <summary>
         /// Use this function if client wishes to build CustomAttribute using CustomAttributeBuilder.
         /// </summary>
-        public void SetCustomAttribute(CustomAttributeBuilder customBuilder!!)
+        public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
+            ArgumentNullException.ThrowIfNull(customBuilder);
+
             lock (SyncRoot)
             {
                 customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyDefToken);

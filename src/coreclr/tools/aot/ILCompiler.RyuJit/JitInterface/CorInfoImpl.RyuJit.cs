@@ -25,7 +25,7 @@ namespace Internal.JitInterface
 {
     unsafe partial class CorInfoImpl
     {
-        private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_CORERT_ABI;
+        private const CORINFO_RUNTIME_ABI TargetABI = CORINFO_RUNTIME_ABI.CORINFO_NATIVEAOT_ABI;
 
         private uint OffsetOfDelegateFirstTarget => (uint)(4 * PointerSize); // Delegate::m_functionPointer
         private int SizeOfReversePInvokeTransitionFrame => 2 * PointerSize;
