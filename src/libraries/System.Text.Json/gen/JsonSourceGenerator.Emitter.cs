@@ -479,6 +479,7 @@ namespace {@namespace}
                     CollectionType.Stack => $"{JsonMetadataServicesTypeRef}.CreateStackInfo<",
                     CollectionType.Queue => $"{JsonMetadataServicesTypeRef}.CreateQueueInfo<",
                     CollectionType.IEnumerableOfT => $"{JsonMetadataServicesTypeRef}.CreateIEnumerableInfo<",
+                    CollectionType.IAsyncEnumerableOfT => $"{JsonMetadataServicesTypeRef}.CreateIAsyncEnumerableInfo<",
                     CollectionType.IDictionaryOfTKeyTValue => $"{JsonMetadataServicesTypeRef}.CreateIDictionaryInfo<",
                     _ => $"{JsonMetadataServicesTypeRef}.Create{collectionType}Info<"
                 };

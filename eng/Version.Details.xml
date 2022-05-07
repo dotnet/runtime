@@ -238,9 +238,9 @@
       <Uri>https://github.com/dotnet/runtime</Uri>
       <Sha>b8dc04b445fc98d24fd92262364a9e5b5e23a5b9</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22252.2">
+    <Dependency Name="Microsoft.NET.ILLink.Tasks" Version="7.0.100-1.22255.1">
       <Uri>https://github.com/dotnet/linker</Uri>
-      <Sha>05a3b652d525acaac1307221b62db979d0108692</Sha>
+      <Sha>00e9a154efeb6369b1345bdafeebb686c0163841</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.XHarness.TestRunners.Common" Version="1.0.0-prerelease.22214.2">
       <Uri>https://github.com/dotnet/xharness</Uri>
@@ -282,9 +282,9 @@
       <Uri>https://github.com/dotnet/runtime-assets</Uri>
       <Sha>78cb33dbb0fb5156f049b9e1778f47b508f1be9f</Sha>
     </Dependency>
-    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="7.0.0-preview1.22212.1">
+    <Dependency Name="Microsoft.CodeAnalysis.NetAnalyzers" Version="7.0.0-preview1.22229.1">
       <Uri>https://github.com/dotnet/roslyn-analyzers</Uri>
-      <Sha>5b0b341f5202a855179864a5b7cad0aba13d5582</Sha>
+      <Sha>9de7a45252c227009c77f5631d7eb86864cbff61</Sha>
     </Dependency>
     <Dependency Name="Microsoft.DotNet.Compatibility" Version="2.0.0-alpha.1.21525.11">
       <Uri>https://github.com/dotnet/sdk</Uri>
