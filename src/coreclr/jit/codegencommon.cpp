@@ -1946,8 +1946,8 @@ void CodeGen::genGenerateMachineCode()
     // after code generation but before eh funclet generation check to see if any jumps can be removed
     if (GetEmitter()->emitRemoveJumpToNextInst())
     {
-         // if jumps were removed the live ranges need to be updated with the new instruction group sizes
-         genUpdateLiveRangesForTruncatedIGs();
+        // if jumps were removed the live ranges need to be updated with the new instruction group sizes
+        genUpdateLiveRangesForTruncatedIGs();
     }
 
     /* We can now generate the function prolog and epilog */
@@ -1967,7 +1967,10 @@ void CodeGen::genGenerateMachineCode()
     /* The code is now complete and final; it should not change after this. */
 }
 
-
+//----------------------------------------------------------------------
+// genUpdateLiveRangesForTruncatedIGs -- find any instruction groups that have
+//   had their count altered and updated live ranges that refer to those groups
+//
 void CodeGen::genUpdateLiveRangesForTruncatedIGs()
 {
 #ifdef DEBUG
@@ -2050,16 +2053,15 @@ void CodeGen::genUpdateLiveRangesForTruncatedIGs()
                         }
                     }
                 }
+#ifdef DEBUG
                 else
                 {
-#ifdef DEBUG
                     if (compiler->verbose)
                     {
-                        JITDUMP("IG%02u is marked with IGF_UPD_ICOUNT but has no live variables\n", ig);
+                        JITDUMP("IG%02u is marked with IGF_UPD_ICOUNT and has no live variables\n", ig);
                     }
-#endif
                 }
-
+#endif
                 ig->igFlags ^= IGF_UPD_ICOUNT;
             }
 
@@ -9325,7 +9327,7 @@ unsigned int CodeGenInterface::VariableLiveKeeper::getVarCount() const
             if (m_Compiler->compMap2ILvarNum(varNum) != (unsigned int)ICorDebugInfo::UNKNOWN_ILNUM)
             {
                 count += 1;
-            }            
+            }
         }
     }
     return count;

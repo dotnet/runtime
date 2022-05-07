@@ -13676,7 +13676,7 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
             if (!id->idIsBound())
             {
                 printf("instruction has IF_LABEL flag ");
-                emitDispIns(id,false,false,false);
+                emitDispIns(id, false, false, false);
                 printf("but should not have\n");
                 assert(0);
             }

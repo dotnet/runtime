@@ -159,7 +159,7 @@ public:
         return ig;
     }
 
-    int GetInsNum() const;
+    int  GetInsNum() const;
     void SetInsNum(int insNum);
 
     bool operator!=(const emitLocation& other) const
@@ -2006,11 +2006,10 @@ private:
 
     insGroup* emitPrologIG; // prolog instruction group
 
-    instrDescJmp* emitJumpList;       // list of local jumps in method
-    instrDescJmp* emitJumpLast;       // last of local jumps in method
-    void          emitJumpDistBind(); // Bind all the local jumps in method
-    bool          emitRemoveJumpToNextInst();
-    void          emitRemoveLabelOnlyUsedBy(instrDescJmp* jmpFrom);
+    instrDescJmp* emitJumpList;               // list of local jumps in method
+    instrDescJmp* emitJumpLast;               // last of local jumps in method
+    void          emitJumpDistBind();         // Bind all the local jumps in method
+    bool          emitRemoveJumpToNextInst(); // try to remove unconditional jumps to the next instruction
 
 #if FEATURE_LOOP_ALIGN
     instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
