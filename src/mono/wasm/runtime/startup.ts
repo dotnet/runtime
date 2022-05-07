@@ -54,7 +54,7 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
     // Consider the can_call_digest check in the pal_crypto_webworker when updating this check.
     if (ENVIRONMENT_IS_WEB && typeof crypto.subtle === "undefined" && typeof SharedArrayBuffer !== "undefined") {
         const chan = LibraryChannel.create(1024); // 1024 is the buffer size in char units.
-        const worker = new Worker("dotnet-crypto-worker.ts");
+        const worker = new Worker("dotnet-crypto-worker.js");
         (globalThis as any).mono_wasm_crypto = {
             channel: chan,
             worker: worker,
