@@ -4260,7 +4260,7 @@ class CallArg
     // The LclVar number if we had to force evaluation of this arg.
     unsigned m_tmpNum;
     // The type of the argument in the signature.
-    var_types m_signatureType;
+    var_types m_signatureType : 5;
     // The type of well-known argument this is.
     WellKnownArg m_wellKnownArg : 5;
     // True when we force this argument's evaluation into a temp LclVar.
