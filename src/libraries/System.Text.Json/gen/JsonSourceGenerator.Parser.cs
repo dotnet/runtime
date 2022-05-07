@@ -774,7 +774,7 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (type.GetCompatibleGenericInterface(_iasyncEnumerableOfTType) is Type iasyncEnumerableType)
                 {
-                    if ((type.GetConstructor(Type.EmptyTypes) != null || type.IsValueType) && !type.IsAbstract && !type.IsInterface)
+                    if (type.CanUseDefaultConstructorForDeserialization())
                     {
                         constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
                     }
@@ -786,7 +786,7 @@ namespace System.Text.Json.SourceGeneration
                 }
                 else if (_ienumerableType.IsAssignableFrom(type))
                 {
-                    if ((type.GetConstructor(Type.EmptyTypes) != null || type.IsValueType) && !type.IsAbstract && !type.IsInterface)
+                    if (type.CanUseDefaultConstructorForDeserialization())
                     {
                         constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
                     }
