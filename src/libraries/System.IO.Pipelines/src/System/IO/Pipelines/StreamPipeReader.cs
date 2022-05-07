@@ -167,11 +167,11 @@ namespace System.IO.Pipelines
         }
 
 #if NETCOREAPP
-        public override async ValueTask CompleteAsync(Exception? exception = null)
+        public override ValueTask CompleteAsync(Exception? exception = null)
         {
             if (CompleteAndGetNeedsDispose())
             {
-                await InnerStream.DisposeAsync().ConfigureAwait(false);
+                return InnerStream.DisposeAsync();
             }
         }
 #endif
