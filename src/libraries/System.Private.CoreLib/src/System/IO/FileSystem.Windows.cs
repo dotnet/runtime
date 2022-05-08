@@ -434,14 +434,11 @@ namespace System.IO
                 FileAttributes = (uint)attributes
             };
 
-            bool success = Interop.Kernel32.SetFileInformationByHandle(
-                fileHandle,
-                Interop.Kernel32.FileBasicInfo,
-                &basicInfo,
-                (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)
-            );
-
-            if (!success)
+            if (!Interop.Kernel32.SetFileInformationByHandle(
+                    fileHandle,
+                    Interop.Kernel32.FileBasicInfo,
+                    &basicInfo,
+                    (uint)sizeof(Interop.Kernel32.FILE_BASIC_INFO)))
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error(fileHandle.Path);
             }
@@ -485,10 +482,10 @@ namespace System.IO
         }
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
-           => SetFileTime(fullPath, asDirectory, time.ToFileTime());
+           => SetFileTime(fullPath, asDirectory, creationTime: time.ToFileTime());
 
-        public static void SetCreationTime(SafeFileHandle fileHandle, DateTimeOffset time) =>
-            SetFileTime(fileHandle, time.ToFileTime());
+        public static void SetCreationTime(SafeFileHandle fileHandle, DateTimeOffset time)
+            => SetFileTime(fileHandle, creationTime: time.ToFileTime());
 
         public static void SetLastAccessTime(string fullPath, DateTimeOffset time, bool asDirectory)
            => SetFileTime(fullPath, asDirectory, lastAccessTime: time.ToFileTime());

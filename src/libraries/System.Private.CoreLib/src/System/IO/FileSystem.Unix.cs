@@ -586,19 +586,19 @@ namespace System.IO
         }
 
         public static FileAttributes GetAttributes(SafeFileHandle fileHandle)
-        => default(FileStatus).GetAttributes(fileHandle);
+            => default(FileStatus).GetAttributes(fileHandle);
 
         public static void SetAttributes(string fullPath, FileAttributes attributes)
             => default(FileStatus).SetAttributes(fullPath, attributes, asDirectory: false);
 
         public static void SetAttributes(SafeFileHandle fileHandle, FileAttributes attributes)
-        => default(FileStatus).SetAttributes(fileHandle, attributes, asDirectory: false);
+            => default(FileStatus).SetAttributes(fileHandle, attributes, asDirectory: false);
 
         public static DateTimeOffset GetCreationTime(string fullPath)
             => default(FileStatus).GetCreationTime(fullPath).UtcDateTime;
 
         public static DateTimeOffset GetCreationTime(SafeFileHandle fileHandle)
-        => default(FileStatus).GetCreationTime(fileHandle).UtcDateTime;
+            => default(FileStatus).GetCreationTime(fileHandle).UtcDateTime;
 
         public static void SetCreationTime(string fullPath, DateTimeOffset time, bool asDirectory)
             => default(FileStatus).SetCreationTime(fullPath, time, asDirectory);
