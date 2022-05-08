@@ -11679,12 +11679,7 @@ DONE_MORPHING_CHILDREN:
 
                     temp = op1->AsOp()->gtOp1; // X
 
-                    // In the test below, if they're both TYP_STRUCT, this of course does *not* mean that
-                    // they are the *same* struct type.  In fact, they almost certainly aren't.  If the
-                    // address has an associated field sequence, that identifies this case; go through
-                    // the "lcl_fld" path rather than this one.
-                    FieldSeqNode* addrFieldSeq = nullptr; // This is an unused out parameter below.
-                    if (typ == temp->TypeGet() && !GetZeroOffsetFieldMap()->Lookup(op1, &addrFieldSeq))
+                    if ((typ == temp->TypeGet()) && (typ != TYP_STRUCT))
                     {
                         foldAndReturnTemp = true;
                     }
@@ -11749,20 +11744,6 @@ DONE_MORPHING_CHILDREN:
                         {
                             tree->gtType = typ = temp->TypeGet();
                             foldAndReturnTemp  = true;
-                        }
-                        else
-                        {
-                            // Assumes that when Lookup returns "false" it will leave "fieldSeq" unmodified (i.e.
-                            // nullptr)
-                            assert(fieldSeq == nullptr);
-                            bool b = GetZeroOffsetFieldMap()->Lookup(op1, &fieldSeq);
-                            assert(b || fieldSeq == nullptr);
-
-                            if ((fieldSeq != nullptr) && (temp->OperGet() == GT_LCL_FLD))
-                            {
-                                temp->gtType      = typ;
-                                foldAndReturnTemp = true;
-                            }
                         }
                         // Otherwise will will fold this into a GT_LCL_FLD below
                         //   where we check (temp != nullptr)
