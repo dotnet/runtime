@@ -612,7 +612,7 @@ public:
     // Gets memory related information the last GC observed. Depending on the last arg, this could
     // be any last GC that got recorded, or of the kind specified by this arg. All info below is
     // what was observed by that last GC.
-    // 
+    //
     // highMemLoadThreshold - physical memory load (in percentage) when GC will start to
     //   react aggressively to reclaim memory.
     // totalPhysicalMem - the total amount of phyiscal memory available on the machine and the memory
@@ -621,7 +621,7 @@ public:
     // lastRecordedHeapSizeBytes - total managed heap size.
     // lastRecordedFragmentation - total fragmentation in the managed heap.
     // totalCommittedBytes - total committed bytes by the managed heap.
-    // promotedBytes - promoted bytes. 
+    // promotedBytes - promoted bytes.
     // pinnedObjectCount - # of pinned objects observed.
     // finalizationPendingCount - # of objects ready for finalization.
     // index - the index of the GC.
@@ -741,8 +741,8 @@ public:
     // Returns whether or not a GC is in progress.
     virtual bool IsGCInProgressHelper(bool bConsiderGCStart = false) = 0;
 
-    // Returns the number of GCs that have occured. Mainly used for
-    // sanity checks asserting that a GC has not occured.
+    // Returns the number of GCs that have occurred. Mainly used for
+    // sanity checks asserting that a GC has not occurred.
     virtual unsigned GetGcCount() = 0;
 
     // Gets whether or not the home heap of this alloc context matches the heap
@@ -785,11 +785,11 @@ public:
     ============================================================================
     */
 
-    // Get the timestamp corresponding to the last GC that occured for the
+    // Get the timestamp corresponding to the last GC that occurred for the
     // given generation.
     virtual size_t GetLastGCStartTime(int generation) = 0;
 
-    // Gets the duration of the last GC that occured for the given generation.
+    // Gets the duration of the last GC that occurred for the given generation.
     virtual size_t GetLastGCDuration(int generation) = 0;
 
     // Gets a timestamp for the current moment in time.

@@ -576,10 +576,12 @@ public:
     static TADDR AllocateTemporaryEntryPoints(MethodDescChunk* pChunk,
         LoaderAllocator *pLoaderAllocator, AllocMemTracker *pamTracker);
 
-    static SIZE_T GetMaxTemporaryEntryPointsCount()
+    static DWORD GetMaxTemporaryEntryPointsCount()
     {
         SIZE_T maxPrecodeCodeSize = Max(FixupPrecode::CodeSize, StubPrecode::CodeSize);
-        return GetOsPageSize() / maxPrecodeCodeSize;
+        SIZE_T count = GetOsPageSize() / maxPrecodeCodeSize;
+        _ASSERTE(count < MAXDWORD);
+        return (DWORD)count;
     }
 
 #ifdef DACCESS_COMPILE

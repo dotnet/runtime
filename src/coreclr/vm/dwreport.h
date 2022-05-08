@@ -3,7 +3,7 @@
 //
 // FILE: dwreport.h
 //
-// This file contains declarations for functions used to report errors occuring
+// This file contains declarations for functions used to report errors occurring
 // in a process running managed code.
 //
 

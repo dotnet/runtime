@@ -84,6 +84,14 @@ event_pipe_thread_ctrl_activity_id(
 	uint8_t *activity_id,
 	uint32_t activity_id_len);
 
+static bool
+event_pipe_signal_session (EventPipeSessionID session_id);
+
+static bool
+event_pipe_wait_for_session_signal (
+	EventPipeSessionID session_id,
+	uint32_t timeout);
+
 static MonoComponentEventPipe fn_table = {
 	{ MONO_COMPONENT_ITF_VERSION, &event_pipe_available },
 	&ep_init,
@@ -114,7 +122,9 @@ static MonoComponentEventPipe fn_table = {
 	&ep_rt_write_event_threadpool_io_enqueue,
 	&ep_rt_write_event_threadpool_io_dequeue,
 	&ep_rt_write_event_threadpool_working_thread_count,
-	&ep_rt_write_event_threadpool_io_pack
+	&ep_rt_write_event_threadpool_io_pack,
+	&event_pipe_signal_session,
+	&event_pipe_wait_for_session_signal
 };
 
 static bool
@@ -161,7 +171,7 @@ event_pipe_enable (
 		rundown_requested,
 		stream,
 		sync_callback,
-        NULL);
+		NULL);
 
 	if (config_providers) {
 		for (int i = 0; i < providers_len; ++i) {
@@ -283,6 +293,28 @@ event_pipe_thread_ctrl_activity_id (
 	}
 
 	return result;
+}
+
+static bool
+event_pipe_signal_session (EventPipeSessionID session_id)
+{
+	EventPipeSession *const session = ep_get_session (session_id);
+	if (!session)
+		return false;
+
+	return ep_rt_wait_event_set (ep_session_get_wait_event (session));
+}
+
+static bool
+event_pipe_wait_for_session_signal (
+	EventPipeSessionID session_id,
+	uint32_t timeout)
+{
+	EventPipeSession *const session = ep_get_session (session_id);
+	if (!session)
+		return false;
+
+	return !ep_rt_wait_event_wait (ep_session_get_wait_event (session), timeout, false) ? true : false;
 }
 
 MonoComponentEventPipe *

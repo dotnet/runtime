@@ -7,7 +7,7 @@ using System.Drawing.Internal;
 using System.Drawing.Text;
 using System.Runtime.InteropServices;
 #if NET7_0_OR_GREATER
-using System.Runtime.InteropServices.GeneratedMarshalling;
+using System.Runtime.InteropServices.Marshalling;
 #endif
 
 namespace System.Drawing

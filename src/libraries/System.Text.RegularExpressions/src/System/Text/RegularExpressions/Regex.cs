@@ -32,6 +32,13 @@ namespace System.Text.RegularExpressions
         private WeakReference<RegexReplacement?>? _replref;   // cached parsed replacement pattern
         private volatile RegexRunner? _runner;                // cached runner
 
+#if DEBUG
+        // These members aren't used from Regex(), but we want to keep them in debug builds for now,
+        // so this is a convenient place to include them rather than needing a debug-only illink file.
+        [DynamicDependency(nameof(SaveDGML))]
+        [DynamicDependency(nameof(GenerateUnicodeTables))]
+        [DynamicDependency(nameof(GenerateRandomMembers))]
+#endif
         protected Regex()
         {
             internalMatchTimeout = s_defaultMatchTimeout;

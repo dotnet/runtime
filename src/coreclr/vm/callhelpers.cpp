@@ -246,7 +246,7 @@ void FillInRegTypeMap(int argOffset, CorElementType typ, BYTE * pMap)
 
     if (regArgNum < NUM_ARGUMENT_REGISTERS)
     {
-        pMap[regArgNum] = typ;
+        pMap[regArgNum] = (BYTE)typ;
     }
 }
 #endif // CALLDESCR_REGTYPEMAP

@@ -34,6 +34,7 @@ namespace LibraryImportGenerator.UnitTests
             // Source will have CS8795 (Partial method must have an implementation) without generator run
             var source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 partial class Foo
 {
     [LibraryImport(""Foo"")]
@@ -64,6 +65,7 @@ struct Native
         {
             var source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 partial class Foo
 {
     [LibraryImport(""Foo"")]

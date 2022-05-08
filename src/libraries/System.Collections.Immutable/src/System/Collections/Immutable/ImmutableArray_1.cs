@@ -418,6 +418,97 @@ namespace System.Collections.Immutable
         }
 
         /// <summary>
+        /// Adds the specified items to the end of the array.
+        /// </summary>
+        /// <param name="items">The values to add.</param>
+        /// <param name="length">The number of elements from the source array to add.</param>
+        /// <returns>A new list with the elements added.</returns>
+        public ImmutableArray<T> AddRange(T[] items, int length)
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+            Requires.NotNull(items, nameof(items));
+            Requires.Range(length >= 0 && length <= items.Length, nameof(length));
+
+            if (items.Length == 0 || length == 0)
+            {
+                return self;
+            }
+            else if (self.IsEmpty)
+            {
+                return ImmutableArray.Create(items, 0, length);
+            }
+
+            T[] tmp = new T[self.Length + length];
+            Array.Copy(self.array!, tmp, self.Length);
+            Array.Copy(items, 0, tmp, self.Length, length);
+
+            return new ImmutableArray<T>(tmp);
+        }
+
+        /// <summary>
+        /// Adds the specified items to the end of the array.
+        /// </summary>
+        /// <param name="items">The values to add.</param>
+        /// <returns>A new list with the elements added.</returns>
+        public ImmutableArray<T> AddRange<TDerived>(TDerived[] items) where TDerived : T
+        {
+            var self = this;
+            self.ThrowNullRefIfNotInitialized();
+            Requires.NotNull(items, nameof(items));
+
+            if (items.Length == 0)
+            {
+                return self;
+            }
+
+            T[] tmp = new T[self.Length + items.Length];
+            Array.Copy(self.array!, tmp, self.Length);
+            Array.Copy(items, 0, tmp, self.Length, items.Length);
+
+            return new ImmutableArray<T>(tmp);
+        }
+
+        /// <summary>
+        /// Adds the specified items to the end of the array.
+        /// </summary>
+        /// <param name="items">The values to add.</param>
+        /// <param name="length">The number of elements from the source array to add.</param>
+        /// <returns>A new list with the elements added.</returns>
+        public ImmutableArray<T> AddRange(ImmutableArray<T> items, int length)
+        {
+            var self = this;
+            Requires.Range(length >= 0, nameof(length));
+
+            if (items.array != null)
+            {
+                return self.AddRange(items.array, length);
+            }
+            else
+            {
+                return self;
+            }
+        }
+
+        /// <summary>
+        /// Adds the specified items to the end of the array.
+        /// </summary>
+        /// <param name="items">The values to add.</param>
+        /// <returns>A new list with the elements added.</returns>
+        public ImmutableArray<T> AddRange<TDerived>(ImmutableArray<TDerived> items) where TDerived : T
+        {
+            var self = this;
+            if (items.array != null)
+            {
+                return self.AddRange(items.array);
+            }
+            else
+            {
+                return self;
+            }
+        }
+
+        /// <summary>
         /// Adds the specified values to this list.
         /// </summary>
         /// <param name="items">The values to add.</param>

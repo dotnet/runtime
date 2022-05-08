@@ -295,9 +295,9 @@ public:
 // Return an index of argument slot. First indices are reserved for general purpose registers,
 // the following ones for float registers and then the rest for stack slots.
 // This index is independent of how many registers are actually used to pass arguments.
-int GetNormalizedArgumentSlotIndex(UINT16 offset)
+static UINT16 GetNormalizedArgumentSlotIndex(UINT16 offset)
 {
-    int index;
+    UINT16 index;
 
     if (offset & ShuffleEntry::FPREGMASK)
     {
@@ -531,11 +531,11 @@ BOOL GenerateShuffleArrayPortable(MethodDesc* pMethodSrc, MethodDesc *pMethodDst
         {
             ShuffleEntry entry = (*pShuffleEntryArray)[i];
 
-            int srcIndex = GetNormalizedArgumentSlotIndex(entry.srcofs);
-            int dstIndex = GetNormalizedArgumentSlotIndex(entry.dstofs);
+            UINT16 srcIndex = GetNormalizedArgumentSlotIndex(entry.srcofs);
+            UINT16 dstIndex = GetNormalizedArgumentSlotIndex(entry.dstofs);
 
-            _ASSERTE((srcIndex >= 0) && ((unsigned int)srcIndex < argSlots));
-            _ASSERTE((dstIndex >= 0) && ((unsigned int)dstIndex < argSlots));
+            _ASSERTE((srcIndex >= 0) && (srcIndex < argSlots));
+            _ASSERTE((dstIndex >= 0) && (dstIndex < argSlots));
 
             // Unmark the node to indicate that it was not processed yet
             pGraphNodes[srcIndex].isMarked = false;

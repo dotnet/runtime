@@ -308,7 +308,7 @@ namespace System.Runtime.Loader
             return null;
         }
 
-#if !CORERT
+#if !NATIVEAOT
         [System.Security.DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod
         public Assembly LoadFromAssemblyName(AssemblyName assemblyName)
         {
@@ -578,7 +578,7 @@ namespace System.Runtime.Loader
             }
         }
 
-#if !CORERT
+#if !NATIVEAOT
         // This method is invoked by the VM when using the host-provided assembly load context
         // implementation.
         private static Assembly? Resolve(IntPtr gchManagedAssemblyLoadContext, AssemblyName assemblyName)
@@ -731,7 +731,7 @@ namespace System.Runtime.Loader
 
             return null;
         }
-#endif // !CORERT
+#endif // !NATIVEAOT
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
             Justification = "Satellite assemblies have no code in them and loading is not a problem")]
