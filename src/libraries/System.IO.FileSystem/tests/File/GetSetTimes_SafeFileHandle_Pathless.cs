@@ -5,14 +5,22 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Tests
 {
-    public sealed class File_GetSetTimes_SafeFileHandle : File_GetSetTimes
+    public sealed class File_GetSetTimes_SafeFileHandle_Pathless : File_GetSetTimes
     {
-        private static SafeFileHandle OpenFileHandle(string path, FileAccess fileAccess) =>
-            File.OpenHandle(
+        private static SafeFileHandle OpenFileHandle(string path, FileAccess fileAccess)
+        {
+            SafeFileHandle originHandle = File.OpenHandle(
                 path,
                 FileMode.OpenOrCreate,
                 fileAccess,
                 FileShare.ReadWrite);
+
+            // Create handle by ptr to force that `SafeFileHandle.Path` is `null`
+            SafeFileHandle newHandle = new(originHandle.DangerousGetHandle(), true);
+            originHandle.SetHandleAsInvalid();
+
+            return newHandle;
+        }
 
         protected override bool CanBeReadOnly => false;
 

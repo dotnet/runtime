@@ -35,6 +35,7 @@
     <Compile Include="File\GetSetAttributes_SafeFileHandle.cs" />
     <Compile Include="File\GetSetTimes.cs" />
     <Compile Include="File\GetSetTimes_SafeFileHandle.cs" />
+    <Compile Include="File\GetSetTimes_SafeFileHandle_Pathless.cs" />
     <Compile Include="File\Replace.cs" />
     <Compile Include="File\AppendAsync.cs" />
     <Compile Include="File\ReadWriteAllLinesAsync.cs" />
