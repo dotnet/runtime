@@ -10,6 +10,12 @@ namespace System
     internal static class ThrowHelper
     {
         [DoesNotReturn]
+        internal static void ThrowOverflowException()
+        {
+            throw new OverflowException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowNotSupportedException()
         {
             throw new NotSupportedException();
