@@ -872,7 +872,7 @@ private:
             }
 
             // Finally, rewire the cold block to jump to the else block,
-            // not fall through to the the check block.
+            // not fall through to the check block.
             //
             coldBlock->bbJumpKind = BBJ_ALWAYS;
             coldBlock->bbJumpDest = elseBlock;

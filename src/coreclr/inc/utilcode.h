@@ -3952,7 +3952,7 @@ LPWSTR *SegmentCommandLine(LPCWSTR lpCmdLine, DWORD *pNumArgs);
 //
 // These accessors serve the purpose of retrieving information from the
 // TEB in a manner that ensures that the current fiber will not switch
-// threads while the access is occuring.
+// threads while the access is occurring.
 //
 class ClrTeb
 {

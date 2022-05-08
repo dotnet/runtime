@@ -7299,7 +7299,7 @@ void Compiler::fgValueNumber()
         else if (info.compInitMem || varDsc->lvMustInit ||
                  VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
-            // The last clause covers the use-before-def variables (the ones that are live-in to the the first block),
+            // The last clause covers the use-before-def variables (the ones that are live-in to the first block),
             // these are variables that are read before being initialized (at least on some control flow paths)
             // if they are not must-init, then they get VNF_InitVal(i), as with the param case.)
 

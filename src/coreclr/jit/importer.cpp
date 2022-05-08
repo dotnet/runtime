@@ -8636,7 +8636,7 @@ bool Compiler::impIsImplicitTailCallCandidate(
 //    opcode                    - opcode that inspires the call
 //    pResolvedToken            - resolved token for the call target
 //    pConstrainedResolvedToken - resolved constraint token (or nullptr)
-//    newObjThis                - tree for this pointer or uninitalized newobj temp (or nullptr)
+//    newObjThis                - tree for this pointer or uninitialized newobj temp (or nullptr)
 //    prefixFlags               - IL prefix flags for the call
 //    callInfo                  - EE supplied info for the call
 //    rawILOffset               - IL offset of the opcode, used for guarded devirtualization.
@@ -8651,7 +8651,7 @@ bool Compiler::impIsImplicitTailCallCandidate(
 //    opcode can be CEE_CALL, CEE_CALLI, CEE_CALLVIRT, or CEE_NEWOBJ.
 //
 //    For CEE_NEWOBJ, newobjThis should be the temp grabbed for the allocated
-//    uninitalized object.
+//    uninitialized object.
 
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -10159,7 +10159,7 @@ var_types Compiler::impImportJitTestLabelMark(int numArgs)
     {
         // A loop hoist annotation with value >= 100 means that the expression should be a static field access,
         // a GT_IND of a static field address, which should be the sum of a (hoistable) helper call and possibly some
-        // offset within the the static field block whose address is returned by the helper call.
+        // offset within the static field block whose address is returned by the helper call.
         // The annotation is saying that this address calculation, but not the entire access, should be hoisted.
         assert(node->OperGet() == GT_IND);
         tlAndN.m_num -= 100;
@@ -10407,7 +10407,7 @@ GenTree* Compiler::impFixupStructReturnType(GenTree*                 op,
     // really have a return buffer, but instead use it as a way
     // to keep the trees cleaner with fewer address-taken temps.
     //
-    // Well now we have to materialize the the return buffer as
+    // Well now we have to materialize the return buffer as
     // an address-taken temp. Then we can return the temp.
     //
     // NOTE: this code assumes that since the call directly

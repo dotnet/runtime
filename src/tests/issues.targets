@@ -1460,9 +1460,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/Sse42.X64/Crc32_*/**">
             <Issue>https://github.com/dotnet/runtime/issues/54185</Issue>
         </ExcludeList>
-        <ExcludeList Include = "$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/*">
-            <Issue>https://github.com/dotnet/runtime/issues/68032</Issue>
-        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/Directed/Convert/out_of_range_fp_to_int_conversions/*">
             <Issue>Mono does not define out of range fp to int conversions</Issue>
         </ExcludeList>
@@ -3080,6 +3077,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventcounter/**">
             <Issue> needs triage </Issue>
         </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/*">
+            <Issue>Build doesn't include diagnostics tracing</Issue>
+        </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/Interop/MonoAPI/MonoMono/Thunks/**">
             <Issue>Test not expected to work with AOT</Issue>
         </ExcludeList>
@@ -3612,6 +3612,9 @@
         </ExcludeList>
         <ExcludeList Include = "$(XunitTestBinBase)/tracing/eventpipe/pauseonstart/**">
             <Issue>Could not load legacy Microsoft.Diagnostics.Tools.RuntimeClient</Issue>
+        </ExcludeList>
+        <ExcludeList Include = "$(XunitTestBinBase)/tracing/runtimeeventsource/nativeruntimeeventsource/*">
+            <Issue>WASM doesn't support diagnostics tracing</Issue>
         </ExcludeList>
     </ItemGroup>
 

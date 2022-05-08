@@ -270,6 +270,7 @@ namespace System.Text.Json.SourceGeneration
             switch (CollectionType)
             {
                 case CollectionType.NotApplicable:
+                case CollectionType.IAsyncEnumerableOfT:
                     return false;
                 case CollectionType.IDictionary:
                 case CollectionType.Dictionary:

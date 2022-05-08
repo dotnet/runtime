@@ -486,7 +486,7 @@ public:
 #endif // FEATURE_SIMD
 
     // Create or return the existimg value number representing a singleton exception set
-    // for the the exception value "x".
+    // for the exception value "x".
     ValueNum VNExcSetSingleton(ValueNum x);
     ValueNumPair VNPExcSetSingleton(ValueNumPair x);
 

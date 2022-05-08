@@ -212,8 +212,8 @@
     <Compile Include="..\..\Common\TypeSystem\Ecma\EcmaSignatureEncoder.cs">
       <Link>Ecma\EcmaSignatureEncoder.cs</Link>
     </Compile>
-    <Compile Include="..\..\Common\TypeSystem\IL\CoreRTILProvider.cs">
-      <Link>IL\CoreRTILProvider.cs</Link>
+    <Compile Include="..\..\Common\TypeSystem\IL\NativeAotILProvider.cs">
+      <Link>IL\NativeAotILProvider.cs</Link>
     </Compile>
     <Compile Include="..\..\Common\TypeSystem\IL\ILImporter.cs">
       <Link>IL\ILImporter.cs</Link>
@@ -265,7 +265,7 @@
     <Compile Include="..\..\Common\Compiler\CompilationModuleGroup.cs" Link="Compiler\CompilationModuleGroup.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.cs" Link="Compiler\CompilerTypeSystemContext.cs" />
     <Compile Include="..\..\Common\Compiler\CompilerTypeSystemContext.Validation.cs" Link="Compiler\CompilerTypeSystemContext.Validation.cs" />
-    <Compile Include="..\..\Common\Compiler\CoreRTNameMangler.cs" Link="Compiler\CoreRTNameMangler.cs" />
+    <Compile Include="..\..\Common\Compiler\NativeAotNameMangler.cs" Link="Compiler\NativeAotNameMangler.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\AssemblyStubNode.cs" Link="Compiler\DependencyAnalysis\AssemblyStubNode.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\CompilerComparer.cs" Link="Compiler\DependencyAnalysis\CompilerComparer.cs" />
     <Compile Include="..\..\Common\Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" Link="Compiler\DependencyAnalysis\EmbeddedDataContainerNode.cs" />

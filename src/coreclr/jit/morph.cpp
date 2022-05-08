@@ -963,7 +963,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                             if (argObj->AsObj()->gtOp1->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
                             {
                                 // If we don't have a LclVar we need to read exactly 3,5,6 or 7 bytes
-                                // For now we use a a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
+                                // For now we use a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
                                 //
                                 SetNeedsTemp(&arg);
                             }
@@ -12923,7 +12923,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 //    node - HWIntrinsic node to examine
 //
 // Returns:
-//    The original node if no optimization happened or if tree bashing occured.
+//    The original node if no optimization happened or if tree bashing occurred.
 //    An alternative tree if an optimization happened.
 //
 // Notes:

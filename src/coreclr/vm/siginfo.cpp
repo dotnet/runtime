@@ -3514,7 +3514,7 @@ BOOL CompareTypeTokens(mdToken tk1, mdToken tk2, Module *pModule1, Module *pModu
     }
 
     //////////////////////////////////////////////////////////////////////
-    // OK, we have non-nested types or the the enclosing types are equivalent
+    // OK, we have non-nested types or the enclosing types are equivalent
 
 
     // Do not load the type! (Or else you may run into circular dependency loading problems.)

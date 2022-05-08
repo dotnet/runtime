@@ -1845,7 +1845,7 @@ public:
     bool verboseSsa; // If true, produce especially verbose dump output in SSA construction.
     bool shouldUseVerboseSsa();
     bool treesBeforeAfterMorph; // If true, print trees before/after morphing (paired by an intra-compilation id:
-    int  morphNum;              // This counts the the trees that have been morphed, allowing us to label each uniquely.
+    int  morphNum;              // This counts the trees that have been morphed, allowing us to label each uniquely.
     bool doExtraSuperPmiQueries;
     void makeExtraStructQueries(CORINFO_CLASS_HANDLE structHandle, int level); // Make queries recursively 'level' deep.
 
@@ -3071,7 +3071,7 @@ public:
 
 #ifdef JIT32_GCENCODER
 
-    unsigned lvaLocAllocSPvar; // variable which stores the value of ESP after the the last alloca/localloc
+    unsigned lvaLocAllocSPvar; // variable which stores the value of ESP after the last alloca/localloc
 
 #endif // JIT32_GCENCODER
 
@@ -4899,7 +4899,7 @@ public:
         SPK_ByReference
     }; // The struct is passed/returned by reference to a copy/buffer.
 
-    // Get the "primitive" type that is is used when we are given a struct of size 'structSize'.
+    // Get the "primitive" type that is used when we are given a struct of size 'structSize'.
     // For pointer sized structs the 'clsHnd' is used to determine if the struct contains GC ref.
     // A "primitive" type is one of the scalar types: byte, short, int, long, ref, float, double
     // If we can't or shouldn't use a "primitive" type then TYP_UNKNOWN is returned.
@@ -8489,10 +8489,10 @@ private:
         return sizeBytes;
     }
 
-    // Get the the number of elements of baseType of SIMD vector given by its size and baseType
+    // Get the number of elements of baseType of SIMD vector given by its size and baseType
     static int getSIMDVectorLength(unsigned simdSize, var_types baseType);
 
-    // Get the the number of elements of baseType of SIMD vector given by its type handle
+    // Get the number of elements of baseType of SIMD vector given by its type handle
     int getSIMDVectorLength(CORINFO_CLASS_HANDLE typeHnd);
 
     // Get preferred alignment of SIMD type.
@@ -10430,7 +10430,7 @@ public:
     // "op1" or its components is augmented by appending "fieldSeq".  In practice, if "op1" is a GT_LCL_FLD, it has
     // a field sequence as a member; otherwise, it may be the addition of an a byref and a constant, where the const
     // has a field sequence -- in this case "fieldSeq" is appended to that of the constant; otherwise, we
-    // record the the field sequence using the ZeroOffsetFieldMap described above.
+    // record the field sequence using the ZeroOffsetFieldMap described above.
     //
     // One exception above is that "op1" is a node of type "TYP_REF" where "op1" is a GT_LCL_VAR.
     // This happens when System.Object vtable pointer is a regular field at offset 0 in System.Private.CoreLib in
