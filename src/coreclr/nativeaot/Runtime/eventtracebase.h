@@ -477,7 +477,7 @@ namespace ETW
         static void MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL);
         static void MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0);
         static void StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName);
-        static void StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG ulNoOfHelpers);
+        static void StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers);
         static void MethodRestored(MethodDesc * pMethodDesc);
         static void MethodTableRestored(MethodTable * pMethodTable);
         static void DynamicMethodDestroyed(MethodDesc *pMethodDesc);
@@ -486,7 +486,7 @@ namespace ETW
         static void MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL) {};
         static void MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName=NULL, SString *methodName=NULL, SString *methodSignature=NULL, SIZE_T pCode = 0, ReJITID rejitID = 0) {};
         static void StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pHelperName) {};
-        static void StubsInitialized(PVOID *pHelperStartAddresss, PVOID *pHelperNames, LONG ulNoOfHelpers) {};
+        static void StubsInitialized(PVOID *pHelperStartAddress, PVOID *pHelperNames, LONG ulNoOfHelpers) {};
         static void MethodRestored(MethodDesc * pMethodDesc) {};
         static void MethodTableRestored(MethodTable * pMethodTable) {};
         static void DynamicMethodDestroyed(MethodDesc *pMethodDesc) {};

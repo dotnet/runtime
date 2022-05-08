@@ -1,14 +1,29 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using Microsoft.Quic;
+using System.Runtime.InteropServices;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal sealed class SafeMsQuicStreamHandle : MsQuicSafeHandle
+    internal sealed class SafeMsQuicStreamHandle : SafeHandle
     {
-        public unsafe SafeMsQuicStreamHandle(QUIC_HANDLE* handle)
-            : base(handle, ptr => MsQuicApi.Api.ApiTable->StreamClose((QUIC_HANDLE*)ptr), SafeHandleType.Stream)
+        public override bool IsInvalid => handle == IntPtr.Zero;
+
+        public SafeMsQuicStreamHandle()
+            : base(IntPtr.Zero, ownsHandle: true)
         { }
+
+        public SafeMsQuicStreamHandle(IntPtr streamHandle)
+            : this()
+        {
+            SetHandle(streamHandle);
+        }
+
+        protected override bool ReleaseHandle()
+        {
+            MsQuicApi.Api.StreamCloseDelegate(handle);
+            SetHandle(IntPtr.Zero);
+            return true;
+        }
     }
 }

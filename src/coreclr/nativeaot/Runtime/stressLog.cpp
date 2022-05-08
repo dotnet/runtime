@@ -71,7 +71,7 @@ unsigned __int64 getTimeStamp() {
 #endif // HOST_X86 else
 
 /*********************************************************************************/
-/* Get the the frequency corresponding to 'getTimeStamp'.  For non-x86
+/* Get the frequency corresponding to 'getTimeStamp'.  For non-x86
    architectures, this is just the performance counter frequency.
 */
 unsigned __int64 getTickFrequency()
@@ -543,7 +543,7 @@ void StressLog::EnumerateStressMsgs(/*STRESSMSGCALLBACK*/void* smcbWrapper, /*EN
             // entries (this was the case for %s arguments)
             memcpy_s(argsCopy, sizeof(argsCopy), latestMsg->args, (latestMsg->numberOfArgs)*sizeof(void*));
 
-            // @TODO: CORERT: Truncating threadId to 32-bit
+            // @TODO: Truncating threadId to 32-bit
             if (!smcb((UINT32)latestLog->threadId, deltaTime, latestMsg->facility, format, argsCopy, token))
                 break;
         }
@@ -553,7 +553,7 @@ void StressLog::EnumerateStressMsgs(/*STRESSMSGCALLBACK*/void* smcbWrapper, /*EN
         {
             latestLog->readPtr = NULL;
 
-            // @TODO: CORERT: Truncating threadId to 32-bit
+            // @TODO: Truncating threadId to 32-bit
             if (!etcb((UINT32)latestLog->threadId, token))
                 break;
         }

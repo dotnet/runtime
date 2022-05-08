@@ -1926,7 +1926,7 @@ class DebuggerEnCBreakpoint : public DebuggerController
 {
 public:
     // We have two types of EnC breakpoints. The first is the one we
-    // sprinkle through old code to let us know when execution is occuring
+    // sprinkle through old code to let us know when execution is occurring
     // in a function that now has a new version. The second is when we've
     // actually resumed excecution into a remapped function and we need
     // to then notify the debugger.

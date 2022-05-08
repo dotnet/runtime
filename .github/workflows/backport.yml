@@ -2,6 +2,9 @@ name: Backport PR to branch
 on:
   issue_comment:
     types: [created]
+  schedule:
+    # once a day at 13:00 UTC
+    - cron: '0 13 * * *'
 
 permissions:
   contents: write
@@ -9,6 +12,22 @@ permissions:
   pull-requests: write
 
 jobs:
+  cleanup_old_runs:
+    if: github.event.schedule == '0 13 * * *'
+    runs-on: ubuntu-20.04
+    env:
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+    - name: Delete old workflow runs
+      run: |
+        _UrlPath="/repos/$GITHUB_REPOSITORY/actions/runs"
+
+        # delete workitems which are 'completed'. (other candidate values of status field are: 'queued' and 'in_progress')
+
+        gh api -X GET "$_UrlPath" --paginate \
+          | jq '.workflow_runs[] | select(.name == '\""$GITHUB_WORKFLOW"\"' and .status == "completed") | .id' \
+          | xargs -I{} gh api -X DELETE "$_UrlPath"/{}
+
   backport:
     if: github.event.issue.pull_request != '' && contains(github.event.comment.body, '/backport to')
     runs-on: ubuntu-20.04

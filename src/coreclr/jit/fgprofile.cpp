@@ -1305,7 +1305,7 @@ void EfficientEdgeCountInstrumentor::BuildSchemaElements(BasicBlock* block, Sche
         assert(probe->schemaIndex == -1);
         probe->schemaIndex = (int)schema.size();
 
-        // Normally we use the the offset of the block in the schema, but for certain
+        // Normally we use the offset of the block in the schema, but for certain
         // blocks we do not have any information we can use and need to use internal BB numbers.
         //
         int32_t sourceKey = EfficientEdgeCountBlockToKey(block);

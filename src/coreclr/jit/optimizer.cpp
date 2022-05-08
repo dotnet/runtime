@@ -6407,7 +6407,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
         updateLoopNum = updateParentLoopNum;
     }
 
-    // If the update block is not the the header of a loop containing
+    // If the update block is not the header of a loop containing
     // block, we can also ignore the update.
     //
     if (!optLoopContains(updateLoopNum, loopNum))
@@ -7854,6 +7854,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         GenTreeArrAddr* arrAddr  = nullptr;
                         GenTree*        baseAddr = nullptr;
                         FieldSeqNode*   fldSeq   = nullptr;
+                        ssize_t         offset   = 0;
 
                         if (arg->IsArrayAddr(&arrAddr))
                         {
@@ -7865,7 +7866,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                             // Conservatively assume byrefs may alias this array element
                             memoryHavoc |= memoryKindSet(ByrefExposed);
                         }
-                        else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
+                        else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
                         {
                             assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
 

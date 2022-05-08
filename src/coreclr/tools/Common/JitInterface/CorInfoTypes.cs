@@ -518,7 +518,7 @@ namespace Internal.JitInterface
         //     but need to insert a callout to the VM to ask during runtime
         //     whether to raise a verification or not (if the method is unverifiable).
         CORINFO_VERIFICATION_DONT_JIT = 3,    // Cannot skip verification during jit time,
-        //     but do not jit the method if is is unverifiable.
+        //     but do not jit the method if it is unverifiable.
     }
 
     public enum CorInfoInitClassResult
@@ -618,7 +618,7 @@ namespace Internal.JitInterface
         CORINFO_EH_CLAUSE_FINALLY = 0x0002, // This clause is a finally clause
         CORINFO_EH_CLAUSE_FAULT = 0x0004, // This clause is a fault clause
         CORINFO_EH_CLAUSE_DUPLICATED = 0x0008, // Duplicated clause. This clause was duplicated to a funclet which was pulled out of line
-        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one. (Used by CoreRT ABI.)
+        CORINFO_EH_CLAUSE_SAMETRY = 0x0010, // This clause covers same try block as the previous one. (Used by NativeAOT ABI.)
     };
 
     public struct CORINFO_EH_CLAUSE
@@ -815,7 +815,7 @@ namespace Internal.JitInterface
     {
         CORINFO_DESKTOP_ABI = 0x100,
         CORINFO_CORECLR_ABI = 0x200,
-        CORINFO_CORERT_ABI = 0x300,
+        CORINFO_NATIVEAOT_ABI = 0x300,
     }
 
     // For some highly optimized paths, the JIT must generate code that directly

@@ -209,10 +209,18 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 	return mono_component_event_pipe()->get_session_info (session_id, (EventPipeSessionInfo *)session_info) ? TRUE : FALSE;
 }
 
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
 {
-	return (intptr_t) mono_component_event_pipe()->get_wait_handle ((EventPipeSessionID)session_id);
+	return (intptr_t) mono_component_event_pipe()->signal_session ((EventPipeSessionID)session_id);
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
+	uint64_t session_id,
+	int32_t timeout)
+{
+	return (intptr_t) mono_component_event_pipe()->wait_for_session_signal ((EventPipeSessionID)session_id, (uint32_t)timeout);
 }
 
 void
@@ -577,13 +585,24 @@ ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo (
 	return FALSE;
 }
 
-intptr_t
-ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle (uint64_t session_id)
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession (uint64_t session_id)
 {
 	ERROR_DECL (error);
-	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.GetWaitHandle");
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.SignalSession");
 	mono_error_set_pending_exception (error);
-	return 0;
+	return FALSE;
+}
+
+MonoBoolean
+ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal (
+	uint64_t session_id,
+	int32_t timeout)
+{
+	ERROR_DECL (error);
+	mono_error_set_not_implemented (error, "System.Diagnostics.Tracing.EventPipeInternal.WaitForSessionSignal");
+	mono_error_set_pending_exception (error);
+	return FALSE;
 }
 
 void

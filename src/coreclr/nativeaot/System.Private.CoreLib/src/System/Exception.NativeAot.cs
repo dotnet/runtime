@@ -30,10 +30,6 @@ namespace System
 
         private static string? SerializationWatsonBuckets => null;
 
-        // WARNING: We allow diagnostic tools to directly inspect these three members (_message, _innerException and _HResult)
-        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
-        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools.
-        // Get in touch with the diagnostics team if you have questions.
         internal string? _message;
         private IDictionary? _data;
         private Exception? _innerException;
@@ -55,13 +51,6 @@ namespace System
             return ips;
         }
 
-        // WARNING: We allow diagnostic tools to directly inspect these two members (_corDbgStackTrace and _idxFirstFreeStackTraceEntry)
-        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
-        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools.
-        // Get in touch with the diagnostics team if you have questions.
-
-        // _corDbgStackTrace: Do not rename: This is for the use of the CorDbg interface. Contains the stack trace as an array of EIP's (ordered from
-        // most nested call to least.) May also include a few "special" IP's from the SpecialIP class:
         private IntPtr[]? _corDbgStackTrace;
         private int _idxFirstFreeStackTraceEntry;
 
@@ -272,7 +261,7 @@ namespace System
                 ThrowHelper.ThrowInvalidOperationException();
             }
 
-            return true; // CoreRT runtime doesn't have immutable agile exceptions, always return true
+            return true; // NativeAOT runtime doesn't have immutable agile exceptions, always return true
         }
     }
 }
