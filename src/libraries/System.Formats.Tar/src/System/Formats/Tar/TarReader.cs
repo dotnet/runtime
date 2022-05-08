@@ -92,7 +92,7 @@ namespace System.Formats.Tar
         /// <para>More than one Global Extended Attributes Entry was found in the current <see cref="TarFormat.Pax"/> archive.</para>
         /// <para>-or-</para>
         /// <para>Two or more Extended Attributes entries were found consecutively in the current <see cref="TarFormat.Pax"/> archive.</para></exception>
-        /// <exception cref="IOException">An I/O problem ocurred.</exception>
+        /// <exception cref="IOException">An I/O problem occurred.</exception>
         public TarEntry? GetNextEntry(bool copyData = false)
         {
             if (_reachedEndMarkers)

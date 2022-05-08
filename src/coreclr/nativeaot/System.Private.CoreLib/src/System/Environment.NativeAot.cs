@@ -46,7 +46,7 @@ namespace System
         internal static void FailFast(string message, Exception exception, string errorSource)
         {
             // TODO: errorSource originates from CoreCLR (See: https://github.com/dotnet/coreclr/pull/15895)
-            // For now, we ignore errorSource on CoreRT but we should distinguish the way FailFast prints exception message using errorSource
+            // For now, we ignore errorSource but we should distinguish the way FailFast prints exception message using errorSource
             bool result = DeveloperExperience.Default.OnContractFailure(exception.StackTrace, ContractFailureKind.Assert, message, null, null, null);
             if (!result)
             {

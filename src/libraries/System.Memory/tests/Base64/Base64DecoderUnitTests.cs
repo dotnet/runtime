@@ -21,7 +21,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 != 0);    // ensure we have a valid length
 
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
                 Assert.Equal(OperationStatus.Done, Base64.DecodeFromUtf8(source, decodedBytes, out int consumed, out int decodedByteCount));
@@ -44,7 +44,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 == 0);    // ensure we have a invalid length
 
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
                 int expectedConsumed = numBytes / 4 * 4;    // decode input up to the closest multiple of 4
@@ -70,7 +70,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 != 0);    // ensure we have a valid length
 
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
                 int expectedConsumed = source.Length / 4 * 4; // only consume closest multiple of four since isFinalBlock is false
@@ -95,7 +95,7 @@ namespace System.Buffers.Text.Tests
                 } while (numBytes % 4 == 0);    // ensure we have a invalid length
 
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[Base64.GetMaxDecodedFromUtf8Length(source.Length)];
                 int expectedConsumed = source.Length / 4 * 4; // only consume closest multiple of four since isFinalBlock is false
@@ -140,7 +140,7 @@ namespace System.Buffers.Text.Tests
             for (int numBytes = 5; numBytes < 20; numBytes++)
             {
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[3];
                 int consumed, written;
@@ -163,7 +163,7 @@ namespace System.Buffers.Text.Tests
             // Output too small even with padding characters in the input
             {
                 Span<byte> source = new byte[12];
-                Base64TestHelper.InitalizeDecodableBytes(source);
+                Base64TestHelper.InitializeDecodableBytes(source);
                 source[10] = Base64TestHelper.EncodingPad;
                 source[11] = Base64TestHelper.EncodingPad;
 
@@ -177,7 +177,7 @@ namespace System.Buffers.Text.Tests
 
             {
                 Span<byte> source = new byte[12];
-                Base64TestHelper.InitalizeDecodableBytes(source);
+                Base64TestHelper.InitializeDecodableBytes(source);
                 source[11] = Base64TestHelper.EncodingPad;
 
                 Span<byte> decodedBytes = new byte[7];
@@ -195,7 +195,7 @@ namespace System.Buffers.Text.Tests
             for (int numBytes = 8; numBytes < 20; numBytes++)
             {
                 Span<byte> source = new byte[numBytes];
-                Base64TestHelper.InitalizeDecodableBytes(source, numBytes);
+                Base64TestHelper.InitializeDecodableBytes(source, numBytes);
 
                 Span<byte> decodedBytes = new byte[4];
                 int consumed, written;
@@ -215,7 +215,7 @@ namespace System.Buffers.Text.Tests
         public void DecodingOutputTooSmallRetry(bool isFinalBlock)
         {
             Span<byte> source = new byte[1000];
-            Base64TestHelper.InitalizeDecodableBytes(source);
+            Base64TestHelper.InitializeDecodableBytes(source);
 
             int outputSize = 240;
             int requiredSize = Base64.GetMaxDecodedFromUtf8Length(source.Length);
@@ -490,7 +490,7 @@ namespace System.Buffers.Text.Tests
             for (int numberOfBytesToTest = 0; numberOfBytesToTest <= numberOfBytes; numberOfBytesToTest += 4)
             {
                 Span<byte> testBytes = new byte[numberOfBytes];
-                Base64TestHelper.InitalizeDecodableBytes(testBytes);
+                Base64TestHelper.InitializeDecodableBytes(testBytes);
                 string sourceString = Encoding.ASCII.GetString(testBytes.Slice(0, numberOfBytesToTest).ToArray());
                 Span<byte> expectedBytes = Convert.FromBase64String(sourceString);
 
