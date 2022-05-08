@@ -2195,7 +2195,6 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public Utf16StringMarshaller(string? str) { }
         public Utf16StringMarshaller(string? str, System.Span<ushort> buffer) { }
-        public ref ushort GetPinnableReference() { throw null; }
         public ushort* ToNativeValue() { throw null; }
         public void FromNativeValue(ushort* value) { }
         public string? ToManaged() { throw null; }
