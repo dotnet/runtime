@@ -540,24 +540,27 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             {
 #ifdef FEATURE_ISYM_READER
                 BOOL fPortablePDB = FALSE;
-                PEDecoder* pe = pModule->GetPEAssembly()->GetLoadedLayout();
-                IMAGE_DATA_DIRECTORY* debugDirectoryEntry = pe->GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG);
-                if (debugDirectoryEntry != nullptr)
+                if (pModule->GetPEAssembly()->HasLoadedPEImage())
                 {
-                    IMAGE_DEBUG_DIRECTORY* debugDirectory = (IMAGE_DEBUG_DIRECTORY*)pe->GetDirectoryData(debugDirectoryEntry);
-                    if (debugDirectory != nullptr)
+                    PEDecoder* pe = pModule->GetPEAssembly()->GetLoadedLayout();
+                    IMAGE_DATA_DIRECTORY* debugDirectoryEntry = pe->GetDirectoryEntry(IMAGE_DIRECTORY_ENTRY_DEBUG);
+                    if (debugDirectoryEntry != nullptr)
                     {
-                        size_t nbytes = 0;
-                        while (nbytes < debugDirectoryEntry->Size)
+                        IMAGE_DEBUG_DIRECTORY* debugDirectory = (IMAGE_DEBUG_DIRECTORY*)pe->GetDirectoryData(debugDirectoryEntry);
+                        if (debugDirectory != nullptr)
                         {
-                            if ((debugDirectory->Type == IMAGE_DEBUG_TYPE_CODEVIEW && debugDirectory->MinorVersion == PORTABLE_PDB_MINOR_VERSION) ||
-                                (debugDirectory->Type == IMAGE_DEBUG_TYPE_EMBEDDED_PORTABLE_PDB))
+                            size_t nbytes = 0;
+                            while (nbytes < debugDirectoryEntry->Size)
                             {
-                                fPortablePDB = TRUE;
-                                break;
+                                if ((debugDirectory->Type == IMAGE_DEBUG_TYPE_CODEVIEW && debugDirectory->MinorVersion == PORTABLE_PDB_MINOR_VERSION) ||
+                                    (debugDirectory->Type == IMAGE_DEBUG_TYPE_EMBEDDED_PORTABLE_PDB))
+                                {
+                                    fPortablePDB = TRUE;
+                                    break;
+                                }
+                                debugDirectory++;
+                                nbytes += sizeof(*debugDirectory);
                             }
-                            debugDirectory++;
-                            nbytes += sizeof(*debugDirectory);
                         }
                     }
                 }
