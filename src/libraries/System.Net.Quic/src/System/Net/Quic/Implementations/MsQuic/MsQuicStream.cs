@@ -847,7 +847,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             bool callShutdown = false;
             bool abortRead = false;
             bool completeRead = false;
-            bool releaseHandles = false;
             lock (_state)
             {
                 if (_state.SendState < SendState.Aborted)
@@ -866,13 +865,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                 if (_state.ShutdownState == ShutdownState.None)
                 {
                     _state.ShutdownState = ShutdownState.Pending;
-                }
-
-                // Check if we already got final event.
-                releaseHandles = Interlocked.Exchange(ref _state.ShutdownDone, State.ShutdownDone_Disposed) == State.ShutdownDone_NotificationReceived;
-                if (releaseHandles)
-                {
-                    _state.ShutdownState = ShutdownState.Finished;
                 }
             }
 
@@ -905,6 +897,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                     ExceptionDispatchInfo.SetCurrentStackTrace(new QuicOperationAbortedException("Read was canceled")));
             }
 
+
+            // Check if we already got final event.
+            bool releaseHandles = Interlocked.Exchange(ref _state.ShutdownDone, State.ShutdownDone_Disposed) == State.ShutdownDone_NotificationReceived;
             if (releaseHandles)
             {
                 _state.Cleanup();
