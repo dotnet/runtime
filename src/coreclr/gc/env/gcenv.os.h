@@ -57,7 +57,7 @@ struct VirtualReserveFlags
 };
 
 // An event is a synchronization object whose state can be set and reset
-// indicating that an event has occured. It is used pervasively throughout
+// indicating that an event has occurred. It is used pervasively throughout
 // the GC.
 //
 // Note that GCEvent deliberately leaks its contents by not having a non-trivial destructor.
@@ -81,7 +81,7 @@ public:
     // is a logic error.
     void CloseEvent();
 
-    // "Sets" the event, indicating that a particular event has occured. May
+    // "Sets" the event, indicating that a particular event has occurred. May
     // wake up other threads waiting on this event. Depending on whether or
     // not this event is an auto-reset event, the state of the event may
     // or may not be automatically reset after Set is called.

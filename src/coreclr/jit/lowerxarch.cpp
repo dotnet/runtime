@@ -3945,6 +3945,33 @@ GenTree* Lowering::TryLowerAndOpToAndNot(GenTreeOp* andNode)
     return andnNode;
 }
 
+//----------------------------------------------------------------------------------------------
+// Lowering::LowerBswapOp: Tries to contain GT_BSWAP node when possible
+//
+// Arguments:
+//    node - GT_BSWAP node to contain
+//
+// Notes:
+//    Containment is not performed when optimizations are disabled
+//    or when MOVBE instruction set is not found
+//
+void Lowering::LowerBswapOp(GenTreeOp* node)
+{
+    assert(node->OperIs(GT_BSWAP, GT_BSWAP16));
+
+    if (!comp->opts.OptimizationEnabled() || !comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
+    {
+        return;
+    }
+
+    GenTree* operand  = node->gtGetOp1();
+    unsigned swapSize = node->OperIs(GT_BSWAP16) ? 2 : genTypeSize(node);
+    if ((swapSize == genTypeSize(operand)) && IsContainableMemoryOp(operand) && IsSafeToContainMem(node, operand))
+    {
+        MakeSrcContained(node, operand);
+    }
+}
+
 #endif // FEATURE_HW_INTRINSICS
 
 //----------------------------------------------------------------------------------------------
@@ -4573,6 +4600,20 @@ void Lowering::ContainCheckStoreIndir(GenTreeStoreInd* node)
     if (IsContainableImmed(node, src) && (!src->IsIntegralConst(0) || varTypeIsSmall(node)))
     {
         MakeSrcContained(node, src);
+    }
+
+    // If the source is a BSWAP, contain it on supported hardware to generate a MOVBE.
+    if (comp->opts.OptimizationEnabled() && src->OperIs(GT_BSWAP, GT_BSWAP16) &&
+        comp->compOpportunisticallyDependsOn(InstructionSet_MOVBE))
+    {
+        unsigned swapSize = src->OperIs(GT_BSWAP16) ? 2 : genTypeSize(src);
+        if ((swapSize == genTypeSize(node)) && IsSafeToContainMem(node, src))
+        {
+            // Prefer containing in the store in case the load has been contained.
+            src->gtGetOp1()->ClearContained();
+
+            MakeSrcContained(node, src);
+        }
     }
 
     ContainCheckIndir(node);

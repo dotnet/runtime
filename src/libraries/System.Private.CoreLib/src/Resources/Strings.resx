@@ -3899,7 +3899,7 @@
     <value>Unable to find an entry point named '{0}' in native library.</value>
   </data>
   <data name="Arg_DllNotFoundExceptionParameterized" xml:space="preserve">
-    <value>Unable to native library '{0}' or one of its dependencies.</value>
+    <value>Unable to load native library '{0}' or one of its dependencies.</value>
   </data>
   <data name="InvalidOperation_ComInteropRequireComWrapperInstance" xml:space="preserve">
     <value>COM Interop requires ComWrapper instance registered for marshalling.</value>

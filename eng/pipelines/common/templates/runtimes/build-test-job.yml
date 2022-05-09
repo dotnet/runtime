@@ -17,7 +17,7 @@ parameters:
   pgoType: ''
 
 ### Build managed test components (native components are getting built as part
-### of the the product build job).
+### of the product build job).
 
 ### TODO: As of today, build of managed test components requires the product build
 ### as a prerequisite due to dependency on System.Private.Corelib. After switching
@@ -97,7 +97,7 @@ jobs:
 
       - name: testTreeFilterArg
         value: ''
-      
+
       # Only build GCSimulator tests when the gc-simulator group is specified.
       - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
         - ${{ if eq(parameters.osGroup, 'windows') }}:

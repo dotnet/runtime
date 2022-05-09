@@ -383,6 +383,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArguments()
         {
             MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));

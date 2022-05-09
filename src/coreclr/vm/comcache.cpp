@@ -721,7 +721,7 @@ IUnknown* IUnkEntry::UnmarshalIUnknownForCurrContext()
 
                         // The proxy is no longer valid. This sometimes manifests itself by
                         // a failure during re-marshaling it to the stream. When this happens,
-                        // we need to release the the pUnk we extracted and the stream and try to
+                        // we need to release the pUnk we extracted and the stream and try to
                         // re-create the stream. We don't want to release the stream data since
                         // we already extracted the proxy from the stream and released it.
                         RCW_VTABLEPTR(GetRCW());

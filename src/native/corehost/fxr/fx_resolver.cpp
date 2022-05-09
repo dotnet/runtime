@@ -438,7 +438,7 @@ StatusCode fx_resolver_t::read_framework(
 
             m_effective_fx_references[fx_name] = new_effective_fx_ref;
 
-            // Resolve the effective framework reference against the the existing physical framework folders
+            // Resolve the effective framework reference against the existing physical framework folders
             fx_definition_t* fx = resolve_framework_reference(new_effective_fx_ref, m_oldest_fx_references[fx_name].get_fx_version(), host_info.dotnet_root, disable_multilevel_lookup);
             if (fx == nullptr)
             {

@@ -30,7 +30,7 @@
 // warning C4061: enumerator '{blah}' in switch of enum '{blarg}' is not explicitly handled by a case label
 #pragma warning(disable:4061)
 
-#if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: these are (currently) only implemented in assembly helpers
+#if !defined(USE_PORTABLE_HELPERS) // @TODO: these are (currently) only implemented in assembly helpers
 
 #if defined(FEATURE_DYNAMIC_CODE)
 EXTERN_C void * RhpUniversalTransition();
@@ -163,7 +163,7 @@ void StackFrameIterator::InternalInit(Thread * pThreadToWalk, PTR_PInvokeTransit
     // properly walk it in parallel.
     ResetNextExInfoForSP((uintptr_t)dac_cast<TADDR>(pFrame));
 
-#if !defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: no portable version of regdisplay
+#if !defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of regdisplay
     memset(&m_RegDisplay, 0, sizeof(m_RegDisplay));
     m_RegDisplay.SetIP((PCODE)pFrame->m_RIP);
     m_RegDisplay.SetAddrOfIP((PTR_PCODE)PTR_HOST_MEMBER(PInvokeTransitionFrame, pFrame, m_RIP));
@@ -652,7 +652,7 @@ void StackFrameIterator::UnwindFuncletInvokeThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: Currently no funclet invoke defined in a portable way
+#if defined(USE_PORTABLE_HELPERS) // @TODO: Currently no funclet invoke defined in a portable way
     return;
 #else // defined(USE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InFuncletInvokeThunk);
@@ -1041,7 +1041,7 @@ void StackFrameIterator::UnwindUniversalTransitionThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: Corresponding helper code is only defined in assembly code
+#if defined(USE_PORTABLE_HELPERS) // @TODO: Corresponding helper code is only defined in assembly code
     return;
 #else // defined(USE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InUniversalTransitionThunk);
@@ -1126,7 +1126,7 @@ void StackFrameIterator::UnwindCallDescrThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: Corresponding helper code is only defined in assembly code
+#if defined(USE_PORTABLE_HELPERS) // @TODO: Corresponding helper code is only defined in assembly code
     return;
 #else // defined(USE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InCallDescrThunk);
@@ -1208,7 +1208,7 @@ void StackFrameIterator::UnwindThrowSiteThunk()
 {
     ASSERT((m_dwFlags & MethodStateCalculated) == 0);
 
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: no portable version of throw helpers
+#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable version of throw helpers
     return;
 #else // defined(USE_PORTABLE_HELPERS)
     ASSERT(CategorizeUnadjustedReturnAddress(m_ControlPC) == InThrowSiteThunk);
@@ -1758,7 +1758,7 @@ PTR_VOID StackFrameIterator::AdjustReturnAddressBackward(PTR_VOID controlPC)
 // static
 StackFrameIterator::ReturnAddressCategory StackFrameIterator::CategorizeUnadjustedReturnAddress(PTR_VOID returnAddress)
 {
-#if defined(USE_PORTABLE_HELPERS) // @TODO: CORERT: no portable thunks are defined
+#if defined(USE_PORTABLE_HELPERS) // @TODO: no portable thunks are defined
 
     return InManagedCode;
 

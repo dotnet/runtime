@@ -64,7 +64,7 @@ typedef void(HOSTFXR_CALLTYPE *hostfxr_error_writer_fn)(const char_t *message);
 // By default no callback is registered in which case the errors are written to stderr.
 //
 // Each call to the error writer is sort of like writing a single line (the EOL character is omitted).
-// Multiple calls to the error writer may occure for one failure.
+// Multiple calls to the error writer may occur for one failure.
 //
 // If the hostfxr invokes functions in hostpolicy as part of its operation, the error writer
 // will be propagated to hostpolicy for the duration of the call. This means that errors from

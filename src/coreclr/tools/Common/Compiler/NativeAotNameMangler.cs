@@ -13,14 +13,14 @@ using System.Diagnostics;
 
 namespace ILCompiler
 {
-    public class CoreRTNameMangler : NameMangler
+    public class NativeAotNameMangler : NameMangler
     {
         private SHA256 _sha256;
 
 #if !READYTORUN
         private readonly bool _mangleForCplusPlus;
 
-        public CoreRTNameMangler(NodeMangler nodeMangler, bool mangleForCplusPlus) : base(nodeMangler)
+        public NativeAotNameMangler(NodeMangler nodeMangler, bool mangleForCplusPlus) : base(nodeMangler)
         {
             _mangleForCplusPlus = mangleForCplusPlus;
         }
