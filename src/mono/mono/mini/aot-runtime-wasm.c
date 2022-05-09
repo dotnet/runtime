@@ -83,7 +83,10 @@ get_long_arg (InterpMethodArguments *margs, int idx)
 	return p.l;
 }
 
-#include "wasm_m2n_invoke.g.h"
+// #include "wasm_m2n_invoke2.g.h"
+extern const char* interp_to_native_signatures [];
+extern size_t interp_to_native_signatures_count;
+extern void* interp_to_native_invokes [];
 
 static int
 compare_icall_tramp (const void *key, const void *elem)
@@ -108,7 +111,7 @@ mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 	}
 	cookie [c_count] = 0;
 
-	void *p = bsearch (cookie, interp_to_native_signatures, G_N_ELEMENTS (interp_to_native_signatures), sizeof (gpointer), compare_icall_tramp);
+	void *p = bsearch (cookie, interp_to_native_signatures, interp_to_native_signatures_count, sizeof (gpointer), compare_icall_tramp);
 	if (!p)
 		g_error ("CANNOT HANDLE INTERP ICALL SIG %s\n", cookie);
 	int idx = (const char**)p - (const char**)interp_to_native_signatures;

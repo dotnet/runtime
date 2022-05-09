@@ -61,6 +61,17 @@
                            Assemblies="@(WasmPInvokeAssembly)"
                            OutputPath="$(WasmPInvokeTablePath)" />
   </Target>
+  <UsingTask TaskName="InterpToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <Target Name="BuildInterpToNativeTable" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
+    <PropertyGroup>
+      <WasmInterpToNativeTablePath>$(ArtifactsObjDir)wasm\wasm_m2n_invoke2.g.h</WasmInterpToNativeTablePath>
+    </PropertyGroup>
+
+    <InterpToNativeGenerator
+      OutputPath="$(WasmInterpToNativeTablePath)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </InterpToNativeGenerator>
+  </Target>
 
   <UsingTask TaskName="GenerateWasmBundle"
     AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
@@ -176,7 +187,7 @@
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
+          DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BuildInterpToNativeTable;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
 
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;
@@ -185,6 +196,7 @@
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
+      <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke2.g.h</InterpToNativeTableFile>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
 
@@ -218,6 +230,10 @@
     </PropertyGroup>
 
     <Copy SourceFiles="$(PInvokeTableFile)"
+          DestinationFolder="$(MonoObjDir)"
+          SkipUnchangedFiles="true" />
+
+    <Copy SourceFiles="$(InterpToNativeTableFile)"
           DestinationFolder="$(MonoObjDir)"
           SkipUnchangedFiles="true" />
 

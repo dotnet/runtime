@@ -10,7 +10,7 @@
     <_WasmBuildNativeCoreDependsOn>
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
-      <!-- _GenerateInterpToNative; -->
+      _GenerateInterpToNative;
       _GeneratePInvokeTable;
       _GenerateICallTable;
       _WasmCompileNativeFiles;

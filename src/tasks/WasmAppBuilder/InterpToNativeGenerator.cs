@@ -47,6 +47,7 @@ public class InterpToNativeGenerator : Task
         "III",
         "IIII",
         "IIIII",
+        "IIIIIDII",
         "IIIIII",
         "IIIIIII",
         "IIIIIIII",
@@ -67,6 +68,7 @@ public class InterpToNativeGenerator : Task
         "IIFII",
         "IIFFI",
         "IIFFF",
+        "IIFFFF",
         "IIFFFI",
         "IIFFII",
         "IIFIII",
@@ -167,6 +169,7 @@ public class InterpToNativeGenerator : Task
         "IIIFFIIIII",
         "IIIIIF",
         "IIIIIFII",
+        "IIIIIFIII",
         "IIIIIIFFI",
         "IIIIIIIFFI",
         "VIFFF",
@@ -181,6 +184,7 @@ public class InterpToNativeGenerator : Task
         "VIIIF",
         "VIIIFFII",
         "VIIIFFIII",
+        "VIIIFI",
         "VIIIFII",
         "VIIIFIII",
         "VIIIIF",
@@ -195,6 +199,7 @@ public class InterpToNativeGenerator : Task
         "IFFFF",
         "VLII",
         "IIIIL",
+        "LIIII",
         "LIIIL",
         "IILL",
     };
@@ -300,12 +305,13 @@ public class InterpToNativeGenerator : Task
 
         Array.Sort(signatures);
 
-        w.WriteLine("static const char* interp_to_native_signatures [] = {");
+        w.WriteLine("interp_to_native_signatures = {");
         foreach (var sig in signatures)
             w.WriteLine($"\"{sig}\",");
         w.WriteLine("};");
+        w.WriteLine($"interp_to_native_signatures_count = {signatures.Length};");
 
-        w.WriteLine("static void* interp_to_native_invokes [] = {");
+        w.WriteLine("interp_to_native_invokes = {");
         foreach (var sig in signatures)
         {
             var lsig = sig.ToLower(CultureInfo.InvariantCulture);
