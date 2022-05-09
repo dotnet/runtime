@@ -540,15 +540,6 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
                 JITDUMP("Updating type of the return GT_IND expression to TYP_BYREF\n");
                 inlineCandidate->gtType = TYP_BYREF;
             }
-            else
-            {
-                // - under a call if we changed size of the argument.
-                GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, inlineCandidate, retType);
-                if (putArgType != nullptr)
-                {
-                    inlineCandidate = putArgType;
-                }
-            }
         }
 
         tree->ReplaceWith(inlineCandidate, comp);
@@ -824,14 +815,8 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
     {
         const var_types retType    = tree->TypeGet();
         GenTree*        foldedTree = comp->gtFoldExpr(tree);
-
-        GenTree* putArgType = comp->fgCheckCallArgUpdate(data->parent, foldedTree, retType);
-        if (putArgType != nullptr)
-        {
-            foldedTree = putArgType;
-        }
-        *pTree       = foldedTree;
-        *madeChanges = true;
+        *pTree                     = foldedTree;
+        *madeChanges               = true;
     }
 
     return WALK_CONTINUE;
@@ -1538,11 +1523,21 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
         {
             const InlArgInfo& argInfo        = inlArgInfo[argNum];
             const bool        argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
-            GenTree*          argNode        = inlArgInfo[argNum].argNode;
-            const bool        argHasPutArg   = argNode->OperIs(GT_PUTARG_TYPE);
+            CallArg*          arg            = argInfo.arg;
+            GenTree*          argNode        = arg->GetNode();
+
+            // TODO-ARGS: This can probably be relaxed, the old comment was:
+            // argHasPutArg disqualifies the arg from a direct substitution because we don't have information about
+            // its user. For example: replace `LCL_VAR short` with `PUTARG_TYPE short->LCL_VAR int`,
+            // we should keep `PUTARG_TYPE` iff the user is a call that needs `short` and delete it otherwise.
+            //
+            // Today we no longer have this contextual PUTARG_TYPE and morph
+            // should properly handle substituting a TYP_INT node for a
+            // TYP_SHORT LCL_VAR (at least for a call arg).
+            bool argHasPutArg = !varTypeIsStruct(arg->GetSignatureType()) &&
+                                (genTypeSize(argNode) != genTypeSize(arg->GetSignatureType()));
 
             BasicBlockFlags bbFlags = BBF_EMPTY;
-            argNode                 = argNode->gtSkipPutArgType();
             argNode                 = argNode->gtRetExprVal(&bbFlags);
 
             if (argInfo.argHasTmp)
@@ -1563,9 +1558,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
 
                 GenTree* argSingleUseNode = argInfo.argBashTmpNode;
 
-                // argHasPutArg disqualifies the arg from a direct substitution because we don't have information about
-                // its user. For example: replace `LCL_VAR short` with `PUTARG_TYPE short->LCL_VAR int`,
-                // we should keep `PUTARG_TYPE` iff the user is a call that needs `short` and delete it otherwise.
                 if ((argSingleUseNode != nullptr) && !(argSingleUseNode->gtFlags & GTF_VAR_CLONED) && argIsSingleDef &&
                     !argHasPutArg)
                 {
