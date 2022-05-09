@@ -175,7 +175,7 @@ namespace DebuggerTests
             }
             else
             {
-                if (output.Length > 0 && output[^1] == '\n')
+                if (output.EndsWith('\n'))
                     output = output[..^1];
             }
 

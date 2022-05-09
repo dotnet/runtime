@@ -306,7 +306,7 @@ namespace System.Xml
         {
             int len, lenLocal, offset;
 
-            if (s.Length != 0 && s[0] == '*')
+            if (s.StartsWith('*'))
             {
                 // '*' as a NameTest
                 prefix = localName = null;

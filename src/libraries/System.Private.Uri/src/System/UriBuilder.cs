@@ -67,16 +67,16 @@ namespace System
         public UriBuilder(string? scheme, string? host, int port, string? path, string? extraValue)
             : this(scheme, host, port, path)
         {
-            if (!string.IsNullOrEmpty(extraValue))
+            if (extraValue is not null)
             {
-                if (extraValue[0] == '#')
+                if (extraValue.StartsWith('#'))
                 {
                     _fragment = extraValue;
                 }
-                else if (extraValue[0] == '?')
+                else if (extraValue.StartsWith('?'))
                 {
                     int fragmentIndex = extraValue.IndexOf('#');
-                    if (fragmentIndex == -1)
+                    if (fragmentIndex < 0)
                     {
                         _query = extraValue;
                     }
@@ -163,7 +163,7 @@ namespace System
             get => _host;
             set
             {
-                if (!string.IsNullOrEmpty(value) && value.Contains(':') && value[0] != '[')
+                if (!string.IsNullOrEmpty(value) && value[0] != '[' && value.Contains(':'))
                 {
                     //probable ipv6 address - Note: this is only supported for cases where the authority is inet-based.
                     value = "[" + value + "]";
