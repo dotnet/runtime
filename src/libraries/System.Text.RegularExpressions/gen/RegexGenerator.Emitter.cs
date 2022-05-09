@@ -1087,7 +1087,7 @@ namespace System.Text.RegularExpressions.Generator
             // doneLabel starts out as the top-level label for the whole expression failing to match.  However,
             // it may be changed by the processing of a node to point to whereever subsequent match failures
             // should jump to, in support of backtracking or other constructs.  For example, before emitting
-            // the code for a branch N, an alternation will set the the doneLabel to point to the label for
+            // the code for a branch N, an alternation will set the doneLabel to point to the label for
             // processing the next branch N+1: that way, any failures in the branch N's processing will
             // implicitly end up jumping to the right location without needing to know in what context it's used.
             string doneLabel = ReserveName("NoMatch");
@@ -3615,7 +3615,7 @@ namespace System.Text.RegularExpressions.Generator
                         writer.Write($".Slice({sliceStaticPos})");
                     }
                     writer.WriteLine($".IndexOf({Literal(node.Ch)});");
-                    
+
                     using (EmitBlock(writer, $"if ({iterationLocal} < 0)"))
                     {
                         writer.WriteLine(sliceStaticPos > 0 ?

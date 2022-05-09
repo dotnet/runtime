@@ -1525,7 +1525,7 @@ BOOL MethodTable::CanCastByVarianceToInterfaceOrDelegate(MethodTable *pTargetMT,
             TypeHandle thTargetArg = targetInst[i];
 
             // If argument types are not equivalent, test them for compatibility
-            // in accordance with the the variance annotation
+            // in accordance with the variance annotation
             if (!thArg.IsEquivalentTo(thTargetArg))
             {
                 switch (pClass->GetVarianceOfTypeParameter(i))

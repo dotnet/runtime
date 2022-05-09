@@ -15041,7 +15041,7 @@ void allocator::copy_from_alloc_list (alloc_list* fromalist)
 
         if (repair_list)
         {
-            //repair the the list
+            //repair the list
             //new items may have been added during the plan phase
             //items may have been unlinked.
             uint8_t* free_item = alloc_list_head_of (i);

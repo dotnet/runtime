@@ -44,7 +44,7 @@
     <ItemGroup>
       <PgoPackagePathPropertyItemList Include="$(PgoPackagePathProperty)" />
       <PgoPackagePathPropertyItemList>
-        <PgoPackagePath>$(%(Identity))</PgoPackagePath>
+        <PgoPackagePath>$(%(Identity).TrimEnd('\\'))</PgoPackagePath>
       </PgoPackagePathPropertyItemList>
     </ItemGroup>
 

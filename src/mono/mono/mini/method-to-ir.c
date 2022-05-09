@@ -8289,7 +8289,7 @@ calli_end:
 			constrained_class = NULL;
 
 			if (need_seq_point) {
-				//check is is a nested call and remove the non_empty_stack of the last call, only for non native methods
+				// check if it is a nested call and remove the non_empty_stack of the last call, only for non native methods
 				if (!(method->flags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 					if (emitted_funccall_seq_point) {
 						if (cfg->last_seq_point)
@@ -10030,7 +10030,7 @@ calli_end:
 			} else {
 				gboolean is_const = FALSE;
 				MonoVTable *vtable = NULL;
-				
+
 				addr = NULL;
 				if (!context_used) {
 					vtable = mono_class_vtable_checked (klass, cfg->error);
