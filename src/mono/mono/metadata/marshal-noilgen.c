@@ -437,7 +437,7 @@ mono_marshal_noilgen_init_blittable (MonoMarshalCallbacks *cb)
 }
 #else
 void
-mono_marshal_noilgen_init_blittable (MonoMarshalCallbacks *cb)
+mono_marshal_noilgen_init_blittable (MonoMarshalLightweightCallbacks *cb)
 {
 }
 #endif
