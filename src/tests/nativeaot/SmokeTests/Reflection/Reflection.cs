@@ -63,7 +63,6 @@ internal class ReflectionTest
         TestInvokeMemberParamsCornerCase.Run();
         TestDefaultInterfaceInvoke.Run();
         TestCovariantReturnInvoke.Run();
-        TestGetMemberWithSameMetadataDefinitionAs.Run();
 #if !CODEGEN_CPP
         TypeConstructionTest.Run();
         TestThreadStaticFields.Run();
@@ -393,38 +392,6 @@ internal class ReflectionTest
 
             if (((Foo)mi.Invoke(new SuperDerived(), Array.Empty<object>())).State != "SuperDerived")
                 throw new Exception();
-        }
-    }
-
-    class TestGetMemberWithSameMetadataDefinitionAs
-    {
-        public class B_T<T>
-        {
-            static B_T() { }
-        }
-
-        public class D_T<T> : B_T<T>
-        {
-        }
-
-        public static void Run()
-        {
-            Console.WriteLine(nameof(TestGetMemberWithSameMetadataDefinitionAs));
-
-            TestGetMemberWithSameMetadataDefinitionAs p = new TestGetMemberWithSameMetadataDefinitionAs();
-            p.GetMemberWithSameMetadataDefinitionAs(typeof(B_T<>), typeof(D_T<int>));
-        }
-
-        public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType)
-        {
-            BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
-            foreach (MemberInfo openGenericMember in openGenericType.GetMembers(all))
-            {
-                MemberInfo closedGenericMember = closedGenericType.GetMemberWithSameMetadataDefinitionAs(openGenericMember);
-                if (!closedGenericMember.Name.Equals(openGenericMember.Name))
-                    throw new Exception();
-
-            }
         }
     }
 
