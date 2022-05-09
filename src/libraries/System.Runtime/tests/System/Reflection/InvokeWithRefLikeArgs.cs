@@ -7,39 +7,51 @@ using Xunit.Sdk;
 
 namespace System.Reflection.Tests
 {
-    public class InvokeWithRefLikeArgs
+    public class InvokeWithRefLikeArgs_Emit : InvokeWithRefLikeArgs
     {
+        public InvokeWithRefLikeArgs_Emit() : base(useEmit: true) { }
+    }
+
+    public class InvokeWithRefLikeArgs_Interpreted : InvokeWithRefLikeArgs
+    {
+        public InvokeWithRefLikeArgs_Interpreted() : base(useEmit: false) { }
+    }
+
+    public abstract class InvokeWithRefLikeArgs : InvokeStrategy
+    {
+        public InvokeWithRefLikeArgs(bool useEmit) : base(useEmit) { }
+
         [Fact]
-        public static void MethodReturnsRefToRefStruct_ThrowsNSE()
+        public void MethodReturnsRefToRefStruct_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.ReturnsRefToRefStruct));
-            Assert.Throws<NotSupportedException>(() => mi.Invoke(null, null));
+            Assert.Throws<NotSupportedException>(() => Invoke(mi, null, null));
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static void MethodTakesRefStructAsArg_ThrowsNSE()
+        public void MethodTakesRefStructAsArg_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.TakesRefStructAsArg));
 
             object[] args = new object[] { null };
-            Assert.Throws<NotSupportedException>(() => mi.Invoke(null, args));
+            Assert.Throws<NotSupportedException>(() => Invoke(mi, null, args));
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static void MethodTakesRefStructAsArgWithDefaultValue_ThrowsNSE()
+        public void MethodTakesRefStructAsArgWithDefaultValue_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.TakesRefStructAsArgWithDefaultValue));
 
             object[] args = new object[] { Type.Missing };
-            Assert.Throws<NotSupportedException>(() => mi.Invoke(null, args));
+            Assert.Throws<NotSupportedException>(() => Invoke(mi, null, args));
         }
 
         // Moq heavily utilizes RefEmit, which does not work on most aot workloads
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/40738")]
-        public static void MethodTakesRefToRefStructAsArg_ThrowsNSE()
+        public void MethodTakesRefToRefStructAsArg_ThrowsNSE()
         {
             // Use a Binder to trick the reflection stack into treating the returned null
             // as meaning "use the default value of the ref struct".
@@ -49,35 +61,35 @@ namespace System.Reflection.Tests
             mockBinder.Setup(o => o.ChangeType("hello", myRefStructType.MakeByRefType(), null)).Returns((object)null);
 
             MethodInfo mi = GetMethod(nameof(TestClass.TakesRefToRefStructAsArg));
-            Assert.Throws<NotSupportedException>(() => mi.Invoke(null, BindingFlags.InvokeMethod, mockBinder.Object, new object[] { "hello" }, null));
+            Assert.Throws<NotSupportedException>(() => Invoke(mi, null, BindingFlags.InvokeMethod, mockBinder.Object, new object[] { "hello" }, null));
         }
 
         [Fact]
         [SkipOnMono("https://github.com/dotnet/runtime/issues/40738")]
-        public static void MethodTakesOutToRefStructAsArg_ThrowsNSE()
+        public void MethodTakesOutToRefStructAsArg_ThrowsNSE()
         {
             MethodInfo mi = GetMethod(nameof(TestClass.TakesOutToRefStructAsArg));
-            Assert.Throws<NotSupportedException>(() => mi.Invoke(null, new object[] { null }));
+            Assert.Throws<NotSupportedException>(() => Invoke(mi, null, new object[] { null }));
         }
 
         [Fact]
-        public static void PropertyTypedAsRefToRefStruct_AsMethodInfo_ThrowsNSE()
+        public void PropertyTypedAsRefToRefStruct_AsMethodInfo_ThrowsNSE()
         {
             MethodInfo mi = GetMethod("get_" + nameof(TestClass.PropertyTypedAsRefToRefStruct));
-            Assert.Throws<NotSupportedException>(() => mi.Invoke(null, null));
+            Assert.Throws<NotSupportedException>(() => Invoke(mi, null, null));
         }
 
         [Fact]
-        public static void PropertyTypedAsRefToRefStruct_AsPropInfo_ThrowsNSE()
+        public void PropertyTypedAsRefToRefStruct_AsPropInfo_ThrowsNSE()
         {
             PropertyInfo pi = typeof(TestClass).GetProperty(nameof(TestClass.PropertyTypedAsRefToRefStruct));
             Assert.NotNull(pi);
-            Assert.Throws<NotSupportedException>(() => pi.GetValue(null));
+            Assert.Throws<NotSupportedException>(() => GetValue(pi, null));
         }
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtimelab/issues/155", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
-        public static void PropertyIndexerWithRefStructArg_ThrowsNSE()
+        public void PropertyIndexerWithRefStructArg_ThrowsNSE()
         {
             PropertyInfo pi = typeof(TestClassWithIndexerWithRefStructArg).GetProperty("Item");
             Assert.NotNull(pi);
@@ -85,8 +97,8 @@ namespace System.Reflection.Tests
             object obj = new TestClassWithIndexerWithRefStructArg();
             object[] args = new object[] { null };
 
-            Assert.Throws<NotSupportedException>(() => pi.GetValue(obj, args));
-            Assert.Throws<NotSupportedException>(() => pi.SetValue(obj, 42, args));
+            Assert.Throws<NotSupportedException>(() => GetValue(pi, obj, args));
+            Assert.Throws<NotSupportedException>(() => SetValue(pi, obj, 42, args));
         }
 
         private sealed class TestClass

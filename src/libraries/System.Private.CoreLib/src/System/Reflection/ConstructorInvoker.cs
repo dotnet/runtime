@@ -50,7 +50,12 @@ namespace System.Reflection
         {
             if (!_strategyDetermined)
             {
-                if (!_invoked)
+                if (!_invoked
+#if !RELEASE
+                    // For testing reasons, determine the strategy on the first invoke.
+                    && (invokeAttr & (BindingFlags)(TestingBindingFlags.InvokeWithEmit | TestingBindingFlags.InvokeWithInterpreter)) == 0
+#endif
+                    )
                 {
                     // The first time, ignoring race conditions, use the slow path.
                     _invoked = true;
@@ -72,7 +77,11 @@ namespace System.Reflection
                 {
                     // For the rarely used scenario of calling the constructor directly through MethodBase.Invoke()
                     // with a non-null 'obj', we use the slow path to avoid having two emit-based delegates.
-                    if (_invokeFunc != null && obj == null)
+                    if (_invokeFunc != null
+#if !RELEASE
+                        && obj == null && (invokeAttr & (BindingFlags)TestingBindingFlags.InvokeWithInterpreter) == 0
+#endif
+                        )
                     {
                         ret = _invokeFunc(target: null, args);
                     }
@@ -86,7 +95,11 @@ namespace System.Reflection
                     throw new TargetInvocationException(e);
                 }
             }
-            else if (_invokeFunc != null && obj == null)
+            else if (_invokeFunc != null && obj == null
+#if !RELEASE
+                && (invokeAttr & (BindingFlags)TestingBindingFlags.InvokeWithInterpreter) == 0
+#endif
+                )
             {
                 ret = _invokeFunc(target: null, args);
             }

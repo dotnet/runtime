@@ -8,8 +8,20 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public class PropertyInfoTests
+    public class PropertyInfoTests_Emit : PropertyInfoTests
     {
+        public PropertyInfoTests_Emit() : base(useEmit: true) { }
+    }
+
+    public class PropertyInfoTests_Interpreted : PropertyInfoTests
+    {
+        public PropertyInfoTests_Interpreted() : base(useEmit: false) { }
+    }
+
+    public abstract class PropertyInfoTests : InvokeStrategy
+    {
+        public PropertyInfoTests(bool useEmit) : base(useEmit) { }
+
         [Theory]
         [InlineData(typeof(BaseClass), nameof(BaseClass.IntProperty))]
         [InlineData(typeof(BaseClass), nameof(BaseClass.StringProperty))]
@@ -54,14 +66,14 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(GetValue_TestData))]
-        public void GetValue(Type type, string name, object obj, object[] index, object expected)
+        public void GetPropertyValue(Type type, string name, object obj, object[] index, object expected)
         {
             PropertyInfo propertyInfo = GetProperty(type, name);
             if (index == null)
             {
-                Assert.Equal(expected, propertyInfo.GetValue(obj));
+                Assert.Equal(expected, GetValue(propertyInfo, obj));
             }
-            Assert.Equal(expected, propertyInfo.GetValue(obj, index));
+            Assert.Equal(expected, GetValue(propertyInfo, obj, index));
         }
 
         public static IEnumerable<object[]> GetValue_Invalid_TestData()
@@ -86,7 +98,7 @@ namespace System.Reflection.Tests
         public void GetValue_Invalid(Type type, string name, object obj, object[] index, Type exceptionType)
         {
             PropertyInfo propertyInfo = GetProperty(type, name);
-            Assert.Throws(exceptionType, () => propertyInfo.GetValue(obj, index));
+            Assert.Throws(exceptionType, () => GetValue(propertyInfo, obj, index));
         }
 
         public static IEnumerable<object[]> SetValue_TestData()
@@ -103,34 +115,34 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(SetValue_TestData))]
-        public void SetValue(Type type, string name, object obj, object value, object[] index, object expected)
+        public void SetPropertyValue(Type type, string name, object obj, object value, object[] index, object expected)
         {
             PropertyInfo PropertyInfo = GetProperty(type, name);
             object originalValue;
             if (index == null)
             {
                 // Use SetValue(object, object)
-                originalValue = PropertyInfo.GetValue(obj);
+                originalValue = GetValue(PropertyInfo, obj);
                 try
                 {
-                    PropertyInfo.SetValue(obj, value);
-                    Assert.Equal(expected, PropertyInfo.GetValue(obj));
+                    SetValue(PropertyInfo, obj, value);
+                    Assert.Equal(expected, GetValue(PropertyInfo, obj));
                 }
                 finally
                 {
-                    PropertyInfo.SetValue(obj, originalValue);
+                    SetValue(PropertyInfo, obj, originalValue);
                 }
             }
             // Use SetValue(object, object, object[])
-            originalValue = PropertyInfo.GetValue(obj, index);
+            originalValue = GetValue(PropertyInfo, obj, index);
             try
             {
-                PropertyInfo.SetValue(obj, value, index);
-                Assert.Equal(expected, PropertyInfo.GetValue(obj, index));
+                SetValue(PropertyInfo, obj, value, index);
+                Assert.Equal(expected, GetValue(PropertyInfo, obj, index));
             }
             finally
             {
-                PropertyInfo.SetValue(obj, originalValue, index);
+                SetValue(PropertyInfo, obj, originalValue, index);
             }
         }
 

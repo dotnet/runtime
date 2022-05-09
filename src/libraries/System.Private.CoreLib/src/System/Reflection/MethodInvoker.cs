@@ -35,7 +35,12 @@ namespace System.Reflection
         {
             if (!_strategyDetermined)
             {
-                if (!_invoked)
+                if (!_invoked
+#if !RELEASE
+                    // For testing reasons, determine the strategy on the first invoke.
+                    && (invokeAttr & (BindingFlags)(TestingBindingFlags.InvokeWithEmit | TestingBindingFlags.InvokeWithInterpreter)) == 0
+#endif
+                    )
                 {
                     // The first time, ignoring race conditions, use the slow path.
                     _invoked = true;
@@ -55,7 +60,11 @@ namespace System.Reflection
             {
                 try
                 {
-                    if (_invokeFunc != null)
+                    if (_invokeFunc != null
+#if !RELEASE
+                        && (invokeAttr & (BindingFlags)TestingBindingFlags.InvokeWithInterpreter) == 0
+#endif
+                        )
                     {
                         ret = _invokeFunc(obj, args);
                     }
@@ -69,7 +78,11 @@ namespace System.Reflection
                     throw new TargetInvocationException(e);
                 }
             }
-            else if (_invokeFunc != null)
+            else if (_invokeFunc != null
+#if !RELEASE
+                && (invokeAttr & (BindingFlags)TestingBindingFlags.InvokeWithInterpreter) == 0
+#endif
+                )
             {
                 ret = _invokeFunc(obj, args);
             }

@@ -46,5 +46,27 @@ namespace System.Reflection
         // These are a couple of misc attributes used
         IgnoreReturn = 0x01000000,  // This is used in COM Interop
         DoNotWrapExceptions = 0x02000000, // Disables wrapping exceptions in TargetInvocationException
+
+        // Softly reserved for test reasons; see TestingBindingFlags.
+        // InvokeWithEmit = 0x20000000,
+        // InvokeWithInterpreter = 0x40000000
+    }
+
+    /// <summary>
+    /// Internal enums for testing only. These are subject to change depending on test strategy.
+    /// If changed, also change InvokeStrategy.cs.
+    /// </summary>
+    [Flags]
+    internal enum TestingBindingFlags
+    {
+        /// <summary>
+        /// Use IL Emit (if available) for Invoke()
+        /// </summary>
+        InvokeWithEmit = 0x20000000,
+
+        /// <summary>
+        /// Use the native interpreter for Invoke()
+        /// </summary>
+        InvokeWithInterpreter = 0x40000000
     }
 }

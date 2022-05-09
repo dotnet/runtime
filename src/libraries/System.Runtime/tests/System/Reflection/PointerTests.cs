@@ -38,8 +38,20 @@ namespace System.Reflection.Tests
     unsafe delegate bool* ReturnDelegate(int expected);
     unsafe delegate object ReturnDelegateWithSystemPointer(int expected);
 
-    public unsafe class PointerTests
+    public class PointerTests_Emit : PointerTests
     {
+        public PointerTests_Emit() : base(useEmit: true) { }
+    }
+
+    public class PointerTests_Interpreted : PointerTests
+    {
+        public PointerTests_Interpreted() : base(useEmit: false) { }
+    }
+
+    public abstract unsafe class PointerTests : InvokeStrategy
+    {
+        public PointerTests(bool useEmit) : base(useEmit) { }
+
         [Fact]
         public void Box_TypeNull()
         {
@@ -155,7 +167,7 @@ namespace System.Reflection.Tests
         {
             var obj = new PointerHolder();
             PropertyInfo property = typeof(PointerHolder).GetProperty("Property");
-            property.SetValue(obj, Pointer.Box(unchecked((void*)value), typeof(char*)));
+            SetValue(property, obj, Pointer.Box(unchecked((void*)value), typeof(char*)));
             Assert.Equal(value, unchecked((int)obj.Property));
         }
 
@@ -165,7 +177,7 @@ namespace System.Reflection.Tests
         {
             var obj = new PointerHolder();
             PropertyInfo property = typeof(PointerHolder).GetProperty("Property");
-            property.SetValue(obj, (IntPtr)value);
+            SetValue(property, obj, (IntPtr)value);
             Assert.Equal(value, unchecked((int)obj.Property));
         }
 
@@ -177,7 +189,7 @@ namespace System.Reflection.Tests
             PropertyInfo property = typeof(PointerHolder).GetProperty("Property");
             AssertExtensions.Throws<ArgumentException>(null, () =>
             {
-                property.SetValue(obj, Pointer.Box(unchecked((void*)value), typeof(long*)));
+                SetValue(property, obj, Pointer.Box(unchecked((void*)value), typeof(long*)));
             });
         }
 
@@ -189,7 +201,7 @@ namespace System.Reflection.Tests
             var obj = new PointerHolder();
             obj.Property = unchecked((char*)value);
             PropertyInfo property = typeof(PointerHolder).GetProperty("Property");
-            object actualValue = property.GetValue(obj);
+            object actualValue = GetValue(property, obj);
             Assert.IsType<Pointer>(actualValue);
             void* actualPointer = Pointer.Unbox(actualValue);
             Assert.Equal(value, unchecked((int)actualPointer));
@@ -201,7 +213,7 @@ namespace System.Reflection.Tests
         {
             var obj = new PointerHolder();
             MethodInfo method = typeof(PointerHolder).GetMethod("Method");
-            method.Invoke(obj, new[] { Pointer.Box(unchecked((void*)value), typeof(byte*)), value });
+            Invoke(method, obj, new[] { Pointer.Box(unchecked((void*)value), typeof(byte*)), value });
         }
 
         [Fact]
@@ -209,7 +221,7 @@ namespace System.Reflection.Tests
         {
             var obj = new PointerHolder();
             MethodInfo method = typeof(PointerHolder).GetMethod("Method");
-            method.Invoke(obj, new object[] { null, 0 });
+            Invoke(method, obj, new object[] { null, 0 });
         }
 
         [Theory]
@@ -218,7 +230,7 @@ namespace System.Reflection.Tests
         {
             var obj = new PointerHolder();
             MethodInfo method = typeof(PointerHolder).GetMethod("Method");
-            method.Invoke(obj, new object[] { (IntPtr)value, value });
+            Invoke(method, obj, new object[] { (IntPtr)value, value });
         }
 
         [Theory]
@@ -229,7 +241,7 @@ namespace System.Reflection.Tests
             MethodInfo method = typeof(PointerHolder).GetMethod("Method");
             AssertExtensions.Throws<ArgumentException>(null, () =>
             {
-                method.Invoke(obj, new[] { Pointer.Box(unchecked((void*)value), typeof(long*)), value });
+                Invoke(method, obj, new[] { Pointer.Box(unchecked((void*)value), typeof(long*)), value });
             });
         }
 

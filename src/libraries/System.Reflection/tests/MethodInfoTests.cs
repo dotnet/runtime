@@ -9,8 +9,20 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public class MethodInfoTests
+    public class MethodInfoTests_Emit : MethodInfoTests
     {
+        public MethodInfoTests_Emit() : base(useEmit: true) { }
+    }
+
+    public class MethodInfoTests_Interpreted : MethodInfoTests
+    {
+        public MethodInfoTests_Interpreted() : base(useEmit: false) { }
+    }
+
+    public abstract class MethodInfoTests : InvokeStrategy
+    {
+        public MethodInfoTests(bool useEmit) : base(useEmit) { }
+
         [Fact]
         public void CreateDelegate_PublicMethod()
         {
@@ -361,24 +373,24 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(Invoke_TestData))]
-        public void Invoke(Type methodDeclaringType, string methodName, object obj, object[] parameters, object result)
+        public void Invoke_Method(Type methodDeclaringType, string methodName, object obj, object[] parameters, object result)
         {
             MethodInfo method = GetMethod(methodDeclaringType, methodName);
-            Assert.Equal(result, method.Invoke(obj, parameters));
+            Assert.Equal(result, Invoke(method, obj, parameters));
         }
 
         [Fact]
         public void Invoke_ParameterSpecification_ArrayOfMissing()
         {
-            Invoke(typeof(MethodInfoDefaultParameters), "OptionalObjectParameter", new MethodInfoDefaultParameters(), new object[] { Type.Missing }, Type.Missing);
-            Invoke(typeof(MethodInfoDefaultParameters), "OptionalObjectParameter", new MethodInfoDefaultParameters(), new Missing[] { Missing.Value }, Missing.Value);
+            Invoke_Method(typeof(MethodInfoDefaultParameters), "OptionalObjectParameter", new MethodInfoDefaultParameters(), new object[] { Type.Missing }, Type.Missing);
+            Invoke_Method(typeof(MethodInfoDefaultParameters), "OptionalObjectParameter", new MethodInfoDefaultParameters(), new Missing[] { Missing.Value }, Missing.Value);
         }
 
         [Fact]
         [ActiveIssue("https://github.com/mono/mono/issues/15025", TestRuntimes.Mono)]
-        public static void Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException()
+        public void Invoke_OptionalParameterUnassingableFromMissing_WithMissingValue_ThrowsArgumentException()
         {
-            AssertExtensions.Throws<ArgumentException>(null, () => GetMethod(typeof(MethodInfoDefaultParameters), "OptionalStringParameter").Invoke(new MethodInfoDefaultParameters(), new object[] { Type.Missing }));
+            AssertExtensions.Throws<ArgumentException>(null, () => Invoke(GetMethod(typeof(MethodInfoDefaultParameters), "OptionalStringParameter"), new MethodInfoDefaultParameters(), new object[] { Type.Missing }));
         }
 
         [Fact]
@@ -387,7 +399,7 @@ namespace System.Reflection.Tests
         {
             MethodInfo method = GetMethod(typeof(MI_SubClass), nameof(MI_SubClass.StaticIntIntMethodReturningInt));
             var args = new object[] { "10", "100" };
-            Assert.Equal(110, method.Invoke(null, BindingFlags.Default, new ConvertStringToIntBinder(), args, null));
+            Assert.Equal(110, Invoke(method, null, BindingFlags.Default, new ConvertStringToIntBinder(), args, null));
             Assert.True(args[0] is int);
             Assert.True(args[1] is int);
         }
@@ -627,27 +639,27 @@ namespace System.Reflection.Tests
 
             int? iNull = null;
             args = new object[] { iNull };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.Null)).Invoke(null, args));
+            Assert.True((bool)Invoke(GetMethod(nameof(NullableRefMethods.Null)), null, args));
             Assert.Null(args[0]);
             Assert.False(((int?)args[0]).HasValue);
 
             args = new object[] { iNull };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullBoxed)).Invoke(null, args));
+            Assert.True((bool)Invoke(GetMethod(nameof(NullableRefMethods.NullBoxed)), null, args));
             Assert.Null(args[0]);
 
             args = new object[] { iNull, 10 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValue)).Invoke(null, args));
+            Assert.True((bool)Invoke(GetMethod(nameof(NullableRefMethods.NullToValue)), null, args));
             Assert.IsType<int>(args[0]);
             Assert.Equal(10, (int)args[0]);
 
             iNull = 42;
             args = new object[] { iNull, 42 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.ValueToNull)).Invoke(null, args));
+            Assert.True((bool)Invoke(GetMethod(nameof(NullableRefMethods.ValueToNull)), null, args));
             Assert.Null(args[0]);
 
             iNull = null;
             args = new object[] { iNull, 10 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValueBoxed)).Invoke(null, args));
+            Assert.True((bool)Invoke(GetMethod(nameof(NullableRefMethods.NullToValueBoxed)), null, args));
             Assert.IsType<int>(args[0]);
             Assert.Equal(10, (int)args[0]);
 
@@ -662,26 +674,26 @@ namespace System.Reflection.Tests
 
             object? iNull = null;
             args = new object[] { iNull };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.Null)).Invoke(null, args));
+            Assert.True((bool)Invoke(GetMethod(nameof(NullableRefMethods.Null)), null, args));
             Assert.Null(args[0]);
 
             args = new object[] { iNull };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullBoxed)).Invoke(null, args));
+            Assert.True((bool)Invoke(GetMethod(nameof(NullableRefMethods.NullBoxed)), null, args));
             Assert.Null(args[0]);
 
             args = new object[] { iNull, 10 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValue)).Invoke(null, args));
+            Assert.True((bool)Invoke(GetMethod(nameof(NullableRefMethods.NullToValue)), null, args));
             Assert.IsType<int>(args[0]);
             Assert.Equal(10, (int)args[0]);
 
             iNull = 42;
             args = new object[] { iNull, 42 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.ValueToNull)).Invoke(null, args));
+            Assert.True((bool)Invoke(GetMethod(nameof(NullableRefMethods.ValueToNull)), null, args));
             Assert.Null(args[0]);
 
             iNull = null;
             args = new object[] { iNull, 10 };
-            Assert.True((bool)GetMethod(nameof(NullableRefMethods.NullToValueBoxed)).Invoke(null, args));
+            Assert.True((bool)Invoke(GetMethod(nameof(NullableRefMethods.NullToValueBoxed)), null, args));
             Assert.IsType<int>(args[0]);
             Assert.Equal(10, (int)args[0]);
 
@@ -693,16 +705,16 @@ namespace System.Reflection.Tests
         public void InvokeEnum()
         {
             // Enums only need to match by primitive type.
-            Assert.True((bool)GetMethod(nameof(EnumMethods.PassColorsInt)).
-                Invoke(null, new object[] { OtherColorsInt.Red }));
+            Assert.True((bool)Invoke(GetMethod(nameof(EnumMethods.PassColorsInt)),
+                null, new object[] { OtherColorsInt.Red }));
 
             // Widening allowed
-            Assert.True((bool)GetMethod(nameof(EnumMethods.PassColorsInt)).
-                Invoke(null, new object[] { ColorsShort.Red }));
+            Assert.True((bool)Invoke(GetMethod(nameof(EnumMethods.PassColorsInt)),
+                null, new object[] { ColorsShort.Red }));
 
             // Narrowing not allowed
-            Assert.Throws<ArgumentException>(() => GetMethod(nameof(EnumMethods.PassColorsShort)).
-                Invoke(null, new object[] { OtherColorsInt.Red }));
+            Assert.Throws<ArgumentException>(() => Invoke(GetMethod(nameof(EnumMethods.PassColorsShort)),
+                null, new object[] { OtherColorsInt.Red }));
 
             static MethodInfo GetMethod(string name) => typeof(EnumMethods).GetMethod(
                 name, BindingFlags.Public | BindingFlags.Static)!;
@@ -714,12 +726,12 @@ namespace System.Reflection.Tests
             ValueTypeWithOverrides obj = new() { Id = 1 };
 
             // ToString is overridden.
-            Assert.Equal("Hello", (string)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.ToString)).
-                Invoke(obj, null));
+            Assert.Equal("Hello", (string)Invoke(GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.ToString)),
+                obj, null));
 
             // Ensure a normal method works.
-            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.GetId)).
-                Invoke(obj, null));
+            Assert.Equal(1, (int)Invoke(GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.GetId)),
+                obj, null));
         }
 
         [Fact]
@@ -728,12 +740,12 @@ namespace System.Reflection.Tests
             ValueTypeWithoutOverrides obj = new() { Id = 1 };
 
             // ToString is not overridden.
-            Assert.Equal(typeof(ValueTypeWithoutOverrides).ToString(), (string)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.ToString)).
-                Invoke(obj, null));
+            Assert.Equal(typeof(ValueTypeWithoutOverrides).ToString(), (string)Invoke(GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.ToString)),
+                obj, null));
 
             // Ensure a normal method works.
-            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.GetId)).
-                Invoke(obj, null));
+            Assert.Equal(1, (int)Invoke(GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.GetId)),
+                obj, null));
         }
 
         [Fact]
@@ -741,7 +753,7 @@ namespace System.Reflection.Tests
         {
             // Ensure calling a method on Nullable<T> works.
             MethodInfo mi = GetMethod(typeof(int?), nameof(Nullable<int>.GetValueOrDefault));
-            Assert.Equal(42, mi.Invoke(42, null));
+            Assert.Equal(42, Invoke(mi, 42, null));
         }
 
         [Fact]
@@ -749,24 +761,24 @@ namespace System.Reflection.Tests
         {
             object i = 42;
             object[] args = new object[] { i };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByRef)).Invoke(null, args);
+            Invoke(GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByRef)), null, args);
             Assert.Equal(43, (int)args[0]);
             Assert.NotSame(i, args[0]); // A copy should be made; a boxed instance should never be directly updated.
 
             i = 42;
             args = new object[] { i };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByNullableRef)).Invoke(null, args);
+            Invoke(GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByNullableRef)), null, args);
             Assert.Equal(43, (int)args[0]);
             Assert.NotSame(i, args[0]);
 
             object o = null;
             args = new object[] { o };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNonNullByRef)).Invoke(null, args);
+            Invoke(GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNonNullByRef)), null, args);
             Assert.NotNull(args[0]);
 
             o = new object();
             args = new object[] { o };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNullByRef)).Invoke(null, args);
+            Invoke(GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNullByRef)), null, args);
             Assert.Null(args[0]);
         }
 

@@ -9,8 +9,20 @@ using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public class ConstructorInfoTests
+    public class ConstructorInfoTests_Emit : ConstructorInfoTests
     {
+        public ConstructorInfoTests_Emit() : base(useEmit: true) { }
+    }
+
+    public class ConstructorInfoTests_Interpreted : ConstructorInfoTests
+    {
+        public ConstructorInfoTests_Interpreted() : base(useEmit: false) { }
+    }
+
+    public abstract class ConstructorInfoTests : InvokeStrategy
+    {
+        public ConstructorInfoTests(bool useEmit) : base(useEmit) { }
+
         [Fact]
         public void ConstructorName()
         {
@@ -51,11 +63,11 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public void Invoke()
+        public void Invoke_Ctor()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
             Assert.Equal(3, constructors.Length);
-            ClassWith3Constructors obj = (ClassWith3Constructors)constructors[0].Invoke(null);
+            ClassWith3Constructors obj = (ClassWith3Constructors)Invoke(constructors[0], null);
             Assert.NotNull(obj);
         }
 
@@ -64,7 +76,7 @@ namespace System.Reflection.Tests
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructor));
             Assert.Equal(1, constructors.Length);
-            object obj = constructors[0].Invoke(null, new object[] { });
+            object obj = Invoke(constructors[0], null, new object[] { });
             Assert.Null(obj);
         }
 
@@ -72,6 +84,12 @@ namespace System.Reflection.Tests
         [ActiveIssue("https://github.com/dotnet/runtime/issues/40351", TestRuntimes.Mono)]
         public void Invoke_StaticConstructorMultipleTimes()
         {
+            // Only 1 of the 2 test classes can call this method since statics are set and tested.
+            if (this is ConstructorInfoTests_Emit)
+            {
+                return;
+            }
+
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructorThatIsCalledMultipleTimesViaReflection));
             Assert.Equal(1, constructors.Length);
             // The first time the static cctor is called, it should run the cctor twice
@@ -95,7 +113,7 @@ namespace System.Reflection.Tests
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructor));
             Assert.Equal(1, constructors.Length);
-            Assert.Throws<MemberAccessException>(() => constructors[0].Invoke(new object[0]));
+            Assert.Throws<MemberAccessException>(() => Invoke(constructors[0], new object[0]));
         }
 
         [Fact]
@@ -108,7 +126,7 @@ namespace System.Reflection.Tests
             foreach (int length in arraylength)
             {
                 // Create big Array with elements
-                object[] arr = (object[])constructors[0].Invoke(new object[] { length });
+                object[] arr = (object[])Invoke(constructors[0], new object[] { length });
                 Assert.Equal(arr.Length, length);
             }
         }
@@ -123,7 +141,7 @@ namespace System.Reflection.Tests
             foreach (int length in arraylength)
             {
                 // Create big Array with elements
-                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[0].Invoke(new object[] { length }));
+                Exception ex = Assert.Throws<TargetInvocationException>(() => Invoke(constructors[0], new object[] { length }));
                 Assert.IsType<OverflowException>(ex.InnerException);
             }
         }
@@ -134,7 +152,7 @@ namespace System.Reflection.Tests
         {
             var ctor = typeof(int[,]).GetConstructor(new[] { typeof(int), typeof(int) });
             var args = new object[] { "1", "2" };
-            var arr = (int[,])ctor.Invoke(BindingFlags.Default, new ConvertStringToIntBinder(), args, null);
+            var arr = (int[,])Invoke(ctor, BindingFlags.Default, new ConvertStringToIntBinder(), args, null);
             Assert.Equal(2, arr.Length);
             Assert.True(args[0] is int);
             Assert.True(args[1] is int);
@@ -144,7 +162,7 @@ namespace System.Reflection.Tests
         public void Invoke_OneParameter()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            ClassWith3Constructors obj = (ClassWith3Constructors)constructors[1].Invoke(new object[] { 100 });
+            ClassWith3Constructors obj = (ClassWith3Constructors)Invoke(constructors[1], new object[] { 100 });
             Assert.Equal(100, obj.intValue);
         }
 
@@ -152,7 +170,7 @@ namespace System.Reflection.Tests
         public void Invoke_TwoParameters()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            ClassWith3Constructors obj = (ClassWith3Constructors)constructors[2].Invoke(new object[] { 101, "hello" });
+            ClassWith3Constructors obj = (ClassWith3Constructors)Invoke(constructors[2], new object[] { 101, "hello" });
             Assert.Equal(101, obj.intValue);
             Assert.Equal("hello", obj.stringValue);
         }
@@ -164,7 +182,7 @@ namespace System.Reflection.Tests
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
 
             var args = new object[] { "101", "hello" };
-            ClassWith3Constructors obj = (ClassWith3Constructors)constructors[2].Invoke(BindingFlags.Default, new ConvertStringToIntBinder(), args, null);
+            ClassWith3Constructors obj = (ClassWith3Constructors)Invoke(constructors[2], BindingFlags.Default, new ConvertStringToIntBinder(), args, null);
             Assert.Equal(101, obj.intValue);
             Assert.Equal("hello", obj.stringValue);
             Assert.True(args[0] is int);
@@ -175,21 +193,21 @@ namespace System.Reflection.Tests
         public void Invoke_NoParameters_ThowsTargetParameterCountException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            Assert.Throws<TargetParameterCountException>(() => constructors[2].Invoke(new object[0]));
+            Assert.Throws<TargetParameterCountException>(() => Invoke(constructors[2], new object[0]));
         }
 
         [Fact]
         public void Invoke_ParameterMismatch_ThrowsTargetParameterCountException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            Assert.Throws<TargetParameterCountException>(() => (ClassWith3Constructors)constructors[2].Invoke(new object[] { 121 }));
+            Assert.Throws<TargetParameterCountException>(() => (ClassWith3Constructors)Invoke(constructors[2], new object[] { 121 }));
         }
 
         [Fact]
         public void Invoke_ParameterWrongType_ThrowsArgumentException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
-            AssertExtensions.Throws<ArgumentException>(null, () => (ClassWith3Constructors)constructors[1].Invoke(new object[] { "hello" }));
+            AssertExtensions.Throws<ArgumentException>(null, () => (ClassWith3Constructors)Invoke(constructors[1], new object[] { "hello" }));
         }
 
         [Fact]
@@ -198,7 +216,7 @@ namespace System.Reflection.Tests
             // Should not produce a second object.
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));
             ClassWith3Constructors obj1 = new ClassWith3Constructors(100, "hello");
-            ClassWith3Constructors obj2 = (ClassWith3Constructors)constructors[2].Invoke(obj1, new object[] { 999, "initialized" });
+            ClassWith3Constructors obj2 = (ClassWith3Constructors)Invoke(constructors[2], obj1, new object[] { 999, "initialized" });
             Assert.Null(obj2);
             Assert.Equal(999, obj1.intValue);
             Assert.Equal("initialized", obj1.stringValue);
@@ -209,7 +227,7 @@ namespace System.Reflection.Tests
         public void Invoke_AbstractClass_ThrowsMemberAccessException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ConstructorInfoAbstractBase));
-            Assert.Throws<MemberAccessException>(() => (ConstructorInfoAbstractBase)constructors[0].Invoke(new object[0]));
+            Assert.Throws<MemberAccessException>(() => (ConstructorInfoAbstractBase)Invoke(constructors[0], new object[0]));
         }
 
         [Fact]
@@ -217,7 +235,7 @@ namespace System.Reflection.Tests
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ConstructorInfoDerived));
             ConstructorInfoDerived obj = null;
-            obj = (ConstructorInfoDerived)constructors[0].Invoke(new object[] { });
+            obj = (ConstructorInfoDerived)Invoke(constructors[0], new object[] { });
             Assert.NotNull(obj);
         }
 
@@ -226,7 +244,7 @@ namespace System.Reflection.Tests
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(StructWith1Constructor));
             StructWith1Constructor obj;
-            obj = (StructWith1Constructor)constructors[0].Invoke(new object[] { 1, 2 });
+            obj = (StructWith1Constructor)Invoke(constructors[0], new object[] { 1, 2 });
             Assert.Equal(1, obj.x);
             Assert.Equal(2, obj.y);
         }

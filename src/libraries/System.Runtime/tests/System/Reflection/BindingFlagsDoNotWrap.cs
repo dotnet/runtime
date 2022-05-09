@@ -1,105 +1,114 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
 using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public static class BindingFlagsDoNotWrapTests
+    public class BindingFlagsDoNotWrapTests_Emit : BindingFlagsDoNotWrapTests
     {
+        public BindingFlagsDoNotWrapTests_Emit() : base(useEmit: true) { }
+    }
+
+    public class BindingFlagsDoNotWrapTests_Interpreted : BindingFlagsDoNotWrapTests
+    {
+        public BindingFlagsDoNotWrapTests_Interpreted() : base(useEmit: false) { }
+    }
+
+    public abstract class BindingFlagsDoNotWrapTests : InvokeStrategy
+    {
+        public BindingFlagsDoNotWrapTests(bool useEmit) : base(useEmit) { }
+
         [Fact]
-        public static void MethodInvoke()
+        public void MethodInvoke()
         {
             MethodInfo m = typeof(TestClass).GetMethod(nameof(TestClass.Moo), BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly);
-            TestDoNotWrap<MyException1>((bf) => m.Invoke(null, bf, null, Array.Empty<object>(), null));
+            TestDoNotWrap<MyException1>((bf) => Invoke(m, null, bf, null, Array.Empty<object>(), null));
         }
 
         [Fact]
-        public static void ConstructorInvoke()
+        public void ConstructorInvoke()
         {
             ConstructorInfo c = typeof(TestClass).GetConstructor(BindingFlags.Public|BindingFlags.Instance, null, Type.EmptyTypes, null);
-            TestDoNotWrap<MyException2>((bf) => c.Invoke(bf, null, Array.Empty<object>(), null));
+            TestDoNotWrap<MyException2>((bf) => Invoke(c, bf, null, Array.Empty<object>(), null));
         }
 
         [Fact]
-        public static void ConstructorInvokeTwoArgs()
+        public void ConstructorInvokeTwoArgs()
         {
             ConstructorInfo c = typeof(TestClass).GetConstructor(BindingFlags.Public | BindingFlags.Instance, Type.EmptyTypes);
-            TestDoNotWrap<MyException2>((bf) => c.Invoke(bf, null, Array.Empty<object>(), null));
+            TestDoNotWrap<MyException2>((bf) => Invoke(c, bf, null, Array.Empty<object>(), null));
         }
 
         [Fact]
-        public static void ConstructorInvokeStringCtor()
+        public void ConstructorInvokeStringCtor()
         {
             // Code coverage: String constructors go through a separate code path.
             ConstructorInfo c = typeof(string).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, new Type[] { typeof(char[]), typeof(int), typeof(int) }, null);
-            TestDoNotWrap<ArgumentNullException>((bf) => c.Invoke(bf, null, new object[] { null, 0, 0 }, null));
+            TestDoNotWrap<ArgumentNullException>((bf) => Invoke(c, bf, null, new object[] { null, 0, 0 }, null));
         }
 
         [Fact]
-        public static void ConstructorInvokeStringCtorTwoArgs()
+        public void ConstructorInvokeStringCtorTwoArgs()
         {
             ConstructorInfo c = typeof(string).GetConstructor(BindingFlags.Public | BindingFlags.Instance, new Type[] { typeof(char[]), typeof(int), typeof(int) });
-            TestDoNotWrap<ArgumentNullException>((bf) => c.Invoke(bf, null, new object[] { null, 0, 0 }, null));
+            TestDoNotWrap<ArgumentNullException>((bf) => Invoke(c, bf, null, new object[] { null, 0, 0 }, null));
         }
 
         [Fact]
-        public static void ConstructorInvokeUsingMethodInfoInvoke()
+        public void ConstructorInvokeUsingMethodInfoInvoke()
         {
             ConstructorInfo c = typeof(TestClass).GetConstructor(BindingFlags.Public | BindingFlags.Instance, null, Type.EmptyTypes, null);
-            TestDoNotWrap<MyException2>((bf) => c.Invoke(new TestClass(0), bf, null, Array.Empty<object>(), null));
+            TestDoNotWrap<MyException2>((bf) => Invoke(c, new TestClass(0), bf, null, Array.Empty<object>(), null));
         }
 
         [Fact]
-        public static void PropertyGet()
+        public void PropertyGet()
         {
             PropertyInfo p = typeof(TestClass).GetProperty(nameof(TestClass.MyProperty));
-            TestDoNotWrap<MyException3>((bf) => p.GetValue(null, bf, null, null, null));
+            TestDoNotWrap<MyException3>((bf) => GetValue(p, null, bf, null, null, null));
         }
 
         [Fact]
-        public static void PropertySet()
+        public void PropertySet()
         {
             PropertyInfo p = typeof(TestClass).GetProperty(nameof(TestClass.MyProperty));
-            TestDoNotWrap<MyException4>((bf) => p.SetValue(null, 42, bf, null, null, null));
+            TestDoNotWrap<MyException4>((bf) => SetValue(p, null, 42, bf, null, null, null));
         }
 
         [Fact]
-        public static void InvokeMember_Method()
+        public void InvokeMember_Method()
         {
             Type t = typeof(TestClass);
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly | BindingFlags.InvokeMethod;
-            TestDoNotWrap<MyException1>((bf) => t.InvokeMember(nameof(TestClass.Moo), bf | flags, null, null, Array.Empty<object>(), null, null, null));
+            TestDoNotWrap<MyException1>((bf) => InvokeMember(t, nameof(TestClass.Moo), bf | flags, null, null, Array.Empty<object>(), null, null, null));
         }
 
         [Fact]
-        public static void InvokeMember_PropertyGet()
+        public void InvokeMember_PropertyGet()
         {
             Type t = typeof(TestClass);
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly | BindingFlags.GetProperty;
-            TestDoNotWrap<MyException3>((bf) => t.InvokeMember(nameof(TestClass.MyProperty), bf | flags, null, null, Array.Empty<object>(), null, null, null));
+            TestDoNotWrap<MyException3>((bf) => InvokeMember(t, nameof(TestClass.MyProperty), bf | flags, null, null, Array.Empty<object>(), null, null, null));
         }
 
         [Fact]
-        public static void InvokeMember_PropertySet()
+        public void InvokeMember_PropertySet()
         {
             Type t = typeof(TestClass);
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Static | BindingFlags.DeclaredOnly | BindingFlags.SetProperty;
-            TestDoNotWrap<MyException4>((bf) => t.InvokeMember(nameof(TestClass.MyProperty), bf | flags, null, null, new object[] { 42 }, null, null, null));
+            TestDoNotWrap<MyException4>((bf) => InvokeMember(t, nameof(TestClass.MyProperty), bf | flags, null, null, new object[] { 42 }, null, null, null));
         }
 
         [Fact]
-        public static void ActivatorCreateInstance()
+        public void ActivatorCreateInstance()
         {
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
             TestDoNotWrap<MyException2>((bf) => Activator.CreateInstance(typeof(TestClass), bf | flags, null, Array.Empty<object>(), null, null));
         }
 
         [Fact]
-        public static void ActivatorCreateInstanceOneArgument()
+        public void ActivatorCreateInstanceOneArgument()
         {
             // For code coverage on CoreCLR: Activator.CreateInstance with parameters uses different code path from one without parameters.
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
@@ -107,7 +116,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public static void ActivatorCreateInstanceCaching()
+        public void ActivatorCreateInstanceCaching()
         {
             // For code coverage on CoreCLR: Activator.CreateInstance - second call after non-throwing call goes through a different path
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
@@ -122,14 +131,14 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public static void ActivatorCreateInstance_BadCCtor()
+        public void ActivatorCreateInstance_BadCCtor()
         {
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
             TestDoNotWrap<TypeInitializationException>((bf) => Activator.CreateInstance(typeof(TestClassBadCCtor), bf | flags, null, Array.Empty<object>(), null, null));
         }
 
         [Fact]
-        public static void AssemblyCreateInstance()
+        public void AssemblyCreateInstance()
         {
             Assembly a = typeof(TestClass).Assembly;
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
@@ -137,7 +146,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
-        public static void AssemblyCreateInstance_BadCCtor()
+        public void AssemblyCreateInstance_BadCCtor()
         {
             Assembly a = typeof(TestClass).Assembly;
             const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;

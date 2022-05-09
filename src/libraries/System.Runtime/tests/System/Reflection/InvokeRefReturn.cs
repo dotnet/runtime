@@ -3,35 +3,46 @@
 
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
-
 using Xunit;
 
 namespace System.Reflection.Tests
 {
-    public class InvokeRefReturnNetcoreTests
+    public class InvokeRefReturnNetcoreTests_Emit : InvokeRefReturnNetcoreTests
     {
+        public InvokeRefReturnNetcoreTests_Emit() : base(useEmit: true) { }
+    }
+
+    public class InvokeRefReturnNetcoreTests_Interpreted : InvokeRefReturnNetcoreTests
+    {
+        public InvokeRefReturnNetcoreTests_Interpreted() : base(useEmit: false) { }
+    }
+
+    public abstract class InvokeRefReturnNetcoreTests : InvokeStrategy
+    {
+        public InvokeRefReturnNetcoreTests(bool useEmit) : base(useEmit) { }
+
         [Theory]
         [MemberData(nameof(RefReturnInvokeTestData))]
-        public static void TestRefReturnPropertyGetValue<T>(T value)
+        public void TestRefReturnPropertyGetValue<T>(T value)
         {
-            TestRefReturnInvoke<T>(value, (p, t) => p.GetValue(t));
+            TestRefReturnInvoke<T>(value, (p, t) => GetValue(p, t));
         }
 
         [Theory]
         [MemberData(nameof(RefReturnInvokeTestData))]
-        public static void TestRefReturnMethodInvoke<T>(T value)
+        public void TestRefReturnMethodInvoke<T>(T value)
         {
-            TestRefReturnInvoke<T>(value, (p, t) => p.GetGetMethod().Invoke(t, Array.Empty<object>()));
+            TestRefReturnInvoke<T>(value, (p, t) => Invoke(p.GetGetMethod(), t, Array.Empty<object>()));
         }
 
         [Fact]
-        public static void TestRefReturnNullable()
+        public void TestRefReturnNullable()
         {
             TestRefReturnInvokeNullable<int>(42);
         }
 
         [Fact]
-        public static void TestRefReturnNullableNoValue()
+        public void TestRefReturnNullableNoValue()
         {
             TestRefReturnInvokeNullable<int>(default(int?));
         }
@@ -39,22 +50,22 @@ namespace System.Reflection.Tests
         [Theory]
         [MemberData(nameof(RefReturnInvokeTestData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
-        public static void TestNullRefReturnInvoke<T>(T value)
+        public void TestNullRefReturnInvoke<T>(T value)
         {
             TestClass<T> tc = new TestClass<T>(value);
             PropertyInfo p = typeof(TestClass<T>).GetProperty(nameof(TestClass<T>.NullRefReturningProp));
             Assert.NotNull(p);
-            Exception ex = Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
+            Exception ex = Assert.Throws<TargetInvocationException>(() => GetValue(p, tc));
             Assert.IsType<NullReferenceException>(ex.InnerException);
         }
 
         [Fact]
-        public static unsafe void TestRefReturnOfPointer()
+        public unsafe void TestRefReturnOfPointer()
         {
             int* expected = (int*)0x1122334455667788;
             TestClassIntPointer tc = new TestClassIntPointer(expected);
             PropertyInfo p = typeof(TestClassIntPointer).GetProperty(nameof(TestClassIntPointer.RefReturningProp));
-            object rv = p.GetValue(tc);
+            object rv = GetValue(p, tc);
             Assert.True(rv is Pointer);
             int* actual = (int*)(Pointer.Unbox(rv));
             Assert.Equal((IntPtr)expected, (IntPtr)actual);
@@ -62,18 +73,18 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
-        public static unsafe void TestNullRefReturnOfPointer()
+        public unsafe void TestNullRefReturnOfPointer()
         {
             TestClassIntPointer tc = new TestClassIntPointer(null);
 
             PropertyInfo p = typeof(TestClassIntPointer).GetProperty(nameof(TestClassIntPointer.NullRefReturningProp));
             Assert.NotNull(p);
-            Exception ex = Assert.Throws<TargetInvocationException>(() => p.GetValue(tc));
+            Exception ex = Assert.Throws<TargetInvocationException>(() => GetValue(p, tc));
             Assert.IsType<NullReferenceException>(ex.InnerException);
         }
 
         [Fact]
-        public static unsafe void TestByRefLikeRefReturn()
+        public unsafe void TestByRefLikeRefReturn()
         {
             ByRefLike brl = new ByRefLike();
             ByRefLike* pBrl = &brl;
@@ -81,7 +92,7 @@ namespace System.Reflection.Tests
             try
             {
                 // Don't use Assert.Throws because that will make a lambda and invalidate the pointer
-                object o = mi.Invoke(null, new object[] { Pointer.Box(pBrl, typeof(ByRefLike*)) });
+                object o = Invoke(mi, null, new object[] { Pointer.Box(pBrl, typeof(ByRefLike*)) });
 
                 // If this is reached, it means `o` is a boxed byref-like type. That's a GC hole right there.
                 throw new Xunit.Sdk.XunitException("Boxed a byref-like type.");
@@ -142,11 +153,11 @@ namespace System.Reflection.Tests
             }
         }
 
-        private static void TestRefReturnInvokeNullable<T>(T? nullable) where T : struct
+        private void TestRefReturnInvokeNullable<T>(T? nullable) where T : struct
         {
             TestClass<T?> tc = new TestClass<T?>(nullable);
             PropertyInfo p = typeof(TestClass<T?>).GetProperty(nameof(TestClass<T?>.RefReturningProp));
-            object rv = p.GetValue(tc);
+            object rv = GetValue(p, tc);
             if (rv != null)
             {
                 Assert.Equal(typeof(T), rv.GetType());
