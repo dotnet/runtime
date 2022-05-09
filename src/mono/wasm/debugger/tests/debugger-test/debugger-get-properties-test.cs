@@ -23,7 +23,7 @@ namespace DebuggerTests.GetPropertiesTests
 
     public class BaseBaseClass
     {
-        public string BaseBase_MemberForOverride { get; set; }
+        public string BaseBase_MemberForHiding { get; set; }
     }
 
     public class BaseClass : BaseBaseClass, IName
@@ -39,7 +39,7 @@ namespace DebuggerTests.GetPropertiesTests
 
         public virtual string StringPropertyForOverrideWithAutoProperty => "base#StringPropertyForOverrideWithAutoProperty";
         public virtual string Base_GetterForOverrideWithField => "base#Base_GetterForOverrideWithField";
-        public new string BaseBase_MemberForOverride => "Base#BaseBase_MemberForOverride";
+        public new string BaseBase_MemberForHiding => "Base#BaseBase_MemberForHiding";
 
         public string this[string s] => s + "_hello";
 
@@ -78,7 +78,7 @@ namespace DebuggerTests.GetPropertiesTests
         public override string StringPropertyForOverrideWithAutoProperty { get; }
         public new string Base_AutoStringPropertyForOverrideWithField = "DerivedClass#Base_AutoStringPropertyForOverrideWithField";
         public new string Base_GetterForOverrideWithField = "DerivedClass#Base_GetterForOverrideWithField";
-        public new string BaseBase_MemberForOverride = "DerivedClass#BaseBase_MemberForOverride";
+        public new string BaseBase_MemberForHiding = "DerivedClass#BaseBase_MemberForHiding";
 
         public int this[int i, string s] => i + 1 + s.Length;
 

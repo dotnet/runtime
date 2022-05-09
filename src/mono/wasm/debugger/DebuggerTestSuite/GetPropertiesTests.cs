@@ -34,7 +34,7 @@ namespace DebuggerTests
                 {"StringPropertyForOverrideWithAutoProperty",   (TString("DerivedClass#StringPropertyForOverrideWithAutoProperty"), true)},
                 {"Base_AutoStringPropertyForOverrideWithField", (TString("DerivedClass#Base_AutoStringPropertyForOverrideWithField"), true)},
                 {"Base_GetterForOverrideWithField",             (TString("DerivedClass#Base_GetterForOverrideWithField"), true)},
-                {"BaseBase_MemberForOverride",                  (TString("DerivedClass#BaseBase_MemberForOverride"), true)},
+                {"BaseBase_MemberForHiding",                    (TString("DerivedClass#BaseBase_MemberForHiding"), true)},
 
                 // protected
                 {"b",                               (TBool(true), true)},
@@ -53,12 +53,12 @@ namespace DebuggerTests
                 // inherited from BaseClass - public
                 {"Base_AutoStringProperty",                                     (TString("base#Base_AutoStringProperty"), false)},
                 {"LastName",                                                    (TGetter("LastName"), false)},
-                {"BaseBase_MemberForOverride (BaseClass)",                      (TGetter("BaseBase_MemberForOverride (BaseClass)"), false)},
+                {"BaseBase_MemberForHiding (BaseClass)",                        (TGetter("BaseBase_MemberForHiding (BaseClass)"), false)},
                 {"Base_AutoStringPropertyForOverrideWithField (BaseClass)",     (TObject("string", is_null: true), false)},
                 {"Base_GetterForOverrideWithField (BaseClass)",                 (TGetter("Base_GetterForOverrideWithField (BaseClass)"), false)},
 
                 // inherited from BaseBaseClass - public
-                {"BaseBase_MemberForOverride (BaseBaseClass)",                  (TString(null), false)}
+                {"BaseBase_MemberForHiding (BaseBaseClass)",                    (TString(null), false)}
             };
 
             // default, all properties
@@ -100,7 +100,7 @@ namespace DebuggerTests
                 "FirstName",
                 "LastName",
                 "DateTimeForOverride",
-                "BaseBase_MemberForOverride (BaseClass)",
+                "BaseBase_MemberForHiding (BaseClass)",
                 "Base_GetterForOverrideWithField (BaseClass)"
             };
 
@@ -434,15 +434,15 @@ namespace DebuggerTests
                 {"StringPropertyForOverrideWithAutoProperty",   TString("DerivedClass#StringPropertyForOverrideWithAutoProperty")},
                 {"Base_AutoStringPropertyForOverrideWithField", TString("DerivedClass#Base_AutoStringPropertyForOverrideWithField")},
                 {"Base_GetterForOverrideWithField",             TString("DerivedClass#Base_GetterForOverrideWithField")},
-                {"BaseBase_MemberForOverride",                  TString("DerivedClass#BaseBase_MemberForOverride")},
+                {"BaseBase_MemberForHiding",                    TString("DerivedClass#BaseBase_MemberForHiding")},
 
                 // inherited public
                 {"Base_AutoStringProperty",                                     TString("base#Base_AutoStringProperty")},
                 {"LastName",                                                    TGetter("LastName")},
-                {"BaseBase_MemberForOverride (BaseClass)",                      TGetter("BaseBase_MemberForOverride (BaseClass)")},
+                {"BaseBase_MemberForHiding (BaseClass)",                        TGetter("BaseBase_MemberForHiding (BaseClass)")},
                 {"Base_AutoStringPropertyForOverrideWithField (BaseClass)",     TObject("string", is_null: true)},
                 {"Base_GetterForOverrideWithField (BaseClass)",                 TGetter("Base_GetterForOverrideWithField (BaseClass)")},
-                {"BaseBase_MemberForOverride (BaseBaseClass)",                  TString(null)}
+                {"BaseBase_MemberForHiding (BaseBaseClass)",                    TString(null)}
             };
 
             var internal_protected_props = new Dictionary<string, JObject>(){

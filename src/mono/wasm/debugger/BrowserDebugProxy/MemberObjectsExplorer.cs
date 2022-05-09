@@ -438,7 +438,6 @@ namespace BrowserDebugProxy
             }
         }
 
-
         public static async Task<GetMembersResult> GetObjectMemberValues(
             MonoSDBHelper sdbHelper,
             int objectId,
@@ -533,23 +532,19 @@ namespace BrowserDebugProxy
 
             static void AddOnlyNewValuesByNameTo(JArray namedValues, IDictionary<string, JObject> valuesDict, string typeName, bool isOwn)
             {
-                var parentSuffix = isOwn ? "" : typeName.Split('.').LastOrDefault();
                 foreach (var item in namedValues)
                 {
                     var key = item["name"]?.Value<string>();
-                    if (key != null)
-                    {
-                        if (!valuesDict.TryAdd(key, item as JObject)
-                            && !isOwn
-                            && valuesDict[key]["get"] == null)
-                        {
-                            var parentMemberName = $"{key} ({parentSuffix})";
-                            if (valuesDict.TryAdd(parentMemberName, item as JObject))
-                            {
-                                item["name"] = parentMemberName;
-                            }
-                        }
-                    }
+                    if (key == null
+                        || valuesDict.TryAdd(key, item as JObject)
+                        || isOwn
+                        || valuesDict[key]["get"] != null)
+                        continue;
+
+                    var parentSuffix = typeName.Split('.').LastOrDefault();
+                    var parentMemberName = $"{key} ({parentSuffix})";
+                    if (valuesDict.TryAdd(parentMemberName, item as JObject))
+                        item["name"] = parentMemberName;
                 }
             }
         }
