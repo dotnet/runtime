@@ -2238,7 +2238,7 @@ namespace System.Text
             {
                 currentOffset = WidenAsciiToUtf16_Avx2(pAsciiBuffer, pUtf16Buffer, elementCount);
             }
-            else if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian) && envsetting2 == "SSE")
+            else if (Sse2.IsSupported || (AdvSimd.Arm64.IsSupported && BitConverter.IsLittleEndian))
             {
                 if (elementCount >= 2 * (uint)Unsafe.SizeOf<Vector128<byte>>())
                 {
