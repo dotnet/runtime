@@ -66,7 +66,6 @@ namespace System
         /// <param name="context">The <see cref="JsonSerializerContext" /> to use when serializing to JSON.</param>
         /// <param name="type">The type to use when serializing the data. If not specified, <see cref="object.GetType"/> will
         /// be used to determine the type.</param>
-        [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public BinaryData(object? jsonSerializable, JsonSerializerContext context, Type? type = default)
         {
             type ??= jsonSerializable?.GetType() ?? typeof(object);
@@ -216,7 +215,6 @@ namespace System
         /// <param name="jsonSerializable">The data to use.</param>
         /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> to use when serializing to JSON.</param>
         /// <returns>A value representing the UTF-8 encoding of the JSON representation of <paramref name="jsonSerializable" />.</returns>
-        [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public static BinaryData FromObjectAsJson<T>(T jsonSerializable, JsonTypeInfo<T> jsonTypeInfo)
             => new BinaryData(JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, jsonTypeInfo));
 
@@ -288,7 +286,6 @@ namespace System
         /// converted to.</typeparam>
         /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> to use when serializing to JSON.</param>
         /// <returns>The data converted to the specified type.</returns>
-        [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public T? ToObjectFromJson<T>(JsonTypeInfo<T> jsonTypeInfo)
             => JsonSerializer.Deserialize<T>(_bytes.Span, jsonTypeInfo);
 
