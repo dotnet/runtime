@@ -6074,7 +6074,7 @@ void EECodeManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
  *  GetAmbientSP
  *
  *  This function computes the zero-depth stack pointer for the given nesting
- *  level within the method given.  Nesting level is the the depth within
+ *  level within the method given.  Nesting level is the depth within
  *  try-catch-finally blocks, and is zero based.  It is up to the caller to
  *  supply a valid nesting level value.
  *

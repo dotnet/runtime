@@ -433,7 +433,7 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Get a DefType that is the generic instantiation of an open generic type over instantiation arguments
-        /// This looks like a rename of GetInstantiatedType, but isn't because the corert GetInstantiatedType
+        /// This looks like a rename of GetInstantiatedType, but isn't because the GetInstantiatedType
         /// relies on typeDef being a MetadataType, whereas this permits non-metadata types.
         /// </summary>
         public DefType ResolveGenericInstantiation(DefType typeDef, Instantiation arguments)

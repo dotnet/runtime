@@ -1790,7 +1790,7 @@ public:
     // active execution in one module to another module without
     // involving triggering the file loader to ensure that the
     // destination module is active.  We must explicitly list these
-    // relationships so the the loader can ensure that the activation
+    // relationships so the loader can ensure that the activation
     // constraints are a priori satisfied.
     //
     // Conditional vs. Unconditional describes how we deal with

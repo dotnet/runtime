@@ -23,7 +23,7 @@ namespace System.Diagnostics.Tracing
     /// </summary>
 #if NATIVEAOT
     [CLSCompliant(false)]
-    public // On CoreRT, this must be public to prevent it from getting reflection blocked.
+    public // On NativeAOT, this must be public to prevent it from getting reflection blocked.
 #else
     internal
 #endif
@@ -213,7 +213,7 @@ namespace System.Diagnostics.Tracing
         }
 
 #if NATIVEAOT
-        public // On CoreRT, this must be public to prevent it from getting reflection blocked.
+        public // On NativeAOT, this must be public to prevent it from getting reflection blocked.
 #else
         private
 #endif
@@ -232,7 +232,7 @@ namespace System.Diagnostics.Tracing
         }
 
 #if NATIVEAOT
-        public // On CoreRT, this must be public to prevent it from getting reflection blocked.
+        public // On NativeAOT, this must be public to prevent it from getting reflection blocked.
 #else
         private
 #endif

@@ -195,7 +195,7 @@ private :
     // Helper function called from MarshalIUnknownToStreamCallback.
     HRESULT MarshalIUnknownToStream();
 
-    // Method to try and start updating the the entry.
+    // Method to try and start updating the entry.
     bool TryUpdateEntry();
 
     // Method to end updating the entry.
