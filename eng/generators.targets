@@ -31,11 +31,10 @@
   </ItemGroup>
 
   <ItemGroup Condition="'@(EnabledGenerators)' != '' and
-                        @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator'))">
-    <!-- Only add the following files if we are not on the latest TFM. -->
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\LibraryImportAttribute.cs;
-                      $(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs"
-             Condition="'$(TargetFrameworkMoniker)' != '$(NetCoreAppCurrentTargetFrameworkMoniker)'" />
+                        @(EnabledGenerators->AnyHaveMetadataValue('Identity', 'LibraryImportGenerator')) and
+                        !$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\LibraryImportAttribute.cs" />
+    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" />
   </ItemGroup>
 
   <!-- Use this complex item list based filtering to add the ProjectReference to make sure dotnet/runtime stays compatible with NuGet Static Graph Restore. -->
