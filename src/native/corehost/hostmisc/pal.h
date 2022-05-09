@@ -293,7 +293,8 @@ namespace pal
 
     // Returns the globally registered install location (if any)
     bool get_dotnet_self_registered_dir(string_t* recv);
-    // Returns name of the global registry location (for error messages)
+
+    // Returns name of the config location for global install registration (for example, registry key or file path)
     string_t get_dotnet_self_registered_config_location();
 
     // Returns the default install location for a given platform

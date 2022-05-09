@@ -159,14 +159,7 @@ namespace System.Xml.Xsl.Xslt
 
         public AttributeSet(QilName name, XslVersion xslVer) : base(XslNodeType.AttributeSet, name, xslVer) { }
 
-        public override string GetDebugName()
-        {
-            StringBuilder dbgName = new StringBuilder();
-            dbgName.Append("<xsl:attribute-set name=\"");
-            dbgName.Append(Name!.QualifiedName);
-            dbgName.Append("\">");
-            return dbgName.ToString();
-        }
+        public override string GetDebugName() => $"<xsl:attribute-set name=\"{Name!.QualifiedName}\">";
 
         public new void AddContent(XslNode node)
         {
