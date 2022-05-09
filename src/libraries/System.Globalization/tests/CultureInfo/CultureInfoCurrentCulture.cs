@@ -180,7 +180,7 @@ namespace System.Globalization.Tests
 
         private static void CopyEssentialTestEnvironment(IDictionary<string, string> environment)
         {
-            string[] essentialVariables = { "HOME", "LD_LIBRARY_PATH" };
+            string[] essentialVariables = { "HOME", "LD_LIBRARY_PATH", "ICU_DATA" };
             string[] prefixedVariables = { "DOTNET_", "COMPlus_" };
 
             foreach (DictionaryEntry de in Environment.GetEnvironmentVariables())

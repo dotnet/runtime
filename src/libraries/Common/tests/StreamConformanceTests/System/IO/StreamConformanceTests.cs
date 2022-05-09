@@ -1736,6 +1736,7 @@ namespace System.IO.Tests
         [Theory]
         [MemberData(nameof(ReadWrite_Success_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public virtual async Task ReadWrite_Success(ReadWriteMode mode, int writeSize, bool startWithFlush)
         {
             foreach (CancellationToken nonCanceledToken in new[] { CancellationToken.None, new CancellationTokenSource().Token })
@@ -2434,6 +2435,7 @@ namespace System.IO.Tests
         [Theory]
         [MemberData(nameof(CopyToAsync_AllDataCopied_MemberData))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public virtual async Task CopyToAsync_AllDataCopied(int byteCount, bool useAsync)
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2509,6 +2511,7 @@ namespace System.IO.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public virtual async Task ReadTimeout_Expires_Throws()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
@@ -2661,6 +2664,7 @@ namespace System.IO.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public virtual async Task Flush_ValidOnReadableStream_Success()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
