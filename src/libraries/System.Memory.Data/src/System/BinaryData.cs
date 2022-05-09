@@ -57,7 +57,7 @@ namespace System
             _bytes = JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type, options);
         }
 
-         /// <summary>
+        /// <summary>
         /// Creates a <see cref="BinaryData"/> instance by serializing the provided object to JSON
         /// using <see cref="JsonSerializer"/>.
         /// </summary>
@@ -218,10 +218,7 @@ namespace System
         /// <returns>A value representing the UTF-8 encoding of the JSON representation of <paramref name="jsonSerializable" />.</returns>
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public static BinaryData FromObjectAsJson<T>(T jsonSerializable, JsonTypeInfo<T> jsonTypeInfo)
-        {
-            byte[] buffer = JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, jsonTypeInfo);
-            return new BinaryData(buffer);
-        }
+            => new BinaryData(JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, jsonTypeInfo));
 
         /// <summary>
         /// Converts the value of this instance to a string using UTF-8.
@@ -293,9 +290,7 @@ namespace System
         /// <returns>The data converted to the specified type.</returns>
         [RequiresUnreferencedCode(JsonSerializerRequiresUnreferencedCode)]
         public T? ToObjectFromJson<T>(JsonTypeInfo<T> jsonTypeInfo)
-        {
-            return JsonSerializer.Deserialize<T>(_bytes.Span, jsonTypeInfo);
-        }
+            => JsonSerializer.Deserialize<T>(_bytes.Span, jsonTypeInfo);
 
         /// <summary>
         /// Defines an implicit conversion from a <see cref="BinaryData" /> to a <see cref="ReadOnlyMemory{Byte}"/>.

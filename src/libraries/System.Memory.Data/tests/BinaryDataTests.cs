@@ -611,7 +611,6 @@ namespace System.Tests
             public int A { get; set; }
         }
 
-
         [JsonSerializable(typeof(TestModel))]
         internal partial class TestModelJsonContext : JsonSerializerContext
         {
