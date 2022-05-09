@@ -485,6 +485,7 @@ namespace System.IO.Pipes.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task Server_ReadWriteCancelledToken_Throws_OperationCanceledException()
         {
             using StreamPair streams = await CreateConnectedStreamsAsync();
