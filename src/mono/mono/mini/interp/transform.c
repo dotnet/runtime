@@ -4777,6 +4777,11 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				last_seq_point->flags = INTERP_INST_FLAG_SEQ_POINT_NONEMPTY_STACK;
 			}
 
+			if (td->last_ins->opcode == MINT_TAILCALL || td->last_ins->opcode == MINT_TAILCALL_VIRT) {
+				// Execution does not follow through
+				link_bblocks = FALSE;
+			}
+
 			constrained_class = NULL;
 			readonly = FALSE;
 			save_last_error = FALSE;
