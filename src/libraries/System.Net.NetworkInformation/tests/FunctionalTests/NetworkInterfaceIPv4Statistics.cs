@@ -71,7 +71,7 @@ namespace System.Net.NetworkInformation.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Android | TestPlatforms.LinuxBionic)]  // This API is not supported on Android
+        [PlatformSpecific(TestPlatforms.Android)]  // This API is not supported on Android
         public void BasicTest_GetIPv4InterfaceStatistics_NotSupported_Android()
         {
             // This API is not actually IPv4 specific.
