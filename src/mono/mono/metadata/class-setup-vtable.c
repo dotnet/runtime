@@ -1484,7 +1484,7 @@ is_ok_for_covariant_ret (MonoType *type_impl, MonoType *type_decl)
  * }
  * class A : B {
  *   public virtual newslot C Foo () {
- *     .override C C::Foo (); // type load error - it should be a a subclass of B because of B's override of C::Foo
+ *     .override C C::Foo (); // type load error - it should be a subclass of B because of B's override of C::Foo
  *   }
  * }
  */

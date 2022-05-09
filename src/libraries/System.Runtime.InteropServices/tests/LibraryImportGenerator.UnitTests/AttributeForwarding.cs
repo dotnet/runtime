@@ -25,6 +25,7 @@ namespace LibraryImportGenerator.UnitTests
             string source = @$"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {{
@@ -67,6 +68,7 @@ struct Native
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -111,6 +113,7 @@ struct Native
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -159,6 +162,7 @@ struct Native
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
@@ -211,6 +215,7 @@ struct Native
             string source = @$"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {{
@@ -257,6 +262,7 @@ struct Native
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 
 class OtherAttribute : Attribute {}

@@ -95,27 +95,6 @@ namespace System.Reflection
 
         internal BindingFlags BindingFlags => m_bindingFlags;
 
-
-        [DebuggerStepThrough]
-        [DebuggerHidden]
-        internal unsafe object InvokeNonEmitUnsafe(object? obj, IntPtr* args, Span<object?> argsForTemporaryMonoSupport, BindingFlags invokeAttr)
-        {
-            if ((invokeAttr & BindingFlags.DoNotWrapExceptions) == 0)
-            {
-                try
-                {
-                    return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, Signature, isConstructor: obj is null)!;
-                }
-                catch (Exception ex)
-                {
-                    throw new TargetInvocationException(ex);
-                }
-            }
-            else
-            {
-                return RuntimeMethodHandle.InvokeMethod(obj, (void**)args, Signature, isConstructor: obj is null)!;
-            }
-        }
         #endregion
 
         #region Object Overrides

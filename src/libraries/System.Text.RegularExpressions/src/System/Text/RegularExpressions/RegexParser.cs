@@ -414,7 +414,7 @@ namespace System.Text.RegularExpressions
                         {
                             throw wasPrevQuantifier ?
                                 MakeException(RegexParseError.NestedQuantifiersNotParenthesized, SR.Format(SR.NestedQuantifiersNotParenthesized, ch)) :
-                                MakeException(RegexParseError.QuantifierAfterNothing, SR.QuantifierAfterNothing);
+                                MakeException(RegexParseError.QuantifierAfterNothing, SR.Format(SR.QuantifierAfterNothing, ch));
                         }
                         MoveLeft();
                         break;
@@ -978,7 +978,7 @@ namespace System.Text.RegularExpressions
                         break;
 
                     case '(':
-                        // alternation construct (?(...) | )
+                        // conditional alternation construct (?(...) | )
 
                         int parenPos = Textpos();
                         if (CharsRight() > 0)

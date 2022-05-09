@@ -122,7 +122,7 @@ extern "C" HRESULT STDCALL StubRareDisableHRWorker(Thread *pThread)
     // when we start executing here, we are actually in cooperative mode.  But we
     // haven't synchronized with the barrier to reentry yet.  So we are in a highly
     // dangerous mode.  If we call managed code, we will potentially be active in
-    // the GC heap, even as GC's are occuring!
+    // the GC heap, even as GC's are occurring!
 
     // We must do the following in this order, because otherwise we would be constructing
     // the exception for the abort without synchronizing with the GC.  Also, we have no
@@ -775,7 +775,9 @@ PCODE ComCallMethodDesc::CreateCOMToCLRStub(DWORD dwStubFlags, MethodDesc **ppSt
     }
     else
     {
-        comCallMDWriterHolder.GetRW()->m_StackBytes = pStubMD->SizeOfArgStack();
+        UINT size = pStubMD->SizeOfArgStack();
+        _ASSERTE(size <= USHRT_MAX);
+        comCallMDWriterHolder.GetRW()->m_StackBytes = (UINT16)size;
     }
 #endif // TARGET_X86
 
@@ -1095,7 +1097,7 @@ void ComCallMethodDesc::InitNativeInfo()
             {
                 // Check to see if this is the parameter after which we need to read the LCID from.
                 if (iArg == iLCIDArg)
-                    nativeArgSize += StackElemSize(sizeof(LCID));
+                    nativeArgSize += (UINT16)StackElemSize(sizeof(LCID));
 
                 MarshalInfo info(msig.GetModule(), msig.GetArgProps(), msig.GetSigTypeContext(), params[iArg],
                                  MarshalInfo::MARSHAL_SCENARIO_COMINTEROP,
@@ -1108,7 +1110,7 @@ void ComCallMethodDesc::InitNativeInfo()
 
                 if (info.GetMarshalType() == MarshalInfo::MARSHAL_TYPE_UNKNOWN)
                 {
-                    nativeArgSize += StackElemSize(sizeof(LPVOID));
+                    nativeArgSize += (UINT16)StackElemSize(sizeof(LPVOID));
                     m_flags |= enum_HasMarshalError;
                 }
                 else
@@ -1123,7 +1125,7 @@ void ComCallMethodDesc::InitNativeInfo()
 
             // Check to see if this is the parameter after which we need to read the LCID from.
             if (iArg == iLCIDArg)
-                nativeArgSize += StackElemSize(sizeof(LCID));
+                nativeArgSize += (UINT16)StackElemSize(sizeof(LCID));
 #endif // TARGET_X86
 
 

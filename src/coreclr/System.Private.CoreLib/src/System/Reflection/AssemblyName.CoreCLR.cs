@@ -3,9 +3,8 @@
 
 using System.Configuration.Assemblies;
 using System.Globalization;
-using System.IO;
 using System.Runtime.CompilerServices;
-using System.Runtime.Serialization;
+using System.Runtime.InteropServices;
 
 namespace System.Reflection
 {
@@ -61,7 +60,7 @@ namespace System.Reflection
         }
     }
 
-    public sealed partial class AssemblyName : ICloneable, IDeserializationCallback, ISerializable
+    public sealed partial class AssemblyName
     {
         internal unsafe AssemblyName(NativeAssemblyNameParts* pParts)
             : this()
@@ -149,5 +148,31 @@ namespace System.Reflection
             }
             return ProcessorArchitecture.None;
         }
+
+        private static unsafe void ParseAsAssemblySpec(char* pAssemblyName, void* pAssemblySpec)
+        {
+            AssemblyNameParser.AssemblyNameParts parts = AssemblyNameParser.Parse(MemoryMarshal.CreateReadOnlySpanFromNullTerminated(pAssemblyName));
+
+            fixed (char* pName = parts._name)
+            fixed (char* pCultureName = parts._cultureName)
+            fixed (byte* pPublicKeyOrToken = parts._publicKeyOrToken)
+            {
+                NativeAssemblyNameParts nameParts = default;
+
+                nameParts._flags = parts._flags;
+                nameParts._pName = pName;
+                nameParts._pCultureName = pCultureName;
+
+                nameParts._pPublicKeyOrToken = pPublicKeyOrToken;
+                nameParts._cbPublicKeyOrToken = (parts._publicKeyOrToken != null) ? parts._publicKeyOrToken.Length : 0;
+
+                nameParts.SetVersion(parts._version, defaultValue: ushort.MaxValue);
+
+                InitializeAssemblySpec(&nameParts, pAssemblySpec);
+            }
+        }
+
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AssemblyName_InitializeAssemblySpec")]
+        private static unsafe partial void InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, void* pAssemblySpec);
     }
 }

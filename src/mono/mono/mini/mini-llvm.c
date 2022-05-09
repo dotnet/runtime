@@ -9048,7 +9048,7 @@ MONO_RESTORE_WARNING
 					break;
 				case OP_SSE2_PSHUFD:
 					/*
-					 * Each 2 bits in mask selects 1 dword from the the source and copies it to the
+					 * Each 2 bits in mask selects 1 dword from the source and copies it to the
 					 * destination.
 					 */
 					mask_len = 4;

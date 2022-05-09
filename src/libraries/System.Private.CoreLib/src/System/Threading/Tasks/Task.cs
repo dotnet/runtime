@@ -1922,13 +1922,13 @@ namespace System.Threading.Tasks
                 }
             }
 
-#if CORERT
+#if NATIVEAOT
             RuntimeExceptionHelpers.ReportUnhandledException(edi.SourceException);
 #else
             // Propagate the exception(s) on the ThreadPool
             ThreadPool.QueueUserWorkItem(static state => ((ExceptionDispatchInfo)state!).Throw(), edi);
 
-#endif // CORERT
+#endif // NATIVEAOT
         }
 
         /// <summary>

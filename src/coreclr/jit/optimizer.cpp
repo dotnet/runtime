@@ -6407,7 +6407,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
         updateLoopNum = updateParentLoopNum;
     }
 
-    // If the update block is not the the header of a loop containing
+    // If the update block is not the header of a loop containing
     // block, we can also ignore the update.
     //
     if (!optLoopContains(updateLoopNum, loopNum))
@@ -6528,7 +6528,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             else if (node->OperIs(GT_NULLCHECK))
             {
                 // If a null-check is for `this` object, it is safe to
-                // hoist it out of the loop. Assrtionprop will get rid
+                // hoist it out of the loop. Assertionprop will get rid
                 // of left over nullchecks present inside the loop. Also,
                 // since NULLCHECK has no value, it will never be CSE,
                 // hence this check is not present in optIsCSEcandidate().
@@ -7854,6 +7854,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         GenTreeArrAddr* arrAddr  = nullptr;
                         GenTree*        baseAddr = nullptr;
                         FieldSeqNode*   fldSeq   = nullptr;
+                        ssize_t         offset   = 0;
 
                         if (arg->IsArrayAddr(&arrAddr))
                         {
@@ -7865,7 +7866,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                             // Conservatively assume byrefs may alias this array element
                             memoryHavoc |= memoryKindSet(ByrefExposed);
                         }
-                        else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
+                        else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
                         {
                             assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
 

@@ -50,6 +50,9 @@ namespace System.Diagnostics
         /// Returns the amount of time the associated thread has spent running code
         /// inside the application (not the operating system core).
         /// </summary>
+        [UnsupportedOSPlatform("ios")]
+        [UnsupportedOSPlatform("tvos")]
+        [SupportedOSPlatform("maccatalyst")]
         public TimeSpan UserProcessorTime
         {
             get

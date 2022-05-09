@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #if NETFRAMEWORK || NETCOREAPP
@@ -8,6 +8,7 @@ using System.Reflection;
 
 namespace System.Text.Json.Serialization.Metadata
 {
+    [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
     internal sealed partial class ReflectionEmitCachingMemberAccessor : MemberAccessor
     {
         private static readonly ReflectionEmitMemberAccessor s_sourceAccessor = new();

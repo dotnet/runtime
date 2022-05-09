@@ -527,7 +527,7 @@ BYTE * ClrVirtualAllocWithinRange(const BYTE *pMinAddr,
     if (m_enableGCNumaAware)
     {
         DWORD currentProcsOnNode = 0;
-        for (int i = 0; i < m_nNodes; i++)
+        for (uint16_t i = 0; i < m_nNodes; i++)
         {
             GROUP_AFFINITY processorMask;
             if (GetNumaNodeProcessorMaskEx(i, &processorMask))
