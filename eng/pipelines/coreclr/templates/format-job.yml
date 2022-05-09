@@ -31,7 +31,23 @@ jobs:
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     helixType: 'format'
     pool: ${{ parameters.pool }}
-    variables: ${{ parameters.variables }}
+    variables:
+
+    - ${{ each variable in parameters.variables }}:
+      - ${{ if ne(variable.name, '') }}:
+        - name: ${{ variable.name }}
+          value: ${{ variable.value }}
+      - ${{ if ne(variable.group, '') }}:
+        - group: ${{ variable.group }}
+        
+    - ${{ if eq(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'py -3'
+
+    - ${{ if ne(parameters.osGroup, 'windows') }}:
+      - name: PythonScript
+        value: 'python3'
+
     condition: ${{ parameters.condition }}
     steps:
     - task: UseDotNet@2
@@ -42,7 +58,7 @@ jobs:
         version: '3.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
-    - script: py -3 $(Build.SourcesDirectory)/src/tests/Common/scripts/format.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)
+    - script: $(PythonScript) $(Build.SourcesDirectory)/src/tests/Common/scripts/format.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)
       displayName: Run format.py
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
