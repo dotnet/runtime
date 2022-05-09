@@ -904,7 +904,7 @@ inline GenTree* Compiler::gtNewLargeOperNode(genTreeOps oper, var_types type, Ge
 
 inline GenTreeIntCon* Compiler::gtNewIconHandleNode(size_t value, GenTreeFlags flags, FieldSeqNode* fields)
 {
-    assert((flags & (GTF_ICON_HDL_MASK | GTF_ICON_FIELD_OFF)) != 0);
+    assert((flags & GTF_ICON_HDL_MASK) != 0);
 
     // Interpret "fields == NULL" as "not a field."
     if (fields == nullptr)

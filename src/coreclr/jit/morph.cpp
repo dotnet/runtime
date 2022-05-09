@@ -5299,7 +5299,7 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // Generate the "addr" node.
             // Add the member offset to the object's address.
             addr = gtNewOperNode(GT_ADD, (objRefType == TYP_I_IMPL) ? TYP_I_IMPL : TYP_BYREF, addr,
-                                 gtNewIconHandleNode(fldOffset, GTF_ICON_FIELD_OFF, fieldSeq));
+                                 gtNewIconNode(fldOffset, fieldSeq));
         }
 
         // Now let's set the "tree" as a GT_IND tree.
