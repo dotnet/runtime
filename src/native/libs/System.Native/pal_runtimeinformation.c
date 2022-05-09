@@ -128,6 +128,11 @@ int32_t SystemNative_GetOSArchitecture()
             result = ARCH_S390X;
         }
 
+        else if (strcmp("ppc64le", isa) == 0)
+        {
+            result = ARCH_POWERPC64;
+        }
+
         else if (strcmp("loongarch64", isa) == 0)
         {
             result = ARCH_LOONGARCH64;
