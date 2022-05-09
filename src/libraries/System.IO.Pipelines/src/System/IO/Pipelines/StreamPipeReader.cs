@@ -170,9 +170,22 @@ namespace System.IO.Pipelines
         /// <inheritdoc />
         public override void Complete(Exception? exception = null)
         {
+            if (CompleteAndGetNeedsDispose())
+            {
+                InnerStream.Dispose();
+            }
+        }
+
+#if NETCOREAPP
+        public override ValueTask CompleteAsync(Exception? exception = null) =>
+            CompleteAndGetNeedsDispose() ? InnerStream.DisposeAsync() : default;
+#endif
+
+        private bool CompleteAndGetNeedsDispose()
+        {
             if (_isReaderCompleted)
             {
-                return;
+                return false;
             }
 
             _isReaderCompleted = true;
@@ -186,10 +199,7 @@ namespace System.IO.Pipelines
                 returnSegment.ResetMemory();
             }
 
-            if (!LeaveOpen)
-            {
-                InnerStream.Dispose();
-            }
+            return !LeaveOpen;
         }
 
         /// <inheritdoc />

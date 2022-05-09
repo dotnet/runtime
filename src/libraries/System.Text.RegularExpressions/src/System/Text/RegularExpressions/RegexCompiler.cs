@@ -5034,7 +5034,7 @@ namespace System.Text.RegularExpressions
             Ret();
         }
 
-        /// <summary>Emits a a check for whether the character is in the specified character class.</summary>
+        /// <summary>Emits a check for whether the character is in the specified character class.</summary>
         /// <remarks>The character to be checked has already been loaded onto the stack.</remarks>
         private void EmitMatchCharacterClass(string charClass)
         {

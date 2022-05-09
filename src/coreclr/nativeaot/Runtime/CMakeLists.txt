@@ -235,7 +235,7 @@ add_definitions(-DFEATURE_DYNAMIC_CODE)
 add_compile_definitions($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:FEATURE_GC_STRESS>)
 add_definitions(-DFEATURE_REDHAWK)
 add_definitions(-DVERIFY_HEAP)
-add_definitions(-DCORERT)
+add_definitions(-DNATIVEAOT)
 add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)
 add_definitions(-D_LIB)
 

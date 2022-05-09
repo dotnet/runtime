@@ -402,7 +402,7 @@ namespace ILCompiler
                 //
                 // See: https://github.com/dotnet/corert/issues/2785
                 //
-                // When we undo this this hack, replace this foreach with
+                // When we undo this hack, replace the foreach with
                 //  typeSystemContext.InputFilePaths = inFilePaths;
                 //
 

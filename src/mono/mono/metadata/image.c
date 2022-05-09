@@ -2167,12 +2167,8 @@ mono_image_close_except_pools (MonoImage *image)
 		char *old_name = image->name;
 		image->name = g_strdup_printf ("%s - UNLOADED", old_name);
 		g_free (old_name);
-		g_free (image->filename);
-		image->filename = NULL;
 	} else {
 		g_free (image->name);
-		g_free (image->filename);
-		g_free (image->guid);
 		g_free (image->version);
 	}
 
@@ -2236,6 +2232,7 @@ mono_image_close_except_pools (MonoImage *image)
 		g_free (ii->cli_section_tables);
 		g_free (ii->cli_sections);
 		g_free (image->image_info);
+		image->image_info = NULL;
 	}
 
 	mono_image_close_except_pools_all (image->files, image->file_count);
@@ -2256,6 +2253,13 @@ mono_image_close_except_pools (MonoImage *image)
 	}
 
 	MONO_PROFILER_RAISE (image_unloaded, (image));
+
+	g_free (image->filename);
+	image->filename = NULL;
+	if (!debug_assembly_unload) {
+		g_free (image->guid);
+		image->guid = NULL;
+	}
 
 	return TRUE;
 }

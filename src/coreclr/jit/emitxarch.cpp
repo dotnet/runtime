@@ -1967,7 +1967,7 @@ inline emitter::code_t emitter::insEncodeRRIb(instruction ins, regNumber reg, em
 
 /*****************************************************************************
  *
- *  Returns the "+reg" opcode with the the given register set into the low
+ *  Returns the "+reg" opcode with the given register set into the low
  *  nibble of the opcode
  */
 
@@ -3332,6 +3332,13 @@ void emitter::emitInsStoreInd(instruction ins, emitAttr attr, GenTreeStoreInd* m
     GenTree* addr = mem->Addr();
     GenTree* data = mem->Data();
 
+    if (data->OperIs(GT_BSWAP, GT_BSWAP16) && data->isContained())
+    {
+        assert(ins == INS_movbe);
+
+        data = data->gtGetOp1();
+    }
+
     if (addr->OperGet() == GT_CLS_VAR_ADDR)
     {
         if (data->isContainedIntOrIImmed())
@@ -3499,7 +3506,7 @@ regNumber emitter::emitInsBinary(instruction ins, emitAttr attr, GenTree* dst, G
     //  * Local variable
     //
     // Most of these types (except Indirect: Class variable and Indirect: Addressing mode)
-    // give us a a local variable number and an offset and access memory on the stack
+    // give us a local variable number and an offset and access memory on the stack
     //
     // Indirect: Class variable is used for access static class variables and gives us a handle
     // to the memory location we read from
@@ -10415,6 +10422,13 @@ BYTE* emitter::emitOutputAM(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Is this a 'big' opcode?
     else if (code & 0xFF000000)
     {
+        if (size == EA_2BYTE)
+        {
+            assert(ins == INS_movbe);
+
+            dst += emitOutputByte(dst, 0x66);
+        }
+
         // Output the REX prefix
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
@@ -11199,6 +11213,13 @@ BYTE* emitter::emitOutputSV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Is this a 'big' opcode?
     else if (code & 0xFF000000)
     {
+        if (size == EA_2BYTE)
+        {
+            assert(ins == INS_movbe);
+
+            dst += emitOutputByte(dst, 0x66);
+        }
+
         // Output the REX prefix
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
@@ -11669,6 +11690,13 @@ BYTE* emitter::emitOutputCV(BYTE* dst, instrDesc* id, code_t code, CnsVal* addc)
     // Is this a 'big' opcode?
     else if (code & 0xFF000000)
     {
+        if (size == EA_2BYTE)
+        {
+            assert(ins == INS_movbe);
+
+            dst += emitOutputByte(dst, 0x66);
+        }
+
         // Output the REX prefix
         dst += emitOutputRexOrVexPrefixIfNeeded(ins, dst, code);
 
@@ -16274,6 +16302,20 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             result.insThroughput = PERFSCORE_THROUGHPUT_140C;
             break;
         }
+
+        case INS_movbe:
+            if (memAccessKind == PERFSCORE_MEMORY_READ)
+            {
+                result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+                result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
+            }
+            else
+            {
+                assert(memAccessKind == PERFSCORE_MEMORY_WRITE);
+                result.insThroughput = PERFSCORE_THROUGHPUT_1C;
+                result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
+            }
+            break;
 
         default:
             // unhandled instruction insFmt combination

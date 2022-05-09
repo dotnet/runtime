@@ -1666,7 +1666,7 @@ public:
         return DacGlobalBase() + *m_rvaPtr;
     }
 
-    // This is only testing the the pointer memory is available but does not verify
+    // This is only testing the pointer memory is available but does not verify
     // the memory that it points to.
     //
     bool IsValidPtr(void) const

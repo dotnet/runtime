@@ -2234,7 +2234,7 @@ public:
     //   spillAfter indicates that the value is spilled here, so a spill must be added.
     //   singleDefSpill indicates that it is associated with a single-def var and if it
     //      is decided to get spilled, it will be spilled at firstRefPosition def. That
-    //      way, the the value of stack will always be up-to-date and no more spills or
+    //      way, the value of stack will always be up-to-date and no more spills or
     //      resolutions (from reg to stack) will be needed for such single-def var.
     //   copyReg indicates that the value needs to be copied to a specific register,
     //      but that it will also retain its current assigned register.
