@@ -753,7 +753,13 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_ALWAYS:
-                inst_JMP(EJ_jmp, block->bbJumpDest, /* isJmpAlways */ true);
+                inst_JMP(EJ_jmp, block->bbJumpDest,
+#ifdef TARGET_AMD64
+                         /* isJmpAlways */ !GetEmitter()->emitIsLastInsCall()
+#else
+                         /* isJmpAlways */ false
+#endif
+                             );
                 FALLTHROUGH;
 
             case BBJ_COND:
