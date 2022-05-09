@@ -236,14 +236,14 @@ namespace System.Net.Http
             catch (QuicStreamAbortedException ex)
             {
                 // Our stream was reset.
-
+                _requestBodyCancellationSource.Cancel();
                 Exception? abortException = _connection.AbortException;
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException ?? ex);
             }
             catch (QuicConnectionAbortedException ex)
             {
                 // Our connection was reset. Start shutting down the connection.
-
+                _requestBodyCancellationSource.Cancel();
                 Exception abortException = _connection.Abort(ex);
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
