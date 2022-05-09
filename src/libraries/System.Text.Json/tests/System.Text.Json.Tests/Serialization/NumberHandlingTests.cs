@@ -92,15 +92,12 @@ namespace System.Text.Json.Serialization.Tests
             // There is active issue https://github.com/dotnet/runtime/issues/68906 on x86 Android 
             switch (Type.GetTypeCode(typeof(T)))
             {
-                case TypeCode.Double:
-                double doubleNumber = (double)(object)number;
-                    return doubleNumber.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
+              case TypeCode.Double:
+                    return Convert.ToDouble(number, CultureInfo.InvariantCulture.NumberFormat).ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
                 case TypeCode.Single:
-                float floatNumber = (float)(object)number;
-                    return floatNumber.ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
+                return Convert.ToSingle(number, CultureInfo.InvariantCulture.NumberFormat).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
                 case TypeCode.Decimal:
-                decimal decimalNumber = (decimal)(object)number;
-                    return decimalNumber.ToString(CultureInfo.InvariantCulture);
+                    return Convert.ToDecimal(number, CultureInfo.InvariantCulture.NumberFormat).ToString(CultureInfo.InvariantCulture);
                 default:
                     return number.ToString();
             }
