@@ -11071,9 +11071,8 @@ DONE_MORPHING_CHILDREN:
      * Perform the required oper-specific postorder morphing
      */
 
-    GenTree*      temp;
-    GenTree*      lclVarTree;
-    FieldSeqNode* fieldSeq = nullptr;
+    GenTree* temp;
+    GenTree* lclVarTree;
 
     switch (oper)
     {

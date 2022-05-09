@@ -1653,8 +1653,6 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
     // Allocate "m_defs" here, according to the typ/attribs pair.
     switch (attribs)
     {
-        case CEA_NotAField:
-            break; // Nothing to do.
         case CEA_Const:
             switch (typ)
             {
@@ -4545,55 +4543,18 @@ ValueNumPair ValueNumStore::VNPairForLoadStoreBitCast(ValueNumPair value, var_ty
 }
 
 //------------------------------------------------------------------------
-// IsVNNotAField: Is the value number a "NotAField" field sequence?
-//
-// Arguments:
-//    vn - the value number in question
-//
-// Return Value:
-//    Whether "vn" represents a "NotAField" field sequence.
-//
-// Notes:
-//    "NotAField" field sequences always get a "new, unique" number, since
-//    they represent unknown locations. Thus they get their own chunk kind,
-//    for which no actual memory is allocated to hold VNFunc data.
-//
-bool ValueNumStore::IsVNNotAField(ValueNum vn)
-{
-    return m_chunks.GetNoExpand(GetChunkNum(vn))->m_attribs == CEA_NotAField;
-}
-
-//------------------------------------------------------------------------
 // VNForFieldSeq: Get the value number representing a field sequence.
 //
 // Arguments:
 //    fieldSeq - the field sequence
 //
 // Return Value:
-//    "VNForNull" if the sequence is empty ("nullptr").
-//    "IsVNNotAField" VN if it is a "NotAField".
-//    "GTF_FIELD_SEQ_PTR" handle VN otherwise.
+//    "GTF_FIELD_SEQ_PTR" handle VN for the sequences.
 //
 ValueNum ValueNumStore::VNForFieldSeq(FieldSeqNode* fieldSeq)
 {
-    if (fieldSeq == nullptr)
-    {
-        return VNForNull();
-    }
-
-    ValueNum fieldSeqVN;
-    if (fieldSeq == FieldSeqStore::NotAField())
-    {
-        // We always allocate a new, unique VN in this call.
-        Chunk*   c                 = GetAllocChunk(TYP_REF, CEA_NotAField);
-        unsigned offsetWithinChunk = c->AllocVN();
-        fieldSeqVN                 = c->m_baseVN + offsetWithinChunk;
-    }
-    else
-    {
-        // This encoding relies on the canonicality of field sequences.
-        fieldSeqVN = VNForHandle(reinterpret_cast<ssize_t>(fieldSeq), GTF_ICON_FIELD_SEQ);
-    }
+    // This encoding relies on the canonicality of field sequences.
+    ValueNum fieldSeqVN = VNForHandle(reinterpret_cast<ssize_t>(fieldSeq), GTF_ICON_FIELD_SEQ);
 
 #ifdef DEBUG
     if (m_pComp->verbose)
@@ -4618,16 +4579,6 @@ ValueNum ValueNumStore::VNForFieldSeq(FieldSeqNode* fieldSeq)
 //
 FieldSeqNode* ValueNumStore::FieldSeqVNToFieldSeq(ValueNum vn)
 {
-    if (vn == VNForNull())
-    {
-        return nullptr;
-    }
-
-    if (IsVNNotAField(vn))
-    {
-        return FieldSeqStore::NotAField();
-    }
-
     assert(IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ));
 
     return reinterpret_cast<FieldSeqNode*>(ConstantValue<ssize_t>(vn));
@@ -4637,19 +4588,14 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, GenTree* opB)
 {
     if (opB->OperGet() == GT_CNS_INT)
     {
-        FieldSeqNode* fldSeq = opB->AsIntCon()->gtFieldSeq;
-        if (fldSeq != nullptr)
-        {
-            return ExtendPtrVN(opA, fldSeq, opB->AsIntCon()->IconValue());
-        }
+        return ExtendPtrVN(opA, opB->AsIntCon()->gtFieldSeq, opB->AsIntCon()->IconValue());
     }
+
     return NoVN;
 }
 
 ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq, ssize_t offset)
 {
-    assert(fldSeq != nullptr);
-
     ValueNum res = NoVN;
 
     ValueNum opAvnWx = opA->gtVNPair.GetLiberal();
@@ -4667,15 +4613,9 @@ ValueNum ValueNumStore::ExtendPtrVN(GenTree* opA, FieldSeqNode* fldSeq, ssize_t 
 
     if (funcApp.m_func == VNF_PtrToStatic)
     {
-        ValueNum fieldSeqVN = funcApp.m_args[1];
-        if (fldSeq != FieldSeqStore::NotAField())
-        {
-            assert(FieldSeqVNToFieldSeq(fieldSeqVN) == nullptr);
-            fieldSeqVN = VNForFieldSeq(fldSeq);
-        }
-
-        res = VNForFunc(TYP_BYREF, VNF_PtrToStatic, funcApp.m_args[0], fieldSeqVN,
-                        VNForIntPtrCon(ConstantValue<ssize_t>(funcApp.m_args[2]) + offset));
+        fldSeq = m_pComp->GetFieldSeqStore()->Append(FieldSeqVNToFieldSeq(funcApp.m_args[1]), fldSeq);
+        res    = VNForFunc(TYP_BYREF, VNF_PtrToStatic, funcApp.m_args[0], VNForFieldSeq(fldSeq),
+                           VNForIntPtrCon(ConstantValue<ssize_t>(funcApp.m_args[2]) + offset));
     }
     else if (funcApp.m_func == VNF_PtrToArrElem)
     {
@@ -4896,13 +4836,7 @@ void Compiler::fgValueNumberArrayElemStore(GenTree* storeNode, VNFuncApp* addrFu
 //
 void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset)
 {
-    assert(fieldSeq != nullptr);
-
-    if (fieldSeq == FieldSeqStore::NotAField())
-    {
-        loadTree->gtVNPair.SetBoth(vnStore->VNForExpr(compCurBB, loadTree->TypeGet()));
-        return;
-    }
+    assert(fieldSeq != FieldSeqStore::NotAField());
 
     // Two cases:
     //
@@ -4952,13 +4886,7 @@ void Compiler::fgValueNumberFieldLoad(GenTree* loadTree, GenTree* baseAddr, Fiel
 void Compiler::fgValueNumberFieldStore(
     GenTree* storeNode, GenTree* baseAddr, FieldSeqNode* fieldSeq, ssize_t offset, unsigned storeSize, ValueNum value)
 {
-    assert(fieldSeq != nullptr);
-
-    if (fieldSeq == FieldSeqStore::NotAField())
-    {
-        fgMutateGcHeap(storeNode DEBUGARG("NotAField field store"));
-        return;
-    }
+    assert(fieldSeq != FieldSeqStore::NotAField());
 
     // Two cases:
     //  1) Instance field / "complex" static: heap[field][baseAddr][offset + load size] = value.
@@ -6372,7 +6300,7 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
     {
         printf("NoVN");
     }
-    else if (IsVNNotAField(vn) || (IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ)))
+    else if (IsVNHandle(vn) && (GetHandleFlags(vn) == GTF_ICON_FIELD_SEQ))
     {
         comp->gtDispAnyFieldSeq(FieldSeqVNToFieldSeq(vn));
         printf(" ");
@@ -8191,7 +8119,7 @@ void Compiler::fgValueNumberAssignment(GenTreeOp* tree)
             ssize_t              offset     = 0;
             unsigned             storeSize  = lhs->AsIndir()->Size();
             GenTree*             baseAddr   = nullptr;
-            FieldSeqNode*        fldSeq     = nullptr;
+            FieldSeqNode*        fldSeq     = FieldSeqStore::NotAField();
 
             if (argIsVNFunc && (funcApp.m_func == VNF_PtrToStatic))
             {
@@ -8544,7 +8472,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
             // can recognize redundant loads with no stores between them.
             GenTree*             addr       = tree->AsIndir()->Addr();
             GenTreeLclVarCommon* lclVarTree = nullptr;
-            FieldSeqNode*        fldSeq     = nullptr;
+            FieldSeqNode*        fldSeq     = FieldSeqStore::NotAField();
             GenTree*             baseAddr   = nullptr;
             bool                 isVolatile = (tree->gtFlags & GTF_IND_VOLATILE) != 0;
 

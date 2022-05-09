@@ -6726,6 +6726,11 @@ GenTreeIntCon* Compiler::gtNewIconNode(ssize_t value, var_types type)
     return new (this, GT_CNS_INT) GenTreeIntCon(type, value);
 }
 
+GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq)
+{
+    return new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, static_cast<ssize_t>(fieldOffset), fieldSeq);
+}
+
 GenTreeIntCon* Compiler::gtNewNull()
 {
     return gtNewIconNode(0, TYP_REF);
@@ -6739,13 +6744,6 @@ GenTreeIntCon* Compiler::gtNewTrue()
 GenTreeIntCon* Compiler::gtNewFalse()
 {
     return gtNewIconNode(0, TYP_INT);
-}
-
-GenTreeIntCon* Compiler::gtNewIconNode(unsigned fieldOffset, FieldSeqNode* fieldSeq)
-{
-    GenTreeIntCon* node = new (this, GT_CNS_INT) GenTreeIntCon(TYP_I_IMPL, static_cast<ssize_t>(fieldOffset));
-    node->gtFieldSeq    = fieldSeq == nullptr ? FieldSeqStore::NotAField() : fieldSeq;
-    return node;
 }
 
 // return a new node representing the value in a physical register
@@ -11193,8 +11191,6 @@ void Compiler::gtDispConst(GenTree* tree)
 //------------------------------------------------------------------------
 // gtDispFieldSeq: "gtDispFieldSeq" that also prints "<NotAField>".
 //
-// Useful for printing zero-offset field sequences.
-//
 void Compiler::gtDispAnyFieldSeq(FieldSeqNode* fieldSeq)
 {
     if (fieldSeq == FieldSeqStore::NotAField())
@@ -11211,27 +11207,13 @@ void Compiler::gtDispAnyFieldSeq(FieldSeqNode* fieldSeq)
 //
 void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
 {
-    if ((pfsn == nullptr) || (pfsn == FieldSeqStore::NotAField()))
+    if (pfsn == FieldSeqStore::NotAField())
     {
         return;
     }
 
-    // Otherwise...
     printf(" Fseq[");
-    while (pfsn != nullptr)
-    {
-        assert(pfsn != FieldSeqStore::NotAField()); // Can't exist in a field sequence list except alone
-
-        CORINFO_FIELD_HANDLE fldHnd = pfsn->GetFieldHandle();
-        printf("%s", eeGetFieldName(fldHnd));
-
-        pfsn = pfsn->GetNext();
-
-        if (pfsn != nullptr)
-        {
-            printf(", ");
-        }
-    }
+    printf("%s", eeGetFieldName(pfsn->GetFieldHandle()));
     printf("]");
 }
 
@@ -17160,7 +17142,6 @@ var_types GenTreeVecCon::GetSimdBaseType() const
 //    this: ADD(baseAddr, CONST [FldSeq])
 //    this: ADD(CONST [FldSeq], baseAddr)
 //    this: CONST [FldSeq]
-//    this: Zero [FldSeq]
 //
 // Arguments:
 //    comp      - the Compiler object
@@ -17169,14 +17150,13 @@ var_types GenTreeVecCon::GetSimdBaseType() const
 //    pOffset   - [out] parameter for the offset of the component struct fields
 //
 // Return Value:
-//    If "this" matches patterns denoted above, and the FldSeq found is "full",
-//    i. e. starts with a class field or a static field, and includes all the
-//    struct fields that this tree represents the address of, this method will
-//    return "true" and set either "pBaseAddr" to some value, which must be used
-//    by the caller as the key into the "first field map" to obtain the actual
-//    value for the field. For instance fields, "base address" will be the object
-//    reference, for statics - the address to which the field offset with the
-//    field sequence is added, see "impImportStaticFieldAccess" and "fgMorphField".
+//    If "this" matches patterns denoted above, with a valid FldSeq, this method
+//    will return "true" and set "pBaseAddr" to some value, which must be used by
+//    the caller as the key into the "first field map" to obtain the value for the
+//    field, or to "nullptr", in which case the handle for the field is the primary
+//    selector. For instance fields, "base address" will be the object reference,
+//    for statics - the address to which the field offset with the field sequence
+//    is added, see "impImportStaticFieldAccess" and "fgMorphField".
 //
 bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq, ssize_t* pOffset)
 {
@@ -17204,7 +17184,6 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     }
     else if (IsIconHandle(GTF_ICON_STATIC_HDL))
     {
-        assert(AsIntCon()->gtFieldSeq != nullptr);
         baseAddr = this;
         fldSeq   = AsIntCon()->gtFieldSeq;
         offset   = AsIntCon()->IconValue();
@@ -17214,7 +17193,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
         return false;
     }
 
-    assert((fldSeq != nullptr) && (baseAddr != nullptr));
+    assert(baseAddr != nullptr);
 
     if (fldSeq == FieldSeqStore::NotAField())
     {
@@ -17642,18 +17621,19 @@ CORINFO_CLASS_HANDLE Compiler::gtGetClassHandle(GenTree* tree, bool* pIsExact, b
                     {
                         FieldSeqNode* fieldSeq = op2->AsIntCon()->gtFieldSeq;
 
-                        if (fieldSeq != nullptr)
+                        if ((fieldSeq != FieldSeqStore::NotAField()) &&
+                            (fieldSeq->GetOffset() == op2->AsIntCon()->IconValue()))
                         {
-                            fieldSeq = fieldSeq->GetTail();
-
                             // No benefit to calling gtGetFieldClassHandle here, as
                             // the exact field being accessed can vary.
                             CORINFO_FIELD_HANDLE fieldHnd   = fieldSeq->GetFieldHandle();
                             CORINFO_CLASS_HANDLE fieldClass = NO_CLASS_HANDLE;
                             var_types            fieldType  = eeGetFieldType(fieldHnd, &fieldClass);
 
-                            assert(fieldType == TYP_REF);
-                            objClass = fieldClass;
+                            if (fieldType == TYP_REF)
+                            {
+                                objClass = fieldClass;
+                            }
                         }
                     }
                 }
@@ -18253,21 +18233,16 @@ bool GenTree::IsArrayAddr(GenTreeArrAddr** pArrAddr)
     return false;
 }
 
-// Note that the value of the below field doesn't matter; it exists only to provide a distinguished address.
-//
-// static
-FieldSeqNode FieldSeqStore::s_notAField(nullptr, nullptr, 0, FieldSeqNode::FieldKind::Instance);
-
 // FieldSeqStore methods.
 FieldSeqStore::FieldSeqStore(CompAllocator alloc) : m_alloc(alloc), m_canonMap(new (alloc) FieldSeqNodeCanonMap(alloc))
 {
 }
 
 FieldSeqNode* FieldSeqStore::CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
-                                             size_t                  offset,
+                                             ssize_t                 offset,
                                              FieldSeqNode::FieldKind fieldKind)
 {
-    FieldSeqNode  fsn(fieldHnd, nullptr, offset, fieldKind);
+    FieldSeqNode  fsn(fieldHnd, offset, fieldKind);
     FieldSeqNode* res = nullptr;
     if (m_canonMap->Lookup(fsn, &res))
     {
@@ -18284,62 +18259,30 @@ FieldSeqNode* FieldSeqStore::CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
 
 FieldSeqNode* FieldSeqStore::Append(FieldSeqNode* a, FieldSeqNode* b)
 {
-    if (a == nullptr)
+    if (a == NotAField())
     {
         return b;
     }
-    else if (a == NotAField())
-    {
-        return NotAField();
-    }
-    else if (b == nullptr)
+    if (b == NotAField())
     {
         return a;
     }
-    else if (b == NotAField())
-    {
-        return NotAField();
-    }
-    else
-    {
-        // We should never add a duplicate FieldSeqNode
-        assert(a != b);
 
-        FieldSeqNode* tmp = Append(a->GetNext(), b);
-        FieldSeqNode  fsn(a->GetFieldHandleValue(), tmp, a->GetOffset(), a->GetKind());
-        FieldSeqNode* res = nullptr;
-        if (m_canonMap->Lookup(fsn, &res))
-        {
-            return res;
-        }
-        else
-        {
-            res  = m_alloc.allocate<FieldSeqNode>(1);
-            *res = fsn;
-            m_canonMap->Set(fsn, res);
-            return res;
-        }
-    }
+    assert(!"Duplicate field sequences!");
+    return NotAField();
 }
 
-FieldSeqNode::FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, size_t offset, FieldKind fieldKind)
-    : m_next(next), m_offset(offset)
+FieldSeqNode::FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, ssize_t offset, FieldKind fieldKind) : m_offset(offset)
 {
+    assert(fieldHnd != NO_FIELD_HANDLE);
+
     uintptr_t handleValue = reinterpret_cast<uintptr_t>(fieldHnd);
 
     assert((handleValue & FIELD_KIND_MASK) == 0);
     m_fieldHandleAndKind = handleValue | static_cast<uintptr_t>(fieldKind);
 
-    if (fieldHnd != NO_FIELD_HANDLE)
-    {
-        assert(JitTls::GetCompiler()->eeIsFieldStatic(fieldHnd) == IsStaticField());
-        // TODO-PhysicalVN: assert that "offset" is correct.
-    }
-    else
-    {
-        // Use the default for NotAField.
-        assert(fieldKind == FieldKind::Instance);
-    }
+    // TODO-PhysicalVN: assert that "offset" is correct.
+    assert(JitTls::GetCompiler()->eeIsFieldStatic(fieldHnd) == IsStaticField());
 }
 
 #ifdef FEATURE_SIMD
