@@ -56,12 +56,13 @@ namespace System.IO
             // Follow links when using SafeFileHandle API.
             CULong flags = new CULong(handle is null ? Interop.libc.FSOPT_NOFOLLOW : 0);
 
-            Interop.Error error =
-                Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), flags) == 0 ?
+            int result = handle is null
+                ? Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), flags)
+                : Interop.libc.fsetattrlist(handle, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), flags);
+
+            return result == 0 ?
                 Interop.Error.SUCCESS :
                 Interop.Sys.GetLastErrorInfo().Error;
-
-            return error;
         }
 
         private void SetAccessOrWriteTime(SafeFileHandle? handle, string path, DateTimeOffset time, bool isAccessTime, bool asDirectory) =>

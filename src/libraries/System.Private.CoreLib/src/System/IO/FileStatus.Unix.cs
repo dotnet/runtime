@@ -214,7 +214,7 @@ namespace System.IO
             => SetAttributes(handle: null, path, attributes, asDirectory);
 
         internal void SetAttributes(SafeFileHandle handle, FileAttributes attributes, bool asDirectory)
-            => SetAttributes(handle, GetHandlePath(handle), attributes, asDirectory);
+            => SetAttributes(handle, GetErrorPath(handle), attributes, asDirectory);
 
         private void SetAttributes(SafeFileHandle? handle, string path, FileAttributes attributes, bool asDirectory)
         {
@@ -286,7 +286,7 @@ namespace System.IO
             => GetCreationTime(handle: null, path, continueOnError);
 
         internal DateTimeOffset GetCreationTime(SafeFileHandle handle, bool continueOnError = false)
-            => GetCreationTime(handle, GetHandlePath(handle), continueOnError);
+            => GetCreationTime(handle, GetErrorPath(handle), continueOnError);
 
         private DateTimeOffset GetCreationTime(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
@@ -326,7 +326,7 @@ namespace System.IO
             => SetLastAccessTime(handle: null, path, time, asDirectory);
 
         internal void SetLastAccessTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
-            => SetLastAccessTime(handle, GetHandlePath(handle), time, asDirectory);
+            => SetLastAccessTime(handle, GetErrorPath(handle), time, asDirectory);
 
         private void SetLastAccessTime(SafeFileHandle? handle, string path, DateTimeOffset time, bool asDirectory)
             => SetAccessOrWriteTime(handle, path, time, isAccessTime: true, asDirectory);
@@ -351,7 +351,7 @@ namespace System.IO
             => SetLastWriteTime(handle: null, path, time, asDirectory);
 
         internal void SetLastWriteTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
-            => SetLastWriteTime(handle, GetHandlePath(handle), time, asDirectory);
+            => SetLastWriteTime(handle, GetErrorPath(handle), time, asDirectory);
 
         internal void SetLastWriteTime(SafeFileHandle? handle, string path, DateTimeOffset time, bool asDirectory)
             => SetAccessOrWriteTime(handle, path, time, isAccessTime: false, asDirectory);
@@ -532,7 +532,7 @@ namespace System.IO
             return (time.UtcDateTime.Ticks - DateTimeOffset.UnixEpoch.Ticks - seconds * TicksPerSecond) * NanosecondsPerTick;
         }
 
-        private static string GetHandlePath(SafeFileHandle handle)
-            => handle.Path ?? throw new ArgumentException(SR.Arg_HandleHasNoPath);
+        private static string GetErrorPath(SafeFileHandle handle)
+            => handle.Path ?? "<<handle>>";
     }
 }

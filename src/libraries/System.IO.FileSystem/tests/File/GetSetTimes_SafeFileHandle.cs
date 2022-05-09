@@ -5,9 +5,9 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.Tests
 {
-    public sealed class File_GetSetTimes_SafeFileHandle : File_GetSetTimes
+    public class File_GetSetTimes_SafeFileHandle : File_GetSetTimes
     {
-        private static SafeFileHandle OpenFileHandle(string path, FileAccess fileAccess) =>
+        protected virtual SafeFileHandle OpenFileHandle(string path, FileAccess fileAccess) =>
             File.OpenHandle(
                 path,
                 FileMode.OpenOrCreate,
