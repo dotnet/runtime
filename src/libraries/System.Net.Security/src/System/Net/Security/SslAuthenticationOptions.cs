@@ -26,7 +26,7 @@ namespace System.Net.Security
             else if (sslClientAuthenticationOptions.RemoteCertificateValidationCallback != null &&
                      CertValidationDelegate != sslClientAuthenticationOptions.RemoteCertificateValidationCallback)
             {
-                // Callback was set in constructor to differet value.
+                // Callback was set in constructor to different value.
                 throw new InvalidOperationException(SR.Format(SR.net_conflicting_options, nameof(RemoteCertificateValidationCallback)));
             }
 
@@ -49,7 +49,10 @@ namespace System.Net.Security
             IsServer = false;
             RemoteCertRequired = true;
             // RFC 6066 section 3 says to exclude trailing dot from fully qualified DNS hostname
-            TargetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
+            if (sslClientAuthenticationOptions.TargetHost != null)
+            {
+                TargetHost = sslClientAuthenticationOptions.TargetHost.TrimEnd('.');
+            }
 
             // Client specific options.
             CertificateRevocationCheckMode = sslClientAuthenticationOptions.CertificateRevocationCheckMode;
