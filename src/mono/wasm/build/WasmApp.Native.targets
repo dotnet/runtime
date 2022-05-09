@@ -3,12 +3,14 @@
 
   <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="InterpToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
+      <!-- _GenerateInterpToNative; -->
       _GeneratePInvokeTable;
       _GenerateICallTable;
       _WasmCompileNativeFiles;
@@ -162,6 +164,7 @@
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
+      <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)wasm_m2n_invoke2.g.h</_WasmInterpToNativeTablePath>
       <_WasmPInvokeHPath>$(_WasmRuntimePackIncludeDir)wasm\pinvoke.h</_WasmPInvokeHPath>
       <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
       <DisableParallelAot Condition="'$(DisableParallelAot)' == ''">false</DisableParallelAot>
@@ -299,6 +302,13 @@
     <ItemGroup>
       <FileWrites Include="$(_WasmICallTablePath)" />
     </ItemGroup>
+  </Target>
+
+  <Target Name="_GenerateInterpToNative">
+    <InterpToNativeGenerator
+      OutputPath="$(_WasmInterpToNativeTablePath)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </InterpToNativeGenerator>
   </Target>
 
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
