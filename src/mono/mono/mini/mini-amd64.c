@@ -2124,14 +2124,6 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			return linfo;
 		}
 
-		if (sig_ret->type == MONO_TYPE_GENERICINST) {
-			MonoClass *klass = mono_class_from_mono_type_internal (sig_ret);
-			if (!strcmp (m_class_get_name (klass), "Vector128`1")) {
-				linfo->ret.storage = LLVMArgVtypeInSIMDReg;
-				break;
-			}
-		}
-
 		linfo->ret.storage = LLVMArgVtypeInReg;
 		for (j = 0; j < 2; ++j)
 			linfo->ret.pair_storage [j] = arg_storage_to_llvm_arg_storage (cfg, ainfo->pair_storage [j]);
@@ -2185,8 +2177,12 @@ mono_arch_get_llvm_call_info (MonoCompile *cfg, MonoMethodSignature *sig)
 			if (t->type == MONO_TYPE_GENERICINST) {
 				MonoClass *klass = mono_class_from_mono_type_internal (t);
 				if (!strcmp (m_class_get_name (klass), "Vector128`1")) {
-					linfo->args [i].storage = LLVMArgVtypeInSIMDReg;
-					break;
+					MonoType *element_type = mono_class_get_context (klass)->class_inst->type_argv [0];;
+					if (MONO_TYPE_IS_VECTOR_PRIMITIVE(element_type))
+					{
+						linfo->args [i].storage = LLVMArgVtypeInSIMDReg;
+						break;
+					}
 				}
 			}
 
