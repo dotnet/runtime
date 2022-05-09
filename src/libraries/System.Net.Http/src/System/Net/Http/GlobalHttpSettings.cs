@@ -85,8 +85,8 @@ namespace System.Net.Http
             private static int GetMaxConnectionsPerServer()
             {
                 int value = RuntimeSettingParser.QueryRuntimeSettingInt32(
-                    "System.Net.Http.HttpHandlerDefaults.MaxConnectionsPerServer",
-                    "DOTNET_SYSTEM_NET_HTTP_HTTPHANDLERDEFAULTS_MAXCONNECTIONSPERSERVER",
+                    "System.Net.SocketsHttpHandler.MaxConnectionsPerServer",
+                    "DOTNET_SYSTEM_NET_HTTP_SOCKETSHTTPHANDLER_MAXCONNECTIONSPERSERVER",
                     int.MaxValue);
 
                 // Disallow invalid values

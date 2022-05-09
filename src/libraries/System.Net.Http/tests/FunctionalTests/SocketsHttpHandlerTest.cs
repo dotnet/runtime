@@ -212,7 +212,7 @@ namespace System.Net.Http.Functional.Tests
             RemoteExecutor.Invoke(static (asInt) =>
             {
                 object data = asInt == Boolean.TrueString ? 1 : "1";
-                AppContext.SetData("System.Net.Http.HttpHandlerDefaults.MaxConnectionsPerServer", data);
+                AppContext.SetData("System.Net.SocketsHttpHandler.MaxConnectionsPerServer", data);
                 var handler = new HttpClientHandler();
                 Assert.Equal(1, handler.MaxConnectionsPerServer);
             }, asInt.ToString()).Dispose();
