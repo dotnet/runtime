@@ -47,7 +47,7 @@ namespace System.Formats.Tar
                 uint minor;
                 unsafe
                 {
-                    Interop.CheckIo(Interop.Sys.GetDeviceIdentifiers((ulong)status.Dev, &major, &minor));
+                    Interop.Sys.GetDeviceIdentifiers((ulong)status.Dev, &major, &minor);
                 }
 
                 entry._header._devMajor = (int)major;

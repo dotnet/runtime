@@ -770,22 +770,16 @@ int32_t SystemNative_SymLink(const char* target, const char* linkPath)
     return result;
 }
 
-int32_t SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
+void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber)
 {
     dev_t castedDev = (dev_t)dev;
     *majorNumber = (uint32_t)major(castedDev);
     *minorNumber = (uint32_t)minor(castedDev);
-    return ConvertErrorPlatformToPal(errno);
 }
 
 int32_t SystemNative_MkNod(const char* pathName, uint32_t mode, uint32_t major, uint32_t minor)
 {
     dev_t dev = (dev_t)makedev(major, minor);
-
-    if (errno > 0)
-    {
-        return -1;
-    }
 
     int32_t result;
     while ((result = mknod(pathName, (mode_t)mode, dev)) < 0 && errno == EINTR);
