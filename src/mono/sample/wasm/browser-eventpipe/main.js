@@ -77,6 +77,8 @@ function createEventPipeSession() {
     return new EventPipeSession();
 }
 
+const delay = (ms) => new Promise((resolve) => setTimeout (resolve, ms))
+
 async function main() {
     const createDotnetRuntime = await loadRuntime();
         const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
@@ -95,16 +97,28 @@ async function main() {
     console.log('after createDotnetRuntime')
 
     try {
-        const testMeaning = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
+        const startWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
+        const stopWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StopWork");
+	const getIterationsDone = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:GetIterationsDone");
 	const eventSession = createEventPipeSession();
 	eventSession.start();
-        const ret = await testMeaning();
-        document.getElementById("out").innerHTML = `${ret} as computed on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
+        const workPromise = startWork();
 	
+	document.getElementById("out").innerHTML = '&lt;&lt;running&gt;&gt;';
+	await delay(5000); // let it run for 5 seconds
 
-        console.debug(`ret: ${ret}`);
+	stopWork();
+
+	document.getElementById("out").innerHTML = '&lt;&lt;stopping&gt;&gt;';
+
+	const ret = await workPromise; // get the answer
+	const iterations = getIterationsDone(); // get how many times the loop ran
 
 	eventSession.stop();
+
+        document.getElementById("out").innerHTML = `${ret} as computed in ${iterations} iterations on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
+
+        console.debug(`ret: ${ret}`);
 
 	const sessionRes = eventSession.saveTrace();
 
