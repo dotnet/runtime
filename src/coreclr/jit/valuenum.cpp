@@ -9608,7 +9608,7 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
     // and it is better TP-wise to skip bitcasts "lazily" when doing the
     // selection, as the scenario where they are expected to be common,
     // single-field structs, implies short selection chains.
-    VNFuncApp srcVNFunc;
+    VNFuncApp srcVNFunc{VNF_COUNT};
     if (GetVNFunc(srcVN, &srcVNFunc) && (srcVNFunc.m_func == VNF_BitCast))
     {
         srcVN = srcVNFunc.m_args[0];
