@@ -72,7 +72,7 @@
 // * file:..\inc\corhdr.h#ManagedHeader - From a data structure point of view, this is the entry point into
 //     the runtime. This is how all other data in the EXE are found.
 //
-// * code:ICorJitCompiler#EEToJitInterface - This is the interface from the the EE to the Just in time (JIT)
+// * code:ICorJitCompiler#EEToJitInterface - This is the interface from the EE to the Just in time (JIT)
 //     compiler. The interface to the JIT is relatively simple (compileMethod), however the EE provides a
 //     rich set of callbacks so the JIT can get all the information it needs. See also
 //     file:../../Documentation/botr/ryujit-overview.md for general information on the JIT.
@@ -1204,7 +1204,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         if (!g_fProcessDetach)
         {
             // Convert key locks into "shutdown" mode. A lock in shutdown mode means:
-            // - Only the finalizer/helper/shutdown threads will be able to take the the lock.
+            // - Only the finalizer/helper/shutdown threads will be able to take the lock.
             // - Any other thread that tries takes it will just get redirected to an endless WaitForEndOfShutdown().
             //
             // The only managed code that should run after this point is the finalizers for shutdown.
@@ -1934,7 +1934,7 @@ static void TerminateDebugger(void)
 // Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
 // copy culture name into szBuffer and return length
 // ---------------------------------------------------------------------------
-extern BOOL g_fFatalErrorOccuredOnGCThread;
+extern BOOL g_fFatalErrorOccurredOnGCThread;
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 {
     CONTRACTL
@@ -1956,7 +1956,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 #if 0 // Enable and test if/once the unmanaged runtime is localized
         Thread * pThread = GetThreadNULLOk();
 
-        // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
+        // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
         // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
         // getting localized with a non-default thread-specific culture.
         // A canonical stack trace that gets here is a fatal error in the GC that comes through:
@@ -1972,7 +1972,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
         // coreclr.dll!EventReporter::EventReporter
         // coreclr.dll!EEPolicy::LogFatalError
         // coreclr.dll!EEPolicy::HandleFatalError
-        if (pThread != NULL && !g_fFatalErrorOccuredOnGCThread) {
+        if (pThread != NULL && !g_fFatalErrorOccurredOnGCThread) {
 
             // Switch to cooperative mode, since we'll be looking at managed objects
             // and we don't want them moving on us.
@@ -2086,7 +2086,7 @@ static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
     Thread * pThread = GetThreadNULLOk();
 
 #if 0 // Enable and test if/once the unmanaged runtime is localized
-    // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
+    // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
     // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
     // getting localized with a non-default thread-specific culture.
     // A canonical stack trace that gets here is a fatal error in the GC that comes through:
@@ -2102,7 +2102,7 @@ static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
     // coreclr.dll!EventReporter::EventReporter
     // coreclr.dll!EEPolicy::LogFatalError
     // coreclr.dll!EEPolicy::HandleFatalError
-    if (pThread != NULL && !g_fFatalErrorOccuredOnGCThread)
+    if (pThread != NULL && !g_fFatalErrorOccurredOnGCThread)
     {
 
         // Switch to cooperative mode, since we'll be looking at managed objects

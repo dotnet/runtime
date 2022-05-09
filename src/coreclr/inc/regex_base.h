@@ -570,7 +570,7 @@ public:
 //        (NOTE: RegexIterator and InputIterator are often typedef'ed to be the same thing.)
 //     3. "Item" typedef.
 //          This will be used with methods GetItem and MatchItem (see below). Item must
-//          define the the following methods:
+//          define the following methods:
 //             ItemType GetType() : returns the type of the item. See below for explanation of ItemType
 //             const RegexIterator& GetNext() : iterator pointing to the start of the next item.
 //     4. "MatchFlags" typedef, and "static const DefaultMatchFlags" value.

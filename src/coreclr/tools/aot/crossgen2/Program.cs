@@ -347,7 +347,7 @@ namespace ILCompiler
 
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
-            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.CoreRTArmel : TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
+            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
             ConfigureImageBase(targetDetails);
 
@@ -402,7 +402,7 @@ namespace ILCompiler
                 //
                 // See: https://github.com/dotnet/corert/issues/2785
                 //
-                // When we undo this this hack, replace this foreach with
+                // When we undo this hack, replace the foreach with
                 //  typeSystemContext.InputFilePaths = inFilePaths;
                 //
 

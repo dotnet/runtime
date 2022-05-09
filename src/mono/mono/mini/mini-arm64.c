@@ -2271,7 +2271,7 @@ mono_arch_allocate_vars (MonoCompile *cfg)
 			offset += 16;
 		break;
 	case ArgVtypeByRef:
-		/* This variable will be initalized in the prolog from R8 */
+		/* This variable will be initialized in the prolog from R8 */
 		cfg->vret_addr->opcode = OP_REGOFFSET;
 		cfg->vret_addr->inst_basereg = cfg->frame_reg;
 		cfg->vret_addr->inst_offset = offset;

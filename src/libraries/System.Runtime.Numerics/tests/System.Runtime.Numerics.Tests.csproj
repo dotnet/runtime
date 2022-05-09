@@ -57,6 +57,7 @@
   <ItemGroup>
     <Compile Include="$(CommonTestPath)System\GenericMathHelpers.cs" Link="Common\System\GenericMathHelpers.cs" />
     <Compile Include="BigIntegerTests.GenericMath.cs" />
+    <Compile Include="ComplexTests.GenericMath.cs" />
   </ItemGroup>
   <ItemGroup>
     <!-- Some internal types are needed, so we reference the implementation assembly, rather than the reference assembly. -->

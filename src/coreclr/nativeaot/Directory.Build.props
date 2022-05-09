@@ -40,7 +40,7 @@
     <NoWarn>$(NoWarn);CS3016</NoWarn>
 
     <!-- Ignore all previous constants since we are sensitive to what is defined and the Sdk adds some by default -->
-    <DefineConstants>CORERT;NETCOREAPP</DefineConstants>
+    <DefineConstants>NATIVEAOT;NETCOREAPP</DefineConstants>
 
     <DisableImplicitConfigurationDefines>true</DisableImplicitConfigurationDefines>
 

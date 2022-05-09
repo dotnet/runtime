@@ -69,7 +69,7 @@ namespace Internal.Runtime
         ManifestAssemblyMvids = 118, // Added in 5.3
 
         //
-        // CoreRT ReadyToRun sections
+        // NativeAOT ReadyToRun sections
         //
         StringTable = 200, // Unused
         GCStaticRegion = 201,

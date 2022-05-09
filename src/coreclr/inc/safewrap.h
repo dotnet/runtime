@@ -34,7 +34,7 @@ consistency's sake.
 - DON'T FORGET CONTRACTS: Most of these APIs will likely be Throws/GC_Notrigger.
     Also use PRECONDITIONs + POSTCONDITIONS when possible.
 
-- SIGNATURES: Keep the method signture as close the the original win32 API as possible.
+- SIGNATURES: Keep the method signture as close the original win32 API as possible.
     - Preserve the return type + value. (except allow it to throw on oom). If the return value
         should be a holder, then use that as an out-parameter at the end of the argument list.
         We don't want to return holders because that will cause the dtors to be called.
