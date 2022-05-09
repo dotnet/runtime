@@ -25,11 +25,13 @@ namespace DebuggerTests
                 {"_DTProp",                         (TGetter("_DTProp"), true)},
 
                 // own public
-                {"a",                               (TNumber(4), true)},
-                {"DateTime",                        (TGetter("DateTime"), true)},
-                {"AutoStringProperty",              (TString("DerivedClass#AutoStringProperty"), true)},
-                {"FirstName",                       (TGetter("FirstName"), true)},
-                {"DateTimeForOverride",             (TGetter("DateTimeForOverride"), true)},
+                {"a",                                   (TNumber(4), true)},
+                {"DateTime",                            (TGetter("DateTime"), true)},
+                {"AutoStringProperty",                  (TString("DerivedClass#AutoStringProperty"), true)},
+                {"FirstName",                           (TGetter("FirstName"), true)},
+                {"DateTimeForOverride",                 (TGetter("DateTimeForOverride"), true)},
+                {"Base_FieldForHidingWithField",        (TString("DerivedClass#Base_FieldForHidingWithField"), true)},
+                {"Base_PropertyForHidingWithProperty",  (TGetter("Base_PropertyForHidingWithProperty"), true)},
 
                 {"StringPropertyForOverrideWithAutoProperty",   (TString("DerivedClass#StringPropertyForOverrideWithAutoProperty"), true)},
                 {"Base_AutoStringPropertyForOverrideWithField", (TString("DerivedClass#Base_AutoStringPropertyForOverrideWithField"), true)},
@@ -46,6 +48,7 @@ namespace DebuggerTests
                 {"_base_name",                      (TString("private_name"), false)},
                 {"_base_dateTime",                  (TGetter("_base_dateTime"), false)},
                 {"_base_autoProperty",              (TString("private_autoproperty"), false)},
+                {"_memberForOverrideBackingField",  (TString("BaseBaseClass#BaseBase_MemberForOverride"), false)},
 
                 // inherited from BaseClass - protected
                 {"base_num",                        (TNumber(5), false)},
@@ -56,9 +59,13 @@ namespace DebuggerTests
                 {"BaseBase_MemberForHiding (BaseClass)",                        (TGetter("BaseBase_MemberForHiding (BaseClass)"), false)},
                 {"Base_AutoStringPropertyForOverrideWithField (BaseClass)",     (TObject("string", is_null: true), false)},
                 {"Base_GetterForOverrideWithField (BaseClass)",                 (TGetter("Base_GetterForOverrideWithField (BaseClass)"), false)},
+                {"Base_FieldForHidingWithField (BaseClass)",                    (TString("Base#Base_FieldForHidingWithField"), false)},
+                {"Base_PropertyForHidingWithProperty (BaseClass)",              (TGetter("Base_PropertyForHidingWithProperty (BaseClass)"), false)},
+                {"DateTimeForOverride (BaseClass)",                             (TDateTime(new DateTime(2250, 4, 5, 6, 7, 8)), false)}, // should not be here - is overwritten
+                {"FirstName (BaseClass)",                                       (TGetter("FirstName (BaseClass)"), false)}, // should not be here - is overwritten
 
                 // inherited from BaseBaseClass - public
-                {"BaseBase_MemberForHiding (BaseBaseClass)",                    (TString(null), false)}
+                {"BaseBase_MemberForHiding (BaseBaseClass)",                    (TGetter("BaseBase_MemberForHiding (BaseBaseClass)"), false)}
             };
 
             // default, all properties
@@ -100,8 +107,13 @@ namespace DebuggerTests
                 "FirstName",
                 "LastName",
                 "DateTimeForOverride",
+                "Base_PropertyForHidingWithProperty",
                 "BaseBase_MemberForHiding (BaseClass)",
-                "Base_GetterForOverrideWithField (BaseClass)"
+                "BaseBase_MemberForHiding (BaseBaseClass)",
+                "Base_GetterForOverrideWithField (BaseClass)",
+                "Base_PropertyForHidingWithProperty (BaseClass)",
+
+                "FirstName (BaseClass)" // should not be here - is overwritten
             };
 
             var only_own_accessors = new[]

@@ -23,7 +23,12 @@ namespace DebuggerTests.GetPropertiesTests
 
     public class BaseBaseClass
     {
-        public string BaseBase_MemberForHiding { get; set; }
+        private string _memberForOverrideBackingField = "BaseBaseClass#BaseBase_MemberForOverride";
+        public string BaseBase_MemberForHiding
+        {
+            get { return _memberForOverrideBackingField; }
+            set { _memberForOverrideBackingField = value; }
+        }
     }
 
     public class BaseClass : BaseBaseClass, IName
@@ -32,6 +37,9 @@ namespace DebuggerTests.GetPropertiesTests
         private DateTime _base_dateTime => new DateTime(2134, 5, 7, 1, 9, 2);
         private string _base_autoProperty { get; set; }
         protected int base_num;
+
+        public string Base_FieldForHidingWithField = "Base#Base_FieldForHidingWithField";
+        public string Base_PropertyForHidingWithProperty => "Base#Base_PropertyForHidingWithProperty";
 
         public string Base_AutoStringProperty { get; set; }
         public virtual DateTime DateTimeForOverride { get; set; }
@@ -72,6 +80,9 @@ namespace DebuggerTests.GetPropertiesTests
         public DateTime DateTime => _DTProp.AddMinutes(10);
         public string AutoStringProperty { get; set; }
         public override string FirstName => "DerivedClass#FirstName";
+        
+        public new string Base_FieldForHidingWithField = "DerivedClass#Base_FieldForHidingWithField";
+        public new string Base_PropertyForHidingWithProperty => "DerivedClass#Base_PropertyForHidingWithProperty";
 
         // Overrides an auto-property with a getter
         public override DateTime DateTimeForOverride => new DateTime(2190, 9, 7, 5, 3, 2);

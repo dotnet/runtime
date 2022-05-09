@@ -337,8 +337,7 @@ namespace BrowserDebugProxy
                 JObject backingField;
                 if (allMembers.TryGetValue(propName, out backingField)
                     && !isOwn
-                    && backingField["__isBackingField"]?.Value<bool>() != true
-                    && backingField?["get"] == null)
+                    && backingField["__isBackingField"]?.Value<bool>() != true)
                 {
                     propNameWithSufix = $"{propName} ({parentSuffix})";
                     backingField = allMembers.GetValueOrDefault(propNameWithSufix);
@@ -537,8 +536,7 @@ namespace BrowserDebugProxy
                     var key = item["name"]?.Value<string>();
                     if (key == null
                         || valuesDict.TryAdd(key, item as JObject)
-                        || isOwn
-                        || valuesDict[key]["get"] != null)
+                        || isOwn)
                         continue;
 
                     var parentSuffix = typeName.Split('.').LastOrDefault();
