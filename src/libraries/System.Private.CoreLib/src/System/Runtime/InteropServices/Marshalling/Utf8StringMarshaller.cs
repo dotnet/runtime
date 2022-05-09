@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Text;
 
@@ -22,8 +23,9 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </summary>
         /// <param name="str">The string to marshal.</param>
         public Utf8StringMarshaller(string? str)
-            : this(str, default)
-        { }
+        {
+            _allocated = ConvertToNative(str);
+        }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Utf8StringMarshaller"/>.
@@ -104,6 +106,27 @@ namespace System.Runtime.InteropServices.Marshalling
         {
             if (_allocated)
                 Marshal.FreeCoTaskMem((IntPtr)_nativeValue);
+        }
+
+        internal static string? ConvertToManaged(byte* value)
+            => Marshal.PtrToStringUTF8((IntPtr)value);
+
+        internal static byte* ConvertToNative(string? str)
+        {
+            // This is functionally equivalent to Marshal.StringToCoTaskMemUTF8 except the conservative over-allocations
+
+            if (str == null)
+                return null;
+
+            fixed (char* charsPtr = str)
+            {
+                int length = Encoding.UTF8.GetByteCount(charsPtr, str.Length);
+                byte* bytesPtr = (byte*)Marshal.AllocCoTaskMem(length + 1);
+                int bytes = Encoding.UTF8.GetBytes(charsPtr, str.Length, bytesPtr, length);
+                Debug.Assert(bytes == length);
+                bytesPtr[length] = 0;
+                return bytesPtr;
+            }
         }
     }
 }
