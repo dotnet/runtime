@@ -2076,8 +2076,14 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
     // (Perhaps should eventually handle associative/commutative [AC] ops -- but that gets complicated...)
     if (VNFuncIsCommutative(func))
     {
-        // Order arg0 arg1 by numerical VN value.
+        // First, order by numerical VN value.
         if (arg0VN > arg1VN)
+        {
+            std::swap(arg0VN, arg1VN);
+        }
+
+        // Second, move constants to the right to simplify code looking at them.
+        if (IsVNConstant(arg0VN) && !IsVNHandle(arg0VN))
         {
             std::swap(arg0VN, arg1VN);
         }
@@ -3860,18 +3866,13 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
         return resultVN; // return the unsuccessful value
     }
 
-    // (0 + x) == x
     // (x + 0) == x
     // This identity does not apply for floating point (when x == -0.0).
     auto identityForAddition = [=]() -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
             ValueNum ZeroVN = VNZeroForType(typ);
-            if (arg0VN == ZeroVN)
-            {
-                return arg1VN;
-            }
-            else if (arg1VN == ZeroVN)
+            if (arg1VN == ZeroVN)
             {
                 return arg0VN;
             }
@@ -3904,26 +3905,16 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     auto identityForMultiplication = [=]() -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
-            // (0 * x) == 0
             // (x * 0) == 0
             ValueNum ZeroVN = VNZeroForType(typ);
-            if (arg0VN == ZeroVN)
-            {
-                return ZeroVN;
-            }
-            else if (arg1VN == ZeroVN)
+            if (arg1VN == ZeroVN)
             {
                 return ZeroVN;
             }
 
             // (x * 1) == x
-            // (1 * x) == x
             ValueNum OneVN = VNOneForType(typ);
-            if (arg0VN == OneVN)
-            {
-                return arg1VN;
-            }
-            else if (arg1VN == OneVN)
+            if (arg1VN == OneVN)
             {
                 return arg0VN;
             }
@@ -3969,14 +3960,9 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 
             case GT_OR:
             case GT_XOR:
-                // (0 | x) == x,  (0 ^ x) == x
                 // (x | 0) == x,  (x ^ 0) == x
                 ZeroVN = VNZeroForType(typ);
-                if (arg0VN == ZeroVN)
-                {
-                    resultVN = arg1VN;
-                }
-                else if (arg1VN == ZeroVN)
+                if (arg1VN == ZeroVN)
                 {
                     resultVN = arg0VN;
                 }
@@ -3984,13 +3970,8 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 
             case GT_AND:
                 // (x & 0) == 0
-                // (0 & x) == 0
                 ZeroVN = VNZeroForType(typ);
-                if (arg0VN == ZeroVN)
-                {
-                    resultVN = ZeroVN;
-                }
-                else if (arg1VN == ZeroVN)
+                if (arg1VN == ZeroVN)
                 {
                     resultVN = ZeroVN;
                 }
@@ -4210,7 +4191,7 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
 //    A new value number distinct from any previously generated, that compares as equal
 //    to itself, but not any other value number, and is annotated with the given
 //    type and block.
-
+//
 ValueNum ValueNumStore::VNForExpr(BasicBlock* block, var_types typ)
 {
     BasicBlock::loopNumber loopNum;
@@ -5028,7 +5009,7 @@ BasicBlock::loopNumber ValueNumStore::LoopOfVN(ValueNum vn)
     return BasicBlock::MAX_LOOP_NUM;
 }
 
-bool ValueNumStore::IsVNConstant(ValueNum vn)
+bool ValueNumStore::IsVNConstant(ValueNum vn) const
 {
     if (vn == NoVN)
     {
@@ -10440,14 +10421,7 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
     while (vnStore->GetVNFunc(baseLVN, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD) &&
            (vnStore->TypeOfVN(baseLVN) == TYP_BYREF))
     {
-        // The arguments in value numbering functions are sorted in increasing order
-        // Thus either arg could be the constant.
-        if (vnStore->IsVNConstant(funcAttr.m_args[0]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
-        {
-            offsetL += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[0]);
-            baseLVN = funcAttr.m_args[1];
-        }
-        else if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
+        if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
         {
             offsetL += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[1]);
             baseLVN = funcAttr.m_args[0];
@@ -10470,14 +10444,7 @@ void Compiler::fgValueNumberAddExceptionSetForIndirection(GenTree* tree, GenTree
     while (vnStore->GetVNFunc(baseCVN, &funcAttr) && (funcAttr.m_func == (VNFunc)GT_ADD) &&
            (vnStore->TypeOfVN(baseCVN) == TYP_BYREF))
     {
-        // The arguments in value numbering functions are sorted in increasing order
-        // Thus either arg could be the constant.
-        if (vnStore->IsVNConstant(funcAttr.m_args[0]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
-        {
-            offsetL += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[0]);
-            baseCVN = funcAttr.m_args[1];
-        }
-        else if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
+        if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
         {
             offsetC += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[1]);
             baseCVN = funcAttr.m_args[0];

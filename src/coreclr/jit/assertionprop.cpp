@@ -1378,12 +1378,6 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                     offset += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[1]);
                     vn = funcAttr.m_args[0];
                 }
-                else if (vnStore->IsVNConstant(funcAttr.m_args[0]) &&
-                         varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
-                {
-                    offset += vnStore->CoercedConstantValue<ssize_t>(funcAttr.m_args[0]);
-                    vn = funcAttr.m_args[1];
-                }
                 else
                 {
                     break;
@@ -4407,11 +4401,6 @@ AssertionIndex Compiler::optAssertionIsNonNullInternal(GenTree*         op,
             if (vnStore->IsVNConstant(funcAttr.m_args[1]) && varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[1])))
             {
                 vnBase = funcAttr.m_args[0];
-            }
-            else if (vnStore->IsVNConstant(funcAttr.m_args[0]) &&
-                     varTypeIsIntegral(vnStore->TypeOfVN(funcAttr.m_args[0])))
-            {
-                vnBase = funcAttr.m_args[1];
             }
             else
             {

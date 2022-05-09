@@ -746,7 +746,7 @@ public:
     BasicBlock::loopNumber LoopOfVN(ValueNum vn);
 
     // Returns true iff the VN represents a (non-handle) constant.
-    bool IsVNConstant(ValueNum vn);
+    bool IsVNConstant(ValueNum vn) const;
 
     bool IsVNVectorZero(ValueNum vn);
 
