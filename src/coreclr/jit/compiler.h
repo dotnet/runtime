@@ -2871,8 +2871,7 @@ public:
     void gtGetArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength);
     void gtGetLateArgMsg(GenTreeCall* call, CallArg* arg, char* bufp, unsigned bufLength);
     void gtDispArgList(GenTreeCall* call, GenTree* lastCallOperand, IndentStack* indentStack);
-    void gtDispAnyFieldSeq(FieldSeqNode* fieldSeq);
-    void gtDispFieldSeq(FieldSeqNode* pfsn);
+    void gtDispFieldSeq(FieldSeqNode* fieldSeq, ssize_t offset);
 
     void gtDispRange(LIR::ReadOnlyRange const& range);
 

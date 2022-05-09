@@ -11114,8 +11114,11 @@ void Compiler::gtDispConst(GenTree* tree)
                 }
             }
 
-            gtDispFieldSeq(tree->AsIntCon()->gtFieldSeq);
-
+            if (tree->AsIntCon()->gtFieldSeq != FieldSeqStore::NotAField())
+            {
+                FieldSeqNode* fieldSeq = tree->AsIntCon()->gtFieldSeq;
+                gtDispFieldSeq(fieldSeq, tree->AsIntCon()->IconValue() - fieldSeq->GetOffset());
+            }
             break;
 
         case GT_CNS_LNG:
@@ -11189,31 +11192,25 @@ void Compiler::gtDispConst(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtDispFieldSeq: "gtDispFieldSeq" that also prints "<NotAField>".
-//
-void Compiler::gtDispAnyFieldSeq(FieldSeqNode* fieldSeq)
-{
-    if (fieldSeq == FieldSeqStore::NotAField())
-    {
-        printf(" Fseq<NotAField>");
-        return;
-    }
-
-    gtDispFieldSeq(fieldSeq);
-}
-
-//------------------------------------------------------------------------
 // gtDispFieldSeq: Print out the fields in this field sequence.
 //
-void Compiler::gtDispFieldSeq(FieldSeqNode* pfsn)
+// Arguments:
+//    fieldSeq - The field sequence
+//    offset   - Offset of the (implicit) struct fields in the sequence
+//
+void Compiler::gtDispFieldSeq(FieldSeqNode* fieldSeq, ssize_t offset)
 {
-    if (pfsn == FieldSeqStore::NotAField())
+    if (fieldSeq == FieldSeqStore::NotAField())
     {
         return;
     }
 
     printf(" Fseq[");
-    printf("%s", eeGetFieldName(pfsn->GetFieldHandle()));
+    printf("%s", eeGetFieldName(fieldSeq->GetFieldHandle()));
+    if (offset != 0)
+    {
+        printf(", %zd", offset);
+    }
     printf("]");
 }
 
