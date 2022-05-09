@@ -50,7 +50,7 @@ run-sim: clean appbuilder
 build-appbundle: clean appbuilder
 	$(DOTNET) publish -c $(MONO_CONFIG) /p:TargetOS=$(TARGET) /p:TargetArchitecture=$(MONO_ARCH) \
 	'/p:DeployAndRun="$(DEPLOY_AND_RUN)"' \
-	/p:UseLLVM=$(USE_LLVM) /p:ForceAOT=$(AOT) /p:ApplicationId=net.dot.monohelloworld /bl \
+	/p:UseLLVM=$(USE_LLVM) /p:ForceAOT=$(AOT) /bl \
 
 run-catalyst:
 	$(DOTNET) publish \

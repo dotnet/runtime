@@ -57,7 +57,7 @@
           $(Python) pre.py --name HelloiOS.app
 
           # Testing commands
-          $(Python) test.py devicestartup --device-type ios --package-path HelloiOS.app --package-name net.dot.monohelloworld --scenario-name "%(Identity)"
+          $(Python) test.py devicestartup --device-type ios --package-path HelloiOS.app --package-name net.dot.HelloiOS --scenario-name "%(Identity)"
           ((result=$?))
           
           # Post commands
