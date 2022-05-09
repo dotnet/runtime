@@ -2378,6 +2378,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public virtual async Task ConcurrentBidirectionalReadsWrites_Success()
         {
             if (!SupportsConcurrentBidirectionalUse)
