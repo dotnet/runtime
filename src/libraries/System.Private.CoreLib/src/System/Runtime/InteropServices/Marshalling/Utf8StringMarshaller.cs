@@ -47,15 +47,14 @@ namespace System.Runtime.InteropServices.Marshalling
 
             const int MaxUtf8BytesPerChar = 3;
 
-            // + 1 for null terminator
-            int maxByteCount = checked(MaxUtf8BytesPerChar * str.Length + 1);
-            if (maxByteCount > buffer.Length)
+            // >= for null terminator
+            if ((long)MaxUtf8BytesPerChar * str.Length >= buffer.Length)
             {
                 // Calculate accurate byte count when the provided stack-allocated buffer is not sufficient
-                maxByteCount = Encoding.UTF8.GetByteCount(str) + 1;
-                if (maxByteCount > buffer.Length)
+                int exactByteCount = checked(Encoding.UTF8.GetByteCount(str) + 1); // + 1 for null terminator
+                if (exactByteCount > buffer.Length)
                 {
-                    buffer = new Span<byte>((byte*)Marshal.AllocCoTaskMem(maxByteCount), maxByteCount);
+                    buffer = new Span<byte>((byte*)Marshal.AllocCoTaskMem(exactByteCount), exactByteCount);
                     _allocated = true;
                 }
             }

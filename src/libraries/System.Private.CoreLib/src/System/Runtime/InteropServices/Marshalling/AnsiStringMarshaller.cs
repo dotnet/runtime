@@ -44,15 +44,14 @@ namespace System.Runtime.InteropServices.Marshalling
                 return;
             }
 
-            // + 1 for null terminator
-            int maxByteCount = checked(Marshal.SystemMaxDBCSCharSize * str.Length + 1);
-            if (maxByteCount > buffer.Length)
+            // >= for null terminator
+            if ((long)Marshal.SystemMaxDBCSCharSize * str.Length >= buffer.Length)
             {
                 // Calculate accurate byte count when the provided stack-allocated buffer is not sufficient
-                maxByteCount = Marshal.GetAnsiStringByteCount(str); // Includes null terminator
-                if (maxByteCount > buffer.Length)
+                int exactByteCount = Marshal.GetAnsiStringByteCount(str); // Includes null terminator
+                if (exactByteCount > buffer.Length)
                 {
-                    buffer = new Span<byte>((byte*)Marshal.AllocCoTaskMem(maxByteCount), maxByteCount);
+                    buffer = new Span<byte>((byte*)Marshal.AllocCoTaskMem(exactByteCount), exactByteCount);
                     _allocated = true;
                 }
             }
