@@ -211,13 +211,13 @@ void Rationalizer::RewriteNodeAsCall(GenTree**             use,
 
     if (arg2 != nullptr)
     {
-        call->gtArgs.PushFront(comp, arg2);
+        call->gtArgs.PushFront(comp, NewCallArg::Primitive(arg2));
         call->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (arg1 != nullptr)
     {
-        call->gtArgs.PushFront(comp, arg1);
+        call->gtArgs.PushFront(comp, NewCallArg::Primitive(arg1));
         call->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
     }
 
@@ -308,8 +308,8 @@ void Rationalizer::SanityCheck()
 
             for (GenTree* const tree : stmt->TreeList())
             {
-                // QMARK and PUT_ARG_TYPE nodes should have been removed before this phase.
-                assert(!tree->OperIs(GT_QMARK, GT_PUTARG_TYPE));
+                // QMARK nodes should have been removed before this phase.
+                assert(!tree->OperIs(GT_QMARK));
 
                 if (tree->OperGet() == GT_ASG)
                 {
