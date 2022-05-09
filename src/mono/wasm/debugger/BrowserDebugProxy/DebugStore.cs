@@ -1285,36 +1285,55 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
         }
 
-        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, [EnumeratorCancellation] CancellationToken token)
+        public async IAsyncEnumerable<SourceFile> Load(SessionId id, string[] loaded_files, MonoSDBHelper sdbAgent, [EnumeratorCancellation] CancellationToken token)
         {
             var asm_files = new List<string>();
-            var pdb_files = new List<string>();
-            foreach (string file_name in loaded_files)
-            {
-                if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
-                    pdb_files.Add(file_name);
-                else
-                    asm_files.Add(file_name);
-            }
-
             List<DebugItem> steps = new List<DebugItem>();
-            foreach (string url in asm_files)
-            {
-                try
-                {
-                    string candidate_pdb = Path.ChangeExtension(url, "pdb");
-                    string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
 
-                    steps.Add(
-                        new DebugItem
-                        {
-                            Url = url,
-                            Data = Task.WhenAll(client.GetByteArrayAsync(url, token), pdb != null ? client.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
-                        });
-                }
-                catch (Exception e)
+            if (sdbAgent is null)
+            {
+                var pdb_files = new List<string>();
+                foreach (string file_name in loaded_files)
                 {
-                    logger.LogDebug($"Failed to read {url} ({e.Message})");
+                    if (file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                        pdb_files.Add(file_name);
+                    else
+                        asm_files.Add(file_name);
+                }
+
+                foreach (string url in asm_files)
+                {
+                    try
+                    {
+                        string candidate_pdb = Path.ChangeExtension(url, "pdb");
+                        string pdb = pdb_files.FirstOrDefault(n => n == candidate_pdb);
+
+                        steps.Add(
+                            new DebugItem
+                            {
+                                Url = url,
+                                Data = Task.WhenAll(client.GetByteArrayAsync(url, token), pdb != null ? client.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
+                            });
+                    }
+                    catch (Exception e)
+                    {
+                        logger.LogDebug($"Failed to read {url} ({e.Message})");
+                    }
+                }
+            }
+            else
+            {
+                foreach (string file_name in loaded_files)
+                {
+                    if (!file_name.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase))
+                    {
+                        steps.Add(
+                            new DebugItem
+                            {
+                                Url = file_name,
+                                Data = sdbAgent.GetBytesFromAssemblyAndPdb(System.IO.Path.GetFileName(file_name), token)
+                            });
+                    }
                 }
             }
 
