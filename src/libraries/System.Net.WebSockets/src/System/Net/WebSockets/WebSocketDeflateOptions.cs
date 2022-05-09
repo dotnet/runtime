@@ -35,7 +35,7 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>
-        /// When true the client-side of the connection indicates that it will persist the deflate context accross messages.
+        /// When true the client-side of the connection indicates that it will persist the deflate context across messages.
         /// The default is true.
         /// </summary>
         /// <remarks>https://tools.ietf.org/html/rfc7692#section-7.1.1.2</remarks>
@@ -62,7 +62,7 @@ namespace System.Net.WebSockets
         }
 
         /// <summary>
-        /// When true the server-side of the connection indicates that it will persist the deflate context accross messages.
+        /// When true the server-side of the connection indicates that it will persist the deflate context across messages.
         /// The default is true.
         /// </summary>
         /// <remarks>https://tools.ietf.org/html/rfc7692#section-7.1.1.1</remarks>

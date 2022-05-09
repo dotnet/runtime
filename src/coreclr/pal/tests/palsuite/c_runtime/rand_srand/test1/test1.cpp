@@ -6,14 +6,14 @@
 ** Source: test1.c
 **
 ** Purpose: Test to ensure that srand provide random
-**          number to rand. Also make sure that rand result from a 
+**          number to rand. Also make sure that rand result from a
 **          srand with seed 1 and no call to srand are the same.
 **
 ** Dependencies: PAL_Initialize
 **               PAL_Terminate
 **				 Fail
 **               srand()
-** 
+**
 
 **
 **===========================================================================*/
@@ -22,7 +22,7 @@
 
 
 PALTEST(c_runtime_rand_srand_test1_paltest_rand_srand_test1, "c_runtime/rand_srand/test1/paltest_rand_srand_test1")
-{   
+{
     int RandNumber[10];
     int TempRandNumber;
     int i;
@@ -37,13 +37,13 @@ PALTEST(c_runtime_rand_srand_test1_paltest_rand_srand_test1, "c_runtime/rand_sra
     {
        return FAIL;
     }
-    
+
     SRAND_SEED = time(NULL);
-    
+
     /* does not initialize srand and call rand. */
     for (i=0; i<10; i++)
     {
-        /* keep the value in a array            */
+        /* keep the value in an array            */
         RandNumber[i]=rand();
         if (RandNumber[i] < 0 || RandNumber[i] > RAND_MAX)
         {
@@ -56,18 +56,18 @@ PALTEST(c_runtime_rand_srand_test1_paltest_rand_srand_test1, "c_runtime/rand_sra
     srand(SRAND_SEED);
 
 
-    /* choose 10 numbers with a different seed. 
+    /* choose 10 numbers with a different seed.
        the numbers should be different than
        those the previously generated one       */
     for(i = 0; i < 10; i++)
     {
-        TempRandNumber=rand();      
+        TempRandNumber=rand();
         if (TempRandNumber < 0 || TempRandNumber > RAND_MAX)
         {
             Fail("2) ERROR: random generated an invalid value: %d", TempRandNumber);
         }
     }
-    
+
 
 
     /* renitialize the srand with 1 */
@@ -86,7 +86,7 @@ PALTEST(c_runtime_rand_srand_test1_paltest_rand_srand_test1, "c_runtime/rand_sra
         {
             Fail ("ERROR: rand should return the same value when srand "
                   "is initialized with 1 or not initialized at all");
-        } 
+        }
         if (TempRandNumber < 0 || TempRandNumber > RAND_MAX)
         {
             Fail("3) ERROR: random generated an invalid value: %d", TempRandNumber);

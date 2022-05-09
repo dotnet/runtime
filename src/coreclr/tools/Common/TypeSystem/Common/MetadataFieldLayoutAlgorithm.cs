@@ -894,11 +894,7 @@ namespace Internal.TypeSystem
             if (!type.IsValueType)
                 return ValueTypeShapeCharacteristics.None;
 
-            ValueTypeShapeCharacteristics result = ComputeHomogeneousAggregateCharacteristic(type);
-
-            // TODO: System V AMD64 characteristics (https://github.com/dotnet/corert/issues/158)
-
-            return result;
+            return ComputeHomogeneousAggregateCharacteristic(type);
         }
 
         private ValueTypeShapeCharacteristics ComputeHomogeneousAggregateCharacteristic(DefType type)

@@ -1180,7 +1180,7 @@ void GCToEEInterface::DiagWalkBGCSurvivors(void* gcContext)
 
 void GCToEEInterface::StompWriteBarrier(WriteBarrierParameters* args)
 {
-    // CoreRT doesn't patch the write barrier like CoreCLR does, but it
+    // NativeAOT doesn't patch the write barrier like CoreCLR does, but it
     // still needs to record the changes in the GC heap.
 
     bool is_runtime_suspended = args->is_runtime_suspended;
@@ -1399,7 +1399,7 @@ bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool i
     return true;
 }
 
-// CoreRT does not use async pinned handles
+// NativeAOT does not use async pinned handles
 void GCToEEInterface::WalkAsyncPinnedForPromotion(Object* object, ScanContext* sc, promote_func* callback)
 {
     UNREFERENCED_PARAMETER(object);
