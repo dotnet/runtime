@@ -20,8 +20,8 @@ namespace System
     // require a large number of significant digits and no round-off errors.
     //
     // The finite set of values of type Decimal are of the form m
-    // / 10e, where m is an integer such that
-    // -296 <; m <; 296, and e is an integer
+    // / 10^e, where m is an integer such that
+    // -2^96 <; m <; 2^96, and e is an integer
     // between 0 and 28 inclusive.
     //
     // Contrary to the float and double data types, decimal
