@@ -14,7 +14,7 @@ In some occasions we may want to include a library in the shared framework, but 
 
 Libraries included in the shared framework should ensure all direct and transitive assembly references are also included in the shared framework. This will be validated as part of the build and errors raised if any dependencies are unsatisfied.
 
-Source generators and analyzers can be included in the shared framework by specifying `IsNetCoreAppAnalyzer`.  These projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
+Source generators and analyzers can be included in the shared framework by adding their project name into the NetCoreAppLibrary.props file under the `NetCoreAppLibraryGenerator` section. These projects should specify `AnalyzerLanguage` as mentioned [below](#analyzers--source-generators).
 
 Removing a library from the shared framework is a breaking change and should be avoided.
 

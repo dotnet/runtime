@@ -10,7 +10,6 @@
     <NoWarn>$(NoWarn);CS0436;CS0649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);REGEXGENERATOR</DefineConstants>
-    <IsNETCoreAppAnalyzer>true</IsNETCoreAppAnalyzer>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
     <IsPackable>false</IsPackable>
     <LangVersion>Preview</LangVersion>
