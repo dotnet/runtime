@@ -42,18 +42,8 @@ jobs:
         version: '3.x'
         includePreviewVersions: true
         installationPath: $(Agent.ToolsDirectory)/dotnet
-    - task: UsePythonVersion@0
-      inputs:
-        versionSpec: '3.x' 
-        addToPath: true 
-        architecture: 'x64'
-      condition: ${{ eq(parameters.osGroup, 'windows') }}
-    - task: PythonScript@0
-      displayName: Run tests/scripts/format.py
-      inputs:
-        scriptSource: 'filePath'
-        scriptPath: $(Build.SourcesDirectory)/src/tests/Common/scripts/format.py
-        arguments: '-c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)'
+    - script: py -3 $(Build.SourcesDirectory)/src/tests/Common/scripts/format.py -c $(Build.SourcesDirectory)/src/coreclr -o $(osGroup) -a $(archType)
+      displayName: Run format.py
     - task: PublishBuildArtifacts@1
       displayName: Publish format.patch
       inputs:
