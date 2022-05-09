@@ -128,8 +128,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
-        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="translated">이 형식의 마샬링을 활성화하려면 어셈블리에 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute'를 적용하여 이 프로젝트에서 런타임 마샬링을 비활성화해야 합니다.</target>
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">이 형식의 마샬링을 활성화하려면 어셈블리에 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute'를 적용하여 이 프로젝트에서 런타임 마샬링을 비활성화해야 합니다.</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">

@@ -128,8 +128,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
-        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="translated">Bu türü sıralamayı etkinleştirmek için derlemeye 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' uygulanarak bu projede çalışma zamanı sıralaması devre dışı bırakılmalıdır.</target>
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">Bu türü sıralamayı etkinleştirmek için derlemeye 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' uygulanarak bu projede çalışma zamanı sıralaması devre dışı bırakılmalıdır.</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">

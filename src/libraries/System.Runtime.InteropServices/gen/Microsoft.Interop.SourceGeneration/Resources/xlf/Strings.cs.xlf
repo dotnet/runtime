@@ -128,8 +128,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
-        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="translated">Zařazování modulu runtime se musí v tomto projektu zakázat použitím atributu System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute u sestavení, aby se povolilo zařazování tohoto typu.</target>
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">Zařazování modulu runtime se musí v tomto projektu zakázat použitím atributu System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute u sestavení, aby se povolilo zařazování tohoto typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">
