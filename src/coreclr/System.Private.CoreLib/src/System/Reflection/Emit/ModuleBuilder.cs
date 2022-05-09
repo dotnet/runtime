@@ -397,7 +397,7 @@ namespace System.Reflection.Emit
             Justification = "Module.ResolveMethod is marked as RequiresUnreferencedCode because it relies on tokens " +
                             "which are not guaranteed to be stable across trimming. So if somebody hardcodes a token it could break. " +
                             "The usage here is not like that as all these tokens come from existing metadata loaded from some IL " +
-                            "and so trimming has no effect (the tokens are read AFTER trimming occured).")]
+                            "and so trimming has no effect (the tokens are read AFTER trimming occurred).")]
         private static MethodBase GetGenericMethodBaseDefinition(MethodBase methodBase)
         {
             // methodInfo = G<Foo>.M<Bar> ==> methDef = G<T>.M<S>

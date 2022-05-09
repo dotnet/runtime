@@ -6407,7 +6407,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
         updateLoopNum = updateParentLoopNum;
     }
 
-    // If the update block is not the the header of a loop containing
+    // If the update block is not the header of a loop containing
     // block, we can also ignore the update.
     //
     if (!optLoopContains(updateLoopNum, loopNum))

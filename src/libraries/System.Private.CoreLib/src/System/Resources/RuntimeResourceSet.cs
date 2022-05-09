@@ -151,7 +151,7 @@ namespace System.Resources
     // resource files containing thousands of resources.
     //
 #if NATIVEAOT
-    public  // On CoreRT, this must be public to prevent it from getting reflection blocked.
+    public  // On NativeAOT, this must be public to prevent it from getting reflection blocked.
 #else
     internal
 #endif

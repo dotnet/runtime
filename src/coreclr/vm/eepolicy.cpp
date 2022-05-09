@@ -396,7 +396,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
 }
 
 //This starts FALSE and then converts to true if HandleFatalError has ever been called by a GC thread
-BOOL g_fFatalErrorOccuredOnGCThread = FALSE;
+BOOL g_fFatalErrorOccurredOnGCThread = FALSE;
 //
 // Log an error to the event log if possible, then throw up a dialog box.
 //
@@ -520,7 +520,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
         //Give a managed debugger a chance if this fatal error is on a managed thread.
         Thread *pThread = GetThreadNULLOk();
 
-        if (pThread && !g_fFatalErrorOccuredOnGCThread)
+        if (pThread && !g_fFatalErrorOccurredOnGCThread)
         {
             GCX_COOP();
 
@@ -765,11 +765,11 @@ int NOINLINE EEPolicy::HandleFatalError(UINT exitCode, UINT_PTR address, LPCWSTR
         CONTRACT_VIOLATION(GCViolation | ModeViolation | FaultNotFatal | TakesLockViolation);
 
 
-        // Setting g_fFatalErrorOccuredOnGCThread allows code to avoid attempting to make GC mode transitions which could
-        // block indefinately if the fatal error occured during the GC.
+        // Setting g_fFatalErrorOccurredOnGCThread allows code to avoid attempting to make GC mode transitions which could
+        // block indefinately if the fatal error occurred during the GC.
         if (IsGCSpecialThread() && GCHeapUtilities::IsGCInProgress())
         {
-            g_fFatalErrorOccuredOnGCThread = TRUE;
+            g_fFatalErrorOccurredOnGCThread = TRUE;
         }
 
         // ThreadStore lock needs to be released before continuing with the FatalError handling should

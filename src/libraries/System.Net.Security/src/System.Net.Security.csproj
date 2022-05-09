@@ -32,10 +32,10 @@
     <Compile Include="System\Net\Security\SslClientAuthenticationOptions.cs" />
     <Compile Include="System\Net\Security\SslClientHelloInfo.cs" />
     <Compile Include="System\Net\Security\SslServerAuthenticationOptions.cs" />
-    <Compile Include="System\Net\Security\SecureChannel.cs" />
     <Compile Include="System\Net\Security\SslSessionsCache.cs" />
     <Compile Include="System\Net\Security\SslStream.cs" />
-    <Compile Include="System\Net\Security\SslStream.Implementation.cs" />
+    <Compile Include="System\Net\Security\SslStream.IO.cs" />
+    <Compile Include="System\Net\Security\SslStream.Protocol.cs" />
     <Compile Include="System\Net\Security\SslStreamCertificateContext.cs" />
     <Compile Include="System\Net\Security\SslConnectionInfo.cs" />
     <Compile Include="System\Net\Security\StreamSizes.cs" />

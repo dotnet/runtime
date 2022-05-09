@@ -5457,7 +5457,7 @@ BasicBlock* Compiler::fgRelocateEHRange(unsigned regionIndex, FG_RELOCATE_TYPE r
     // 4. A and X share the 'last' block. There are two sub-cases:
     //    (a) A is a larger range than X (such that the beginning of A precedes the
     //        beginning of X): in this case, we are moving the tail of A. We set the
-    //        'last' block of A to the the block preceding the beginning block of X.
+    //        'last' block of A to the block preceding the beginning block of X.
     //    (b) A is a smaller range than X. Thus, we are moving the entirety of A along
     //        with X. In this case, nothing in the EH record for A needs to change.
     // 5. A and X share the 'beginning' block (but aren't the same range, as in #3).

@@ -2168,7 +2168,7 @@ void GatherFuncEvalMethodInfo(DebuggerEval *pDE,
             // object ref as the stack.
             //
             // Note that we are passing ELEMENT_TYPE_END in the last parameter because we want to
-            // supress the the valid object ref check.
+            // supress the valid object ref check.
             //
             GetFuncEvalArgValue(pDE,
                                 &(argData[0]),

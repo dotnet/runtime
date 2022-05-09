@@ -236,7 +236,7 @@ namespace System.Reflection
 
             CheckConsistency(obj);
 
-            bool _ref = false;
+            ParameterCopyBackAction _ref = default;
             RuntimeType fieldType = (RuntimeType)FieldType;
             if (value is null)
             {

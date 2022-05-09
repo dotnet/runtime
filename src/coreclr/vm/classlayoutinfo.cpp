@@ -620,7 +620,7 @@ VOID EEClassLayoutInfo::CollectLayoutFieldMetadataThrowing(
         CONSISTENCY_CHECK_MSGF(false, ("BreakOnStructMarshalSetup: '%s' ", szName));
 #endif
 
-    // Running tote - if anything in this type disqualifies it from being ManagedSequential, somebody will set this to TRUE by the the time
+    // Running tote - if anything in this type disqualifies it from being ManagedSequential, somebody will set this to TRUE by the time
     // function exits.
     BOOL fDisqualifyFromManagedSequential;
     BOOL hasAutoLayoutField = FALSE;
