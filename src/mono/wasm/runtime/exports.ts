@@ -67,6 +67,7 @@ import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
 import { EmscriptenModule } from "./types/emscripten";
 import { mono_run_main, mono_run_main_and_exit } from "./run";
+import { diagnostics } from "./diagnostics";
 
 const MONO = {
     // current "public" MONO API
@@ -110,6 +111,9 @@ const MONO = {
     getU32,
     getF32,
     getF64,
+
+    // Diagnostics
+    diagnostics
 };
 export type MONOType = typeof MONO;
 

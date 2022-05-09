@@ -173,6 +173,12 @@ export type CoverageProfilerOptions = {
     send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
 }
 
+/// Options to configure the event pipe session
+export interface EventPipeSessionOptions {
+    /// location on the VFS where the session trace will be saved
+    traceFilePath?: string;
+}
+
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 

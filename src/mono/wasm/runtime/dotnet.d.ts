@@ -204,6 +204,9 @@ declare type CoverageProfilerOptions = {
     write_at?: string;
     send_to?: string;
 };
+interface EventPipeSessionOptions {
+    traceFilePath?: string;
+}
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
@@ -234,6 +237,15 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
+
+interface EventPipeSession {
+    get sessionID(): number;
+    stop(): void;
+    saveTrace(): string;
+}
+interface Diagnostics {
+    createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
+}
 
 declare function mono_wasm_runtime_ready(): void;
 
@@ -343,6 +355,7 @@ declare const MONO: {
     getU32: typeof getU32;
     getF32: typeof getF32;
     getF64: typeof getF64;
+    diagnostics: Diagnostics;
 };
 declare type MONOType = typeof MONO;
 declare const BINDING: {

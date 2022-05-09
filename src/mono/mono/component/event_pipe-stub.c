@@ -6,6 +6,35 @@
 #include "mono/component/event_pipe.h"
 #include "mono/metadata/components.h"
 
+
+#ifdef HOST_WASM
+#include <emscripten.h>
+
+G_BEGIN_DECLS
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_enable (const char *output_path,
+			     uint32_t circular_buffer_size_in_mb,
+			     const char *providers,
+			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
+			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
+			     /* bool */ gboolean rundown_requested,
+			     /* IpcStream stream = NULL, */
+			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
+			     /* void *callback_additional_data, */
+			     int32_t *out_session_id);
+
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_session_start_streaming (int32_t session_id);
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_session_disable (int32_t session_id);
+
+G_END_DECLS
+
+#endif /* HOST_WASM */
+
 static EventPipeSessionID _dummy_session_id;
 
 static uint8_t _max_event_pipe_type_size [256];
@@ -495,3 +524,37 @@ mono_component_event_pipe_init (void)
 {
 	return component_event_pipe_stub_init ();
 }
+
+#ifdef HOST_WASM
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_enable (const char *output_path,
+			     uint32_t circular_buffer_size_in_mb,
+			     const char *providers,
+			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
+			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
+			     /* bool */ gboolean rundown_requested,
+			     /* IpcStream stream = NULL, */
+			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
+			     /* void *callback_additional_data, */
+			     int32_t *out_session_id)
+{
+  if (out_session_id)
+    *out_session_id = 0;
+  return 0;
+}
+
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_session_start_streaming (int32_t session_id)
+{
+  g_assert_not_reached ();
+}
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_session_disable (int32_t session_id)
+{
+  g_assert_not_reached ();
+}
+
+#endif /* HOST_WASM */

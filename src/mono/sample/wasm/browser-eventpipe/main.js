@@ -46,37 +46,6 @@ async function loadRuntime() {
 }
 
 
-function createEventPipeSession() {
-    class EventPipeSession {
-	state;
-    
-	constructor () {
-	    this.state = 'INIT';
-	}
-
-	start = () => {
-	    this.state = 'STARTED';
-	    console.log ('"Event"pipe session started');
-	}
-
-	stop = () => {
-	    this.state = 'DONE';
-	    console.log ('"Event"pipe session stopped');
-	}
-
-	saveTrace = () => {
-	    if (this.state !== 'DONE') {
-		console.err (`session is in state ${this.state}, not 'DONE'`);
-		return;
-	    }
-	    console.log ('"saving" session trace');
-	    return '';
-	}
-    }
-
-    return new EventPipeSession();
-}
-
 const delay = (ms) => new Promise((resolve) => setTimeout (resolve, ms))
 
 async function main() {
@@ -96,11 +65,13 @@ async function main() {
     globalThis.MONO = MONO;
     console.log('after createDotnetRuntime')
 
+    let sessionFile = '';
+    
     try {
         const startWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
         const stopWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StopWork");
 	const getIterationsDone = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:GetIterationsDone");
-	const eventSession = createEventPipeSession();
+	const eventSession = MONO.diagnostics.createEventPipeSession();
 	eventSession.start();
         const workPromise = startWork();
 	
@@ -120,7 +91,7 @@ async function main() {
 
         console.debug(`ret: ${ret}`);
 
-	const sessionRes = eventSession.saveTrace();
+	sessionFile = eventSession.saveTrace();
 
         let exit_code = ret == 42 ? 0 : 1;
         Module._mono_wasm_exit(exit_code);
@@ -129,7 +100,7 @@ async function main() {
     } catch (err) {
         console.log('WASM ERROR %o', err);
 
-        var b = Module.FS.readFile('/trace.nettrace');
+        var b = Module.FS.readFile(sessionFile);
         var bits = btoa((Uint8ToString(b)));
 
 	const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";

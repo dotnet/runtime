@@ -6,10 +6,38 @@
 #include <mono/component/event_pipe.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
+#include <mono/utils/mono-threads-api.h>
 #include <eventpipe/ep.h>
 #include <eventpipe/ep-event.h>
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
+
+#ifdef HOST_WASM
+#include <emscripten.h>
+
+G_BEGIN_DECLS
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_enable (const char *output_path,
+			     uint32_t circular_buffer_size_in_mb,
+			     const char *providers,
+			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
+			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
+			     /* bool */ gboolean rundown_requested,
+			     /* IpcStream stream = NULL, */
+			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
+			     /* void *callback_additional_data, */
+			     int32_t *out_session_id);
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_session_start_streaming (int32_t session_id);
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_session_disable (int32_t session_id);
+
+G_END_DECLS
+
+#endif /* HOST_WASM */
 
 extern void ep_rt_mono_component_init (void);
 static bool _event_pipe_component_inited = false;
@@ -327,3 +355,59 @@ mono_component_event_pipe_init (void)
 
 	return &fn_table;
 }
+
+
+#ifdef HOST_WASM
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_enable (const char *output_path,
+			     uint32_t circular_buffer_size_in_mb,
+			     const char *providers,
+			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
+			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
+			     /* bool */ gboolean rundown_requested,
+			     /* IpcStream stream = NULL, */
+			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
+			     /* void *callback_additional_data, */
+			     int32_t *out_session_id)
+{
+  MONO_ENTER_GC_UNSAFE;
+  EventPipeSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4;
+  EventPipeSessionType session_type = EP_SESSION_TYPE_FILE;
+
+  EventPipeSessionID session;
+  session = ep_enable_2 (output_path,
+		       circular_buffer_size_in_mb,
+		       providers,
+		       session_type,
+		       format,
+		       !!rundown_requested,
+		       /* stream */NULL,
+		       /* callback*/ NULL,
+		       /* callback_data*/ NULL);
+  
+  if (out_session_id)
+    *out_session_id = (int32_t)session;
+  MONO_EXIT_GC_UNSAFE;
+  return TRUE;
+}
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_session_start_streaming (int32_t session_id)
+{
+  MONO_ENTER_GC_UNSAFE;
+  ep_start_streaming ((EventPipeSessionID)session_id);
+  MONO_EXIT_GC_UNSAFE;
+  return TRUE;
+}
+
+EMSCRIPTEN_KEEPALIVE gboolean
+mono_wasm_event_pipe_session_disable (int32_t session_id)
+{
+  MONO_ENTER_GC_UNSAFE;
+  ep_disable ((EventPipeSessionID)session_id);
+  MONO_EXIT_GC_UNSAFE;
+  return TRUE;
+}
+
+#endif /* HOST_WASM */
