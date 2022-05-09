@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import { AllAssetEntryTypes, assert, AssetEntry, CharPtrNull, DotnetModule, GlobalizationMode, MonoConfig, MonoConfigError, wasm_type_symbol, MonoObject } from "./types";
-import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, ENVIRONMENT_IS_WEB, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
+import { ENVIRONMENT_IS_ESM, ENVIRONMENT_IS_NODE, ENVIRONMENT_IS_SHELL, INTERNAL, locateFile, Module, MONO, requirePromise, runtimeHelpers } from "./imports";
 import cwraps from "./cwraps";
 import { mono_wasm_raise_debug_event, mono_wasm_runtime_ready } from "./debug";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
@@ -15,7 +15,7 @@ import { VoidPtr, CharPtr } from "./types/emscripten";
 import { DotnetPublicAPI } from "./exports";
 import { mono_on_abort } from "./run";
 import { mono_wasm_new_root } from "./roots";
-import { LibraryChannel } from "./library-channel";
+import { init_crypto } from "./crypto-worker";
 
 export let runtime_is_initialized_resolve: Function;
 export let runtime_is_initialized_reject: Function;
@@ -48,22 +48,6 @@ export function configure_emscripten_startup(module: DotnetModule, exportedAPI: 
             console.log("determined url of main script to be " + temp.href);
             (<any>module)["mainScriptUrlOrBlob"] = temp.href;
         }
-    }
-
-    console.debug ("MONO_WASM: Initialize WebWorkers");
-    // Consider the can_call_digest check in the pal_crypto_webworker when updating this check.
-    if (ENVIRONMENT_IS_WEB && typeof crypto.subtle === "undefined" && typeof SharedArrayBuffer !== "undefined") {
-        const chan = LibraryChannel.create(1024); // 1024 is the buffer size in char units.
-        const worker = new Worker("dotnet-crypto-worker.js");
-        (globalThis as any).mono_wasm_crypto = {
-            channel: chan,
-            worker: worker,
-        };
-        worker.postMessage({
-            comm_buf: chan.get_comm_buffer(),
-            msg_buf: chan.get_msg_buffer(),
-            msg_char_len: chan.get_msg_len()
-        });
     }
 
     // these could be overriden on DotnetModuleConfig
@@ -135,6 +119,8 @@ async function mono_wasm_pre_init(): Promise<void> {
     if (ENVIRONMENT_IS_NODE && ENVIRONMENT_IS_ESM) {
         await requirePromise;
     }
+
+    init_crypto();
 
     if (moduleExt.configSrc) {
         try {

@@ -227,8 +227,7 @@
                        runtime/pinvoke.c;
                        runtime/corebindings.c;
                        runtime/dotnet-crypto-worker.js;
-                       $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;
-                       $(SystemCryptoNativeDir)\pal_crypto_webworker.js;"
+                       $(SharedNativeRoot)libs\System.Native\pal_random.lib.js;"
           DestinationFolder="$(NativeBinDir)src"
           SkipUnchangedFiles="true" />
 
@@ -274,9 +273,8 @@
                        $(NativeBinDir)dotnet.d.ts;
                        $(NativeBinDir)package.json;
                        $(NativeBinDir)dotnet.wasm;
-                       $(NativeBinDir)dotnet.timezones.blat;
                        $(NativeBinDir)\src\dotnet-crypto-worker.js;
-                       $(NativeBinDir)\src\pal_crypto_webworker.js;"
+                       $(NativeBinDir)dotnet.timezones.blat"
           DestinationFolder="$(MicrosoftNetCoreAppRuntimePackNativeDir)"
           SkipUnchangedFiles="true" />
 

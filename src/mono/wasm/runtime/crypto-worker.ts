@@ -1,13 +1,67 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-export class LibraryChannel {
+import { Module } from "./imports";
+import { assert } from "./types";
+
+let mono_wasm_crypto: {
+    channel: LibraryChannel
+    worker: Worker
+} | null = null;
+
+export function dotnet_browser_can_use_simple_digest_hash(): number {
+    return mono_wasm_crypto === null ? 0 : 1;
+}
+
+export function dotnet_browser_simple_digest_hash(ver: number, input_buffer: number, input_len: number, output_buffer: number, output_len: number): number {
+    assert(!!mono_wasm_crypto, "subtle crypto not initialized");
+
+    const msg = {
+        func: "digest",
+        type: ver,
+        data: Array.from(Module.HEAPU8.subarray(input_buffer, input_buffer + input_len))
+    };
+
+    const response = mono_wasm_crypto.channel.send_msg(JSON.stringify(msg));
+    const digest = JSON.parse(response);
+    if (digest.length > output_len) {
+        console.info("call_digest: about to throw!");
+        throw "DIGEST HASH: Digest length exceeds output length: " + digest.length + " > " + output_len;
+    }
+
+    Module.HEAPU8.set(digest, output_buffer);
+    return 1;
+}
+
+export function init_crypto(): void {
+    console.debug("MONO_WASM: Initialize Crypto WebWorker");
+    if (typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.subtle !== "undefined"
+        && typeof SharedArrayBuffer !== "undefined"
+        && typeof Worker !== "undefined"
+    ) {
+        const chan = LibraryChannel.create(1024); // 1024 is the buffer size in char units.
+        const worker = new Worker("dotnet-crypto-worker.js");
+        if (chan && worker) {
+            mono_wasm_crypto = {
+                channel: chan,
+                worker: worker,
+            };
+            worker.postMessage({
+                comm_buf: chan.get_comm_buffer(),
+                msg_buf: chan.get_msg_buffer(),
+                msg_char_len: chan.get_msg_len()
+            });
+        }
+    }
+}
+
+class LibraryChannel {
     private msg_char_len: number;
     private comm_buf: SharedArrayBuffer;
     private msg_buf: SharedArrayBuffer;
     private comm: Int32Array;
     private msg: Uint16Array;
-    
+
     // Index constants for the communication buffer.
     private get STATE_IDX(): number { return 0; }
     private get MSG_SIZE_IDX(): number { return 1; }
@@ -67,7 +121,7 @@ export class LibraryChannel {
         const msg_len = msg.length;
         let msg_written = 0;
 
-        for (;;) {
+        for (; ;) {
             // Write the message and return how much was written.
             const wrote = this.write_to_msg(msg, msg_written, msg_len);
             msg_written += wrote;
@@ -108,7 +162,7 @@ export class LibraryChannel {
     private read_response(): string {
         let state;
         let response = "";
-        for (;;) {
+        for (; ;) {
             // Wait for webworker response.
             //  - Atomics.wait() is not permissible on the main thread.
             do {
