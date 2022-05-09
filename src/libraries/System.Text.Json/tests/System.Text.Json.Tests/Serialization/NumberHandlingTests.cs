@@ -88,19 +88,19 @@ namespace System.Text.Json.Serialization.Tests
 
         private static string GetNumberAsString<T>(T number)
         {
-            // Refactored to TypeCode enum switch from Switch expression in C#8
+            // Took out float case from switch due to nan conversion
             // There is active issue https://github.com/dotnet/runtime/issues/68906 on x86 Android 
-            switch (Type.GetTypeCode(typeof(T)))
+            if (number is float)
             {
-              case TypeCode.Double:
-                    return Convert.ToDouble(number, CultureInfo.InvariantCulture).ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
-                case TypeCode.Single:
-                return Convert.ToSingle(number, CultureInfo.InvariantCulture).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
-                case TypeCode.Decimal:
-                    return Convert.ToDecimal(number, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
-                default:
-                    return number.ToString();
+                return ((float)(object)number).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
             }
+
+            return number switch
+            {
+                double @double => @double.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture),
+                decimal @decimal => @decimal.ToString(CultureInfo.InvariantCulture),
+                _ => number.ToString()
+            };
         }
 
         private static void PerformAsRootTypeSerialization<T>(T number, string jsonWithNumberAsNumber, string jsonWithNumberAsString)
