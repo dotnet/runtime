@@ -55,9 +55,9 @@ namespace System.Net.Http
                     DefaultHttp2MaxStreamWindowSize);
 
                 // Disallow small values:
-                if (value < HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize)
+                if (value < Http.HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize)
                 {
-                    value = HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
+                    value = Http.HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
                 }
                 return value;
             }
@@ -77,5 +77,25 @@ namespace System.Net.Http
             }
         }
 #endif
+
+        internal static class HttpHandlerDefaults
+        {
+            public static int MaxConnectionsPerServer { get; } = GetMaxConnectionsPerServer();
+
+            private static int GetMaxConnectionsPerServer()
+            {
+                int value = RuntimeSettingParser.QueryRuntimeSettingInt32(
+                    "System.Net.Http.HttpHandlerDefaults.MaxConnectionsPerServer",
+                    "DOTNET_SYSTEM_NET_HTTP_HTTPHANDLERDEFAULTS_MAXCONNECTIONSPERSERVER",
+                    int.MaxValue);
+
+                // Disallow invalid values
+                if (value < 1)
+                {
+                    value = int.MaxValue;
+                }
+                return value;
+            }
+        }
     }
 }
