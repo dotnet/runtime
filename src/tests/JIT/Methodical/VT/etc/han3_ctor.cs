@@ -4,7 +4,7 @@
 using System;
 using Xunit;
 
-namespace JitTest
+namespace JitTest_han3_ctor_cs
 {
     public struct Ring
     {

@@ -1,15 +1,25 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{F8166147-93CA-4985-8E1F-E10A31C9713A}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Win32.Primitives", "..\Microsoft.Win32.Primitives\ref\Microsoft.Win32.Primitives.csproj", "{70F50962-2A63-4EAA-ADBB-8BA37DE1856F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Collections", "..\System.Collections\ref\System.Collections.csproj", "{C895B59B-6528-4B4C-98D8-4FAA566248A3}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NetworkInformation", "ref\System.Net.NetworkInformation.csproj", "{EDF83CE6-22BB-45EA-B8CF-32AC2CFE5713}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NetworkInformation", "src\System.Net.NetworkInformation.csproj", "{062F1189-143C-456B-A439-D9C1BE2DD640}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.NetworkInformation.Functional.Tests", "tests\FunctionalTests\System.Net.NetworkInformation.Functional.Tests.csproj", "{A0F37A17-0D79-4A84-84CC-AEE604206F06}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Primitives", "..\System.Net.Primitives\ref\System.Net.Primitives.csproj", "{DEA9B7BC-3E15-43E3-922B-2F5D8E4140C7}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{D6600B0A-FEE0-4D1E-B42F-88EB016403CF}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{1E0ED0DE-76B3-402F-8029-C432E638CE0C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.InteropServices", "..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj", "{77771E3F-B423-45CD-B113-10FF264671A0}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime", "..\System.Runtime\ref\System.Runtime.csproj", "{2F199597-D0CF-49F4-B6AC-136568ACA101}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{33058B90-33C6-4731-AF47-DC7678DC2739}"
 EndProject
@@ -29,6 +39,14 @@ Global
 		{F8166147-93CA-4985-8E1F-E10A31C9713A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F8166147-93CA-4985-8E1F-E10A31C9713A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F8166147-93CA-4985-8E1F-E10A31C9713A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{70F50962-2A63-4EAA-ADBB-8BA37DE1856F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{70F50962-2A63-4EAA-ADBB-8BA37DE1856F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{70F50962-2A63-4EAA-ADBB-8BA37DE1856F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{70F50962-2A63-4EAA-ADBB-8BA37DE1856F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C895B59B-6528-4B4C-98D8-4FAA566248A3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C895B59B-6528-4B4C-98D8-4FAA566248A3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C895B59B-6528-4B4C-98D8-4FAA566248A3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C895B59B-6528-4B4C-98D8-4FAA566248A3}.Release|Any CPU.Build.0 = Release|Any CPU
 		{EDF83CE6-22BB-45EA-B8CF-32AC2CFE5713}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{EDF83CE6-22BB-45EA-B8CF-32AC2CFE5713}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EDF83CE6-22BB-45EA-B8CF-32AC2CFE5713}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -41,6 +59,10 @@ Global
 		{A0F37A17-0D79-4A84-84CC-AEE604206F06}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A0F37A17-0D79-4A84-84CC-AEE604206F06}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A0F37A17-0D79-4A84-84CC-AEE604206F06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DEA9B7BC-3E15-43E3-922B-2F5D8E4140C7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DEA9B7BC-3E15-43E3-922B-2F5D8E4140C7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DEA9B7BC-3E15-43E3-922B-2F5D8E4140C7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DEA9B7BC-3E15-43E3-922B-2F5D8E4140C7}.Release|Any CPU.Build.0 = Release|Any CPU
 		{D6600B0A-FEE0-4D1E-B42F-88EB016403CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{D6600B0A-FEE0-4D1E-B42F-88EB016403CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D6600B0A-FEE0-4D1E-B42F-88EB016403CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -49,6 +71,14 @@ Global
 		{1E0ED0DE-76B3-402F-8029-C432E638CE0C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1E0ED0DE-76B3-402F-8029-C432E638CE0C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1E0ED0DE-76B3-402F-8029-C432E638CE0C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77771E3F-B423-45CD-B113-10FF264671A0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77771E3F-B423-45CD-B113-10FF264671A0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77771E3F-B423-45CD-B113-10FF264671A0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77771E3F-B423-45CD-B113-10FF264671A0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2F199597-D0CF-49F4-B6AC-136568ACA101}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2F199597-D0CF-49F4-B6AC-136568ACA101}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2F199597-D0CF-49F4-B6AC-136568ACA101}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2F199597-D0CF-49F4-B6AC-136568ACA101}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -56,7 +86,12 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{F8166147-93CA-4985-8E1F-E10A31C9713A} = {33058B90-33C6-4731-AF47-DC7678DC2739}
 		{A0F37A17-0D79-4A84-84CC-AEE604206F06} = {33058B90-33C6-4731-AF47-DC7678DC2739}
+		{70F50962-2A63-4EAA-ADBB-8BA37DE1856F} = {01C6C981-C56F-453F-B099-C8B9DF61CDEB}
+		{C895B59B-6528-4B4C-98D8-4FAA566248A3} = {01C6C981-C56F-453F-B099-C8B9DF61CDEB}
 		{EDF83CE6-22BB-45EA-B8CF-32AC2CFE5713} = {01C6C981-C56F-453F-B099-C8B9DF61CDEB}
+		{DEA9B7BC-3E15-43E3-922B-2F5D8E4140C7} = {01C6C981-C56F-453F-B099-C8B9DF61CDEB}
+		{77771E3F-B423-45CD-B113-10FF264671A0} = {01C6C981-C56F-453F-B099-C8B9DF61CDEB}
+		{2F199597-D0CF-49F4-B6AC-136568ACA101} = {01C6C981-C56F-453F-B099-C8B9DF61CDEB}
 		{062F1189-143C-456B-A439-D9C1BE2DD640} = {A3CAA996-BF7C-48EE-A03A-2B2F78D88D86}
 		{D6600B0A-FEE0-4D1E-B42F-88EB016403CF} = {575528E7-33D8-4375-8B5A-D88215FEE447}
 		{1E0ED0DE-76B3-402F-8029-C432E638CE0C} = {575528E7-33D8-4375-8B5A-D88215FEE447}

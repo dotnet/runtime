@@ -10,12 +10,14 @@
 .typedef [System.Runtime]System.WeakReference as WeakRef
 .typedef [System.Runtime]System.GC as GC
 
-.class Program extends [System.Runtime]System.Object
+.namespace Test_copy_prop_byref_to_native_int_il
+{
+.class public Program extends [System.Runtime]System.Object
 {
   .field private static class WeakRef s_weakArrRef
   .field private static bool s_arrIsAlive
 
-  .method private static int32 Main() cil managed
+  .method public static int32 Main() cil managed
   {
     .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
         01 00 00 00
@@ -30,25 +32,25 @@
 
     ldloc arr
     newobj instance void WeakRef::.ctor(object)
-    stsfld class WeakRef Program::s_weakArrRef
+    stsfld class WeakRef Test_copy_prop_byref_to_native_int_il.Program::s_weakArrRef
 
     ldc.i4 1
-    stsfld bool Program::s_arrIsAlive
+    stsfld bool Test_copy_prop_byref_to_native_int_il.Program::s_arrIsAlive
 
     ldloc arr
     ldc.i4 0
     ldelema int32
     dup
     ldc.i4 1
-    call unsigned int8& Program::Problem(unsigned int8&, native int, int32)
+    call unsigned int8& Test_copy_prop_byref_to_native_int_il.Program::Problem(unsigned int8&, native int, int32)
     brtrue SKIP
 
     // Unreachable, exists to not have "arr"'s liveness extended.
-    call unsigned int8& Program::SideEffect()
+    call unsigned int8& Test_copy_prop_byref_to_native_int_il.Program::SideEffect()
     pop
 
   SKIP:
-    ldsfld bool Program::s_arrIsAlive
+    ldsfld bool Test_copy_prop_byref_to_native_int_il.Program::s_arrIsAlive
     brtrue SUCCESS
 
     ldc.i4 101
@@ -68,7 +70,7 @@
 
     // Before this point, array is kept alive by "byrefAddrArg".
     ldarg byrefAddrArg
-    call void Program::Use(unsigned int8&)
+    call void Test_copy_prop_byref_to_native_int_il.Program::Use(unsigned int8&)
     // Now the array should be kept alive by "byrefAddr".
 
     ldc.i4 0
@@ -79,7 +81,7 @@
     add
     stloc i
 
-    call void Program::TryCollectArr()
+    call void Test_copy_prop_byref_to_native_int_il.Program::TryCollectArr()
 
     ldloc i
     ldc.i4 10
@@ -96,7 +98,7 @@
     // that local copy propagation does not substitute
     // "nintAddrCopy" with "nintAddr" too early. We
     // want the fact they're equal to be discovered in VN.
-    call unsigned int8& Program::SideEffect()
+    call unsigned int8& Test_copy_prop_byref_to_native_int_il.Program::SideEffect()
     ret
 
   SKIP:
@@ -136,11 +138,11 @@
     call void GC::Collect(int32, valuetype [System.Runtime]System.GCCollectionMode)
     call void GC::WaitForPendingFinalizers()
 
-    ldsfld class WeakRef Program::s_weakArrRef
+    ldsfld class WeakRef Test_copy_prop_byref_to_native_int_il.Program::s_weakArrRef
     callvirt instance bool WeakRef::get_IsAlive()
-    ldsfld bool Program::s_arrIsAlive
+    ldsfld bool Test_copy_prop_byref_to_native_int_il.Program::s_arrIsAlive
     and
-    stsfld bool Program::s_arrIsAlive
+    stsfld bool Test_copy_prop_byref_to_native_int_il.Program::s_arrIsAlive
 
     ret
   }
@@ -156,4 +158,5 @@
   {
     ret
   }
+}
 }

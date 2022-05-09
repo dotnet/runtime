@@ -46,10 +46,6 @@ protected:
     GenTree*             m_dstAddr            = nullptr;
     ssize_t              m_dstAddOff          = 0;
 
-#if defined(DEBUG)
-    bool m_isLateArg = false;
-#endif // DEBUG
-
     enum class BlockTransformation
     {
         Undefined,
@@ -129,8 +125,6 @@ GenTree* MorphInitBlockHelper::Morph()
     PrepareDst();
     PrepareSrc();
 
-    INDEBUG(m_isLateArg = (m_asg->gtFlags & GTF_LATE_ARG) != 0);
-
     TrySpecialCases();
 
     if (m_transformationDecision == BlockTransformation::Undefined)
@@ -155,17 +149,6 @@ GenTree* MorphInitBlockHelper::Morph()
 
     assert(m_transformationDecision != BlockTransformation::Undefined);
     assert(m_result != nullptr);
-
-    if (m_result != m_asg)
-    {
-        const bool isLateArg = ((m_asg->gtFlags & GTF_LATE_ARG) != 0);
-        assert(m_isLateArg == isLateArg);
-        if (isLateArg)
-        {
-            assert(!m_initBlock && "do not expect a block init as a late arg.");
-            m_result->gtFlags |= GTF_LATE_ARG;
-        }
-    }
 
 #ifdef DEBUG
     if (m_result != m_asg)
@@ -263,9 +246,6 @@ void MorphInitBlockHelper::PrepareDst()
         noway_assert(dstAddr->TypeIs(TYP_BYREF, TYP_I_IMPL));
         if (dstAddr->IsLocalAddrExpr(m_comp, &m_dstLclNode, &m_dstFldSeq, &m_dstAddOff))
         {
-            // Don't expect `IsLocalAddrExpr` to pass `INDEX_ADDR`.
-            assert((m_dst->gtFlags & GTF_IND_ARR_INDEX) == 0);
-
             // Note that lclNode can be a field, like `BLK<4> struct(ADD(ADDR(LCL_FLD int), CNST_INT))`.
             m_dstVarDsc = m_comp->lvaGetDesc(m_dstLclNode);
         }
@@ -898,7 +878,7 @@ void MorphCopyBlockHelper::MorphStructCases()
         }
         else if (m_srcDoFldAsg && srcFldIsProfitable)
         {
-            // Check for the symmetric case (which happens for the _pointer field of promoted spans):
+            // Check for the symmetric case (which happens for the _reference field of promoted spans):
             //
             //               [000240] -----+------             /--*  lclVar    struct(P) V18 tmp9
             //                                                  /--*    byref  V18._value (offs=0x00) -> V30
@@ -1272,10 +1252,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     // TODO-1stClassStructs: remove this and implement storing to a field in a struct in a reg.
                     m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
                 }
-
-                // !!! The destination could be on stack. !!!
-                // This flag will let us choose the correct write barrier.
-                dstFld->gtFlags |= GTF_IND_TGTANYWHERE;
             }
         }
 

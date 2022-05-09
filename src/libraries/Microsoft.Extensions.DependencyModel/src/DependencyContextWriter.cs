@@ -13,8 +13,11 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContextWriter
     {
-        public void Write(DependencyContext context!!, Stream stream!!)
+        public void Write(DependencyContext context, Stream stream)
         {
+            ThrowHelper.ThrowIfNull(context);
+            ThrowHelper.ThrowIfNull(stream);
+
             // Custom encoder is required to fix https://github.com/dotnet/core-setup/issues/7137
             // Since the JSON is only written to a file that is read by the SDK (and not transmitted over the wire),
             // it is safe to skip escaping certain characters in this scenario
@@ -190,9 +193,9 @@ namespace Microsoft.Extensions.DependencyModel
             WriteAssetList(key, group.RuntimeFiles, jsonWriter);
         }
 
-        private static void AddDependencies(IEnumerable<Dependency> dependencies, Utf8JsonWriter jsonWriter)
+        private static void AddDependencies(IReadOnlyCollection<Dependency> dependencies, Utf8JsonWriter jsonWriter)
         {
-            if (!dependencies.Any())
+            if (dependencies.Count == 0)
             {
                 return;
             }
@@ -205,16 +208,18 @@ namespace Microsoft.Extensions.DependencyModel
             jsonWriter.WriteEndObject();
         }
 
-        private static void AddResourceAssemblies(IEnumerable<ResourceAssembly> resourceAssemblies, Utf8JsonWriter jsonWriter)
+        private static void AddResourceAssemblies(IReadOnlyList<ResourceAssembly> resourceAssemblies, Utf8JsonWriter jsonWriter)
         {
-            if (!resourceAssemblies.Any())
+            int count = resourceAssemblies.Count;
+            if (count == 0)
             {
                 return;
             }
 
             jsonWriter.WriteStartObject(DependencyContextStrings.ResourceAssembliesPropertyName);
-            foreach (ResourceAssembly resourceAssembly in resourceAssemblies)
+            for (int i = 0; i < count; i++)
             {
+                ResourceAssembly resourceAssembly = resourceAssemblies[i];
                 jsonWriter.WriteStartObject(NormalizePath(resourceAssembly.Path));
                 jsonWriter.WriteString(DependencyContextStrings.LocalePropertyName, resourceAssembly.Locale);
                 jsonWriter.WriteEndObject();
@@ -300,33 +305,42 @@ namespace Microsoft.Extensions.DependencyModel
 
         private static bool AddRuntimeSpecificAssetGroups(string assetType, IEnumerable<RuntimeAssetGroup> assetGroups, bool wroteObjectStart, Utf8JsonWriter jsonWriter)
         {
-            IEnumerable<RuntimeAssetGroup> groups = assetGroups.Where(g => !string.IsNullOrEmpty(g.Runtime));
-            if (!wroteObjectStart && groups.Any())
-            {
-                jsonWriter.WriteStartObject(DependencyContextStrings.RuntimeTargetsPropertyName);
-                wroteObjectStart = true;
-            }
-            foreach (RuntimeAssetGroup group in groups)
-            {
-                if (group.RuntimeFiles.Any())
-                {
-                    AddRuntimeSpecificAssets(group.RuntimeFiles, group.Runtime, assetType, jsonWriter);
-                }
-                else
-                {
-                    // Add a placeholder item
-                    // We need to generate a pseudo-path because there could be multiple different asset groups with placeholders
-                    // Only the last path segment matters, the rest is basically just a GUID.
-                    string pseudoPathFolder = assetType == DependencyContextStrings.RuntimeAssetType ?
-                        "lib" :
-                        "native";
+            using IEnumerator<RuntimeAssetGroup> groups = assetGroups.Where(g => !string.IsNullOrEmpty(g.Runtime)).GetEnumerator();
 
-                    jsonWriter.WriteStartObject($"runtime/{group.Runtime}/{pseudoPathFolder}/_._");
-                    jsonWriter.WriteString(DependencyContextStrings.RidPropertyName, group.Runtime);
-                    jsonWriter.WriteString(DependencyContextStrings.AssetTypePropertyName, assetType);
-                    jsonWriter.WriteEndObject();
+            if (groups.MoveNext())
+            {
+                if (!wroteObjectStart)
+                {
+                    jsonWriter.WriteStartObject(DependencyContextStrings.RuntimeTargetsPropertyName);
+                    wroteObjectStart = true;
                 }
+
+                do
+                {
+                    RuntimeAssetGroup group = groups.Current;
+
+                    if (group.RuntimeFiles.Count != 0)
+                    {
+                        AddRuntimeSpecificAssets(group.RuntimeFiles, group.Runtime, assetType, jsonWriter);
+                    }
+                    else
+                    {
+                        // Add a placeholder item
+                        // We need to generate a pseudo-path because there could be multiple different asset groups with placeholders
+                        // Only the last path segment matters, the rest is basically just a GUID.
+                        string pseudoPathFolder = assetType == DependencyContextStrings.RuntimeAssetType ?
+                            "lib" :
+                            "native";
+
+                        jsonWriter.WriteStartObject($"runtime/{group.Runtime}/{pseudoPathFolder}/_._");
+                        jsonWriter.WriteString(DependencyContextStrings.RidPropertyName, group.Runtime);
+                        jsonWriter.WriteString(DependencyContextStrings.AssetTypePropertyName, assetType);
+                        jsonWriter.WriteEndObject();
+                    }
+                }
+                while (groups.MoveNext());
             }
+
             return wroteObjectStart;
         }
 

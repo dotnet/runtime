@@ -42,6 +42,21 @@ namespace System
             action(span, state);
             return span.ToString();
         }
+
+        public static int CommonPrefixLength(this ReadOnlySpan<char> span, ReadOnlySpan<char> other)
+        {
+            int length = Math.Min(span.Length, other.Length);
+
+            for (int i = 0; i < length; i++)
+            {
+                if (span[i] != other[i])
+                {
+                    return i;
+                }
+            }
+
+            return length;
+        }
     }
 }
 

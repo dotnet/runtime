@@ -26,6 +26,22 @@ namespace System.Net.Quic.Tests
                 await clientStreamTask;
             }).WaitAsync(TimeSpan.FromSeconds(6));
         }
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67301", TestPlatforms.Linux)]
+        public async Task Listener_Backlog_Success_IPv6()
+        {
+            await Task.Run(async () =>
+            {
+                using QuicListener listener = CreateQuicListener(new IPEndPoint(IPAddress.IPv6Loopback, 0));
+
+                using QuicConnection clientConnection = CreateQuicConnection(listener.ListenEndPoint);
+                var clientStreamTask = clientConnection.ConnectAsync();
+
+                using QuicConnection serverConnection = await listener.AcceptConnectionAsync();
+                await clientStreamTask;
+            }).WaitAsync(TimeSpan.FromSeconds(6));
+        }
     }
 
     [ConditionalClass(typeof(QuicTestBase<MockProviderFactory>), nameof(QuicTestBase<MockProviderFactory>.IsSupported))]

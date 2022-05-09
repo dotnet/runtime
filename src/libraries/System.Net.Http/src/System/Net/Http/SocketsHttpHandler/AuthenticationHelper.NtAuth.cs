@@ -187,8 +187,15 @@ namespace System.Net.Http
                                 SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(challenge.SchemeName, challengeResponse), isProxyAuth);
 
                                 response = await InnerSendAsync(request, async, isProxyAuth, connectionPool, connection, cancellationToken).ConfigureAwait(false);
-                                if (authContext.IsCompleted || !TryGetRepeatedChallenge(response, challenge.SchemeName, isProxyAuth, out challengeData))
+                                if (authContext.IsCompleted || !TryGetChallengeDataForScheme(challenge.SchemeName, GetResponseAuthenticationHeaderValues(response, isProxyAuth), out challengeData))
                                 {
+                                    break;
+                                }
+
+                                if (!IsAuthenticationChallenge(response, isProxyAuth))
+                                {
+                                    // Tail response for Negoatiate on successful authentication. Validate it before we proceed.
+                                    authContext.GetOutgoingBlob(challengeData);
                                     break;
                                 }
 

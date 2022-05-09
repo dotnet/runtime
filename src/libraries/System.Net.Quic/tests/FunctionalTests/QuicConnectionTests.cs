@@ -42,7 +42,7 @@ namespace System.Net.Quic.Tests
 
         private static async Task<QuicStream> OpenAndUseStreamAsync(QuicConnection c)
         {
-            QuicStream s = c.OpenBidirectionalStream();
+            QuicStream s = await c.OpenBidirectionalStreamAsync();
 
             // This will pend
             await s.ReadAsync(new byte[1]);
@@ -74,7 +74,11 @@ namespace System.Net.Quic.Tests
 
                     // Pending ops should fail
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask);
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => connectTask);
+                    // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
+                    // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
+                    // To be revisited once we standartize on exceptions.
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
+                    await Assert.ThrowsAnyAsync<QuicException>(() => connectTask);
 
                     // Subsequent attempts should fail
                     // TODO: Which exception is correct?
@@ -86,10 +90,6 @@ namespace System.Net.Quic.Tests
                     else
                     {
                         await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await serverConnection.AcceptStreamAsync());
-
-                        // TODO: ActiveIssue https://github.com/dotnet/runtime/issues/56133
-                        // MsQuic fails with System.Net.Quic.QuicException: Failed to open stream to peer. Error Code: INVALID_STATE
-                        //await Assert.ThrowsAsync<QuicOperationAbortedException>(async () => await OpenAndUseStreamAsync(serverConnection));
                         await Assert.ThrowsAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
                     }
                 });
@@ -119,7 +119,12 @@ namespace System.Net.Quic.Tests
 
                     // Pending ops should fail
                     await Assert.ThrowsAsync<QuicOperationAbortedException>(() => acceptTask);
-                    await Assert.ThrowsAsync<QuicOperationAbortedException>(() => connectTask);
+
+                    // TODO: This may not always throw QuicOperationAbortedException due to a data race with MsQuic worker threads
+                    // (CloseAsync may be processed before OpenStreamAsync as it is scheduled to the front of the operation queue)
+                    // To be revisited once we standartize on exceptions.
+                    // [ActiveIssue("https://github.com/dotnet/runtime/issues/55619")]
+                    await Assert.ThrowsAnyAsync<QuicException>(() => connectTask);
 
                     // Subsequent attempts should fail
                     // TODO: Should these be QuicOperationAbortedException, to match above? Or vice-versa?
@@ -166,17 +171,8 @@ namespace System.Net.Quic.Tests
                     // Subsequent attempts should fail
                     ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => serverConnection.AcceptStreamAsync().AsTask());
                     Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-                    // TODO: ActiveIssue https://github.com/dotnet/runtime/issues/56133
-                    // MsQuic fails with System.Net.Quic.QuicException: Failed to open stream to peer. Error Code: INVALID_STATE
-                    if (IsMsQuicProvider)
-                    {
-                        await Assert.ThrowsAsync<QuicException>(() => OpenAndUseStreamAsync(serverConnection));
-                    }
-                    else
-                    {
-                        ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => OpenAndUseStreamAsync(serverConnection));
-                        Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
-                    }
+                    ex = await Assert.ThrowsAsync<QuicConnectionAbortedException>(() => OpenAndUseStreamAsync(serverConnection));
+                    Assert.Equal(ExpectedErrorCode, ex.ErrorCode);
                 });
         }
 
@@ -212,7 +208,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                    using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
                     await DoWrites(clientStream, writesBeforeClose);
 
                     // Wait for peer to receive data
@@ -259,7 +255,7 @@ namespace System.Net.Quic.Tests
             await RunClientServer(
                 async clientConnection =>
                 {
-                    using QuicStream clientStream = clientConnection.OpenBidirectionalStream();
+                    using QuicStream clientStream = await clientConnection.OpenBidirectionalStreamAsync();
                     await DoWrites(clientStream, writesBeforeClose);
 
                     // Wait for peer to receive data

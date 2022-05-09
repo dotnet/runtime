@@ -6629,6 +6629,8 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM64;
+#elif defined(TARGET_LOONGARCH64)
+    s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unknown processor.
 #endif
@@ -6945,6 +6947,18 @@ BOOL Debugger::PreJitAttach(BOOL willSendManagedEvent, BOOL willLaunchDebugger, 
     CONTRACTL_END;
 
     LOG( (LF_CORDB, LL_INFO10000, "D::PreJA: Entering\n") );
+
+    if (m_fShutdownMode)
+    {
+        // Trying to JitAttach because of some failure at shutdown is likely to block because we
+        // would suspend any thread that isn't the finalizer or debugger helper thread when it tries to
+        // take the debugger lock below. By bailing out here we won't do the JitAttach as we normally
+        // would, but at least the app should exit with an unhandled exception or FailFast rather
+        // entering a hung state. We believe this is very rare scenario so mitigating the problem in
+        // this way is sufficient.
+        LOG( (LF_CORDB, LL_INFO10000, "D::PreJA: Leaving - shutdown case\n") );
+        return FALSE;
+    }
 
     // Multiple threads may be calling this, so need to take the lock.
     if(!m_jitAttachInProgress)
@@ -13511,6 +13525,9 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp,
         pContext->EFlags));
+#elif defined(TARGET_LOONGARCH64)
+    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p\n",
+        tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp));
 #endif
 
     // This memory is used as IPC during the hijack. We will place a pointer to this in
@@ -16541,10 +16558,15 @@ void DebuggerHeap::Free(void *pMem)
 }
 
 #ifndef DACCESS_COMPILE
-
-
-// Undef this so we can call them from the EE versions.
-#undef UtilMessageBoxVA
+// forward declare for specific type needed.
+int UtilMessageBoxVA(
+        HWND hWnd,        // Handle to Owner Window
+        UINT uText,       // Resource Identifier for Text message
+        UINT uCaption,    // Resource Identifier for Caption
+        UINT uType,       // Style of MessageBox
+        BOOL displayForNonInteractive,    // Display even if the process is running non interactive
+        BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
+        va_list args);    // Additional Arguments
 
 // Message box API for the left side of the debugger. This API handles calls from the
 // debugger helper thread as well as from normal EE threads. It is the only one that
@@ -16579,9 +16601,6 @@ int Debugger::MessageBox(
 
     return result;
 }
-
-// Redefine this to an error just in case code is added after this point in the file.
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
 
 #else // DACCESS_COMPILE
 void

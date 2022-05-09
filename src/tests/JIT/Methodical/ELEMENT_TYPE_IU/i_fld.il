@@ -12,27 +12,27 @@
 .assembly 'i_fld'// as "qsort"
 { }
 .assembly extern xunit.core {}
-.namespace Test
+.namespace Test_i_fld
 {
-  .class private auto ansi AA extends [mscorlib]System.Object
+  .class public auto ansi AA extends [mscorlib]System.Object
   {
 	.field public native int m_i
 	.field public static native int s_i
 	.field public native int[0...] m_ai
 
-    .method private hidebysig static int32 Main() il managed
+    .method public hidebysig static int32 Main() il managed
     {
 		.custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
 		    01 00 00 00
 		)
 		.entrypoint
 		.maxstack  8
-		.locals (class Test.AA pinned, native int[0...], native int, int32, native int[0...] pinned)
-		newobj instance void Test.AA::.ctor()
+		.locals (class Test_i_fld.AA pinned, native int[0...], native int, int32, native int[0...] pinned)
+		newobj instance void Test_i_fld.AA::.ctor()
 		stloc.0
 
 		ldloc.0
-		ldfld native int[0...] Test.AA::m_ai
+		ldfld native int[0...] Test_i_fld.AA::m_ai
 		stloc 4
 
 
@@ -47,11 +47,11 @@
 		dup
 
 		ldc.i4 16
-		ldsflda native int Test.AA::s_i
+		ldsflda native int Test_i_fld.AA::s_i
 		stelem.i
 		ldc.i4 17
 		ldloc.0
-		ldflda native int Test.AA::m_i
+		ldflda native int Test_i_fld.AA::m_i
 		stelem.i
 		ldc.i4 18
 		ldloca 2
@@ -63,7 +63,7 @@
 		ldloc.1
 		ldloc.3
 		ldloc.0
-		ldfld native int[0...] Test.AA::m_ai
+		ldfld native int[0...] Test_i_fld.AA::m_ai
 		ldloc.3
 		ldelema [mscorlib]System.IntPtr
 		stelem.i
@@ -119,7 +119,7 @@
     {
 	      .maxstack  8
 	      ldc.i4 100
-	      stsfld native int Test.AA::s_i
+	      stsfld native int Test_i_fld.AA::s_i
 	      ret
     } // end of method 'AA::.ctor'
     .method public hidebysig specialname rtspecialname instance void .ctor() il managed
@@ -130,11 +130,11 @@
 		call       instance void [mscorlib]System.Object::.ctor()
 		ldarg.0
 		ldc.i4 10
-		stfld native int Test.AA::m_i
+		stfld native int Test_i_fld.AA::m_i
 		ldarg.0
 		ldc.i4 16
 		newobj instance void native int[0...]::.ctor(int32)
-		stfld native int[0...] Test.AA::m_ai
+		stfld native int[0...] Test_i_fld.AA::m_ai
 
 		ldc.i4.0
 		br begin_loop
@@ -142,7 +142,7 @@
 		dup
 		stloc.0
 		ldarg.0
-		ldfld native int[0...] Test.AA::m_ai
+		ldfld native int[0...] Test_i_fld.AA::m_ai
 		ldloc.0
 		dup
 		stelem.i
@@ -160,6 +160,6 @@
 
   } // end of class 'AA'
 
-} // end of namespace 'Test'
+} // end of namespace 'Test_i_fld'
 
 //*********** DISASSEMBLY COMPLETE ***********************

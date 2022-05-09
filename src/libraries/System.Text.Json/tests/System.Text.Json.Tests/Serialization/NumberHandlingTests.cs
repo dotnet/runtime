@@ -373,17 +373,22 @@ namespace System.Text.Json.Serialization.Tests
             RunAsCollectionElementTest(JsonNumberTestData.Floats);
             RunAsCollectionElementTest(JsonNumberTestData.Doubles);
             RunAsCollectionElementTest(JsonNumberTestData.Decimals);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableBytes);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableSBytes);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableShorts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableInts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableLongs);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableUShorts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
-            RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
+
+            // https://github.com/dotnet/runtime/issues/66220
+            if (!PlatformDetection.IsAppleMobile)
+            {
+                RunAsCollectionElementTest(JsonNumberTestData.NullableBytes);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableSBytes);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableShorts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableInts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableLongs);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableUShorts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableUInts);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableULongs);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableFloats);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableDoubles);
+                RunAsCollectionElementTest(JsonNumberTestData.NullableDecimals);
+            }
         }
 
         private static void RunAsCollectionElementTest<T>(List<T> numbers)

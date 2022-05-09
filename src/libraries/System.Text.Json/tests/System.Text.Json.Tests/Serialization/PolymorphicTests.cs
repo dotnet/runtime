@@ -54,13 +54,10 @@ namespace System.Text.Json.Serialization.Tests
         public PolymorphicTests_Node() : base(JsonSerializerWrapper.NodeSerializer) { }
     }
 
-    public abstract class PolymorphicTests
+    public abstract partial class PolymorphicTests : SerializerTests
     {
-        private JsonSerializerWrapper Serializer { get; }
-
-        public PolymorphicTests(JsonSerializerWrapper serializer)
+        public PolymorphicTests(JsonSerializerWrapper serializer) : base(serializer)
         {
-            Serializer = serializer;
         }
 
         [Fact]

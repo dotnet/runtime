@@ -341,7 +341,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
                 .Execute(fExpectedToFail: true)
                 .Should().Fail()
                 .And.HaveStdErrContaining(string.Format(expectedError, startupHookVar))
-                .And.HaveStdErrContaining("---> System.IO.FileLoadException: The given assembly name or codebase was invalid.");
+                .And.HaveStdErrContaining("---> System.IO.FileLoadException: The given assembly name was invalid.");
 
             // Relative path error is caught before any hooks run
             startupHookVar = startupHookDll + Path.PathSeparator + relativeAssemblyPath;

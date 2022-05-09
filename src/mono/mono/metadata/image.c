@@ -1779,7 +1779,6 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	if (coree_module_handle) {
 		HMODULE module_handle;
 		gunichar2 *fname_utf16;
-		DWORD last_error;
 
 		absfname = mono_path_resolve_symlinks (fname);
 		fname_utf16 = NULL;
@@ -1803,6 +1802,8 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 			g_free (absfname);
 			return image;
 		}
+
+		DWORD last_error = ERROR_SUCCESS;
 
 		// Image not loaded, load it now
 		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
@@ -2290,10 +2291,6 @@ mono_image_close_finish (MonoImage *image)
 
 	mono_metadata_update_image_close_all (image);
 
-#ifndef DISABLE_PERFCOUNTERS
-	/* FIXME: use an explicit subtraction method as soon as it's available */
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, -1 * mono_mempool_get_allocated (image->mempool));
-#endif
 
 	if (!image_is_dynamic (image)) {
 		if (debug_assembly_unload)
@@ -2827,9 +2824,6 @@ mono_image_alloc (MonoImage *image, guint size)
 {
 	gpointer res;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
 	mono_image_lock (image);
 	res = mono_mempool_alloc (image->mempool, size);
 	mono_image_unlock (image);
@@ -2842,9 +2836,6 @@ mono_image_alloc0 (MonoImage *image, guint size)
 {
 	gpointer res;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, size);
-#endif
 	mono_image_lock (image);
 	res = mono_mempool_alloc0 (image->mempool, size);
 	mono_image_unlock (image);
@@ -2857,9 +2848,6 @@ mono_image_strdup (MonoImage *image, const char *s)
 {
 	char *res;
 
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, (gint32)strlen (s));
-#endif
 	mono_image_lock (image);
 	res = mono_mempool_strdup (image->mempool, s);
 	mono_image_unlock (image);
@@ -2874,9 +2862,6 @@ mono_image_strdup_vprintf (MonoImage *image, const char *format, va_list args)
 	mono_image_lock (image);
 	buf = mono_mempool_strdup_vprintf (image->mempool, format, args);
 	mono_image_unlock (image);
-#ifndef DISABLE_PERFCOUNTERS
-	mono_atomic_fetch_add_i32 (&mono_perfcounters->loader_bytes, (gint32)strlen (buf));
-#endif
 	return buf;
 }
 

@@ -160,6 +160,8 @@ namespace System.Security.Cryptography.X509Certificates
                 }
             }
 
+            chainPal.CommitToChain();
+
             if (revocationMode != X509RevocationMode.NoCheck)
             {
                 if (OpenSslX509ChainProcessor.IsCompleteChain(status))
@@ -179,7 +181,6 @@ namespace System.Security.Cryptography.X509Certificates
                         revocationMode = X509RevocationMode.NoCheck;
                     }
 
-                    chainPal.CommitToChain();
                     chainPal.ProcessRevocation(revocationMode, revocationFlag);
                 }
             }

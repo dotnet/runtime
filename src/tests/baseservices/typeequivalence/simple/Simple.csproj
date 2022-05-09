@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="Simple.cs" />

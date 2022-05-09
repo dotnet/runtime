@@ -36,8 +36,22 @@ namespace System.Text.Json
         public JsonTypeInfo JsonTypeInfo;
         public StackFrameObjectState ObjectState; // State tracking the current object.
 
-        // Validate EndObject token on array with preserve semantics.
-        public bool ValidateEndTokenOnArray;
+        // Current object can contain metadata
+        public bool CanContainMetadata;
+        public MetadataPropertyName LatestMetadataPropertyName;
+        public MetadataPropertyName MetadataPropertyNames;
+
+        // Serialization state for value serialized by the current frame.
+        public PolymorphicSerializationState PolymorphicSerializationState;
+
+        // Holds any entered polymorphic JsonTypeInfo metadata.
+        public JsonTypeInfo? PolymorphicJsonTypeInfo;
+
+        // Gets the initial JsonTypeInfo metadata used when deserializing the current value.
+        public JsonTypeInfo BaseJsonTypeInfo
+            => PolymorphicSerializationState == PolymorphicSerializationState.PolymorphicReEntryStarted
+                ? PolymorphicJsonTypeInfo!
+                : JsonTypeInfo;
 
         // For performance, we order the properties by the first deserialize and PropertyIndex helps find the right slot quicker.
         public int PropertyIndex;
@@ -63,7 +77,6 @@ namespace System.Text.Json
             JsonPropertyName = null;
             JsonPropertyNameAsString = null;
             PropertyState = StackFramePropertyState.None;
-            ValidateEndTokenOnArray = false;
 
             // No need to clear these since they are overwritten each time:
             //  NumberHandling

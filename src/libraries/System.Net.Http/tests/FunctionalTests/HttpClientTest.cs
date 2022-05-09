@@ -430,7 +430,10 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await connection.ReadRequestHeaderAsync();
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                        }
                         cts.Cancel();
                     });
                 });
@@ -597,7 +600,10 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await connection.ReadRequestHeaderAsync();
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                        }
                         cts.Cancel();
                     });
                 });
@@ -671,7 +677,10 @@ namespace System.Net.Http.Functional.Tests
                         {
                             await connection.ReadRequestHeaderAsync();
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                        }
                         cts.Cancel();
                     });
                 });
@@ -1003,7 +1012,10 @@ namespace System.Net.Http.Functional.Tests
                             cts.Cancel();
                             await connection.ReadRequestBodyAsync();
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                        }
                     });
                 });
         }
@@ -1048,7 +1060,10 @@ namespace System.Net.Http.Functional.Tests
                             await connection.ReadRequestHeaderAsync();
                             await connection.ReadRequestBodyAsync();
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                        }
                     });
                 });
         }
@@ -1100,7 +1115,10 @@ namespace System.Net.Http.Functional.Tests
                                 await Task.Delay(TimeSpan.FromSeconds(0.1));
                             }
                         }
-                        catch { }
+                        catch (Exception ex)
+                        {
+                            _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                        }
                     });
                 });
         }

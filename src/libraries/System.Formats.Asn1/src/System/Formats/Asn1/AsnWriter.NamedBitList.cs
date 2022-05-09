@@ -32,8 +32,13 @@ namespace System.Formats.Asn1
         /// <exception cref="ArgumentNullException">
         ///   <paramref name="value"/> is <see langword="null"/>.
         /// </exception>
-        public void WriteNamedBitList(Enum value!!, Asn1Tag? tag = null)
+        public void WriteNamedBitList(Enum value, Asn1Tag? tag = null)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             CheckUniversalTag(tag, UniversalTagNumber.BitString);
 
             WriteNamedBitList(tag, value.GetType(), value);
@@ -86,8 +91,13 @@ namespace System.Formats.Asn1
         ///   For example, the bit array <c>{ false, true, true }</c> encodes as <c>0b0110_0000</c> with 5
         ///   unused bits.
         /// </remarks>
-        public void WriteNamedBitList(BitArray value!!, Asn1Tag? tag = null)
+        public void WriteNamedBitList(BitArray value, Asn1Tag? tag = null)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             CheckUniversalTag(tag, UniversalTagNumber.BitString);
 
             WriteBitArray(value, tag);

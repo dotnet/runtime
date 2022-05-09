@@ -107,13 +107,14 @@ namespace System.Reflection.Tests
             // Try to invoke Array ctors with different lengths
             foreach (int length in arraylength)
             {
-                // Create big Array with  elements
+                // Create big Array with elements
                 object[] arr = (object[])constructors[0].Invoke(new object[] { length });
                 Assert.Equal(arr.Length, length);
             }
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public void Invoke_OneDimensionalArray_NegativeLengths_ThrowsOverflowException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(object[]));
@@ -121,8 +122,9 @@ namespace System.Reflection.Tests
             // Try to invoke Array ctors with different lengths
             foreach (int length in arraylength)
             {
-                // Create big Array with  elements
-                Assert.Throws<OverflowException>(() => (object[])constructors[0].Invoke(new object[] { length }));
+                // Create big Array with elements
+                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[0].Invoke(new object[] { length }));
+                Assert.IsType<OverflowException>(ex.InnerException);
             }
         }
 

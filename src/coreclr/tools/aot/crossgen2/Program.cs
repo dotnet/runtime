@@ -29,6 +29,7 @@ namespace ILCompiler
         public TargetArchitecture _targetArchitecture;
         private bool _armelAbi = false;
         public OptimizationMode _optimizationMode;
+        private ulong _imageBase;
 
         // File names as strings in args
         private Dictionary<string, string> _inputFilePaths = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -229,13 +230,11 @@ namespace ILCompiler
             // Ready to run images are built with certain instruction set baselines
             if ((_targetArchitecture == TargetArchitecture.X86) || (_targetArchitecture == TargetArchitecture.X64))
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("sse2"); // Lower baselines included by implication
             }
             else if (_targetArchitecture == TargetArchitecture.ARM64)
             {
-                instructionSetSupportBuilder.AddSupportedInstructionSet("base");
-                instructionSetSupportBuilder.AddSupportedInstructionSet("neon");
+                instructionSetSupportBuilder.AddSupportedInstructionSet("neon"); // Lower baselines included by implication
             }
 
 
@@ -296,10 +295,7 @@ namespace ILCompiler
                 // notifyInstructionSetUsage, which will result in generation of a fixup to verify the behavior of
                 // code.
                 //
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse2");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.1");
-                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2");
+                optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("sse4.2"); // Lower SSE versions included by implication
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("aes");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("pclmul");
                 optimisticInstructionSetSupportBuilder.AddSupportedInstructionSet("popcnt");
@@ -316,6 +312,16 @@ namespace ILCompiler
                                                                   optimisticInstructionSet,
                                                                   InstructionSetSupportBuilder.GetNonSpecifiableInstructionSetsForArch(_targetArchitecture),
                                                                   _targetArchitecture);
+        }
+
+        private void ConfigureImageBase(TargetDetails targetDetails)
+        {
+            bool is64BitTarget = targetDetails.PointerSize == sizeof(long);
+
+            if (_commandLineOptions.ImageBase != null)
+                _imageBase = is64BitTarget ? Convert.ToUInt64(_commandLineOptions.ImageBase, 16) : Convert.ToUInt32(_commandLineOptions.ImageBase, 16);
+            else
+                _imageBase = is64BitTarget ? PEWriter.PE64HeaderConstants.DllImageBase : PEWriter.PE32HeaderConstants.ImageBase;
         }
 
         private int Run(string[] args)
@@ -341,7 +347,9 @@ namespace ILCompiler
 
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
-            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.CoreRTArmel : TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
+            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
+
+            ConfigureImageBase(targetDetails);
 
             bool versionBubbleIncludesCoreLib = false;
             if (_commandLineOptions.InputBubble)
@@ -743,6 +751,7 @@ namespace ILCompiler
                         .UseCustomPESectionAlignment(_commandLineOptions.CustomPESectionAlignment)
                         .UseVerifyTypeAndFieldLayout(_commandLineOptions.VerifyTypeAndFieldLayout)
                         .GenerateOutputFile(outFile)
+                        .UseImageBase(_imageBase)
                         .UseILProvider(ilProvider)
                         .UseBackendOptions(_commandLineOptions.CodegenOptions)
                         .UseLogger(logger)

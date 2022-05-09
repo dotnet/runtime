@@ -15,12 +15,9 @@
 #if defined(HOST_WIN32)
 #include <io.h>
 #include <windows.h>
-#include <mono/utils/mono-counters.h>
 #include "mono/utils/mono-mmap.h"
 #include "mono/utils/mono-mmap-internals.h"
 #include <mono/utils/w32subset.h>
-
-static void *malloced_shared_area;
 
 int
 mono_pagesize (void)
@@ -309,40 +306,6 @@ mono_mprotect (void *addr, size_t length, int flags)
 		return 0;
 	}
 	return VirtualProtect (addr, length, prot, &oldprot) == 0;
-}
-
-void*
-mono_shared_area (void)
-{
-	if (!malloced_shared_area)
-		malloced_shared_area = mono_malloc_shared_area (0);
-	/* get the pid here */
-	return malloced_shared_area;
-}
-
-void
-mono_shared_area_remove (void)
-{
-	if (malloced_shared_area)
-		g_free (malloced_shared_area);
-	malloced_shared_area = NULL;
-}
-
-void*
-mono_shared_area_for_pid (void *pid)
-{
-	return NULL;
-}
-
-void
-mono_shared_area_unload (void *area)
-{
-}
-
-int
-mono_shared_area_instances (void **array, int count)
-{
-	return 0;
 }
 
 #else

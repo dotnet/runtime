@@ -13,9 +13,6 @@
 
 #if !DEFINITIONS_FROM_NON_IMPORTABLE_PLACES
 
-cpp_quote("#define CorDB_CONTROL_Profiling         \"Cor_Enable_Profiling\"")
-cpp_quote("#define CorDB_CONTROL_ProfilingL       L\"Cor_Enable_Profiling\"")
-
 cpp_quote("#if 0")
 
 

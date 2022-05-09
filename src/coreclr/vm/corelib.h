@@ -113,38 +113,11 @@ DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_ARRAY,                m_array)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_OFFSET,               m_offset)
 DEFINE_FIELD(ARRAY_WITH_OFFSET,     M_COUNT,                m_count)
 
-DEFINE_CLASS(ASSEMBLY_HASH_ALGORITHM,   Assemblies,         AssemblyHashAlgorithm)
-DEFINE_CLASS(PORTABLE_EXECUTABLE_KINDS, Reflection,         PortableExecutableKinds)
-DEFINE_CLASS(IMAGE_FILE_MACHINE,        Reflection,         ImageFileMachine)
-
-DEFINE_CLASS_U(Reflection,             AssemblyName,           AssemblyNameBaseObject)
-DEFINE_FIELD_U(_name,                      AssemblyNameBaseObject, _name)
-DEFINE_FIELD_U(_publicKey,                 AssemblyNameBaseObject, _publicKey)
-DEFINE_FIELD_U(_publicKeyToken,            AssemblyNameBaseObject, _publicKeyToken)
-DEFINE_FIELD_U(_cultureInfo,               AssemblyNameBaseObject, _cultureInfo)
-DEFINE_FIELD_U(_codeBase,                  AssemblyNameBaseObject, _codeBase)
-DEFINE_FIELD_U(_version,                   AssemblyNameBaseObject, _version)
-DEFINE_FIELD_U(_hashAlgorithm,             AssemblyNameBaseObject, _hashAlgorithm)
-DEFINE_FIELD_U(_versionCompatibility,      AssemblyNameBaseObject, _versionCompatibility)
-DEFINE_FIELD_U(_flags,                     AssemblyNameBaseObject, _flags)
 DEFINE_CLASS(ASSEMBLY_NAME,         Reflection,             AssemblyName)
-DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_Str_ArrB_ArrB_Ver_CI_AHA_AVC_Str_ANF_RetV)
-DEFINE_METHOD(ASSEMBLY_NAME,        SET_PROC_ARCH_INDEX,    SetProcArchIndex,          IM_PEK_IFM_RetV)
+DEFINE_METHOD(ASSEMBLY_NAME,        CTOR,                   .ctor,                     IM_PtrNativeAssemblyNameParts)
+DEFINE_METHOD(ASSEMBLY_NAME,        PARSE_AS_ASSEMBLYSPEC,  ParseAsAssemblySpec,       SM_PtrCharPtrVoid)
 
-DEFINE_CLASS_U(System,                 Version,                    VersionBaseObject)
-DEFINE_FIELD_U(_Major,                     VersionBaseObject,    m_Major)
-DEFINE_FIELD_U(_Minor,                     VersionBaseObject,    m_Minor)
-DEFINE_FIELD_U(_Build,                     VersionBaseObject,    m_Build)
-DEFINE_FIELD_U(_Revision,                  VersionBaseObject,    m_Revision)
-DEFINE_CLASS(VERSION,               System,                 Version)
-DEFINE_METHOD(VERSION,              CTOR_Ix2,               .ctor,                      IM_Int_Int_RetVoid)
-DEFINE_METHOD(VERSION,              CTOR_Ix3,               .ctor,                      IM_Int_Int_Int_RetVoid)
-DEFINE_METHOD(VERSION,              CTOR_Ix4,               .ctor,                      IM_Int_Int_Int_Int_RetVoid)
-
-DEFINE_CLASS(ASSEMBLY_VERSION_COMPATIBILITY, Assemblies,    AssemblyVersionCompatibility)
-
-DEFINE_CLASS(ASSEMBLY_NAME_FLAGS,   Reflection,             AssemblyNameFlags)
-
+DEFINE_CLASS(NATIVE_ASSEMBLY_NAME_PARTS,   Reflection,             NativeAssemblyNameParts)
 // ASSEMBLYBASE is System.ReflectionAssembly while ASSEMBLY is System.Reflection.RuntimeAssembly
 // Maybe we should reverse these two names
 DEFINE_CLASS(ASSEMBLYBASE,          Reflection,             Assembly)
@@ -280,9 +253,7 @@ DEFINE_FIELD_U(_parent,           CultureInfoBaseObject,  _parent)
 DEFINE_FIELD_U(_isReadOnly,        CultureInfoBaseObject,  _isReadOnly)
 DEFINE_FIELD_U(_isInherited,      CultureInfoBaseObject,  _isInherited)
 DEFINE_CLASS(CULTURE_INFO,          Globalization,          CultureInfo)
-DEFINE_METHOD(CULTURE_INFO,         STR_CTOR,               .ctor,                      IM_Str_RetVoid)
 DEFINE_FIELD(CULTURE_INFO,          CURRENT_CULTURE,        s_userDefaultCulture)
-DEFINE_PROPERTY(CULTURE_INFO,       NAME,                   Name,                       Str)
 DEFINE_METHOD(CULTURE_INFO,         INT_CTOR,               .ctor,                      IM_Int_RetVoid)
 DEFINE_PROPERTY(CULTURE_INFO,       ID,                     LCID,                       Int)
 DEFINE_FIELD(CULTURE_INFO,          CULTURE,                s_currentThreadCulture)
@@ -512,6 +483,9 @@ DEFINE_CLASS(VECTORT,               Numerics,               Vector`1)
 
 DEFINE_CLASS(MEMBER,                Reflection,             MemberInfo)
 
+DEFINE_CLASS(METHOD_INVOKER,        Reflection,             MethodInvoker)
+DEFINE_CLASS(CONSTRUCTOR_INVOKER,   Reflection,             ConstructorInvoker)
+DEFINE_CLASS(DYNAMIC_METHOD_INVOKER,ReflectionEmit,         DynamicMethodInvoker)
 
 DEFINE_CLASS_U(Reflection,             RuntimeMethodInfo,  NoClass)
 DEFINE_FIELD_U(m_handle,                   ReflectMethodObject, m_pMD)
@@ -956,7 +930,7 @@ DEFINE_METHOD(EXCEPTION_DISPATCH_INFO, THROW, Throw, IM_RetVoid)
 
 DEFINE_CLASS_U(Loader,             AssemblyLoadContext,           AssemblyLoadContextBaseObject)
 DEFINE_FIELD_U(_unloadLock,                 AssemblyLoadContextBaseObject, _unloadLock)
-DEFINE_FIELD_U(_resolvingUnmanagedDll,      AssemblyLoadContextBaseObject, _resovlingUnmanagedDll)
+DEFINE_FIELD_U(_resolvingUnmanagedDll,      AssemblyLoadContextBaseObject, _resolvingUnmanagedDll)
 DEFINE_FIELD_U(_resolving,                  AssemblyLoadContextBaseObject, _resolving)
 DEFINE_FIELD_U(_unloading,                  AssemblyLoadContextBaseObject, _unloading)
 DEFINE_FIELD_U(_name,                       AssemblyLoadContextBaseObject, _name)
@@ -1236,13 +1210,6 @@ DEFINE_CLASS(NULLABLE_COMPARER, CollectionsGeneric, NullableComparer`1)
 
 DEFINE_CLASS(INATTRIBUTE, Interop, InAttribute)
 
-DEFINE_CLASS_U(CompilerServices,           GCHeapHash,                      GCHeapHashObject)
-DEFINE_FIELD_U(_data,                      GCHeapHashObject,                _data)
-DEFINE_FIELD_U(_count,                     GCHeapHashObject,                _count)
-DEFINE_FIELD_U(_deletedCount,              GCHeapHashObject,                _deletedCount)
-
-DEFINE_CLASS(GCHEAPHASH, CompilerServices, GCHeapHash)
-
 DEFINE_CLASS(CASTHELPERS, CompilerServices, CastHelpers)
 DEFINE_FIELD(CASTHELPERS, TABLE, s_table)
 DEFINE_METHOD(CASTHELPERS, ISINSTANCEOFANY,  IsInstanceOfAny,             SM_PtrVoid_Obj_RetObj)
@@ -1255,21 +1222,6 @@ DEFINE_METHOD(CASTHELPERS, CHKCASTCLASSSPECIAL, ChkCastClassSpecial,      SM_Ptr
 DEFINE_METHOD(CASTHELPERS, UNBOX,            Unbox,                       SM_PtrVoid_Obj_RetRefByte)
 DEFINE_METHOD(CASTHELPERS, STELEMREF,        StelemRef,                   SM_Array_Int_Obj_RetVoid)
 DEFINE_METHOD(CASTHELPERS, LDELEMAREF,       LdelemaRef,                  SM_Array_Int_PtrVoid_RetRefObj)
-
-DEFINE_CLASS_U(CompilerServices,           LAHashDependentHashTracker,      LAHashDependentHashTrackerObject)
-DEFINE_FIELD_U(_dependentHandle,           LAHashDependentHashTrackerObject,_dependentHandle)
-DEFINE_FIELD_U(_loaderAllocator,           LAHashDependentHashTrackerObject,_loaderAllocator)
-
-DEFINE_CLASS(LAHASHDEPENDENTHASHTRACKER, CompilerServices, LAHashDependentHashTracker)
-#if FOR_ILLINK
-DEFINE_METHOD(LAHASHDEPENDENTHASHTRACKER,  CTOR,                            .ctor,        IM_RetVoid)
-#endif
-
-DEFINE_CLASS_U(CompilerServices,           LAHashKeyToTrackers,             LAHashKeyToTrackersObject)
-DEFINE_FIELD_U(_trackerOrTrackerSet,       LAHashKeyToTrackersObject,       _trackerOrTrackerSet)
-DEFINE_FIELD_U(_laLocalKeyValueStore,      LAHashKeyToTrackersObject,       _laLocalKeyValueStore)
-
-DEFINE_CLASS(LAHASHKEYTOTRACKERS, CompilerServices, LAHashKeyToTrackers)
 
 DEFINE_CLASS_U(System, GCMemoryInfoData, GCMemoryInfoData)
 DEFINE_FIELD_U(_highMemoryLoadThresholdBytes, GCMemoryInfoData, highMemLoadThresholdBytes)

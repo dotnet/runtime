@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Diagnostics.Tracing;
 using System.Runtime.InteropServices;
 
 namespace System.Threading
@@ -98,6 +99,10 @@ namespace System.Threading
                 *(GCHandle*)(_pNativeOverlapped + 1) = GCHandle.Alloc(this);
 
                 success = true;
+#if FEATURE_PERFTRACING
+                if (NativeRuntimeEventSource.Log.IsEnabled())
+                    NativeRuntimeEventSource.Log.ThreadPoolIOPack(pNativeOverlapped);
+#endif
                 return _pNativeOverlapped;
             }
             finally
@@ -242,8 +247,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe Overlapped Unpack(NativeOverlapped* nativeOverlappedPtr)
         {
-            if (nativeOverlappedPtr == null)
-                throw new ArgumentNullException(nameof(nativeOverlappedPtr));
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
 
             return OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped!;
         }
@@ -251,8 +255,7 @@ namespace System.Threading
         [CLSCompliant(false)]
         public static unsafe void Free(NativeOverlapped* nativeOverlappedPtr)
         {
-            if (nativeOverlappedPtr == null)
-                throw new ArgumentNullException(nameof(nativeOverlappedPtr));
+            ArgumentNullException.ThrowIfNull(nativeOverlappedPtr);
 
             OverlappedData.GetOverlappedFromNative(nativeOverlappedPtr)._overlapped!._overlappedData = null!;
             OverlappedData.FreeNativeOverlapped(nativeOverlappedPtr);

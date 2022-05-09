@@ -204,7 +204,7 @@ namespace System.Net.Http.Functional.Tests
                 Http2LoopbackConnection connection = await server.EstablishConnectionAsync();
                 Assert.IsNotType<SslStream>(connection.Stream);
 
-                HttpRequestData requestData = await connection.ReadRequestDataAsync();                
+                HttpRequestData requestData = await connection.ReadRequestDataAsync();
                 string requestContent = requestData.Body is null ? (string)null : Encoding.ASCII.GetString(requestData.Body);
                 Assert.Equal(clientContent, requestContent);
                 await connection.SendResponseAsync(HttpStatusCode.OK, content: serverContent);
@@ -3164,7 +3164,10 @@ namespace System.Net.Http.Functional.Tests
                     await connection.SendGoAway(streamId);
                     await connection.WaitForConnectionShutdownAsync();
                 }
-                catch { };
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                }
             });
         }
 

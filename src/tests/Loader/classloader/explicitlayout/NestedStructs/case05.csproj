@@ -2,6 +2,7 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <Nullable>enable</Nullable>
+    <MonoAotIncompatible>true</MonoAotIncompatible>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="case05.cs" />

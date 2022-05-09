@@ -695,15 +695,8 @@ mono_class_create_from_typedef (MonoImage *image, guint32 type_token, MonoError 
 		return NULL;
 	}
 
-	if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "Mono.Simd") && !strcmp (nspace, "Mono.Simd")) {
-		if (!strncmp (name, "Vector", 6))
-			klass->simd_type = !strcmp (name + 6, "2d") || !strcmp (name + 6, "2ul") || !strcmp (name + 6, "2l") || !strcmp (name + 6, "4f") || !strcmp (name + 6, "4ui") || !strcmp (name + 6, "4i") || !strcmp (name + 6, "8s") || !strcmp (name + 6, "8us") || !strcmp (name + 6, "16b") || !strcmp (name + 6, "16sb");
-	} else if (klass->image->assembly_name && !strcmp (klass->image->assembly_name, "System.Numerics") && !strcmp (nspace, "System.Numerics")) {
-		/* The JIT can't handle SIMD types with != 16 size yet */
-		//if (!strcmp (name, "Vector2") || !strcmp (name, "Vector3") || !strcmp (name, "Vector4"))
-		if (!strcmp (name, "Vector4"))
-			klass->simd_type = 1;
-	}
+	if (mono_get_runtime_callbacks ()->init_class)
+		mono_get_runtime_callbacks ()->init_class (klass);
 
 	// compute is_byreflike
 	if (m_class_is_valuetype (klass))
@@ -828,7 +821,7 @@ mono_class_setup_method_has_preserve_base_overrides_attribute (MonoMethod *metho
 static gboolean
 check_valid_generic_inst_arguments (MonoGenericInst *inst, MonoError *error)
 {
-	for (int i = 0; i < inst->type_argc; i++) {
+	for (guint i = 0; i < inst->type_argc; i++) {
 		if (!mono_type_is_valid_generic_argument (inst->type_argv [i])) {
 			char *type_name = mono_type_full_name (inst->type_argv [i]);
 			mono_error_set_invalid_program (error, "generic type cannot be instantiated with type '%s'", type_name);
@@ -878,19 +871,8 @@ mono_class_create_generic_inst (MonoGenericClass *gclass)
 	klass->enumtype = gklass->enumtype;
 	klass->valuetype = gklass->valuetype;
 
-	if (gklass->image->assembly_name && !strcmp (gklass->image->assembly_name, "System.Numerics.Vectors") && !strcmp (gklass->name_space, "System.Numerics") && !strcmp (gklass->name, "Vector`1")) {
-		g_assert (gclass->context.class_inst);
-		g_assert (gclass->context.class_inst->type_argc > 0);
-		if (mono_type_is_primitive (gclass->context.class_inst->type_argv [0]))
-			klass->simd_type = 1;
-	}
-
-	if (mono_is_corlib_image (gklass->image) &&
-		(!strcmp (gklass->name, "Vector`1") || !strcmp (gklass->name, "Vector64`1") || !strcmp (gklass->name, "Vector128`1") || !strcmp (gklass->name, "Vector256`1"))) {
-		MonoType *etype = gclass->context.class_inst->type_argv [0];
-		if (mono_type_is_primitive (etype) && etype->type != MONO_TYPE_CHAR && etype->type != MONO_TYPE_BOOLEAN)
-			klass->simd_type = 1;
-	}
+	if (mono_get_runtime_callbacks ()->init_class)
+		mono_get_runtime_callbacks ()->init_class (klass);
 
 	klass->is_array_special_interface = gklass->is_array_special_interface;
 
@@ -2494,7 +2476,7 @@ mono_class_layout_fields (MonoClass *klass, int base_instance_size, int packing_
 	if (mono_class_has_static_metadata (klass)) {
 		for (MonoClass *p = klass; p != NULL; p = p->parent) {
 			gpointer iter = NULL;
-			guint32 first_field_idx = mono_class_get_first_field_idx (p);
+			first_field_idx = mono_class_get_first_field_idx (p);
 
 			while ((field = mono_class_get_fields_internal (p, &iter))) {
 				guint32 field_idx = first_field_idx + (field - p->fields);
@@ -3862,7 +3844,7 @@ mono_class_setup_interface_id (MonoClass *klass)
 void
 mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 {
-	int i, interface_count;
+	int interface_count;
 	MonoClass *iface, **interfaces;
 
 	error_init (error);
@@ -3924,7 +3906,7 @@ mono_class_setup_interfaces (MonoClass *klass, MonoError *error)
 
 		interface_count = gklass->interface_count;
 		interfaces = mono_class_new0 (klass, MonoClass *, interface_count);
-		for (i = 0; i < interface_count; i++) {
+		for (int i = 0; i < interface_count; i++) {
 			interfaces [i] = mono_class_inflate_generic_class_checked (gklass->interfaces [i], mono_generic_class_get_context (mono_class_get_generic_class (klass)), error);
 			if (!is_ok (error)) {
 				mono_class_set_type_load_failure (klass, "Could not setup the interfaces");

@@ -8,10 +8,12 @@ namespace System.Security.Cryptography.X509Certificates
     internal static class CertificateExtensionsCommon
     {
         public static T? GetPublicKey<T>(
-            this X509Certificate2 certificate!!,
+            this X509Certificate2 certificate,
             Predicate<X509Certificate2>? matchesConstraints = null)
             where T : AsymmetricAlgorithm
         {
+            ArgumentNullException.ThrowIfNull(certificate);
+
             string oidValue = GetExpectedOidValue<T>();
             PublicKey publicKey = certificate.PublicKey;
             Oid algorithmOid = publicKey.Oid;
@@ -42,10 +44,12 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public static T? GetPrivateKey<T>(
-            this X509Certificate2 certificate!!,
+            this X509Certificate2 certificate,
             Predicate<X509Certificate2>? matchesConstraints = null)
             where T : AsymmetricAlgorithm
         {
+            ArgumentNullException.ThrowIfNull(certificate);
+
             string oidValue = GetExpectedOidValue<T>();
             if (!certificate.HasPrivateKey || oidValue != certificate.PublicKey.Oid.Value)
                 return null;

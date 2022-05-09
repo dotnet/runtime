@@ -715,7 +715,7 @@ namespace System
                         if (nextChar >= 0 && nextChar != '%')
                         {
                             char nextCharChar = (char)nextChar;
-                            StringBuilder origStringBuilder = FormatCustomized(dateTime, MemoryMarshal.CreateReadOnlySpan<char>(ref nextCharChar, 1), dtfi, offset, result);
+                            StringBuilder origStringBuilder = FormatCustomized(dateTime, new ReadOnlySpan<char>(in nextCharChar), dtfi, offset, result);
                             Debug.Assert(ReferenceEquals(origStringBuilder, result));
                             tokenLen = 2;
                         }

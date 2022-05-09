@@ -52,15 +52,9 @@ namespace System.Text.Json.Serialization.Converters
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            // Ensure property cache has been initialized.
-            Debug.Assert(typeInfo.PropertyCache != null);
+            Debug.Assert(typeInfo.ParameterCache != null);
 
-            if (typeInfo.ParameterCache == null)
-            {
-                typeInfo.InitializePropCache();
-            }
-
-            List<KeyValuePair<string, JsonParameterInfo?>> cache = typeInfo.ParameterCache!.List;
+            List<KeyValuePair<string, JsonParameterInfo?>> cache = typeInfo.ParameterCache.List;
             object?[] arguments = ArrayPool<object>.Shared.Rent(cache.Count);
 
             for (int i = 0; i < typeInfo.ParameterCount; i++)

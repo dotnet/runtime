@@ -2131,7 +2131,7 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         {
             return (MethodDesc*)((StubPrecode*)pInstr)->GetMethodDesc();
         }
-        
+
         if (PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList()->IsInRange(entryPoint))
         {
             return (MethodDesc*)((FixupPrecode*)pInstr)->GetMethodDesc();
@@ -3110,7 +3110,7 @@ void MethodDesc::RecordAndBackpatchEntryPointSlot(
     GCX_PREEMP();
 
     LoaderAllocator *mdLoaderAllocator = GetLoaderAllocator();
-    MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
 
     RecordAndBackpatchEntryPointSlot_Locked(
         mdLoaderAllocator,

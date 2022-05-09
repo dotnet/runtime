@@ -28,7 +28,7 @@ namespace Internal.Reflection.Execution
             {
                 if (resourceName == resourceInfos[i].Name)
                 {
-                    return new ManifestResourceInfo(assembly, resourceName, ResourceLocation.Embedded);
+                    return new ManifestResourceInfo(null, null, ResourceLocation.Embedded | ResourceLocation.ContainedInManifestFile);
                 }
             }
             return null;

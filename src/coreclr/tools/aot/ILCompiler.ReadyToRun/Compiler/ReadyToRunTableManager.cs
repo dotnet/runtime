@@ -101,7 +101,7 @@ namespace ILCompiler
             {
                 if (!_sortedMethods)
                 {
-                    CompilerComparer comparer = new CompilerComparer();
+                    CompilerComparer comparer = CompilerComparer.Instance;
                     SortableDependencyNode.ObjectNodeComparer objectNodeComparer = new SortableDependencyNode.ObjectNodeComparer(comparer);
                     Comparison<IMethodNode> sortHelper = (x, y) =>
                     {

@@ -20,14 +20,14 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace GCTest
+.namespace GCTest_arrres_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends [mscorlib]System.Object
   {
     .field private int32 m_indx
     .field private int32 m_resCount
-    .field private static class GCTest.Test[-100...100] arr
+    .field private static class GCTest_arrres_il.Test[-100...100] arr
     .method public hidebysig specialname rtspecialname 
             instance void  .ctor(int32 indx) il managed
     {
@@ -36,10 +36,10 @@
       IL_0001:  call       instance void [mscorlib]System.Object::.ctor()
       IL_0006:  ldarg.0
       IL_0007:  ldarg.1
-      IL_0008:  stfld      int32 GCTest.Test::m_indx
+      IL_0008:  stfld      int32 GCTest_arrres_il.Test::m_indx
       IL_000d:  ldarg.0
       IL_000e:  ldc.i4.0
-      IL_000f:  stfld      int32 GCTest.Test::m_resCount
+      IL_000f:  stfld      int32 GCTest_arrres_il.Test::m_resCount
       IL_0014:  ret
     } // end of method 'Test::.ctor'
 
@@ -47,7 +47,7 @@
             instance void CheckValid() il managed
     {
       .maxstack  10
-      IL_0000:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0000:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
                 dup
       			brinst.s   IL_0005
       			
@@ -57,10 +57,10 @@
       			ret
 
       IL_0005:  ldarg.0
-      IL_0006:  ldfld      int32 GCTest.Test::m_indx
+      IL_0006:  ldfld      int32 GCTest_arrres_il.Test::m_indx
       
 
-      IL_000b:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
+      IL_000b:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
       IL_000c:  ldarg.0
       IL_000d:  beq.s      IL_0015
 
@@ -77,11 +77,11 @@
       .locals (string[] V_0,
                int32 V_1)
       			ldarg.0
-      			ldfld      int32 GCTest.Test::m_indx
+      			ldfld      int32 GCTest_arrres_il.Test::m_indx
       			ldc.i4 -10000
       			beq   IL_RET
       			
-      IL_0000:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0000:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
                 dup
       			brinst.s   IL_0005
       			
@@ -91,18 +91,18 @@
       			ret
       
       IL_0005:  ldarg.0
-      IL_0006:  ldfld      int32 GCTest.Test::m_indx
-      IL_000b:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
+      IL_0006:  ldfld      int32 GCTest_arrres_il.Test::m_indx
+      IL_000b:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
       IL_000c:  brfalse.s  IL_0014
 
       IL_000e:  newobj     instance void [mscorlib]System.Exception::.ctor()
       			throw
 
-      IL_0014:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0014:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0019:  ldarg.0
-      IL_001a:  ldfld      int32 GCTest.Test::m_indx
+      IL_001a:  ldfld      int32 GCTest_arrres_il.Test::m_indx
       IL_001f:  ldarg.0
-      IL_0020:  callvirt   instance void class GCTest.Test[-100...100]::Set(int32, class GCTest.Test)
+      IL_0020:  callvirt   instance void class GCTest_arrres_il.Test[-100...100]::Set(int32, class GCTest_arrres_il.Test)
       IL_0021:  ldarg.0
       IL_0022:  call       void [mscorlib]System.GC::ReRegisterForFinalize(class [mscorlib]System.Object)
       IL_0027:  ldc.i4.5
@@ -115,7 +115,7 @@
       IL_0036:  ldloc.0
       IL_0037:  ldc.i4.1
       IL_0038:  ldarg.0
-      IL_0039:  ldflda     int32 GCTest.Test::m_indx
+      IL_0039:  ldflda     int32 GCTest_arrres_il.Test::m_indx
       IL_003e:  call       instance string [mscorlib]System.Int32::ToString()
       IL_0043:  stelem.ref
       IL_0044:  ldloc.0
@@ -126,12 +126,12 @@
       IL_004d:  ldc.i4.3
       IL_004e:  ldarg.0
       IL_004f:  dup
-      IL_0050:  ldfld      int32 GCTest.Test::m_resCount
+      IL_0050:  ldfld      int32 GCTest_arrres_il.Test::m_resCount
       IL_0055:  ldc.i4.1
       IL_0056:  add
       IL_0057:  dup
       IL_0058:  stloc.1
-      IL_0059:  stfld      int32 GCTest.Test::m_resCount
+      IL_0059:  stfld      int32 GCTest_arrres_il.Test::m_resCount
       IL_005e:  ldloc.1
       IL_005f:  stloc.1
       IL_0060:  ldloca.s   V_1
@@ -148,7 +148,7 @@
       IL_007b:  ret
     } // end of method 'Test::Finalize'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -167,11 +167,11 @@
       IL_0002:  stloc.0
       IL_0003:  br.s       IL_0017
 
-      IL_0005:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0005:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_000a:  ldloc.0
       IL_000b:  ldloc.0
-      IL_000c:  newobj     instance void GCTest.Test::.ctor(int32)
-      IL_0011:  callvirt   instance void class GCTest.Test[-100...100]::Set(int32, class GCTest.Test)
+      IL_000c:  newobj     instance void GCTest_arrres_il.Test::.ctor(int32)
+      IL_0011:  callvirt   instance void class GCTest_arrres_il.Test[-100...100]::Set(int32, class GCTest_arrres_il.Test)
       IL_0012:  ldloc.0
       IL_0013:  ldc.i4.s   50
       IL_0015:  add
@@ -188,23 +188,23 @@
       IL_002d:  stloc.1
       IL_002e:  br.s       IL_0058
 
-      IL_0030:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0030:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0035:  ldloc.1
-      IL_0036:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
+      IL_0036:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
       IL_0037:  brtrue.s   IL_003f
 
       IL_0039:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_003e:  throw
 
-      IL_003f:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_003f:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0044:  ldloc.1
-      IL_0045:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
-      IL_0046:  callvirt   instance void GCTest.Test::CheckValid()
-      IL_004b:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0045:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
+      IL_0046:  callvirt   instance void GCTest_arrres_il.Test::CheckValid()
+      IL_004b:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0050:  ldloc.1
       IL_0051:  ldnull
       
-      IL_0052:  callvirt   instance void class GCTest.Test[-100...100]::Set(int32, class GCTest.Test)
+      IL_0052:  callvirt   instance void class GCTest_arrres_il.Test[-100...100]::Set(int32, class GCTest_arrres_il.Test)
       IL_0053:  ldloc.1
       IL_0054:  ldc.i4.s   50
       IL_0056:  add
@@ -221,22 +221,22 @@
       IL_006e:  stloc.2
       IL_006f:  br.s       IL_0099
 
-      IL_0071:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0071:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0076:  ldloc.2
-      IL_0077:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
+      IL_0077:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
       IL_0078:  brtrue.s   IL_0080
 
       IL_007a:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_007f:  throw
 
-      IL_0080:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0080:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0085:  ldloc.2
-      IL_0086:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
-      IL_0087:  callvirt   instance void GCTest.Test::CheckValid()
-      IL_008c:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0086:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
+      IL_0087:  callvirt   instance void GCTest_arrres_il.Test::CheckValid()
+      IL_008c:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0091:  ldloc.2
       IL_0092:  ldnull
-      IL_0093:  callvirt   instance void class GCTest.Test[-100...100]::Set(int32, class GCTest.Test)
+      IL_0093:  callvirt   instance void class GCTest_arrres_il.Test[-100...100]::Set(int32, class GCTest_arrres_il.Test)
       IL_0094:  ldloc.2
       IL_0095:  ldc.i4.s   50
       IL_0097:  add
@@ -252,22 +252,22 @@
       IL_00af:  stloc.3
       IL_00b0:  br.s       IL_00da
 
-      IL_00b2:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_00b2:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_00b7:  ldloc.3
-      IL_00b8:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
+      IL_00b8:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
       IL_00b9:  brtrue.s   IL_00c1
 
       IL_00bb:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_00c0:  throw
 
-      IL_00c1:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_00c1:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_00c6:  ldloc.3
-      IL_00c7:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
-      IL_00c8:  callvirt   instance void GCTest.Test::CheckValid()
-      IL_00cd:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_00c7:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
+      IL_00c8:  callvirt   instance void GCTest_arrres_il.Test::CheckValid()
+      IL_00cd:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_00d2:  ldloc.3
       IL_00d3:  ldnull
-      IL_00d4:  callvirt   instance void class GCTest.Test[-100...100]::Set(int32, class GCTest.Test)
+      IL_00d4:  callvirt   instance void class GCTest_arrres_il.Test[-100...100]::Set(int32, class GCTest_arrres_il.Test)
       IL_00d5:  ldloc.3
       IL_00d6:  ldc.i4.s   50
       IL_00d8:  add
@@ -283,22 +283,22 @@
       IL_00f0:  stloc.s    V_4
       IL_00f2:  br.s       IL_0121
 
-      IL_00f4:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_00f4:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_00f9:  ldloc.s    V_4
-      IL_00fb:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
+      IL_00fb:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
       IL_00fc:  brtrue.s   IL_0104
 
       IL_00fe:  newobj     instance void [mscorlib]System.Exception::.ctor()
       IL_0103:  throw
 
-      IL_0104:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0104:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0109:  ldloc.s    V_4
-      IL_010b:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
-      IL_010c:  callvirt   instance void GCTest.Test::CheckValid()
-      IL_0111:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_010b:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
+      IL_010c:  callvirt   instance void GCTest_arrres_il.Test::CheckValid()
+      IL_0111:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0116:  ldloc.s    V_4
       IL_0118:  ldnull
-      IL_0119:  callvirt   instance void class GCTest.Test[-100...100]::Set(int32, class GCTest.Test)
+      IL_0119:  callvirt   instance void class GCTest_arrres_il.Test[-100...100]::Set(int32, class GCTest_arrres_il.Test)
       IL_011a:  ldloc.s    V_4
       IL_011c:  ldc.i4.s   50
       IL_011e:  add
@@ -314,9 +314,9 @@
       IL_0138:  stloc.s    V_5
       IL_013a:  br.s       IL_0169
 
-      IL_013c:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_013c:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0141:  ldloc.s    V_5
-      IL_0143:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
+      IL_0143:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
       IL_0144:  brtrue.s   IL_014c
 
                 ldstr      "Warning: object at index "
@@ -327,18 +327,18 @@
 				call       void [System.Console]System.Console::WriteLine(string)
 				br.s       IL_0162
 		
-      IL_014c:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_014c:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_0151:  ldloc.s    V_5
-      IL_0153:  callvirt   instance class GCTest.Test class GCTest.Test[-100...100]::Get(int32)
+      IL_0153:  callvirt   instance class GCTest_arrres_il.Test class GCTest_arrres_il.Test[-100...100]::Get(int32)
       			dup
-      IL_0154:  callvirt   instance void GCTest.Test::CheckValid()
+      IL_0154:  callvirt   instance void GCTest_arrres_il.Test::CheckValid()
       			ldc.i4 		-10000
-      			stfld      int32 GCTest.Test::m_indx
+      			stfld      int32 GCTest_arrres_il.Test::m_indx
       
-      IL_0159:  ldsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      IL_0159:  ldsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_015e:  ldloc.s    V_5
       IL_0160:  ldnull
-      IL_0161:  callvirt   instance void class GCTest.Test[-100...100]::Set(int32, class GCTest.Test)
+      IL_0161:  callvirt   instance void class GCTest_arrres_il.Test[-100...100]::Set(int32, class GCTest_arrres_il.Test)
       
       IL_0162:  ldloc.s    V_5
       IL_0164:  ldc.i4.s   50
@@ -349,7 +349,7 @@
       IL_016d:  ble.s      IL_013c
 
 				ldnull
-				stsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+				stsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
 				
       IL_016f:  ldstr      "Test passed."
       IL_0174:  call       void [System.Console]System.Console::WriteLine(string)
@@ -367,12 +367,12 @@
       .maxstack  8
       			ldc.i4 -100
       			ldc.i4 201
-      			newobj      instance void class GCTest.Test[-100...100]::.ctor(int32, int32)
-      IL_0007:  stsfld     class GCTest.Test[-100...100] GCTest.Test::arr
+      			newobj      instance void class GCTest_arrres_il.Test[-100...100]::.ctor(int32, int32)
+      IL_0007:  stsfld     class GCTest_arrres_il.Test[-100...100] GCTest_arrres_il.Test::arr
       IL_000c:  ret
     } // end of method 'Test::.cctor'
 
   } // end of class 'Test'
 
-} // end of namespace 'GCTest'
+} // end of namespace 'GCTest_arrres_il'
 

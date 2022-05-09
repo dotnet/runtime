@@ -18,9 +18,13 @@ namespace System.ComponentModel.Composition.AttributedModel
 
         private IDictionary<string, object?>? _metadata;
 
-        public AttributedExportDefinition(AttributedPartCreationInfo partCreationInfo!!, MemberInfo member!!, ExportAttribute exportAttribute!!, Type? typeIdentityType, string contractName)
+        public AttributedExportDefinition(AttributedPartCreationInfo partCreationInfo, MemberInfo member, ExportAttribute exportAttribute, Type? typeIdentityType, string contractName)
             : base(contractName, (IDictionary<string, object?>?)null)
         {
+            ArgumentNullException.ThrowIfNull(partCreationInfo);
+            ArgumentNullException.ThrowIfNull(member);
+            ArgumentNullException.ThrowIfNull(exportAttribute);
+
             _partCreationInfo = partCreationInfo;
             _member = member;
             _exportAttribute = exportAttribute;

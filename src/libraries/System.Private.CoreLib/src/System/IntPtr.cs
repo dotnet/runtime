@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -75,8 +76,10 @@ namespace System
             _value = (void*)l;
         }
 
-        unsafe void ISerializable.GetObjectData(SerializationInfo info!!, StreamingContext context)
+        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
+            ArgumentNullException.ThrowIfNull(info);
+
             info.AddValue("value", ToInt64());
         }
 
@@ -176,14 +179,14 @@ namespace System
         [NonVersionable]
         public unsafe void* ToPointer() => _value;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
         public static IntPtr MaxValue
         {
             [NonVersionable]
             get => (IntPtr)nint_t.MaxValue;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
         public static IntPtr MinValue
         {
             [NonVersionable]
@@ -213,11 +216,11 @@ namespace System
         public unsafe bool Equals(IntPtr other) => (nint_t)_value == (nint_t)other;
 
         public unsafe override string ToString() => ((nint_t)_value).ToString();
-        public unsafe string ToString(string? format) => ((nint_t)_value).ToString(format);
+        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ((nint_t)_value).ToString(format);
         public unsafe string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
-        public unsafe string ToString(string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
+        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
 
-        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
         public static IntPtr Parse(string s) => (IntPtr)nint_t.Parse(s);
@@ -270,8 +273,8 @@ namespace System
         /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
         static nint IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right) => left + right;
 
-        // /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
-        // static nint IAdditionOperators<nint, nint, nint>.operator checked +(nint left, nint right) => checked(left + right);
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static nint IAdditionOperators<nint, nint, nint>.operator checked +(nint left, nint right) => checked(left + right);
 
         //
         // IAdditiveIdentity
@@ -284,68 +287,57 @@ namespace System
         // IBinaryInteger
         //
 
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
+        public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) => Math.DivRem(left, right);
+
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
-        static nint IBinaryInteger<nint>.LeadingZeroCount(nint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.LeadingZeroCount((ulong)value);
-            }
-            else
-            {
-                return BitOperations.LeadingZeroCount((uint)value);
-            }
-        }
+        public static nint LeadingZeroCount(nint value) => BitOperations.LeadingZeroCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
-        static nint IBinaryInteger<nint>.PopCount(nint value)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.PopCount((ulong)value);
-            }
-            else
-            {
-                return BitOperations.PopCount((uint)value);
-            }
-        }
+        public static nint PopCount(nint value) => BitOperations.PopCount((nuint)value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
-        static nint IBinaryInteger<nint>.RotateLeft(nint value, int rotateAmount)
-        {
-            if (Environment.Is64BitProcess)
-            {
-                return (nint)BitOperations.RotateLeft((ulong)value, rotateAmount);
-            }
-            else
-            {
-                return (nint)BitOperations.RotateLeft((uint)value, rotateAmount);
-            }
-        }
+        public static nint RotateLeft(nint value, int rotateAmount) => (nint)BitOperations.RotateLeft((nuint)value, rotateAmount);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
-        static nint IBinaryInteger<nint>.RotateRight(nint value, int rotateAmount)
+        public static nint RotateRight(nint value, int rotateAmount) => (nint)BitOperations.RotateRight((nuint)value, rotateAmount);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
+        public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
+        unsafe long IBinaryInteger<nint>.GetShortestBitLength()
         {
-            if (Environment.Is64BitProcess)
+            nint value = (nint)_value;
+
+            if (value >= 0)
             {
-                return (nint)BitOperations.RotateRight((ulong)value, rotateAmount);
+                return (sizeof(nint) * 8) - BitOperations.LeadingZeroCount((nuint)value);
             }
             else
             {
-                return (nint)BitOperations.RotateRight((uint)value, rotateAmount);
+                return (sizeof(nint) * 8) + 1 - BitOperations.LeadingZeroCount((nuint)(~value));
             }
         }
 
-        /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
-        static nint IBinaryInteger<nint>.TrailingZeroCount(nint value)
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
+        unsafe int IBinaryInteger<nint>.GetByteCount() => sizeof(nint);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
+        unsafe bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (Environment.Is64BitProcess)
+            if (destination.Length >= sizeof(nint))
             {
-                return BitOperations.TrailingZeroCount((ulong)value);
+                nint value = BitConverter.IsLittleEndian ? (nint)_value : (nint)BinaryPrimitives.ReverseEndianness((nint)_value);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(nint);
+                return true;
             }
             else
             {
-                return BitOperations.TrailingZeroCount((uint)value);
+                bytesWritten = 0;
+                return false;
             }
         }
 
@@ -354,24 +346,16 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
-        static bool IBinaryNumber<nint>.IsPow2(nint value) => BitOperations.IsPow2(value);
+        public static bool IsPow2(nint value) => BitOperations.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
-        static nint IBinaryNumber<nint>.Log2(nint value)
+        public static nint Log2(nint value)
         {
             if (value < 0)
             {
                 ThrowHelper.ThrowValueArgumentOutOfRange_NeedNonNegNumException();
             }
-
-            if (Environment.Is64BitProcess)
-            {
-                return BitOperations.Log2((ulong)value);
-            }
-            else
-            {
-                return BitOperations.Log2((uint)value);
-            }
+            return BitOperations.Log2((nuint)value);
         }
 
         //
@@ -413,8 +397,8 @@ namespace System
         /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
         static nint IDecrementOperators<nint>.operator --(nint value) => --value;
 
-        // /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
-        // static nint IDecrementOperators<nint>.operator checked --(nint value) => checked(--value);
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static nint IDecrementOperators<nint>.operator checked --(nint value) => checked(--value);
 
         //
         // IDivisionOperators
@@ -423,8 +407,8 @@ namespace System
         /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_Division(TSelf, TOther)" />
         static nint IDivisionOperators<nint, nint, nint>.operator /(nint left, nint right) => left / right;
 
-        // /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
-        // static nint IDivisionOperators<nint, nint, nint>.operator checked /(nint left, nint right) => checked(left / right);
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static nint IDivisionOperators<nint, nint, nint>.operator checked /(nint left, nint right) => left / right;
 
         //
         // IIncrementOperators
@@ -433,8 +417,8 @@ namespace System
         /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
         static nint IIncrementOperators<nint>.operator ++(nint value) => ++value;
 
-        // /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
-        // static nint IIncrementOperators<nint>.operator checked ++(nint value) => checked(++value);
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static nint IIncrementOperators<nint>.operator checked ++(nint value) => checked(++value);
 
         //
         // IMinMaxValue
@@ -467,28 +451,46 @@ namespace System
         /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_Multiply(TSelf, TOther)" />
         static nint IMultiplyOperators<nint, nint, nint>.operator *(nint left, nint right) => left * right;
 
-        // /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
-        // static nint IMultiplyOperators<nint, nint, nint>.operator checked *(nint left, nint right) => checked(left * right);
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        static nint IMultiplyOperators<nint, nint, nint>.operator checked *(nint left, nint right) => checked(left * right);
 
         //
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.One" />
-        static nint INumber<nint>.One => 1;
-
-        /// <inheritdoc cref="INumber{TSelf}.Zero" />
-        static nint INumber<nint>.Zero => 0;
-
         /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        static nint INumber<nint>.Abs(nint value) => Math.Abs(value);
+        public static nint Abs(nint value) => Math.Abs(value);
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        static nint INumber<nint>.Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
+        public static nint Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
 
-        /// <inheritdoc cref="INumber{TSelf}.Create{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
+        public static nint CopySign(nint value, nint sign)
+        {
+            nint absValue = value;
+
+            if (absValue < 0)
+            {
+                absValue = -absValue;
+            }
+
+            if (sign >= 0)
+            {
+                if (absValue < 0)
+                {
+                    Math.ThrowNegateTwosCompOverflow();
+                }
+
+                return absValue;
+            }
+
+            return -absValue;
+        }
+
+        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.Create<TOther>(TOther value)
+        public static nint CreateChecked<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -555,7 +557,8 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateSaturating<TOther>(TOther value)
+        public static nint CreateSaturating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -633,7 +636,8 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static nint INumber<nint>.CreateTruncating<TOther>(TOther value)
+        public static nint CreateTruncating<TOther>(TOther value)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -698,21 +702,82 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.DivRem(TSelf, TSelf)" />
-        static (nint Quotient, nint Remainder) INumber<nint>.DivRem(nint left, nint right) => Math.DivRem(left, right);
+        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        public static bool IsNegative(nint value) => value < 0;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        static nint INumber<nint>.Max(nint x, nint y) => Math.Max(x, y);
+        public static nint Max(nint x, nint y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static nint MaxMagnitude(nint x, nint y)
+        {
+            nint absX = x;
+
+            if (absX < 0)
+            {
+                absX = -absX;
+
+                if (absX < 0)
+                {
+                    return x;
+                }
+            }
+
+            nint absY = y;
+
+            if (absY < 0)
+            {
+                absY = -absY;
+
+                if (absY < 0)
+                {
+                    return y;
+                }
+            }
+
+            return (absX >= absY) ? x : y;
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        static nint INumber<nint>.Min(nint x, nint y) => Math.Min(x, y);
+        public static nint Min(nint x, nint y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static nint MinMagnitude(nint x, nint y)
+        {
+            nint absX = x;
+
+            if (absX < 0)
+            {
+                absX = -absX;
+
+                if (absX < 0)
+                {
+                    return y;
+                }
+            }
+
+            nint absY = y;
+
+            if (absY < 0)
+            {
+                absY = -absY;
+
+                if (absY < 0)
+                {
+                    return x;
+                }
+            }
+
+            return (absX <= absY) ? x : y;
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static nint INumber<nint>.Sign(nint value) => Math.Sign(value);
+        public static int Sign(nint value) => Math.Sign(value);
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<nint>.TryCreate<TOther>(TOther value, out nint result)
+        public static bool TryCreate<TOther>(TOther value, out nint result)
+            where TOther : INumber<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -849,17 +914,27 @@ namespace System
         }
 
         //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static nint INumberBase<nint>.One => 1;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static nint INumberBase<nint>.Zero => 0;
+
+        //
         // IShiftOperators
         //
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_LeftShift(TSelf, int)" />
-        static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount) => value << (int)shiftAmount;
+        static nint IShiftOperators<nint, nint>.operator <<(nint value, int shiftAmount) => value << shiftAmount;
 
         /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_RightShift(TSelf, int)" />
-        static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount) => value >> (int)shiftAmount;
+        static nint IShiftOperators<nint, nint>.operator >>(nint value, int shiftAmount) => value >> shiftAmount;
 
-        // /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
-        // static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount) => (nint)((nuint)value >> (int)shiftAmount);
+        /// <inheritdoc cref="IShiftOperators{TSelf, TResult}.op_UnsignedRightShift(TSelf, int)" />
+        static nint IShiftOperators<nint, nint>.operator >>>(nint value, int shiftAmount) => value >>> shiftAmount;
 
         //
         // ISignedNumber
@@ -875,8 +950,8 @@ namespace System
         /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_Subtraction(TSelf, TOther)" />
         static nint ISubtractionOperators<nint, nint, nint>.operator -(nint left, nint right) => left - right;
 
-        // /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
-        // static nint ISubtractionOperators<nint, nint, nint>.operator checked -(nint left, nint right) => checked(left - right);
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static nint ISubtractionOperators<nint, nint, nint>.operator checked -(nint left, nint right) => checked(left - right);
 
         //
         // IUnaryNegationOperators
@@ -885,8 +960,8 @@ namespace System
         /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_UnaryNegation(TSelf)" />
         static nint IUnaryNegationOperators<nint, nint>.operator -(nint value) => -value;
 
-        // /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
-        // static nint IUnaryNegationOperators<nint, nint>.operator checked -(nint value) => checked(-value);
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static nint IUnaryNegationOperators<nint, nint>.operator checked -(nint value) => checked(-value);
 
         //
         // IUnaryPlusOperators
@@ -894,8 +969,5 @@ namespace System
 
         /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
         static nint IUnaryPlusOperators<nint, nint>.operator +(nint value) => +value;
-
-        // /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_CheckedUnaryPlus(TSelf)" />
-        // static nint IUnaryPlusOperators<nint, nint>.operator checked +(nint value) => checked(+value);
     }
 }

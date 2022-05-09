@@ -6,12 +6,13 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using BrowserDebugProxy;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
 namespace Microsoft.WebAssembly.Diagnostics;
 
-internal class JObjectValueCreator
+internal sealed class JObjectValueCreator
 {
     private Dictionary<int, ValueTypeClass> _valueTypes = new();
     private Dictionary<int, PointerValue> _pointerValues = new();
@@ -81,9 +82,15 @@ internal class JObjectValueCreator
                           className: className,
                           subtype: "null");
 
-    public async Task<JObject> ReadAsVariableValue(MonoBinaryReader retDebuggerCmdReader, string name, bool isOwn, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
+    public async Task<JObject> ReadAsVariableValue(
+        MonoBinaryReader retDebuggerCmdReader,
+        string name,
+        CancellationToken token,
+        bool isOwn = false,
+        int typeIdForObject = -1,
+        bool forDebuggerDisplayAttribute = false)
     {
-        long initialPos = retDebuggerCmdReader == null ? 0 : retDebuggerCmdReader.BaseStream.Position;
+        long initialPos =  /*retDebuggerCmdReader == null ? 0 : */retDebuggerCmdReader.BaseStream.Position;
         ElementType etype = (ElementType)retDebuggerCmdReader.ReadByte();
         JObject ret = null;
         switch (etype)
@@ -184,12 +191,12 @@ internal class JObjectValueCreator
             case ElementType.Class:
             case ElementType.Object:
                 {
-                    ret = await ReadAsObjectValue(retDebuggerCmdReader, typeIdFromAttribute, forDebuggerDisplayAttribute, token);
+                    ret = await ReadAsObjectValue(retDebuggerCmdReader, typeIdForObject, forDebuggerDisplayAttribute, token);
                     break;
                 }
             case ElementType.ValueType:
                 {
-                    ret = await ReadAsValueType(retDebuggerCmdReader, name, initialPos, token);
+                    ret = await ReadAsValueType(retDebuggerCmdReader, name, initialPos, forDebuggerDisplayAttribute, token);
                     break;
                 }
             case (ElementType)ValueTypeId.Null:
@@ -258,11 +265,12 @@ internal class JObjectValueCreator
     private async Task<JObject> ReadAsObjectValue(MonoBinaryReader retDebuggerCmdReader, int typeIdFromAttribute, bool forDebuggerDisplayAttribute, CancellationToken token)
     {
         var objectId = retDebuggerCmdReader.ReadInt32();
-        var type_id = await _sdbAgent.GetTypeIdFromObject(objectId, false, token);
+        var type_id = await _sdbAgent.GetTypeIdsForObject(objectId, false, token);
         string className = await _sdbAgent.GetTypeName(type_id[0], token);
         string debuggerDisplayAttribute = null;
         if (!forDebuggerDisplayAttribute)
-            debuggerDisplayAttribute = await _sdbAgent.GetValueFromDebuggerDisplayAttribute(objectId, type_id[0], token);
+            debuggerDisplayAttribute = await _sdbAgent.GetValueFromDebuggerDisplayAttribute(
+                new DotnetObjectId("object", objectId), type_id[0], token);
         var description = className.ToString();
 
         if (debuggerDisplayAttribute != null)
@@ -284,81 +292,59 @@ internal class JObjectValueCreator
         return Create<object>(value: null, type: "object", description: description, className: className, objectId: $"dotnet:object:{objectId}");
     }
 
-    public async Task<JObject> ReadAsValueType(MonoBinaryReader retDebuggerCmdReader, string name, long initialPos, CancellationToken token)
+    public async Task<JObject> ReadAsValueType(
+        MonoBinaryReader retDebuggerCmdReader,
+        string name,
+        long initialPos,
+        bool forDebuggerDisplayAttribute,
+        CancellationToken token)
     {
-        JObject fieldValueType = null;
-        var isEnum = retDebuggerCmdReader.ReadByte();
+        // FIXME: debugger proxy
+        var isEnum = retDebuggerCmdReader.ReadByte() == 1;
         var isBoxed = retDebuggerCmdReader.ReadByte() == 1;
         var typeId = retDebuggerCmdReader.ReadInt32();
         var className = await _sdbAgent.GetTypeName(typeId, token);
-        var description = className;
-        var numFields = retDebuggerCmdReader.ReadInt32();
-        var fields = await _sdbAgent.GetTypeFields(typeId, token);
-        JArray valueTypeFields = new JArray();
-        if (className.IndexOf("System.Nullable<") == 0) //should we call something on debugger-agent to check???
+        var numValues = retDebuggerCmdReader.ReadInt32();
+
+        if (className.IndexOf("System.Nullable<", StringComparison.Ordinal) == 0) //should we call something on debugger-agent to check???
         {
             retDebuggerCmdReader.ReadByte(); //ignoring the boolean type
             var isNull = retDebuggerCmdReader.ReadInt32();
-            var value = await ReadAsVariableValue(retDebuggerCmdReader, name, false, -1, false, token);
+
+            // Read the value, even if isNull==true, to correctly advance the reader
+            var value = await ReadAsVariableValue(retDebuggerCmdReader, name, token);
             if (isNull != 0)
                 return value;
             else
                 return Create<object>(null, "object", className, className, subtype: "null", isValueType: true);
         }
-        for (int i = 0; i < numFields; i++)
+        if (isBoxed && numValues == 1)
         {
-            fieldValueType = await ReadAsVariableValue(retDebuggerCmdReader, fields.ElementAt(i).Name, true, fields.ElementAt(i).TypeId, false, token);
-            valueTypeFields.Add(fieldValueType);
+            if (MonoSDBHelper.IsPrimitiveType(className))
+            {
+                return await ReadAsVariableValue(retDebuggerCmdReader, name: null, token);
+            }
         }
 
-        long endPos = retDebuggerCmdReader.BaseStream.Position;
-        var valueTypeId = MonoSDBHelper.GetNextDebuggerObjectId();
-
-        retDebuggerCmdReader.BaseStream.Position = initialPos;
-        byte[] valueTypeBuffer = new byte[endPos - initialPos];
-        retDebuggerCmdReader.Read(valueTypeBuffer, 0, (int)(endPos - initialPos));
-        retDebuggerCmdReader.BaseStream.Position = endPos;
-        _valueTypes[valueTypeId] = new ValueTypeClass(name, valueTypeBuffer, valueTypeFields, typeId, AutoExpandable(className), valueTypeId);
-        if (AutoInvokeToString(className) || isEnum == 1)
-        {
-            int methodId = await _sdbAgent.GetMethodIdByName(typeId, "ToString", token);
-            var retMethod = await _sdbAgent.InvokeMethod(valueTypeBuffer, methodId, "methodRet", token);
-            description = retMethod["value"]?["value"].Value<string>();
-            if (className.Equals("System.Guid"))
-                description = description.ToUpper(); //to keep the old behavior
-        }
-        else if (isBoxed && numFields == 1)
-        {
-            return fieldValueType;
-        }
-        return Create<string>(value: null,
-                              type: "object",
-                              description: description,
-                              className: className,
-                              objectId: $"dotnet:valuetype:{valueTypeId}",
-                              isValueType: true,
-                              isEnum: isEnum == 1);
-
-        static bool AutoExpandable(string className)
-            => className is "System.DateTime" or
-                "System.DateTimeOffset" or
-                "System.TimeSpan";
-
-        static bool AutoInvokeToString(string className)
-            => className is "System.DateTime" or
-                "System.DateTimeOffset" or
-                "System.TimeSpan" or
-                "System.Decimal" or
-                "System.Guid";
+        ValueTypeClass valueType = await ValueTypeClass.CreateFromReader(
+                                                    _sdbAgent,
+                                                    retDebuggerCmdReader,
+                                                    initialPos,
+                                                    className,
+                                                    typeId,
+                                                    numValues,
+                                                    isEnum,
+                                                    token);
+        _valueTypes[valueType.Id.Value] = valueType;
+        return await valueType.ToJObject(_sdbAgent, forDebuggerDisplayAttribute, token);
     }
-
     public void ClearCache()
     {
         _valueTypes = new Dictionary<int, ValueTypeClass>();
         _pointerValues = new Dictionary<int, PointerValue>();
     }
 
-    public ValueTypeClass GetValueTypeById(int valueTypeId) => _valueTypes.TryGetValue(valueTypeId, out ValueTypeClass vt) ? vt : null;
+    public bool TryGetValueTypeById(int valueTypeId, out ValueTypeClass vt) => _valueTypes.TryGetValue(valueTypeId, out vt);
     public PointerValue GetPointerValue(int pointerId) => _pointerValues.TryGetValue(pointerId, out PointerValue pv) ? pv : null;
 
     private static JObject CreateJObjectForNumber<T>(T value) => Create(value, "number", value.ToString(), writable: true);

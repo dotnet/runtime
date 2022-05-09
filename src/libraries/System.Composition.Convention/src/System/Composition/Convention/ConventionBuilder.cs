@@ -45,8 +45,13 @@ namespace System.Composition.Convention
         /// </summary>
         /// <param name="type">The type from which matching types derive.</param>
         /// <returns>A <see cref="PartConventionBuilder"/> that must be used to specify the rule.</returns>
-        public PartConventionBuilder ForTypesDerivedFrom(Type type!!)
+        public PartConventionBuilder ForTypesDerivedFrom(Type type)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             var partBuilder = new PartConventionBuilder((t) => IsDescendentOf(t, type));
             _conventions.Add(partBuilder);
             return partBuilder;
@@ -69,8 +74,13 @@ namespace System.Composition.Convention
         /// </summary>
         /// <param name="type">The type to which the rule applies.</param>
         /// <returns>A <see cref="PartConventionBuilder"/> that must be used to specify the rule.</returns>
-        public PartConventionBuilder ForType(Type type!!)
+        public PartConventionBuilder ForType(Type type)
         {
+            if (type is null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
             var partBuilder = new PartConventionBuilder((t) => t == type);
             _conventions.Add(partBuilder);
             return partBuilder;
@@ -83,8 +93,13 @@ namespace System.Composition.Convention
         /// <param name="typeFilter">A predicate that selects matching types.</param>
         /// <typeparam name="T">The type to which the rule applies.</typeparam>
         /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
-        public PartConventionBuilder<T> ForTypesMatching<T>(Predicate<Type> typeFilter!!)
+        public PartConventionBuilder<T> ForTypesMatching<T>(Predicate<Type> typeFilter)
         {
+            if (typeFilter is null)
+            {
+                throw new ArgumentNullException(nameof(typeFilter));
+            }
+
             var partBuilder = new PartConventionBuilder<T>(typeFilter);
             _conventions.Add(partBuilder);
             return partBuilder;
@@ -96,8 +111,13 @@ namespace System.Composition.Convention
         /// </summary>
         /// <param name="typeFilter">A predicate that selects matching types.</param>
         /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
-        public PartConventionBuilder ForTypesMatching(Predicate<Type> typeFilter!!)
+        public PartConventionBuilder ForTypesMatching(Predicate<Type> typeFilter)
         {
+            if (typeFilter is null)
+            {
+                throw new ArgumentNullException(nameof(typeFilter));
+            }
+
             var partBuilder = new PartConventionBuilder(typeFilter);
             _conventions.Add(partBuilder);
             return partBuilder;
@@ -136,8 +156,13 @@ namespace System.Composition.Convention
         /// <param name="reflectedType">The reflectedType the type used to retrieve the memberInfo.</param>
         /// <param name="member">The member to supply attributes for.</param>
         /// <returns>The list of applied attributes.</returns>
-        public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.MemberInfo member!!)
+        public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.MemberInfo member)
         {
+            if (member is null)
+            {
+                throw new ArgumentNullException(nameof(member));
+            }
+
             // Now edit the attributes returned from the base type
             List<Attribute> cachedAttributes = null;
             var typeInfo = member as TypeInfo;
@@ -271,8 +296,13 @@ namespace System.Composition.Convention
         /// <param name="reflectedType">The reflectedType the type used to retrieve the parameterInfo.</param>
         /// <param name="parameter">The parameter to supply attributes for.</param>
         /// <returns>The list of applied attributes.</returns>
-        public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.ParameterInfo parameter!!)
+        public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.ParameterInfo parameter)
         {
+            if (parameter is null)
+            {
+                throw new ArgumentNullException(nameof(parameter));
+            }
+
             IEnumerable<Attribute> attributes = parameter.GetCustomAttributes<Attribute>(false);
             List<Attribute> cachedAttributes = ReadParameterCustomAttributes(reflectedType, parameter);
             return cachedAttributes == null ? attributes : attributes.Concat(cachedAttributes);

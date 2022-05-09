@@ -382,8 +382,9 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
 #endif //0
 
     AppDomain::AssemblyIterator i;
-    // Iterate through every loader allocator, marking as we go
     {
+        // Iterate through every loader allocator, marking as we go
+        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
         CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
 
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
@@ -405,17 +406,11 @@ LoaderAllocator * LoaderAllocator::GCLoaderAllocators_RemoveAssemblies(AppDomain
                 }
             }
         }
-    }
 
-    // Iterate through every loader allocator, unmarking marked loaderallocators, and
-    // build a free list of unmarked ones
-    {
-        CrstHolder chLoaderAllocatorReferencesLock(pAppDomain->GetLoaderAllocatorReferencesLock());
-        CrstHolder chAssemblyListLock(pAppDomain->GetAssemblyListLock());
-
+        // Iterate through every loader allocator, unmarking marked loaderallocators, and
+        // build a free list of unmarked ones
         i = pAppDomain->IterateAssembliesEx((AssemblyIterationFlags)(
             kIncludeExecution | kIncludeLoaded | kIncludeCollected));
-        CollectibleAssemblyHolder<DomainAssembly *> pDomainAssembly;
 
         while (i.Next_Unlocked(pDomainAssembly.This()))
         {
@@ -576,6 +571,10 @@ void LoaderAllocator::GCLoaderAllocators(LoaderAllocator* pOriginalLoaderAllocat
         pDomainLoaderAllocatorDestroyIterator->m_pFirstDomainAssemblyFromSameALCToDelete = NULL;
 
         pDomainLoaderAllocatorDestroyIterator->ReleaseManagedAssemblyLoadContext();
+
+        // The native objects in dependent handles may refer to the virtual call stub manager's heaps, so clear the dependent
+        // handles first
+        pDomainLoaderAllocatorDestroyIterator->CleanupDependentHandlesToNativeObjects();
 
         // The following code was previously happening on delete ~DomainAssembly->Terminate
         // We are moving this part here in order to make sure that we can unload a LoaderAllocator
@@ -1681,6 +1680,11 @@ void AssemblyLoaderAllocator::SetCollectible()
 void AssemblyLoaderAllocator::Init(AppDomain* pAppDomain)
 {
     m_Id.Init();
+
+    // This is CRST_UNSAFE_ANYMODE to enable registering/unregistering dependent handles to native objects without changing the
+    // GC mode, in case the caller requires that
+    m_dependentHandleToNativeObjectSetCrst.Init(CrstLeafLock, CRST_UNSAFE_ANYMODE);
+
     LoaderAllocator::Init((BaseDomain *)pAppDomain);
     if (IsCollectible())
     {
@@ -1873,6 +1877,70 @@ void AssemblyLoaderAllocator::CleanupHandles()
     {
         HandleCleanupListItem * pItem = m_handleCleanupList.RemoveHead();
         DestroyTypedHandle(pItem->m_handle);
+    }
+}
+
+void AssemblyLoaderAllocator::RegisterDependentHandleToNativeObjectForCleanup(LADependentHandleToNativeObject *dependentHandle)
+{
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(dependentHandle != nullptr);
+
+    CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
+
+    _ASSERTE(m_dependentHandleToNativeObjectSet.Lookup(dependentHandle) == NULL);
+    m_dependentHandleToNativeObjectSet.Add(dependentHandle);
+}
+
+void AssemblyLoaderAllocator::UnregisterDependentHandleToNativeObjectFromCleanup(LADependentHandleToNativeObject *dependentHandle)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_ANY;
+    }
+    CONTRACTL_END;
+
+    _ASSERTE(dependentHandle != nullptr);
+
+    CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
+
+    _ASSERTE(m_dependentHandleToNativeObjectSet.Lookup(dependentHandle) != NULL);
+    m_dependentHandleToNativeObjectSet.Remove(dependentHandle);
+}
+
+void AssemblyLoaderAllocator::CleanupDependentHandlesToNativeObjects()
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_PREEMPTIVE;
+    }
+    CONTRACTL_END;
+
+    // Locks under which dependent handles may be used must all be taken here to ensure that a thread using a dependent handle
+    // would either observe it cleared, or that the dependent object remains valid under those locks. In particular, any locks
+    // used to synchronize uses of CrossLoaderAllocatorHash instances must also be taken here.
+    CrstHolder jitInlineTrackingMapLockHolder(JITInlineTrackingMap::GetMapCrst());
+    MethodDescBackpatchInfoTracker::ConditionalLockHolder slotBackpatchLockHolder;
+
+    CrstHolder setLockHolder(&m_dependentHandleToNativeObjectSetCrst);
+
+    for (DependentHandleToNativeObjectSet::Iterator it = m_dependentHandleToNativeObjectSet.Begin(),
+            itEnd = m_dependentHandleToNativeObjectSet.End();
+        it != itEnd;
+        ++it)
+    {
+        LADependentHandleToNativeObject *dependentHandle = *it;
+        dependentHandle->Clear();
     }
 }
 

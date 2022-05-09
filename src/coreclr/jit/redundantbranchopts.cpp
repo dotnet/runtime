@@ -107,11 +107,13 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     // Walk up the dom tree and see if any dominating block has branched on
     // exactly this tree's VN...
     //
-    BasicBlock*    prevBlock  = block;
-    BasicBlock*    domBlock   = block->bbIDom;
-    int            relopValue = -1;
-    unsigned       matchCount = 0;
-    const unsigned matchLimit = 4;
+    BasicBlock*    prevBlock   = block;
+    BasicBlock*    domBlock    = block->bbIDom;
+    int            relopValue  = -1;
+    ValueNum       treeExcVN   = ValueNumStore::NoVN;
+    ValueNum       domCmpExcVN = ValueNumStore::NoVN;
+    unsigned       matchCount  = 0;
+    const unsigned matchLimit  = 4;
 
     if (domBlock == nullptr)
     {
@@ -141,15 +143,17 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 //
                 // Look for an exact match and also try the various swapped/reversed forms.
                 //
-                const ValueNum                  treeVN          = tree->GetVN(VNK_Liberal);
-                const ValueNum                  domCmpVN        = domCmpTree->GetVN(VNK_Liberal);
+                ValueNum treeNormVN;
+                vnStore->VNUnpackExc(tree->GetVN(VNK_Liberal), &treeNormVN, &treeExcVN);
+                ValueNum domCmpNormVN;
+                vnStore->VNUnpackExc(domCmpTree->GetVN(VNK_Liberal), &domCmpNormVN, &domCmpExcVN);
                 ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
                 bool                            matched         = false;
 
                 for (auto vnRelation : vnRelations)
                 {
-                    const ValueNum relatedVN = vnStore->GetRelatedRelop(domCmpVN, vnRelation);
-                    if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == treeVN))
+                    const ValueNum relatedVN = vnStore->GetRelatedRelop(domCmpNormVN, vnRelation);
+                    if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == treeNormVN))
                     {
                         vnRelationMatch = vnRelation;
                         matched         = true;
@@ -258,34 +262,41 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
         return false;
     }
 
-    // Bail out if tree is has certain side effects
+    // Be conservative if there is an exception effect and we're in an EH region
+    // as we might not model the full extent of EH flow.
     //
-    // Note we really shouldn't get here if the tree has non-exception effects,
-    // as they should have impacted the value number.
+    if (((tree->gtFlags & GTF_EXCEPT) != 0) && block->hasTryIndex())
+    {
+        JITDUMP("Current relop has exception side effect and is in a try, so we won't optimize\n");
+        return false;
+    }
+
+    // Handle the side effects: for exceptions we can know whether we can drop them using the exception sets.
+    // Other side effects we always leave around (the unused tree will be appropriately transformed by morph).
     //
+    bool keepTreeForSideEffects = false;
     if ((tree->gtFlags & GTF_SIDE_EFFECT) != 0)
     {
-        // Bail if there is a non-exception effect.
-        //
-        if ((tree->gtFlags & GTF_SIDE_EFFECT) != GTF_EXCEPT)
-        {
-            JITDUMP("Current relop has non-exception side effects, so we won't optimize\n");
-            return false;
-        }
+        keepTreeForSideEffects = true;
 
-        // Be conservative if there is an exception effect and we're in an EH region
-        // as we might not model the full extent of EH flow.
-        //
-        if (block->hasTryIndex())
+        if (((tree->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) && vnStore->VNExcIsSubset(domCmpExcVN, treeExcVN))
         {
-            JITDUMP("Current relop has exception side effect and is in a try, so we won't optimize\n");
-            return false;
+            keepTreeForSideEffects = false;
         }
     }
 
-    JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
+    if (keepTreeForSideEffects)
+    {
+        JITDUMP("Current relop has side effects, keeping it, unused\n");
+        GenTree* relopComma       = gtNewOperNode(GT_COMMA, TYP_INT, tree, gtNewIconNode(relopValue));
+        jumpTree->AsUnOp()->gtOp1 = relopComma;
+    }
+    else
+    {
+        tree->BashToConst(relopValue);
+    }
 
-    tree->BashToConst(relopValue);
+    JITDUMP("\nRedundant branch opt in " FMT_BB ":\n", block->bbNum);
 
     fgMorphBlockStmt(block, stmt DEBUGARG(__FUNCTION__));
     return true;
