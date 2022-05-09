@@ -30,11 +30,7 @@ jobs:
     name: ${{ format('format_{0}{1}_{2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     displayName: ${{ format('Formatting {0}{1} {2}', parameters.osGroup, parameters.osSubgroup, parameters.archType) }}
     helixType: 'format'
-    ${{ if eq(parameters.osGroup, 'windows') }}:
-      pool: 
-        vmImage: 'windows-2019'
-    ${{ if ne(parameters.osGroup, 'windows') }}:
-      pool: ${{ parameters.pool }}
+    pool: ${{ parameters.pool }}
     variables: ${{ parameters.variables }}
     condition: ${{ parameters.condition }}
     steps:
