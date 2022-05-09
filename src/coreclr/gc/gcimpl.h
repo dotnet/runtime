@@ -182,8 +182,7 @@ public:
                        uint64_t* pauseInfoRaw,
                        int kind);
 
-    // AndrewTodo: Does the order of methods in this interface matters?
-    uint64_t GetTotalPauseDuration();
+    int64_t GetTotalPauseDuration();
 
     uint32_t GetMemoryLoad();
 

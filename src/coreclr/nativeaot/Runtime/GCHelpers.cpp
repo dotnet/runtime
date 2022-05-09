@@ -342,5 +342,5 @@ EXTERN_C REDHAWK_API void RhAllocateNewObject(MethodTable* pEEType, uint32_t fla
 
 COOP_PINVOKE_HELPER(int64_t, RhGetTotalPauseDuration, ())
 {
-    return (int64_t)(GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration() * 10);
+    return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
 }

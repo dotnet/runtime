@@ -674,18 +674,13 @@ UINT64   GCInterface::m_remPressure[MEM_PRESSURE_COUNT] = {0, 0, 0, 0};   // his
 // (m_iteration % MEM_PRESSURE_COUNT) is used as an index into m_addPressure and m_remPressure
 UINT     GCInterface::m_iteration = 0;
 
-FCIMPL0(INT64, GCInterface::_GetTotalPauseDuration)
+FCIMPL0(INT64, GCInterface::GetTotalPauseDuration)
 {
     FCALL_CONTRACT;
 
     FC_GC_POLL_NOT_NEEDED();
 
-    // Unsigned to signed conversion happened here
-
-    // GetTotalPauseDuration returned microseconds, but the TimeSpan constructor requires
-    // 100 nanosecond unit.
-    
-    return (int64_t)(GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration() * 10);
+    return GCHeapUtilities::GetGCHeap()->GetTotalPauseDuration();
 }
 FCIMPLEND
 
