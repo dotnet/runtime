@@ -440,17 +440,9 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
 
         if (blkNode->OperIs(GT_STORE_OBJ))
         {
-            if (!blkNode->AsObj()->GetLayout()->HasGCPtr())
+            if (!blkNode->AsObj()->GetLayout()->HasGCPtr() || (isDstAddrLocal && (size <= copyBlockUnrollLimit)))
             {
                 blkNode->SetOper(GT_STORE_BLK);
-            }
-            else if (isDstAddrLocal && (size <= copyBlockUnrollLimit))
-            {
-                // If the size is small enough to unroll then we need to mark the block as non-interruptible
-                // to actually allow unrolling. The generated code does not report GC references loaded in the
-                // temporary register(s) used for copying.
-                blkNode->SetOper(GT_STORE_BLK);
-                blkNode->gtBlkOpGcUnsafe = true;
             }
         }
 
@@ -463,6 +455,17 @@ void Lowering::LowerBlockStore(GenTreeBlk* blkNode)
         else if (blkNode->OperIs(GT_STORE_BLK) && (size <= copyBlockUnrollLimit))
         {
             blkNode->gtBlkOpKind = GenTreeBlk::BlkOpKindUnroll;
+
+            if (!isSrcAddrLocal || !isDstAddrLocal)
+            {
+                // If the size is small enough to unroll then we need to mark the block as non-interruptible
+                // to actually allow unrolling. The generated code does not report GC references loaded in the
+                // temporary register(s) used for copying.
+                // Although marking it here would sometime make blkop gcUnsafe for more scenarios than needed,
+                // it will be less complex if marked in genCodeForCpBlkUnroll() for scenarios that generate
+                // code of GC references.
+                blkNode->gtBlkOpGcUnsafe = true;
+            }
 
             if (src->OperIs(GT_IND))
             {

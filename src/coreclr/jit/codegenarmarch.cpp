@@ -2815,14 +2815,22 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     CopyBlockUnrollHelper helper(srcOffset, dstOffset, size);
     regNumber             srcReg = srcAddrBaseReg;
 
+#ifdef DEBUG
+    bool                  isSrcRegAddrAlignmentKnown = false;
+    bool                  isDstRegAddrAlignmentKnown = false;
+#endif
+    
     if (srcLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &fpBased);
 
-        srcReg = fpBased ? REG_FPBASE : REG_SPBASE;
-
+        srcReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
         helper.SetSrcOffset(baseAddr + srcOffset);
+
+#ifdef DEBUG
+        isSrcRegAddrAlignmentKnown = true;
+#endif
     }
 
     regNumber dstReg = dstAddrBaseReg;
@@ -2832,9 +2840,12 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
-
+        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
         helper.SetDstOffset(baseAddr + dstOffset);
+
+#ifdef DEBUG
+        isDstRegAddrAlignmentKnown = true;
+#endif
     }
 
     bool canEncodeAllLoads  = true;
@@ -2947,6 +2958,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         assert(helper.CanEncodeAllOffsets(REGSIZE_BYTES));
     }
 #endif
+
+    // If one of the src or dst is not local, we will generate code that produce GC references in
+    // in temporary registers and are not reported. For such cases, ensure that the block is marked
+    // with non-interruptible.
+    assert((isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown) || node->gtBlkOpGcUnsafe);
 
     if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
     {
