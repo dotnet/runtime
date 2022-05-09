@@ -615,7 +615,7 @@ namespace System.Text.RegularExpressions
                                 // if (pos > 0...
                                 Ldloc(pos!);
                                 Ldc(0);
-                                Ble(label);
+                                BleFar(label);
 
                                 // ... && inputSpan[pos - 1] != '\n') { ... }
                                 Ldloca(inputSpan);
@@ -625,7 +625,7 @@ namespace System.Text.RegularExpressions
                                 Call(s_spanGetItemMethod);
                                 LdindU2();
                                 Ldc('\n');
-                                Beq(label);
+                                BeqFar(label);
 
                                 // int nextPos = inputSpan.Slice(pos).IndexOf('\n');
                                 Ldloca(inputSpan);
