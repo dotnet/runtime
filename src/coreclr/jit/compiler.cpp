@@ -1938,7 +1938,6 @@ void Compiler::compInit(ArenaAllocator*       pAlloc,
     m_switchDescMap      = nullptr;
     m_blockToEHPreds     = nullptr;
     m_fieldSeqStore      = nullptr;
-    m_zeroOffsetFieldMap = nullptr;
     m_refAnyClass        = nullptr;
     for (MemoryKind memoryKind : allMemoryKinds())
     {

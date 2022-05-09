@@ -1122,25 +1122,14 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 LclVarDsc* srcVarDsc      = m_comp->lvaGetDesc(m_srcLclNum);
                 unsigned   srcFieldLclNum = srcVarDsc->lvFieldLclStart + i;
                 LclVarDsc* srcFieldVarDsc = m_comp->lvaGetDesc(srcFieldLclNum);
-
-                // Have to set the field sequence -- which means we need the field handle.
-                CORINFO_CLASS_HANDLE classHnd = srcVarDsc->GetStructHnd();
-                CORINFO_FIELD_HANDLE fieldHnd =
-                    m_comp->info.compCompHnd->getFieldInClass(classHnd, srcFieldVarDsc->lvFldOrdinal);
-
-                unsigned      srcFieldOffset = m_comp->lvaGetDesc(srcFieldLclNum)->lvFldOffset;
-                var_types     srcType        = srcFieldVarDsc->TypeGet();
-                FieldSeqNode* curFieldSeq    = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd, srcFieldOffset);
+                unsigned   srcFieldOffset = srcFieldVarDsc->lvFldOffset;
+                var_types  srcType        = srcFieldVarDsc->TypeGet();
 
                 if (!m_dstUseLclFld)
                 {
-                    if (srcFieldOffset == 0)
+                    if (srcFieldOffset != 0)
                     {
-                        m_comp->fgAddFieldSeqForZeroOffset(dstAddrClone, curFieldSeq);
-                    }
-                    else
-                    {
-                        GenTree* fieldOffsetNode = m_comp->gtNewIconNode(srcFieldVarDsc->lvFldOffset, curFieldSeq);
+                        GenTree* fieldOffsetNode = m_comp->gtNewIconNode(srcFieldVarDsc->lvFldOffset, TYP_I_IMPL);
                         dstAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, dstAddrClone, fieldOffsetNode);
                     }
 
@@ -1218,14 +1207,8 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     }
                 }
 
-                CORINFO_CLASS_HANDLE classHnd = m_comp->lvaGetDesc(m_dstLclNum)->GetStructHnd();
-                CORINFO_FIELD_HANDLE fieldHnd =
-                    m_comp->info.compCompHnd->getFieldInClass(classHnd,
-                                                              m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOrdinal);
-
-                unsigned      fldOffset   = m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset;
-                var_types     destType    = m_comp->lvaGetDesc(dstFieldLclNum)->lvType;
-                FieldSeqNode* curFieldSeq = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd, fldOffset);
+                unsigned  fldOffset = m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset;
+                var_types destType  = m_comp->lvaGetDesc(dstFieldLclNum)->lvType;
 
                 bool done = false;
                 if (fldOffset == 0)
@@ -1257,15 +1240,12 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     if (!m_srcUseLclFld)
                     {
                         assert(srcAddrClone != nullptr);
-                        if (fldOffset == 0)
+                        if (fldOffset != 0)
                         {
-                            m_comp->fgAddFieldSeqForZeroOffset(srcAddrClone, curFieldSeq);
-                        }
-                        else
-                        {
-                            GenTreeIntCon* fldOffsetNode = m_comp->gtNewIconNode(fldOffset, curFieldSeq);
+                            GenTreeIntCon* fldOffsetNode = m_comp->gtNewIconNode(fldOffset, TYP_I_IMPL);
                             srcAddrClone = m_comp->gtNewOperNode(GT_ADD, TYP_BYREF, srcAddrClone, fldOffsetNode);
                         }
+
                         srcFld = m_comp->gtNewIndir(destType, srcAddrClone);
                     }
                     else

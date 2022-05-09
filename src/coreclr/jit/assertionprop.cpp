@@ -1111,11 +1111,6 @@ void Compiler::optPrintAssertion(AssertionDsc* curAssertion, AssertionIndex asse
                 {
                     printf(".%02u", curAssertion->op1.lcl.ssaNum);
                 }
-                if (curAssertion->op2.zeroOffsetFieldSeq != nullptr)
-                {
-                    printf(" Zero");
-                    gtDispFieldSeq(curAssertion->op2.zeroOffsetFieldSeq);
-                }
                 break;
 
             case O2K_CONST_INT:
@@ -1673,14 +1668,10 @@ AssertionIndex Compiler::optCreateAssertion(GenTree*         op1,
                         goto DONE_ASSERTION; // Don't make an assertion
                     }
 
-                    FieldSeqNode* zeroOffsetFieldSeq = nullptr;
-                    GetZeroOffsetFieldMap()->Lookup(op2, &zeroOffsetFieldSeq);
-
-                    assertion.op2.kind               = O2K_LCLVAR_COPY;
-                    assertion.op2.vn                 = vnStore->VNConservativeNormalValue(op2->gtVNPair);
-                    assertion.op2.lcl.lclNum         = lclNum2;
-                    assertion.op2.lcl.ssaNum         = op2->AsLclVarCommon()->GetSsaNum();
-                    assertion.op2.zeroOffsetFieldSeq = zeroOffsetFieldSeq;
+                    assertion.op2.kind       = O2K_LCLVAR_COPY;
+                    assertion.op2.vn         = vnStore->VNConservativeNormalValue(op2->gtVNPair);
+                    assertion.op2.lcl.lclNum = lclNum2;
+                    assertion.op2.lcl.ssaNum = op2->AsLclVarCommon()->GetSsaNum();
 
                     // Ok everything has been set and the assertion looks good
                     assertion.assertionKind = assertionKind;
@@ -3524,23 +3515,17 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
     }
 
     // Extract the matching lclNum and ssaNum, as well as the field sequence.
-    unsigned      copyLclNum;
-    unsigned      copySsaNum;
-    FieldSeqNode* zeroOffsetFieldSeq;
+    unsigned copyLclNum;
+    unsigned copySsaNum;
     if (op1.lcl.lclNum == lclNum)
     {
-        copyLclNum         = op2.lcl.lclNum;
-        copySsaNum         = op2.lcl.ssaNum;
-        zeroOffsetFieldSeq = op2.zeroOffsetFieldSeq;
+        copyLclNum = op2.lcl.lclNum;
+        copySsaNum = op2.lcl.ssaNum;
     }
     else
     {
-        copyLclNum         = op1.lcl.lclNum;
-        copySsaNum         = op1.lcl.ssaNum;
-        zeroOffsetFieldSeq = nullptr;  // Only the RHS of an assignment can have a FldSeq.
-        assert(optLocalAssertionProp); // Were we to perform replacements in global propagation, that makes copy
-                                       // assertions for control flow ("if (a == b) { ... }"), where both operands
-                                       // could have a FldSeq, we'd need to save it for "op1" too.
+        copyLclNum = op1.lcl.lclNum;
+        copySsaNum = op1.lcl.ssaNum;
     }
 
     if (!optLocalAssertionProp)
@@ -3571,19 +3556,6 @@ GenTree* Compiler::optCopyAssertionProp(AssertionDsc*        curAssertion,
 
     tree->SetLclNum(copyLclNum);
     tree->SetSsaNum(copySsaNum);
-
-    // The sequence we are propagating (if any) represents the inner fields.
-    if (zeroOffsetFieldSeq != nullptr)
-    {
-        FieldSeqNode* outerZeroOffsetFieldSeq = nullptr;
-        if (GetZeroOffsetFieldMap()->Lookup(tree, &outerZeroOffsetFieldSeq))
-        {
-            zeroOffsetFieldSeq = GetFieldSeqStore()->Append(zeroOffsetFieldSeq, outerZeroOffsetFieldSeq);
-            GetZeroOffsetFieldMap()->Remove(tree);
-        }
-
-        fgAddFieldSeqForZeroOffset(tree, zeroOffsetFieldSeq);
-    }
 
 #ifdef DEBUG
     if (verbose)

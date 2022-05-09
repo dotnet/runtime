@@ -2834,7 +2834,6 @@ public:
     unsigned gtDispMultiRegCount(GenTree* tree);
 #endif
     void gtDispRegVal(GenTree* tree);
-    void gtDispZeroFieldSeq(GenTree* tree);
     void gtDispVN(GenTree* tree);
     void gtDispCommonEndLine(GenTree* tree);
 
@@ -4857,7 +4856,6 @@ public:
 
 #ifdef DEBUG
     void fgDebugCheckExceptionSets();
-    void fgDebugCheckValueNumberedTree(GenTree* tree);
 #endif
 
     // These are the current value number for the memory implicit variables while
@@ -7006,11 +7004,7 @@ public:
                 GenTreeFlags iconFlags; // gtFlags
             };
             union {
-                struct
-                {
-                    SsaVar        lcl;
-                    FieldSeqNode* zeroOffsetFieldSeq;
-                };
+                SsaVar        lcl;
                 IntVal        u1;
                 __int64       lconVal;
                 double        dconVal;
@@ -7113,8 +7107,7 @@ public:
 
                 case O2K_LCLVAR_COPY:
                     return (op2.lcl.lclNum == that->op2.lcl.lclNum) &&
-                           (!vnBased || op2.lcl.ssaNum == that->op2.lcl.ssaNum) &&
-                           (op2.zeroOffsetFieldSeq == that->op2.zeroOffsetFieldSeq);
+                           (!vnBased || (op2.lcl.ssaNum == that->op2.lcl.ssaNum));
 
                 case O2K_SUBRANGE:
                     return op2.u2.Equals(that->op2.u2);
@@ -10432,37 +10425,6 @@ public:
     }
 
     typedef JitHashTable<GenTree*, JitPtrKeyFuncs<GenTree>, FieldSeqNode*> NodeToFieldSeqMap;
-
-    // Some nodes of "TYP_BYREF" or "TYP_I_IMPL" actually represent the address of a field within a struct, but since
-    // the offset of the field is zero, there's no "GT_ADD" node.  We normally attach a field sequence to the constant
-    // that is added, but what do we do when that constant is zero, and is thus not present?  We use this mechanism to
-    // attach the field sequence directly to the address node.
-    NodeToFieldSeqMap* m_zeroOffsetFieldMap;
-
-    NodeToFieldSeqMap* GetZeroOffsetFieldMap()
-    {
-        // Don't need to worry about inlining here
-        if (m_zeroOffsetFieldMap == nullptr)
-        {
-            // Create a CompAllocator that labels sub-structure with CMK_ZeroOffsetFieldMap, and use that for
-            // allocation.
-            CompAllocator ialloc(getAllocator(CMK_ZeroOffsetFieldMap));
-            m_zeroOffsetFieldMap = new (ialloc) NodeToFieldSeqMap(ialloc);
-        }
-        return m_zeroOffsetFieldMap;
-    }
-
-    // Requires that "op1" is a node of type "TYP_BYREF" or "TYP_I_IMPL".  We are dereferencing this with the fields in
-    // "fieldSeq", whose offsets are required all to be zero.  Ensures that any field sequence annotation currently on
-    // "op1" or its components is augmented by appending "fieldSeq".  In practice, if "op1" is a GT_LCL_FLD, it has
-    // a field sequence as a member; otherwise, it may be the addition of an a byref and a constant, where the const
-    // has a field sequence -- in this case "fieldSeq" is appended to that of the constant; otherwise, we
-    // record the field sequence using the ZeroOffsetFieldMap described above.
-    //
-    // One exception above is that "op1" is a node of type "TYP_REF" where "op1" is a GT_LCL_VAR.
-    // This happens when System.Object vtable pointer is a regular field at offset 0 in System.Private.CoreLib in
-    // NativeAOT. Such case is handled same as the default case.
-    void fgAddFieldSeqForZeroOffset(GenTree* op1, FieldSeqNode* fieldSeq);
 
     NodeToUnsignedMap* m_memorySsaMap[MemoryKindCount];
 

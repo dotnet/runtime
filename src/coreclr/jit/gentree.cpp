@@ -8674,16 +8674,6 @@ GenTree* Compiler::gtCloneExpr(
 
 DONE:
 
-    // If it has a zero-offset field seq, copy annotation.
-    if (tree->TypeGet() == TYP_BYREF)
-    {
-        FieldSeqNode* fldSeq = nullptr;
-        if (GetZeroOffsetFieldMap()->Lookup(tree, &fldSeq))
-        {
-            fgAddFieldSeqForZeroOffset(copy, fldSeq);
-        }
-    }
-
     copy->gtVNPair = tree->gtVNPair; // A cloned tree gets the orginal's Value number pair
 
     /* Compute the flags for the copied node. Note that we can do this only
@@ -10052,26 +10042,6 @@ void Compiler::gtDispNodeName(GenTree* tree)
 }
 
 //------------------------------------------------------------------------
-// gtDispZeroFieldSeq: If this node has a zero fieldSeq annotation
-//                      then print this Field Sequence
-//
-void Compiler::gtDispZeroFieldSeq(GenTree* tree)
-{
-    NodeToFieldSeqMap* map = GetZeroOffsetFieldMap();
-
-    // THe most common case is having no entries in this map
-    if (map->GetCount() > 0)
-    {
-        FieldSeqNode* fldSeq = nullptr;
-        if (map->Lookup(tree, &fldSeq))
-        {
-            printf(" Zero");
-            gtDispAnyFieldSeq(fldSeq);
-        }
-    }
-}
-
-//------------------------------------------------------------------------
 // gtDispVN: Utility function that prints a tree's ValueNumber: gtVNPair
 //
 void Compiler::gtDispVN(GenTree* tree)
@@ -10094,7 +10064,6 @@ void Compiler::gtDispVN(GenTree* tree)
 //
 void Compiler::gtDispCommonEndLine(GenTree* tree)
 {
-    gtDispZeroFieldSeq(tree);
     gtDispRegVal(tree);
     gtDispVN(tree);
     printf("\n");
@@ -17222,18 +17191,8 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
 
     if (OperIs(GT_ADD))
     {
-        // If one operand has a field sequence, the other operand must not have one
-        // as the order of fields in that case would not be well-defined.
-        if (AsOp()->gtOp1->IsIconHandle())
+        if (AsOp()->gtOp2->IsCnsIntOrI())
         {
-            assert(!AsOp()->gtOp2->IsCnsIntOrI() || !AsOp()->gtOp2->IsIconHandle());
-            baseAddr = AsOp()->gtOp2;
-            fldSeq   = AsOp()->gtOp1->AsIntCon()->gtFieldSeq;
-            offset   = AsOp()->gtOp1->AsIntCon()->IconValue();
-        }
-        else if (AsOp()->gtOp2->IsCnsIntOrI())
-        {
-            assert(!AsOp()->gtOp1->IsCnsIntOrI() || !AsOp()->gtOp1->IsIconHandle());
             baseAddr = AsOp()->gtOp1;
             fldSeq   = AsOp()->gtOp2->AsIntCon()->gtFieldSeq;
             offset   = AsOp()->gtOp2->AsIntCon()->IconValue();
@@ -17242,21 +17201,13 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
         {
             return false;
         }
-
-        assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
     }
     else if (IsIconHandle(GTF_ICON_STATIC_HDL))
     {
-        assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
+        assert(AsIntCon()->gtFieldSeq != nullptr);
         baseAddr = this;
         fldSeq   = AsIntCon()->gtFieldSeq;
         offset   = AsIntCon()->IconValue();
-    }
-    else if (comp->GetZeroOffsetFieldMap()->Lookup(this, &fldSeq))
-    {
-        assert((fldSeq != FieldSeqStore::NotAField()) || (fldSeq->GetOffset() == 0));
-        baseAddr = this;
-        offset   = 0;
     }
     else
     {
