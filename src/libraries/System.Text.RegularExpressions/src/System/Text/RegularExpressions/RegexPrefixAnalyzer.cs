@@ -155,6 +155,51 @@ namespace System.Text.RegularExpressions
             }
         }
 
+        /// <summary>Finds a string literal that is guaranteed to exist in any successful match.</summary>
+        /// <remarks>The exact position of the literal is unknown.</remarks>
+        /// <param name="node">The RegexNode tree node.</param>
+        /// <returns>The found literal, or none if there isn't one.</returns>
+        public static string? FindGuaranteedLiteral(RegexNode node)
+        {
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                // If we're too deep on the stack, just give up on searching further here.
+                return null;
+            }
+
+            switch (node.Kind)
+            {
+                case RegexNodeKind.Multi:
+                    // We found a string literal.
+                    return node.Str;
+
+                case RegexNodeKind.Atomic:
+                case RegexNodeKind.Capture:
+                case RegexNodeKind.Concatenate:
+                case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M > 0:
+                    // This construct's child or children are guaranteed to occur at least once.
+                    // Examine all children and choose the best literal if any has one.  We define
+                    // "best" as being the longest, with an equal-length tie breaker being whichever
+                    // has the lowest expected frequency.
+                    string? bestResult = null;
+                    for (int i = 0; i < node.ChildCount(); i++)
+                    {
+                        if (FindGuaranteedLiteral(node.Child(i)) is string result)
+                        {
+                            if (bestResult is null ||
+                                (bestResult is not null &&
+                                 (result.Length > bestResult.Length || (result.Length == bestResult.Length && SumFrequencies(result.AsSpan()) < SumFrequencies(bestResult.AsSpan())))))
+                            {
+                                bestResult = result;
+                            }
+                        }
+                    }
+                    return bestResult;
+            }
+
+            return null;
+        }
+
         /// <summary>Finds sets at fixed-offsets from the beginning of the pattern/</summary>
         /// <param name="root">The RegexNode tree root.</param>
         /// <param name="thorough">true to spend more time finding sets (e.g. through alternations); false to do a faster analysis that's potentially more incomplete.</param>
@@ -438,24 +483,10 @@ namespace System.Text.RegularExpressions
                     // Then of the ones that are the same length, prefer those with less frequent values.  The frequency is
                     // only an approximation, used as a tie-breaker when we'd otherwise effectively be picking randomly.  True
                     // frequencies will vary widely based on the actual data being searched, the language of the data, etc.
-                    int c = SumFrequencies(s1.Chars).CompareTo(SumFrequencies(s2.Chars));
+                    int c = SumFrequencies(s1.Chars.AsSpan()).CompareTo(SumFrequencies(s2.Chars.AsSpan()));
                     if (c != 0)
                     {
                         return c;
-                    }
-
-                    [MethodImpl(MethodImplOptions.AggressiveInlining)]
-                    static float SumFrequencies(char[] chars)
-                    {
-                        float sum = 0;
-                        foreach (char c in chars)
-                        {
-                            // Lookup each character in the table.  For values > 255, this will end up truncating
-                            // and thus we'll get skew in the data.  It's already a gross approximation, though,
-                            // and it is primarily meant for disambiguation of ASCII letters.
-                            sum += s_frequency[(byte)c];
-                        }
-                        return sum;
                     }
                 }
                 else if (s1.Chars is not null)
@@ -863,6 +894,19 @@ namespace System.Text.RegularExpressions
                         return RegexNodeKind.Unknown;
                 }
             }
+        }
+
+        private static float SumFrequencies(ReadOnlySpan<char> chars)
+        {
+            float sum = 0;
+            foreach (char c in chars)
+            {
+                // Lookup each character in the table.  For values > 255, this will end up truncating
+                // and thus we'll get skew in the data.  It's already a gross approximation, though,
+                // and it is primarily meant for disambiguation of ASCII letters.
+                sum += s_frequency[(byte)c];
+            }
+            return sum;
         }
 
         /// <summary>Percent occurrences in source text (100 * char count / total count).</summary>

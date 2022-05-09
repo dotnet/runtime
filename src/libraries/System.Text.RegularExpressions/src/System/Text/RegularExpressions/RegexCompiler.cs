@@ -627,25 +627,25 @@ namespace System.Text.RegularExpressions
                                 Ldc('\n');
                                 Beq(label);
 
-                                // int tmp = inputSpan.Slice(pos).IndexOf('\n');
+                                // int nextPos = inputSpan.Slice(pos).IndexOf('\n');
                                 Ldloca(inputSpan);
                                 Ldloc(pos);
                                 Call(s_spanSliceIntMethod);
                                 Ldc('\n');
                                 Call(s_spanIndexOfChar);
-                                using (RentedLocalBuilder newlinePos = RentInt32Local())
+                                using (RentedLocalBuilder nextPos = RentInt32Local())
                                 {
-                                    Stloc(newlinePos);
+                                    Stloc(nextPos);
 
-                                    // if (newlinePos < 0 || newlinePos + pos + 1 > inputSpan.Length)
+                                    // if (nextPos < 0 || nextPos + pos + 1 > inputSpan.Length)
                                     // {
                                     //     base.runtextpos = inputSpan.Length;
                                     //     return false;
                                     // }
-                                    Ldloc(newlinePos);
+                                    Ldloc(nextPos);
                                     Ldc(0);
                                     Blt(returnFalse);
-                                    Ldloc(newlinePos);
+                                    Ldloc(nextPos);
                                     Ldloc(pos);
                                     Add();
                                     Ldc(1);
@@ -654,25 +654,72 @@ namespace System.Text.RegularExpressions
                                     Call(s_spanGetLengthMethod);
                                     Bgt(returnFalse);
 
-                                    // pos += newlinePos + 1;
+                                    // pos += nextPos + 1;
                                     Ldloc(pos);
-                                    Ldloc(newlinePos);
+                                    Ldloc(nextPos);
                                     Add();
                                     Ldc(1);
                                     Add();
                                     Stloc(pos);
 
-                                    // We've updated the position.  Make sure there's still enough room in the input for a possible match.
-                                    // if (pos > inputSpan.Length - minRequiredLength) returnFalse;
-                                    Ldloca(inputSpan);
-                                    Call(s_spanGetLengthMethod);
-                                    if (minRequiredLength != 0)
+                                    // If there's a literal guaranteed to be in any match, we can also then boost our position to the next newline
+                                    // that's followed by that literal.  This is a very helpful optimization if the literal is expected to only show
+                                    // up in a subset of lines; if it shows up in every line, the two additional {Last}IndexOf operations end up
+                                    // being pure overhead.
+                                    bool needsLengthCheck = true;
+                                    if (_regexTree.FindOptimizations.GuaranteedLiteral is string guaranteedLiteral)
                                     {
-                                        Ldc(minRequiredLength);
-                                        Sub();
+                                        // Now that the next line has been found, find the literal that's guaranteed to be in a match.
+                                        // Then back off from that to the start of the line containing it, which may or may not be
+                                        // the same newline as was found earlier.
+
+                                        // int nextPos = inputSpan.Slice(pos).IndexOf(guaranteedLiteral);
+                                        Ldloca(inputSpan);
+                                        Ldloc(pos);
+                                        Call(s_spanSliceIntMethod);
+                                        Ldstr(guaranteedLiteral);
+                                        Call(s_stringAsSpanMethod);
+                                        Call(s_spanIndexOfSpan);
+                                        Stloc(nextPos);
+
+                                        // if (nextPos < 0) goto returnFalse;
+                                        Ldloc(nextPos);
+                                        Ldc(0);
+                                        BltFar(returnFalse);
+
+                                        // pos = inputSpan.Slice(0, pos + nextPos).LastIndexOf('\\n') + 1;
+                                        Ldloca(inputSpan);
+                                        Ldc(0);
+                                        Ldloc(pos);
+                                        Ldloc(nextPos);
+                                        Add();
+                                        Call(s_spanSliceIntIntMethod);
+                                        Ldc('\n');
+                                        Call(s_spanLastIndexOfChar);
+                                        Ldc(1);
+                                        Add();
+                                        Stloc(pos);
+
+                                        // We know there's at least GuaranteedLiteral.Length remaining, because it matched after the newline,
+                                        // so we don't need a length check if the minimum required length is the same as the literal's length.
+                                        Debug.Assert(guaranteedLiteral.Length <= minRequiredLength);
+                                        needsLengthCheck = guaranteedLiteral.Length < minRequiredLength;
                                     }
-                                    Ldloc(pos);
-                                    BltFar(returnFalse);
+
+                                    // We've updated the position.  Make sure there's still enough room in the input for a possible match.
+                                    if (needsLengthCheck)
+                                    {
+                                        // if (pos > inputSpan.Length - minRequiredLength) returnFalse;
+                                        Ldloca(inputSpan);
+                                        Call(s_spanGetLengthMethod);
+                                        if (minRequiredLength != 0)
+                                        {
+                                            Ldc(minRequiredLength);
+                                            Sub();
+                                        }
+                                        Ldloc(pos);
+                                        BltFar(returnFalse);
+                                    }
                                 }
 
                                 MarkLabel(label);

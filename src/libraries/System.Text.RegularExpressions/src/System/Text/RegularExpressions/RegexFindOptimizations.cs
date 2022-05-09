@@ -154,6 +154,20 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
+            // If we have a beginning-of-line anchor, see if there's some literal we can search for in the line
+            // in order to skip processing unnecessary lines completely.
+            if (LeadingAnchor == RegexNodeKind.Bol)
+            {
+                string? guaranteedLiteral = RegexPrefixAnalyzer.FindGuaranteedLiteral(root);
+                if (guaranteedLiteral is not null &&
+#pragma warning disable CA1847 // netstandard2.0 used for source generator lacks Contains(char) overload
+                    !guaranteedLiteral.Contains("\n")) // we use this with BOL handling, and contained newlines would complicate use too much to be worthwhile
+#pragma warning restore CA1847
+                {
+                    GuaranteedLiteral = guaranteedLiteral;
+                }
+            }
+
             // As a backup, see if we can find a literal after a leading atomic loop.  That might be better than whatever sets we find, so
             // we want to know whether we have one in our pocket before deciding whether to use a leading set (we'll prefer a leading
             // set if it's something for which we can vectorize a search).
@@ -231,6 +245,9 @@ namespace System.Text.RegularExpressions
 
         /// <summary>When in fixed distance literal mode, gets the literal and how far it is from the start of the pattern.</summary>
         public (char Char, string? String, int Distance) FixedDistanceLiteral { get; }
+
+        /// <summary>A string guaranteed to exist somewhere within a match.</summary>
+        public string? GuaranteedLiteral { get; }
 
         /// <summary>When in fixed distance set mode, gets the set and how far it is from the start of the pattern.</summary>
         /// <remarks>The case-insensitivity of the 0th entry will always match the mode selected, but subsequent entries may not.</remarks>
@@ -326,22 +343,40 @@ namespace System.Text.RegularExpressions
             // to boost our position to the next line, and then continue normally with any searches.
             if (LeadingAnchor == RegexNodeKind.Bol)
             {
+                Debug.Assert(!_rightToLeft, "Only implemented for left-to-right");
+
                 // If we're not currently positioned at the beginning of a line (either
                 // the beginning of the string or just after a line feed), find the next
                 // newline and position just after it.
-                Debug.Assert(!_rightToLeft);
                 int posm1 = pos - 1;
                 if ((uint)posm1 < (uint)textSpan.Length && textSpan[posm1] != '\n')
                 {
-                    int newline = textSpan.Slice(pos).IndexOf('\n');
-                    if ((uint)newline > textSpan.Length - 1 - pos)
+                    int nextPos = textSpan.Slice(pos).IndexOf('\n');
+                    if ((uint)nextPos > textSpan.Length - 1 - pos)
                     {
                         pos = textSpan.Length;
                         return false;
                     }
+                    pos += nextPos + 1;
+
+                    // If there's a literal guaranteed to be in any match, we can also then boost our position to the next newline
+                    // that's followed by that literal.  This is a very helpful optimization if the literal is expected to only show
+                    // up in a subset of lines; if it shows up in every line, the two additional {Last}IndexOf operations end up
+                    // being pure overhead.
+                    if (GuaranteedLiteral is string literal)
+                    {
+                        // Find the literal that's guaranteed to be in a match. Then back off from that to the start of the line
+                        // containing it, which may or may not be the same newline as was found earlier.
+                        nextPos = textSpan.Slice(pos).IndexOf(literal.AsSpan());
+                        if (nextPos < 0)
+                        {
+                            pos = textSpan.Length;
+                            return false;
+                        }
+                        pos = textSpan.Slice(0, pos + nextPos).LastIndexOf('\n') + 1;
+                    }
 
                     // We've updated the position.  Make sure there's still enough room in the input for a possible match.
-                    pos = newline + 1 + pos;
                     if (pos > textSpan.Length - MinRequiredLength)
                     {
                         pos = textSpan.Length;

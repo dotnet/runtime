@@ -651,28 +651,56 @@ namespace System.Text.RegularExpressions.Generator
                         // other anchors like Beginning, there are potentially multiple places a BOL can match.  So unlike
                         // the other anchors, which all skip all subsequent processing if found, with BOL we just use it
                         // to boost our position to the next line, and then continue normally with any searches.
-                        writer.WriteLine($"// The pattern has a leading beginning-of-line anchor.");
+                        writer.WriteLine($"// The pattern has a leading beginning-of-line anchor. Move to the next newline.");
                         using (EmitBlock(writer, "if (pos > 0 && inputSpan[pos - 1] != '\\n')"))
                         {
-                            writer.WriteLine("int newlinePos = inputSpan.Slice(pos).IndexOf('\\n');");
-                            using (EmitBlock(writer, "if ((uint)newlinePos > inputSpan.Length - pos - 1)"))
+                            writer.WriteLine("int nextPos = inputSpan.Slice(pos).IndexOf('\\n');");
+                            using (EmitBlock(writer, "if ((uint)nextPos > inputSpan.Length - pos - 1)"))
                             {
                                 noMatchFoundLabelNeeded = true;
                                 Goto(NoMatchFound);
                             }
-                            writer.WriteLine("pos += newlinePos + 1;");
-                            writer.WriteLine();
+                            writer.WriteLine("pos += nextPos + 1;");
 
-                            // We've updated the position.  Make sure there's still enough room in the input for a possible match.
-                            using (EmitBlock(writer, minRequiredLength switch
+                            // If there's a literal guaranteed to be in any match, we can also then boost our position to the next newline
+                            // that's followed by that literal.  This is a very helpful optimization if the literal is expected to only show
+                            // up in a subset of lines; if it shows up in every line, the two additional {Last}IndexOf operations end up
+                            // being pure overhead.
+                            bool needsLengthCheck = true;
+                            if (regexTree.FindOptimizations.GuaranteedLiteral is string guaranteedLiteral)
                             {
-                                0 => "if (pos > inputSpan.Length)",
-                                1 => "if (pos >= inputSpan.Length)",
-                                _ => $"if (pos > inputSpan.Length - {minRequiredLength})"
-                            }))
+                                writer.WriteLine();
+                                writer.WriteLine("// Now that the next line has been found, find the literal that's guaranteed to be in a match.");
+                                writer.WriteLine("// Then back off from that to the start of the line containing it, which may or may not be");
+                                writer.WriteLine("// the same newline as was found earlier.");
+                                writer.WriteLine($"nextPos = inputSpan.Slice(pos).IndexOf({Literal(guaranteedLiteral)});");
+                                using (EmitBlock(writer, "if (nextPos < 0)"))
+                                {
+                                    noMatchFoundLabelNeeded = true;
+                                    Goto(NoMatchFound);
+                                }
+                                writer.WriteLine("pos = inputSpan.Slice(0, pos + nextPos).LastIndexOf('\\n') + 1;");
+
+                                // We know there's at least GuaranteedLiteral.Length remaining, because it matched after the newline,
+                                // so we don't need a length check if the minimum required length is the same as the literal's length.
+                                Debug.Assert(guaranteedLiteral.Length <= minRequiredLength);
+                                needsLengthCheck = guaranteedLiteral.Length < minRequiredLength;
+                            }
+
+                            if (needsLengthCheck)
                             {
-                                noMatchFoundLabelNeeded = true;
-                                Goto(NoMatchFound);
+                                // We've updated the position.  Make sure there's still enough room in the input for a possible match.
+                                writer.WriteLine();
+                                using (EmitBlock(writer, minRequiredLength switch
+                                {
+                                    0 => "if (pos > inputSpan.Length)",
+                                    1 => "if (pos >= inputSpan.Length)",
+                                    _ => $"if (pos > inputSpan.Length - {minRequiredLength})"
+                                }))
+                                {
+                                    noMatchFoundLabelNeeded = true;
+                                    Goto(NoMatchFound);
+                                }
                             }
                         }
                         writer.WriteLine();
