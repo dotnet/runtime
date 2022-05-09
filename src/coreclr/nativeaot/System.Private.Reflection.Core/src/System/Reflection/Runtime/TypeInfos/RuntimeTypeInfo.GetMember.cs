@@ -123,6 +123,21 @@ namespace System.Reflection.Runtime.TypeInfos
             if (member is null)
                 throw new ArgumentNullException(nameof(member));
 
+            // Need to walk up the inheritance chain if member is not found
+            // Leverage the existing cache mechanism of per type to store members
+            RuntimeTypeInfo? runtimeType = this;
+            while (runtimeType != null)
+            {
+                MemberInfo result = runtimeType.GetMemberWithSameMetadataDefinitionAsInternal(member);
+                if (result != null)
+                    return result;
+                runtimeType = runtimeType.BaseType as RuntimeTypeInfo;
+            }
+            throw new ArgumentException(SR.Format(SR.Arg_MemberInfoNotFound, member.Name), nameof(member));
+        }
+
+        private MemberInfo GetMemberWithSameMetadataDefinitionAsInternal(MemberInfo member)
+        {
             MemberInfo result = member.MemberType switch
             {
                 MemberTypes.Method => QueryMemberWithSameMetadataDefinitionAs<MethodInfo>(member),
@@ -133,9 +148,6 @@ namespace System.Reflection.Runtime.TypeInfos
                 MemberTypes.NestedType => QueryMemberWithSameMetadataDefinitionAs<Type>(member),
                 _ => null,
             };
-
-            if (result is null)
-                throw new ArgumentException(SR.Format(SR.Arg_MemberInfoNotFound, member.Name), nameof(member));
 
             return result;
         }
