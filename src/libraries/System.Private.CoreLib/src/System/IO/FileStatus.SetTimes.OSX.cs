@@ -12,9 +12,9 @@ namespace System.IO
             => SetCreationTime(handle: null, path, time, asDirectory);
 
         internal void SetCreationTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
-            => SetCreationTime(handle, GetHandlePath(handle), time, asDirectory);
+            => SetCreationTime(handle, handle.Path, time, asDirectory);
 
-        private void SetCreationTime(SafeFileHandle? handle, string path, DateTimeOffset time, bool asDirectory)
+        private void SetCreationTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool asDirectory)
         {
             // Try to set the attribute on the file system entry using setattrlist,
             // if we get ENOTSUP then it means that "The volume does not support
@@ -42,7 +42,7 @@ namespace System.IO
             }
         }
 
-        private static unsafe Interop.Error SetCreationTimeCore(SafeFileHandle? handle, string path, long seconds, long nanoseconds)
+        private static unsafe Interop.Error SetCreationTimeCore(SafeFileHandle? handle, string? path, long seconds, long nanoseconds)
         {
             Interop.Sys.TimeSpec timeSpec = default;
 
@@ -53,19 +53,16 @@ namespace System.IO
             attrList.bitmapCount = Interop.libc.AttrList.ATTR_BIT_MAP_COUNT;
             attrList.commonAttr = Interop.libc.AttrList.ATTR_CMN_CRTIME;
 
-            // Follow links when using SafeFileHandle API.
-            CULong flags = new CULong(handle is null ? Interop.libc.FSOPT_NOFOLLOW : 0);
-
-            int result = handle is null
-                ? Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), flags)
-                : Interop.libc.fsetattrlist(handle, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), flags);
+            int result = handle is not null
+                ? Interop.libc.fsetattrlist(handle, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW))
+                : Interop.libc.setattrlist(path!, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW));
 
             return result == 0 ?
                 Interop.Error.SUCCESS :
                 Interop.Sys.GetLastErrorInfo().Error;
         }
 
-        private void SetAccessOrWriteTime(SafeFileHandle? handle, string path, DateTimeOffset time, bool isAccessTime, bool asDirectory) =>
+        private void SetAccessOrWriteTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool isAccessTime, bool asDirectory) =>
             SetAccessOrWriteTimeCore(handle, path, time, isAccessTime, checkCreationTime: true, asDirectory);
     }
 }
