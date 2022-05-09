@@ -93,11 +93,11 @@ namespace System.Text.Json.Serialization.Tests
             switch (Type.GetTypeCode(typeof(T)))
             {
               case TypeCode.Double:
-                    return Convert.ToDouble(number, CultureInfo.InvariantCulture.NumberFormat).ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
+                    return Convert.ToDouble(number, CultureInfo.InvariantCulture).ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture);
                 case TypeCode.Single:
-                return Convert.ToSingle(number, CultureInfo.InvariantCulture.NumberFormat).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
+                return Convert.ToSingle(number, CultureInfo.InvariantCulture).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
                 case TypeCode.Decimal:
-                    return Convert.ToDecimal(number, CultureInfo.InvariantCulture.NumberFormat).ToString(CultureInfo.InvariantCulture);
+                    return Convert.ToDecimal(number, CultureInfo.InvariantCulture).ToString(CultureInfo.InvariantCulture);
                 default:
                     return number.ToString();
             }
