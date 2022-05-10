@@ -548,13 +548,13 @@ mono_wasm_event_pipe_enable (const char *output_path,
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_session_start_streaming (int32_t session_id)
 {
-  g_assert_not_reached ();
+	g_assert_not_reached ();
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_session_disable (int32_t session_id)
 {
-  g_assert_not_reached ();
+	g_assert_not_reached ();
 }
 
 #endif /* HOST_WASM */
