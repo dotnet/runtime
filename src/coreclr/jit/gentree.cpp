@@ -16487,7 +16487,7 @@ bool GenTree::IsBlockProfileUpdate()
 
     GenTree* const addr = lhs->AsIndir()->Addr();
 
-    return addr->IsIntegralConst() && addr->IsIconHandle(GTF_ICON_BBC_PTR);
+    return addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_BBC_PTR);
 }
 
 #ifdef DEBUG
