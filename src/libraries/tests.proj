@@ -156,9 +156,6 @@
     <!-- https://github.com/dotnet/runtime/issues/50926 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing\tests\System.Diagnostics.Tracing.Tests.csproj" />
 
-    <!-- https://github.com/dotnet/runtime/issues/49936 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
-
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
 
     <!-- Execution may be compromised -->
