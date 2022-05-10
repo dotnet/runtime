@@ -39,9 +39,8 @@ internal static partial class Interop
 
             int flags = 0;
 
-            bool isAtLeastWin10Build14972 =
-                Environment.OSVersion.Version.Major == 10 && Environment.OSVersion.Version.Build >= 14972 ||
-                Environment.OSVersion.Version.Major >= 11;
+            Version osVersion = Environment.OSVersion.Version;
+            bool isAtLeastWin10Build14972 = osVersion.Major >= 11 || osVersion.Major == 10 && osVersion.Build >= 14972;
 
             if (isAtLeastWin10Build14972)
             {
