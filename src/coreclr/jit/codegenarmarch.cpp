@@ -302,6 +302,10 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM64
+        case GT_CHK_DIV_BY_ZERO:
+            genCodeForChkDivByZero(treeNode->AsOp());
+            break;
+
         case GT_MADD:
             genCodeForMadd(treeNode->AsOp());
             break;

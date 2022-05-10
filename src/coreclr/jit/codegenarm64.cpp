@@ -10243,4 +10243,20 @@ void CodeGen::genCodeForCond(GenTreeOp* tree)
     genProduceReg(tree);
 }
 
+//------------------------------------------------------------------------
+// genCodeForChkDivByZero: Generates the code for checking
+//                         if a value is zero to throw a div-by-zero exception.
+//
+// Arguments:
+//    tree - divide-by-zero check
+//
+void CodeGen::genCodeForChkDivByZero(GenTreeOp* tree)
+{
+    assert(tree->OperIs(GT_CHK_DIV_BY_ZERO));
+    genConsumeOperands(tree->AsOp());
+
+    GetEmitter()->emitIns_R_I(INS_cmp, emitActualTypeSize(tree), tree->GetRegNum(), 0);
+    genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+}
+
 #endif // TARGET_ARM64
