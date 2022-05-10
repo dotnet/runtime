@@ -12,8 +12,6 @@ class Program
 {
     static int Main(string[] args)
     {
-        // Ensure the internal GlobalizationMode class is trimmed correctly
-        Type globalizationMode = GetCoreLibType("System.Globalization.GlobalizationMode");
         const BindingFlags allStatics = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static;
 
         try
@@ -30,26 +28,29 @@ class Program
             return -3;
         }
 
-        foreach (MemberInfo member in globalizationMode.GetMembers(allStatics))
+        if (OperatingSystem.IsWindows())
         {
-            // properties and their backing getter methods are OK
-            if (member is PropertyInfo || member.Name.StartsWith("get_"))
+            // Ensure the internal GlobalizationMode class is trimmed correctly
+            Type globalizationMode = GetCoreLibType("System.Globalization.GlobalizationMode");
+            
+            foreach (MemberInfo member in globalizationMode.GetMembers(allStatics))
             {
-                continue;
-            }
+                // properties and their backing getter methods are OK
+                if (member is PropertyInfo || member.Name.StartsWith("get_"))
+                {
+                    continue;
+                }
 
-            if (OperatingSystem.IsWindows())
-            {
-                // Windows still contains a static cctor and a backing field for UseNls
+                // Windows still contains a static cctor and a backing field for UseNls.
                 if (member is ConstructorInfo || (member is FieldInfo field && field.Name.Contains("UseNls")))
                 {
                     continue;
                 }
-            }
 
-            // Some unexpected member was left on GlobalizationMode, fail
-            Console.WriteLine($"Member '{member.Name}' was not trimmed from GlobalizationMode, but should have been.");
-            return -4;
+                // Some unexpected member was left on GlobalizationMode, fail
+                Console.WriteLine($"Member '{member.Name}' was not trimmed from GlobalizationMode, but should have been.");
+                return -4;
+            }
         }
 
         return 100;
