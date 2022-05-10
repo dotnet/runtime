@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppMinimum);netstandard2.0;$(NetFrameworkMinimum)</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -335,6 +335,8 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
     <Compile Include="System.Text.Json.Typeforwards.netcoreapp.cs" />
     <Compile Include="System\Text\Json\Serialization\JsonSerializerOptionsUpdateHandler.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\DateOnlyConverter.cs" />
+    <Compile Include="System\Text\Json\Serialization\Converters\Value\TimeOnlyConverter.cs" />
   </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
