@@ -31,9 +31,7 @@ target_link_libraries(dotnet
 
 set_target_properties(dotnet PROPERTIES
     LINK_DEPENDS "${NATIVE_BIN_DIR}/src/emcc-default.rsp;${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.pre.js;${NATIVE_BIN_DIR}/src/cjs/runtime.cjs.iffe.js;${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.lib.js;${NATIVE_BIN_DIR}/src/pal_random.lib.js;${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.post.js;${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.extpost.js;"
-    # remove -Wno-limited-postlink-optimizations once below issue is fixed
-    # active issue: https://github.com/emscripten-core/emscripten/pull/16727
-    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-link.rsp ${CONFIGURATION_LINK_FLAGS} --extern-pre-js ${NATIVE_BIN_DIR}/src/cjs/runtime.cjs.iffe.js --pre-js ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.pre.js --js-library ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.lib.js --js-library ${NATIVE_BIN_DIR}/src/pal_random.lib.js --post-js ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.post.js --extern-post-js ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.extpost.js -Wno-limited-postlink-optimizations "
+    LINK_FLAGS "@${NATIVE_BIN_DIR}/src/emcc-default.rsp @${NATIVE_BIN_DIR}/src/emcc-link.rsp ${CONFIGURATION_LINK_FLAGS} --extern-pre-js ${NATIVE_BIN_DIR}/src/cjs/runtime.cjs.iffe.js --pre-js ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.pre.js --js-library ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.lib.js --js-library ${NATIVE_BIN_DIR}/src/pal_random.lib.js --post-js ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.post.js --extern-post-js ${NATIVE_BIN_DIR}/src/cjs/dotnet.cjs.extpost.js "
     RUNTIME_OUTPUT_DIRECTORY "${NATIVE_BIN_DIR}")
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
