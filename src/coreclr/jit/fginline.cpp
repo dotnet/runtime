@@ -121,6 +121,22 @@ PhaseStatus Compiler::fgInline()
             // candidate stage. So scan the tree looking for those early failures.
             fgWalkTreePre(stmt->GetRootNodePointer(), fgFindNonInlineCandidate, stmt);
 #endif
+            // See if we need to replace some return value place holders.
+            // Also, see if this replacement enables further devirtualization.
+            //
+            // Note we have both preorder and postorder callbacks here.
+            //
+            // The preorder callback is responsible for replacing GT_RET_EXPRs
+            // with the appropriate expansion (call or inline result).
+            // Replacement may introduce subtrees with GT_RET_EXPR and so
+            // we rely on the preorder to recursively process those as well.
+            //
+            // On the way back up, the postorder callback then re-examines nodes for
+            // possible further optimization, as the (now complete) GT_RET_EXPR
+            // replacement may have enabled optimizations by providing more
+            // specific types for trees or variables.
+            fgWalkTree(stmt->GetRootNodePointer(), fgUpdateInlineReturnExpressionPlaceHolder, fgLateDevirtualization,
+                       &madeChanges);
 
             GenTree* expr = stmt->GetRootNode();
 
@@ -138,16 +154,6 @@ PhaseStatus Compiler::fgInline()
                 // they belong.
                 if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
                 {
-                    // Yes. We may still have GT_RET_EXPR in arguments,
-                    // substitute those here so the inlinee does not need to
-                    // deal with them.
-                    // Note that we leave late devirts in arguments for when we
-                    // handle inlined statements as fgLateDevirtualization
-                    // cannot handle being called twice on a late devirt
-                    // candidate.
-                    fgWalkTree(stmt->GetRootNodePointer(), fgUpdateInlineReturnExpressionPlaceHolder, nullptr,
-                               &madeChanges);
-
                     InlineResult inlineResult(this, call, stmt, "fgInline");
 
                     fgMorphStmt = stmt;
@@ -171,23 +177,6 @@ PhaseStatus Compiler::fgInline()
                     }
                 }
             }
-
-            // See if we need to replace some return value place holders.
-            // Also, see if this replacement enables further devirtualization.
-            //
-            // Note we have both preorder and postorder callbacks here.
-            //
-            // The preorder callback is responsible for replacing GT_RET_EXPRs
-            // with the appropriate expansion (call or inline result).
-            // Replacement may introduce subtrees with GT_RET_EXPR and so
-            // we rely on the preorder to recursively process those as well.
-            //
-            // On the way back up, the postorder callback then re-examines nodes for
-            // possible further optimization, as the (now complete) GT_RET_EXPR
-            // replacement may have enabled optimizations by providing more
-            // specific types for trees or variables.
-            fgWalkTree(stmt->GetRootNodePointer(), fgUpdateInlineReturnExpressionPlaceHolder, fgLateDevirtualization,
-                       &madeChanges);
 
             // See if stmt is of the form GT_COMMA(call, nop)
             // If yes, we can get rid of GT_COMMA.
@@ -734,8 +723,12 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
 
             if ((call->gtCallMoreFlags & GTF_CALL_M_LATE_DEVIRT) != 0)
             {
-                context                          = call->gtLateDevirtualizationInfo->exactContextHnd;
-                call->gtLateDevirtualizationInfo = nullptr;
+                context = call->gtLateDevirtualizationInfo->exactContextHnd;
+                // Note: we might call this multiple times for the same trees.
+                // If the devirtualization below succeeds, the call becomes
+                // non-virtual and we won't get here again. If it does not
+                // succeed we might get here again so we keep the late devirt
+                // info.
             }
 
             comp->impDevirtualizeCall(call, nullptr, &method, &methodFlags, &context, nullptr, isLateDevirtualization,

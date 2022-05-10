@@ -21300,6 +21300,7 @@ void Compiler::impDevirtualizeCall(GenTreeCall*            call,
     // it's a union field used for other things by virtual
     // stubs)
     call->gtInlineCandidateInfo = nullptr;
+    call->gtCallMoreFlags &= ~GTF_CALL_M_LATE_DEVIRT;
 
 #if defined(DEBUG)
     if (verbose)
