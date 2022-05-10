@@ -40,8 +40,8 @@ namespace ILCompiler.Dataflow
             return
                 GetIntrinsicIdForMethod(methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
                 flowAnnotations.RequiresDataflowAnalysis(methodDefinition) ||
-                methodDefinition.DoesMethodRequires(RequiresUnreferencedCodeAttribute, out _) ||
-                methodDefinition.DoesMethodRequires(RequiresDynamicCodeAttribute, out _) ||
+                methodDefinition.DoesMethodRequire(RequiresUnreferencedCodeAttribute, out _) ||
+                methodDefinition.DoesMethodRequire(RequiresDynamicCodeAttribute, out _) ||
                 methodDefinition.IsPInvoke;
         }
 
@@ -55,8 +55,8 @@ namespace ILCompiler.Dataflow
         public static bool RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations flowAnnotations, FieldDesc fieldDefinition)
         {
             return flowAnnotations.RequiresDataflowAnalysis(fieldDefinition) ||
-                fieldDefinition.DoesFieldRequires(RequiresUnreferencedCodeAttribute, out _) ||
-                fieldDefinition.DoesFieldRequires(RequiresDynamicCodeAttribute, out _);
+                fieldDefinition.DoesFieldRequire(RequiresUnreferencedCodeAttribute, out _) ||
+                fieldDefinition.DoesFieldRequire(RequiresDynamicCodeAttribute, out _);
         }
 
         void CheckAndReportRequires(TypeSystemEntity calledMember, in MessageOrigin origin, string requiresAttributeName)
@@ -66,7 +66,7 @@ namespace ILCompiler.Dataflow
             if (ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, requiresAttributeName))
                 return;
 
-            if (!calledMember.DoesMemberRequires(requiresAttributeName, out var requiresAttribute))
+            if (!calledMember.DoesMemberRequire(requiresAttributeName, out var requiresAttribute))
                 return;
 
             DiagnosticId diagnosticId = requiresAttributeName switch

@@ -692,8 +692,8 @@ namespace ILCompiler
 
         public static bool HasMismatchingAttributes (MethodDesc baseMethod, MethodDesc overridingMethod, string requiresAttributeName)
         {
-            bool baseMethodCreatesRequirement = baseMethod.DoesMethodRequires(requiresAttributeName, out _);
-            bool overridingMethodCreatesRequirement = overridingMethod.DoesMethodRequires(requiresAttributeName, out _);
+            bool baseMethodCreatesRequirement = baseMethod.DoesMethodRequire(requiresAttributeName, out _);
+            bool overridingMethodCreatesRequirement = overridingMethod.DoesMethodRequire(requiresAttributeName, out _);
             bool baseMethodFulfillsRequirement = baseMethod.IsOverrideInRequiresScope(requiresAttributeName);
             bool overridingMethodFulfillsRequirement = overridingMethod.IsOverrideInRequiresScope(requiresAttributeName);
             return (baseMethodCreatesRequirement && !overridingMethodFulfillsRequirement) || (overridingMethodCreatesRequirement && !baseMethodFulfillsRequirement);

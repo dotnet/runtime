@@ -82,13 +82,12 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this PropertyPseudoDesc This,
-            string attributeNamespace, string attributeName)
+        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this PropertyPseudoDesc prop, string attributeNamespace, string attributeName)
         {
-            var ecmaType = This.OwningType as EcmaType;
+            var ecmaType = prop.OwningType as EcmaType;
             var metadataReader = ecmaType.MetadataReader;
 
-            var attributeHandle = metadataReader.GetCustomAttributeHandle(This.GetCustomAttributes,
+            var attributeHandle = metadataReader.GetCustomAttributeHandle(prop.GetCustomAttributes,
                 attributeNamespace, attributeName);
 
             if (attributeHandle.IsNil)
@@ -117,7 +116,7 @@ namespace ILCompiler.Dataflow
         /// Determines if method is within a declared Requires scope - this typically means that trim analysis
         /// warnings should be suppressed in such a method.
         /// </summary>
-        /// <remarks>Unlike <see cref="DoesMemberRequires(TypeSystemEntity, string, out CustomAttributeValue{TypeDesc}?)"/>
+        /// <remarks>Unlike <see cref="DoesMemberRequire(TypeSystemEntity, string, out CustomAttributeValue{TypeDesc}?)"/>
         /// if a declaring type has Requires, all methods in that type are considered "in scope" of that Requires. So this includes also
         /// instance methods (not just statics and .ctors).</remarks>
         internal static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute) =>
@@ -147,7 +146,7 @@ namespace ILCompiler.Dataflow
             return false;
         }
 
-		internal static bool DoesMethodRequires(this MethodDesc method, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
+        internal static bool DoesMethodRequire(this MethodDesc method, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
             attribute = null;
             if (method.IsStaticConstructor)
@@ -163,7 +162,7 @@ namespace ILCompiler.Dataflow
             return false;
         }
 
-        internal static bool DoesFieldRequires(this FieldDesc field, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
+        internal static bool DoesFieldRequire(this FieldDesc field, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
             if (!field.IsStatic || field.OwningType is null)
             {
@@ -174,7 +173,7 @@ namespace ILCompiler.Dataflow
             return TryGetRequiresAttribute(field.OwningType, requiresAttribute, out attribute);
         }
 
-        internal static bool DoesPropertyRequires(this PropertyPseudoDesc property, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute) =>
+        internal static bool DoesPropertyRequire(this PropertyPseudoDesc property, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute) =>
             TryGetRequiresAttribute(property, requiresAttribute, out attribute);
 
         /// <summary>
@@ -182,14 +181,14 @@ namespace ILCompiler.Dataflow
 		/// </summary>
 		/// <remarks>Unlike <see cref="IsInRequiresScope(MethodDesc, string)"/> only static methods 
 		/// and .ctors are reported as requires when the declaring type has Requires on it.</remarks>
-        internal static bool DoesMemberRequires(this TypeSystemEntity member, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
+        internal static bool DoesMemberRequire(this TypeSystemEntity member, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
             attribute = null;
             return member switch
             {
-                MethodDesc method => DoesMethodRequires(method, requiresAttribute, out attribute),
-                FieldDesc field => DoesFieldRequires(field, requiresAttribute, out attribute),
-                PropertyPseudoDesc property => DoesPropertyRequires(property, requiresAttribute, out attribute),
+                MethodDesc method => DoesMethodRequire(method, requiresAttribute, out attribute),
+                FieldDesc field => DoesFieldRequire(field, requiresAttribute, out attribute),
+                PropertyPseudoDesc property => DoesPropertyRequire(property, requiresAttribute, out attribute),
                 _ => false
             };
         }
