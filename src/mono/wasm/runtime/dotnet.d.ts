@@ -240,6 +240,7 @@ declare type DotnetModuleConfigImports = {
 
 interface EventPipeSession {
     get sessionID(): number;
+    start(): void;
     stop(): void;
     saveTrace(): string;
 }
