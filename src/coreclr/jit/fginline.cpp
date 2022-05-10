@@ -138,6 +138,15 @@ PhaseStatus Compiler::fgInline()
                 // they belong.
                 if (call->IsInlineCandidate() || call->IsGuardedDevirtualizationCandidate())
                 {
+                    // Yes. We may still have GT_RET_EXPR in arguments,
+                    // substitute those here so the inlinee does not need to
+                    // deal with them.
+                    // Note that we leave late devirts in arguments for when we
+                    // handle inlined statements as fgLateDevirtualization
+                    // cannot handle being called twice on a late devirt
+                    // candidate.
+                    fgWalkTree(stmt->GetRootNodePointer(), fgUpdateInlineReturnExpressionPlaceHolder, nullptr, &madeChanges);
+
                     InlineResult inlineResult(this, call, stmt, "fgInline");
 
                     fgMorphStmt = stmt;
