@@ -187,7 +187,7 @@ PhaseStatus Compiler::fgInline()
             // replacement may have enabled optimizations by providing more
             // specific types for trees or variables.
             fgWalkTree(stmt->GetRootNodePointer(), fgUpdateInlineReturnExpressionPlaceHolder, fgLateDevirtualization,
-                       (void*)&madeChanges);
+                       &madeChanges);
 
             // See if stmt is of the form GT_COMMA(call, nop)
             // If yes, we can get rid of GT_COMMA.
