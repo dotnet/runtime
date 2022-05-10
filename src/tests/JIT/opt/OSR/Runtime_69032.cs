@@ -10,19 +10,19 @@ using System.Runtime.CompilerServices;
 class Runtime_69032
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    static int F()
+    static int F(int n)
     {
         var cwt = new ConditionalWeakTable<object, object>();
-        for (int i = 0; i < 10_000; i++)
+        for (int i = 0; i < n; i++)
         {
             cwt.Add(i.ToString(), i.ToString());
             if (i % 1000 == 0) GC.Collect();
         }
-        return cwt.Count();
+        return n;
     }
 
     public static int Main()
     {
-        return F() / 100;
+        return F(10_000) / 100;
     }
 }
