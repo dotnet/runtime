@@ -54,6 +54,8 @@ if [ -d "$_RuntimeDir/openssl" ]; then
 		;;
 	esac
 	export LD_LIBRARY_PATH=$_RuntimeDir/openssl/prefab/modules/ssl/libs/android.$_thisArchAndroid:$_RuntimeDir/openssl/prefab/modules/crypto/libs/android.$_thisArchAndroid
+	# Since we're on Helix, we know we want to set the SSL cert dir
+	export SSL_CERT_DIR=/system/etc/security/cacerts
 fi
 # Android sets an invalid value for HOME, which we bypass on "real" Android via
 # some env var setup in the task. Since we aren't using the Android task system
