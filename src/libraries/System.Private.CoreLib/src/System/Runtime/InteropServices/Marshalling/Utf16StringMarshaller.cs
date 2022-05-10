@@ -18,6 +18,10 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <summary>
         /// Initializes a new instance of the <see cref="Utf16StringMarshaller"/>.
         /// </summary>
+        /// <remarks>
+        /// The caller allocated constructor option is not provided because
+        /// pinning should be preferred for UTF-16 scenarios.
+        /// </remarks>
         /// <param name="str">The string to marshal.</param>
         public Utf16StringMarshaller(string? str)
         {
