@@ -83,10 +83,16 @@ get_long_arg (InterpMethodArguments *margs, int idx)
 	return p.l;
 }
 
-// #include "wasm_m2n_invoke2.g.h"
-extern const char* interp_to_native_signatures [];
-extern size_t interp_to_native_signatures_count;
-extern void* interp_to_native_invokes [];
+static void** interp_to_native_invokes;
+static const char** interp_to_native_signatures;
+static unsigned int interp_to_native_signatures_count;
+
+MONO_API void
+mono_wasm_install_interp_to_native_invokes (void **invokes, const char **sigs, unsigned int count) {
+	interp_to_native_invokes = invokes;
+	interp_to_native_signatures = sigs;
+	interp_to_native_signatures_count = count;
+}
 
 static int
 compare_icall_tramp (const void *key, const void *elem)
@@ -139,6 +145,12 @@ mono_wasm_get_native_to_interp_trampoline (MonoMethod *method, gpointer extra_ar
 
 void
 mono_wasm_install_get_native_to_interp_tramp (MonoWasmGetNativeToInterpTramp cb)
+{
+	g_assert_not_reached ();
+}
+
+void
+mono_wasm_install_interp_to_native_invokes (void **invokes, const char **sigs, unsigned int count) {
 {
 	g_assert_not_reached ();
 }

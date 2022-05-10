@@ -13,6 +13,7 @@ void mono_wasm_printerr (const char *s);
 
 #ifdef GEN_PINVOKE
 #include "pinvoke-table.h"
+#include "wasm_m2n_invoke2.g.h"
 #else
 #include "pinvoke-tables-default.h"
 #endif
