@@ -253,8 +253,6 @@ namespace LibraryImportGenerator.UnitTests
             TestUtils.AssertPreSourceGeneratorCompilation(comp);
 
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
-            if (!generatorDiags.IsEmpty)
-                Console.WriteLine(source);
             Assert.Empty(generatorDiags);
 
             TestUtils.AssertPostSourceGeneratorCompilation(newComp);
