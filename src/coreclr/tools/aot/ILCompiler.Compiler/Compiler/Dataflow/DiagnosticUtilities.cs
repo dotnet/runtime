@@ -68,6 +68,9 @@ namespace ILCompiler.Dataflow
                         return false;
                     decoded = ecmaType.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
                     break;
+                case PropertyPseudoDesc property:
+                    decoded = property.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
+                    break;
                 default:
                     Debug.Fail(member.GetType().ToString());
                     break;
@@ -77,6 +80,21 @@ namespace ILCompiler.Dataflow
 
             attribute = decoded.Value;
             return true;
+        }
+
+        public static CustomAttributeValue<TypeDesc>? GetDecodedCustomAttribute(this PropertyPseudoDesc This,
+            string attributeNamespace, string attributeName)
+        {
+            var ecmaType = This.OwningType as EcmaType;
+            var metadataReader = ecmaType.MetadataReader;
+
+            var attributeHandle = metadataReader.GetCustomAttributeHandle(This.GetCustomAttributes,
+                attributeNamespace, attributeName);
+
+            if (attributeHandle.IsNil)
+                return null;
+
+            return metadataReader.GetCustomAttribute(attributeHandle).DecodeValue(new CustomAttributeTypeProvider(ecmaType.EcmaModule));
         }
 
         internal static string GetRequiresAttributeMessage(CustomAttributeValue<TypeDesc> attribute)
@@ -99,10 +117,23 @@ namespace ILCompiler.Dataflow
         /// Determines if method is within a declared Requires scope - this typically means that trim analysis
         /// warnings should be suppressed in such a method.
         /// </summary>
-        /// <remarks>Unlike <see cref="DoesMethodRequires(MethodDesc, string, out CustomAttributeValue?)"/>
+        /// <remarks>Unlike <see cref="DoesMemberRequires(TypeSystemEntity, string, out CustomAttributeValue{TypeDesc}?)"/>
         /// if a declaring type has Requires, all methods in that type are considered "in scope" of that Requires. So this includes also
         /// instance methods (not just statics and .ctors).</remarks>
-        internal static bool IsMethodInRequiresScope(this MethodDesc method, string requiresAttribute)
+        internal static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute) =>
+            method.IsInRequiresScope(requiresAttribute, true);
+
+        /// <summary>
+		/// True if member of a call is considered to be annotated with the Requires... attribute.
+		/// Doesn't check the associated symbol for overrides and virtual methods because we should warn on mismatched between the property AND the accessors
+		/// </summary>
+		/// <param name="method">
+		///	MethodDesc that is either an overriding member or an overriden/virtual member
+		/// </param>
+        internal static bool IsOverrideInRequiresScope(this MethodDesc method, string requiresAttribute) =>
+            method.IsInRequiresScope(requiresAttribute, false);
+
+        private static bool IsInRequiresScope(this MethodDesc method, string requiresAttribute, bool checkAssociatedSymbol)
         {
             if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttribute) && !method.IsStaticConstructor)
                 return true;
@@ -110,14 +141,12 @@ namespace ILCompiler.Dataflow
             if (method.OwningType is TypeDesc type && TryGetRequiresAttribute(type, requiresAttribute, out _))
                 return true;
 
+            if (checkAssociatedSymbol && method.GetPropertyForAccessor() is PropertyPseudoDesc property && TryGetRequiresAttribute(property, requiresAttribute, out _))
+                return true;
+
             return false;
         }
 
-        /// <summary>
-		/// Determines if method requires (and thus any usage of such method should be warned about).
-		/// </summary>
-		/// <remarks>Unlike <see cref="IsMethodInRequiresScope(MethodDesc, string)"/> only static methods 
-		/// and .ctors are reported as requires when the declaring type has Requires on it.</remarks>
 		internal static bool DoesMethodRequires(this MethodDesc method, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
             attribute = null;
@@ -145,6 +174,14 @@ namespace ILCompiler.Dataflow
             return TryGetRequiresAttribute(field.OwningType, requiresAttribute, out attribute);
         }
 
+        internal static bool DoesPropertyRequires(this PropertyPseudoDesc property, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute) =>
+            TryGetRequiresAttribute(property, requiresAttribute, out attribute);
+
+        /// <summary>
+		/// Determines if member requires (and thus any usage of such method should be warned about).
+		/// </summary>
+		/// <remarks>Unlike <see cref="IsInRequiresScope(MethodDesc, string)"/> only static methods 
+		/// and .ctors are reported as requires when the declaring type has Requires on it.</remarks>
         internal static bool DoesMemberRequires(this TypeSystemEntity member, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
             attribute = null;
@@ -152,6 +189,7 @@ namespace ILCompiler.Dataflow
             {
                 MethodDesc method => DoesMethodRequires(method, requiresAttribute, out attribute),
                 FieldDesc field => DoesFieldRequires(field, requiresAttribute, out attribute),
+                PropertyPseudoDesc property => DoesPropertyRequires(property, requiresAttribute, out attribute),
                 _ => false
             };
         }
