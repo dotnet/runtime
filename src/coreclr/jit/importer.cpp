@@ -19572,7 +19572,7 @@ void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
     inlCurArgInfo->arg = arg;
     GenTree* curArgVal = arg->GetNode();
 
-    curArgVal = curArgVal->gtRetExprVal();
+    assert(!curArgVal->OperIs(GT_RET_EXPR));
 
     if (curArgVal->gtOper == GT_MKREFANY)
     {
@@ -20168,7 +20168,8 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
     const var_types      lclTyp           = lclInfo.lclTypeInfo;
     GenTree*             op1              = nullptr;
 
-    GenTree* argNode = argInfo.arg->GetNode()->gtRetExprVal();
+    GenTree* argNode = argInfo.arg->GetNode();
+    assert(!argNode->OperIs(GT_RET_EXPR));
 
     if (argInfo.argIsInvariant && !argCanBeModified)
     {

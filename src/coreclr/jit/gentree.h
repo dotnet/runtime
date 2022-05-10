@@ -1762,9 +1762,6 @@ public:
 
     inline GenTree* gtCommaAssignVal();
 
-    // Tunnel through any GT_RET_EXPRs
-    GenTree* gtRetExprVal(BasicBlockFlags* pbbFlags = nullptr);
-
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
 

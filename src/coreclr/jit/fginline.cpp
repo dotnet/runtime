@@ -145,7 +145,8 @@ PhaseStatus Compiler::fgInline()
                     // handle inlined statements as fgLateDevirtualization
                     // cannot handle being called twice on a late devirt
                     // candidate.
-                    fgWalkTree(stmt->GetRootNodePointer(), fgUpdateInlineReturnExpressionPlaceHolder, nullptr, &madeChanges);
+                    fgWalkTree(stmt->GetRootNodePointer(), fgUpdateInlineReturnExpressionPlaceHolder, nullptr,
+                               &madeChanges);
 
                     InlineResult inlineResult(this, call, stmt, "fgInline");
 
@@ -501,7 +502,7 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
     Compiler*            comp        = data->compiler;
     CORINFO_CLASS_HANDLE retClsHnd   = NO_CLASS_HANDLE;
 
-    while (tree->OperGet() == GT_RET_EXPR)
+    while (tree->OperIs(GT_RET_EXPR))
     {
         // We are going to copy the tree from the inlinee,
         // so record the handle now.
@@ -514,15 +515,21 @@ Compiler::fgWalkResult Compiler::fgUpdateInlineReturnExpressionPlaceHolder(GenTr
         // Skip through chains of GT_RET_EXPRs (say from nested inlines)
         // to the actual tree to use.
         //
-        // Also we might as well try and fold the return value.
-        // Eg returns of constant bools will have CASTS.
-        // This folding may uncover more GT_RET_EXPRs, so we loop around
-        // until we've got something distinct.
+        BasicBlockFlags bbFlags;
+        GenTree*        inlineCandidate = tree;
+        do
+        {
+            GenTreeRetExpr* retExpr = inlineCandidate->AsRetExpr();
+            inlineCandidate         = retExpr->gtInlineCandidate;
+            bbFlags                 = retExpr->bbFlags;
+        } while (inlineCandidate->OperIs(GT_RET_EXPR));
+
+        // We might as well try and fold the return value. Eg returns of
+        // constant bools will have CASTS. This folding may uncover more
+        // GT_RET_EXPRs, so we loop around until we've got something distinct.
         //
-        BasicBlockFlags bbFlags         = BBF_EMPTY;
-        GenTree*        inlineCandidate = tree->gtRetExprVal(&bbFlags);
-        inlineCandidate                 = comp->gtFoldExpr(inlineCandidate);
-        var_types retType               = tree->TypeGet();
+        inlineCandidate   = comp->gtFoldExpr(inlineCandidate);
+        var_types retType = tree->TypeGet();
 
 #ifdef DEBUG
         if (comp->verbose)
@@ -1546,8 +1553,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             bool argHasPutArg = !varTypeIsStruct(arg->GetSignatureType()) &&
                                 (genTypeSize(argNode) != genTypeSize(arg->GetSignatureType()));
 
-            BasicBlockFlags bbFlags = BBF_EMPTY;
-            argNode                 = argNode->gtRetExprVal(&bbFlags);
+            assert(!argNode->OperIs(GT_RET_EXPR));
 
             if (argInfo.argHasTmp)
             {
@@ -1610,7 +1616,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     }
 #endif // DEBUG
                 }
-                block->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
             }
             else if (argInfo.argIsByRefToStructLocal)
             {
@@ -1664,33 +1669,33 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                         //
                         // Chase through any GT_RET_EXPRs to find the actual argument
                         // expression.
-                        GenTree* actualArgNode = argNode->gtRetExprVal(&bbFlags);
+                        assert(!argNode->OperIs(GT_RET_EXPR));
 
                         // For case (1)
                         //
                         // Look for the following tree shapes
                         // prejit: (IND (ADD (CONST, CALL(special dce helper...))))
                         // jit   : (COMMA (CALL(special dce helper...), (FIELD ...)))
-                        if (actualArgNode->gtOper == GT_COMMA)
+                        if (argNode->gtOper == GT_COMMA)
                         {
                             // Look for (COMMA (CALL(special dce helper...), (FIELD ...)))
-                            GenTree* op1 = actualArgNode->AsOp()->gtOp1;
-                            GenTree* op2 = actualArgNode->AsOp()->gtOp2;
+                            GenTree* op1 = argNode->AsOp()->gtOp1;
+                            GenTree* op2 = argNode->AsOp()->gtOp2;
                             if (op1->IsCall() &&
                                 ((op1->AsCall()->gtCallMoreFlags & GTF_CALL_M_HELPER_SPECIAL_DCE) != 0) &&
                                 (op2->gtOper == GT_FIELD) && ((op2->gtFlags & GTF_EXCEPT) == 0))
                             {
                                 JITDUMP("\nPerforming special dce on unused arg [%06u]:"
                                         " actual arg [%06u] helper call [%06u]\n",
-                                        argNode->gtTreeID, actualArgNode->gtTreeID, op1->gtTreeID);
+                                        argNode->gtTreeID, argNode->gtTreeID, op1->gtTreeID);
                                 // Drop the whole tree
                                 append = false;
                             }
                         }
-                        else if (actualArgNode->gtOper == GT_IND)
+                        else if (argNode->gtOper == GT_IND)
                         {
                             // Look for (IND (ADD (CONST, CALL(special dce helper...))))
-                            GenTree* addr = actualArgNode->AsOp()->gtOp1;
+                            GenTree* addr = argNode->AsOp()->gtOp1;
 
                             if (addr->gtOper == GT_ADD)
                             {
@@ -1703,7 +1708,7 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                                     // Drop the whole tree
                                     JITDUMP("\nPerforming special dce on unused arg [%06u]:"
                                             " actual arg [%06u] helper call [%06u]\n",
-                                            argNode->gtTreeID, actualArgNode->gtTreeID, op1->gtTreeID);
+                                            argNode->gtTreeID, argNode->gtTreeID, op1->gtTreeID);
                                     append = false;
                                 }
                             }
@@ -1740,8 +1745,6 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                     // since the box itself will be ignored.
                     gtTryRemoveBoxUpstreamEffects(argNode);
                 }
-
-                block->bbFlags |= (bbFlags & BBF_SPLIT_GAINED);
             }
         }
     }
