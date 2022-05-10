@@ -75,7 +75,7 @@ export const diagnostics: Diagnostics = {
         const defaultProviders = '';
         const defaultBufferSizeInMB = 1;
 
-        let sessionIdPtr: Int32Ptr = Module._malloc(4) as unknown as Int32Ptr;
+        const sessionIdPtr = Module._malloc(4) as unknown as Int32Ptr;
 
         try {
             const tracePath = options?.traceFilePath ?? defaultOutputPath
