@@ -9,36 +9,18 @@ namespace System.Runtime.InteropServices.Marshalling
     /// Marshaller for UTF-16 strings
     /// </summary>
     [CLSCompliant(false)]
-    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
-        Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer)]
+    [CustomTypeMarshaller(typeof(string),
+        Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
     public unsafe ref struct Utf16StringMarshaller
     {
         private ushort* _nativeValue;
-        private bool _allocated;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="Utf16StringMarshaller"/>.
         /// </summary>
         /// <param name="str">The string to marshal.</param>
         public Utf16StringMarshaller(string? str)
-            : this(str, default)
         {
-        }
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Utf16StringMarshaller"/>.
-        /// </summary>
-        /// <param name="str">The string to marshal.</param>
-        /// <param name="buffer">Buffer that may be used for marshalling.</param>
-        /// <remarks>
-        /// The <paramref name="buffer"/> must not be movable - that is, it should not be
-        /// on the managed heap or it should be pinned.
-        /// <seealso cref="CustomTypeMarshallerFeatures.CallerAllocatedBuffer"/>
-        /// </remarks>
-        public Utf16StringMarshaller(string? str, Span<ushort> buffer)
-        {
-            _allocated = false;
-
             if (str is null)
             {
                 _nativeValue = null;
@@ -46,17 +28,10 @@ namespace System.Runtime.InteropServices.Marshalling
             }
 
             // + 1 for null terminator
-            int required = str.Length + 1;
-            if (required > buffer.Length)
-            {
-                buffer = new Span<ushort>((ushort*)Marshal.AllocCoTaskMem(required * sizeof(ushort)), required);
-                _allocated = true;
-            }
+            _nativeValue =  (ushort*)Marshal.AllocCoTaskMem((str.Length + 1) * sizeof(ushort));
 
-            _nativeValue = (ushort*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
-
-            str.CopyTo(MemoryMarshal.Cast<ushort, char>(buffer));
-            buffer[str.Length] = '\0'; // null-terminate
+            str.CopyTo(new Span<char>(_nativeValue, str.Length));
+            _nativeValue[str.Length] = '\0'; // null-terminate
         }
 
         /// <summary>
@@ -74,11 +49,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public void FromNativeValue(ushort* value)
-        {
-            _nativeValue = value;
-            _allocated = true;
-        }
+        public void FromNativeValue(ushort* value) => _nativeValue = value;
 
         /// <summary>
         /// Returns the managed string.
@@ -96,8 +67,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// </remarks>
         public void FreeNative()
         {
-            if (_allocated)
-                Marshal.FreeCoTaskMem((IntPtr)_nativeValue);
+            Marshal.FreeCoTaskMem((IntPtr)_nativeValue);
         }
     }
 }
