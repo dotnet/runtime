@@ -1829,6 +1829,9 @@ namespace System.Text.RegularExpressions
                             // means the a*? could match by itself, in which case as it's lazy it needs to match as few a's as possible, e.g.
                             // a+?b* against the input "aaaab" should match "a", not "aaaa" nor "aaaab". (Technically for lazy, we only need to prevent
                             // walking off the end of the pattern, but it's not currently worth complicating the implementation for that case.)
+                            // allowLazy is set to true so that the implementation will analyze rather than ignore this node; generally lazy nodes
+                            // are ignored due to making them atomic not generally being a sound change, but here we're explicitly choosing to
+                            // given the circumstances.
                             node.Kind -= RegexNodeKind.Onelazy - RegexNodeKind.Oneloop; // lazy to greedy
                             node.MakeLoopAtomic();
                             break;
