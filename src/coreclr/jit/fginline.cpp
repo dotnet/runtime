@@ -1663,12 +1663,10 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
                         // This helper call is marked as a "Special DCE" helper during
                         // importation, over in fgGetStaticsCCtorHelper.
                         //
-                        // (2) NYI. If, after tunneling through GT_RET_VALs, we find that
-                        // the actual arg expression has no side effects, we can skip
-                        // appending all together. This will help jit TP a bit.
+                        // (2) NYI. If we find that the actual arg expression
+                        // has no side effects, we can skip appending all
+                        // together. This will help jit TP a bit.
                         //
-                        // Chase through any GT_RET_EXPRs to find the actual argument
-                        // expression.
                         assert(!argNode->OperIs(GT_RET_EXPR));
 
                         // For case (1)
