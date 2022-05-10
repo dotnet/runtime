@@ -4218,12 +4218,12 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	guint32 *local_locals = NULL;
 	InterpInst *last_seq_point = NULL;
 	gboolean save_last_error = FALSE;
-	gboolean link_bblocks = TRUE;
 	gboolean inlining = td->method != method;
 	InterpBasicBlock *exit_bb = NULL;
-	gboolean skipped_bbs_present = FALSE;
+	gboolean link_bblocks = TRUE;
 	gboolean emitting = TRUE;
-	gboolean blocks_skipped = FALSE;
+	gboolean uninit_stack_present = FALSE;
+	gboolean emitted_bbs_skipped = FALSE;
 
 	original_bb = bb = mono_basic_block_split (method, error, header);
 	goto_if_nok (error, exit);
@@ -4398,6 +4398,44 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 	// and skips those which don't.
 	// Next pass(es) will handle the skipped blocks and ignore the already generated ones.
 	// Naturally, if there are no back edges there will be a single pass.
+	// The code generation loop is sensitive to the following boolean flags:
+	// 'link_bblocks'
+	//		- indication to link the current block with the new one
+	//		- initial value: TRUE
+	//		- set to TRUE when:
+	//			- new code gen pass starts
+	//			- already emitted blocks have been skipped 
+	//			- code gen starts emitting a new (not emitted) block
+	//		- set to FALSE when:
+	//			- current block is marked as dead
+	//			- current block has uninitialized stack
+	//			- current block ends with unconditional branch (BR, LEAVE, ENDFINALLY)
+	// 'emitting'
+	//		- indication that the current block is being emitted
+	//		- initial value: TRUE
+	//		- set to TRUE when:
+	//			- new code gen pass starts
+	//			- already emitted blocks have been skipped 
+	//			- code gen starts emitting a new (not emitted) block
+	//		- set to FALSE when:
+	//			- current block is marked as dead
+	//			- current block has uninitialized stack
+	// 'uninit_stack_present'
+	//		- indication that in the current code gen pass a block with uninitialized stack has been detected and skipped
+	//		- initial value: FALSE
+	//		- set to TRUE when:
+	//			- a block with uninitialized stack is detected
+	//		- set to FALSE when:
+	//			- new code gen pass starts
+	// 'emitted_bbs_skipped'
+	//		- indication that in the current code gen pass already emitted blocks have been skipped
+	//		- initial value: FALSE 
+	//		- set to TRUE when:
+	//			- skipping already emitted blocks starts
+	//		- set to FALSE when:
+	//			- new code gen pass starts
+	//			- skipping already emitted blocks ends
+	// TODO: We might want to replace these flags with state enums to improve readability and maintenance
 retry_code_gen:
 
 	while (td->ip < end) {
@@ -4409,13 +4447,13 @@ retry_code_gen:
 				td->cbb = td->cbb->next_bb;
 				if (td->cbb->il_offset == bb->end)
 					bb = bb->next;
-				blocks_skipped = TRUE;
+				emitted_bbs_skipped = TRUE;
 			} else {
 				// nothing to be done
 				td->ip = end;
 			}
 			continue;
-		} else if (blocks_skipped) {
+		} else if (emitted_bbs_skipped) {
 			if (td->cbb->stack_height >= 0) {
 				if (td->cbb->stack_height > 0)
 					memcpy (td->stack, td->cbb->stack_state, td->cbb->stack_height * sizeof(td->stack [0]));
@@ -4424,7 +4462,7 @@ retry_code_gen:
 			link_bblocks = TRUE;
 			emitting = TRUE;
 		}
-		blocks_skipped = FALSE;
+		emitted_bbs_skipped = FALSE;
 
 		g_assert (td->sp >= td->stack);
 		in_offset = td->ip - header->code;
@@ -4476,6 +4514,7 @@ retry_code_gen:
 			if (td->verbose_level > 1)
 				g_print ("SKIPPING DEAD OP at %x\n", in_offset);
 			link_bblocks = FALSE;
+			emitting = FALSE;
 			td->ip += op_size;
 			continue;
 		}
@@ -4486,7 +4525,7 @@ retry_code_gen:
 			g_assert (bb_size > 0);
 			td->ip += bb_size;
 
-			skipped_bbs_present = TRUE;
+			uninit_stack_present = TRUE;
 			link_bblocks = FALSE;
 			emitting = FALSE;
 			continue;
@@ -7438,19 +7477,19 @@ retry_code_gen:
 	}
 
 	// Mark the last block with emitting information (if not already marked)
-	// and retry code generation if there was any skipped block.
+	// and retry code generation if there was a block with uninitialized stack size detected.
 	td->cbb->already_emitted |= emitting;
-	if (skipped_bbs_present) {
+	if (uninit_stack_present) {
 		// Reset the instruction, stack pointer, bbs and flags for the next pass
 		td->ip = header->code;
 		td->cbb = td->entry_bb;
 		bb = original_bb;
 		td->sp = td->stack;
 
-		link_bblocks = FALSE;
+		link_bblocks = TRUE;
 		emitting = TRUE;
-		skipped_bbs_present = FALSE;
-		blocks_skipped = FALSE;
+		uninit_stack_present = FALSE;
+		emitted_bbs_skipped = FALSE;
 		goto retry_code_gen;
 	}
 
