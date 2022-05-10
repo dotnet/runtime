@@ -77,7 +77,7 @@ namespace Microsoft.Interop
             context.RegisterSourceOutput(generatedMethods,
                 static (context, source) =>
                 {
-                    context.AddSource("LibraryImports.g.cs", source);
+                    context.AddSource(fileName, source);
                 });
         }
     }

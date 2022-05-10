@@ -48,8 +48,6 @@ namespace Microsoft.Interop
             }
 
             return containingTypeInfoBuilder.ToImmutable();
-
-
         }
 
         private static string GetContainingNamespace(MemberDeclarationSyntax memberDeclaration)

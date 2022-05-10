@@ -17,28 +17,6 @@ using static Microsoft.CodeAnalysis.CSharp.SyntaxFactory;
 
 namespace Microsoft.Interop
 {
-    public sealed record StubEnvironment(
-        Compilation Compilation,
-        TargetFramework TargetFramework,
-        Version TargetFrameworkVersion,
-        bool ModuleSkipLocalsInit)
-    {
-        /// <summary>
-        /// Override for determining if two StubEnvironment instances are
-        /// equal. This intentionally excludes the Compilation instance
-        /// since that represents the actual compilation and not just the settings.
-        /// </summary>
-        /// <param name="env1">The first StubEnvironment</param>
-        /// <param name="env2">The second StubEnvironment</param>
-        /// <returns>True if the settings are equal, otherwise false.</returns>
-        public static bool AreCompilationSettingsEqual(StubEnvironment env1, StubEnvironment env2)
-        {
-            return env1.TargetFramework == env2.TargetFramework
-                && env1.TargetFrameworkVersion == env2.TargetFrameworkVersion
-                && env1.ModuleSkipLocalsInit == env2.ModuleSkipLocalsInit;
-        }
-    }
-
     public sealed record SignatureContext
     {
         // We don't need the warnings around not setting the various
@@ -75,19 +53,19 @@ namespace Microsoft.Interop
 
         public static SignatureContext Create(
             IMethodSymbol method,
-            InteropAttributeData libraryImportData,
+            InteropAttributeData interopAttributeData,
             StubEnvironment env,
             IGeneratorDiagnostics diagnostics,
             Assembly generatorInfoAssembly)
         {
-            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, libraryImportData, diagnostics, env);
+            ImmutableArray<TypePositionInfo> typeInfos = GenerateTypeInformation(method, interopAttributeData, diagnostics, env);
 
             ImmutableArray<AttributeListSyntax>.Builder additionalAttrs = ImmutableArray.CreateBuilder<AttributeListSyntax>();
 
             if (env.TargetFramework != TargetFramework.Unknown)
             {
-                string GeneratorName = generatorInfoAssembly.GetName().Name;
-                string GeneratorVersion = generatorInfoAssembly.GetName().Version.ToString();
+                string generatorName = generatorInfoAssembly.GetName().Name;
+                string generatorVersion = generatorInfoAssembly.GetName().Version.ToString();
                 // Define additional attributes for the stub definition.
                 additionalAttrs.Add(
                     AttributeList(
@@ -97,8 +75,8 @@ namespace Microsoft.Interop
                                     SeparatedList(
                                         new[]
                                         {
-                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(GeneratorName))),
-                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(GeneratorVersion)))
+                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(generatorName))),
+                                            AttributeArgument(LiteralExpression(SyntaxKind.StringLiteralExpression, Literal(generatorVersion)))
                                         }))))));
             }
 
@@ -121,13 +99,13 @@ namespace Microsoft.Interop
             };
         }
 
-        private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(IMethodSymbol method, InteropAttributeData libraryImportData, IGeneratorDiagnostics diagnostics, StubEnvironment env)
+        private static ImmutableArray<TypePositionInfo> GenerateTypeInformation(IMethodSymbol method, InteropAttributeData interopAttributeData, IGeneratorDiagnostics diagnostics, StubEnvironment env)
         {
             // Compute the current default string encoding value.
             CharEncoding defaultEncoding = CharEncoding.Undefined;
-            if (libraryImportData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
+            if (interopAttributeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
             {
-                defaultEncoding = libraryImportData.StringMarshalling switch
+                defaultEncoding = interopAttributeData.StringMarshalling switch
                 {
                     StringMarshalling.Utf16 => CharEncoding.Utf16,
                     StringMarshalling.Utf8 => CharEncoding.Utf8,
@@ -135,12 +113,12 @@ namespace Microsoft.Interop
                     _ => CharEncoding.Undefined, // [Compat] Do not assume a specific value
                 };
             }
-            else if (libraryImportData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
+            else if (interopAttributeData.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshallingCustomType))
             {
                 defaultEncoding = CharEncoding.Custom;
             }
 
-            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, libraryImportData.StringMarshallingCustomType);
+            var defaultInfo = new DefaultMarshallingInfo(defaultEncoding, interopAttributeData.StringMarshallingCustomType);
 
             var marshallingAttributeParser = new MarshallingAttributeInfoParser(env.Compilation, diagnostics, defaultInfo, method);
 

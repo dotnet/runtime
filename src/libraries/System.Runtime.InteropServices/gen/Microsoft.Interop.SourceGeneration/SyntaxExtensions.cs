@@ -13,7 +13,7 @@ namespace Microsoft.Interop
 {
     public static class SyntaxExtensions
     {
-        public static FixedStatementSyntax AddStatementWithoutEmptyStatements(this FixedStatementSyntax fixedStatement, StatementSyntax childStatement)
+        private static FixedStatementSyntax AddStatementWithoutEmptyStatements(this FixedStatementSyntax fixedStatement, StatementSyntax childStatement)
         {
             if (fixedStatement.Statement.IsKind(SyntaxKind.EmptyStatement))
             {

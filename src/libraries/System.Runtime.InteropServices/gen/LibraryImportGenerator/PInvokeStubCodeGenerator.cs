@@ -120,7 +120,7 @@ namespace Microsoft.Interop
         /// </remarks>
         public BlockSyntax GeneratePInvokeBody(string dllImportName)
         {
-            GeneratedStatements statements = GeneratedStatements.GenerateStatements(_marshallers, _context, IdentifierName(dllImportName));
+            GeneratedStatements statements = GeneratedStatements.Create(_marshallers, _context, IdentifierName(dllImportName));
             bool shouldInitializeVariables = !statements.GuaranteedUnmarshal.IsEmpty || !statements.Cleanup.IsEmpty;
             VariableDeclarations declarations = VariableDeclarations.GenerateDeclarationsForManagedToNative(_marshallers, _context, shouldInitializeVariables);
 

@@ -21,7 +21,6 @@ namespace Microsoft.Interop
     [Generator]
     public sealed class LibraryImportGenerator : IIncrementalGenerator
     {
-
         internal sealed record IncrementalStubGenerationContext(
             StubEnvironment Environment,
             SignatureContext SignatureContext,

@@ -24,7 +24,7 @@ namespace Microsoft.Interop
         public ImmutableArray<StatementSyntax> GuaranteedUnmarshal { get; init; }
         public ImmutableArray<StatementSyntax> Cleanup { get; init; }
 
-        public static GeneratedStatements GenerateStatements(BoundGenerators marshallers, StubCodeContext context, ExpressionSyntax expressionToInvoke)
+        public static GeneratedStatements Create(BoundGenerators marshallers, StubCodeContext context, ExpressionSyntax expressionToInvoke)
         {
             return new GeneratedStatements
             {
