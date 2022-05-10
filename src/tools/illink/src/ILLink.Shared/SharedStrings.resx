@@ -1107,6 +1107,30 @@
   <data name="RequiresDynamicCodeAttributeMismatchMessage" xml:space="preserve">
     <value>{0}. 'RequiresDynamicCodeAttribute' annotations must match across all interface implementations or overrides.</value>
   </data>
+  <data name="COMInteropNotSupportedInFullAOTTitle" xml:space="preserve">
+    <value>COM interop is not supported with full ahead of time compilation.</value>
+  </data>
+  <data name="COMInteropNotSupportedInFullAOTMessage" xml:space="preserve">
+    <value>COM interop is not supported with full ahead of time compilation.</value>
+  </data>
+  <data name="AssemblyProducedAOTWarningsTitle" xml:space="preserve">
+    <value>Assembly produced AOT analysis warnings.</value>
+  </data>
+  <data name="AssemblyProducedAOTWarningsMessage" xml:space="preserve">
+    <value>Assembly '{0}' produced AOT analysis warnings.</value>
+  </data>
+  <data name="GenericRecursionCycleTitle" xml:space="preserve">
+    <value>Generic expansion to was aborted due to generic recursion. An exception will be thrown at runtime if this codepath is ever reached.</value>
+  </data>
+  <data name="GenericRecursionCycleMessage" xml:space="preserve">
+    <value>Generic expansion to '{0}' was aborted due to generic recursion. An exception will be thrown at runtime if this codepath is ever reached. Generic recursion also negatively affects compilation speed and the size of the compilation output. It is advisable to remove the source of the generic recursion by restructuring the program around the source of recursion. The source of generic recursion might include: {1}</value>
+  </data>
+  <data name="CorrectnessOfAbstractDelegatesCannotBeGuaranteedTitle" xml:space="preserve">
+    <value>P/invoke method declares a parameter with an abstract delegate. Correctness of interop for abstract delegates cannot be guaranteed after native compilation.</value>
+  </data>
+  <data name="CorrectnessOfAbstractDelegatesCannotBeGuaranteedMessage" xml:space="preserve">
+    <value>P/invoke method '{0}' declares a parameter with an abstract delegate. Correctness of interop for abstract delegates cannot be guaranteed after native compilation: the marshalling code for the delegate might not be available. Use a non-abstract delegate type or ensure any delegate instance passed as parameter is marked with `UnmanagedFunctionPointerAttribute`.</value>
+  </data>
   <data name="BaseRequiresMismatchMessage" xml:space="preserve">
     <value>Base member '{2}' with '{0}' has a derived member '{1}' without '{0}'</value>
   </data>

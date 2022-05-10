@@ -79,7 +79,7 @@ namespace Mono.Linker.Tests.Cases.RequiresCapability
 		{
 			[ExpectedWarning ("IL2116", "StaticCtorTriggeredByMethodCall..cctor()")]
 			[ExpectedWarning ("IL3004", "StaticCtorTriggeredByMethodCall..cctor()", ProducedBy = ProducedBy.Analyzer)]
-			[ExpectedWarning ("IL3052", "StaticCtorTriggeredByMethodCall..cctor()", ProducedBy = ProducedBy.Analyzer)]
+			[ExpectedWarning ("IL3056", "StaticCtorTriggeredByMethodCall..cctor()", ProducedBy = ProducedBy.Analyzer)]
 			[RequiresUnreferencedCode ("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
 			[RequiresAssemblyFiles ("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
 			[RequiresDynamicCode ("Message for --StaticCtorTriggeredByMethodCall.Cctor--")]
