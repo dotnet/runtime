@@ -187,7 +187,11 @@ namespace ILLink.Shared
 		// Dynamic code diagnostic ids.
 		RequiresDynamicCode = 3050,
 		RequiresDynamicCodeAttributeMismatch = 3051,
-		RequiresDynamicCodeOnStaticConstructor = 3052
+		COMInteropNotSupportedInFullAOT = 3052,
+		AssemblyProducedAOTWarnings = 3053,
+		GenericRecursionCycle = 3054,
+		CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
+		RequiresDynamicCodeOnStaticConstructor = 3056,
 	}
 
 	public static class DiagnosticIdExtensions
@@ -204,11 +208,13 @@ namespace ILLink.Shared
 				2045 => MessageSubCategory.TrimAnalysis,
 				2046 => MessageSubCategory.TrimAnalysis,
 				2050 => MessageSubCategory.TrimAnalysis,
-				var x when x >= 2055 && x <= 2099 => MessageSubCategory.TrimAnalysis,
+				>= 2055 and <= 2099 => MessageSubCategory.TrimAnalysis,
 				2103 => MessageSubCategory.TrimAnalysis,
 				2106 => MessageSubCategory.TrimAnalysis,
 				2107 => MessageSubCategory.TrimAnalysis,
-				var x when x >= 2109 && x <= 2116 => MessageSubCategory.TrimAnalysis,
+				>= 2109 and <= 2116 => MessageSubCategory.TrimAnalysis,
+				>= 3050 and <= 3052 => MessageSubCategory.AotAnalysis,
+				>= 3054 and <= 3055 => MessageSubCategory.AotAnalysis,
 				_ => MessageSubCategory.None,
 			};
 	}

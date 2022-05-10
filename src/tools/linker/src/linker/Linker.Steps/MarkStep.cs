@@ -2919,7 +2919,7 @@ namespace Mono.Linker.Steps
 				return false;
 
 			if (originMember is MethodDefinition &&
-				Annotations.IsMethodInRequiresUnreferencedCodeScope ((MethodDefinition) originMember))
+				Annotations.IsInRequiresUnreferencedCodeScope ((MethodDefinition) originMember))
 				return true;
 
 			if (originMember is not IMemberDefinition member)
@@ -2928,7 +2928,7 @@ namespace Mono.Linker.Steps
 			MethodDefinition? owningMethod;
 			while (Context.CompilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember (member, out owningMethod)) {
 				Debug.Assert (owningMethod != member);
-				if (Annotations.IsMethodInRequiresUnreferencedCodeScope (owningMethod))
+				if (Annotations.IsInRequiresUnreferencedCodeScope (owningMethod))
 					return true;
 				member = owningMethod;
 			}
