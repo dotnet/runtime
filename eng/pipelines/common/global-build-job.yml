@@ -154,12 +154,12 @@ jobs:
         inputs:
           filePath: $(Build.SourcesDirectory)/eng/pipelines/mono/update-machine-certs.ps1
 
-    # Build
-    - ${{ if eq(parameters.buildingOnSourceBuildImage, false) }}:
-      - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
-        displayName: Build product
-        ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
-          continueOnError: ${{ parameters.shouldContinueOnError }}
+    ## Build
+    #- ${{ if eq(parameters.buildingOnSourceBuildImage, false) }}:
+    #  - script: $(_sclEnableCommand) $(Build.SourcesDirectory)$(dir)build$(scriptExt) -ci -arch ${{ parameters.archType }} $(_osParameter) ${{ parameters.buildArgs }} $(_officialBuildParameter) $(_crossBuildPropertyArg) $(_cxx11Parameter) $(_richCodeNavigationParam) $(_buildDarwinFrameworksParameter)
+    #    displayName: Build product
+    #    ${{ if eq(parameters.useContinueOnErrorDuringBuild, true) }}:
+    #      continueOnError: ${{ parameters.shouldContinueOnError }}
 
     - ${{ if in(parameters.osGroup, 'OSX', 'iOS', 'tvOS', 'Android') }}:
       - script: |
@@ -186,14 +186,14 @@ jobs:
           shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
           ${{ insert }}: ${{ parameters.extraStepsParameters }}
 
-    - task: PublishBuildArtifacts@1
-      displayName: Publish Logs
-      inputs:
-        PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
-        PublishLocation: Container
-        ${{ if ne(parameters.osGroup, 'Browser') }}:
-          ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-        ${{ if eq(parameters.osGroup, 'Browser') }}:
-          ArtifactName: Logs_Build_Browser_wasm_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
-      continueOnError: true
-      condition: always()
+    #- task: PublishBuildArtifacts@1
+    #  displayName: Publish Logs
+    #  inputs:
+    #    PathtoPublish: '$(Build.SourcesDirectory)/artifacts/log/'
+    #    PublishLocation: Container
+    #    ${{ if ne(parameters.osGroup, 'Browser') }}:
+    #      ArtifactName: Logs_Build_${{ parameters.osGroup }}_${{ parameters.osSubGroup }}_${{ parameters.archType }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+    #    ${{ if eq(parameters.osGroup, 'Browser') }}:
+    #      ArtifactName: Logs_Build_Browser_wasm_${{ parameters.hostedOs }}_${{ parameters.buildConfig }}_${{ parameters.nameSuffix }}
+    #  continueOnError: true
+    #  condition: always()
