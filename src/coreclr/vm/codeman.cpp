@@ -1362,6 +1362,9 @@ void EEJitManager::SetCpuInfo()
     //   CORJIT_FLAG_USE_SSE42 if the following feature bits are set (input EAX of 1)
     //      CORJIT_FLAG_USE_SSE41
     //      SSE4.2    - ECX bit 20
+    //   CORJIT_FLAG_USE_MOVBE if the following feature bits are set (input EAX of 1)
+    //      CORJIT_FLAG_USE_SSE42
+    //      MOVBE    - ECX bit 22
     //   CORJIT_FLAG_USE_POPCNT if the following feature bits are set (input EAX of 1)
     //      CORJIT_FLAG_USE_SSE42
     //      POPCNT    - ECX bit 23
@@ -1432,6 +1435,11 @@ void EEJitManager::SetCpuInfo()
                         if ((cpuidInfo[ECX] & (1 << 20)) != 0)                                              // SSE4.2
                         {
                             CPUCompileFlags.Set(InstructionSet_SSE42);
+
+                            if ((cpuidInfo[ECX] & (1 << 22)) != 0)                                          // MOVBE
+                            {
+                                CPUCompileFlags.Set(InstructionSet_MOVBE);
+                            }
 
                             if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
                             {
@@ -1608,6 +1616,11 @@ void EEJitManager::SetCpuInfo()
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePCLMULQDQ))
     {
         CPUCompileFlags.Clear(InstructionSet_PCLMULQDQ);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableMOVBE))
+    {
+        CPUCompileFlags.Clear(InstructionSet_MOVBE);
     }
 
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePOPCNT))

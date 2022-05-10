@@ -860,6 +860,19 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
         {
             // Morph trees that aren't already OBJs or MKREFANY to be OBJs
             assert(ti.IsType(TI_STRUCT));
+
+            // The argument and parameter types can be different for legitimate
+            // reasons, but we expect them to be compatible in those cases. One
+            // example where this happens is when inlining shared code into a
+            // non-generic function, in which case we might see the __Canon in
+            // the parameter type but exact types in the signature type.
+            //
+            // TODO-ARGS: Remove this quirk; we should be able to use the
+            // signature type that is different in the rare case above. It will
+            // cause positive diffs, but that is probably an indication that we
+            // have downstream phases that should be using
+            // `ClassLayout::AreCompatible` instead.
+            //
             classHnd = ti.GetClassHandleForValueClass();
 
             bool forceNormalization = false;
@@ -921,23 +934,23 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             }
         }
 
-        const var_types nodeArgType = argNode->TypeGet();
-        if (!varTypeIsStruct(jitSigType) && genTypeSize(nodeArgType) != genTypeSize(jitSigType))
+        NewCallArg arg;
+        if (varTypeIsStruct(jitSigType))
         {
-            assert(!varTypeIsStruct(nodeArgType));
-            // Some ABI require precise size information for call arguments less than target pointer size,
-            // for example arm64 OSX. Create a special node to keep this information until morph
-            // consumes it into `CallArgs`.
-            argNode = gtNewOperNode(GT_PUTARG_TYPE, jitSigType, argNode);
+            arg = NewCallArg::Struct(argNode, jitSigType, classHnd);
+        }
+        else
+        {
+            arg = NewCallArg::Primitive(argNode, jitSigType);
         }
 
         if (lastArg == nullptr)
         {
-            lastArg = call->gtArgs.PushFront(this, argNode);
+            lastArg = call->gtArgs.PushFront(this, arg);
         }
         else
         {
-            lastArg = call->gtArgs.InsertAfterUnchecked(this, lastArg, argNode);
+            lastArg = call->gtArgs.InsertAfterUnchecked(this, lastArg, arg);
         }
 
         call->gtFlags |= argNode->gtFlags & GTF_GLOB_EFFECT;
@@ -988,7 +1001,7 @@ static bool TypeIs(var_types type1, var_types type2, T... rest)
 //   - it can't check long -> native int case on 64-bit platforms,
 //      so the behavior is different depending on the target bitness.
 //
-bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType) const
+bool Compiler::impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType)
 {
     if (sigType == nodeType)
     {
@@ -1239,6 +1252,8 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
             WellKnownArg wellKnownArgType =
                 srcCall->ShouldHaveRetBufArg() ? WellKnownArg::RetBuffer : WellKnownArg::None;
 
+            NewCallArg newArg = NewCallArg::Primitive(destAddr).WellKnown(wellKnownArgType);
+
 #if !defined(TARGET_ARM)
             // Unmanaged instance methods on Windows or Unix X86 need the retbuf arg after the first (this) parameter
             if ((TargetOS::IsWindows || compUnixX86Abi()) && srcCall->IsUnmanaged())
@@ -1253,18 +1268,18 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     if (srcCall->gtArgs.Args().begin() == srcCall->gtArgs.Args().end())
                     {
                         // Empty arg list
-                        srcCall->gtArgs.PushFront(this, destAddr, wellKnownArgType);
+                        srcCall->gtArgs.PushFront(this, newArg);
                     }
                     else if (srcCall->GetUnmanagedCallConv() == CorInfoCallConvExtension::Thiscall)
                     {
                         // For thiscall, the "this" parameter is not included in the argument list reversal,
                         // so we need to put the return buffer as the last parameter.
-                        srcCall->gtArgs.PushBack(this, destAddr, wellKnownArgType);
+                        srcCall->gtArgs.PushBack(this, newArg);
                     }
                     else if (srcCall->gtArgs.Args().begin()->GetNext() == nullptr)
                     {
                         // Only 1 arg, so insert at beginning
-                        srcCall->gtArgs.PushFront(this, destAddr, wellKnownArgType);
+                        srcCall->gtArgs.PushFront(this, newArg);
                     }
                     else
                     {
@@ -1281,17 +1296,17 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                         }
 
                         assert(secondLastArg && "Expected to find second last arg");
-                        srcCall->gtArgs.InsertAfter(this, secondLastArg, destAddr, wellKnownArgType);
+                        srcCall->gtArgs.InsertAfter(this, secondLastArg, newArg);
                     }
 
 #else
                     if (srcCall->gtArgs.Args().begin() == srcCall->gtArgs.Args().end())
                     {
-                        srcCall->gtArgs.PushFront(this, destAddr, wellKnownArgType);
+                        srcCall->gtArgs.PushFront(this, newArg);
                     }
                     else
                     {
-                        srcCall->gtArgs.InsertAfter(this, &*srcCall->gtArgs.Args().begin(), destAddr, wellKnownArgType);
+                        srcCall->gtArgs.InsertAfter(this, &*srcCall->gtArgs.Args().begin(), newArg);
                     }
 #endif
                 }
@@ -1301,10 +1316,10 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
                     // The argument list has already been reversed.
                     // Insert the return buffer as the last node so it will be pushed on to the stack last
                     // as required by the native ABI.
-                    srcCall->gtArgs.PushBack(this, destAddr, wellKnownArgType);
+                    srcCall->gtArgs.PushBack(this, newArg);
 #else
                     // insert the return value buffer into the argument list as first byref parameter
-                    srcCall->gtArgs.PushFront(this, destAddr, wellKnownArgType);
+                    srcCall->gtArgs.PushFront(this, newArg);
 #endif
                 }
             }
@@ -1312,7 +1327,7 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
 #endif // !defined(TARGET_ARM)
             {
                 // insert the return value buffer into the argument list as first byref parameter after 'this'
-                srcCall->gtArgs.InsertAfterThisOrFirst(this, destAddr, wellKnownArgType);
+                srcCall->gtArgs.InsertAfterThisOrFirst(this, newArg);
             }
 
             // now returns void, not a struct
@@ -1375,13 +1390,14 @@ GenTree* Compiler::impAssignStructPtr(GenTree*             destAddr,
     }
     else if (src->gtOper == GT_RET_EXPR)
     {
+        noway_assert(src->AsRetExpr()->gtInlineCandidate->OperIs(GT_CALL));
         GenTreeCall* call = src->AsRetExpr()->gtInlineCandidate->AsCall();
-        noway_assert(call->gtOper == GT_CALL);
 
         if (call->ShouldHaveRetBufArg())
         {
             // insert the return value buffer into the argument list as first byref parameter after 'this'
-            call->gtArgs.InsertAfterThisOrFirst(this, destAddr, WellKnownArg::RetBuffer);
+            call->gtArgs.InsertAfterThisOrFirst(this,
+                                                NewCallArg::Primitive(destAddr).WellKnown(WellKnownArg::RetBuffer));
 
             // now returns void, not a struct
             src->gtType  = TYP_VOID;
@@ -2373,7 +2389,10 @@ GenTree* Compiler::impRuntimeLookupToTree(CORINFO_RESOLVED_TOKEN* pResolvedToken
 
         // ((sizeCheck fails || nullCheck fails))) ? (helperCall : handle).
         // Add checks and the handle as call arguments, indirect call transformer will handle this.
-        helperCall->gtArgs.PushFront(this, nullCheck, sizeCheck, handleForResult);
+        NewCallArg nullCheckArg       = NewCallArg::Primitive(nullCheck);
+        NewCallArg sizeCheckArg       = NewCallArg::Primitive(sizeCheck);
+        NewCallArg handleForResultArg = NewCallArg::Primitive(handleForResult);
+        helperCall->gtArgs.PushFront(this, nullCheckArg, sizeCheckArg, handleForResultArg);
         result = helperCall;
         addExpRuntimeLookupCandidate(helperCall);
     }
@@ -8449,7 +8468,7 @@ void Compiler::impInsertHelperCall(CORINFO_HELPER_DESC* helperInfo)
             default:
                 NO_WAY("Illegal helper arg type");
         }
-        callout->gtArgs.PushFront(this, currentArg);
+        callout->gtArgs.PushFront(this, NewCallArg::Primitive(currentArg));
     }
 
     impAppendTree(callout, (unsigned)CHECK_SPILL_NONE, impCurStmtDI);
@@ -8730,8 +8749,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     bool bIntrinsicImported = false;
 
     CORINFO_SIG_INFO calliSig;
-    GenTree*         extraArg     = nullptr;
-    WellKnownArg     extraArgKind = WellKnownArg::None;
+    NewCallArg       extraArg;
 
     /*-------------------------------------------------------------------------
      * First create the call node
@@ -9036,7 +9054,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
                 GenTree* fptr = impImportLdvirtftn(thisPtr, pResolvedToken, callInfo);
                 assert(fptr != nullptr);
 
-                call->AsCall()->gtArgs.PushFront(this, thisPtrCopy, WellKnownArg::ThisPointer);
+                call->AsCall()
+                    ->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtrCopy).WellKnown(WellKnownArg::ThisPointer));
 
                 // Now make an indirect call through the function pointer
 
@@ -9363,9 +9382,9 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         varCookie = info.compCompHnd->getVarArgsHandle(sig, &pVarCookie);
         assert((!varCookie) != (!pVarCookie));
-        assert(extraArg == nullptr);
-        extraArg     = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
-        extraArgKind = WellKnownArg::VarArgsCookie;
+        GenTree* cookieNode = gtNewIconEmbHndNode(varCookie, pVarCookie, GTF_ICON_VARG_HDL, sig);
+        assert(extraArg.Node == nullptr);
+        extraArg = NewCallArg::Primitive(cookieNode).WellKnown(WellKnownArg::VarArgsCookie);
     }
 
     //-------------------------------------------------------------------------
@@ -9487,9 +9506,8 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
             }
         }
 
-        assert(extraArg == nullptr);
-        extraArg     = instParam;
-        extraArgKind = WellKnownArg::InstParam;
+        assert(extraArg.Node == nullptr);
+        extraArg = NewCallArg::Primitive(instParam).WellKnown(WellKnownArg::InstParam);
     }
 
     if ((opcode == CEE_NEWOBJ) && ((clsFlags & CORINFO_FLG_DELEGATE) != 0))
@@ -9511,18 +9529,18 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
     // The main group of arguments
 
     impPopCallArgs(sig, call->AsCall());
-    if (extraArg != nullptr)
+    if (extraArg.Node != nullptr)
     {
         if (Target::g_tgtArgOrder == Target::ARG_ORDER_R2L)
         {
-            call->AsCall()->gtArgs.PushFront(this, extraArg, extraArgKind);
+            call->AsCall()->gtArgs.PushFront(this, extraArg);
         }
         else
         {
-            call->AsCall()->gtArgs.PushBack(this, extraArg, extraArgKind);
+            call->AsCall()->gtArgs.PushBack(this, extraArg);
         }
 
-        call->gtFlags |= extraArg->gtFlags & GTF_GLOB_EFFECT;
+        call->gtFlags |= extraArg.Node->gtFlags & GTF_GLOB_EFFECT;
     }
 
     //-------------------------------------------------------------------------
@@ -9549,7 +9567,7 @@ var_types Compiler::impImportCall(OPCODE                  opcode,
 
         // Store the "this" value in the call
         call->gtFlags |= obj->gtFlags & GTF_GLOB_EFFECT;
-        call->AsCall()->gtArgs.PushFront(this, obj, WellKnownArg::ThisPointer);
+        call->AsCall()->gtArgs.PushFront(this, NewCallArg::Primitive(obj).WellKnown(WellKnownArg::ThisPointer));
 
         // Is this a virtual or interface call?
         if (call->AsCall()->IsVirtual())
@@ -16065,6 +16083,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
             }
 
             case CEE_REFANYVAL:
+            {
 
                 // get the class handle and make a ICON node out of it
 
@@ -16083,11 +16102,16 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 op1 = impNormStructVal(op1, impGetRefAnyClass(), (unsigned)CHECK_SPILL_ALL);
 
                 // Call helper GETREFANY(classHandle, op1);
-                op1 = gtNewHelperCallNode(CORINFO_HELP_GETREFANY, TYP_BYREF, op2, op1);
+                GenTreeCall* helperCall   = gtNewHelperCallNode(CORINFO_HELP_GETREFANY, TYP_BYREF);
+                NewCallArg   clsHandleArg = NewCallArg::Primitive(op2);
+                NewCallArg   typedRefArg  = NewCallArg::Struct(op1, TYP_STRUCT, impGetRefAnyClass());
+                helperCall->gtArgs.PushFront(this, clsHandleArg, typedRefArg);
+                helperCall->gtFlags |= (op1->gtFlags | op2->gtFlags) & GTF_ALL_EFFECT;
+                op1 = helperCall;
 
                 impPushOnStack(op1, tiRetVal);
                 break;
-
+            }
             case CEE_REFANYTYPE:
 
                 op1 = impPopStack().val;
@@ -19103,7 +19127,7 @@ void Compiler::impMakeDiscretionaryInlineObservations(InlineInfo* pInlineInfo, I
 
         CORINFO_CLASS_HANDLE sigClass;
         CorInfoType          corType = strip(info.compCompHnd->getArgType(&sig, sigArg, &sigClass));
-        GenTree*             argNode = argUse == nullptr ? nullptr : argUse->GetEarlyNode()->gtSkipPutArgType();
+        GenTree*             argNode = argUse == nullptr ? nullptr : argUse->GetEarlyNode();
 
         if (corType == CORINFO_TYPE_CLASS)
         {
@@ -19527,7 +19551,7 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //
 // Arguments:
 //   pInlineInfo - inline info for the inline candidate
-//   curArgVal - tree for the caller actual argument value
+//   arg - the caller argument
 //   argNum - logical index of this argument
 //   inlineResult - result of ongoing inline evaluation
 //
@@ -19539,15 +19563,15 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //   pass the argument into the inlinee.
 
 void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
-                                      GenTree*      curArgVal,
+                                      CallArg*      arg,
                                       unsigned      argNum,
                                       InlineResult* inlineResult)
 {
     InlArgInfo* inlCurArgInfo = &pInlineInfo->inlArgInfo[argNum];
 
-    inlCurArgInfo->argNode = curArgVal; // Save the original tree, with PUT_ARG and RET_EXPR.
+    inlCurArgInfo->arg = arg;
+    GenTree* curArgVal = arg->GetNode();
 
-    curArgVal = curArgVal->gtSkipPutArgType();
     curArgVal = curArgVal->gtRetExprVal();
 
     if (curArgVal->gtOper == GT_MKREFANY)
@@ -19725,8 +19749,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 break;
         }
 
-        GenTree* actualArg = gtFoldExpr(arg.GetEarlyNode());
-        impInlineRecordArgInfo(pInlineInfo, actualArg, ilArgCnt, inlineResult);
+        arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
+        impInlineRecordArgInfo(pInlineInfo, &arg, ilArgCnt, inlineResult);
 
         if (inlineResult->IsFailure())
         {
@@ -19795,6 +19819,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
     CORINFO_ARG_LIST_HANDLE argLst;
     argLst = methInfo->args.args;
 
+    // TODO-ARGS: We can presumably just use type info stored in CallArgs
+    // instead of reiterating the signature.
     unsigned i;
     for (i = (thisArg ? 1 : 0); i < ilArgCnt; i++, argLst = info.compCompHnd->getArgNext(argLst))
     {
@@ -19820,114 +19846,105 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
         lclVarInfo[i].lclTypeInfo    = sigType;
         lclVarInfo[i].lclHasLdlocaOp = false;
 
-        /* Does the tree type match the signature type? */
+        // Does the tree type match the signature type?
 
-        GenTree* inlArgNode = inlArgInfo[i].argNode;
+        GenTree* inlArgNode = inlArgInfo[i].arg->GetNode();
 
-        if ((sigType != inlArgNode->gtType) || inlArgNode->OperIs(GT_PUTARG_TYPE))
+        if (sigType == inlArgNode->gtType)
         {
-            assert(impCheckImplicitArgumentCoercion(sigType, inlArgNode->gtType));
-            assert(!varTypeIsStruct(inlArgNode->gtType) && !varTypeIsStruct(sigType));
+            continue;
+        }
 
-            /* In valid IL, this can only happen for short integer types or byrefs <-> [native] ints,
-               but in bad IL cases with caller-callee signature mismatches we can see other types.
-               Intentionally reject cases with mismatches so the jit is more flexible when
-               encountering bad IL. */
+        assert(impCheckImplicitArgumentCoercion(sigType, inlArgNode->gtType));
+        assert(!varTypeIsStruct(inlArgNode->gtType) && !varTypeIsStruct(sigType));
 
-            bool isPlausibleTypeMatch = (genActualType(sigType) == genActualType(inlArgNode->gtType)) ||
-                                        (genActualTypeIsIntOrI(sigType) && inlArgNode->gtType == TYP_BYREF) ||
-                                        (sigType == TYP_BYREF && genActualTypeIsIntOrI(inlArgNode->gtType));
+        // In valid IL, this can only happen for short integer types or byrefs <-> [native] ints,
+        // but in bad IL cases with caller-callee signature mismatches we can see other types.
+        // Intentionally reject cases with mismatches so the jit is more flexible when
+        // encountering bad IL.
 
-            if (!isPlausibleTypeMatch)
+        bool isPlausibleTypeMatch = (genActualType(sigType) == genActualType(inlArgNode->gtType)) ||
+                                    (genActualTypeIsIntOrI(sigType) && inlArgNode->gtType == TYP_BYREF) ||
+                                    (sigType == TYP_BYREF && genActualTypeIsIntOrI(inlArgNode->gtType));
+
+        if (!isPlausibleTypeMatch)
+        {
+            inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_TYPES_INCOMPATIBLE);
+            return;
+        }
+
+        // The same size but different type of the arguments.
+        GenTree** pInlArgNode = &inlArgInfo[i].arg->EarlyNodeRef();
+
+        // Is it a narrowing or widening cast?
+        // Widening casts are ok since the value computed is already
+        // normalized to an int (on the IL stack)
+        if (genTypeSize(inlArgNode->gtType) >= genTypeSize(sigType))
+        {
+            if (sigType == TYP_BYREF)
             {
-                inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_TYPES_INCOMPATIBLE);
-                return;
+                lclVarInfo[i].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
             }
+            else if (inlArgNode->gtType == TYP_BYREF)
+            {
+                assert(varTypeIsIntOrI(sigType));
 
-            GenTree** pInlArgNode;
-            if (inlArgNode->OperIs(GT_PUTARG_TYPE))
-            {
-                // There was a widening or narrowing cast.
-                GenTreeUnOp* putArgType = inlArgNode->AsUnOp();
-                pInlArgNode             = &putArgType->gtOp1;
-                inlArgNode              = putArgType->gtOp1;
-            }
-            else
-            {
-                // The same size but different type of the arguments.
-                pInlArgNode = &inlArgInfo[i].argNode;
-            }
-
-            /* Is it a narrowing or widening cast?
-             * Widening casts are ok since the value computed is already
-             * normalized to an int (on the IL stack) */
-            if (genTypeSize(inlArgNode->gtType) >= genTypeSize(sigType))
-            {
-                if (sigType == TYP_BYREF)
+                /* If possible bash the BYREF to an int */
+                if (inlArgNode->IsLocalAddrExpr() != nullptr)
                 {
+                    inlArgNode->gtType           = TYP_I_IMPL;
                     lclVarInfo[i].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
                 }
-                else if (inlArgNode->gtType == TYP_BYREF)
+                else
                 {
-                    assert(varTypeIsIntOrI(sigType));
-
-                    /* If possible bash the BYREF to an int */
-                    if (inlArgNode->IsLocalAddrExpr() != nullptr)
-                    {
-                        inlArgNode->gtType           = TYP_I_IMPL;
-                        lclVarInfo[i].lclVerTypeInfo = typeInfo(varType2tiType(TYP_I_IMPL));
-                    }
-                    else
-                    {
-                        /* Arguments 'int <- byref' cannot be changed */
-                        inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_INT);
-                        return;
-                    }
+                    // Arguments 'int <- byref' cannot be changed
+                    inlineResult->NoteFatal(InlineObservation::CALLSITE_ARG_NO_BASH_TO_INT);
+                    return;
                 }
-                else if (genTypeSize(sigType) < TARGET_POINTER_SIZE)
-                {
-                    // Narrowing cast.
-                    if (inlArgNode->OperIs(GT_LCL_VAR))
-                    {
-                        const unsigned lclNum = inlArgNode->AsLclVarCommon()->GetLclNum();
-                        if (!lvaTable[lclNum].lvNormalizeOnLoad() && sigType == lvaGetRealType(lclNum))
-                        {
-                            // We don't need to insert a cast here as the variable
-                            // was assigned a normalized value of the right type.
-                            continue;
-                        }
-                    }
-
-                    inlArgNode = gtNewCastNode(TYP_INT, inlArgNode, false, sigType);
-
-                    inlArgInfo[i].argIsLclVar = false;
-                    // Try to fold the node in case we have constant arguments.
-                    if (inlArgInfo[i].argIsInvariant)
-                    {
-                        inlArgNode = gtFoldExprConst(inlArgNode);
-                        assert(inlArgNode->OperIsConst());
-                    }
-                    *pInlArgNode = inlArgNode;
-                }
-#ifdef TARGET_64BIT
-                else if (genTypeSize(genActualType(inlArgNode->gtType)) < genTypeSize(sigType))
-                {
-                    // This should only happen for int -> native int widening
-                    inlArgNode = gtNewCastNode(genActualType(sigType), inlArgNode, false, sigType);
-
-                    inlArgInfo[i].argIsLclVar = false;
-
-                    /* Try to fold the node in case we have constant arguments */
-
-                    if (inlArgInfo[i].argIsInvariant)
-                    {
-                        inlArgNode = gtFoldExprConst(inlArgNode);
-                        assert(inlArgNode->OperIsConst());
-                    }
-                    *pInlArgNode = inlArgNode;
-                }
-#endif // TARGET_64BIT
             }
+            else if (genTypeSize(sigType) < TARGET_POINTER_SIZE)
+            {
+                // Narrowing cast.
+                if (inlArgNode->OperIs(GT_LCL_VAR))
+                {
+                    const unsigned lclNum = inlArgNode->AsLclVarCommon()->GetLclNum();
+                    if (!lvaTable[lclNum].lvNormalizeOnLoad() && sigType == lvaGetRealType(lclNum))
+                    {
+                        // We don't need to insert a cast here as the variable
+                        // was assigned a normalized value of the right type.
+                        continue;
+                    }
+                }
+
+                inlArgNode = gtNewCastNode(TYP_INT, inlArgNode, false, sigType);
+
+                inlArgInfo[i].argIsLclVar = false;
+                // Try to fold the node in case we have constant arguments.
+                if (inlArgInfo[i].argIsInvariant)
+                {
+                    inlArgNode = gtFoldExprConst(inlArgNode);
+                    assert(inlArgNode->OperIsConst());
+                }
+                *pInlArgNode = inlArgNode;
+            }
+#ifdef TARGET_64BIT
+            else if (genTypeSize(genActualType(inlArgNode->gtType)) < genTypeSize(sigType))
+            {
+                // This should only happen for int -> native int widening
+                inlArgNode = gtNewCastNode(genActualType(sigType), inlArgNode, false, sigType);
+
+                inlArgInfo[i].argIsLclVar = false;
+
+                /* Try to fold the node in case we have constant arguments */
+
+                if (inlArgInfo[i].argIsInvariant)
+                {
+                    inlArgNode = gtFoldExprConst(inlArgNode);
+                    assert(inlArgNode->OperIsConst());
+                }
+                *pInlArgNode = inlArgNode;
+            }
+#endif // TARGET_64BIT
         }
     }
 
@@ -20151,7 +20168,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
     const var_types      lclTyp           = lclInfo.lclTypeInfo;
     GenTree*             op1              = nullptr;
 
-    GenTree* argNode = argInfo.argNode->gtSkipPutArgType()->gtRetExprVal();
+    GenTree* argNode = argInfo.arg->GetNode()->gtRetExprVal();
 
     if (argInfo.argIsInvariant && !argCanBeModified)
     {

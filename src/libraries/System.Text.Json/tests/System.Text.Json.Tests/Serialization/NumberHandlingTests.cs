@@ -88,10 +88,16 @@ namespace System.Text.Json.Serialization.Tests
 
         private static string GetNumberAsString<T>(T number)
         {
+            // Took out float case from switch due to nan conversion
+            // There is active issue https://github.com/dotnet/runtime/issues/68906 on x86 Android 
+            if (number is float)
+            {
+                return ((float)(object)number).ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture);
+            }
+
             return number switch
             {
                 double @double => @double.ToString(JsonTestHelper.DoubleFormatString, CultureInfo.InvariantCulture),
-                float @float => @float.ToString(JsonTestHelper.SingleFormatString, CultureInfo.InvariantCulture),
                 decimal @decimal => @decimal.ToString(CultureInfo.InvariantCulture),
                 _ => number.ToString()
             };
@@ -359,7 +365,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49936", TestPlatforms.Android)]
         public static void Number_AsCollectionElement_RoundTrip()
         {
             RunAsCollectionElementTest(JsonNumberTestData.Bytes);
@@ -986,7 +991,6 @@ namespace System.Text.Json.Serialization.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/49936", TestPlatforms.Android)]
         public static void EscapingTest()
         {
             // Cause all characters to be escaped.

@@ -1,4 +1,4 @@
-﻿Microsoft Visual Studio Solution File, Format Version 12.00
+Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StreamConformanceTests", "..\Common\tests\StreamConformanceTests\StreamConformanceTests.csproj", "{D5EDF0C3-7574-4A08-B78F-AEAA2DEE0BD6}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{55C933AA-2735-4B38-A1DD-01A27467AB18}"
@@ -22,6 +22,8 @@ EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Quic.Functional.Tests", "tests\FunctionalTests\System.Net.Quic.Functional.Tests.csproj", "{E8E7DD3A-EC3F-4472-9F70-B515A3D11038}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Security", "..\System.Net.Security\ref\System.Net.Security.csproj", "{1D3532DF-961F-4037-A53A-275B7050760B}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Net.Security", "..\System.Net.Security\src\System.Net.Security.csproj", "{2FEE4EEE-A0EC-4619-AD75-5FEAD90C6541}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{C1EDF9E8-5584-47B7-A7D5-C034134DEEC1}"
 EndProject
@@ -97,6 +99,10 @@ Global
 		{1D3532DF-961F-4037-A53A-275B7050760B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1D3532DF-961F-4037-A53A-275B7050760B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1D3532DF-961F-4037-A53A-275B7050760B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2FEE4EEE-A0EC-4619-AD75-5FEAD90C6541}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2FEE4EEE-A0EC-4619-AD75-5FEAD90C6541}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2FEE4EEE-A0EC-4619-AD75-5FEAD90C6541}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2FEE4EEE-A0EC-4619-AD75-5FEAD90C6541}.Release|Any CPU.Build.0 = Release|Any CPU
 		{C1EDF9E8-5584-47B7-A7D5-C034134DEEC1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C1EDF9E8-5584-47B7-A7D5-C034134DEEC1}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C1EDF9E8-5584-47B7-A7D5-C034134DEEC1}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -142,6 +148,7 @@ Global
 		{C5EE5FF4-9505-4B22-B82D-D1E902B94ED7} = {538F3900-95BF-423D-9912-F94B0ECE463C}
 		{569A37E6-CEC4-4AAA-A364-65A70CAAB8F3} = {538F3900-95BF-423D-9912-F94B0ECE463C}
 		{4F87758B-D1AF-4DE3-A9A2-68B1558C02B7} = {8EF7F530-1F45-48CE-AA30-30FFD83147B9}
+		{2FEE4EEE-A0EC-4619-AD75-5FEAD90C6541} = {8EF7F530-1F45-48CE-AA30-30FFD83147B9}
 		{C1EDF9E8-5584-47B7-A7D5-C034134DEEC1} = {AA7C6283-6473-4B71-8877-CAB8D75F9469}
 		{E1D4C4F2-B830-4E87-B10D-ADC667213957} = {AA7C6283-6473-4B71-8877-CAB8D75F9469}
 	EndGlobalSection

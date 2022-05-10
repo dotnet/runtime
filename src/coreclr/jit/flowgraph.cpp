@@ -1216,19 +1216,19 @@ GenTree* Compiler::fgOptimizeDelegateConstructor(GenTreeCall*            call,
             if (ctorData.pArg3 != nullptr)
             {
                 GenTree* arg3 = gtNewIconHandleNode(size_t(ctorData.pArg3), GTF_ICON_FTN_ADDR);
-                lastArg       = call->gtArgs.PushBack(this, arg3);
+                lastArg       = call->gtArgs.PushBack(this, NewCallArg::Primitive(arg3));
             }
 
             if (ctorData.pArg4 != nullptr)
             {
                 GenTree* arg4 = gtNewIconHandleNode(size_t(ctorData.pArg4), GTF_ICON_FTN_ADDR);
-                lastArg       = call->gtArgs.InsertAfter(this, lastArg, arg4);
+                lastArg       = call->gtArgs.InsertAfter(this, lastArg, NewCallArg::Primitive(arg4));
             }
 
             if (ctorData.pArg5 != nullptr)
             {
                 GenTree* arg5 = gtNewIconHandleNode(size_t(ctorData.pArg5), GTF_ICON_FTN_ADDR);
-                lastArg       = call->gtArgs.InsertAfter(this, lastArg, arg5);
+                lastArg       = call->gtArgs.InsertAfter(this, lastArg, NewCallArg::Primitive(arg5));
             }
         }
         else
@@ -4185,42 +4185,4 @@ void Compiler::fgLclFldAssign(unsigned lclNum)
     {
         lvaSetVarDoNotEnregister(lclNum DEBUGARG(DoNotEnregisterReason::LocalField));
     }
-}
-
-//------------------------------------------------------------------------
-// fgCheckCallArgUpdate: check if we are replacing a call argument and add GT_PUTARG_TYPE if necessary.
-//
-// Arguments:
-//    parent   - the parent that could be a call;
-//    child    - the new child node;
-//    origType - the original child type;
-//
-// Returns:
-//   PUT_ARG_TYPE node if it is needed, nullptr otherwise.
-//
-GenTree* Compiler::fgCheckCallArgUpdate(GenTree* parent, GenTree* child, var_types origType)
-{
-    if ((parent == nullptr) || !parent->IsCall())
-    {
-        return nullptr;
-    }
-    const var_types newType = child->TypeGet();
-    if (newType == origType)
-    {
-        return nullptr;
-    }
-    if (varTypeIsStruct(origType) || (genTypeSize(origType) == genTypeSize(newType)))
-    {
-        assert(!varTypeIsStruct(newType));
-        return nullptr;
-    }
-    GenTree* putArgType = gtNewOperNode(GT_PUTARG_TYPE, origType, child);
-#if defined(DEBUG)
-    if (verbose)
-    {
-        printf("For call [%06d] the new argument's type [%06d]", dspTreeID(parent), dspTreeID(child));
-        printf(" does not match the original type size, add a GT_PUTARG_TYPE [%06d]\n", dspTreeID(parent));
-    }
-#endif
-    return putArgType;
 }

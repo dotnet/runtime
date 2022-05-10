@@ -572,15 +572,16 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         reportAfter();
     }
 
-    if ((skipUnmarkLoop == false) &&                  //
-        block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        //
-        block->bbJumpDest->isLoopHead() &&            //
-        (block->bbJumpDest->bbNum <= block->bbNum) && //
-        fgDomsComputed &&                             //
+    if ((skipUnmarkLoop == false) &&                  // If we don't want to unmark this loop...
+        block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        // This block reaches conditionally or always
+        block->bbJumpDest->isLoopHead() &&            // to a loop head...
+        (fgCurBBEpochSize == fgBBNumMax + 1) &&       // We didn't add new blocks since last renumber...
+        (block->bbJumpDest->bbNum <= block->bbNum) && // This is a backedge...
+        fgDomsComputed &&                             // Given the doms are computed and valid...
         (fgCurBBEpochSize == fgDomBBcount + 1) &&     //
-        fgReachable(block->bbJumpDest, block))
+        fgReachable(block->bbJumpDest, block))        // Block's destination is reachable from block...
     {
-        optUnmarkLoopBlocks(block->bbJumpDest, block);
+        optUnmarkLoopBlocks(block->bbJumpDest, block); // Unscale the blocks in such loop.
     }
 }
 

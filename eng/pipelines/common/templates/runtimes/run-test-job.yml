@@ -136,7 +136,7 @@ jobs:
 
     - name: testTreeFilterArg
       value: ''
-    
+
     # Only build GCSimulator tests when the gc-simulator group is specified.
     - ${{ if eq(parameters.testGroup, 'gc-simulator') }}:
       - ${{ if eq(parameters.osGroup, 'windows') }}:
@@ -223,7 +223,10 @@ jobs:
 
     # TODO: update these numbers as they were determined long ago
     ${{ if eq(parameters.testGroup, 'innerloop') }}:
-      timeoutInMinutes: 200
+      ${{ if and(eq(parameters.osGroup, 'windows'), eq(parameters.archType, 'arm64')) }}:
+        timeoutInMinutes: 300
+      ${{ else }}:
+        timeoutInMinutes: 200
     ${{ if in(parameters.testGroup, 'outerloop', 'jit-experimental', 'pgo', 'jit-cfg') }}:
       timeoutInMinutes: 270
     ${{ if in(parameters.testGroup, 'gc-longrunning', 'gc-simulator') }}:
