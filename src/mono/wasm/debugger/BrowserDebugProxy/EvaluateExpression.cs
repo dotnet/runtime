@@ -262,7 +262,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                             {
                                 case "valuetype" when variable["isEnum"]?.Value<bool>() == true:
                                     typeRet = variable["className"]?.Value<string>();
-                                    // now we don't have value of the valueType accessible here, it's null
                                     valueRet = $"({typeRet}) {value["value"].Value<double>()}";
                                     break;
                                 case "object":
