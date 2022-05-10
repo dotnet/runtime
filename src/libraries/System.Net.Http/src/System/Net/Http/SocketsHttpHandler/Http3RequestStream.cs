@@ -869,8 +869,6 @@ namespace System.Net.Http
             _headerDecoder.Reset();
         }
 
-        private static ReadOnlySpan<byte> StatusHeaderNameBytes => new byte[] { (byte)'s', (byte)'t', (byte)'a', (byte)'t', (byte)'u', (byte)'s' };
-
         void IHttpStreamHeadersHandler.OnHeader(ReadOnlySpan<byte> name, ReadOnlySpan<byte> value)
         {
             Debug.Assert(name.Length > 0);

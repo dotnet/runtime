@@ -158,7 +158,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Serializer uses more compacted representations when fewer bits are needed, which is reflected in the first
         /// two numbers of the return value. MTBDD terminals are represented by negated numbers as -id.
         /// </summary>
-        [ExcludeFromCodeCoverage]
+        [ExcludeFromCodeCoverage(Justification = "Used only to generate src data files")]
         public long[] Serialize()
         {
             if (IsEmpty)

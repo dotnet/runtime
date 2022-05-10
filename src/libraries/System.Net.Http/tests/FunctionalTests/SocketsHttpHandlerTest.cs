@@ -1054,7 +1054,7 @@ namespace System.Net.Http.Functional.Tests
         {
             using (var handler = new SocketsHttpHandler())
             {
-                Assert.Equal(TimeSpan.FromSeconds(15), handler.ConnectTimeout);
+                Assert.Equal(Timeout.InfiniteTimeSpan, handler.ConnectTimeout);
             }
         }
 

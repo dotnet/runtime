@@ -17,7 +17,6 @@
 #include "nibblemapmacros.h"
 #include "generics.h"
 #include "dynamicmethod.h"
-#include "eemessagebox.h"
 #include "eventtrace.h"
 #include "threadsuspend.h"
 
@@ -273,7 +272,7 @@ void UnwindInfoTable::AddToUnwindInfoTable(UnwindInfoTable** unwindInfoPtr, PT_R
     if (unwindInfo->hHandle == NULL)
         return;
 
-    // Check for the fast path: we are adding the the end of an UnwindInfoTable with space
+    // Check for the fast path: we are adding the end of an UnwindInfoTable with space
     if (unwindInfo->cTableCurCount < unwindInfo->cTableMaxCount)
     {
         if (unwindInfo->cTableCurCount == 0 ||
@@ -1363,6 +1362,9 @@ void EEJitManager::SetCpuInfo()
     //   CORJIT_FLAG_USE_SSE42 if the following feature bits are set (input EAX of 1)
     //      CORJIT_FLAG_USE_SSE41
     //      SSE4.2    - ECX bit 20
+    //   CORJIT_FLAG_USE_MOVBE if the following feature bits are set (input EAX of 1)
+    //      CORJIT_FLAG_USE_SSE42
+    //      MOVBE    - ECX bit 22
     //   CORJIT_FLAG_USE_POPCNT if the following feature bits are set (input EAX of 1)
     //      CORJIT_FLAG_USE_SSE42
     //      POPCNT    - ECX bit 23
@@ -1433,6 +1435,11 @@ void EEJitManager::SetCpuInfo()
                         if ((cpuidInfo[ECX] & (1 << 20)) != 0)                                              // SSE4.2
                         {
                             CPUCompileFlags.Set(InstructionSet_SSE42);
+
+                            if ((cpuidInfo[ECX] & (1 << 22)) != 0)                                          // MOVBE
+                            {
+                                CPUCompileFlags.Set(InstructionSet_MOVBE);
+                            }
 
                             if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
                             {
@@ -1609,6 +1616,11 @@ void EEJitManager::SetCpuInfo()
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePCLMULQDQ))
     {
         CPUCompileFlags.Clear(InstructionSet_PCLMULQDQ);
+    }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableMOVBE))
+    {
+        CPUCompileFlags.Clear(InstructionSet_MOVBE);
     }
 
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnablePOPCNT))
@@ -3762,7 +3774,7 @@ void EEJitManager::AddToCleanupList(HostCodeHeap *pCodeHeap)
     // it may happen that the current heap count goes to 0 and later on, before it is destroyed, it gets reused
     // for another dynamic method.
     // It's then possible that the ref count reaches 0 multiple times. If so we simply don't add it again
-    // Also on cleanup we check the the ref count is actually 0.
+    // Also on cleanup we check the ref count is actually 0.
     HostCodeHeap *pHeap = m_cleanupList;
     while (pHeap)
     {
@@ -5019,7 +5031,7 @@ void ExecutionManager::DeleteRange(TADDR pStartRange)
         if (pCurr != NULL)
         {
 
-            // If pPrev is NULL the the head of this list is to be deleted
+            // If pPrev is NULL the head of this list is to be deleted
             if (pPrev == NULL)
             {
                 m_CodeRangeList = pCurr->pnext;

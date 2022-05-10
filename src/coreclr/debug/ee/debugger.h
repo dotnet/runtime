@@ -437,27 +437,6 @@ CONTEXT * GetManagedStoppedCtx(Thread * pThread);
 // Never NULL.
 CONTEXT * GetManagedLiveCtx(Thread * pThread);
 
-
-#undef UtilMessageBoxCatastrophic
-#undef UtilMessageBoxCatastrophicNonLocalized
-#undef UtilMessageBoxCatastrophicVA
-#undef UtilMessageBoxCatastrophicNonLocalizedVA
-#undef UtilMessageBox
-#undef UtilMessageBoxNonLocalized
-#undef UtilMessageBoxVA
-#undef UtilMessageBoxNonLocalizedVA
-#undef WszMessageBox
-#define UtilMessageBoxCatastrophic __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxCatastrophicNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBox __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalized __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define UtilMessageBoxNonLocalizedVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-#define WszMessageBox __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
-
-
 /* ------------------------------------------------------------------------ *
  * Module classes
  * ------------------------------------------------------------------------ */
@@ -650,7 +629,7 @@ protected:
     // The "debugger data lock" is a very small leaf lock used to protect debugger internal data structures (such
     // as DJIs, DMIs, module table). It is a GC-unsafe-anymode lock and so it can't trigger a GC while being held.
     // It also can't issue any callbacks into the EE or anycode that it does not directly control.
-    // This is a separate lock from the the larger Debugger-lock / Controller lock, which allows regions under those
+    // This is a separate lock from the larger Debugger-lock / Controller lock, which allows regions under those
     // locks to access debugger datastructures w/o blocking each other.
     Crst                  m_DebuggerDataLock;
     HANDLE                m_CtrlCMutex;

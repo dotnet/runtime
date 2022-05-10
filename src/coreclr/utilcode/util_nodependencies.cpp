@@ -18,8 +18,6 @@
 
 RunningOnStatusEnum gRunningOnStatus = RUNNING_ON_STATUS_UNINITED;
 
-#define NON_SUPPORTED_PLATFORM_MSGBOX_TITLE             W("Platform not supported")
-#define NON_SUPPORTED_PLATFORM_MSGBOX_TEXT              W("The minimum supported platform is Windows 7")
 #define NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE     0xBAD1BAD1
 
 //*****************************************************************************
@@ -81,10 +79,8 @@ CHECK_SUPPORTED:
 
     if (!fSupportedPlatform)
     {
-        // The current platform isn't supported. Display a message box to this effect and exit.
-        // Note that this should never happen since the .NET Fx setup should not install on
-        // non supported platforms (which is why the message box text isn't localized).
-        UtilMessageBoxCatastrophicNonLocalized(NON_SUPPORTED_PLATFORM_MSGBOX_TEXT, NON_SUPPORTED_PLATFORM_MSGBOX_TITLE, MB_OK | MB_ICONERROR, TRUE);
+        // The current platform isn't supported. Display a message to this effect and exit.
+        fprintf(stderr, "Platform not supported: The minimum supported platform is Windows 7\n");
         TerminateProcess(GetCurrentProcess(), NON_SUPPORTED_PLATFORM_TERMINATE_ERROR_CODE);
     }
 #endif // TARGET_UNIX

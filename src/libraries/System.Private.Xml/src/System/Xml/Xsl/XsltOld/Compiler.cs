@@ -46,7 +46,7 @@ namespace System.Xml.Xsl.XsltOld
         CSharp
     }
 
-    internal class Compiler
+    internal sealed class Compiler
     {
         internal const int InvalidQueryKey = -1;
 
@@ -157,8 +157,6 @@ namespace System.Xml.Xsl.XsltOld
         {
             get { return _queryStore; }
         }
-
-        public virtual IXsltDebugger? Debugger { get { return null; } }
 
         internal string GetUnicRtfId()
         {
@@ -301,12 +299,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        protected InputScopeManager ScopeManager
-        {
-            get { return _scopeManager; }
-        }
-
-        internal virtual void PopScope()
+        internal void PopScope()
         {
             _scopeManager.PopScope();
         }
@@ -963,167 +956,167 @@ namespace System.Xml.Xsl.XsltOld
         // Compiler is a class factory for some actions:
         // CompilerDbg override all this methods:
 
-        public virtual ApplyImportsAction CreateApplyImportsAction()
+        public ApplyImportsAction CreateApplyImportsAction()
         {
             ApplyImportsAction action = new ApplyImportsAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual ApplyTemplatesAction CreateApplyTemplatesAction()
+        public ApplyTemplatesAction CreateApplyTemplatesAction()
         {
             ApplyTemplatesAction action = new ApplyTemplatesAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual AttributeAction CreateAttributeAction()
+        public AttributeAction CreateAttributeAction()
         {
             AttributeAction action = new AttributeAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual AttributeSetAction CreateAttributeSetAction()
+        public AttributeSetAction CreateAttributeSetAction()
         {
             AttributeSetAction action = new AttributeSetAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual CallTemplateAction CreateCallTemplateAction()
+        public CallTemplateAction CreateCallTemplateAction()
         {
             CallTemplateAction action = new CallTemplateAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual ChooseAction CreateChooseAction()
+        public ChooseAction CreateChooseAction()
         {//!!! don't need to be here
             ChooseAction action = new ChooseAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual CommentAction CreateCommentAction()
+        public CommentAction CreateCommentAction()
         {
             CommentAction action = new CommentAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual CopyAction CreateCopyAction()
+        public CopyAction CreateCopyAction()
         {
             CopyAction action = new CopyAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual CopyOfAction CreateCopyOfAction()
+        public CopyOfAction CreateCopyOfAction()
         {
             CopyOfAction action = new CopyOfAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual ElementAction CreateElementAction()
+        public ElementAction CreateElementAction()
         {
             ElementAction action = new ElementAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual ForEachAction CreateForEachAction()
+        public ForEachAction CreateForEachAction()
         {
             ForEachAction action = new ForEachAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual IfAction CreateIfAction(IfAction.ConditionType type)
+        public IfAction CreateIfAction(IfAction.ConditionType type)
         {
             IfAction action = new IfAction(type);
             action.Compile(this);
             return action;
         }
 
-        public virtual MessageAction CreateMessageAction()
+        public MessageAction CreateMessageAction()
         {
             MessageAction action = new MessageAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual NewInstructionAction CreateNewInstructionAction()
+        public NewInstructionAction CreateNewInstructionAction()
         {
             NewInstructionAction action = new NewInstructionAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual NumberAction CreateNumberAction()
+        public NumberAction CreateNumberAction()
         {
             NumberAction action = new NumberAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual ProcessingInstructionAction CreateProcessingInstructionAction()
+        public ProcessingInstructionAction CreateProcessingInstructionAction()
         {
             ProcessingInstructionAction action = new ProcessingInstructionAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual void CreateRootAction()
+        public void CreateRootAction()
         {
             this.RootAction = new RootAction();
             this.RootAction.Compile(this);
         }
 
-        public virtual SortAction CreateSortAction()
+        public SortAction CreateSortAction()
         {
             SortAction action = new SortAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual TemplateAction CreateTemplateAction()
+        public TemplateAction CreateTemplateAction()
         {
             TemplateAction action = new TemplateAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual TemplateAction CreateSingleTemplateAction()
+        public TemplateAction CreateSingleTemplateAction()
         {
             TemplateAction action = new TemplateAction();
             action.CompileSingle(this);
             return action;
         }
 
-        public virtual TextAction CreateTextAction()
+        public TextAction CreateTextAction()
         {
             TextAction action = new TextAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual UseAttributeSetsAction CreateUseAttributeSetsAction()
+        public UseAttributeSetsAction CreateUseAttributeSetsAction()
         {
             UseAttributeSetsAction action = new UseAttributeSetsAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual ValueOfAction CreateValueOfAction()
+        public ValueOfAction CreateValueOfAction()
         {
             ValueOfAction action = new ValueOfAction();
             action.Compile(this);
             return action;
         }
 
-        public virtual VariableAction? CreateVariableAction(VariableType type)
+        public VariableAction? CreateVariableAction(VariableType type)
         {
             VariableAction action = new VariableAction(type);
             action.Compile(this);
@@ -1137,7 +1130,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        public virtual WithParamAction CreateWithParamAction()
+        public WithParamAction CreateWithParamAction()
         {
             WithParamAction action = new WithParamAction();
             action.Compile(this);
@@ -1147,12 +1140,12 @@ namespace System.Xml.Xsl.XsltOld
         // Compiler is a class factory for some events:
         // CompilerDbg override all this methods:
 
-        public virtual BeginEvent CreateBeginEvent()
+        public BeginEvent CreateBeginEvent()
         {
             return new BeginEvent(this);
         }
 
-        public virtual TextEvent CreateTextEvent()
+        public TextEvent CreateTextEvent()
         {
             return new TextEvent(this);
         }

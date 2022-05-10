@@ -34,7 +34,6 @@
 #include <wincrypt.h>
 #include <specstrings.h>
 
-#include "registrywrapper.h"
 #include "longfilepathwrappers.h"
 
 #if defined(_PREFAST_) || defined(SOURCE_FORMATTING)
@@ -167,15 +166,12 @@
 #define WszGetMessage GetMessageW
 #define WszSendMessage SendMessageW
 #define WszCharLower CharLowerW
-#define WszMessageBox LateboundMessageBoxW
 #define WszGetClassName GetClassNameW
 #define WszLoadString LoadStringW
-#define WszRegOpenKeyEx ClrRegOpenKeyEx
-#define WszRegOpenKey(hKey, wszSubKey, phkRes) ClrRegOpenKeyEx(hKey, wszSubKey, 0, KEY_ALL_ACCESS, phkRes)
+#define WszRegOpenKeyEx RegOpenKeyExW
+#define WszRegOpenKey(hKey, wszSubKey, phkRes) RegOpenKeyExW(hKey, wszSubKey, 0, KEY_ALL_ACCESS, phkRes)
 #define WszRegQueryValue RegQueryValueW
 #define WszRegQueryValueEx RegQueryValueExW
-#define WszRegQueryValueExTrue RegQueryValueExW
-#define WszRegQueryStringValueEx RegQueryValueExW
 
 #define WszRegQueryInfoKey RegQueryInfoKeyW
 #define WszRegEnumValue RegEnumValueW
@@ -385,92 +381,5 @@ __forceinline LONGLONG __InterlockedExchangeAdd64(LONGLONG volatile * Addend, LO
 }
 
 #endif // HOST_X86
-
-// Output printf-style formatted text to the debugger if it's present or stdout otherwise.
-inline void DbgWPrintf(const LPCWSTR wszFormat, ...)
-{
-    WCHAR wszBuffer[4096];
-
-    va_list args;
-    va_start(args, wszFormat);
-
-    _vsnwprintf_s(wszBuffer, sizeof(wszBuffer) / sizeof(WCHAR), _TRUNCATE, wszFormat, args);
-
-    va_end(args);
-
-    if (IsDebuggerPresent())
-    {
-        OutputDebugStringW(wszBuffer);
-    }
-    else
-    {
-        fwprintf(stdout, W("%s"), wszBuffer);
-        fflush(stdout);
-    }
-}
-
-typedef int (*MessageBoxWFnPtr)(HWND hWnd,
-                                LPCWSTR lpText,
-                                LPCWSTR lpCaption,
-                                UINT uType);
-
-inline int LateboundMessageBoxW(HWND hWnd,
-                                LPCWSTR lpText,
-                                LPCWSTR lpCaption,
-                                UINT uType)
-{
-#ifndef HOST_UNIX
-    // User32 should exist on all systems where displaying a message box makes sense.
-    HMODULE hGuiExtModule = WszLoadLibrary(W("user32"));
-    if (hGuiExtModule)
-    {
-        int result = IDCANCEL;
-        MessageBoxWFnPtr fnptr = (MessageBoxWFnPtr)GetProcAddress(hGuiExtModule, "MessageBoxW");
-        if (fnptr)
-            result = fnptr(hWnd, lpText, lpCaption, uType);
-
-        FreeLibrary(hGuiExtModule);
-        return result;
-    }
-#endif // !HOST_UNIX
-
-    // No luck. Output the caption and text to the debugger if present or stdout otherwise.
-    if (lpText == NULL)
-        lpText = W("<null>");
-    if (lpCaption == NULL)
-        lpCaption = W("<null>");
-    DbgWPrintf(W("**** MessageBox invoked, title '%s' ****\n"), lpCaption);
-    DbgWPrintf(W("  %s\n"), lpText);
-    DbgWPrintf(W("********\n"));
-    DbgWPrintf(W("\n"));
-
-    // Indicate to the caller that message box was not actually displayed
-    SetLastError(ERROR_NOT_SUPPORTED);
-    return 0;
-}
-
-inline int LateboundMessageBoxA(HWND hWnd,
-                                LPCSTR lpText,
-                                LPCSTR lpCaption,
-                                UINT uType)
-{
-    if (lpText == NULL)
-        lpText = "<null>";
-    if (lpCaption == NULL)
-        lpCaption = "<null>";
-
-    SIZE_T cchText = strlen(lpText) + 1;
-    LPWSTR wszText = (LPWSTR)_alloca(cchText * sizeof(WCHAR));
-    swprintf_s(wszText, cchText, W("%S"), lpText);
-
-    SIZE_T cchCaption = strlen(lpCaption) + 1;
-    LPWSTR wszCaption = (LPWSTR)_alloca(cchCaption * sizeof(WCHAR));
-    swprintf_s(wszCaption, cchCaption, W("%S"), lpCaption);
-
-    return LateboundMessageBoxW(hWnd, wszText, wszCaption, uType);
-}
-
-#define MessageBoxW LateboundMessageBoxW
-#define MessageBoxA LateboundMessageBoxA
 
 #endif  // __WIN_WRAP_H__

@@ -2,15 +2,6 @@
   <PropertyGroup>
     <OutputType>library</OutputType>
     <CLRTestKind>SharedLibrary</CLRTestKind>
-    <!-- Use the locally built ILAsm until the published version supports the new IL keywords
-        When the below is removed, also update the test project to enable ILAsm roundtrip testing.
-      -->
-    <ILAsmToolPath>$(ArtifactsBinDir)/coreclr/$(OSPlatformConfig)</ILAsmToolPath>
-
-    <!-- This override is for the AnyOS build of managed libraries. When this is detected we defer to the host OS value
-        and also to the Release build as that is what is used for the AnyOS build leg.
-      -->
-    <ILAsmToolPath Condition="'$(TargetOS)' == 'AnyOS'">$(ArtifactsBinDir)/coreclr/$(_hostOS).$(TargetArchitecture).Release</ILAsmToolPath>
     <MonoAotIncompatible>true</MonoAotIncompatible>
     <DisableProjectBuild Condition="'$(RuntimeFlavor)' == 'Mono'">true</DisableProjectBuild>
   </PropertyGroup>

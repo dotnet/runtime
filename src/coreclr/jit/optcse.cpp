@@ -2312,7 +2312,7 @@ public:
             If we are unable to enregister the CSE then the cse-use-cost is IND_COST
             and the cse-def-cost is also IND_COST.
 
-            If we want to be conservative we use IND_COST as the the value
+            If we want to be conservative we use IND_COST as the value
             for both cse-def-cost and cse-use-cost and then we never introduce
             a CSE that could pessimize the execution time of the method.
 
@@ -3569,7 +3569,6 @@ bool Compiler::optIsCSEcandidate(GenTree* tree)
 
         case GT_ARR_ELEM:
         case GT_ARR_LENGTH:
-        case GT_CLS_VAR:
         case GT_LCL_FLD:
             return true;
 

@@ -854,7 +854,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 // to high addresses. This means that integer registers are saved at lower addresses than floatint-point/SIMD
 // registers. However, when genSaveFpLrWithAllCalleeSavedRegisters is true, the integer registers are stored
 // at higher addresses than floating-point/SIMD registers, that is, the relative order of these two classes
-// is reveresed. This is done to put the saved frame pointer very high in the frame, for simplicity.
+// is reversed. This is done to put the saved frame pointer very high in the frame, for simplicity.
 //
 // TODO: We could always put integer registers at the higher addresses, if desired, to remove this special
 // case. It would cause many asm diffs when first implemented.
@@ -1081,7 +1081,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -1108,7 +1108,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -1138,7 +1138,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned
  *      |-----------------------|
@@ -1206,7 +1206,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -1243,7 +1243,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the first SP subtraction 16 byte aligned
  *      |-----------------------|
@@ -1459,7 +1459,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // If there is no PSPSym (CoreRT ABI), we are done. Otherwise, we need to set up the PSPSym in the funclet frame.
+    // If there is no PSPSym (NativeAOT ABI), we are done. Otherwise, we need to set up the PSPSym in the funclet frame.
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
         if (isFilter)
@@ -3830,7 +3830,7 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
     GenTree* data = tree->Data();
     GenTree* addr = tree->Addr();
 
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(tree);
     if (writeBarrierForm != GCInfo::WBF_NoBarrier)
     {
         // data and addr must be in registers.
@@ -4956,7 +4956,7 @@ void CodeGen::genStoreIndTypeSIMD12(GenTree* treeNode)
 
 #ifdef DEBUG
     // Should not require a write barrier
-    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(treeNode, data);
+    GCInfo::WriteBarrierForm writeBarrierForm = gcInfo.gcIsWriteBarrierCandidate(treeNode->AsStoreInd());
     assert(writeBarrierForm == GCInfo::WBF_NoBarrier);
 #endif
 

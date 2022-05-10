@@ -53,7 +53,7 @@
     <NetCoreAppCurrent>net$(NetCoreAppCurrentVersion)</NetCoreAppCurrent>
     <NetCoreAppMinimum>net6.0</NetCoreAppMinimum>
 
-    <NetCoreAppToolCurrentVersion>6.0</NetCoreAppToolCurrentVersion>
+    <NetCoreAppToolCurrentVersion>7.0</NetCoreAppToolCurrentVersion>
     <NetCoreAppToolCurrent>net$(NetCoreAppToolCurrentVersion)</NetCoreAppToolCurrent>
     <NetCoreAppCurrentToolTargetFrameworkMoniker>$(NetCoreAppCurrentIdentifier),Version=v$(NetCoreAppToolCurrentVersion)</NetCoreAppCurrentToolTargetFrameworkMoniker>
 
@@ -61,7 +61,7 @@
     <NetCoreAppLatestStablePackageBaselineVersion>$(NetCoreAppLatestStableVersion).0</NetCoreAppLatestStablePackageBaselineVersion>
     <NetCoreAppLatestStable>net$(NetCoreAppLatestStableVersion)</NetCoreAppLatestStable>
 
-    <AspNetCoreAppCurrentVersion>6.0</AspNetCoreAppCurrentVersion>
+    <AspNetCoreAppCurrentVersion>7.0</AspNetCoreAppCurrentVersion>
     <AspNetCoreAppCurrent>net$(AspNetCoreAppCurrentVersion)</AspNetCoreAppCurrent>
 
     <NetFrameworkMinimum>net462</NetFrameworkMinimum>
@@ -74,9 +74,6 @@
     <TargetFrameworkForNETFrameworkTasks Condition="'$(DotNetBuildFromSource)' == 'true'" />
 
     <TargetFrameworkForNETCoreTasks>$(NetCoreAppToolCurrent)</TargetFrameworkForNETCoreTasks>
-
-    <!-- TODO (#68024): remove this once we're using a 7.0 SDK -->
-    <XHarnessTargetFramework>net6.0</XHarnessTargetFramework>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -164,7 +161,8 @@
     <_runtimeOS Condition="$(_runtimeOS.StartsWith('tizen'))">linux</_runtimeOS>
     <_runtimeOS Condition="'$(PortableBuild)' == 'true'">$(_portableOS)</_runtimeOS>
 
-    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)</_packageOS>
+    <_packageLibc Condition="$(_runtimeOS.Contains('musl'))">-musl</_packageLibc>
+    <_packageOS Condition="'$(CrossBuild)' == 'true'">$(_hostOS.ToLowerInvariant)$(_packageLibc)</_packageOS>
     <_packageOS Condition="'$(_packageOS)' == '' and '$(PortableBuild)' == 'true'">$(_portableOS)</_packageOS>
     <_packageOS Condition="'$(_packageOS)' == ''">$(_runtimeOS)</_packageOS>
   </PropertyGroup>
@@ -193,10 +191,6 @@
     <MicrosoftNetCoreIlasmPackageRuntimeId>$(ToolsRID)</MicrosoftNetCoreIlasmPackageRuntimeId>
 
     <PackageRID>$(_packageOS)-$(TargetArchitecture)</PackageRID>
-
-    <!-- Crossgen2 does not support armel, so we will use arm instead. -->
-    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' == 'armel'">$(_packageOS)-arm</Crossgen2PackageRID>
-    <Crossgen2PackageRID Condition="'$(TargetArchitecture)' != 'armel'">$(PackageRID)</Crossgen2PackageRID>
 
     <OutputRid Condition="'$(OutputRid)' == ''">$(PackageRID)</OutputRid>
     <OutputRid Condition="'$(PortableBuild)' == 'true'">$(_portableOS)-$(TargetArchitecture)</OutputRid>

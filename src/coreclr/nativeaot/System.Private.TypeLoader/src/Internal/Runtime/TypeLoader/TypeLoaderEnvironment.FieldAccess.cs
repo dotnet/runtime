@@ -267,7 +267,7 @@ namespace Internal.Runtime.TypeLoader
         /// </param>
         public static unsafe IntPtr RvaToNonGenericStaticFieldAddress(TypeManagerHandle moduleHandle, int staticFieldRVA)
         {
-            // TODO: implement for CoreRT
+            // TODO: implement
             throw new NotImplementedException();
         }
 

@@ -16,7 +16,6 @@ namespace System.Net.Mime
         // that are NOT encoded already, which means being less conservative is ok.
         private const int DefaultLineLength = 76;
         private static readonly AsyncCallback s_onWrite = OnWrite;
-        protected static readonly byte[] s_crlf = new byte[] { (byte)'\r', (byte)'\n' };
 
         protected readonly BufferBuilder _bufferBuilder;
         protected readonly Stream _stream;
@@ -55,7 +54,7 @@ namespace System.Net.Mime
             _bufferBuilder.Append(name);
             _bufferBuilder.Append(": ");
             WriteAndFold(value, name.Length + 2, allowUnicode);
-            _bufferBuilder.Append(s_crlf);
+            _bufferBuilder.Append("\r\n"u8);
         }
 
         private void WriteAndFold(string value, int charsAlreadyOnLine, bool allowUnicode)
@@ -77,7 +76,7 @@ namespace System.Net.Mime
                 else if (((index - startOfLine) > (_lineLength - charsAlreadyOnLine)) && lastSpace != startOfLine)
                 {
                     _bufferBuilder.Append(value, startOfLine, lastSpace - startOfLine, allowUnicode);
-                    _bufferBuilder.Append(s_crlf);
+                    _bufferBuilder.Append("\r\n"u8);
                     startOfLine = lastSpace;
                     charsAlreadyOnLine = 0;
                 }
@@ -111,7 +110,7 @@ namespace System.Net.Mime
 
             CheckBoundary();
 
-            _bufferBuilder.Append(s_crlf);
+            _bufferBuilder.Append("\r\n"u8);
             Flush(multiResult);
 
             ClosableStream cs = new ClosableStream(new EightBitStream(_stream, _shouldEncodeLeadingDots), _onCloseHandler);

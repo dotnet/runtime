@@ -1902,14 +1902,8 @@ namespace System.Xml
 
         private static XmlException DupAttrException(string prefix, string localName)
         {
-            StringBuilder sb = new StringBuilder();
-            if (prefix.Length > 0)
-            {
-                sb.Append(prefix);
-                sb.Append(':');
-            }
-            sb.Append(localName);
-            return new XmlException(SR.Xml_DupAttributeName, sb.ToString());
+            string attr = prefix.Length > 0 ? $"{prefix}:{localName}" : localName;
+            return new XmlException(SR.Xml_DupAttributeName, attr);
         }
 
         // Advance the state machine

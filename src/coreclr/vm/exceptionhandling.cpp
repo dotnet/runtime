@@ -742,7 +742,7 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
     //
     // In a case when we're nested inside another catch block, the domain in which we're executing may not be the
     // same as the one the domain of the throwable that was just made the current throwable above. Therefore, we
-    // make a special effort to preserve the domain of the throwable as we update the the last thrown object.
+    // make a special effort to preserve the domain of the throwable as we update the last thrown object.
     //
     // If an exception is active, we dont want to reset the LastThrownObject to NULL as the active exception
     // might be represented by a tracker created in the second pass (refer to

@@ -4794,7 +4794,7 @@ ClrDataAccess::SetAllCodeNotifications(
                     PTR_HOST_TO_TADDR(((ClrDataModule*)mod)->GetModule()) :
                     NULL;
 
-                if (jn.SetAllNotifications(modulePtr, flags, &changedTable))
+                if (jn.SetAllNotifications(modulePtr, (USHORT)flags, &changedTable))
                 {
                     if (!changedTable ||
                         (changedTable && jn.UpdateOutOfProcTable()))
@@ -5514,6 +5514,8 @@ ClrDataAccess::Initialize(void)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM;
     #elif defined(TARGET_ARM64)
         CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_ARM64;
+    #elif defined(TARGET_LOONGARCH64)
+        CorDebugPlatform hostPlatform = CORDB_PLATFORM_POSIX_LOONGARCH64;
     #else
         #error Unknown Processor.
     #endif

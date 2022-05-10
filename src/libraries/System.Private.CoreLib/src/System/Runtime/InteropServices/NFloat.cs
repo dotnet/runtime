@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Buffers.Binary;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Numerics;
@@ -884,6 +885,12 @@ namespace System.Runtime.InteropServices
             if (destination.Length >= sizeof(NativeExponentType))
             {
                 NativeExponentType exponent = _value.Exponent;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    exponent = BinaryPrimitives.ReverseEndianness(exponent);
+                }
+
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
 
                 bytesWritten = sizeof(NativeExponentType);
@@ -915,6 +922,12 @@ namespace System.Runtime.InteropServices
             if (destination.Length >= sizeof(NativeSignificandType))
             {
                 NativeSignificandType significand = _value.Significand;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
+
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
 
                 bytesWritten = sizeof(NativeSignificandType);

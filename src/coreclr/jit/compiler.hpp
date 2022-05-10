@@ -991,11 +991,11 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 // Arguments:
 //    helper    - Call helper
 //    type      - Type of the node
-//    args      - Call args
+//    args      - Call args (struct args not supported)
 //
 // Return Value:
 //    New CT_HELPER node
-
+//
 inline GenTreeCall* Compiler::gtNewHelperCallNode(
     unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
 {
@@ -1011,19 +1011,19 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 
     if (arg3 != nullptr)
     {
-        result->gtArgs.PushFront(this, arg3);
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg3));
         result->gtFlags |= arg3->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (arg2 != nullptr)
     {
-        result->gtArgs.PushFront(this, arg2);
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg2));
         result->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (arg1 != nullptr)
     {
-        result->gtArgs.PushFront(this, arg1);
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg1));
         result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
     }
 
@@ -1254,15 +1254,6 @@ inline void GenTree::gtBashToNOP()
     AsOp()->gtOp1 = AsOp()->gtOp2 = nullptr;
 
     gtFlags &= ~(GTF_ALL_EFFECT | GTF_REVERSE_OPS);
-}
-
-// return new arg placeholder node.  Does not do anything but has a type associated
-// with it so we can keep track of register arguments in lists associated w/ call nodes
-
-inline GenTree* Compiler::gtNewArgPlaceHolderNode(var_types type, CORINFO_CLASS_HANDLE clsHnd)
-{
-    GenTree* node = new (this, GT_ARGPLACE) GenTreeArgPlace(type, clsHnd);
-    return node;
 }
 
 /*****************************************************************************/
@@ -2555,22 +2546,22 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
     fgWalkResult result;
     if (lclVarsOnly && computeStack)
     {
-        GenericTreeWalker<true, true, false, true, true> walker(&walkData);
+        GenericTreeWalker<true, false, true, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else if (lclVarsOnly)
     {
-        GenericTreeWalker<false, true, false, true, true> walker(&walkData);
+        GenericTreeWalker<true, false, true, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else if (computeStack)
     {
-        GenericTreeWalker<true, true, false, false, true> walker(&walkData);
+        GenericTreeWalker<true, false, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else
     {
-        GenericTreeWalker<false, true, false, false, true> walker(&walkData);
+        GenericTreeWalker<true, false, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
 
@@ -2610,12 +2601,12 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTree**     pTree,
     fgWalkResult result;
     if (computeStack)
     {
-        GenericTreeWalker<true, false, true, false, true> walker(&walkData);
+        GenericTreeWalker<false, true, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else
     {
-        GenericTreeWalker<false, false, true, false, true> walker(&walkData);
+        GenericTreeWalker<false, true, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
 
@@ -2658,17 +2649,17 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 
     if (preVisitor && postVisitor)
     {
-        GenericTreeWalker<true, true, true, false, true> walker(&walkData);
+        GenericTreeWalker<true, true, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else if (preVisitor)
     {
-        GenericTreeWalker<true, true, false, false, true> walker(&walkData);
+        GenericTreeWalker<true, false, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else
     {
-        GenericTreeWalker<true, false, true, false, true> walker(&walkData);
+        GenericTreeWalker<false, true, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
 
@@ -3520,6 +3511,27 @@ inline genTreeOps Compiler::LoopDsc::lpTestOper() const
 
 //-----------------------------------------------------------------------------
 
+inline bool Compiler::LoopDsc::lpIsIncreasingLoop() const
+{
+    // Increasing loop is the one that has "+=" increment operation and "< or <=" limit check.
+    bool isLessThanLimitCheck = GenTree::StaticOperIs(lpTestOper(), GT_LT, GT_LE);
+    return (isLessThanLimitCheck &&
+            (((lpIterOper() == GT_ADD) && (lpIterConst() > 0)) || ((lpIterOper() == GT_SUB) && (lpIterConst() < 0))));
+}
+
+//-----------------------------------------------------------------------------
+
+inline bool Compiler::LoopDsc::lpIsDecreasingLoop() const
+{
+    // Decreasing loop is the one that has "-=" decrement operation and "> or >=" limit check. If the operation is
+    // "+=", make sure the constant is negative to give an effect of decrementing the iterator.
+    bool isGreaterThanLimitCheck = GenTree::StaticOperIs(lpTestOper(), GT_GT, GT_GE);
+    return (isGreaterThanLimitCheck &&
+            (((lpIterOper() == GT_ADD) && (lpIterConst() < 0)) || ((lpIterOper() == GT_SUB) && (lpIterConst() > 0))));
+}
+
+//-----------------------------------------------------------------------------
+
 inline GenTree* Compiler::LoopDsc::lpIterator() const
 {
     VERIFY_lpTestTree();
@@ -4206,9 +4218,7 @@ void GenTree::VisitOperands(TVisitor visitor)
 #endif // !FEATURE_EH_FUNCLETS
         case GT_PHI_ARG:
         case GT_JMPTABLE:
-        case GT_CLS_VAR:
         case GT_CLS_VAR_ADDR:
-        case GT_ARGPLACE:
         case GT_PHYSREG:
         case GT_EMITNOP:
         case GT_PINVOKE_PROLOG:
@@ -4255,7 +4265,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-        case GT_PUTARG_TYPE:
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT
@@ -4370,7 +4379,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         {
             GenTreeCall* const call = this->AsCall();
 
-            for (CallArg& arg : call->gtArgs.Args())
+            for (CallArg& arg : call->gtArgs.EarlyArgs())
             {
                 if (visitor(arg.GetEarlyNode()) == VisitResult::Abort)
                 {

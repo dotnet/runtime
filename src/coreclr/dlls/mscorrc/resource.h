@@ -206,9 +206,6 @@
 #define IDS_EE_INVALID_VT_FOR_CUSTOM_MARHALER   0x17ec
 #define IDS_EE_BAD_COMEXTENDS_CLASS             0x17ed
 
-#define IDS_EE_ERRORTITLE                       0x17f0
-#define IDS_EE_ERRORMESSAGETEMPLATE             0x17f1
-
 #define IDS_EE_LOCAL_COGETCLASSOBJECT_FAILED    0x17f5
 
 #define IDS_EE_MISSING_FIELD                    0x17f7

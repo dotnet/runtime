@@ -23,7 +23,7 @@ namespace System.Threading
         // the runtime may use the thread for processing other work
         internal static bool YieldFromDispatchLoop => false;
 
-#if CORERT
+#if NATIVEAOT
         private const bool IsWorkerTrackingEnabledInConfig = false;
 #else
         private static readonly bool IsWorkerTrackingEnabledInConfig =
@@ -107,6 +107,7 @@ namespace System.Threading
             ArgumentNullException.ThrowIfNull(waitObject);
             ArgumentNullException.ThrowIfNull(callBack);
 
+            Thread.ThrowIfNoThreadStart();
             RegisteredWaitHandle registeredHandle = new RegisteredWaitHandle(
                 waitObject,
                 new _ThreadPoolWaitOrTimerCallback(callBack, state, flowExecutionContext),

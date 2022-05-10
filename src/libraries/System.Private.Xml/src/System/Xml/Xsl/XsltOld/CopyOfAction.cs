@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml.XPath;
     using MS.Internal.Xml.XPath;
 
-    internal class CopyOfAction : CompiledAction
+    internal sealed class CopyOfAction : CompiledAction
     {
         private const int ResultStored = 2;
         private const int NodeSetCopied = 3;
