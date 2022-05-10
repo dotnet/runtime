@@ -21,7 +21,7 @@ internal static partial class Interop
         internal const int SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = 0x2;
 
         [LibraryImport(Libraries.Kernel32, EntryPoint = "CreateSymbolicLinkW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
-        [return: MarshalAs(UnmanagedType.Bool)]
+        [return: MarshalAs(UnmanagedType.U1)]
         private static partial bool CreateSymbolicLinkPrivate(string lpSymlinkFileName, string lpTargetFileName, int dwFlags);
 
         /// <summary>
@@ -55,16 +55,9 @@ internal static partial class Interop
 
             bool success = CreateSymbolicLinkPrivate(symlinkFileName, targetFileName, flags);
 
-            int error;
             if (!success)
             {
                 throw Win32Marshal.GetExceptionForLastWin32Error(originalPath);
-            }
-            // In older versions we need to check GetLastWin32Error regardless of the return value of CreateSymbolicLink,
-            // e.g: if the user doesn't have enough privileges to create a symlink the method returns success which we can consider as a silent failure.
-            else if (!isAtLeastWin10Build14972 && (error = Marshal.GetLastWin32Error()) != 0)
-            {
-                throw Win32Marshal.GetExceptionForWin32Error(error, originalPath);
             }
         }
     }
