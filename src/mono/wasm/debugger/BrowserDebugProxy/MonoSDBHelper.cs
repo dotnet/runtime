@@ -2531,7 +2531,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             int assembly_size = retDebuggerCmdReader.ReadInt32();
             byte[] assembly_buf = retDebuggerCmdReader.ReadBytes(assembly_size);
             int pdb_size = retDebuggerCmdReader.ReadInt32();
-            byte[] pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
+            byte[] pdb_buf = null;
+            if (pdb_size > 0)
+                pdb_buf = retDebuggerCmdReader.ReadBytes(pdb_size);
             byte[][] ret = new byte[2][];
             ret[0] = assembly_buf;
             ret[1] = pdb_buf;
