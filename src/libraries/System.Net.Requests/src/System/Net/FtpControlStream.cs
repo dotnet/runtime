@@ -957,7 +957,7 @@ namespace System.Net
             if (originalPath.Length > 0 && !originalPath.EndsWith('/'))
             {
                 UriBuilder uriBuilder = new UriBuilder(baseUri);
-                uriBuilder.Path = orginalPath + "/";
+                uriBuilder.Path = originalPath + "/";
                 baseUri = uriBuilder.Uri;
             }
 
