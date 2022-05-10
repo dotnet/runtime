@@ -129,7 +129,7 @@
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
         <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="translated">O marshalling de tempo de execução deve ser desabilitado neste projeto aplicando o 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' ao assembly para habilitar o empacotamento desse tipo.</target>
+        <target state="new">Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">
