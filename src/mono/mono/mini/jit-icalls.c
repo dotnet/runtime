@@ -167,9 +167,9 @@ mono_llmult (gint64 a, gint64 b)
 guint64
 mono_llmult_ovf_un (guint64 a, guint64 b)
 {
-	guint32 al = a;
+	guint32 al = GUINT64_TO_UINT32 (a);
 	guint32 ah = a >> 32;
-	guint32 bl = b;
+	guint32 bl = GUINT64_TO_UINT32 (b);
 	guint32 bh = b >> 32;
 	guint64 res, t1;
 
@@ -201,9 +201,9 @@ mono_llmult_ovf_un (guint64 a, guint64 b)
 guint64
 mono_llmult_ovf_un_oom (guint64 a, guint64 b)
 {
-	guint32 al = a;
+	guint32 al = GUINT64_TO_UINT32 (a);
 	guint32 ah = a >> 32;
-	guint32 bl = b;
+	guint32 bl = GUINT64_TO_UINT32 (b);
 	guint32 bh = b >> 32;
 	guint64 res, t1;
 
@@ -235,9 +235,9 @@ mono_llmult_ovf_un_oom (guint64 a, guint64 b)
 guint64
 mono_llmult_ovf (gint64 a, gint64 b)
 {
-	guint32 al = a;
+	guint32 al = GUINT64_TO_UINT32 (a);
 	gint32 ah = a >> 32;
-	guint32 bl = b;
+	guint32 bl = GUINT64_TO_UINT32 (b);
 	gint32 bh = b >> 32;
 	/*
 	Use Karatsuba algorithm where:

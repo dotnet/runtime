@@ -3249,7 +3249,7 @@ sgen_gc_get_used_size (void)
 	tot += sgen_major_collector.get_used_size ();
 	/* FIXME: account for pinned objects */
 	UNLOCK_GC;
-	return tot;
+	return GINT64_TO_SIZE (tot);
 }
 
 void sgen_gc_get_gctimeinfo (
