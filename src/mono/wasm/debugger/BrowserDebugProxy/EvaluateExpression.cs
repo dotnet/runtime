@@ -448,10 +448,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (expressionTree == null)
                 throw new Exception($"BUG: Unable to evaluate {expression}, could not get expression from the syntax tree");
 
-            var newScript = script.ContinueWith(
-                string.Join("\n", replacer.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
+            Script<object> newScript = script;
             try
             {
+                newScript = script.ContinueWith(
+                string.Join("\n", replacer.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
                 var state = await newScript.RunAsync(cancellationToken: token);
                 return JObject.FromObject(ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue?.GetType()));
             }
