@@ -309,7 +309,6 @@ namespace System.Runtime.CompilerServices
     }
 
     /// <summary>Provides an awaiter for awaiting a <see cref="System.Threading.Tasks.Task{TResult}"/>.</summary>
-    /// <remarks>This type is intended for compiler use only.</remarks>
     public readonly struct TaskAwaiter<TResult> : ICriticalNotifyCompletion, ITaskAwaiter
     {
         // WARNING: Unsafe.As is used to access TaskAwaiter<> as the non-generic TaskAwaiter.
