@@ -142,5 +142,6 @@ extern "C" void QCALLTYPE AssemblyNative_ApplyUpdate(QCall::AssemblyHandle assem
 
 extern "C" BOOL QCALLTYPE AssemblyNative_IsApplyUpdateSupported();
 
-#endif
+extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyNameParts* pAssemblyNameParts, BaseAssemblySpec* pAssemblySpec);
 
+#endif

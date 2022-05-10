@@ -30,6 +30,7 @@ namespace DebuggerTests.GetPropertiesTests
     {
         private string _base_name;
         private DateTime _base_dateTime => new DateTime(2134, 5, 7, 1, 9, 2);
+        private string _base_autoProperty { get; set; }
         protected int base_num;
 
         public string Base_AutoStringProperty { get; set; }
@@ -45,6 +46,7 @@ namespace DebuggerTests.GetPropertiesTests
         public BaseClass()
         {
             _base_name = "private_name";
+            _base_autoProperty = "private_autoproperty";
             base_num = 5;
             Base_AutoStringProperty = "base#Base_AutoStringProperty";
             DateTimeForOverride = new DateTime(2250, 4, 5, 6, 7, 8);
@@ -63,6 +65,8 @@ namespace DebuggerTests.GetPropertiesTests
         private string _stringField = "DerivedClass#_stringField";
         private DateTime _dateTime = new DateTime(2020, 7, 6, 5, 4, 3);
         private DateTime _DTProp => new DateTime(2200, 5, 6, 7, 8, 9);
+
+        internal bool b = true;
 
         public int a;
         public DateTime DateTime => _DTProp.AddMinutes(10);
@@ -116,6 +120,8 @@ namespace DebuggerTests.GetPropertiesTests
         private string _stringField;
         private DateTime _dateTime;
         private DateTime _DTProp => new DateTime(2200, 5, 6, 7, 8, 9);
+        
+        internal bool b = true;
 
         public int a;
         public DateTime DateTime => _DTProp.AddMinutes(10);

@@ -743,7 +743,7 @@ emit_native_wrapper_validate_signature (MonoMethodBuilder *mb, MonoMethodSignatu
 	if (mspecs) {
 		for (int i = 0; i < sig->param_count; i ++) {
 			if (mspecs [i + 1] && mspecs [i + 1]->native == MONO_NATIVE_CUSTOM) {
-				if (!mspecs [i + 1]->data.custom_data.custom_name || strlen (mspecs [i + 1]->data.custom_data.custom_name) == 0) {
+				if (!mspecs [i + 1]->data.custom_data.custom_name || *mspecs [i + 1]->data.custom_data.custom_name == '\0') {
 					mono_mb_emit_exception_full (mb, "System", "TypeLoadException", g_strdup ("Missing ICustomMarshaler type"));
 					return FALSE;
 				}
@@ -5023,7 +5023,7 @@ emit_managed_wrapper_validate_signature (MonoMethodSignature* sig, MonoMarshalSp
 	if (mspecs) {
 		for (int i = 0; i < sig->param_count; i ++) {
 			if (mspecs [i + 1] && mspecs [i + 1]->native == MONO_NATIVE_CUSTOM) {
-				if (!mspecs [i + 1]->data.custom_data.custom_name || strlen (mspecs [i + 1]->data.custom_data.custom_name) == 0) {
+				if (!mspecs [i + 1]->data.custom_data.custom_name || *mspecs [i + 1]->data.custom_data.custom_name == '\0') {
 					mono_error_set_generic_error (error, "System", "TypeLoadException", "Missing ICustomMarshaler type");
 					return FALSE;
 				}
@@ -5067,18 +5067,6 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 	sig = m->sig;
 	csig = m->csig;
 
-	if (!emit_managed_wrapper_validate_signature (sig, mspecs, error))
-		return;
-
-	MonoType *int_type = mono_get_int_type ();
-	MonoType *boolean_type = m_class_get_byval_arg (mono_defaults.boolean_class);
-	/* allocate local 0 (pointer) src_ptr */
-	mono_mb_add_local (mb, int_type);
-	/* allocate local 1 (pointer) dst_ptr */
-	mono_mb_add_local (mb, int_type);
-	/* allocate local 2 (boolean) delete_old */
-	mono_mb_add_local (mb, boolean_type);
-
 	if (!sig->hasthis && sig->param_count != invoke_sig->param_count) {
 		/* Closed delegate */
 		g_assert (sig->param_count == invoke_sig->param_count + 1);
@@ -5088,6 +5076,21 @@ emit_managed_wrapper_ilgen (MonoMethodBuilder *mb, MonoMethodSignature *invoke_s
 		memmove (&sig->params [0], &sig->params [1], (sig->param_count - 1) * sizeof (MonoType*));
 		sig->param_count --;
 	}
+
+	if (!emit_managed_wrapper_validate_signature (sig, mspecs, error)) {
+		if (closed)
+			g_free (sig);
+		return;
+	}
+
+	MonoType *int_type = mono_get_int_type ();
+	MonoType *boolean_type = m_class_get_byval_arg (mono_defaults.boolean_class);
+	/* allocate local 0 (pointer) src_ptr */
+	mono_mb_add_local (mb, int_type);
+	/* allocate local 1 (pointer) dst_ptr */
+	mono_mb_add_local (mb, int_type);
+	/* allocate local 2 (boolean) delete_old */
+	mono_mb_add_local (mb, boolean_type);
 
 	if (!MONO_TYPE_IS_VOID(sig->ret)) {
 		/* allocate local 3 to store the return value */

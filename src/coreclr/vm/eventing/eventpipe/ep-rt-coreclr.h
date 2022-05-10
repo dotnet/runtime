@@ -1216,6 +1216,15 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 	return static_cast<size_t>(InterlockedCompareExchangeT<size_t> (target, value, expected));
 }
 
+static
+inline
+ep_char8_t *
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
+{
+	STATIC_CONTRACT_NOTHROW;
+	return static_cast<ep_char8_t *>(InterlockedCompareExchangeT<ep_char8_t *> (target, value, expected));
+}
+
 /*
  * EventPipe.
  */
@@ -1390,7 +1399,7 @@ ep_rt_provider_config_init (EventPipeProviderConfiguration *provider_config)
 	STATIC_CONTRACT_NOTHROW;
 
 	if (!ep_rt_utf8_string_compare (ep_config_get_rundown_provider_name_utf8 (), ep_provider_config_get_provider_name (provider_config))) {
-		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = ep_provider_config_get_logging_level (provider_config);
+		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.Level = (UCHAR) ep_provider_config_get_logging_level (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.EnabledKeywordsBitmask = ep_provider_config_get_keywords (provider_config);
 		MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Context.EventPipeProvider.IsEnabled = true;
 	}
@@ -2664,19 +2673,29 @@ ep_rt_diagnostics_command_line_get (void)
 	STATIC_CONTRACT_NOTHROW;
 
 	// In coreclr, this value can change over time, specifically before vs after suspension in diagnostics server.
-	// The host initalizes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
+	// The host initializes the runtime in two phases, init and exec assembly. On non-Windows platforms the commandline returned by the runtime
 	// is different during each phase. We suspend during init where the runtime has populated the commandline with a
 	// mock value (the full path of the executing assembly) and the actual value isn't populated till the exec assembly phase.
-	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested.
+	// On Windows this does not apply as the value is retrieved directly from the OS any time it is requested. 
 	// As a result, we cannot actually cache this value. We need to return the _current_ value.
 	// This function needs to handle freeing the string in order to make it consistent with Mono's version.
-	// To that end, we'll "cache" it here so we free the previous string when we get it again.
-	extern ep_char8_t *_ep_rt_coreclr_diagnostics_cmd_line;
+	// There is a rare chance this may be called on multiple threads, so we attempt to always return the newest value
+	// and conservatively leak the old value if it changed. This is extremely rare and should only leak 1 string.
+	extern ep_char8_t *volatile _ep_rt_coreclr_diagnostics_cmd_line;
 
-	if (_ep_rt_coreclr_diagnostics_cmd_line)
-		ep_rt_utf8_string_free(_ep_rt_coreclr_diagnostics_cmd_line);
-
-	_ep_rt_coreclr_diagnostics_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
+	ep_char8_t *old_cmd_line = _ep_rt_coreclr_diagnostics_cmd_line;
+	ep_char8_t *new_cmd_line = ep_rt_utf16_to_utf8_string (reinterpret_cast<const ep_char16_t *>(GetCommandLineForDiagnostics ()), -1);
+	if (old_cmd_line && ep_rt_utf8_string_compare (old_cmd_line, new_cmd_line) == 0) {
+		// same as old, so free the new one
+		ep_rt_utf8_string_free (new_cmd_line);
+	} else {
+		// attempt an update, and give up if you lose the race
+		if (ep_rt_atomic_compare_exchange_utf8_string (&_ep_rt_coreclr_diagnostics_cmd_line, old_cmd_line, new_cmd_line) != old_cmd_line) {
+			ep_rt_utf8_string_free (new_cmd_line);
+		}
+		// NOTE: If there was a value we purposefully leak it since it may still be in use.
+		// This leak is *small* (length of the command line) and bounded (should only happen once)
+	}
 
 	return _ep_rt_coreclr_diagnostics_cmd_line;
 }

@@ -3085,8 +3085,8 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
         return GenTree::VisitResult::Continue;
     });
 
-    // ADDR nodes break the "parent flags >= operands flags" invariant for GTF_GLOB_REF.
-    if (tree->OperIs(GT_ADDR) && op1->OperIs(GT_LCL_VAR, GT_LCL_FLD))
+    // Addresses of locals never need GTF_GLOB_REF
+    if (tree->OperIs(GT_ADDR) && tree->IsLocalAddrExpr())
     {
         expectedFlags &= ~GTF_GLOB_REF;
     }

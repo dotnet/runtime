@@ -5060,7 +5060,7 @@ add_wrappers (MonoAotCompile *acfg)
 	rows = table_info_get_rows (&acfg->image->tables [MONO_TABLE_METHOD]);
 	for (int i = 0; i < rows; ++i) {
 		ERROR_DECL (error);
-		
+
 		MonoCustomAttrInfo *cattr;
 		int j;
 
@@ -11807,7 +11807,7 @@ emit_file_info (MonoAotCompile *acfg)
 
 		/*
 		 * Emit a global symbol which can be passed by an embedding app to
-		 * mono_aot_register_module (). The symbol points to a pointer to the the file info
+		 * mono_aot_register_module (). The symbol points to a pointer to the file info
 		 * structure.
 		 */
 		sprintf (symbol, "%smono_aot_module_%s_info", acfg->user_symbol_prefix, acfg->image->assembly->aname.name);
