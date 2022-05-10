@@ -19,11 +19,13 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class MonoProxy : DevToolsProxy
     {
         private IList<string> urlSymbolServerList;
-        private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
         private const string sPauseOnUncaught = "pause_on_uncaught";
         private const string sPauseOnCaught = "pause_on_caught";
+
+        public static HttpClient HttpClient => new HttpClient();
+
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
@@ -1154,7 +1156,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 try
                 {
-                    using HttpResponseMessage response = await client.GetAsync(downloadURL, token);
+                    using HttpResponseMessage response = await HttpClient.GetAsync(downloadURL, token);
                     if (!response.IsSuccessStatusCode)
                     {
                         Log("info", $"Unable to download symbols on demand url:{downloadURL} assembly: {asm.Name}");

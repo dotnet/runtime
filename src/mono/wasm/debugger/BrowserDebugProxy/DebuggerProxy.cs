@@ -21,7 +21,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public DebuggerProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "", bool autoSetBreakpointOnEntryPoint = false)
         {
             string suffix = loggerId.Length > 0 ? $"-{loggerId}" : string.Empty;
-            MonoProxy = new MonoProxy(loggerFactory.CreateLogger($"DevToolsProxy-{suffix}"), urlSymbolServerList, runtimeId, loggerId)
+            MonoProxy = new MonoProxy(loggerFactory.CreateLogger($"DevToolsProxy{suffix}"), urlSymbolServerList, runtimeId, loggerId)
             {
                 AutoSetBreakpointOnEntryPoint = autoSetBreakpointOnEntryPoint
             };

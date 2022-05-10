@@ -1129,8 +1129,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else if (uri.Scheme == "http" || uri.Scheme == "https")
                 {
-                    using (var client = new HttpClient())
-                    using (Stream stream = await client.GetStreamAsync(uri, token))
+                    using (Stream stream = await MonoProxy.HttpClient.GetStreamAsync(uri, token))
                     {
                         await stream.CopyToAsync(mem, token).ConfigureAwait(false);
                         mem.Position = 0;
@@ -1226,20 +1225,15 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal sealed class DebugStore
     {
         internal List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
-        private readonly HttpClient client;
         private readonly ILogger logger;
         private readonly MonoProxy monoProxy;
         private MethodInfo _entryPoint;
 
-        public DebugStore(MonoProxy monoProxy, ILogger logger, HttpClient client)
+        public DebugStore(MonoProxy monoProxy, ILogger logger)
         {
-            this.client = client;
             this.logger = logger;
             this.monoProxy = monoProxy;
         }
-
-        public DebugStore(MonoProxy monoProxy, ILogger logger) : this(monoProxy, logger, new HttpClient())
-        { }
 
         private sealed class DebugItem
         {
@@ -1310,7 +1304,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         new DebugItem
                         {
                             Url = url,
-                            Data = Task.WhenAll(client.GetByteArrayAsync(url, token), pdb != null ? client.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
+                            Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
                         });
                 }
                 catch (Exception e)
