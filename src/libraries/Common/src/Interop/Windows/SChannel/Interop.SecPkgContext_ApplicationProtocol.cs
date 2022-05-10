@@ -35,7 +35,7 @@ internal static partial class Interop
             {
                 fixed (byte* pid = ProtocolId)
                 {
-                    return new Span<byte>(pid, ProtocolIdSize);
+                    return new ReadOnlySpan<byte>(pid, ProtocolIdSize);
                 }
             }
         }
