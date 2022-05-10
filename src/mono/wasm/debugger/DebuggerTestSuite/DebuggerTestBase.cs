@@ -732,7 +732,20 @@ namespace DebuggerTests
             if (!skip_num_fields_check)
             {
                 num_fields = num_fields < 0 ? exp.Values<JToken>().Count() : num_fields;
-                Assert.True(num_fields == actual.Count(), $"[{label}] Number of fields don't match, Expected: {num_fields}, Actual: {actual.Count()}");
+                var expected_str = string.Join(", ", 
+                    exp.Children()
+                    .Select(e => e is JProperty jprop ? jprop.Name : e["name"]?.Value<string>())
+                    .Where(e => !string.IsNullOrEmpty(e))
+                    .OrderBy(e => e));
+
+                var actual_str = string.Join(", ",
+                    actual.Children()
+                    .Select(e => e["name"]?.Value<string>())
+                    .Where(e => !string.IsNullOrEmpty(e))
+                    .OrderBy(e => e));
+                Assert.True(num_fields == actual.Count(), $"[{label}] Number of fields don't match, Expected: {num_fields}, Actual: {actual.Count()}.{Environment.NewLine}"
+                    + $"  Expected: {expected_str}{Environment.NewLine}"
+                    + $"  Actual:   {actual_str}");
             }
 
             foreach (var kvp in exp)
