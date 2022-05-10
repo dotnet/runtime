@@ -359,9 +359,8 @@ struct insGroup
     //  hadAlignInstr: Checks if this IG was ever marked as aligned and later
     //                 decided to not align. Sometimes, a loop is marked as not
     //                 needing alignment, but the igSize was not adjusted immediately.
-    //                 This method would helpful to know that specially during loopSize
-    //                 calculation where we would adjust the loopsize by removed alignment
-    //                 bytes.
+    //                 This method is used during loopSize calculation, where we adjust
+    //                 the loop size by removed alignment bytes.
     bool hadAlignInstr() const
     {
         return (igFlags & IGF_REMOVED_ALIGN) != 0;
