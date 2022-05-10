@@ -56,8 +56,8 @@ namespace System.Net.Security
             // block potential future read and auth operations since SslStream is disposing.
             // This leaves the _nestedRead = 1 and _nestedAuth = 1, but that's ok, since
             // subsequent operations check the _exception sentinel first
-            if (Interlocked.CompareExchange(ref _nestedRead, 1, 0) == 0 &&
-                Interlocked.CompareExchange(ref _nestedAuth, 1, 0) == 0)
+            if (Interlocked.Exchange(ref _nestedRead, 1) == 0 &&
+                Interlocked.Exchange(ref _nestedAuth, 1) == 0)
             {
                 _buffer.ReturnBuffer();
             }
