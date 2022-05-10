@@ -467,7 +467,7 @@ namespace System
                             case MemberListType.All:
                                 if (!m_cacheComplete)
                                 {
-                                    MergeWithGlobalList(list);
+                                    MergeWithGlobalListInOrder(list);
 
                                     // Trim null entries at the end of m_allMembers array
                                     int memberCount = m_allMembers!.Length;
@@ -497,6 +497,54 @@ namespace System
                             Monitor.Exit(this);
                         }
                     }
+                }
+
+                private void MergeWithGlobalListInOrder(T[] list)
+                {
+                    T[]? cachedMembers = m_allMembers;
+
+                    if (cachedMembers == null)
+                    {
+                        m_allMembers = list;
+                        return;
+                    }
+
+                    int length = list.Length;
+                    int cachedCount = cachedMembers.Length;
+                    int freeSlotIndex = length;
+
+                    T[] newCache = list;
+                    Array.Resize(ref newCache, cachedCount + length);
+
+                    for (int cachedIndex = 0; cachedIndex < cachedCount; cachedIndex++)
+                    {
+                        T cachedMemberInfo = cachedMembers[cachedIndex];
+                        bool foundInList = false;
+
+                        if (cachedMemberInfo == null)
+                            break;
+
+                        for (int i = 0; i < length; i++)
+                        {
+                            T newMemberInfo = list[i];
+
+                            if (newMemberInfo.CacheEquals(cachedMemberInfo))
+                            {
+                                newCache[i] = cachedMemberInfo;
+                                list[i] = cachedMemberInfo;
+                                foundInList = true;
+                                break;
+                            }
+                        }
+
+                        if (!foundInList)
+                        {
+                            Volatile.Write(ref newCache[freeSlotIndex], cachedMemberInfo);
+                            freeSlotIndex++;
+                        }
+                    }
+
+                    m_allMembers = newCache;
                 }
 
                 // Modifies the existing list.
