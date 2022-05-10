@@ -556,8 +556,7 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [Fact]
-        [SkipOnPlatform(TestPlatforms.Browser, "Content-Length can't be present with Transfer-Encoding")]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         public async Task SendAsync_ContentLengthAndTransferEncodingHeaders_IgnoreContentLength()
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
