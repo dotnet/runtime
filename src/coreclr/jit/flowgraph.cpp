@@ -2950,13 +2950,16 @@ void Compiler::fgSimpleLowering()
                 case GT_ARR_LENGTH:
                 {
                     GenTreeArrLen* arrLen = tree->AsArrLen();
-                    GenTree*       arr    = arrLen->AsArrLen()->ArrRef();
+                    GenTree*       arr    = arrLen->ArrRef();
                     GenTree*       add;
                     GenTree*       con;
 
                     /* Create the expression "*(array_addr + ArrLenOffs)" */
 
                     noway_assert(arr->gtNext == tree);
+
+                    JITDUMP("Lower GT_ARR_LENGTH:\n");
+                    DISPRANGE(LIR::ReadOnlyRange(arr, tree));
 
                     noway_assert(arrLen->ArrLenOffset() == OFFSETOF__CORINFO_Array__length ||
                                  arrLen->ArrLenOffset() == OFFSETOF__CORINFO_String__stringLen);
@@ -2973,7 +2976,7 @@ void Compiler::fgSimpleLowering()
                     else
                     {
                         con = gtNewIconNode(arrLen->ArrLenOffset(), TYP_I_IMPL);
-                        add = gtNewOperNode(GT_ADD, TYP_REF, arr, con);
+                        add = gtNewOperNode(GT_ADD, TYP_BYREF, arr, con);
 
                         range.InsertAfter(arr, con, add);
                     }
@@ -2982,6 +2985,9 @@ void Compiler::fgSimpleLowering()
                     tree->ChangeOperUnchecked(GT_IND);
 
                     tree->AsOp()->gtOp1 = add;
+
+                    JITDUMP("After lowering GT_ARR_LENGTH:\n");
+                    DISPRANGE(LIR::ReadOnlyRange(arr, tree));
                     break;
                 }
 

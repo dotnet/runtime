@@ -6427,15 +6427,16 @@ private:
 
 struct GenTreeArrLen : public GenTreeUnOp
 {
-    GenTree*& ArrRef()
+    GenTree*& ArrRef() // the array address node
     {
         return gtOp1;
-    } // the array address node
+    }
+
 private:
-    int gtArrLenOffset; // constant to add to "gtArrRef" to get the address of the array length.
+    int gtArrLenOffset; // constant to add to "ArrRef()" to get the address of the array length.
 
 public:
-    inline int ArrLenOffset()
+    int ArrLenOffset() const
     {
         return gtArrLenOffset;
     }
