@@ -65,49 +65,42 @@ async function main() {
     globalThis.MONO = MONO;
     console.log('after createDotnetRuntime')
 
-    let sessionFile = '';
-    
-    try {
-        const startWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
-        const stopWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StopWork");
-	const getIterationsDone = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:GetIterationsDone");
-	const eventSession = MONO.diagnostics.createEventPipeSession();
-	eventSession.start();
-        const workPromise = startWork();
-	
-	document.getElementById("out").innerHTML = '&lt;&lt;running&gt;&gt;';
-	await delay(5000); // let it run for 5 seconds
+    const startWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
+    const stopWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StopWork");
+    const getIterationsDone = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:GetIterationsDone");
+    const eventSession = MONO.diagnostics.createEventPipeSession();
+    eventSession.start();
+    const workPromise = startWork();
 
-	stopWork();
+    document.getElementById("out").innerHTML = '&lt;&lt;running&gt;&gt;';
+    await delay(5000); // let it run for 5 seconds
 
-	document.getElementById("out").innerHTML = '&lt;&lt;stopping&gt;&gt;';
+    stopWork();
 
-	const ret = await workPromise; // get the answer
-	const iterations = getIterationsDone(); // get how many times the loop ran
+    document.getElementById("out").innerHTML = '&lt;&lt;stopping&gt;&gt;';
 
-	eventSession.stop();
+    const ret = await workPromise; // get the answer
+    const iterations = getIterationsDone(); // get how many times the loop ran
 
-        document.getElementById("out").innerHTML = `${ret} as computed in ${iterations} iterations on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
+    eventSession.stop();
 
-        console.debug(`ret: ${ret}`);
+    document.getElementById("out").innerHTML = `${ret} as computed in ${iterations} iterations on dotnet ver ${RuntimeBuildInfo.ProductVersion}`;
 
-	sessionFile = eventSession.saveTrace();
+    console.debug(`ret: ${ret}`);
 
-        let exit_code = ret == 42 ? 0 : 1;
-        Module._mono_wasm_exit(exit_code);
+    const sessionFile = eventSession.saveTrace();
 
-        wasm_exit(exit_code);
-    } catch (err) {
-        console.log('WASM ERROR %o', err);
+    const exit_code = ret == 42 ? 0 : 1;
 
-        var b = Module.FS.readFile(sessionFile);
-        var bits = btoa((Uint8ToString(b)));
+    wasm_exit(exit_code);
 
-	const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
-        downloadData("data:application/octet-stream;base64," + bits, filename);
-        
-        wasm_exit(2);
-    }
+    const b = Module.FS.readFile(sessionFile);
+
+    const bits = btoa((Uint8ToString(b)));
+
+    const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
+    downloadData("data:application/octet-stream;base64," + bits, filename);
+
 }
 
 setTimeout(main, 10000);
