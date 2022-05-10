@@ -74,16 +74,9 @@ namespace System.Formats.Tar
 
             if (entry.EntryType is TarEntryType.RegularFile or TarEntryType.V7RegularFile)
             {
-                FileStreamOptions options = new()
-                {
-                    Mode = FileMode.Open,
-                    Access = FileAccess.Read,
-                    Share = FileShare.Read,
-                    Options = FileOptions.None
-                };
-
                 Debug.Assert(entry._header._dataStream == null);
-                entry._header._dataStream = File.Open(fullPath, options);
+                // FileMode.Open, FileAccess.Read and FileShare.Read are default FileStreamOptions
+                entry._header._dataStream = new FileStream(fullPath, new FileStreamOptions());
             }
 
             WriteEntry(entry);

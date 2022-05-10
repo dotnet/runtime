@@ -166,15 +166,8 @@ namespace System.Formats.Tar
                 throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
             }
 
-            FileStreamOptions fileStreamOptions = new()
-            {
-                Access = FileAccess.Read,
-                BufferSize = 0x1000,
-                Mode = FileMode.Open,
-                Share = FileShare.Read
-            };
-
-            using FileStream archive = File.Open(sourceFileName, fileStreamOptions);
+            // FileMode.Open, FileAccess.Read and FileShare.Read are default FileStreamOptions
+            using FileStream archive = new(sourceFileName, new FileStreamOptions());
 
             ExtractToDirectoryInternal(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false);
         }
