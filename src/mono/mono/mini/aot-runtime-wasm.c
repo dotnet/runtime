@@ -88,10 +88,23 @@ static const char** interp_to_native_signatures;
 static unsigned int interp_to_native_signatures_count;
 
 MONO_API void
-mono_wasm_install_interp_to_native_invokes (void **invokes, const char **sigs, unsigned int count) {
+mono_wasm_install_interp_to_native_invokes (void **invokes, const char **sigs, unsigned int count)
+{
 	interp_to_native_invokes = invokes;
 	interp_to_native_signatures = sigs;
 	interp_to_native_signatures_count = count;
+}
+
+MONO_API gpointer*
+mono_wasm_interp_method_args_get_iargs (InterpMethodArguments *margs)
+{
+	return margs->iargs;
+}
+
+MONO_API gpointer*
+mono_wasm_interp_method_args_get_retval (InterpMethodArguments *margs)
+{
+	return margs->retval;
 }
 
 static int
