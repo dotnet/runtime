@@ -1373,10 +1373,7 @@ namespace System.Net.Http.Functional.Tests
                 CancellationToken serializeToken = requestContent.SerializeCancellationToken;
                 Assert.False(serializeToken.IsCancellationRequested);
 
-                // Send headers and first part of the stream
-                await requestStream.FlushAsync();
-
-                await requestStream.WriteAsync(message);
+                // Send headers
                 await requestStream.FlushAsync();
 
                 // wait for the server to abort the request, which should cancel the token provided to the HttpContent
@@ -1386,9 +1383,16 @@ namespace System.Net.Http.Functional.Tests
                     await waitTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
                 }
 
+                if (graceful)
+                {
                 // HttpClient will retry to send the request, so we cancel the sending itself
                 cts.Cancel();
                 await Assert.ThrowsAnyAsync<OperationCanceledException>(() => responseTask);
+                }
+                else
+                {
+                    await Assert.ThrowsAnyAsync<HttpRequestException>(() => responseTask);
+                }
             });
 
             await clientTask.WaitAsync(TimeSpan.FromSeconds(120));
