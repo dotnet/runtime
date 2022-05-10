@@ -66,7 +66,7 @@ namespace LibraryImportGenerator.UnitTests
             }.ToImmutableDictionary();
 
         /// <summary>
-        /// Assert the pre-srouce generator compilation has only
+        /// Assert the pre-source generator compilation has only
         /// the expected failure diagnostics.
         /// </summary>
         /// <param name="comp"></param>
@@ -77,6 +77,30 @@ namespace LibraryImportGenerator.UnitTests
                 "CS8795", // Partial method impl missing
                 "CS0234", // Missing type or namespace - LibraryImportAttribute
                 "CS0246", // Missing type or namespace - LibraryImportAttribute
+                "CS8019", // Unnecessary using
+            };
+
+            foreach (string diagnostic in additionalAllowedDiagnostics)
+            {
+                allowedDiagnostics.Add(diagnostic);
+            }
+
+            var compDiags = comp.GetDiagnostics();
+            Assert.All(compDiags, diag =>
+            {
+                Assert.Subset(allowedDiagnostics, new HashSet<string> { diag.Id });
+            });
+        }
+
+        /// <summary>
+        /// Assert the post-source generator compilation has only
+        /// the expected failure diagnostics.
+        /// </summary>
+        /// <param name="comp"></param>
+        public static void AssertPostSourceGeneratorCompilation(Compilation comp, params string[] additionalAllowedDiagnostics)
+        {
+            var allowedDiagnostics = new HashSet<string>()
+            {
                 "CS8019", // Unnecessary using
             };
 
