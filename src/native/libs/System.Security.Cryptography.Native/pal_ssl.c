@@ -649,7 +649,7 @@ void CryptoNative_SslSetVerifyPeer(SSL* ssl)
     SSL_set_verify(ssl, SSL_VERIFY_PEER, verify_callback);
 }
 
-int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
+int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, int cacheSize, SslCtxNewSessionCallback newSessionCb, SslCtxRemoveSessionCallback removeSessionCb)
 {
     int retValue = 1;
     if (mode && !API_EXISTS(SSL_SESSION_get0_hostname))
@@ -671,6 +671,10 @@ int CryptoNative_SslCtxSetCaching(SSL_CTX* ctx, int mode, SslCtxNewSessionCallba
     if (mode == 0)
     {
         SSL_CTX_set_options(ctx, SSL_OP_NO_TICKET);
+    }
+    else if (cacheSize >= 0)
+    {
+        SSL_CTX_ctrl(ctx, SSL_CTRL_SET_SESS_CACHE_SIZE, (long)cacheSize, NULL);
     }
 
     if (newSessionCb != NULL)
