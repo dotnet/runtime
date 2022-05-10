@@ -154,11 +154,12 @@ namespace System
 
         private static bool TrySetSlot(object?[] a, int index, object o)
         {
-            object? ai = a[index];
+            ref object? slot = ref a[index];
+            object? ai = slot;
 
             if (ai is null)
             {
-                ai = System.Threading.Interlocked.CompareExchange<object?>(ref a[index], o, null);
+                ai = System.Threading.Interlocked.CompareExchange<object?>(ref slot, o, null);
                 if (ai is null)
                     return true;
             }
