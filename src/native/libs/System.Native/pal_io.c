@@ -190,6 +190,7 @@ c_static_assert(PAL_IN_ISDIR == IN_ISDIR);
 static void ConvertFileStatus(const struct stat_* src, FileStatus* dst)
 {
     dst->Dev = (int64_t)src->st_dev;
+    dst->RDev = (int64_t)src->st_rdev;
     dst->Ino = (int64_t)src->st_ino;
     dst->Flags = FILESTATUS_FLAGS_NONE;
     dst->Mode = (int32_t)src->st_mode;

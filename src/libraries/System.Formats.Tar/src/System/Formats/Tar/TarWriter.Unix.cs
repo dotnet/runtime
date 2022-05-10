@@ -41,13 +41,13 @@ namespace System.Formats.Tar
                 _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
             };
 
-            if ((entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice) && status.Dev > 0)
+            if ((entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice) && status.RDev > 0)
             {
                 uint major;
                 uint minor;
                 unsafe
                 {
-                    Interop.Sys.GetDeviceIdentifiers((ulong)status.Dev, &major, &minor);
+                    Interop.Sys.GetDeviceIdentifiers((ulong)status.RDev, &major, &minor);
                 }
 
                 entry._header._devMajor = (int)major;
