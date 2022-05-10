@@ -171,6 +171,20 @@ event_pipe_stub_write_event_threadpool_working_thread_count (
 	uint16_t count,
 	uint16_t clr_instance_id);
 
+static bool
+event_pipe_stub_write_event_threadpool_io_pack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id);
+
+static bool
+event_pipe_stub_signal_session (EventPipeSessionID session_id);
+
+static bool
+event_pipe_stub_wait_for_session_signal (
+	EventPipeSessionID session_id,
+	uint32_t timeout);
+
 MonoComponentEventPipe *
 component_event_pipe_stub_init (void);
 
@@ -203,7 +217,10 @@ static MonoComponentEventPipe fn_table = {
 	&event_pipe_stub_write_event_threadpool_worker_thread_adjustment_stats,
 	&event_pipe_stub_write_event_threadpool_io_enqueue,
 	&event_pipe_stub_write_event_threadpool_io_dequeue,
-	&event_pipe_stub_write_event_threadpool_working_thread_count
+	&event_pipe_stub_write_event_threadpool_working_thread_count,
+	&event_pipe_stub_write_event_threadpool_io_pack,
+	&event_pipe_stub_signal_session,
+	&event_pipe_stub_wait_for_session_signal
 };
 
 static bool
@@ -439,6 +456,29 @@ static bool
 event_pipe_stub_write_event_threadpool_working_thread_count (
 	uint16_t count,
 	uint16_t clr_instance_id)
+{
+	return true;
+}
+
+static bool
+event_pipe_stub_write_event_threadpool_io_pack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	return true;
+}
+
+static bool
+event_pipe_stub_signal_session (EventPipeSessionID session_id)
+{
+	return true;
+}
+
+static bool
+event_pipe_stub_wait_for_session_signal (
+	EventPipeSessionID session_id,
+	uint32_t timeout)
 {
 	return true;
 }

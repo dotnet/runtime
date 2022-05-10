@@ -624,6 +624,18 @@ ClrDataAccess::GetRegisterName(int regNum, unsigned int count, _Inout_updates_z_
     {
         W("eax"), W("ecx"), W("edx"), W("ebx"), W("esp"), W("ebp"), W("esi"), W("edi"),
     };
+#elif defined(TARGET_LOONGARCH64)
+    static const WCHAR *regs[] =
+    {
+        W("R0"), W("AT"), W("V0"), W("V1"),
+        W("A0"), W("A1"), W("A2"), W("A3"),
+        W("A4"), W("A5"), W("A6"), W("A7"),
+        W("T0"), W("T1"), W("T2"), W("T3"),
+        W("T8"), W("T9"), W("S0"), W("S1"),
+        W("S2"), W("S3"), W("S4"), W("S5"),
+        W("S6"), W("S7"), W("K0"), W("K1"),
+        W("GP"), W("SP"), W("FP"), W("RA")
+    };
 #endif
 
     // Caller frame registers are encoded as "-(reg+1)".
@@ -1726,7 +1738,7 @@ ClrDataAccess::GetMethodTableData(CLRDATA_ADDRESS mt, struct DacpMethodTableData
             MTData->Module = HOST_CDADDR(pMT->GetModule());
             MTData->Class = HOST_CDADDR(pMT->GetClass());
             MTData->ParentMethodTable = HOST_CDADDR(pMT->GetParentMethodTable());;
-            MTData->wNumInterfaces = pMT->GetNumInterfaces();
+            MTData->wNumInterfaces = (WORD)pMT->GetNumInterfaces();
             MTData->wNumMethods = pMT->GetNumMethods();
             MTData->wNumVtableSlots = pMT->GetNumVtableSlots();
             MTData->wNumVirtuals = pMT->GetNumVirtuals();

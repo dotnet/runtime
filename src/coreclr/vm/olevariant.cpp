@@ -4796,7 +4796,7 @@ void OleVariant::TransposeArrayData(BYTE *pDestData, BYTE *pSrcData, SIZE_T dwNu
             aDestElemCount[iDims] = pSafeArray->rgsabound[iDims].cElements;
     }
 
-    // Initalize the indexes for each dimension to 0.
+    // Initialize the indexes for each dimension to 0.
     memset(aDestIndex, 0, pSafeArray->cDims * sizeof(int));
 
     // Set all the destination data positions to the start of the array.

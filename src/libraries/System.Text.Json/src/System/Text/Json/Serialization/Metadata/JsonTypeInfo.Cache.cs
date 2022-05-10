@@ -187,7 +187,14 @@ namespace System.Text.Json.Serialization.Metadata
                 {
                     if (propertyName.SequenceEqual(info.NameAsUtf8Bytes))
                     {
-                        Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()), "key does not match re-computed value for the same sequence (case-insensitive)");
+#if DEBUG
+                        ulong recomputedKey = GetKey(info.NameAsUtf8Bytes.AsSpan());
+                        if (key != recomputedKey)
+                        {
+                            string propertyNameStr = JsonHelpers.Utf8GetString(propertyName);
+                            Debug.Fail($"key {key} [propertyName={propertyNameStr}] does not match re-computed value {recomputedKey} for the same sequence (case-insensitive). {info.GetDebugInfo()}");
+                        }
+#endif
 
                         // Use the existing byte[] reference instead of creating another one.
                         utf8PropertyName = info.NameAsUtf8Bytes!;
@@ -200,7 +207,14 @@ namespace System.Text.Json.Serialization.Metadata
                 }
                 else
                 {
-                    Debug.Assert(key == GetKey(info.NameAsUtf8Bytes.AsSpan()), "key does not match re-computed value for the same sequence (case-sensitive)");
+#if DEBUG
+                    ulong recomputedKey = GetKey(info.NameAsUtf8Bytes.AsSpan());
+                    if (key != recomputedKey)
+                    {
+                        string propertyNameStr = JsonHelpers.Utf8GetString(propertyName);
+                        Debug.Fail($"key {key} [propertyName={propertyNameStr}] does not match re-computed value {recomputedKey} for the same sequence (case-sensitive). {info.GetDebugInfo()}");
+                    }
+#endif
                     utf8PropertyName = info.NameAsUtf8Bytes;
                 }
             }

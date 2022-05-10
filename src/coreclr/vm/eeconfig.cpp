@@ -14,7 +14,6 @@
 #include "method.hpp"
 #include "eventtrace.h"
 #include "eehash.h"
-#include "eemessagebox.h"
 #include "corhost.h"
 #include "regex_util.h"
 #include "clr/fs/path.h"

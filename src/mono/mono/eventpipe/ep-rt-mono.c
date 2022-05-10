@@ -3804,6 +3804,20 @@ ep_rt_write_event_threadpool_working_thread_count (
 		NULL) == 0 ? true : false;
 }
 
+bool
+ep_rt_write_event_threadpool_io_pack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
+	uint16_t clr_instance_id)
+{
+	return FireEtwThreadPoolIOPack (
+		(const void *)native_overlapped,
+		(const void *)overlapped,
+		clr_instance_id,
+		NULL,
+		NULL) == 0 ? true : false;
+}
+
 static
 void
 runtime_profiler_jit_begin (

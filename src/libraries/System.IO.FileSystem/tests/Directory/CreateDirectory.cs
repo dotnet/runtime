@@ -34,6 +34,7 @@ namespace System.IO.Tests
                 string subdir = Path.GetRandomFileName();
                 DirectoryInfo info = Create(subdir);
                 Assert.Equal(subdir, info.ToString());
+                Environment.CurrentDirectory = Path.GetTempPath();
             }).Dispose();
         }
 
@@ -85,7 +86,6 @@ namespace System.IO.Tests
         public void PathAlreadyExistsAsDirectory(FileAttributes attributes)
         {
             DirectoryInfo testDir = Create(GetTestFilePath());
-            FileAttributes original = testDir.Attributes;
 
             try
             {
@@ -94,7 +94,7 @@ namespace System.IO.Tests
             }
             finally
             {
-                testDir.Attributes = original;
+                testDir.Attributes = FileAttributes.Normal;
             }
         }
 

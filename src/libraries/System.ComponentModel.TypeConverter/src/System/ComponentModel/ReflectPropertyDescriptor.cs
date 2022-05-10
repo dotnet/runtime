@@ -481,8 +481,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
-        public override void AddValueChanged(object component!!, EventHandler handler!!)
+        public override void AddValueChanged(object component, EventHandler handler)
         {
+            ArgumentNullException.ThrowIfNull(component);
+            ArgumentNullException.ThrowIfNull(handler);
+
             // If there's an event called <propertyname>Changed, hook the caller's handler directly up to that on the component
             EventDescriptor changedEvent = ChangedEventValue;
             if (changedEvent != null && changedEvent.EventType.IsInstanceOfType(handler))

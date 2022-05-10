@@ -126,15 +126,15 @@ namespace System.Text.RegularExpressions
             /// </returns>
             public bool MoveNext()
             {
-                Match? match = _regex.RunSingleMatch(quick: false, _prevLen, _input, _startAt);
-                Debug.Assert(match != null, "Match shouldn't be null because we passed quick = false.");
-                if (match != RegularExpressions.Match.Empty)
+                (bool Success, int Index, int Length, int TextPosition) match = _regex.RunSingleMatch(RegexRunnerMode.BoundsRequired, _prevLen, _input, _startAt);
+                if (match.Success)
                 {
                     _current = new ValueMatch(match.Index, match.Length);
-                    _startAt = match._textpos;
+                    _startAt = match.TextPosition;
                     _prevLen = match.Length;
                     return true;
                 }
+
                 return false;
             }
 

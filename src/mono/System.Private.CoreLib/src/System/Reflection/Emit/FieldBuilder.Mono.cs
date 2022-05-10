@@ -61,8 +61,7 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(modOpt))]  // Automatically keeps all previous fields too due to StructLayout
         internal FieldBuilder(TypeBuilder tb, string fieldName, Type type, FieldAttributes attributes, Type[]? modReq, Type[]? modOpt)
         {
-            if (type == null)
-                throw new ArgumentNullException(nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             attrs = attributes & ~FieldAttributes.ReservedMask;
             name = fieldName;
@@ -174,8 +173,7 @@ namespace System.Reflection.Emit
         {
             RejectIfCreated();
 
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.FieldOffsetAttribute")

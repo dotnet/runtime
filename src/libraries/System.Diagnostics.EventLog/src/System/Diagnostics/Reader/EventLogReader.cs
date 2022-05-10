@@ -62,8 +62,10 @@ namespace System.Diagnostics.Eventing.Reader
         {
         }
 
-        public EventLogReader(EventLogQuery eventQuery!!, EventBookmark bookmark)
+        public EventLogReader(EventLogQuery eventQuery, EventBookmark bookmark)
         {
+            ArgumentNullException.ThrowIfNull(eventQuery);
+
             string logfile = null;
             if (eventQuery.ThePathType == PathType.FilePath)
                 logfile = eventQuery.Path;
@@ -228,8 +230,10 @@ namespace System.Diagnostics.Eventing.Reader
             Seek(bookmark, 0);
         }
 
-        public void Seek(EventBookmark bookmark!!, long offset)
+        public void Seek(EventBookmark bookmark, long offset)
         {
+            ArgumentNullException.ThrowIfNull(bookmark);
+
             SeekReset();
             using (EventLogHandle bookmarkHandle = EventLogRecord.GetBookmarkHandleFromBookmark(bookmark))
             {

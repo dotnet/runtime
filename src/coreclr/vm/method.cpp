@@ -2131,7 +2131,7 @@ MethodDesc* NonVirtualEntry2MethodDesc(PCODE entryPoint)
         {
             return (MethodDesc*)((StubPrecode*)pInstr)->GetMethodDesc();
         }
-        
+
         if (PrecodeStubManager::g_pManager->GetFixupPrecodeRangeList()->IsInRange(entryPoint))
         {
             return (MethodDesc*)((FixupPrecode*)pInstr)->GetMethodDesc();

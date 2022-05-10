@@ -11,7 +11,7 @@ using System.Net;
 namespace System.Text.RegularExpressions.Symbolic
 {
     [ExcludeFromCodeCoverage(Justification = "Currently only used for testing")]
-    internal static class DgmlWriter<TSet> where TSet : IComparable<TSet>
+    internal static class DgmlWriter<TSet> where TSet : IComparable<TSet>, IEquatable<TSet>
     {
         /// <summary>Write the DFA or NFA in DGML format into the TextWriter.</summary>
         /// <param name="matcher">The <see cref="SymbolicRegexMatcher"/> for the regular expression.</param>
@@ -313,7 +313,7 @@ namespace System.Text.RegularExpressions.Symbolic
             public List<Transition> GetTransitions() => _transitions;
         }
 
-        private record Transition(int SourceState, int TargetState, (SymbolicRegexNode<TSet>?, TSet) Label)
+        private sealed record Transition(int SourceState, int TargetState, (SymbolicRegexNode<TSet>?, TSet) Label)
         {
             public bool IsEpsilon => Label.Equals(default);
         }

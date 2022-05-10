@@ -34,7 +34,11 @@
     <Compile Include="ContentTypeTests.cs" />
     <Compile Include="CtorTests.cs" />
     <Compile Include="ExportTests.cs" />
-    <Compile Include="ExtensionsTests.cs" />
+    <Compile Include="ExtensionsTests\BasicConstraintsTests.cs" />
+    <Compile Include="ExtensionsTests\ComprehensiveTests.cs" />
+    <Compile Include="ExtensionsTests\EnhancedKeyUsageTests.cs" />
+    <Compile Include="ExtensionsTests\KeyUsageTests.cs" />
+    <Compile Include="ExtensionsTests\SubjectKeyIdentifierTests.cs" />
     <Compile Include="FindTests.cs" />
     <Compile Include="LoadFromFileTests.cs" />
     <Compile Include="NameTests.cs" />
@@ -163,7 +167,6 @@
     <Compile Include="X509StoreMutableTests.iOS.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Cng\src\System.Security.Cryptography.Cng.csproj" />
     <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography.Pkcs\src\System.Security.Cryptography.Pkcs.csproj" />
     <PackageReference Include="System.Security.Cryptography.X509Certificates.TestData" Version="$(SystemSecurityCryptographyX509CertificatesTestDataVersion)" />
   </ItemGroup>

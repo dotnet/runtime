@@ -2495,7 +2495,7 @@ void RedirectedThreadFrame::ExceptionUnwind()
 #ifdef TARGET_X86
 
 //****************************************************************************************
-// This will check who caused the exception.  If it was caused by the the redirect function,
+// This will check who caused the exception.  If it was caused by the redirect function,
 // the reason is to resume the thread back at the point it was redirected in the first
 // place.  If the exception was not caused by the function, then it was caused by the call
 // out to the I[GC|Debugger]ThreadControl client and we need to determine if it's an
@@ -3701,7 +3701,7 @@ void Thread::CommitGCStressInstructionUpdate()
         else
             *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
-#elif defined(TARGET_ARM64)
+#elif defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
         *(DWORD*)destCodeWriterHolder.GetRW() = *(DWORD*)pbSrcCode;
 
@@ -4860,7 +4860,7 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                     {
                          // We already have the caller context available at this point
                         _ASSERTE(pRDT->IsCallerContextValid);
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 
                         // Why do we use CallerContextPointers below?
                         //
@@ -4879,7 +4879,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                         // Note that the JIT always pushes LR even for leaf methods to make hijacking
                         // work for them. See comment in code:Compiler::genPushCalleeSavedRegisters.
 
+#if defined(TARGET_LOONGARCH64)
+                        if (pRDT->pCallerContextPointers->Ra == &pRDT->pContext->Ra)
+#else
                         if(pRDT->pCallerContextPointers->Lr == &pRDT->pContext->Lr)
+#endif
                         {
                             // This is the case when we are either:
                             //
@@ -4914,7 +4918,11 @@ StackWalkAction SWCB_GetExecutionState(CrawlFrame *pCF, VOID *pData)
                             // This is the case of IP being inside the method body and LR is
                             // pushed on the stack. We get it to determine the return address
                             // in the caller of the current non-interruptible frame.
+#if defined(TARGET_LOONGARCH64)
+                            pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Ra;
+#else
                             pES->m_ppvRetAddrPtr = (void **) pRDT->pCallerContextPointers->Lr;
+#endif
                         }
 #elif defined(TARGET_X86) || defined(TARGET_AMD64)
                         pES->m_ppvRetAddrPtr = (void **) (EECodeManager::GetCallerSp(pRDT) - sizeof(void*));

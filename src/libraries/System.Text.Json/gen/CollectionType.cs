@@ -28,6 +28,7 @@ namespace System.Text.Json.SourceGeneration
         QueueOfT,
         ConcurrentStack,
         ConcurrentQueue,
+        IAsyncEnumerableOfT,
         IEnumerableOfT,
         Stack,
         Queue,

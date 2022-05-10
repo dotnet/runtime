@@ -7,7 +7,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class ProcessingInstructionAction : ContainerAction
+    internal sealed class ProcessingInstructionAction : ContainerAction
     {
         private const int NameReady = 3;
 

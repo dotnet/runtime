@@ -319,7 +319,7 @@ retry_state_change:
 /*
 
 [1] It's questionable on what to do if we hit the beginning of a self suspend.
-The expected behavior is that the target should poll its state very soon so the the suspend latency should be minimal.
+The expected behavior is that the target should poll its state very soon so the suspend latency should be minimal.
 
 STATE_ASYNC_SUSPEND_REQUESTED: Since there can only be one async suspend in progress and it must finish, it should not be possible to witness this.
 */

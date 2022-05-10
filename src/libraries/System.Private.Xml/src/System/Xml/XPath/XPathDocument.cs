@@ -49,8 +49,10 @@ namespace System.Xml.XPath
         /// <summary>
         /// Create a new empty document.  All names should be atomized using "nameTable".
         /// </summary>
-        internal XPathDocument(XmlNameTable nameTable!!)
+        internal XPathDocument(XmlNameTable nameTable)
         {
+            ArgumentNullException.ThrowIfNull(nameTable);
+
             _nameTable = nameTable;
         }
 
@@ -64,8 +66,10 @@ namespace System.Xml.XPath
         /// <summary>
         /// Create a new document from "reader", with whitespace handling controlled according to "space".
         /// </summary>
-        public XPathDocument(XmlReader reader!!, XmlSpace space)
+        public XPathDocument(XmlReader reader, XmlSpace space)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             LoadFromReader(reader, space);
         }
 
@@ -141,8 +145,10 @@ namespace System.Xml.XPath
         /// can be passed to indicate that names should be atomized by the builder and/or a fragment should be created.
         /// </summary>
         [MemberNotNull(nameof(_nameTable))]
-        internal void LoadFromReader(XmlReader reader!!, XmlSpace space)
+        internal void LoadFromReader(XmlReader reader, XmlSpace space)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             XPathDocumentBuilder builder;
             IXmlLineInfo? lineInfo;
             string? xmlnsUri;

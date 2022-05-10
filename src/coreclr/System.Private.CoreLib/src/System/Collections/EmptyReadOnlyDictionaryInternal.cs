@@ -33,8 +33,10 @@ namespace System.Collections
 
         // ICollection members
 
-        public void CopyTo(Array array!!, int index)
+        public void CopyTo(Array array, int index)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported);
 
@@ -55,14 +57,18 @@ namespace System.Collections
 
         // IDictionary members
 
-        public object? this[object key!!]
+        public object? this[object key]
         {
             get
             {
+                ArgumentNullException.ThrowIfNull(key);
+
                 return null;
             }
             set
             {
+                ArgumentNullException.ThrowIfNull(key);
+
                 if (!key.GetType().IsSerializable)
                     throw new ArgumentException(SR.Argument_NotSerializable, nameof(key));
 
@@ -82,8 +88,10 @@ namespace System.Collections
             return false;
         }
 
-        public void Add(object key!!, object? value)
+        public void Add(object key, object? value)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             if (!key.GetType().IsSerializable)
                 throw new ArgumentException(SR.Argument_NotSerializable, nameof(key));
 
