@@ -9599,15 +9599,15 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
     // be live if parent is getting removed, but until we fix it, this will
     // at least guarantee that the loopTable is somewhat accurate and up to
     // date.
-    for (BasicBlock::loopNumber l = optLoopTable[loopNum].lpChild; //
-         l != BasicBlock::NOT_IN_LOOP;                             //
+    for (BasicBlock::loopNumber l = loop.lpChild; //
+         l != BasicBlock::NOT_IN_LOOP;            //
          l = optLoopTable[l].lpSibling)
     {
         if ((optLoopTable[l].lpFlags & LPFLG_REMOVED) == 0)
         {
             JITDUMP("Resetting parent of loop number " FMT_LP " from " FMT_LP " to " FMT_LP ".\n", l,
-                    optLoopTable[l].lpParent, optLoopTable[loopNum].lpParent);
-            optLoopTable[l].lpParent = optLoopTable[loopNum].lpParent;
+                    optLoopTable[l].lpParent, loop.lpParent);
+            optLoopTable[l].lpParent = loop.lpParent;
         }
     }
 
