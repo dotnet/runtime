@@ -21,9 +21,9 @@ namespace System.Diagnostics.Tracing
     ///
     /// To get the value of a property quickly, use a delegate produced by <see cref="PropertyValue.GetPropertyGetter(PropertyInfo)"/>.
     /// </summary>
-#if CORERT
+#if NATIVEAOT
     [CLSCompliant(false)]
-    public // On CoreRT, this must be public to prevent it from getting reflection blocked.
+    public // On NativeAOT, this must be public to prevent it from getting reflection blocked.
 #else
     internal
 #endif
@@ -212,8 +212,8 @@ namespace System.Diagnostics.Tracing
             return helper.GetPropertyGetter(property);
         }
 
-#if CORERT
-        public // On CoreRT, this must be public to prevent it from getting reflection blocked.
+#if NATIVEAOT
+        public // On NativeAOT, this must be public to prevent it from getting reflection blocked.
 #else
         private
 #endif
@@ -231,8 +231,8 @@ namespace System.Diagnostics.Tracing
             }
         }
 
-#if CORERT
-        public // On CoreRT, this must be public to prevent it from getting reflection blocked.
+#if NATIVEAOT
+        public // On NativeAOT, this must be public to prevent it from getting reflection blocked.
 #else
         private
 #endif

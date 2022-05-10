@@ -12786,7 +12786,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
     }
 #endif
 
-    // This call will decide what to do w/ the the win32 event we just got. It does a lot of work.
+    // This call will decide what to do w/ the win32 event we just got. It does a lot of work.
     Reaction reaction = TriageWin32DebugEvent(pUnmanagedThread, pEvent);
 
 

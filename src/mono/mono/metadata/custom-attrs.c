@@ -496,7 +496,7 @@ MONO_RESTORE_WARNING
 		return NULL;
 	}
 	case MONO_TYPE_SZARRAY: {
-		MonoArray *arr;
+		MonoArray *arr = NULL;
 		guint32 i, alen, basetype;
 
 		if (!bcheck_blob (p, 3, boundp, error))
@@ -508,8 +508,10 @@ MONO_RESTORE_WARNING
 			return NULL;
 		}
 
-		arr = mono_array_new_checked (tklass, alen, error);
-		return_val_if_nok (error, NULL);
+		if (out_obj) {
+			arr = mono_array_new_checked (tklass, alen, error);
+			return_val_if_nok (error, NULL);
+		}
 
 		basetype = m_class_get_byval_arg (tklass)->type;
 		if (basetype == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tklass))
@@ -533,7 +535,8 @@ MONO_RESTORE_WARNING
 				if (!bcheck_blob (p, 0, boundp, error))
 					return NULL;
 				MonoBoolean val = *p++;
-				mono_array_set_internal (arr, MonoBoolean, i, val);
+				if (arr)
+					mono_array_set_internal (arr, MonoBoolean, i, val);
 			}
 			break;
 		case MONO_TYPE_CHAR:
@@ -543,7 +546,8 @@ MONO_RESTORE_WARNING
 				if (!bcheck_blob (p, 1, boundp, error))
 					return NULL;
 				guint16 val = read16 (p);
-				mono_array_set_internal (arr, guint16, i, val);
+				if (arr)
+					mono_array_set_internal (arr, guint16, i, val);
 				p += 2;
 			}
 			break;
@@ -554,7 +558,8 @@ MONO_RESTORE_WARNING
 				if (!bcheck_blob (p, 3, boundp, error))
 					return NULL;
 				guint32 val = read32 (p);
-				mono_array_set_internal (arr, guint32, i, val);
+				if (arr)
+					mono_array_set_internal (arr, guint32, i, val);
 				p += 4;
 			}
 			break;
@@ -564,7 +569,8 @@ MONO_RESTORE_WARNING
 					return NULL;
 				double val;
 				readr8 (p, &val);
-				mono_array_set_internal (arr, double, i, val);
+				if (arr)
+					mono_array_set_internal (arr, double, i, val);
 				p += 8;
 			}
 			break;
@@ -574,7 +580,8 @@ MONO_RESTORE_WARNING
 				if (!bcheck_blob (p, 7, boundp, error))
 					return NULL;
 				guint64 val = read64 (p);
-				mono_array_set_internal (arr, guint64, i, val);
+				if (arr)
+					mono_array_set_internal (arr, guint64, i, val);
 				p += 8;
 			}
 			break;
@@ -582,26 +589,35 @@ MONO_RESTORE_WARNING
 		case MONO_TYPE_OBJECT:
 		case MONO_TYPE_STRING:
 		case MONO_TYPE_SZARRAY: {
-			HANDLE_FUNCTION_ENTER ();
-			MONO_HANDLE_NEW (MonoArray, arr);
+			if (arr) {
+				HANDLE_FUNCTION_ENTER ();
+				MONO_HANDLE_NEW (MonoArray, arr);
 
-			for (i = 0; i < alen; i++) {
-				MonoObject *item = NULL;
-				load_cattr_value (image, m_class_get_byval_arg (tklass), &item, p, boundp, &p, error);
-				if (!is_ok (error))
-					return NULL;
-				mono_array_setref_internal (arr, i, item);
+				for (i = 0; i < alen; i++) {
+					MonoObject *item = NULL;
+					load_cattr_value (image, m_class_get_byval_arg (tklass), &item, p, boundp, &p, error);
+					if (!is_ok (error))
+						return NULL;
+					mono_array_setref_internal (arr, i, item);
+				}
+				HANDLE_FUNCTION_RETURN ();
+			} else {
+				for (i = 0; i < alen; i++) {
+					MonoObject *item = NULL;
+					load_cattr_value (image, m_class_get_byval_arg (tklass), &item, p, boundp, &p, error);
+					if (!is_ok (error))
+						return NULL;
+				}
 			}
-			HANDLE_FUNCTION_RETURN ();
 			break;
 		}
 		default:
 			g_error ("Type 0x%02x not handled in custom attr array decoding", basetype);
 		}
 		*end = p;
-		g_assert (out_obj);
-		*out_obj = (MonoObject*)arr;
 
+		if (out_obj)
+			*out_obj = (MonoObject*)arr;
 		return NULL;
 	}
 	default:
@@ -1210,6 +1226,7 @@ fail:
  * using C arrays. Only usable for cattrs with primitive/type/string arguments.
  * For types, a MonoType* is returned.
  * For strings, the address in the metadata blob is returned.
+ * For arrays, NULL is returned.
  * TYPED_ARGS, NAMED_ARGS, and NAMED_ARG_INFO should be freed using g_free ().
  */
 void

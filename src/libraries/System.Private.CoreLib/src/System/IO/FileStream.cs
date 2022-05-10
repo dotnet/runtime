@@ -219,6 +219,7 @@ namespace System.IO
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public virtual void Lock(long position, long length)
         {
             if (position < 0 || length < 0)
@@ -236,6 +237,7 @@ namespace System.IO
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public virtual void Unlock(long position, long length)
         {
             if (position < 0 || length < 0)

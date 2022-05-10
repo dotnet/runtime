@@ -348,6 +348,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal bool IsEnCMethod;
         internal LocalScopeHandleCollection localScopes;
         public bool IsStatic() => (methodDef.Attributes & MethodAttributes.Static) != 0;
+        public MethodAttributes Attributes => methodDef.Attributes;
         public int IsAsync { get; set; }
         public DebuggerAttributesInfo DebuggerAttrInfo { get; set; }
         public TypeInfo TypeInfo { get; }

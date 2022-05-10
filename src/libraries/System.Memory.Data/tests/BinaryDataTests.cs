@@ -8,13 +8,14 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Tests
 {
-    public class BinaryDataTests
+    public partial class BinaryDataTests
     {
         [Fact]
         public void CanCreateBinaryDataFromBytes()
@@ -323,11 +324,13 @@ namespace System.Tests
 
             AssertData(BinaryData.FromObjectAsJson(payload));
             AssertData(BinaryData.FromObjectAsJson(payload, options));
+            AssertData(BinaryData.FromObjectAsJson(payload, TestModelJsonContext.Default.TestModel));
             AssertData(new BinaryData(payload, type: typeof(TestModel)));
             AssertData(new BinaryData(payload));
             AssertData(new BinaryData(payload, type: null));
             AssertData(new BinaryData(payload, options: null, typeof(TestModel)));
             AssertData(new BinaryData(payload, options, typeof(TestModel)));
+            AssertData(new BinaryData(payload, context: TestModelJsonContext.Default, type: typeof(TestModel)));
 
             void AssertData(BinaryData data)
             {
@@ -358,6 +361,9 @@ namespace System.Tests
 
             data = BinaryData.FromObjectAsJson<TestModel>(null);
             Assert.Null(data.ToObjectFromJson<TestModel>());
+
+            data = BinaryData.FromObjectAsJson<TestModel>(null, TestModelJsonContext.Default.TestModel as JsonTypeInfo<TestModel>);
+            Assert.Null(data.ToObjectFromJson<TestModel>(TestModelJsonContext.Default.TestModel));
         }
 
         [Fact]
@@ -399,6 +405,7 @@ namespace System.Tests
             TestModel payload = new TestModel { A = "value", B = 5, C = true };
             BinaryData data = BinaryData.FromObjectAsJson(payload);
             Assert.ThrowsAny<Exception>(() => data.ToObjectFromJson<string>());
+            Assert.ThrowsAny<Exception>(() => data.ToObjectFromJson<MismatchedTestModel>(jsonTypeInfo: MismatchedTestModelJsonContext.Default.MismatchedTestModel));
         }
 
         [Fact]
@@ -591,12 +598,27 @@ namespace System.Tests
             Assert.Equal(string.Empty, BinaryData.Empty.ToString());
         }
 
-        private class TestModel
+        internal class TestModel
         {
             public string A { get; set; }
             public int B { get; set; }
             public bool C { get; set; }
             public object D { get; set; }
+        }
+
+        internal class MismatchedTestModel 
+        {
+            public int A { get; set; }
+        }
+
+        [JsonSerializable(typeof(TestModel))]
+        internal partial class TestModelJsonContext : JsonSerializerContext
+        {
+        }
+
+        [JsonSerializable(typeof(MismatchedTestModel))]
+        internal partial class MismatchedTestModelJsonContext: JsonSerializerContext 
+        {
         }
 
         private class OverFlowStream : MemoryStream

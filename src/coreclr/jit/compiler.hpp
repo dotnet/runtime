@@ -991,11 +991,11 @@ inline GenTree* Compiler::gtNewIconEmbFldHndNode(CORINFO_FIELD_HANDLE fldHnd)
 // Arguments:
 //    helper    - Call helper
 //    type      - Type of the node
-//    args      - Call args
+//    args      - Call args (struct args not supported)
 //
 // Return Value:
 //    New CT_HELPER node
-
+//
 inline GenTreeCall* Compiler::gtNewHelperCallNode(
     unsigned helper, var_types type, GenTree* arg1, GenTree* arg2, GenTree* arg3)
 {
@@ -1011,19 +1011,19 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 
     if (arg3 != nullptr)
     {
-        result->gtArgs.PushFront(this, arg3);
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg3));
         result->gtFlags |= arg3->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (arg2 != nullptr)
     {
-        result->gtArgs.PushFront(this, arg2);
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg2));
         result->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (arg1 != nullptr)
     {
-        result->gtArgs.PushFront(this, arg1);
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg1));
         result->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
     }
 
@@ -4265,7 +4265,6 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_NULLCHECK:
         case GT_PUTARG_REG:
         case GT_PUTARG_STK:
-        case GT_PUTARG_TYPE:
 #if FEATURE_ARG_SPLIT
         case GT_PUTARG_SPLIT:
 #endif // FEATURE_ARG_SPLIT

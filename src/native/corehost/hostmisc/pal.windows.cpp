@@ -325,6 +325,12 @@ namespace
         *sub_key = dotnet_key_path + pal::string_t(_X("\\Setup\\InstalledVersions\\")) + get_arch();
         *value = _X("InstallLocation");
     }
+
+    pal::string_t registry_path_as_string(const HKEY& key_hive, const pal::string_t& sub_key, const pal::char_t* value)
+    {
+        assert(key_hive == HKEY_CURRENT_USER || key_hive == HKEY_LOCAL_MACHINE);
+        return (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
+    }
 }
 
 pal::string_t pal::get_dotnet_self_registered_config_location()
@@ -334,7 +340,7 @@ pal::string_t pal::get_dotnet_self_registered_config_location()
     const pal::char_t* value;
     get_dotnet_install_location_registry_path(&key_hive, &sub_key, &value);
 
-    return (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
+    return registry_path_as_string(key_hive, sub_key, value);
 }
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
@@ -355,13 +361,24 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     const pal::char_t* value;
     get_dotnet_install_location_registry_path(&hkeyHive, &sub_key, &value);
 
+    if (trace::is_enabled())
+        trace::verbose(_X("Looking for architecture-specific registry value in '%s'."), registry_path_as_string(hkeyHive, sub_key, value).c_str());
+
     // Must use RegOpenKeyEx to be able to specify KEY_WOW64_32KEY to access the 32-bit registry in all cases.
     // The RegGetValue has this option available only on Win10.
     HKEY hkey = NULL;
     LSTATUS result = ::RegOpenKeyExW(hkeyHive, sub_key.c_str(), 0, KEY_READ | KEY_WOW64_32KEY, &hkey);
     if (result != ERROR_SUCCESS)
     {
-        trace::verbose(_X("Can't open the SDK installed location registry key, result: 0x%X"), result);
+        if (result == ERROR_FILE_NOT_FOUND)
+        {
+            trace::verbose(_X("The registry key ['%s'] does not exist."), sub_key.c_str());
+        }
+        else
+        {
+            trace::verbose(_X("Failed to open the registry key. Error code: 0x%X"), result);
+        }
+
         return false;
     }
 
@@ -370,7 +387,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     result = ::RegGetValueW(hkey, nullptr, value, RRF_RT_REG_SZ, nullptr, nullptr, &size);
     if (result != ERROR_SUCCESS || size == 0)
     {
-        trace::verbose(_X("Can't get the size of the SDK location registry value or it's empty, result: 0x%X"), result);
+        trace::verbose(_X("Failed to get the size of the install location registry value or it's empty. Error code: 0x%X"), result);
         ::RegCloseKey(hkey);
         return false;
     }
@@ -380,13 +397,14 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     result = ::RegGetValueW(hkey, nullptr, value, RRF_RT_REG_SZ, nullptr, &buffer[0], &size);
     if (result != ERROR_SUCCESS)
     {
-        trace::verbose(_X("Can't get the value of the SDK location registry value, result: 0x%X"), result);
+        trace::verbose(_X("Failed to get the value of the install location registry value. Error code: 0x%X"), result);
         ::RegCloseKey(hkey);
         return false;
     }
 
     recv->assign(buffer.data());
     ::RegCloseKey(hkey);
+    trace::verbose(_X("Found registered install location '%s'."), recv->c_str());
     return true;
 }
 
