@@ -2546,22 +2546,22 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePre(
     fgWalkResult result;
     if (lclVarsOnly && computeStack)
     {
-        GenericTreeWalker<true, true, false, true, true> walker(&walkData);
+        GenericTreeWalker<true, false, true, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else if (lclVarsOnly)
     {
-        GenericTreeWalker<false, true, false, true, true> walker(&walkData);
+        GenericTreeWalker<true, false, true, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else if (computeStack)
     {
-        GenericTreeWalker<true, true, false, false, true> walker(&walkData);
+        GenericTreeWalker<true, false, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else
     {
-        GenericTreeWalker<false, true, false, false, true> walker(&walkData);
+        GenericTreeWalker<true, false, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
 
@@ -2601,12 +2601,12 @@ inline Compiler::fgWalkResult Compiler::fgWalkTreePost(GenTree**     pTree,
     fgWalkResult result;
     if (computeStack)
     {
-        GenericTreeWalker<true, false, true, false, true> walker(&walkData);
+        GenericTreeWalker<false, true, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else
     {
-        GenericTreeWalker<false, false, true, false, true> walker(&walkData);
+        GenericTreeWalker<false, true, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
 
@@ -2649,17 +2649,17 @@ inline Compiler::fgWalkResult Compiler::fgWalkTree(GenTree**    pTree,
 
     if (preVisitor && postVisitor)
     {
-        GenericTreeWalker<true, true, true, false, true> walker(&walkData);
+        GenericTreeWalker<true, true, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else if (preVisitor)
     {
-        GenericTreeWalker<true, true, false, false, true> walker(&walkData);
+        GenericTreeWalker<true, false, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
     else
     {
-        GenericTreeWalker<true, false, true, false, true> walker(&walkData);
+        GenericTreeWalker<false, true, false, true> walker(&walkData);
         result = walker.WalkTree(pTree, nullptr);
     }
 
