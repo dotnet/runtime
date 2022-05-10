@@ -157,8 +157,13 @@ namespace System.Formats.Tar.Tests
 
             if (entry is PosixTarEntry posix)
             {
-                Assert.Equal(DefaultGName, posix.GroupName);
-                Assert.Equal(DefaultUName, posix.UserName);
+                string gname = Interop.Sys.GetGName(status.Gid);
+                Assert.NotNull(gname);
+                string uname = Interop.Sys.GetUName(status.Uid);
+                Assert.NotNull(uname);
+
+                Assert.Equal(gname, posix.GroupName);
+                Assert.Equal(uname, posix.UserName);
 
                 if (entry.EntryType is not TarEntryType.BlockDevice and not TarEntryType.CharacterDevice)
                 {

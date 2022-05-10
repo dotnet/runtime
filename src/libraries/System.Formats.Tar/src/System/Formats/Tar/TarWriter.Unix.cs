@@ -60,12 +60,11 @@ namespace System.Formats.Tar
 
             entry._header._mode = (status.Mode & 4095); // First 12 bits
 
-            entry.Uid = (int)status.Uid;
-            entry.Gid = (int)status.Gid;
+            entry._header._uid = (int)status.Uid;
+            entry._header._gid = (int)status.Gid;
 
-            // TODO: Add these p/invokes https://github.com/dotnet/runtime/issues/68230
-            entry._header._uName = "";// Interop.Sys.GetUName();
-            entry._header._gName = "";// Interop.Sys.GetGName();
+            entry._header._uName = Interop.Sys.GetUName(status.Uid) ?? string.Empty;
+            entry._header._gName = Interop.Sys.GetGName(status.Gid) ?? string.Empty;
 
             if (entry.EntryType == TarEntryType.SymbolicLink)
             {
