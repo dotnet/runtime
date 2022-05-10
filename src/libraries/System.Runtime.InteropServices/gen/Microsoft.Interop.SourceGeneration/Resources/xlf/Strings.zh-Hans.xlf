@@ -128,8 +128,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
-        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="translated">必须通过将 “System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute” 应用到程序集来在此项目中禁用运行时封送，以启用此类型的封送处理。</target>
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">必须通过将 “System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute” 应用到程序集来在此项目中禁用运行时封送，以启用此类型的封送处理。</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">

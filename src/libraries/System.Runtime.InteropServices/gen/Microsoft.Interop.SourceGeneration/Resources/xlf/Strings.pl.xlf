@@ -128,8 +128,8 @@
         <note />
       </trans-unit>
       <trans-unit id="RuntimeMarshallingMustBeDisabled">
-        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
-        <target state="translated">Skierowanie środowiska uruchomieniowego musi być wyłączone w tym projekcie przez zastosowanie do zestawu atrybutu „System.Runtime.InteropServices.DisableRuntimeMarshallingAttribute”, aby umożliwić skierowanie tego typu.</target>
+        <source>Runtime marshalling must be disabled in this project by applying the 'System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute' to the assembly to enable marshalling this type.</source>
+        <target state="translated">Skierowanie środowiska uruchomieniowego musi być wyłączone w tym projekcie przez zastosowanie do zestawu atrybutu „System.Runtime.CompilerServices.DisableRuntimeMarshallingAttribute”, aby umożliwić skierowanie tego typu.</target>
         <note />
       </trans-unit>
       <trans-unit id="SafeHandleByRefMustBeConcrete">

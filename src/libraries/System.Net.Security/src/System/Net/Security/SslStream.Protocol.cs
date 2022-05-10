@@ -13,14 +13,14 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace System.Net.Security
 {
-    // SecureChannel - a wrapper on SSPI based functionality.
-    // Provides an additional abstraction layer over SSPI for SslStream.
-    internal sealed class SecureChannel
+    internal delegate X509Certificate2? SelectClientCertificate(out bool sessionRestartAttempt);
+
+    public partial class SslStream
     {
         private SafeFreeCredentials? _credentialsHandle;
         private SafeDeleteSslContext? _securityContext;
 
-        private SslConnectionInfo? _connectionInfo;
+        private SslConnectionInfo _connectionInfo;
         private X509Certificate? _selectedClientCertificate;
         private X509Certificate2? _remoteCertificate;
         private bool _remoteCertificateExposed;
@@ -30,30 +30,13 @@ namespace System.Net.Security
         private int _trailerSize = 16;
         private int _maxDataSize = 16354;
 
-        private bool _refreshCredentialNeeded;
-
-        private readonly SslAuthenticationOptions _sslAuthenticationOptions;
-        private SslApplicationProtocol _negotiatedApplicationProtocol;
+        private bool _refreshCredentialNeeded = true;
 
         private static readonly Oid s_serverAuthOid = new Oid("1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.1");
         private static readonly Oid s_clientAuthOid = new Oid("1.3.6.1.5.5.7.3.2", "1.3.6.1.5.5.7.3.2");
-        private SslStream? _ssl;
-
-        internal SecureChannel(SslAuthenticationOptions sslAuthenticationOptions, SslStream sslStream)
-        {
-            if (NetEventSource.Log.IsEnabled()) NetEventSource.Log.SecureChannelCtor(this, sslStream, sslAuthenticationOptions.TargetHost!, sslAuthenticationOptions.ClientCertificates, sslAuthenticationOptions.EncryptionPolicy);
-
-            SslStreamPal.VerifyPackageInfo();
-            Debug.Assert(sslAuthenticationOptions.TargetHost != null, "sslAuthenticationOptions.TargetHost == null");
-
-            _securityContext = null;
-            _refreshCredentialNeeded = true;
-            _sslAuthenticationOptions = sslAuthenticationOptions;
-            _ssl = sslStream;
-        }
 
         //
-        // SecureChannel properties
+        // Protocol properties
         //
         //   LocalServerCertificate - local certificate for server mode channel
         //   LocalClientCertificate - selected certificated used in the client channel mode otherwise null
@@ -85,15 +68,6 @@ namespace System.Net.Security
             }
         }
 
-        internal X509Certificate? RemoteCertificate
-        {
-            get
-            {
-                _remoteCertificateExposed = true;
-                return _remoteCertificate;
-            }
-        }
-
         internal ChannelBinding? GetChannelBinding(ChannelBindingKind kind)
         {
             ChannelBinding? result = null;
@@ -105,27 +79,11 @@ namespace System.Net.Security
             return result;
         }
 
-        internal X509RevocationMode CheckCertRevocationStatus
-        {
-            get
-            {
-                return _sslAuthenticationOptions.CertificateRevocationCheckMode;
-            }
-        }
-
         internal int MaxDataSize
         {
             get
             {
                 return _maxDataSize;
-            }
-        }
-
-        internal SslConnectionInfo? ConnectionInfo
-        {
-            get
-            {
-                return _connectionInfo;
             }
         }
 
@@ -138,27 +96,11 @@ namespace System.Net.Security
             }
         }
 
-        internal bool IsServer
-        {
-            get
-            {
-                return _sslAuthenticationOptions.IsServer;
-            }
-        }
-
         internal bool RemoteCertRequired
         {
             get
             {
-                return _sslAuthenticationOptions.RemoteCertRequired;
-            }
-        }
-
-        internal SslApplicationProtocol NegotiatedApplicationProtocol
-        {
-            get
-            {
-                return _negotiatedApplicationProtocol;
+                return _sslAuthenticationOptions!.RemoteCertRequired;
             }
         }
 
@@ -167,7 +109,7 @@ namespace System.Net.Security
             _refreshCredentialNeeded = true;
         }
 
-        internal void Close()
+        internal void CloseContext()
         {
             if (!_remoteCertificateExposed)
             {
@@ -177,7 +119,6 @@ namespace System.Net.Security
 
             _securityContext?.Dispose();
             _credentialsHandle?.Dispose();
-            _ssl = null;
             GC.SuppressFinalize(this);
         }
 
@@ -297,9 +238,9 @@ namespace System.Net.Security
             sessionRestartAttempt = false;
 
             X509Certificate? clientCertificate = null;        // candidate certificate that can come from the user callback or be guessed when targeting a session restart.
-            X509Certificate2? selectedCert = null;     // final selected cert (ensured that it does have private key with it).
+            X509Certificate2? selectedCert = null;            // final selected cert (ensured that it does have private key with it).
             List<X509Certificate>? filteredCerts = null;      // This is an intermediate client certs collection that try to use if no selectedCert is available yet.
-            string[] issuers;                                // This is a list of issuers sent by the server, only valid if we do know what the server cert is.
+            string[] issuers;                                 // This is a list of issuers sent by the server, only valid if we do know what the server cert is.
 
             if (_sslAuthenticationOptions.CertSelectionDelegate != null)
             {
@@ -315,7 +256,7 @@ namespace System.Net.Security
                     {
                         _sslAuthenticationOptions.ClientCertificates = new X509CertificateCollection();
                     }
-                    clientCertificate = _sslAuthenticationOptions.CertSelectionDelegate(_sslAuthenticationOptions.TargetHost!, _sslAuthenticationOptions.ClientCertificates, remoteCert, issuers);
+                    clientCertificate = _sslAuthenticationOptions.CertSelectionDelegate(this, _sslAuthenticationOptions.TargetHost, _sslAuthenticationOptions.ClientCertificates, remoteCert, issuers);
                 }
                 finally
                 {
@@ -639,7 +580,7 @@ namespace System.Net.Security
             // with .NET Framework), and if neither is set we fall back to using CertificateContext.
             if (_sslAuthenticationOptions.ServerCertSelectionDelegate != null)
             {
-                localCertificate = _sslAuthenticationOptions.ServerCertSelectionDelegate(_sslAuthenticationOptions.TargetHost);
+                localCertificate = _sslAuthenticationOptions.ServerCertSelectionDelegate(this, _sslAuthenticationOptions.TargetHost);
                 if (localCertificate == null)
                 {
                     if (NetEventSource.Log.IsEnabled())
@@ -655,7 +596,7 @@ namespace System.Net.Security
                 X509CertificateCollection tempCollection = new X509CertificateCollection();
                 tempCollection.Add(_sslAuthenticationOptions.CertificateContext!.Certificate!);
                 // We pass string.Empty here to maintain strict compatibility with .NET Framework.
-                localCertificate = _sslAuthenticationOptions.CertSelectionDelegate(string.Empty, tempCollection, null, Array.Empty<string>());
+                localCertificate = _sslAuthenticationOptions.CertSelectionDelegate(this, string.Empty, tempCollection, null, Array.Empty<string>());
                 if (localCertificate == null)
                 {
                     if (NetEventSource.Log.IsEnabled())
@@ -844,7 +785,6 @@ namespace System.Net.Security
                     if (_sslAuthenticationOptions.IsServer)
                     {
                         status = SslStreamPal.AcceptSecurityContext(
-                                      this,
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       inputBuffer,
@@ -854,13 +794,14 @@ namespace System.Net.Security
                     else
                     {
                         status = SslStreamPal.InitializeSecurityContext(
-                                       this,
                                        ref _credentialsHandle!,
                                        ref _securityContext,
                                        _sslAuthenticationOptions.TargetHost,
                                        inputBuffer,
                                        ref result,
-                                       _sslAuthenticationOptions);
+                                       _sslAuthenticationOptions,
+                                       SelectClientCertificate
+                                       );
                     }
                 } while (cachedCreds && _credentialsHandle == null);
             }
@@ -895,7 +836,6 @@ namespace System.Net.Security
         internal SecurityStatusPal Renegotiate(out byte[]? output)
         {
             return SslStreamPal.Renegotiate(
-                                      this,
                                       ref _credentialsHandle!,
                                       ref _securityContext,
                                       _sslAuthenticationOptions,
@@ -911,13 +851,6 @@ namespace System.Net.Security
         --*/
         internal void ProcessHandshakeSuccess()
         {
-            if (_negotiatedApplicationProtocol == default)
-            {
-                // try to get ALPN info unless we already have it. (renegotiation)
-                byte[]? alpnResult = SslStreamPal.GetNegotiatedApplicationProtocol(_securityContext!);
-                _negotiatedApplicationProtocol = alpnResult == null ? default : new SslApplicationProtocol(alpnResult, false);
-            }
-
             SslStreamPal.QueryContextStreamSizes(_securityContext!, out StreamSizes streamSizes);
 
             _headerSize = streamSizes.Header;
@@ -925,7 +858,7 @@ namespace System.Net.Security
             _maxDataSize = checked(streamSizes.MaximumMessage - (_headerSize + _trailerSize));
             Debug.Assert(_maxDataSize > 0, "_maxDataSize > 0");
 
-            SslStreamPal.QueryContextConnectionInfo(_securityContext!, out _connectionInfo);
+            SslStreamPal.QueryContextConnectionInfo(_securityContext!, ref _connectionInfo);
         }
 
         /*++
@@ -1049,13 +982,7 @@ namespace System.Net.Security
 
                 if (remoteCertValidationCallback != null)
                 {
-                    object? sender = _ssl;
-                    if (sender == null)
-                    {
-                        throw new ObjectDisposedException(nameof(SslStream));
-                    }
-
-                    success = remoteCertValidationCallback(sender, _remoteCertificate, chain, sslPolicyErrors);
+                    success = remoteCertValidationCallback(this, _remoteCertificate, chain, sslPolicyErrors);
                 }
                 else
                 {
@@ -1105,7 +1032,7 @@ namespace System.Net.Security
             return success;
         }
 
-        public ProtocolToken? CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain)
+        private ProtocolToken? CreateFatalHandshakeAlertToken(SslPolicyErrors sslPolicyErrors, X509Chain chain)
         {
             TlsAlertMessage alertMessage;
 
@@ -1145,7 +1072,7 @@ namespace System.Net.Security
             return GenerateAlertToken();
         }
 
-        public ProtocolToken? CreateShutdownToken()
+        private ProtocolToken? CreateShutdownToken()
         {
             SecurityStatusPal status;
             status = SslStreamPal.ApplyShutdownToken(ref _credentialsHandle, _securityContext!);

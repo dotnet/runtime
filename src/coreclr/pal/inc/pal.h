@@ -1602,7 +1602,7 @@ typedef struct _XMM_SAVE_AREA32 {
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) is is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //

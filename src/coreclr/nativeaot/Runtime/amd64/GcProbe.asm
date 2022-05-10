@@ -318,7 +318,7 @@ NESTED_ENTRY RhpHijackForGcStress, _TEXT
         lea         rcx, [rsp + 20h + 6*10h + 2*8h]   ;; address of PAL_LIMITED_CONTEXT
         call        THREAD__HIJACKFORGCSTRESS
 
-        ;; Note: we only restore the scratch registers here. No GC has occured, so restoring
+        ;; Note: we only restore the scratch registers here. No GC has occurred, so restoring
         ;; the callee saved ones is unnecessary.
         mov         rax, [rsp + 20h + 6*10h + 2*8h + OFFSETOF__PAL_LIMITED_CONTEXT__Rax]
         mov         rcx, [rsp + 20h + 6*10h + 0*8h]

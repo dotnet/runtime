@@ -30,7 +30,7 @@
 ; Also, note that an empty line is ignored, and a line that begins with a ; is ignored.
 ;
 ; If the boilerplate around the individual functions needs adjustment, edit the thunk generator source code, and
-;    rebuild with rebuildthunkgen.cmd in the the ThunkGenerator subdir, then rebuildthunks.cmd
+;    rebuild with rebuildthunkgen.cmd in the ThunkGenerator subdir, then rebuildthunks.cmd
 ; If this file is editted, rebuild with gen.cmd -- DO NOT RUN from within a razzle window.
 ;
 NORMALTYPES

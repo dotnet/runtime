@@ -1895,7 +1895,7 @@ static INT32 RegularGetValueTypeHashCode(MethodTable *mt, void *pObjRef)
         canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(mt);
     }
 
-    // While we shouln't get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to
+    // While we should not get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to
     // be able to handle getting the hashcode for an embedded structure whose hashcode is computed by the fast path.
     if (canUseFastGetHashCodeHelper)
     {

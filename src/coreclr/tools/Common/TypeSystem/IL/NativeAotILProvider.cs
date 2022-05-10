@@ -12,7 +12,7 @@ using Debug = System.Diagnostics.Debug;
 
 namespace Internal.IL
 {
-    public sealed class CoreRTILProvider : ILProvider
+    public sealed class NativeAotILProvider : ILProvider
     {
         private MethodIL TryGetRuntimeImplementedMethodIL(MethodDesc method)
         {

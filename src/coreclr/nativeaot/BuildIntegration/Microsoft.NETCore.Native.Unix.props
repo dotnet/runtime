@@ -97,8 +97,8 @@ The .NET Foundation licenses this file to you under the MIT license.
       <LinkerArg Include="-Wl,-z,relro" Condition="'$(TargetOS)' != 'OSX'" />
       <!-- binskim warning BA3011 The BIND_NOW flag is missing -->
       <LinkerArg Include="-Wl,-z,now" Condition="'$(TargetOS)' != 'OSX'" />
-      <LinkerArg Include="-Wl,-u,_CoreRT_StaticInitialization" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
-      <LinkerArg Include="-Wl,--require-defined,CoreRT_StaticInitialization" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-Wl,-u,_NativeAOT_StaticInitialization" Condition="'$(TargetOS)' == 'OSX' and '$(NativeLib)' == 'Shared'" />
+      <LinkerArg Include="-Wl,--require-defined,NativeAOT_StaticInitialization" Condition="'$(TargetOS)' != 'OSX' and '$(NativeLib)' == 'Shared'" />
 
       <LinkerArg Include="@(NativeFramework->'-framework %(Identity)')" Condition="'$(TargetOS)' == 'OSX'" />
     </ItemGroup>
