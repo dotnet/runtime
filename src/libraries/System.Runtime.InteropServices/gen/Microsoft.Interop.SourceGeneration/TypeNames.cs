@@ -9,8 +9,6 @@ namespace Microsoft.Interop
         public const string LibraryImportAttribute = "System.Runtime.InteropServices.LibraryImportAttribute";
         public const string StringMarshalling = "System.Runtime.InteropServices.StringMarshalling";
 
-        public const string GeneratedMarshallingAttribute = "System.Runtime.InteropServices.GeneratedMarshallingAttribute";
-
         public const string NativeMarshallingAttribute = "System.Runtime.InteropServices.Marshalling.NativeMarshallingAttribute";
 
         public const string MarshalUsingAttribute = "System.Runtime.InteropServices.Marshalling.MarshalUsingAttribute";

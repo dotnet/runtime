@@ -51,22 +51,51 @@ namespace Microsoft.Interop
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
-            return info.MarshallingAttributeInfo switch
+            if (info.MarshallingAttributeInfo is NativeMarshallingAttributeInfo marshalInfo)
             {
-                NativeMarshallingAttributeInfo marshalInfo when Options.RuntimeMarshallingDisabled => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
-                NativeMarshallingAttributeInfo { NativeValueType: SpecialTypeInfo specialType } marshalInfo when specialType.SpecialType.IsAlwaysBlittable() => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
-                NativeMarshallingAttributeInfo { NativeValueType: PointerTypeInfo } marshalInfo => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
-                UnmanagedBlittableMarshallingInfo when Options.RuntimeMarshallingDisabled => s_blittable,
-                UnmanagedBlittableMarshallingInfo or NativeMarshallingAttributeInfo when !Options.RuntimeMarshallingDisabled =>
-                    throw new MarshallingNotSupportedException(info, context)
-                    {
-                        NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
-                        DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
-                    },
-                GeneratedNativeMarshallingAttributeInfo => s_forwarder,
-                MissingSupportMarshallingInfo => s_forwarder,
-                _ => _innerMarshallingGenerator.Create(info, context)
-            };
+                if (Options.RuntimeMarshallingDisabled || marshalInfo.IsStrictlyBlittable)
+                {
+                    return CreateCustomNativeTypeMarshaller(info, context, marshalInfo);
+                }
+
+                if (marshalInfo.NativeValueType is SpecialTypeInfo specialType
+                        && specialType.SpecialType.IsAlwaysBlittable())
+                {
+                    return CreateCustomNativeTypeMarshaller(info, context, marshalInfo);
+                }
+
+                if (marshalInfo.NativeValueType is PointerTypeInfo)
+                {
+                    return CreateCustomNativeTypeMarshaller(info, context, marshalInfo);
+                }
+
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
+                    DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
+                };
+            }
+
+            if (info.MarshallingAttributeInfo is UnmanagedBlittableMarshallingInfo blittableInfo)
+            {
+                if (Options.RuntimeMarshallingDisabled || blittableInfo.IsStrictlyBlittable)
+                {
+                    return s_blittable;
+                }
+
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
+                    DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
+                };
+            }
+
+            if (info.MarshallingAttributeInfo is MissingSupportMarshallingInfo)
+            {
+                return s_forwarder;
+            }
+
+            return _innerMarshallingGenerator.Create(info, context);
         }
 
         private static ExpressionSyntax GetNumElementsExpressionFromMarshallingInfo(TypePositionInfo info, CountInfo count, StubCodeContext context)

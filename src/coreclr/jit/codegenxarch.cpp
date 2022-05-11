@@ -4979,7 +4979,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     emitter*  emit       = GetEmitter();
 
     GenTree* addr = tree->Addr();
-    if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_TLS_HDL))
+    if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
