@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using Xunit.Abstractions;
+
 namespace Wasm.Build.Tests
 {
     public class DotNetCommand : ToolCommand
@@ -8,7 +10,7 @@ namespace Wasm.Build.Tests
         private BuildEnvironment _buildEnvironment;
         private bool _useDefaultArgs;
 
-        public DotNetCommand(BuildEnvironment buildEnv, bool useDefaultArgs=true) : base(buildEnv.DotNet)
+        public DotNetCommand(BuildEnvironment buildEnv, ITestOutputHelper _testOutput, bool useDefaultArgs=true) : base(buildEnv.DotNet, _testOutput)
         {
             _buildEnvironment = buildEnv;
             _useDefaultArgs = useDefaultArgs;

@@ -62,14 +62,14 @@ namespace Wasm.Build.Tests
                 try
                 {
                     CultureInfo culture = new (""es-ES"", false);
-                    Console.WriteLine($""es-ES: Is Invariant LCID: {culture.LCID == CultureInfo.InvariantCulture.LCID}, NativeName: {culture.NativeName}"");
+                    _testOutput.WriteLine($""es-ES: Is Invariant LCID: {culture.LCID == CultureInfo.InvariantCulture.LCID}, NativeName: {culture.NativeName}"");
                 }
                 catch (CultureNotFoundException cnfe)
                 {
-                    Console.WriteLine($""Could not create es-ES culture: {cnfe.Message}"");
+                    _testOutput.WriteLine($""Could not create es-ES culture: {cnfe.Message}"");
                 }
 
-                Console.WriteLine($""CurrentCulture.NativeName: {CultureInfo.CurrentCulture.NativeName}"");
+                _testOutput.WriteLine($""CurrentCulture.NativeName: {CultureInfo.CurrentCulture.NativeName}"");
                 return 42;
             ";
 

@@ -191,7 +191,7 @@ namespace ResourcesTest
             var currentCultureName = Thread.CurrentThread.CurrentCulture.Name;
 
             var rm = new ResourceManager(""##RESOURCE_NAME##"", typeof(##TYPE_NAME##).Assembly);
-            Console.WriteLine($""For '{currentCultureName}' got: {rm.GetString(""hello"")}"");
+            _testOutput.WriteLine($""For '{currentCultureName}' got: {rm.GetString(""hello"")}"");
 
             return 42;
         }

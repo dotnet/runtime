@@ -78,7 +78,7 @@ namespace Wasm.Build.NativeRebuild.Tests
             buildArgs = newBuildArgs;
 
             _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
-            Console.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
+            _testOutput.WriteLine($"{Environment.NewLine}Rebuilding with no changes ..{Environment.NewLine}");
             (_, string output) = BuildProject(buildArgs,
                                             id: id,
                                             new BuildProjectOptions(

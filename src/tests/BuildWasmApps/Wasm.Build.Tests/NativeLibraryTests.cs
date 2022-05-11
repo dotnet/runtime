@@ -75,7 +75,7 @@ public class Test
         using SKFileStream skfs = new SKFileStream(""mono.png"");
         using SKImage img = SKImage.FromEncodedData(skfs);
 
-        Console.WriteLine ($""Size: {skfs.Length} Height: {img.Height}, Width: {img.Width}"");
+        _testOutput.WriteLine ($""Size: {skfs.Length} Height: {img.Height}, Width: {img.Width}"");
         return 0;
     }
 }";

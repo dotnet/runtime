@@ -44,7 +44,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                     {{" +
              @"          string json = ""{ \""name\"": \""value\"" }"";" +
              @"          var jdoc = JsonDocument.Parse($""{json}"", new JsonDocumentOptions());" +
-            @$"          Console.WriteLine($""json: {{jdoc}}"");
+            @$"          _testOutput.WriteLine($""json: {{jdoc}}"");
                         return 42;
                     }}
                 }}";
