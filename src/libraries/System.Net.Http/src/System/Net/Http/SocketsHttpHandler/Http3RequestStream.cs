@@ -126,6 +126,8 @@ namespace System.Net.Http
                 linkedTokenRegistration = cancellationToken.UnsafeRegister(cts => ((CancellationTokenSource)cts!).Cancel(), _requestBodyCancellationSource);
             }
 
+            // upon failure, we should cancel the _requestBodyCancellationSource
+            bool shouldCancelBody = true;
             try
             {
                 BufferHeaders(_request);
@@ -228,6 +230,7 @@ namespace System.Net.Http
                 // If we're 100% done with the stream, dispose.
                 disposeSelf = useEmptyResponseContent;
 
+                shouldCancelBody = false;
                 return response;
             }
             catch (QuicStreamAbortedException ex) when (ex.ErrorCode == (long)Http3ErrorCode.VersionFallback)
@@ -243,14 +246,12 @@ namespace System.Net.Http
             catch (QuicStreamAbortedException ex)
             {
                 // Our stream was reset.
-                _requestBodyCancellationSource.Cancel();
                 Exception? abortException = _connection.AbortException;
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException ?? ex);
             }
             catch (QuicConnectionAbortedException ex)
             {
                 // Our connection was reset. Start shutting down the connection.
-                _requestBodyCancellationSource.Cancel();
                 Exception abortException = _connection.Abort(ex);
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
@@ -260,6 +261,9 @@ namespace System.Net.Http
                 // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
                 if (cancellationToken.IsCancellationRequested)
                 {
+                    // in case the HttpContent was duplex, don't cancel _requestBodyCancellationSource
+                    shouldCancelBody = false;
+
                     _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
                     throw new TaskCanceledException(ex.Message, ex, cancellationToken);
                 }
@@ -286,6 +290,11 @@ namespace System.Net.Http
             }
             finally
             {
+                if (shouldCancelBody)
+                {
+                    _requestBodyCancellationSource.Cancel();
+                }
+
                 linkedTokenRegistration.Dispose();
                 if (disposeSelf)
                 {
