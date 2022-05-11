@@ -33,12 +33,13 @@ enum State {
 }
 
 function withCUIn64Ptr<TRes> (x: CUInt64, f: (ptr: VoidPtr) => TRes): TRes {
-    const tmp = Module._malloc (sizeOfCUInt64);
+    const sp = Module.stackSave();
+    const tmp = Module.stackAlloc (sizeOfCUInt64);
     try {
         memory.setCU64 (tmp, x);
         return f (tmp);
     } finally {
-        Module._free (tmp);
+        Module.stackRestore(sp);
     }
 }
 
