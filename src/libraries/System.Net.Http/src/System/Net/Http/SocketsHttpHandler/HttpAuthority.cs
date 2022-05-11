@@ -24,17 +24,17 @@ namespace System.Net.Http
             var builder = new UriBuilder(Uri.UriSchemeHttp, host, port);
             Uri uri = builder.Uri;
 
-            // This includes brackets for IPv6 and ScopeId for IPv6 LLA so Connect works.
-            IdnHost = uri.HostNameType == UriHostNameType.IPv6 ? "[" + uri.IdnHost + "]" : uri.IdnHost;
             if (uri.HostNameType == UriHostNameType.IPv6)
             {
+                // This includes brackets for IPv6 and ScopeId for IPv6 LLA so Connect works.
+                IdnHost = $"[{uri.IdnHost}]";
                 // This is bracket enclosed IPv6 without ScopeID for LLA
                 HostValue = uri.Host;
             }
             else
             {
                 // IPv4 address, dns or puny encoded name
-                HostValue = IdnHost;
+                HostValue = IdnHost = uri.IdnHost;
             }
             Port = port;
         }

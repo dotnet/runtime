@@ -21,11 +21,12 @@ namespace System.Net.Http.Functional.Tests
 #if WINHTTPHANDLER_TEST
     using HttpClientHandler = System.Net.Http.WinHttpClientHandler;
 #endif
-
     // Note:  Disposing the HttpClient object automatically disposes the handler within. So, it is not necessary
     // to separately Dispose (or have a 'using' statement) for the handler.
     public abstract class HttpClientHandlerTest : HttpClientHandlerTestBase
     {
+        public static bool IsNotWinHttpHandler = !IsWinHttpHandler;
+
         public HttpClientHandlerTest(ITestOutputHelper output) : base(output)
         {
         }
@@ -228,7 +229,7 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        [Theory]
+        [ConditionalTheory(nameof(IsNotWinHttpHandler))]
         [InlineData("[::1234]", "[::1234]")]
         [InlineData("[::1234]:8080", "[::1234]:8080")]
         [InlineData("[fe80::9c3a:b64d:6249:1de8%2]", "[fe80::9c3a:b64d:6249:1de8]")]
