@@ -129,6 +129,8 @@ namespace System.Net.Test.Common
                 throw new Exception("Received second control stream from client???");
             }
 
+            Assert.False(controlStream.CanWrite);
+
             long? streamType = await controlStream.ReadIntegerAsync();
             Assert.Equal(Http3LoopbackStream.ControlStream, streamType);
 
@@ -143,19 +145,37 @@ namespace System.Net.Test.Common
         // This will automatically handle the control stream, including validating its contents
         public async Task<Http3LoopbackStream> AcceptRequestStreamAsync()
         {
-            Http3LoopbackStream stream;
+            Http3LoopbackStream requestStream = null;
 
             while (true)
             {
-                stream = await AcceptStreamAsync().ConfigureAwait(false);
+                var stream = await AcceptStreamAsync().ConfigureAwait(false);
 
+                // Accepted request stream.
                 if (stream.CanWrite)
                 {
-                    return stream;
+                    // Only one expected.
+                    Assert.True(requestStream is null, "Expected single request stream, got a second");
+
+                    // Control stream is set --> return the request stream.
+                    if (_inboundControlStream is not null)
+                    {
+                        return stream;
+                    }
+
+                    // Control stream not set --> need to accept another stream.
+                    requestStream = stream;
+                    continue;
                 }
 
-                // Must be the control stream
+                // Must be the control stream.
                 await HandleControlStreamAsync(stream);
+
+                // We've already accepted request stream --> return it.
+                if (requestStream is not null)
+                {
+                    return requestStream;
+                }
             }
         }
 

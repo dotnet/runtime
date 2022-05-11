@@ -2998,7 +2998,7 @@ void Compiler::fgDebugCheckFlags(GenTree* tree)
 
         case GT_IND:
             // Do we have a constant integer address as op1 that is also a handle?
-            if (op1->IsCnsIntOrI() && op1->IsIconHandle())
+            if (op1->IsIconHandle())
             {
                 if ((tree->gtFlags & GTF_IND_INVARIANT) != 0)
                 {

@@ -2187,15 +2187,12 @@ namespace System.Runtime.InteropServices.Marshalling
         public void FreeNative() { }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
+    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string),
         Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
             | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
     public unsafe ref struct Utf16StringMarshaller
     {
         public Utf16StringMarshaller(string? str) { }
-        public Utf16StringMarshaller(string? str, System.Span<ushort> buffer) { }
-        public ref ushort GetPinnableReference() { throw null; }
         public ushort* ToNativeValue() { throw null; }
         public void FromNativeValue(ushort* value) { }
         public string? ToManaged() { throw null; }

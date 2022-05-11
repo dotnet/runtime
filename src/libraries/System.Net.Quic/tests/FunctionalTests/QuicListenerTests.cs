@@ -28,7 +28,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67301", TestPlatforms.Linux)]
         public async Task Listener_Backlog_Success_IPv6()
         {
             await Task.Run(async () =>

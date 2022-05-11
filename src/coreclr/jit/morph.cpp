@@ -5066,12 +5066,13 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     JITDUMP("fgMorphArrayIndex (before remorph):\n")
     DISPTREE(tree)
 
-    tree = fgMorphTree(tree);
+    GenTree* morphedTree = fgMorphTree(tree);
+    DBEXEC(morphedTree != tree, morphedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
 
     JITDUMP("fgMorphArrayIndex (after remorph):\n")
-    DISPTREE(tree)
+    DISPTREE(morphedTree)
 
-    return tree;
+    return morphedTree;
 }
 
 #ifdef TARGET_X86
@@ -14519,7 +14520,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
 #if defined(LATE_DISASM)
         // GT_CNS_INT is considered small, so ReplaceWith() won't copy all fields
-        if ((tree->gtOper == GT_CNS_INT) && tree->IsIconHandle())
+        if (tree->IsIconHandle())
         {
             copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
         }

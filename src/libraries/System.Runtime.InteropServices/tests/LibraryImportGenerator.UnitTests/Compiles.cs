@@ -114,8 +114,8 @@ namespace LibraryImportGenerator.UnitTests
 
             // [In, Out] attributes
             // By value non-blittable array
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out", CodeSnippets.UseCustomTypeMarshaller + CodeSnippets.BasicNonBlittableUserDefinedType) };
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out", CodeSnippets.UseCustomTypeMarshaller + CodeSnippets.BasicNonBlittableUserDefinedType) };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out", CodeSnippets.DisableRuntimeMarshalling + CodeSnippets.BasicNonBlittableUserDefinedType()) };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out", CodeSnippets.DisableRuntimeMarshalling + CodeSnippets.BasicNonBlittableUserDefinedType()) };
 
             // Enums
             yield return new[] { CodeSnippets.EnumParameters };
@@ -149,7 +149,12 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.MarshalAsParametersAndModifiersUnsafe("delegate* unmanaged<int>", UnmanagedType.FunctionPtr) };
 
             // Structs
-            yield return new[] { CodeSnippets.BlittableStructParametersAndModifiers };
+            yield return new[] { CodeSnippets.BlittableStructParametersAndModifiers(string.Empty) };
+            yield return new[] { CodeSnippets.BlittableStructParametersAndModifiers(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ValidateDisableRuntimeMarshalling.TypeUsage(string.Empty)
+                + CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType };
+            yield return new[] { CodeSnippets.ValidateDisableRuntimeMarshalling.TypeUsage(CodeSnippets.DisableRuntimeMarshalling)
+                + CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType };
 
             // SafeHandle
             yield return new[] { CodeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle") };
@@ -166,6 +171,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomStructMarshallingPinnableParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshallingNativeTypePinnable };
             yield return new[] { CodeSnippets.CustomStructMarshallingMarshalUsingParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshallingNativeToManagedOnlyOutParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshallingNativeToManagedOnlyReturnValue };
             yield return new[] { CodeSnippets.ArrayMarshallingWithCustomStructElement };
             yield return new[] { CodeSnippets.ArrayMarshallingWithCustomStructElementWithValueProperty };
 
@@ -252,8 +259,7 @@ namespace LibraryImportGenerator.UnitTests
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompileWithPreprocessorSymbols()
@@ -278,8 +284,7 @@ namespace LibraryImportGenerator.UnitTests
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
         }
 
         public static IEnumerable<object[]> CodeSnippetsToValidateFallbackForwarder()
@@ -338,8 +343,7 @@ namespace LibraryImportGenerator.UnitTests
 
             Assert.Empty(generatorDiags);
 
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
 
             // Verify that the forwarder generates the method as a DllImport.
             SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
@@ -375,8 +379,7 @@ namespace LibraryImportGenerator.UnitTests
 
             Assert.Empty(generatorDiags);
 
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
 
             // Verify that the forwarder generates the method as a DllImport.
             SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
@@ -409,8 +412,7 @@ namespace LibraryImportGenerator.UnitTests
 
             Assert.Empty(generatorDiags);
 
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
 
             // Verify that the generator generates stubs with inner DllImports for all methods.
             SyntaxTree generatedCode = newComp.SyntaxTrees.Last();
@@ -449,13 +451,7 @@ namespace LibraryImportGenerator.UnitTests
 
             Assert.Empty(generatorDiags);
 
-            var newCompDiags = newComp.GetDiagnostics();
-
-            Assert.All(newCompDiags, diag =>
-            {
-                Assert.Equal("CS0117", diag.Id);
-                Assert.StartsWith("'Marshal' does not contain a definition for ", diag.GetMessage());
-            });
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp, "CS0117");
         }
 
         public static IEnumerable<object[]> CodeSnippetsToCompileMultipleSources()
@@ -475,8 +471,7 @@ namespace LibraryImportGenerator.UnitTests
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
             Assert.Empty(generatorDiags);
 
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
         }
     }
 }

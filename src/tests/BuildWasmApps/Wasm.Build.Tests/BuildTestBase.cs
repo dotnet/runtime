@@ -129,7 +129,8 @@ namespace Wasm.Build.Tests
                                            int expectedExitCode = 0,
                                            string? args = null,
                                            Dictionary<string, string>? envVars = null,
-                                           string targetFramework = DefaultTargetFramework)
+                                           string targetFramework = DefaultTargetFramework,
+                                           string? extraXHarnessMonoArgs = null)
         {
             buildDir ??= _projectDir;
             envVars ??= new();
@@ -164,7 +165,9 @@ namespace Wasm.Build.Tests
                                 envVars: envVars,
                                 expectedAppExitCode: expectedExitCode,
                                 extraXHarnessArgs: extraXHarnessArgs,
-                                appArgs: args);
+                                appArgs: args,
+                                extraXHarnessMonoArgs: extraXHarnessMonoArgs
+                                );
 
             if (buildArgs.AOT)
             {
@@ -185,7 +188,7 @@ namespace Wasm.Build.Tests
 
         protected static string RunWithXHarness(string testCommand, string testLogPath, string projectName, string bundleDir,
                                         ITestOutputHelper _testOutput, IDictionary<string, string>? envVars=null,
-                                        int expectedAppExitCode=0, int xharnessExitCode=0, string? extraXHarnessArgs=null, string? appArgs=null)
+                                        int expectedAppExitCode=0, int xharnessExitCode=0, string? extraXHarnessArgs=null, string? appArgs=null, string? extraXHarnessMonoArgs = null)
         {
             Console.WriteLine($"============== {testCommand} =============");
             Directory.CreateDirectory(testLogPath);
@@ -199,7 +202,10 @@ namespace Wasm.Build.Tests
             args.Append($" {extraXHarnessArgs ?? string.Empty}");
 
             args.Append(" -- ");
-
+            if (extraXHarnessMonoArgs != null)
+            {
+                args.Append($" {extraXHarnessMonoArgs}");
+            }
             // App arguments
             if (envVars != null)
             {
