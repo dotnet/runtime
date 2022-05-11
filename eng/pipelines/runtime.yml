@@ -1131,14 +1131,14 @@ jobs:
 # ________________________________________
 # | Platform         | PR      | Rolling |
 # | ---------------- | ------- | ------- |
-# | Linux-arm64      | Debug   | Release |
+# | linux-arm64      | Debug   | Release |
 # | windows-x86      | Debug   | Release |
-# | Linux-musl-x64   | Debug   | Release |
+# | linux-musl-x64   | Debug   | Release |
 # | OSX-x64          | Debug   | Release |
-# | Linux-musl-arm   | Release | Release |
+# | linux-musl-arm   | Release | Release |
 # | linux-musl-arm64 | Release | Release |
-# | Linux-x64        | Release | Release |
-# | Windows-x64      | Release | Release |
+# | linux-x64        | Release | Release |
+# | windows-x64      | Release | Release |
 
 #
 # Debug (PR) / Release (rolling) Libraries Test Execution against a checked runtime
@@ -1149,9 +1149,9 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
+    - Linux_arm64
     - windows_x86
     - Linux_musl_x64
-    - Linux_arm64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
