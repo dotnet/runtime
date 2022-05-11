@@ -942,7 +942,6 @@ namespace System.IO
                     }
 
                     i = _charLen - _charPos;
-                    if (i < 0) break; // a hack for System.Globalization.Tests (to check on CI if it fixes the problem)
 
                     Append(ref rentedArray, lastWrittenIndex, _charBuffer, _charPos, i);
                     lastWrittenIndex += i;
