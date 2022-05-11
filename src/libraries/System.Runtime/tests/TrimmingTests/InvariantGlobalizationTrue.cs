@@ -27,12 +27,12 @@ class Program
         {
             return -3;
         }
+        
+        // Ensure the internal GlobalizationMode class is trimmed correctly.
+        Type globalizationMode = typeof(object).Assembly.GetType("System.Globalization.GlobalizationMode", throwOnError: false);
 
         if (OperatingSystem.IsWindows())
         {
-            // Ensure the internal GlobalizationMode class is trimmed correctly
-            Type globalizationMode = GetCoreLibType("System.Globalization.GlobalizationMode");
-            
             foreach (MemberInfo member in globalizationMode.GetMembers(allStatics))
             {
                 // properties and their backing getter methods are OK
@@ -52,10 +52,12 @@ class Program
                 return -4;
             }
         }
+        // On non Windows platforms, the full type is trimmed.
+        else if (globalizationMode is not null)
+        {
+            return -4;
+        }
 
         return 100;
-    }
-
-    private static Type GetCoreLibType(string name) =>
-        typeof(object).Assembly.GetType(name, throwOnError: true);
+    }        
 }
