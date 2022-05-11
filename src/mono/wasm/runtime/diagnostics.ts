@@ -8,12 +8,13 @@ import * as memory from "./memory";
 /// events from the runtime and managed libraries.  There may be multiple active sessions at the same time.
 /// Each session subscribes to a number of providers and will collect events from the time that start() is called, until stop() is called.
 /// Upon completion the session saves the events to a file on the VFS.
+/// The data can then be retrieved as Blob or as a data URI (prefer Blob).
 export interface EventPipeSession {
     get sessionID(): number;
     start(): void;
     stop(): void;
-    saveTrace(): string;
-
+    getTraceBlob(): Blob;
+    getTraceDataURI(): string;
 }
 
 // internal session state of the JS instance
@@ -23,7 +24,7 @@ enum State {
     Done,
 }
 
-/// An EventPipe session in the runtime.  There may be multiple sessions.
+/// An EventPipe session that saves the event data to a file in the VFS.
 class EventPipeFileSession implements EventPipeSession {
     private _state: State;
     private _sessionID: number; // integer session ID
@@ -56,17 +57,30 @@ class EventPipeFileSession implements EventPipeSession {
         console.debug (`EventPipe session ${this._sessionID} stopped`);
     }
 
-    saveTrace = () => {
+    getTraceBlob = () => {
         if (this._state !== State.Done) {
             throw new Error (`session is in state ${this._state}, not 'Done'`);
         }
-        console.debug (`session ${this._sessionID} trace in ${this._tracePath}`);
-        return this._tracePath;
+        const data = Module.FS_readFile(this._tracePath, { encoding: "binary" }) as Uint8Array;
+        return new Blob([data], { type: "application/octet-stream" });
     }
 
-
+    getTraceDataURI = () => {
+        if (this._state !== State.Done) {
+            throw new Error (`session is in state ${this._state}, not 'Done'`);
+        }
+        const data = Module.FS_readFile(this._tracePath, { encoding: "binary" }) as Uint8Array;
+        return `data:application/octet-stream;base64,${dataUriEncode(data)}`;
+    }
 }
-
+function dataUriEncode (data: Uint8Array): string {
+    const CHUNK_SZ = 0x8000;
+    const c: string[] = [];
+    for (let i=0; i < data.length; i+=CHUNK_SZ) {
+        c.push(String.fromCharCode(... data.subarray(i, i+CHUNK_SZ)));
+    }
+    return btoa(c.join(""));
+}
 
 export interface Diagnostics {
     createEventPipeSession (options?: EventPipeSessionOptions): EventPipeSession | null;
@@ -83,7 +97,11 @@ function computeTracePath (tracePath? : string | (() => string | null | undefine
     return tracePath;
 }
 
+/// APIs for working with .NET diagnostics from JavaScript.
 export const diagnostics: Diagnostics = {
+    /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
+    /// Use the options to control the output file and the level of detail.
+    /// Note that if you use multiple sessions at the same time, you should specify a unique 'traceFilePath' for each session.
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null {
         const defaultRundownRequested = true;
         const defaultProviders = "";

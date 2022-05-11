@@ -30,15 +30,6 @@ function makeTimestamp()
     return s.replace(/[:.]/g, '-');
 }
 
-function Uint8ToString(u8a){
-    var CHUNK_SZ = 0x8000;
-    var c = [];
-    for (var i=0; i < u8a.length; i+=CHUNK_SZ) {
-        c.push(String.fromCharCode.apply(null, u8a.subarray(i, i+CHUNK_SZ)));
-    }
-    return c.join("");
-}
-
 async function loadRuntime() {
     globalThis.exports = {};
     await import("./dotnet.js");
@@ -47,6 +38,8 @@ async function loadRuntime() {
 
 
 const delay = (ms) => new Promise((resolve) => setTimeout (resolve, ms))
+
+const saveUsingBlob = true;
 
 async function main() {
     const createDotnetRuntime = await loadRuntime();
@@ -88,19 +81,21 @@ async function main() {
 
     console.debug(`ret: ${ret}`);
 
-    const sessionFile = eventSession.saveTrace();
+    const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
 
+    if (saveUsingBlob) {
+        const blob = eventSession.getTraceBlob();
+        const uri = URL.createObjectURL(blob);
+        downloadData(uri, filename);
+        URL.revokeObjectURL(uri);
+    } else {
+        const dataUri = eventSession.getTraceDataURI();
+
+        downloadData(dataUri, filename);
+    }
     const exit_code = ret == 42 ? 0 : 1;
 
     wasm_exit(exit_code);
-
-    const b = Module.FS.readFile(sessionFile);
-
-    const bits = btoa((Uint8ToString(b)));
-
-    const filename = "dotnet-wasm-" + makeTimestamp() + ".nettrace";
-    downloadData("data:application/octet-stream;base64," + bits, filename);
-
 }
 
 setTimeout(main, 10000);
