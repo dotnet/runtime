@@ -358,7 +358,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBlock
 		[Kept] static void MethodWithParamAndVarArgs_Reached2 () { }
 
 
-		[Kept] [KeptMember (".ctor()")] class TestClass { }
+		[Kept][KeptMember (".ctor()")] class TestClass { }
 		[Kept] struct TestStruct { }
 
 		[Kept]

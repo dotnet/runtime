@@ -263,7 +263,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			}
 
 			missingDiagnosticMessage = $"Warning '{expectedWarningCode}'. Expected to find warning containing:{string.Join (" ", expectedMessages.Select (m => "'" + m + "'"))}" +
-					$", but no such message was found.{ Environment.NewLine}";
+					$", but no such message was found.{Environment.NewLine}";
 			return false;
 
 			bool Matches (Diagnostic diagnostic)

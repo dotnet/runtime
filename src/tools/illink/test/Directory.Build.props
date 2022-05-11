@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <RunAnalyzers>false</RunAnalyzers>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
     <Nullable>disable</Nullable>
   </PropertyGroup>
 </Project>

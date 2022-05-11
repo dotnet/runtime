@@ -3,7 +3,7 @@
     <!-- Keep these in sync with ILLinkTasksAssembly in Microsoft.NET.ILLInk.Tasks.props. -->
     <!-- Keep the net#.0 TFM in sync with the Mono.Linker.csproj condition below. -->
     <!-- Keep the net#.0 TFM in sync with the code in LinkTask.cs in method ILLink.ILLinkPath. -->
-    <TargetFrameworks>net6.0;net472</TargetFrameworks>
+    <TargetFrameworks>$(NetCoreAppToolCurrent);net472</TargetFrameworks>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <Description>MSBuild tasks for running the IL Linker</Description>
     <IsPackable>true</IsPackable>
@@ -36,7 +36,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="../linker/Mono.Linker.csproj" PrivateAssets="All" Condition=" '$(TargetFramework)' == 'net6.0' " />
+    <ProjectReference Include="../linker/Mono.Linker.csproj" PrivateAssets="All" Condition=" '$(TargetFramework)' == '$(NetCoreAppToolCurrent)' " />
     <PackageReference Condition="'$(UseCecilPackage)' == 'true'" Include="Mono.Cecil" Version="$(MonoCecilVersion)" PrivateAssets="All" Publish="True" />
     <ProjectReference Condition="'$(UseCecilPackage)' != 'true'" Include="../../external/cecil/Mono.Cecil.csproj" PrivateAssets="All">
       <!-- https://github.com/dotnet/sdk/issues/2280#issuecomment-392815466 -->

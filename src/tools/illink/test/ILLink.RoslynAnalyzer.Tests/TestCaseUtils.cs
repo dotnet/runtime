@@ -26,9 +26,9 @@ namespace ILLink.RoslynAnalyzer.Tests
 
 		public static readonly ReferenceAssemblies Net6PreviewAssemblies =
 			new ReferenceAssemblies (
-				"net6.0",
-				new PackageIdentity ("Microsoft.NETCore.App.Ref", "6.0.0-preview.7.21368.2"),
-				Path.Combine ("ref", "net6.0"))
+				"net7.0",
+				new PackageIdentity ("Microsoft.NETCore.App.Ref", "7.0.0-preview.2.22152.2"),
+				Path.Combine ("ref", "net7.0"))
 			.WithNuGetConfigFilePath (Path.Combine (TestCaseUtils.GetRepoRoot (), "NuGet.config"));
 
 		private static ImmutableArray<MetadataReference> s_net6Refs;
@@ -161,11 +161,7 @@ namespace ILLink.RoslynAnalyzer.Tests
 			var configDirectoryName = "Release";
 #endif
 
-#if NET6_0
-			const string tfm = "net6.0";
-#else
-			const string tfm = "net5.0";
-#endif
+			const string tfm = "net7.0";
 
 			// Working directory is artifacts/bin/Mono.Linker.Tests/<config>/<tfm>
 			var artifactsBinDir = Path.Combine (Directory.GetCurrentDirectory (), "..", "..", "..");

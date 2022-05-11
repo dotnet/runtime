@@ -54,18 +54,18 @@ namespace Mono.Linker.Tests.Cases.Serialization
 
 		[Kept]
 		[KeptBackingField]
-		public GetSetPropertyType p2 { [Kept]get; [Kept]set; }
+		public GetSetPropertyType p2 { [Kept] get; [Kept] set; }
 
 		// removed
 		PrivatePropertyType p3 { get; set; }
 
 		[Kept]
 		[KeptBackingField]
-		public PublicGetPrivateSetPropertyType p4 { [Kept]get; [Kept]private set; }
+		public PublicGetPrivateSetPropertyType p4 { [Kept] get; [Kept] private set; }
 
 		[Kept]
 		[KeptBackingField]
-		public PrivateGetPublicSetPropertyType p5 { [Kept]private get; [Kept]set; }
+		public PrivateGetPublicSetPropertyType p5 { [Kept] private get; [Kept] set; }
 
 		[Kept]
 		public RecursiveType f4;
