@@ -417,10 +417,10 @@ namespace System.IO
             CheckAsyncTaskInProgress();
 
             // Call ReadBuffer, then pull data out of charBuffer.
-            using ValueStringBuilder sb = new(_charLen - _charPos);
+            StringBuilder sb = new StringBuilder(_charLen - _charPos);
             do
             {
-                sb.Append(_charBuffer.AsSpan(_charPos, _charLen - _charPos));
+                sb.Append(_charBuffer, _charPos, _charLen - _charPos);
                 _charPos = _charLen;  // Note we consumed these characters
                 ReadBuffer();
             } while (_charLen > 0);
@@ -1005,41 +1005,17 @@ namespace System.IO
 
         private async Task<string> ReadToEndAsyncInternal(CancellationToken cancellationToken)
         {
-            static char[] Resize(char[] array, int atLeastSpace)
+            // Call ReadBuffer, then pull data out of charBuffer.
+            StringBuilder sb = new StringBuilder(_charLen - _charPos);
+            do
             {
-                char[] newArr = ArrayPool<char>.Shared.Rent(array.Length + atLeastSpace);
-                Array.Copy(array, newArr, array.Length);
-                ArrayPool<char>.Shared.Return(array);
-                return newArr;
-            }
-            static void Append(ref char[] to, int destinationOffset, char[] @from, int offset, int length)
-            {
-                if ((destinationOffset + length) >= to.Length)
-                {
-                    to = Resize(to, destinationOffset + length + 80);
-                }
+                int tmpCharPos = _charPos;
+                sb.Append(_charBuffer, tmpCharPos, _charLen - tmpCharPos);
+                _charPos = _charLen;  // We consumed these characters
+                await ReadBufferAsync(cancellationToken).ConfigureAwait(false);
+            } while (_charLen > 0);
 
-                Array.Copy(@from, offset, to, destinationOffset, length);
-            }
-
-            char[] rentedArray = ArrayPool<char>.Shared.Rent(_charLen - _charPos);
-            int lastWrittenIndex = 0;
-            try
-            {
-                do
-                {
-                    Append(ref rentedArray, lastWrittenIndex, _charBuffer, _charPos, _charLen - _charPos);
-                    lastWrittenIndex += _charLen - _charPos;
-                    _charPos = _charLen; // We consumed these characters
-                    await ReadBufferAsync(cancellationToken).ConfigureAwait(false);
-                } while (_charLen > 0);
-
-                return new string(rentedArray, 0, lastWrittenIndex);
-            }
-            finally
-            {
-                ArrayPool<char>.Shared.Return(rentedArray);
-            }
+            return sb.ToString();
         }
 
         public override Task<int> ReadAsync(char[] buffer, int index, int count)
