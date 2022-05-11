@@ -28,6 +28,7 @@ jobs:
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
       - eng/pipelines/runtime.yml
+      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
@@ -66,6 +67,7 @@ jobs:
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
       - eng/pipelines/runtime.yml
+      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: runtimetests
       include:
       - src/tests/*
