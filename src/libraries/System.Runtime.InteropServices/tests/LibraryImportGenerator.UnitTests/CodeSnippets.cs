@@ -850,6 +850,68 @@ partial class Test
 }}
 ";
 
+        public static string CustomStructMarshallingNativeTypePinnableDifferentType = $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+using System;
+
+{DisableRuntimeMarshalling}
+
+[NativeMarshalling(typeof(Native))]
+class S
+{{
+    public byte c;
+}}
+
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 1)]
+unsafe ref struct Native
+{{
+    private byte* ptr;
+    private Span<byte> stackBuffer;
+
+    public Native(S s) : this()
+    {{
+        ptr = (byte*)Marshal.AllocCoTaskMem(sizeof(byte));
+        *ptr = s.c;
+        stackBuffer = new Span<byte>(ptr, 1);
+    }}
+
+    public Native(S s, Span<byte> buffer) : this()
+    {{
+        stackBuffer = buffer;
+        stackBuffer[0] = s.c;
+    }}
+
+    public ref sbyte GetPinnableReference() => ref Unsafe.As<byte, sbyte>(ref stackBuffer.GetPinnableReference());
+
+    public S ToManaged()
+    {{
+        return new S {{ c = *ptr }};
+    }}
+
+    public byte* ToNativeValue() => (byte*)Unsafe.AsPointer(ref stackBuffer.GetPinnableReference());
+
+    public void FromNativeValue(byte* value) => ptr = value;
+
+    public void FreeNative()
+    {{
+        if (ptr != null)
+        {{
+            Marshal.FreeCoTaskMem((IntPtr)ptr);
+        }}
+    }}
+}}
+
+partial class Test
+{{
+    [LibraryImport(""DoesNotExist"")]
+    public static partial void Method(
+        S s,
+        in S sIn);
+}}
+";
+
         public static string CustomStructMarshallingByRefValueProperty = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Native))]
 class S
