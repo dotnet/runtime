@@ -1237,7 +1237,8 @@ namespace ILCompiler.Dataflow
                                         _dependencies.Add(_factory.ConstructedTypeSymbol(systemTypeValue.TypeRepresented.MakeArrayType()), "Enum.GetValues");
                                     }
                                 }
-                                CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset),RequiresDynamicCodeAttribute);
+                                else
+                                    CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset),RequiresDynamicCodeAttribute);
                             }
                         }
                         break;
@@ -1271,7 +1272,8 @@ namespace ILCompiler.Dataflow
                                         _dependencies.Add(_factory.StructMarshallingData((DefType)systemTypeValue.TypeRepresented), "Marshal API");
                                     }
                                 }
-                                CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
+                                else
+                                    CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
                             }
                         }
                         break;
@@ -1295,7 +1297,8 @@ namespace ILCompiler.Dataflow
                                         _dependencies.Add(_factory.DelegateMarshallingData((DefType)systemTypeValue.TypeRepresented), "Marshal API");
                                     }
                                 }
-                                CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
+                                else
+                                    CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
                             }
                         }
                         break;
