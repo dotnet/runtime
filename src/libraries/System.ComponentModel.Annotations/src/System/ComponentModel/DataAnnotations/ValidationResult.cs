@@ -67,10 +67,7 @@ namespace System.ComponentModel.DataAnnotations
         /// <exception cref="System.ArgumentNullException">The <paramref name="validationResult" /> is null.</exception>
         protected ValidationResult(ValidationResult validationResult)
         {
-            if (validationResult == null)
-            {
-                throw new ArgumentNullException(nameof(validationResult));
-            }
+            ArgumentNullException.ThrowIfNull(validationResult);
 
             ErrorMessage = validationResult.ErrorMessage;
             MemberNames = validationResult.MemberNames;

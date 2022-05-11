@@ -173,6 +173,9 @@ namespace Internal.TypeSystem.Interop
 #if !READYTORUN
                 case MarshallerKind.Variant:
                     return InteropTypes.GetVariant(context);
+
+                case MarshallerKind.CustomMarshaler:
+                    return context.GetWellKnownType(WellKnownType.IntPtr);
 #endif
 
                 case MarshallerKind.OleCurrency:
@@ -248,6 +251,14 @@ namespace Internal.TypeSystem.Interop
 
             if (marshalAs != null)
                 nativeType = marshalAs.Type;
+
+            if (nativeType == NativeTypeKind.CustomMarshaler)
+            {
+                if (isField)
+                    return MarshallerKind.FailedTypeLoad;
+                else
+                    return MarshallerKind.CustomMarshaler;
+            }
 
             //
             // Determine MarshalerKind
@@ -574,6 +585,9 @@ namespace Internal.TypeSystem.Interop
                     case NativeTypeKind.AnsiBStr:
                         return MarshallerKind.AnsiBSTRString;
 
+                    case NativeTypeKind.CustomMarshaler:
+                        return MarshallerKind.CustomMarshaler;
+
                     case NativeTypeKind.Default:
                         if (isAnsi)
                             return MarshallerKind.AnsiString;
@@ -663,7 +677,9 @@ namespace Internal.TypeSystem.Interop
                     return MarshallerKind.Invalid;
             }
             else
+            {
                 return MarshallerKind.Invalid;
+            }
         }
 
         private static MarshallerKind GetArrayElementMarshallerKind(
@@ -834,6 +850,8 @@ namespace Internal.TypeSystem.Interop
                         return MarshallerKind.BSTRString;
                     case NativeTypeKind.AnsiBStr:
                         return MarshallerKind.AnsiBSTRString;
+                    case NativeTypeKind.CustomMarshaler:
+                        return MarshallerKind.CustomMarshaler;
                     default:
                         return MarshallerKind.Invalid;
                 }
@@ -854,26 +872,28 @@ namespace Internal.TypeSystem.Interop
         internal static MarshallerKind GetDisabledMarshallerKind(
             TypeDesc type)
         {
-            if (type.Category == TypeFlags.Void)
+            // Get the underlying type for enum types.
+            TypeDesc underlyingType = type.UnderlyingType;
+            if (underlyingType.Category == TypeFlags.Void)
             {
                 return MarshallerKind.VoidReturn;
             }
-            else if (type.IsByRef)
+            else if (underlyingType.IsByRef)
             {
                 // Managed refs are not supported when runtime marshalling is disabled.
                 return MarshallerKind.Invalid;
             }
-            else if (type.IsPrimitive)
+            else if (underlyingType.IsPrimitive)
             {
                 return MarshallerKind.BlittableValue;
             }
-            else if (type.IsPointer || type.IsFunctionPointer)
+            else if (underlyingType.IsPointer || underlyingType.IsFunctionPointer)
             {
                 return MarshallerKind.BlittableValue;
             }
-            else if (type.IsValueType)
+            else if (underlyingType.IsValueType)
             {
-                var defType = (DefType)type;
+                var defType = (DefType)underlyingType;
                 if (!defType.ContainsGCPointers && !defType.IsAutoLayoutOrHasAutoLayoutFields)
                 {
                     return MarshallerKind.BlittableValue;

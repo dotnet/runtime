@@ -26,7 +26,7 @@ namespace System.Net.Quic.Implementations.Mock
             _isInitiator = isInitiator;
         }
 
-        private ValueTask ConnectAsync(CancellationToken cancellationToken = default)
+        private static ValueTask ConnectAsync(CancellationToken cancellationToken = default)
         {
             return ValueTask.CompletedTask;
         }
@@ -133,7 +133,7 @@ namespace System.Net.Quic.Implementations.Mock
             if (Volatile.Read(ref _writesCanceled))
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                throw new OperationCanceledException();
+                throw new QuicOperationAbortedException();
             }
 
             StreamBuffer? streamBuffer = WriteStreamBuffer;

@@ -4,6 +4,7 @@
 namespace System.Xml.Schema
 {
     using System;
+    using System.Diagnostics.CodeAnalysis;
     using System.Threading;
     using System.Collections;
     using System.Xml.Schema;
@@ -44,10 +45,7 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchemaCollection(XmlNameTable nametable)
         {
-            if (nametable == null)
-            {
-                throw new ArgumentNullException(nameof(nametable));
-            }
+            ArgumentNullException.ThrowIfNull(nametable);
 
             _nameTable = nametable;
             _collection = Hashtable.Synchronized(new Hashtable());
@@ -96,7 +94,7 @@ namespace System.Xml.Schema
         /// If the given schema references other namespaces, the schemas for those other
         /// namespaces are NOT automatically loaded.
         /// </summary>
-        public XmlSchema? Add(string? ns, string uri)
+        public XmlSchema? Add(string? ns, [StringSyntax(StringSyntaxAttribute.Uri)] string uri)
         {
             if (uri == null || uri.Length == 0)
                 throw new ArgumentNullException(nameof(uri));
@@ -128,8 +126,8 @@ namespace System.Xml.Schema
         /// </summary>
         public XmlSchema? Add(string? ns, XmlReader reader, XmlResolver? resolver)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
+
             XmlNameTable readerNameTable = reader.NameTable;
             SchemaInfo schemaInfo = new SchemaInfo();
 
@@ -164,8 +162,7 @@ namespace System.Xml.Schema
 
         public XmlSchema? Add(XmlSchema schema, XmlResolver? resolver)
         {
-            if (schema == null)
-                throw new ArgumentNullException(nameof(schema));
+            ArgumentNullException.ThrowIfNull(schema);
 
             SchemaInfo schemaInfo = new SchemaInfo();
             schemaInfo.SchemaType = SchemaType.XSD;
@@ -178,8 +175,8 @@ namespace System.Xml.Schema
         /// </summary>
         public void Add(XmlSchemaCollection schema)
         {
-            if (schema == null)
-                throw new ArgumentNullException(nameof(schema));
+            ArgumentNullException.ThrowIfNull(schema);
+
             if (this == schema)
                 return;
             IDictionaryEnumerator enumerator = schema._collection.GetEnumerator();
@@ -205,10 +202,7 @@ namespace System.Xml.Schema
 
         public bool Contains(XmlSchema schema)
         {
-            if (schema == null)
-            {
-                throw new ArgumentNullException(nameof(schema));
-            }
+            ArgumentNullException.ThrowIfNull(schema);
 
             return this[schema.TargetNamespace] != null;
         }
@@ -233,8 +227,8 @@ namespace System.Xml.Schema
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)
@@ -249,8 +243,8 @@ namespace System.Xml.Schema
 
         public void CopyTo(XmlSchema[] array, int index)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array));
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index));
             for (XmlSchemaCollectionEnumerator e = this.GetEnumerator(); e.MoveNext();)

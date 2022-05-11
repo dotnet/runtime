@@ -8,7 +8,7 @@ using System.Threading;
 
 namespace System.Security.Permissions
 {
-#if NET5_0_OR_GREATER
+#if NETCOREAPP
     [Obsolete(Obsoletions.CodeAccessSecurityMessage, DiagnosticId = Obsoletions.CodeAccessSecurityDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
 #endif
     public sealed class PrincipalPermission : IPermission, ISecurityEncodable, IUnrestrictedPermission
@@ -270,8 +270,10 @@ namespace System.Security.Permissions
 
         public void FromXml(SecurityElement elem)
         {
-            if (elem == null)
+            if (elem is null)
+            {
                 throw new ArgumentNullException(nameof(elem));
+            }
 
             if (elem.Tag == null || !elem.Tag.Equals("Permission") && !elem.Tag.Equals("IPermission"))
                 throw new ArgumentException(SR.Argument_NotAPermissionElement);

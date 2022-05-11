@@ -80,7 +80,7 @@ namespace System.Collections.Generic
                 return result;
             }
 
-            var builder = new LargeArrayBuilder<T>(initialize: true);
+            LargeArrayBuilder<T> builder = new();
             builder.AddRange(source);
             return builder.ToArray();
         }

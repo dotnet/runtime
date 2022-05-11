@@ -87,7 +87,7 @@ namespace System.Security.Cryptography
                 throw GetErrorCode().ToCryptographicException();
             }
             //allocate memory for the provider name
-            StringBuilder providerName = new StringBuilder((int)sizeofProviderName);
+            char[] providerName = new char[sizeofProviderName];
 
             //Now call the function CryptGetDefaultProvider again to get the name of the provider
             if (!Interop.Advapi32.CryptGetDefaultProvider(dwType, IntPtr.Zero,
@@ -98,7 +98,7 @@ namespace System.Security.Cryptography
             }
 
             // check to see if there are upgrades available for the requested CSP
-            string providerNameString = providerName.ToString();
+            string providerNameString = new string(providerName.AsSpan().Slice(0, providerName.AsSpan().IndexOf('\0')));
             string? wszUpgrade = null;
             if (dwType == (int)ProviderType.PROV_RSA_FULL)
             {
@@ -1050,8 +1050,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public static int ObjToHashAlgId(object hashAlg)
         {
-            if (hashAlg == null)
-                throw new ArgumentNullException(nameof(hashAlg));
+            ArgumentNullException.ThrowIfNull(hashAlg);
 
             string? hashAlgString = hashAlg as string;
             if (hashAlgString != null)
@@ -1114,6 +1113,17 @@ namespace System.Security.Cryptography
                 CapiHelper.CALG_SHA_256 => SHA256.Create(),
                 CapiHelper.CALG_SHA_384 => SHA384.Create(),
                 CapiHelper.CALG_SHA_512 => SHA512.Create(),
+                _ => throw new ArgumentException(SR.Argument_InvalidValue, nameof(hashAlg)),
+            };
+
+        internal static HashAlgorithmName AlgIdToHashAlgorithmName(int hashAlg) =>
+            hashAlg switch
+            {
+                CapiHelper.CALG_MD5 => HashAlgorithmName.MD5,
+                CapiHelper.CALG_SHA1 => HashAlgorithmName.SHA1,
+                CapiHelper.CALG_SHA_256 => HashAlgorithmName.SHA256,
+                CapiHelper.CALG_SHA_384 => HashAlgorithmName.SHA384,
+                CapiHelper.CALG_SHA_512 => HashAlgorithmName.SHA512,
                 _ => throw new ArgumentException(SR.Argument_InvalidValue, nameof(hashAlg)),
             };
 

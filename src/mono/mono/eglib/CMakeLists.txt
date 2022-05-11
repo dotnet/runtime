@@ -1,7 +1,7 @@
 
 set(eglib_win32_sources
     gdate-win32.c gdir-win32.c gfile-win32.c gmisc-win32.c
-    gmodule-win32.c gtimer-win32.c gunicode-win32.c)
+    gmodule-win32.c gtimer-win32.c)
 
 set(eglib_unix_sources
     gdate-unix.c  gdir-unix.c  gfile-unix.c  gmisc-unix.c
@@ -25,7 +25,6 @@ set(eglib_common_sources
     gmem.c
     gmodule.h
     goutput.c
-    gqsort.c
     gstr.c
     gslist.c
     gstring.c
@@ -33,15 +32,14 @@ set(eglib_common_sources
     glist.c
     gqueue.c
     gpath.c
-    gshell.c
     gspawn.c
     gfile.c
     gfile-posix.c
-    gpattern.c
-    gmarkup.c
-    gutf8.c
-    gunicode.c
-    unicode-data.h)
+    gutf8.c)
+
+if(HAVE_CLOCK_NANOSLEEP)
+list(APPEND eglib_common_sources gclock-nanosleep.c)
+endif()
 
 addprefix(eglib_sources ../eglib/ "${eglib_platform_sources};${eglib_common_sources}")
 

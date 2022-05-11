@@ -590,7 +590,7 @@ namespace Internal.JitInterface
             return true;
         }
 
-        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup)
+        private void getReadyToRunDelegateCtorHelper(ref CORINFO_RESOLVED_TOKEN pTargetMethod, mdToken targetConstraint, CORINFO_CLASS_STRUCT_* delegateType, ref CORINFO_LOOKUP pLookup)
         {
 #if DEBUG
             // In debug, write some bogus data to the struct to ensure we have filled everything
@@ -2595,8 +2595,17 @@ namespace Internal.JitInterface
             throw new RequiresRuntimeJitException($"{MethodBeingCompiled} -> {nameof(canGetCookieForPInvokeCalliSig)}");
         }
 
-        private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * _compilation.NodeFactory.Target.PointerSize;
-        private int SizeOfReversePInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits(_compilation.NodeFactory.Target.Architecture) * _compilation.NodeFactory.Target.PointerSize;
+        private int SizeOfPInvokeTransitionFrame => ReadyToRunRuntimeConstants.READYTORUN_PInvokeTransitionFrameSizeInPointerUnits * PointerSize;
+        private int SizeOfReversePInvokeTransitionFrame
+        {
+            get
+            {
+                if (_compilation.NodeFactory.Target.Architecture == TargetArchitecture.X86)
+                    return ReadyToRunRuntimeConstants.READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits_X86 * PointerSize;
+                else
+                    return ReadyToRunRuntimeConstants.READYTORUN_ReversePInvokeTransitionFrameSizeInPointerUnits_Universal * PointerSize;
+            }
+        }
 
         private void setEHcount(uint cEH)
         {

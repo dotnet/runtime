@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics.CodeAnalysis;
@@ -27,11 +27,12 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(this JsonDocument document, JsonSerializerOptions? options = null)
         {
-            if (document == null)
+            if (document is null)
             {
-                throw new ArgumentNullException(nameof(document));
+                ThrowHelper.ThrowArgumentNullException(nameof(document));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
@@ -56,16 +57,16 @@ namespace System.Text.Json
         /// for <paramref name="returnType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static object? Deserialize(this JsonDocument document, Type returnType, JsonSerializerOptions? options = null)
         {
-            if (document == null)
+            if (document is null)
             {
-                throw new ArgumentNullException(nameof(document));
+                ThrowHelper.ThrowArgumentNullException(nameof(document));
             }
-
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, returnType);
@@ -95,14 +96,13 @@ namespace System.Text.Json
         /// </exception>
         public static TValue? Deserialize<TValue>(this JsonDocument document, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (document == null)
+            if (document is null)
             {
-                throw new ArgumentNullException(nameof(document));
+                ThrowHelper.ThrowArgumentNullException(nameof(document));
             }
-
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             return ReadDocument<TValue>(document, jsonTypeInfo);
@@ -146,19 +146,17 @@ namespace System.Text.Json
         /// </exception>
         public static object? Deserialize(this JsonDocument document, Type returnType, JsonSerializerContext context)
         {
-            if (document == null)
+            if (document is null)
             {
-                throw new ArgumentNullException(nameof(document));
+                ThrowHelper.ThrowArgumentNullException(nameof(document));
             }
-
-            if (returnType == null)
+            if (returnType is null)
             {
-                throw new ArgumentNullException(nameof(returnType));
+                ThrowHelper.ThrowArgumentNullException(nameof(returnType));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);

@@ -137,7 +137,7 @@ them for the new task assembly.
 
 If encountering build performance issues, you can use the rollup `--perf` option and the typescript compiler `--generateCpuProfile` option to get build profile data, like so:
 
-```../emsdk/node/14.15.5_64bit/bin/npm run rollup --perf -- --perf --environment Configuration:Release,NativeBinDir:./rollup-test-data,ProductVersion:12.3.4```
+```../emsdk/node/14.18.2_64bit/bin/npm run rollup --perf -- --perf --environment Configuration:Release,NativeBinDir:./rollup-test-data,ProductVersion:12.3.4```
 
 ```node node_modules/typescript/lib/tsc.js --generateCpuProfile dotnet-tsc.cpuprofile -p tsconfig.json ```
 

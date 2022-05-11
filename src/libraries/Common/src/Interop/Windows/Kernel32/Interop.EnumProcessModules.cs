@@ -9,7 +9,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(Libraries.Kernel32, EntryPoint = "K32EnumProcessModules", CharSet = CharSet.Unicode, SetLastError = true)]
+        [LibraryImport(Libraries.Kernel32, EntryPoint = "K32EnumProcessModules",  SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
+        [return: MarshalAs(UnmanagedType.Bool)]
         internal static partial bool EnumProcessModules(SafeProcessHandle handle, IntPtr[]? modules, int size, out int needed);
     }
 }

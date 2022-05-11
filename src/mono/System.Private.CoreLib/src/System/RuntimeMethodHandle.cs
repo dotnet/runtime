@@ -66,7 +66,7 @@ namespace System
             return !left.Equals(right);
         }
 
-        internal static string ConstructInstantiation(RuntimeMethodInfo method, TypeNameFormatFlags format)
+        internal static string ConstructInstantiation(RuntimeMethodInfo method)
         {
             var sb = new StringBuilder();
             Type[]? gen_params = method.GetGenericArguments();
@@ -85,5 +85,8 @@ namespace System
         {
             return value == IntPtr.Zero;
         }
+
+        // Temporary placeholder until Mono adds support for supporting boxing true Nullables.
+        internal static object? ReboxFromNullable(object? src) => src;
     }
 }

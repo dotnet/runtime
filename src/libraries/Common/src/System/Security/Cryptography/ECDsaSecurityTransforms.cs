@@ -9,7 +9,7 @@ namespace System.Security.Cryptography
 {
     internal static partial class ECDsaImplementation
     {
-        public sealed partial class ECDsaSecurityTransforms : ECDsa
+        public sealed partial class ECDsaSecurityTransforms : ECDsa, IRuntimeAlgorithm
         {
             private readonly EccSecurityTransforms _ecc = new EccSecurityTransforms(nameof(ECDsa));
 
@@ -59,8 +59,7 @@ namespace System.Security.Cryptography
 
             public override byte[] SignHash(byte[] hash)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
+                ArgumentNullException.ThrowIfNull(hash);
 
                 SecKeyPair keys = GetKeys();
 
@@ -113,10 +112,8 @@ namespace System.Security.Cryptography
 
             public override bool VerifyHash(byte[] hash, byte[] signature)
             {
-                if (hash == null)
-                    throw new ArgumentNullException(nameof(hash));
-                if (signature == null)
-                    throw new ArgumentNullException(nameof(signature));
+                ArgumentNullException.ThrowIfNull(hash);
+                ArgumentNullException.ThrowIfNull(signature);
 
                 return VerifyHash((ReadOnlySpan<byte>)hash, (ReadOnlySpan<byte>)signature);
             }
@@ -142,15 +139,6 @@ namespace System.Security.Cryptography
                     Interop.AppleCrypto.PAL_HashAlgorithm.Unknown,
                     Interop.AppleCrypto.PAL_SignatureAlgorithm.EC);
             }
-
-            protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
-
-            protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-                AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
-
-            protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-                AsymmetricAlgorithmHelpers.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
 
             private void ThrowIfDisposed()
             {

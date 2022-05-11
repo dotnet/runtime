@@ -17,8 +17,7 @@ namespace System.Reflection
 
         public CustomAttributeTypedArgument(Type argumentType, object? value)
         {
-            if (argumentType is null)
-                throw new ArgumentNullException(nameof(argumentType));
+            ArgumentNullException.ThrowIfNull(argumentType);
 
             _value = CanonicalizeValue(value);
             _argumentType = argumentType;
@@ -26,8 +25,7 @@ namespace System.Reflection
 
         public CustomAttributeTypedArgument(object value)
         {
-            if (value is null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             _value = CanonicalizeValue(value);
             _argumentType = value.GetType();

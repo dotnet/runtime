@@ -34,10 +34,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ImportType(Type type, ImportCardinality cardinality)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
+            ArgumentNullException.ThrowIfNull(type);
 
             _type = type;
             Type contractType = type;
@@ -110,15 +107,8 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public static bool IsDescendentOf(Type type, Type baseType)
         {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            if (baseType == null)
-            {
-                throw new ArgumentNullException(nameof(baseType));
-            }
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(baseType);
 
             if (!baseType.IsGenericTypeDefinition)
             {

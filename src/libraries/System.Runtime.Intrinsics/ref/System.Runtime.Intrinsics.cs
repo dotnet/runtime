@@ -228,6 +228,20 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector128<System.UInt32> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<System.UInt32> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector128<System.UInt64> ShiftRightLogical(System.Runtime.Intrinsics.Vector128<System.UInt64> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<byte> Shuffle(System.Runtime.Intrinsics.Vector128<byte> vector, System.Runtime.Intrinsics.Vector128<byte> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<sbyte> Shuffle(System.Runtime.Intrinsics.Vector128<sbyte> vector, System.Runtime.Intrinsics.Vector128<sbyte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<short> Shuffle(System.Runtime.Intrinsics.Vector128<short> vector, System.Runtime.Intrinsics.Vector128<short> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<ushort> Shuffle(System.Runtime.Intrinsics.Vector128<ushort> vector, System.Runtime.Intrinsics.Vector128<ushort> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<int> Shuffle(System.Runtime.Intrinsics.Vector128<int> vector, System.Runtime.Intrinsics.Vector128<int> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<uint> Shuffle(System.Runtime.Intrinsics.Vector128<uint> vector, System.Runtime.Intrinsics.Vector128<uint> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<float> Shuffle(System.Runtime.Intrinsics.Vector128<float> vector, System.Runtime.Intrinsics.Vector128<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<long> Shuffle(System.Runtime.Intrinsics.Vector128<long> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector128<ulong> Shuffle(System.Runtime.Intrinsics.Vector128<ulong> vector, System.Runtime.Intrinsics.Vector128<ulong> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector128<double> Shuffle(System.Runtime.Intrinsics.Vector128<double> vector, System.Runtime.Intrinsics.Vector128<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector128<T> Sqrt<T>(System.Runtime.Intrinsics.Vector128<T> vector) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector128<T> source, T* destination) where T : unmanaged { throw null; }
@@ -502,6 +516,20 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector256<System.UInt32> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<System.UInt32> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector256<System.UInt64> ShiftRightLogical(System.Runtime.Intrinsics.Vector256<System.UInt64> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<byte> Shuffle(System.Runtime.Intrinsics.Vector256<byte> vector, System.Runtime.Intrinsics.Vector256<byte> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<sbyte> Shuffle(System.Runtime.Intrinsics.Vector256<sbyte> vector, System.Runtime.Intrinsics.Vector256<sbyte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<short> Shuffle(System.Runtime.Intrinsics.Vector256<short> vector, System.Runtime.Intrinsics.Vector256<short> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<ushort> Shuffle(System.Runtime.Intrinsics.Vector256<ushort> vector, System.Runtime.Intrinsics.Vector256<ushort> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<int> Shuffle(System.Runtime.Intrinsics.Vector256<int> vector, System.Runtime.Intrinsics.Vector256<int> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<uint> Shuffle(System.Runtime.Intrinsics.Vector256<uint> vector, System.Runtime.Intrinsics.Vector256<uint> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<float> Shuffle(System.Runtime.Intrinsics.Vector256<float> vector, System.Runtime.Intrinsics.Vector256<int> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<long> Shuffle(System.Runtime.Intrinsics.Vector256<long> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector256<ulong> Shuffle(System.Runtime.Intrinsics.Vector256<ulong> vector, System.Runtime.Intrinsics.Vector256<ulong> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector256<double> Shuffle(System.Runtime.Intrinsics.Vector256<double> vector, System.Runtime.Intrinsics.Vector256<long> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector256<T> Sqrt<T>(System.Runtime.Intrinsics.Vector256<T> vector) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector256<T> source, T* destination) where T : unmanaged { throw null; }
@@ -748,6 +776,16 @@ namespace System.Runtime.Intrinsics
         public static System.Runtime.Intrinsics.Vector64<System.UInt32> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<System.UInt32> vector, int shiftCount) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static System.Runtime.Intrinsics.Vector64<System.UInt64> ShiftRightLogical(System.Runtime.Intrinsics.Vector64<System.UInt64> vector, int shiftCount) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<byte> Shuffle(System.Runtime.Intrinsics.Vector64<byte> vector, System.Runtime.Intrinsics.Vector64<byte> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<sbyte> Shuffle(System.Runtime.Intrinsics.Vector64<sbyte> vector, System.Runtime.Intrinsics.Vector64<sbyte> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<short> Shuffle(System.Runtime.Intrinsics.Vector64<short> vector, System.Runtime.Intrinsics.Vector64<short> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<ushort> Shuffle(System.Runtime.Intrinsics.Vector64<ushort> vector, System.Runtime.Intrinsics.Vector64<ushort> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<int> Shuffle(System.Runtime.Intrinsics.Vector64<int> vector, System.Runtime.Intrinsics.Vector64<int> indices) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static System.Runtime.Intrinsics.Vector64<uint> Shuffle(System.Runtime.Intrinsics.Vector64<uint> vector, System.Runtime.Intrinsics.Vector64<uint> indices) { throw null; }
+        public static System.Runtime.Intrinsics.Vector64<float> Shuffle(System.Runtime.Intrinsics.Vector64<float> vector, System.Runtime.Intrinsics.Vector64<int> indices) { throw null; }
         public static System.Runtime.Intrinsics.Vector64<T> Sqrt<T>(System.Runtime.Intrinsics.Vector64<T> vector) where T : struct { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static unsafe void Store<T>(this System.Runtime.Intrinsics.Vector64<T> source, T* destination) where T : unmanaged { throw null; }
@@ -2663,6 +2701,52 @@ namespace System.Runtime.Intrinsics.Arm
             public unsafe static System.Runtime.Intrinsics.Vector128<double> LoadAndReplicateToVector128(double* address) { throw null; }
             public unsafe static System.Runtime.Intrinsics.Vector128<long> LoadAndReplicateToVector128(long* address) { throw null; }
             public unsafe static System.Runtime.Intrinsics.Vector128<ulong> LoadAndReplicateToVector128(ulong* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadPairScalarVector64(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadPairScalarVector64(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadPairScalarVector64(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadPairScalarVector64NonTemporal(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadPairScalarVector64NonTemporal(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadPairScalarVector64NonTemporal(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) LoadPairVector128(byte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2) LoadPairVector128(double* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) LoadPairVector128(short* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2) LoadPairVector128(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2) LoadPairVector128(long* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) LoadPairVector128(sbyte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2) LoadPairVector128(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2) LoadPairVector128(ushort* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2) LoadPairVector128(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2) LoadPairVector128(ulong* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<byte> Value1, System.Runtime.Intrinsics.Vector128<byte> Value2) LoadPairVector128NonTemporal(byte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<double> Value1, System.Runtime.Intrinsics.Vector128<double> Value2) LoadPairVector128NonTemporal(double* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<short> Value1, System.Runtime.Intrinsics.Vector128<short> Value2) LoadPairVector128NonTemporal(short* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<int> Value1, System.Runtime.Intrinsics.Vector128<int> Value2) LoadPairVector128NonTemporal(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<long> Value1, System.Runtime.Intrinsics.Vector128<long> Value2) LoadPairVector128NonTemporal(long* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<sbyte> Value1, System.Runtime.Intrinsics.Vector128<sbyte> Value2) LoadPairVector128NonTemporal(sbyte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<float> Value1, System.Runtime.Intrinsics.Vector128<float> Value2) LoadPairVector128NonTemporal(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<ushort> Value1, System.Runtime.Intrinsics.Vector128<ushort> Value2) LoadPairVector128NonTemporal(ushort* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<uint> Value1, System.Runtime.Intrinsics.Vector128<uint> Value2) LoadPairVector128NonTemporal(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector128<ulong> Value1, System.Runtime.Intrinsics.Vector128<ulong> Value2) LoadPairVector128NonTemporal(ulong* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) LoadPairVector64(byte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<double> Value1, System.Runtime.Intrinsics.Vector64<double> Value2) LoadPairVector64(double* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) LoadPairVector64(short* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadPairVector64(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<long> Value1, System.Runtime.Intrinsics.Vector64<long> Value2) LoadPairVector64(long* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) LoadPairVector64(sbyte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadPairVector64(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2) LoadPairVector64(ushort* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadPairVector64(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<ulong> Value1, System.Runtime.Intrinsics.Vector64<ulong> Value2) LoadPairVector64(ulong* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<byte> Value1, System.Runtime.Intrinsics.Vector64<byte> Value2) LoadPairVector64NonTemporal(byte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<double> Value1, System.Runtime.Intrinsics.Vector64<double> Value2) LoadPairVector64NonTemporal(double* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<short> Value1, System.Runtime.Intrinsics.Vector64<short> Value2) LoadPairVector64NonTemporal(short* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<int> Value1, System.Runtime.Intrinsics.Vector64<int> Value2) LoadPairVector64NonTemporal(int* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<long> Value1, System.Runtime.Intrinsics.Vector64<long> Value2) LoadPairVector64NonTemporal(long* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<sbyte> Value1, System.Runtime.Intrinsics.Vector64<sbyte> Value2) LoadPairVector64NonTemporal(sbyte* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<float> Value1, System.Runtime.Intrinsics.Vector64<float> Value2) LoadPairVector64NonTemporal(float* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<ushort> Value1, System.Runtime.Intrinsics.Vector64<ushort> Value2) LoadPairVector64NonTemporal(ushort* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<uint> Value1, System.Runtime.Intrinsics.Vector64<uint> Value2) LoadPairVector64NonTemporal(uint* address) { throw null; }
+            public unsafe static (System.Runtime.Intrinsics.Vector64<ulong> Value1, System.Runtime.Intrinsics.Vector64<ulong> Value2) LoadPairVector64NonTemporal(ulong* address) { throw null; }
             public static System.Runtime.Intrinsics.Vector128<double> Max(System.Runtime.Intrinsics.Vector128<double> left, System.Runtime.Intrinsics.Vector128<double> right) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<byte> MaxAcross(System.Runtime.Intrinsics.Vector128<byte> value) { throw null; }
             public static System.Runtime.Intrinsics.Vector64<short> MaxAcross(System.Runtime.Intrinsics.Vector128<short> value) { throw null; }

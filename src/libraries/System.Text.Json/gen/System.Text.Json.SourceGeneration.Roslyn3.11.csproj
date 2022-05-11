@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <AnalyzerRoslynVersion>3.11</AnalyzerRoslynVersion>
-    <RoslynApiVersion>$(MicrosoftCodeAnalysisCSharpWorkspacesVersion_3_11)</RoslynApiVersion>
+    <RoslynApiVersion>$(MicrosoftCodeAnalysisVersion_3_11)</RoslynApiVersion>
   </PropertyGroup>
 
   <Import Project="System.Text.Json.SourceGeneration.targets" />

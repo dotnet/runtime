@@ -84,15 +84,6 @@ g_setenv(const gchar *variable, const gchar *value, gboolean overwrite)
 	return result;
 }
 
-void
-g_unsetenv(const gchar *variable)
-{
-	gunichar2 *var;
-	var = u8to16(variable);
-	SetEnvironmentVariableW(var, L"");
-	g_free(var);
-}
-
 #if HAVE_API_SUPPORT_WIN32_LOCAL_INFO || HAVE_API_SUPPORT_WIN32_LOCAL_INFO_EX
 gchar*
 g_win32_getlocale(void)

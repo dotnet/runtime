@@ -22,7 +22,7 @@ namespace System.Net.Quic.Implementations.Mock
 
         internal MockListener(QuicListenerOptions options)
         {
-            if (options.ListenEndPoint is null || options.ListenEndPoint.Address != IPAddress.Loopback || options.ListenEndPoint.Port != 0)
+            if (options.ListenEndPoint is null || (options.ListenEndPoint.Address != IPAddress.Loopback && options.ListenEndPoint.Address != IPAddress.IPv6Loopback) || options.ListenEndPoint.Port != 0)
             {
                 throw new ArgumentException("Must pass loopback address and port 0");
             }

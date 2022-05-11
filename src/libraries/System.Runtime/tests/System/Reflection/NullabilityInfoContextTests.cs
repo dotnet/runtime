@@ -759,7 +759,7 @@ namespace System.Reflection.Tests
             Assert.Equal(NullabilityState.Nullable, info.ReadState);
             Assert.Equal(NullabilityState.Nullable, info.WriteState);
 
-            privateNullableField = regexType.GetField("_code", flags)!;
+            privateNullableField = regexType.GetField("_runner", flags)!;
             info = nullabilityContext.Create(privateNullableField);
             Assert.Equal(NullabilityState.Unknown, info.ReadState);
             Assert.Equal(NullabilityState.Unknown, info.WriteState);

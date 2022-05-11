@@ -15,7 +15,6 @@ namespace System.Security.Cryptography
         private readonly bool _randomKeyContainer;
         private SafeCapiKeyHandle? _safeKeyHandle;
         private SafeProvHandle? _safeProvHandle;
-        private readonly SHA1 _sha1;
         private static volatile CspProviderFlags s_useMachineKeyStore;
         private bool _disposed;
 
@@ -79,7 +78,6 @@ namespace System.Security.Cryptography
                 out _randomKeyContainer);
 
             _keySize = dwKeySize;
-            _sha1 = SHA1.Create();
 
             // If this is not a random container we generate, create it eagerly
             // in the constructor so we can report any errors now.
@@ -324,7 +322,7 @@ namespace System.Security.Cryptography
         /// This method helps Acquire the default CSP and avoids the need for static SafeProvHandle
         /// in CapiHelper class
         /// </summary>
-        private SafeProvHandle AcquireSafeProviderHandle()
+        private static SafeProvHandle AcquireSafeProviderHandle()
         {
             SafeProvHandle safeProvHandle;
             CapiHelper.AcquireCsp(new CspParameters(CapiHelper.DefaultDssProviderType), out safeProvHandle);
@@ -389,7 +387,7 @@ namespace System.Security.Cryptography
         /// <returns>The DSA signature for the specified data.</returns>
         public byte[] SignData(Stream inputStream)
         {
-            byte[] hashVal = _sha1.ComputeHash(inputStream);
+            byte[] hashVal = SHA1.HashData(inputStream);
             return SignHash(hashVal, null);
         }
 
@@ -400,7 +398,7 @@ namespace System.Security.Cryptography
         /// <returns>The DSA signature for the specified data.</returns>
         public byte[] SignData(byte[] buffer)
         {
-            byte[] hashVal = _sha1.ComputeHash(buffer);
+            byte[] hashVal = SHA1.HashData(buffer);
             return SignHash(hashVal, null);
         }
 
@@ -413,7 +411,7 @@ namespace System.Security.Cryptography
         /// <returns>The DSA signature for the specified data.</returns>
         public byte[] SignData(byte[] buffer, int offset, int count)
         {
-            byte[] hashVal = _sha1.ComputeHash(buffer, offset, count);
+            byte[] hashVal = SHA1.HashData(new ReadOnlySpan<byte>(buffer, offset, count));
             return SignHash(hashVal, null);
         }
 
@@ -425,7 +423,7 @@ namespace System.Security.Cryptography
         /// <returns>true if the signature verifies as valid; otherwise, false.</returns>
         public bool VerifyData(byte[] rgbData, byte[] rgbSignature)
         {
-            byte[] hashVal = _sha1.ComputeHash(rgbData);
+            byte[] hashVal = SHA1.HashData(rgbData);
             return VerifyHash(hashVal, null, rgbSignature);
         }
 
@@ -457,7 +455,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
             }
 
-            return _sha1.ComputeHash(data, offset, count);
+            return SHA1.HashData(new ReadOnlySpan<byte>(data, offset, count));
         }
 
         protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
@@ -471,7 +469,7 @@ namespace System.Security.Cryptography
                 throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name);
             }
 
-            return _sha1.ComputeHash(data);
+            return SHA1.HashData(data);
         }
 
         /// <summary>
@@ -482,15 +480,15 @@ namespace System.Security.Cryptography
         /// <returns>The DSA signature for the specified hash value.</returns>
         public byte[] SignHash(byte[] rgbHash, string? str)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
+            ArgumentNullException.ThrowIfNull(rgbHash);
+
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
 
             int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
 
-            if (rgbHash.Length != _sha1.HashSize / 8)
-                throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHashSize, "SHA1", _sha1.HashSize / 8));
+            if (rgbHash.Length != SHA1.HashSizeInBytes)
+                throw new CryptographicException(SR.Format(SR.Cryptography_InvalidHashSize, "SHA1", SHA1.HashSizeInBytes));
 
             return CapiHelper.SignValue(
                 SafeProvHandle,
@@ -510,10 +508,8 @@ namespace System.Security.Cryptography
         /// <returns>true if the signature verifies as valid; otherwise, false.</returns>
         public bool VerifyHash(byte[] rgbHash, string? str, byte[] rgbSignature)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
-                throw new ArgumentNullException(nameof(rgbSignature));
+            ArgumentNullException.ThrowIfNull(rgbHash);
+            ArgumentNullException.ThrowIfNull(rgbSignature);
 
             int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
 
@@ -531,10 +527,7 @@ namespace System.Security.Cryptography
         /// </summary>
         private static bool IsPublic(byte[] keyBlob)
         {
-            if (keyBlob == null)
-            {
-                throw new ArgumentNullException(nameof(keyBlob));
-            }
+            ArgumentNullException.ThrowIfNull(keyBlob);
 
             // The CAPI DSS public key representation consists of the following sequence:
             //  - BLOBHEADER (the first byte is bType)

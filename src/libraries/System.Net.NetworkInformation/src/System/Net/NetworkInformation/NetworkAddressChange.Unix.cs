@@ -2,17 +2,36 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
+using System.Net.Sockets;
 using System.Runtime.InteropServices;
+using System.Runtime.Versioning;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace System.Net.NetworkInformation
 {
     // Linux implementation of NetworkChange
     public partial class NetworkChange
     {
-        private static volatile SocketWrapper? s_socket;
-        // Lock controlling access to delegate subscriptions, socket initialization, availability-changed state and timer.
+        private static Socket? s_socket;
+
+        private static Socket? Socket
+        {
+            get
+            {
+                Debug.Assert(Monitor.IsEntered(s_gate));
+                return s_socket;
+            }
+            set
+            {
+                Debug.Assert(Monitor.IsEntered(s_gate));
+                s_socket = value;
+            }
+        }
+
+        // Lock controlling access to delegate subscriptions, socket, availability-changed state and timer.
         private static readonly object s_gate = new object();
 
         // The "leniency" window for NetworkAvailabilityChanged socket events.
@@ -25,6 +44,8 @@ namespace System.Net.NetworkInformation
         private static Timer? s_availabilityTimer;
         private static bool s_availabilityHasChanged;
 
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public static event NetworkAddressChangedEventHandler? NetworkAddressChanged
         {
             add
@@ -33,7 +54,7 @@ namespace System.Net.NetworkInformation
                 {
                     lock (s_gate)
                     {
-                        if (s_socket == null)
+                        if (Socket == null)
                         {
                             CreateSocket();
                         }
@@ -50,8 +71,8 @@ namespace System.Net.NetworkInformation
                     {
                         if (s_addressChangedSubscribers.Count == 0 && s_availabilityChangedSubscribers.Count == 0)
                         {
-                            Debug.Assert(s_socket == null,
-                                "s_socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
+                            Debug.Assert(Socket == null,
+                                "Socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
                             return;
                         }
 
@@ -65,6 +86,8 @@ namespace System.Net.NetworkInformation
             }
         }
 
+        [UnsupportedOSPlatform("illumos")]
+        [UnsupportedOSPlatform("solaris")]
         public static event NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged
         {
             add
@@ -73,7 +96,7 @@ namespace System.Net.NetworkInformation
                 {
                     lock (s_gate)
                     {
-                        if (s_socket == null)
+                        if (Socket == null)
                         {
                             CreateSocket();
                         }
@@ -112,8 +135,8 @@ namespace System.Net.NetworkInformation
                     {
                         if (s_addressChangedSubscribers.Count == 0 && s_availabilityChangedSubscribers.Count == 0)
                         {
-                            Debug.Assert(s_socket == null,
-                                "s_socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
+                            Debug.Assert(Socket == null,
+                                "Socket is not null, but there are no subscribers to NetworkAddressChanged or NetworkAvailabilityChanged.");
                             return;
                         }
 
@@ -139,8 +162,9 @@ namespace System.Net.NetworkInformation
 
         private static unsafe void CreateSocket()
         {
-            Debug.Assert(s_socket == null, "s_socket is not null, must close existing socket before opening another.");
-            int newSocket;
+            Debug.Assert(Monitor.IsEntered(s_gate));
+            Debug.Assert(Socket == null, "Socket is not null, must close existing socket before opening another.");
+            IntPtr newSocket;
             Interop.Error result = Interop.Sys.CreateNetworkChangeListenerSocket(&newSocket);
             if (result != Interop.Error.SUCCESS)
             {
@@ -148,45 +172,65 @@ namespace System.Net.NetworkInformation
                 throw new NetworkInformationException(message);
             }
 
-            s_socket = new SocketWrapper(newSocket);
+            Socket = new Socket(new SafeSocketHandle(newSocket, ownsHandle: true));
 
-            new Thread(args => LoopReadSocket((SocketWrapper)args!))
-            {
-                IsBackground = true,
-                Name = ".NET Network Address Change"
-            }.UnsafeStart(s_socket);
+            // Don't capture ExecutionContext.
+            ThreadPool.UnsafeQueueUserWorkItem(
+                static socket => ReadEventsAsync(socket),
+                Socket, preferLocal: false);
         }
 
         private static void CloseSocket()
         {
-            Debug.Assert(s_socket != null, "s_socket was null when CloseSocket was called.");
-            Interop.Error result = Interop.Sys.CloseNetworkChangeListenerSocket(s_socket != null ? s_socket.Socket : -1);
-            if (result != Interop.Error.SUCCESS)
-            {
-                string message = Interop.Sys.GetLastErrorInfo().GetErrorMessage();
-                throw new NetworkInformationException(message);
-            }
-
-            s_socket = null;
+            Debug.Assert(Monitor.IsEntered(s_gate));
+            Debug.Assert(Socket != null, "Socket was null when CloseSocket was called.");
+            Socket.Dispose();
+            Socket = null;
         }
 
-        private static unsafe void LoopReadSocket(SocketWrapper initiallyCreatedSocket)
+        private static async void ReadEventsAsync(Socket socket)
         {
-            while (s_socket == initiallyCreatedSocket) //if both references are equal then s_socket was not changed
+            try
             {
-                //we can continue processing events
-                Interop.Sys.ReadEvents(initiallyCreatedSocket.Socket, &ProcessEvent);
+                while (true)
+                {
+                    // Wait for data to become available.
+                    await socket.ReceiveAsync(Array.Empty<byte>(), SocketFlags.None).ConfigureAwait(false);
+
+                    Interop.Error result = ReadEvents(socket);
+
+                    if (result != Interop.Error.SUCCESS &&
+                        result != Interop.Error.EAGAIN)
+                    {
+                        throw new Win32Exception(result.Info().RawErrno);
+                    }
+                }
             }
+            catch (ObjectDisposedException)
+            { } // Socket disposed.
+            catch (SocketException se) when (se.SocketErrorCode == SocketError.OperationAborted)
+            { } // ReceiveAsync aborted by disposing Socket.
+            catch (Exception ex)
+            {
+                // Unexpected error.
+                Debug.Fail($"Unexpected error: {ex}");
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Error(null, ex);
+            }
+
+            static unsafe Interop.Error ReadEvents(Socket socket)
+                => Interop.Sys.ReadEvents(socket.SafeHandle, &ProcessEvent);
         }
 
         [UnmanagedCallersOnly]
-        private static void ProcessEvent(int socket, Interop.Sys.NetworkChangeKind kind)
+        private static void ProcessEvent(IntPtr socket, Interop.Sys.NetworkChangeKind kind)
         {
             if (kind != Interop.Sys.NetworkChangeKind.None)
             {
                 lock (s_gate)
                 {
-                    if (s_socket != null && socket == s_socket.Socket)
+                    // It's safe to compare raw handle values because ProcessEvents gets
+                    // called from ReadEvents which holds a reference on the SafeHandle.
+                    if (Socket != null && socket == Socket.Handle)
                     {
                         OnSocketEvent(kind);
                     }
@@ -290,20 +334,6 @@ namespace System.Net.NetworkInformation
                     }
                 }
             }
-        }
-
-        // SocketWrapper class was introduced to prevent event thread leaks on Linux
-        // as described on GitHub: https://github.com/dotnet/runtime/issues/63788
-        // For each CreateSocket() new s_socket instance is created and we pass it to ".NET Network Address Change" thread.
-        // We then continue loop in LoopReadSocket method as long as both references are equal.
-        private class SocketWrapper
-        {
-            public SocketWrapper(int socket)
-            {
-                Socket = socket;
-            }
-
-            public int Socket { get; }
         }
     }
 }

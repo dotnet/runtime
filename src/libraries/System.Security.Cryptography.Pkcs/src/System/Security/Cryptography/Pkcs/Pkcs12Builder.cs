@@ -34,10 +34,15 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            if (safeContents == null)
+            if (safeContents is null)
+            {
                 throw new ArgumentNullException(nameof(safeContents));
-            if (pbeParameters == null)
+            }
+            if (pbeParameters is null)
+            {
                 throw new ArgumentNullException(nameof(pbeParameters));
+            }
+
             if (pbeParameters.IterationCount < 1)
                 throw new ArgumentOutOfRangeException(nameof(pbeParameters));
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
@@ -82,10 +87,15 @@ namespace System.Security.Cryptography.Pkcs
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
-            if (safeContents == null)
+            if (safeContents is null)
+            {
                 throw new ArgumentNullException(nameof(safeContents));
-            if (pbeParameters == null)
+            }
+            if (pbeParameters is null)
+            {
                 throw new ArgumentNullException(nameof(pbeParameters));
+            }
+
             if (pbeParameters.IterationCount < 1)
                 throw new ArgumentOutOfRangeException(nameof(pbeParameters));
             if (safeContents.ConfidentialityMode != Pkcs12ConfidentialityMode.None)
@@ -115,8 +125,11 @@ namespace System.Security.Cryptography.Pkcs
 
         public void AddSafeContentsUnencrypted(Pkcs12SafeContents safeContents)
         {
-            if (safeContents == null)
+            if (safeContents is null)
+            {
                 throw new ArgumentNullException(nameof(safeContents));
+            }
+
             if (IsSealed)
                 throw new InvalidOperationException(SR.Cryptography_Pkcs12_PfxIsSealed);
 

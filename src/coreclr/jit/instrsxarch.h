@@ -167,6 +167,7 @@ INSTMUL(imul_15,        "imul",             IUM_RD, BAD_CODE,     0x4400003868, 
 #define SSEDBL(c) PACK3(0xf2, 0x0f, c)
 #define PCKDBL(c) PACK3(0x66, 0x0f, c)
 #define PCKFLT(c) PACK2(0x0f,c)
+#define PCKMVB(c) PACK3(0x0F, 0x38, c)
 
 // These macros encode extra byte that is implicit in the macro.
 #define PACK4(byte1,byte2,byte3,byte4) (((byte1) << 16) | ((byte2) << 24) | (byte3) | ((byte4) << 8))
@@ -592,8 +593,8 @@ INST3(LAST_AVXVNNI_INSTRUCTION, "LAST_AVXVNNI_INSTRUCTION", IUM_WR, BAD_CODE, BA
 
 // BMI1
 INST3(FIRST_BMI_INSTRUCTION, "FIRST_BMI_INSTRUCTION", IUM_WR, BAD_CODE, BAD_CODE, BAD_CODE, INS_FLAGS_None)
-INST3(andn,             "andn",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF2),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Logical AND NOT
-INST3(blsi,             "blsi",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF3),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Extract Lowest Set Isolated Bit
+INST3(andn,             "andn",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF2),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Resets_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Logical AND NOT
+INST3(blsi,             "blsi",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF3),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Extract Lowest Set Isolated Bit
 INST3(blsmsk,           "blsmsk",           IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF3),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Get Mask Up to Lowest Set Bit
 INST3(blsr,             "blsr",             IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF3),                             Resets_OF      | Writes_SF     | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF     | INS_Flags_IsDstDstSrcAVXInstruction)    // Reset Lowest Set Bit
 INST3(bextr,            "bextr",            IUM_WR, BAD_CODE,     BAD_CODE,     SSE38(0xF7),                             INS_Flags_IsDstDstSrcAVXInstruction)    // Bit Field Extract
@@ -617,6 +618,9 @@ INST3(tzcnt,            "tzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     
 
 // LZCNT
 INST3(lzcnt,            "lzcnt",            IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xBD),                            Undefined_OF   | Undefined_SF  | Writes_ZF     | Undefined_AF  | Undefined_PF  | Writes_CF )
+
+// MOVBE
+INST3(movbe,            "movbe",            IUM_WR, PCKMVB(0xF1), BAD_CODE,     PCKMVB(0xF0),                            INS_FLAGS_None )
 
 // POPCNT
 INST3(popcnt,           "popcnt",           IUM_WR, BAD_CODE,     BAD_CODE,     SSEFLT(0xB8),                            Resets_OF      | Resets_SF     | Writes_ZF     | Resets_AF     | Resets_PF     | Resets_CF )

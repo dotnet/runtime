@@ -1191,7 +1191,7 @@ namespace System.Data
         ///     is the character a whitespace character?
         ///     Consider using CharacterInfo().IsWhiteSpace(ch) (System.Globalization)
         /// </summary>
-        private bool IsWhiteSpace(char ch)
+        private static bool IsWhiteSpace(char ch)
         {
             return ch <= 32 && ch != '\0';
         }
@@ -1199,7 +1199,7 @@ namespace System.Data
         /// <summary>
         ///     is the character an alphanumeric?
         /// </summary>
-        private bool IsAlphaNumeric(char ch)
+        private static bool IsAlphaNumeric(char ch)
         {
             //single comparison
             switch (ch)
@@ -1277,7 +1277,7 @@ namespace System.Data
             }
         }
 
-        private bool IsDigit(char ch)
+        private static bool IsDigit(char ch)
         {
             //single comparison
             switch (ch)
@@ -1301,7 +1301,7 @@ namespace System.Data
         /// <summary>
         ///     is the character an alpha?
         /// </summary>
-        private bool IsAlpha(char ch)
+        private static bool IsAlpha(char ch)
         {
             //single comparison
             switch (ch)

@@ -38,8 +38,10 @@ namespace System.Formats.Asn1
         /// </exception>
         public void WriteCharacterString(UniversalTagNumber encodingType, string value, Asn1Tag? tag = null)
         {
-            if (value == null)
+            if (value is null)
+            {
                 throw new ArgumentNullException(nameof(value));
+            }
 
             WriteCharacterString(encodingType, value.AsSpan(), tag);
         }

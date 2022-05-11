@@ -18,6 +18,7 @@ namespace System.Net.Security.Tests
     {
         [Theory]
         [MemberData(nameof(HostNameData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ClientSendsSNIServerReceives_Ok(string hostName)
         {
             X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
@@ -95,6 +96,7 @@ namespace System.Net.Security.Tests
 
         [Theory]
         [MemberData(nameof(HostNameData))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task SslStream_ServerCallbackNotSet_UsesLocalCertificateSelection(string hostName)
         {
             X509Certificate serverCert = Configuration.Certificates.GetSelfSignedServerCertificate();
@@ -133,7 +135,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
-        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", RuntimeConfiguration.Checked)]
+        [SkipOnCoreClr("System.Net.Tests are flaky and/or long running: https://github.com/dotnet/runtime/issues/131", ~RuntimeConfiguration.Release)]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/131", TestRuntimes.Mono)] // System.Net.Tests are flaky and/or long running
         public async Task SslStream_NoSniFromClient_CallbackReturnsNull()
         {

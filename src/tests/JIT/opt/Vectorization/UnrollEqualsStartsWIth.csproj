@@ -1,0 +1,10 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <Optimize>True</Optimize>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="UnrollEqualsStartsWIth.cs" />
+    <Compile Include="UnrollEqualsStartsWIth_Tests.cs" />
+  </ItemGroup>
+</Project>

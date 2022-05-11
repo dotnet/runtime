@@ -3,6 +3,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using Internal.Cryptography;
 using Microsoft.Win32.SafeHandles;
 
@@ -20,7 +21,7 @@ internal static partial class Interop
         /// <summary>
         ///     Generate a secret agreement for generating shared key material
         /// </summary>
-        [GeneratedDllImport(Interop.Libraries.NCrypt)]
+        [LibraryImport(Interop.Libraries.NCrypt)]
         private static partial ErrorCode NCryptSecretAgreement(
             SafeNCryptKeyHandle hPrivKey,
             SafeNCryptKeyHandle hPubKey,

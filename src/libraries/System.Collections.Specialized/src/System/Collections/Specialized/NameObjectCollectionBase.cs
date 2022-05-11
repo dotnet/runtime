@@ -365,10 +365,7 @@ namespace System.Collections.Specialized
 
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -436,11 +433,9 @@ namespace System.Collections.Specialized
         /// </devdoc>
         protected object?[] BaseGetAllValues(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             int n = _entriesArray.Count;
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
             object?[] allValues = (object?[])Array.CreateInstance(type, n);
 
             for (int i = 0; i < n; i++)
@@ -603,10 +598,7 @@ namespace System.Collections.Specialized
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array == null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
+                ArgumentNullException.ThrowIfNull(array);
 
                 if (array.Rank != 1)
                 {

@@ -5,7 +5,7 @@ using System.Runtime.InteropServices;
 
 internal static partial class Interop
 {
-    internal static partial class procfs
+    internal static partial class @procfs
     {
         /// <summary>
         /// Attempts to get status info for the specified process ID.
@@ -15,7 +15,7 @@ internal static partial class Interop
         /// <returns>
         /// true if the process status was read; otherwise, false.
         /// </returns>
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadProcessStatusInfo", SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_ReadProcessStatusInfo", SetLastError = true)]
         private static unsafe partial bool TryReadProcessStatusInfo(int pid, ProcessStatusInfo* processStatus);
 
         internal struct ProcessStatusInfo

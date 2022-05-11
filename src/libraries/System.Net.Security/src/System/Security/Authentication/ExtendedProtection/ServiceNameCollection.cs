@@ -14,10 +14,7 @@ namespace System.Security.Authentication.ExtendedProtection
     {
         public ServiceNameCollection(ICollection items)
         {
-            if (items == null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
+            ArgumentNullException.ThrowIfNull(items);
 
             // Normalize and filter for duplicates.
             AddIfNew(items, expectStrings: true);

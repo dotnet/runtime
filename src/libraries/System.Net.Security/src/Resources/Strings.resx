@@ -135,7 +135,7 @@
     <value>The connection was closed</value>
   </data>
   <data name="net_io_invalidnestedcall" xml:space="preserve">
-    <value> The {0} method cannot be called when another {1} operation is pending.</value>
+    <value> This method may not be called when another {0} operation is pending.</value>
   </data>
   <data name="net_io_invalidendcall" xml:space="preserve">
     <value>{0} can only be called once for each asynchronous operation.</value>
@@ -385,5 +385,8 @@
   </data>
   <data name="net_ssl_trust_collection" xml:space="preserve">
     <value>Sending trust from collection is not supported on Windows.</value>
+  </data>
+  <data name="net_ssl_trust_handshake" xml:space="preserve">
+    <value>Sending trust in handshake is not supported on this platform.</value>
   </data>
 </root>

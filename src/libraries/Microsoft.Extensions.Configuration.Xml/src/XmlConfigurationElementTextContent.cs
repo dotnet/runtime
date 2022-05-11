@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
@@ -9,7 +9,9 @@ namespace Microsoft.Extensions.Configuration.Xml
     {
         public XmlConfigurationElementTextContent(string textContent, int? linePosition, int? lineNumber)
         {
-            TextContent = textContent ?? throw new ArgumentNullException(nameof(textContent));
+            ThrowHelper.ThrowIfNull(textContent);
+
+            TextContent = textContent;
             LineNumber = lineNumber;
             LinePosition = linePosition;
         }

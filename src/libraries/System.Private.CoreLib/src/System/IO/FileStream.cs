@@ -147,6 +147,14 @@ namespace System.IO
         {
         }
 
+        ~FileStream()
+        {
+            // Preserved for compatibility since FileStream has defined a
+            // finalizer in past releases and derived classes may depend
+            // on Dispose(false) call.
+            Dispose(false);
+        }
+
         /// <summary>
         /// Initializes a new instance of the <see cref="System.IO.FileStream" /> class with the specified path, creation mode, read/write and sharing permission, the access other FileStreams can have to the same file, the buffer size,  additional file options and the allocation size.
         /// </summary>
@@ -211,6 +219,7 @@ namespace System.IO
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public virtual void Lock(long position, long length)
         {
             if (position < 0 || length < 0)
@@ -228,6 +237,7 @@ namespace System.IO
         [UnsupportedOSPlatform("ios")]
         [UnsupportedOSPlatform("macos")]
         [UnsupportedOSPlatform("tvos")]
+        [UnsupportedOSPlatform("freebsd")]
         public virtual void Unlock(long position, long length)
         {
             if (position < 0 || length < 0)
@@ -486,11 +496,15 @@ namespace System.IO
         /// <param name="value">The byte to write to the stream.</param>
         public override void WriteByte(byte value) => _strategy.WriteByte(value);
 
-        protected override void Dispose(bool disposing) => _strategy.DisposeInternal(disposing);
+        // _strategy can be null only when ctor has thrown
+        protected override void Dispose(bool disposing) => _strategy?.DisposeInternal(disposing);
 
-        internal void DisposeInternal(bool disposing) => Dispose(disposing);
-
-        public override ValueTask DisposeAsync() => _strategy.DisposeAsync();
+        public async override ValueTask DisposeAsync()
+        {
+            await _strategy.DisposeAsync().ConfigureAwait(false);
+            Dispose(false);
+            GC.SuppressFinalize(this);
+        }
 
         public override void CopyTo(Stream destination, int bufferSize)
         {
@@ -522,10 +536,7 @@ namespace System.IO
 
         public override int EndRead(IAsyncResult asyncResult)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             return _strategy.EndRead(asyncResult);
         }
@@ -548,10 +559,7 @@ namespace System.IO
 
         public override void EndWrite(IAsyncResult asyncResult)
         {
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             _strategy.EndWrite(asyncResult);
         }
@@ -578,8 +586,6 @@ namespace System.IO
 
         internal ValueTask BaseWriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
             => base.WriteAsync(buffer, cancellationToken);
-
-        internal ValueTask BaseDisposeAsync() => base.DisposeAsync();
 
         internal Task BaseCopyToAsync(Stream destination, int bufferSize, CancellationToken cancellationToken)
             => base.CopyToAsync(destination, bufferSize, cancellationToken);

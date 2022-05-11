@@ -20,8 +20,7 @@ namespace System.Security.Cryptography
         // For backwards compat with CapiHelper.ObjToHashAlgorithm, use "hashAlg" as name
         internal static HashAlgorithmName ObjToHashAlgorithmName(object hashAlg)
         {
-            if (hashAlg == null)
-                throw new ArgumentNullException(nameof(hashAlg));
+            ArgumentNullException.ThrowIfNull(hashAlg);
 
             HashAlgorithmName? name = null;
 

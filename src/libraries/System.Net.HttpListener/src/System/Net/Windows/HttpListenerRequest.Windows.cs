@@ -254,12 +254,9 @@ namespace System.Net
 
         public X509Certificate2? EndGetClientCertificate(IAsyncResult asyncResult)
         {
-            X509Certificate2? clientCertificate = null;
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            X509Certificate2? clientCertificate = null;
             ListenerClientCertAsyncResult? clientCertAsyncResult = asyncResult as ListenerClientCertAsyncResult;
             if (clientCertAsyncResult == null || clientCertAsyncResult.AsyncObject != this)
             {
@@ -552,6 +549,6 @@ namespace System.Net
             ObjectDisposedException.ThrowIf(_isDisposed, this);
         }
 
-        private bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;
+        private static bool SupportsWebSockets => WebSocketProtocolComponent.IsSupported;
     }
 }

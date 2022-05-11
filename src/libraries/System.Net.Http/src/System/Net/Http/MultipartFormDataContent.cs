@@ -25,25 +25,17 @@ namespace System.Net.Http
 
         public override void Add(HttpContent content)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
-            if (content.Headers.ContentDisposition == null)
-            {
-                content.Headers.ContentDisposition = new ContentDispositionHeaderValue(formData);
-            }
+            content.Headers.ContentDisposition ??= new ContentDispositionHeaderValue(formData);
 
             base.Add(content);
         }
 
         public void Add(HttpContent content, string name)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
+
             if (string.IsNullOrWhiteSpace(name))
             {
                 throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));
@@ -54,10 +46,8 @@ namespace System.Net.Http
 
         public void Add(HttpContent content, string name, string fileName)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
+
             if (string.IsNullOrWhiteSpace(name))
             {
                 throw new ArgumentException(SR.net_http_argument_empty_string, nameof(name));

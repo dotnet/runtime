@@ -92,6 +92,9 @@ namespace System.Security.Cryptography
 
         // X500 Names
         internal const string CommonName = "2.5.4.3";
+        internal const string CountryOrRegionName = "2.5.4.6";
+        internal const string LocalityName = "2.5.4.7";
+        internal const string StateOrProvinceName = "2.5.4.8";
         internal const string Organization = "2.5.4.10";
         internal const string OrganizationalUnit = "2.5.4.11";
         internal const string EmailAddress = "1.2.840.113549.1.9.1";
@@ -151,5 +154,8 @@ namespace System.Security.Cryptography
         internal const string secp256r1 = "1.2.840.10045.3.1.7";
         internal const string secp384r1 = "1.3.132.0.34";
         internal const string secp521r1 = "1.3.132.0.35";
+
+        // LDAP
+        internal const string DomainComponent = "0.9.2342.19200300.100.1.25";
     }
 }

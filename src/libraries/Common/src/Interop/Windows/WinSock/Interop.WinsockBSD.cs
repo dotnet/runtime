@@ -1,7 +1,10 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 internal static partial class Interop
 {
@@ -57,23 +60,54 @@ internal static partial class Interop
 
         // Argument structure for IP_ADD_MEMBERSHIP and IP_DROP_MEMBERSHIP.
         [StructLayout(LayoutKind.Sequential)]
-        internal struct IPMulticastRequest
+        internal unsafe struct IPMulticastRequest
         {
             internal int MulticastAddress; // IP multicast address of group
             internal int InterfaceAddress; // local IP address of interface
 
-            internal static readonly int Size = Marshal.SizeOf<IPMulticastRequest>();
+            internal static readonly int Size = sizeof(IPMulticastRequest);
         }
 
         // Argument structure for IPV6_ADD_MEMBERSHIP and IPV6_DROP_MEMBERSHIP.
-        [StructLayout(LayoutKind.Sequential)]
+        [NativeMarshalling(typeof(Native))]
         internal struct IPv6MulticastRequest
         {
-            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 16)]
             internal byte[] MulticastAddress; // IP address of group.
             internal int InterfaceIndex; // Local interface index.
 
-            internal static readonly int Size = Marshal.SizeOf<IPv6MulticastRequest>();
+            [CustomTypeMarshaller(typeof(IPv6MulticastRequest))]
+            public unsafe struct Native
+            {
+                private const int MulticastAddressLength = 16;
+                private fixed byte _multicastAddress[MulticastAddressLength];
+                private int _interfaceIndex;
+
+                public Native(IPv6MulticastRequest managed)
+                {
+                    Debug.Assert(managed.MulticastAddress.Length == MulticastAddressLength);
+                    fixed (void* dest = _multicastAddress)
+                    {
+                        managed.MulticastAddress.CopyTo(new Span<byte>(dest, MulticastAddressLength));
+                    }
+                    _interfaceIndex = managed.InterfaceIndex;
+                }
+
+                public IPv6MulticastRequest ToManaged()
+                {
+                    IPv6MulticastRequest managed = new()
+                    {
+                        MulticastAddress = new byte[MulticastAddressLength],
+                        InterfaceIndex = _interfaceIndex
+                    };
+                    fixed (void* src = _multicastAddress)
+                    {
+                        new Span<byte>(src, 16).CopyTo(managed.MulticastAddress);
+                    }
+                    return managed;
+                }
+            }
+
+            internal static readonly unsafe int Size = sizeof(Native);
         }
 
         [StructLayout(LayoutKind.Sequential)]

@@ -221,6 +221,7 @@ function_name() to call the system's implementation
 #define sqrt DUMMY_sqrt
 #define tan DUMMY_tan
 #define tanh DUMMY_tanh
+#define trunc DUMMY_trunc
 #define ceilf DUMMY_ceilf
 #define cosf DUMMY_cosf
 #define coshf DUMMY_coshf
@@ -233,6 +234,7 @@ function_name() to call the system's implementation
 #define sqrtf DUMMY_sqrtf
 #define tanf DUMMY_tanf
 #define tanhf DUMMY_tanhf
+#define truncf DUMMY_truncf
 
 /* RAND_MAX needed to be renamed to avoid duplicate definition when including
    stdlib.h header files. PAL_RAND_MAX should have the same value as RAND_MAX
@@ -464,6 +466,7 @@ function_name() to call the system's implementation
 #undef sqrt
 #undef tan
 #undef tanh
+#undef trunc
 #undef acosf
 #undef acoshf
 #undef asinf
@@ -492,6 +495,7 @@ function_name() to call the system's implementation
 #undef sqrtf
 #undef tanf
 #undef tanhf
+#undef truncf
 #undef rand
 #undef srand
 #undef errno
@@ -691,30 +695,30 @@ T* InterlockedCompareExchangePointerT(
 template <typename T>
 inline T* InterlockedExchangePointerT(
     T* volatile * target,
-    int           value) // When NULL is provided as argument.
+    std::nullptr_t           value) // When NULL is provided as argument.
 {
     //STATIC_ASSERT(value == 0);
-    return InterlockedExchangePointerT(target, reinterpret_cast<T*>(value));
+    return InterlockedExchangePointerT(target, (T*)(void*)value);
 }
 
 template <typename T>
 inline T* InterlockedCompareExchangePointerT(
     T* volatile * destination,
-    int           exchange,  // When NULL is provided as argument.
+    std::nullptr_t           exchange,  // When NULL is provided as argument.
     T*            comparand)
 {
     //STATIC_ASSERT(exchange == 0);
-    return InterlockedCompareExchangePointerT(destination, reinterpret_cast<T*>(exchange), comparand);
+    return InterlockedCompareExchangePointerT(destination, (T*)(void*)exchange, comparand);
 }
 
 template <typename T>
 inline T* InterlockedCompareExchangePointerT(
     T* volatile * destination,
     T*            exchange,
-    int           comparand) // When NULL is provided as argument.
+    std::nullptr_t           comparand) // When NULL is provided as argument.
 {
     //STATIC_ASSERT(comparand == 0);
-    return InterlockedCompareExchangePointerT(destination, exchange, reinterpret_cast<T*>(comparand));
+    return InterlockedCompareExchangePointerT(destination, exchange, (T*)(void*)comparand);
 }
 
 #undef InterlockedExchangePointer

@@ -36,7 +36,7 @@ if(CLR_CMAKE_HOST_OS STREQUAL Linux)
         # "amd64" string. Accept either of the two here.
         if(CMAKE_SYSTEM_PROCESSOR STREQUAL x86_64 OR CMAKE_SYSTEM_PROCESSOR STREQUAL amd64)
             set(CLR_CMAKE_HOST_UNIX_AMD64 1)
-        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l)
+        elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL armv7l OR CMAKE_SYSTEM_PROCESSOR STREQUAL armv8l)
             set(CLR_CMAKE_HOST_UNIX_ARM 1)
             set(CLR_CMAKE_HOST_UNIX_ARMV7L 1)
         elseif(CMAKE_SYSTEM_PROCESSOR STREQUAL arm OR CMAKE_SYSTEM_PROCESSOR STREQUAL armv7-a)
@@ -70,6 +70,11 @@ if(CLR_CMAKE_HOST_OS STREQUAL Linux)
             COMMAND bash -c "source ${LINUX_ID_FILE} && echo \$ID"
             OUTPUT_VARIABLE CLR_CMAKE_LINUX_ID
             OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+        execute_process(
+            COMMAND bash -c "if strings \"${CMAKE_SYSROOT}/usr/bin/ldd\" 2>&1 | grep -q musl; then echo musl; fi"
+            OUTPUT_VARIABLE CLR_CMAKE_LINUX_MUSL
+            OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif()
 
     if(DEFINED CLR_CMAKE_LINUX_ID)
@@ -79,6 +84,10 @@ if(CLR_CMAKE_HOST_OS STREQUAL Linux)
         elseif(CLR_CMAKE_LINUX_ID STREQUAL alpine)
             set(CLR_CMAKE_HOST_ALPINE_LINUX 1)
             set(CLR_CMAKE_HOST_OS ${CLR_CMAKE_LINUX_ID})
+        endif()
+
+        if(CLR_CMAKE_LINUX_MUSL STREQUAL musl)
+            set(CLR_CMAKE_HOST_LINUX_MUSL 1)
         endif()
     endif(DEFINED CLR_CMAKE_LINUX_ID)
 endif(CLR_CMAKE_HOST_OS STREQUAL Linux)
@@ -313,6 +322,10 @@ if(CLR_CMAKE_TARGET_OS STREQUAL Linux)
     set(CLR_CMAKE_TARGET_UNIX 1)
     set(CLR_CMAKE_TARGET_LINUX 1)
 endif(CLR_CMAKE_TARGET_OS STREQUAL Linux)
+
+if(CLR_CMAKE_HOST_LINUX_MUSL)
+    set(CLR_CMAKE_TARGET_LINUX_MUSL 1)
+endif(CLR_CMAKE_HOST_LINUX_MUSL)
 
 if(CLR_CMAKE_TARGET_OS STREQUAL tizen)
     set(CLR_CMAKE_TARGET_UNIX 1)

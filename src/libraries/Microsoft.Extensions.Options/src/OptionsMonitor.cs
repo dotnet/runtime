@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Options
         private readonly IOptionsMonitorCache<TOptions> _cache;
         private readonly IOptionsFactory<TOptions> _factory;
         private readonly List<IDisposable> _registrations = new List<IDisposable>();
-        internal event Action<TOptions, string> _onChange;
+        internal event Action<TOptions, string>? _onChange;
 
         /// <summary>
         /// Constructor.
@@ -61,7 +61,7 @@ namespace Microsoft.Extensions.Options
             }
         }
 
-        private void InvokeChanged(string name)
+        private void InvokeChanged(string? name)
         {
             name = name ?? Options.DefaultName;
             _cache.TryRemove(name);
@@ -83,10 +83,19 @@ namespace Microsoft.Extensions.Options
         /// <summary>
         /// Returns a configured <typeparamref name="TOptions"/> instance with the given <paramref name="name"/>.
         /// </summary>
-        public virtual TOptions Get(string name)
+        public virtual TOptions Get(string? name)
         {
-            name = name ?? Options.DefaultName;
-            return _cache.GetOrAdd(name, () => _factory.Create(name));
+            if (_cache is not OptionsCache<TOptions> optionsCache)
+            {
+                // copying captured variables to locals avoids allocating a closure if we don't enter the if
+                string localName = name ?? Options.DefaultName;
+                IOptionsFactory<TOptions> localFactory = _factory;
+                return _cache.GetOrAdd(localName, () => localFactory.Create(localName));
+            }
+
+            // non-allocating fast path
+            return optionsCache.GetOrAdd(name, static (name, factory) => factory.Create(name), _factory);
+
         }
 
         /// <summary>

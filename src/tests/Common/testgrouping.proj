@@ -180,42 +180,6 @@
       <XUnitWrapperDll>$(TestBinDir)JIT\HardwareIntrinsics\JIT.HardwareIntrinsics.XUnitWrapper.dll</XUnitWrapperDll>
     </TestGrouping>
 
-    <TestGrouping Include="$(TestBinDir)JIT\Methodical\a*\**;
-                           $(TestBinDir)JIT\Methodical\b*\**;
-                           $(TestBinDir)JIT\Methodical\c*\**;
-                           $(TestBinDir)JIT\Methodical\d*\**;
-                           $(TestBinDir)JIT\Methodical\A*\**;
-                           $(TestBinDir)JIT\Methodical\B*\**;
-                           $(TestBinDir)JIT\Methodical\C*\**;
-                           $(TestBinDir)JIT\Methodical\D*\**">
-      <TestGroup>JIT.Methodical.a-dA-D</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\Methodical\JIT.Methodical.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)JIT\Methodical\eh\**">
-      <TestGroup>JIT.Methodical.eh</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\Methodical\JIT.Methodical.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)JIT\Methodical\e*\**;
-                           $(TestBinDir)JIT\Methodical\E*\**"
-                  Exclude="$(TestBinDir)JIT\Methodical\eh\**">
-      <TestGroup>JIT.Methodical.eE</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\Methodical\JIT.Methodical.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
-    <TestGrouping Include="$(TestBinDir)JIT\Methodical\f*\**;
-                           $(TestBinDir)JIT\Methodical\g*\**;
-                           $(TestBinDir)JIT\Methodical\h*\**;
-                           $(TestBinDir)JIT\Methodical\i*\**;
-                           $(TestBinDir)JIT\Methodical\F*\**;
-                           $(TestBinDir)JIT\Methodical\G*\**;
-                           $(TestBinDir)JIT\Methodical\H*\**;
-                           $(TestBinDir)JIT\Methodical\I*\**">
-      <TestGroup>JIT.Methodical.f-iF-I</TestGroup>
-      <XUnitWrapperDll>$(TestBinDir)JIT\Methodical\JIT.Methodical.XUnitWrapper.dll</XUnitWrapperDll>
-    </TestGrouping>
-
     <TestGrouping Include="$(TestBinDir)JIT\Regression\CLR-x86-JIT\V1-M09*\**;
                            $(TestBinDir)JIT\Regression\CLR-x86-JIT\V1-M10*\**;
                            $(TestBinDir)JIT\Regression\CLR-x86-JIT\V1-M11*\**">

@@ -485,100 +485,14 @@ public:
     {
         if(Is64Bit())
         {
-            //fast track this one - and avoid DIV_0 below
-            if(lhs == 0 || rhs == 0)
-            {
-                result = 0;
-                return true;
-            }
-
             //we're 64 bit - slow, but the only way to do it
             if(IsSigned())
             {
-                if(!IsMixedSign(lhs, rhs))
-                {
-                    //both positive or both negative
-                    //result will be positive, check for lhs * rhs > MaxInt
-                    if(lhs > 0)
-                    {
-                        //both positive
-                        if(MaxInt()/lhs < rhs)
-                        {
-                            //overflow
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        //both negative
-
-                        //comparison gets tricky unless we force it to positive
-                        //EXCEPT that -MinInt is undefined - can't be done
-                        //And MinInt always has a greater magnitude than MaxInt
-                        if(lhs == MinInt() || rhs == MinInt())
-                        {
-                            //overflow
-                            return false;
-                        }
-
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning( disable : 4146 )   // unary minus applied to unsigned is still unsigned
-#endif
-                        if(MaxInt()/(-lhs) < (-rhs) )
-                        {
-                            //overflow
-                            return false;
-                        }
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
-                    }
-                }
-                else
-                {
-                    //mixed sign - this case is difficult
-                    //test case is lhs * rhs < MinInt => overflow
-                    //if lhs < 0 (implies rhs > 0),
-                    //lhs < MinInt/rhs is the correct test
-                    //else if lhs > 0
-                    //rhs < MinInt/lhs is the correct test
-                    //avoid dividing MinInt by a negative number,
-                    //because MinInt/-1 is a corner case
-
-                    if(lhs < 0)
-                    {
-                        if(lhs < MinInt()/rhs)
-                        {
-                            //overflow
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        if(rhs < MinInt()/lhs)
-                        {
-                            //overflow
-                            return false;
-                        }
-                    }
-                }
-
-                //ok
-                result = lhs * rhs;
-                return true;
+                return ClrSafeInt<int64_t>::multiply((int64_t)lhs, (int64_t)rhs, (int64_t&)result);
             }
             else
             {
-                //unsigned, easy case
-                if(MaxInt()/lhs < rhs)
-                {
-                    //overflow
-                    return false;
-                }
-                //ok
-                result = lhs * rhs;
-                return true;
+                return ClrSafeInt<uint64_t>::multiply((uint64_t)lhs, (uint64_t)rhs, (uint64_t&)result);
             }
         }
         else if(Is32Bit())
@@ -586,32 +500,11 @@ public:
             //we're 32-bit
             if(IsSigned())
             {
-                INT64 tmp = (INT64)lhs * (INT64)rhs;
-
-                //upper 33 bits must be the same
-                //most common case is likely that both are positive - test first
-                if( (tmp & 0xffffffff80000000LL) == 0 ||
-                    (tmp & 0xffffffff80000000LL) == 0xffffffff80000000LL)
-                {
-                    //this is OK
-                    result = (T)tmp;
-                    return true;
-                }
-
-                //overflow
-                return false;
-
+                return ClrSafeInt<int32_t>::multiply((int32_t)lhs, (int32_t)rhs, (int32_t&)result);
             }
             else
             {
-                UINT64 tmp = (UINT64)lhs * (UINT64)rhs;
-                if (tmp & 0xffffffff00000000ULL) //overflow
-                {
-                    //overflow
-                    return false;
-                }
-                result = (T)tmp;
-                return true;
+                return ClrSafeInt<uint32_t>::multiply((uint32_t)lhs, (uint32_t)rhs, (uint32_t&)result);
             }
         }
         else if(Is16Bit())
@@ -619,59 +512,23 @@ public:
             //16-bit
             if(IsSigned())
             {
-                INT32 tmp = (INT32)lhs * (INT32)rhs;
-                //upper 17 bits must be the same
-                //most common case is likely that both are positive - test first
-                if( (tmp & 0xffff8000) == 0 || (tmp & 0xffff8000) == 0xffff8000)
-                {
-                    //this is OK
-                    result = (T)tmp;
-                    return true;
-                }
-
-                //overflow
-                return false;
+                return ClrSafeInt<int16_t>::multiply((int16_t)lhs, (int16_t)rhs, (int16_t&)result);
             }
             else
             {
-                UINT32 tmp = (UINT32)lhs * (UINT32)rhs;
-                if (tmp & 0xffff0000) //overflow
-                {
-                    return false;
-                }
-                result = (T)tmp;
-                return true;
+                return ClrSafeInt<uint16_t>::multiply((uint16_t)lhs, (uint16_t)rhs, (uint16_t&)result);
             }
         }
         else //8-bit
         {
             _ASSERTE_SAFEMATH(Is8Bit());
-
             if(IsSigned())
             {
-                INT16 tmp = (INT16)lhs * (INT16)rhs;
-                //upper 9 bits must be the same
-                //most common case is likely that both are positive - test first
-                if( (tmp & 0xff80) == 0 || (tmp & 0xff80) == 0xff80)
-                {
-                    //this is OK
-                    result = (T)tmp;
-                    return true;
-                }
-
-                //overflow
-                return false;
+                return ClrSafeInt<int8_t>::multiply((int8_t)lhs, (int8_t)rhs, (int8_t&)result);
             }
             else
             {
-                UINT16 tmp = ((UINT16)lhs) * ((UINT16)rhs);
-
-                if (tmp & 0xff00) //overflow
-                {
-                    return false;
-                }
-                result = (T)tmp;
-                return true;
+                return ClrSafeInt<uint8_t>::multiply((uint8_t)lhs, (uint8_t)rhs, (uint8_t&)result);
             }
         }
     }
@@ -830,6 +687,192 @@ private:
     // is called.
     INDEBUG( mutable bool m_checkedOverflow; )
 };
+
+template <>
+inline bool ClrSafeInt<int64_t>::multiply(int64_t lhs, int64_t rhs, int64_t &result)
+{
+    //fast track this one - and avoid DIV_0 below
+    if(lhs == 0 || rhs == 0)
+    {
+        result = 0;
+        return true;
+    }
+    if(!IsMixedSign(lhs, rhs))
+    {
+        //both positive or both negative
+        //result will be positive, check for lhs * rhs > MaxInt
+        if(lhs > 0)
+        {
+            //both positive
+            if(MaxInt()/lhs < rhs)
+            {
+                //overflow
+                return false;
+            }
+        }
+        else
+        {
+            //both negative
+
+            //comparison gets tricky unless we force it to positive
+            //EXCEPT that -MinInt is undefined - can't be done
+            //And MinInt always has a greater magnitude than MaxInt
+            if(lhs == MinInt() || rhs == MinInt())
+            {
+                //overflow
+                return false;
+            }
+            if(MaxInt()/(-lhs) < (-rhs) )
+            {
+                //overflow
+                return false;
+            }
+        }
+    }
+    else
+    {
+        //mixed sign - this case is difficult
+        //test case is lhs * rhs < MinInt => overflow
+        //if lhs < 0 (implies rhs > 0),
+        //lhs < MinInt/rhs is the correct test
+        //else if lhs > 0
+        //rhs < MinInt/lhs is the correct test
+        //avoid dividing MinInt by a negative number,
+        //because MinInt/-1 is a corner case
+
+        if(lhs < 0)
+        {
+            if(lhs < MinInt()/rhs)
+            {
+                //overflow
+                return false;
+            }
+        }
+        else
+        {
+            if(rhs < MinInt()/lhs)
+            {
+                //overflow
+                return false;
+            }
+        }
+    }
+
+    //ok
+    result = lhs * rhs;
+    return true;
+}
+
+template <>
+inline bool ClrSafeInt<uint64_t>::multiply(uint64_t lhs, uint64_t rhs, uint64_t &result)
+{
+    //fast track this one - and avoid DIV_0 below
+    if(lhs == 0 || rhs == 0)
+    {
+        result = 0;
+        return true;
+    }
+    //unsigned, easy case
+    if(MaxInt()/lhs < rhs)
+    {
+        //overflow
+        return false;
+    }
+    //ok
+    result = lhs * rhs;
+    return true;
+}
+
+template <>
+inline bool ClrSafeInt<int32_t>::multiply(int32_t lhs, int32_t rhs, int32_t &result)
+{
+    INT64 tmp = (INT64)lhs * (INT64)rhs;
+
+    //upper 33 bits must be the same
+    //most common case is likely that both are positive - test first
+    if( (tmp & 0xffffffff80000000LL) == 0 ||
+        (tmp & 0xffffffff80000000LL) == 0xffffffff80000000LL)
+    {
+        //this is OK
+        result = (int32_t)tmp;
+        return true;
+    }
+
+    //overflow
+    return false;
+}
+
+template <>
+inline bool ClrSafeInt<uint32_t>::multiply(uint32_t lhs, uint32_t rhs, uint32_t &result)
+{
+    UINT64 tmp = (UINT64)lhs * (UINT64)rhs;
+    if (tmp & 0xffffffff00000000ULL) //overflow
+    {
+        //overflow
+        return false;
+    }
+    result = (uint32_t)tmp;
+    return true;
+}
+
+template <>
+inline bool ClrSafeInt<int16_t>::multiply(int16_t lhs, int16_t rhs, int16_t &result)
+{
+    INT32 tmp = (INT32)lhs * (INT32)rhs;
+    //upper 17 bits must be the same
+    //most common case is likely that both are positive - test first
+    if( (tmp & 0xffff8000) == 0 || (tmp & 0xffff8000) == 0xffff8000)
+    {
+        //this is OK
+        result = (int16_t)tmp;
+        return true;
+    }
+
+    //overflow
+    return false;
+}
+
+template <>
+inline bool ClrSafeInt<uint16_t>::multiply(uint16_t lhs, uint16_t rhs, uint16_t &result)
+{
+    UINT32 tmp = (UINT32)lhs * (UINT32)rhs;
+    if (tmp & 0xffff0000) //overflow
+    {
+        return false;
+    }
+    result = (uint16_t)tmp;
+    return true;
+}
+
+template <>
+inline bool ClrSafeInt<int8_t>::multiply(int8_t lhs, int8_t rhs, int8_t &result)
+{
+    INT16 tmp = (INT16)lhs * (INT16)rhs;
+    //upper 9 bits must be the same
+    //most common case is likely that both are positive - test first
+    if( (tmp & 0xff80) == 0 || (tmp & 0xff80) == 0xff80)
+    {
+        //this is OK
+        result = (int8_t)tmp;
+        return true;
+    }
+
+    //overflow
+    return false;
+}
+
+template <>
+inline bool ClrSafeInt<uint8_t>::multiply(uint8_t lhs, uint8_t rhs, uint8_t &result)
+{
+    UINT16 tmp = ((UINT16)lhs) * ((UINT16)rhs);
+
+    if (tmp & 0xff00) //overflow
+    {
+        return false;
+    }
+    result = (uint8_t)tmp;
+    return true;
+}
 
 // Allows creation of a ClrSafeInt corresponding to the type of the argument.
 template <typename T>

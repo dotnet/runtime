@@ -22,8 +22,7 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public DSACng(CngKey key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             if (key.AlgorithmGroup != CngAlgorithmGroup.Dsa)
                 throw new ArgumentException(SR.Cryptography_ArgDSARequiresDSAKey, nameof(key));

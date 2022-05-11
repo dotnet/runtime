@@ -1,12 +1,15 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.ComponentModel;
+
 namespace System.Text.Json.Serialization.Metadata
 {
     /// <summary>
     /// Provides serialization metadata about a property or field.
     /// </summary>
     /// <typeparam name="T">The type to convert of the <see cref="JsonConverter{T}"/> for the property.</typeparam>
+    [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class JsonPropertyInfoValues<T>
     {
         /// <summary>

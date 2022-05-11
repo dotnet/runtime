@@ -47,7 +47,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder ForTypesDerivedFrom(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -76,7 +76,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder ForType(Type type)
         {
-            if (type == null)
+            if (type is null)
             {
                 throw new ArgumentNullException(nameof(type));
             }
@@ -95,7 +95,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder<T> ForTypesMatching<T>(Predicate<Type> typeFilter)
         {
-            if (typeFilter == null)
+            if (typeFilter is null)
             {
                 throw new ArgumentNullException(nameof(typeFilter));
             }
@@ -113,7 +113,7 @@ namespace System.Composition.Convention
         /// <returns>A <see cref="PartConventionBuilder{T}"/> that must be used to specify the rule.</returns>
         public PartConventionBuilder ForTypesMatching(Predicate<Type> typeFilter)
         {
-            if (typeFilter == null)
+            if (typeFilter is null)
             {
                 throw new ArgumentNullException(nameof(typeFilter));
             }
@@ -158,7 +158,7 @@ namespace System.Composition.Convention
         /// <returns>The list of applied attributes.</returns>
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.MemberInfo member)
         {
-            if (member == null)
+            if (member is null)
             {
                 throw new ArgumentNullException(nameof(member));
             }
@@ -298,7 +298,7 @@ namespace System.Composition.Convention
         /// <returns>The list of applied attributes.</returns>
         public override IEnumerable<Attribute> GetCustomAttributes(Type reflectedType, System.Reflection.ParameterInfo parameter)
         {
-            if (parameter == null)
+            if (parameter is null)
             {
                 throw new ArgumentNullException(nameof(parameter));
             }

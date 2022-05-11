@@ -30,14 +30,4 @@
         </ExcludeList>
     </ItemGroup>
 
-    <ItemGroup Condition="'$(TargetArchitecture)' == 'arm64' and '$(TargetOS)' == 'OSX'">
-        <ExcludeList Include="file_io/ReadFile/test2/paltest_readfile_test2">
-            <!-- Test hard codes PAGE_SIZE = 4096. Apple Silicon does not have 4K pages. -->
-            <Issue>https://github.com/dotnet/runtime/issues/48783</Issue>
-        </ExcludeList>
-        <ExcludeList Include="filemapping_memmgt/VirtualProtect/test4/paltest_virtualprotect_test4">
-            <!-- Test tries to set RWX on general memory page -->
-            <Issue>https://github.com/dotnet/runtime/issues/48783</Issue>
-        </ExcludeList>
-    </ItemGroup>
 </Project>

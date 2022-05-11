@@ -11,8 +11,8 @@ namespace System.Security.Cryptography
 
         internal ECDiffieHellmanOpenSslPublicKey(SafeEvpPKeyHandle pkeyHandle)
         {
-            if (pkeyHandle == null)
-                throw new ArgumentNullException(nameof(pkeyHandle));
+            ArgumentNullException.ThrowIfNull(pkeyHandle);
+
             if (pkeyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(pkeyHandle));
 
@@ -33,12 +33,16 @@ namespace System.Security.Cryptography
             _key = new ECOpenSsl(parameters);
         }
 
+#pragma warning disable 0672 // Member overrides an obsolete member.
         public override string ToXmlString()
+#pragma warning restore 0672
         {
             throw new PlatformNotSupportedException();
         }
 
+#pragma warning disable 0672 // Member overrides an obsolete member.
         public override byte[] ToByteArray()
+#pragma warning restore 0672
         {
             throw new PlatformNotSupportedException();
         }

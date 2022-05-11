@@ -39,10 +39,10 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.Ws2_32)]
+        [LibraryImport(Libraries.Ws2_32)]
         private static unsafe partial SocketError WSAStartup(short wVersionRequested, WSAData* lpWSAData);
 
-        [GeneratedDllImport(Libraries.Ws2_32)]
+        [LibraryImport(Libraries.Ws2_32)]
         private static partial SocketError WSACleanup();
 
         [StructLayout(LayoutKind.Sequential, Size = 408)]

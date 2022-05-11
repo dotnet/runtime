@@ -63,7 +63,7 @@ namespace System.ServiceModel.Syndication
 
         public void Add(string outerName, string outerNamespace, object dataContractExtension, XmlObjectSerializer dataContractSerializer)
         {
-            if (dataContractExtension == null)
+            if (dataContractExtension is null)
             {
                 throw new ArgumentNullException(nameof(dataContractExtension));
             }
@@ -77,7 +77,7 @@ namespace System.ServiceModel.Syndication
 
         public void Add(object xmlSerializerExtension, XmlSerializer serializer)
         {
-            if (xmlSerializerExtension == null)
+            if (xmlSerializerExtension is null)
             {
                 throw new ArgumentNullException(nameof(xmlSerializerExtension));
             }
@@ -91,7 +91,7 @@ namespace System.ServiceModel.Syndication
 
         public void Add(XmlReader xmlReader)
         {
-            if (xmlReader == null)
+            if (xmlReader is null)
             {
                 throw new ArgumentNullException(nameof(xmlReader));
             }
@@ -114,7 +114,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlObjectSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
@@ -124,7 +124,7 @@ namespace System.ServiceModel.Syndication
 
         public Collection<TExtension> ReadElementExtensions<TExtension>(string extensionName, string extensionNamespace, XmlSerializer serializer)
         {
-            if (serializer == null)
+            if (serializer is null)
             {
                 throw new ArgumentNullException(nameof(serializer));
             }
@@ -170,7 +170,7 @@ namespace System.ServiceModel.Syndication
 
         protected override void InsertItem(int index, SyndicationElementExtension item)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }
@@ -193,7 +193,7 @@ namespace System.ServiceModel.Syndication
 
         protected override void SetItem(int index, SyndicationElementExtension item)
         {
-            if (item == null)
+            if (item is null)
             {
                 throw new ArgumentNullException(nameof(item));
             }

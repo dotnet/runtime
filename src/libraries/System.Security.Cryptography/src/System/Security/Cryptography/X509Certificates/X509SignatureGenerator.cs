@@ -26,18 +26,15 @@ namespace System.Security.Cryptography.X509Certificates
 
         public static X509SignatureGenerator CreateForECDsa(ECDsa key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             return new ECDsaX509SignatureGenerator(key);
         }
 
         public static X509SignatureGenerator CreateForRSA(RSA key, RSASignaturePadding signaturePadding)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
-            if (signaturePadding == null)
-                throw new ArgumentNullException(nameof(signaturePadding));
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(signaturePadding);
 
             if (signaturePadding == RSASignaturePadding.Pkcs1)
                 return new RSAPkcs1X509SignatureGenerator(key);

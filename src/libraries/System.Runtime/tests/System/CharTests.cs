@@ -1038,7 +1038,7 @@ namespace System.Tests
         new char[] {'\u17db','\u20a2','\u20a5','\u20a8','\u20ab','\u20ae','\u20b1','\u20b4','\ufe69','\uffe1'}, // UnicodeCategory.CurrencySymbol
         new char[] {'\u02c5','\u02da','\u02e8','\u02f3','\u02fc','\u1fc0','\u1fee','\ua703','\ua70c','\ua715'}, // UnicodeCategory.ModifierSymbol
         new char[] {'\u0bf3','\u2316','\u24ac','\u25b2','\u26af','\u285c','\u2e8f','\u2f8c','\u3292','\u3392'}, // UnicodeCategory.OtherSymbol
-        new char[] {'\u09c6','\u0dfa','\u2e5c'}, // UnicodeCategory.OtherNotAssigned
+        new char[] {'\u09c6','\u0dfa'}, // UnicodeCategory.OtherNotAssigned
         };
 
         private static char[] s_highSurrogates = new char[] { '\ud800', '\udaaa', '\udbff' }; // Range from '\ud800' to '\udbff'

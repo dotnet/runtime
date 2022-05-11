@@ -6,7 +6,7 @@ It describes requirements that the Just-In-Time (JIT) compiler imposes on the VM
 
 A note on the JIT codebases: JIT32 refers to the original JIT codebase that originally generated x86 code and was later ported to generate ARM code. JIT64 refers to the legacy .NET Framework codebase that supports AMD64. The RyuJIT compiler evolved from JIT32, and now supports all platforms and architectures. See [this post](https://devblogs.microsoft.com/dotnet/the-ryujit-transition-is-complete) for more RyuJIT history.
 
-[CoreRT](https://github.com/dotnet/corert) refers to an experimental runtime that is optimized for ahead-of-time compilation (AOT). The CoreRT ABI differs in a few details for simplicity and consistency across platforms. CoreRT has been superseded by [NativeAOT](https://github.com/dotnet/runtimelab/tree/feature/NativeAOT).
+NativeAOT refers to a runtime that is optimized for ahead-of-time compilation (AOT). The NativeAOT ABI differs in a few details for simplicity and consistency across platforms.
 
 # Getting started
 
@@ -25,6 +25,8 @@ ARM64: See [Overview of ARM64 ABI conventions](https://docs.microsoft.com/en-us/
 Arm corporation ABI documentation (for ARM32 and ARM64) is [here](https://developer.arm.com/architectures/system-architectures/software-standards/abi) and [here](https://github.com/ARM-software/abi-aa).
 
 The Linux System V x86_64 ABI is documented in [System V Application Binary Interface / AMD64 Architecture Processor Supplement](https://github.com/hjl-tools/x86-psABI/wiki/x86-64-psABI-1.0.pdf), with document source material [here](https://gitlab.com/x86-psABIs/x86-64-ABI).
+
+The LoongArch64 ABI documentation is [here](https://github.com/loongson/LoongArch-Documentation/blob/main/docs/LoongArch-ELF-ABI-EN.adoc)
 
 # General Unwind/Frame Layout
 
@@ -105,7 +107,7 @@ ARM64-only: When a method returns a structure that is larger than 16 bytes the c
 
 ## Hidden parameters
 
-*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (AMD64 CoreRT ABI) `R10` / (ARM) `R4` / (ARM CoreRT ABI) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
+*Stub dispatch* - when a virtual call uses a VSD stub, rather than back-patching the calling code (or disassembling it), the JIT must place the address of the stub used to load the call target, the "stub indirection cell", in (x86) `EAX` / (AMD64) `R11` / (AMD64 NativeAOT ABI) `R10` / (ARM) `R4` / (ARM NativeAOT ABI) `R12` / (ARM64) `R11`. In the JIT, this is encapsulated in the `VirtualStubParamInfo` class.
 
 *Calli Pinvoke* - The VM wants the address of the PInvoke in (AMD64) `R10` / (ARM) `R12` / (ARM64) `R14` (In the JIT: `REG_PINVOKE_TARGET_PARAM`), and the signature (the pinvoke cookie) in (AMD64) `R11` / (ARM) `R4` / (ARM64) `R15` (in the JIT: `REG_PINVOKE_COOKIE_PARAM`).
 
@@ -307,7 +309,7 @@ Note that JIT64 does not implement this properly. The C# compiler used to always
 
 The *PSPSym* (which stands for Previous Stack Pointer Symbol) is a pointer-sized local variable used to access locals from the main function body.
 
-CoreRT does not use PSPSym. For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores all non-volatile registers. The same convention is used across all platforms.
+NativeAOT does not use PSPSym. For filter funclets the VM sets the frame register to be the same as the parent function. For second pass funclets the VM restores all non-volatile registers. The same convention is used across all platforms.
 
 CoreCLR uses PSPSym for all platforms except x86: the frame pointer on x86 is always preserved when the handlers are invoked.
 
@@ -508,7 +510,7 @@ Filters are invoked in the 1st pass of EH processing and as such execution might
 
 Duplicated clauses are a special set of entries in the EH tables to assist the VM. Specifically, if handler 'A' is also protected by an outer EH clause 'B', then the JIT must emit a duplicated clause, a duplicate of 'B', that marks the whole handler 'A' (which is now lexically disjoint for the range of code for the corresponding try body 'A') as being protected by the handler for 'B'.
 
-Duplicated clauses are not needed for x86 and for CoreRT ABI.
+Duplicated clauses are not needed for x86 and for NativeAOT ABI.
 
 During exception dispatch the VM uses these duplicated clauses to know when to skip any frames between the handler and its parent function. After skipping to the parent function, due to a duplicated clause, the VM searches for a regular/non-duplicate clause in the parent function. The order of duplicated clauses is important. They should appear after all of the main function clauses. They should still follow the normal sorting rules (inner-to-outer, top-to-bottom), but because the try-start/try-end will all be the same for a given handler, they should maintain the ordering, regarding inner-to-outer, as the corresponding original clause.
 
@@ -752,3 +754,43 @@ The return value is handled as follows:
 4. All other cases require the use of a return buffer, through which the value is returned.
 
 In addition, there is a guarantee that if a return buffer is used a value is stored there only upon ordinary exit from the method. The buffer is not allowed to be used for temporary storage within the method and its contents will be unaltered if an exception occurs while executing the method.
+
+# Control Flow Guard (CFG) support on Windows
+
+Control Flow Guard (CFG) is a security mitigation available in Windows.
+When CFG is enabled, the operating system maintains data structures that can be used to verify whether an address is to be considered a valid indirect call target.
+This mechanism is exposed through two different helper functions, each with different characteristics.
+
+The first mechanism is a validator that takes the target address as an argument and fails fast if the address is not an expected indirect call target; otherwise, it does nothing and returns.
+The second mechanism is a dispatcher that takes the target address in a non-standard register; on successful validation of the address, it jumps directly to the target function.
+Windows makes the dispatcher available only on ARM64 and x64, while the validator is available on all platforms.
+However, the JIT supports CFG only on ARM64 and x64, with CFG by default being disabled for these platforms.
+The expected use of the CFG feature is for NativeAOT scenarios that are running in constrained environments where CFG is required.
+
+The helpers are exposed to the JIT as standard JIT helpers `CORINFO_HELP_VALIDATE_INDIRECT_CALL` and `CORINFO_HELP_DISPATCH_INDIRECT_CALL`.
+
+To use the validator the JIT expands indirect calls into a call to the validator followed by a call to the validated address.
+For the dispatcher the JIT will transform calls to pass the target along but otherwise set up the call as normal.
+
+Note that "indirect call" here refers to any call that is not to an immediate (in the instruction stream) address.
+For example, even direct calls may emit indirect call instructions in JIT codegen due to e.g. tiering or if they have not been compiled yet; these are expanded with the CFG mechanism as well.
+
+The next sections describe the calling convention that the JIT expects from these helpers.
+
+## CFG details for ARM64
+
+On ARM64, `CORINFO_HELP_VALIDATE_INDIRECT_CALL` takes the call address in `x15`.
+In addition to the usual registers it preserves all float registers, `x0`-`x8` and `x15`.
+
+`CORINFO_HELP_DISPATCH_INDIRECT_CALL` takes the call address in `x9`.
+The JIT does not use the dispatch helper by default due to worse branch predictor performance.
+Therefore it will expand all indirect calls via the validation helper and a manual call.
+
+## CFG details for x64
+
+On x64, `CORINFO_HELP_VALIDATE_INDIRECT_CALL` takes the call address in `rcx`.
+In addition to the usual registers it also preserves all float registers and `rcx` and `r10`; furthermore, shadow stack space is not required to be allocated.
+
+`CORINFO_HELP_DISPATCH_INDIRECT_CALL` takes the call address in `rax` and it reserves the right to use and trash `r10` and `r11`.
+The JIT uses the dispatch helper on x64 whenever possible as it is expected that the code size benefits outweighs the less accurate branch prediction.
+However, note that the use of `r11` in the dispatcher makes it incompatible with VSD calls where the JIT must fall back to the validator and a manual call.

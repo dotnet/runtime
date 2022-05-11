@@ -39,7 +39,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public override string ToString() => $"session-{sessionId}";
     }
 
-    public struct MessageId : IEquatable<MessageId>
+    public class MessageId : IEquatable<MessageId>
     {
         public readonly string sessionId;
         public readonly int id;
@@ -61,106 +61,201 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool Equals(MessageId other) => other.sessionId == sessionId && other.id == id;
     }
 
-    internal class DotnetObjectId
+    internal sealed class DotnetObjectId
     {
+        private int? _intValue;
+
         public string Scheme { get; }
-        public int Value { get; }
+        public int Value
+        {
+            get
+            {
+                if (_intValue == null)
+                    throw new ArgumentException($"DotnetObjectId (scheme: {Scheme}, ValueAsJson: {ValueAsJson}) does not have an int value");
+                return _intValue.Value;
+            }
+        }
         public int SubValue { get; set; }
+        public bool IsValueType => Scheme == "valuetype";
+
+        public JObject ValueAsJson { get; init; }
 
         public static bool TryParse(JToken jToken, out DotnetObjectId objectId) => TryParse(jToken?.Value<string>(), out objectId);
 
         public static bool TryParse(string id, out DotnetObjectId objectId)
         {
             objectId = null;
-            try {
-                if (id == null)
-                    return false;
-
-                if (!id.StartsWith("dotnet:"))
-                    return false;
-
-                string[] parts = id.Split(":");
-
-                if (parts.Length < 3)
-                    return false;
-
-                objectId = new DotnetObjectId(parts[1], int.Parse(parts[2]));
-                switch (objectId.Scheme)
-                {
-                    case "methodId":
-                    {
-                        parts = id.Split(":");
-                        if (parts.Length > 3)
-                            objectId.SubValue = int.Parse(parts[3]);
-                        break;
-                    }
-                }
-                return true;
-            }
-            catch (Exception)
-            {
+            if (id == null)
                 return false;
-            }
+
+            if (!id.StartsWith("dotnet:"))
+                return false;
+
+            string[] parts = id.Split(":", 3);
+
+            if (parts.Length < 3)
+                return false;
+
+            objectId = new DotnetObjectId(parts[1], parts[2]);
+            return true;
         }
 
         public DotnetObjectId(string scheme, int value)
+                : this(scheme, value.ToString()) { }
+
+        public DotnetObjectId(string scheme, string value)
         {
             Scheme = scheme;
-            Value = value;
+            if (int.TryParse(value, out int ival))
+            {
+                _intValue = ival;
+            }
+            else
+            {
+                try
+                {
+                    ValueAsJson = JObject.Parse(value);
+                }
+                catch (JsonReaderException) { }
+            }
         }
 
         public override string ToString()
-        {
-            switch (Scheme)
-            {
-                case "methodId":
-                    return $"dotnet:{Scheme}:{Value}:{SubValue}";
-            }
-            return $"dotnet:{Scheme}:{Value}";
-        }
+            => _intValue != null
+                    ? $"dotnet:{Scheme}:{_intValue}"
+                    : $"dotnet:{Scheme}:{ValueAsJson}";
     }
 
     public struct Result
     {
         public JObject Value { get; private set; }
         public JObject Error { get; private set; }
+        public JObject FullContent { get; private set; }
 
-        public bool IsOk => Value != null;
-        public bool IsErr => Error != null;
+        public bool IsOk => Error == null;
 
-        private Result(JObject result, JObject error)
+        private Result(JObject resultOrError, bool isError, JObject fullContent = null)
         {
-            if (result != null && error != null)
-                throw new ArgumentException($"Both {nameof(result)} and {nameof(error)} arguments cannot be non-null.");
+            if (resultOrError == null)
+                throw new ArgumentNullException(nameof(resultOrError));
 
-            bool resultHasError = string.Equals((result?["result"] as JObject)?["subtype"]?.Value<string>(), "error");
-            if (result != null && resultHasError)
+            bool resultHasError = isError || string.Equals((resultOrError["result"] as JObject)?["subtype"]?.Value<string>(), "error");
+            resultHasError |= resultOrError["exceptionDetails"] != null;
+            if (resultHasError)
             {
-                this.Value = null;
-                this.Error = result;
+                Value = null;
+                Error = resultOrError;
             }
             else
             {
-                this.Value = result;
-                this.Error = error;
+                Value = resultOrError;
+                Error = null;
             }
+            FullContent = fullContent;
         }
-
         public static Result FromJson(JObject obj)
         {
+            var error = obj["error"] as JObject;
+            if (error != null)
+                return new Result(error, true);
+            var result = (obj["result"] as JObject) ?? new JObject();
+            return new Result(result, false);
+        }
+        public static Result FromJsonFirefox(JObject obj)
+        {
             //Log ("protocol", $"from result: {obj}");
-            return new Result(obj["result"] as JObject, obj["error"] as JObject);
+            JObject o;
+            if (obj["ownProperties"] != null && obj["prototype"]?["class"]?.Value<string>() == "Array")
+            {
+                var ret = new JArray();
+                var arrayItems = obj["ownProperties"];
+                foreach (JProperty arrayItem in arrayItems)
+                {
+                    if (arrayItem.Name != "length")
+                        ret.Add(arrayItem.Value["value"]);
+                }
+                o = JObject.FromObject(new
+                {
+                    result = new
+                    {
+                        value = ret
+                    }
+                });
+            }
+            else if (obj["result"] is JObject && obj["result"]?["type"]?.Value<string>() == "object")
+            {
+                if (obj["result"]["class"].Value<string>() == "Array")
+                {
+                    o = JObject.FromObject(new
+                    {
+                        result = new
+                        {
+                            value = obj["result"]["preview"]["items"]
+                        }
+                    });
+                }
+                else if (obj["result"]?["preview"] != null)
+                {
+                    o = JObject.FromObject(new
+                    {
+                        result = new
+                        {
+                            value = obj["result"]?["preview"]?["ownProperties"]?["value"]
+                        }
+                    });
+                }
+                else
+                {
+                    o = JObject.FromObject(new
+                    {
+                        result = new
+                        {
+                            value = obj["result"]
+                        }
+                    });
+                }
+            }
+            else if (obj["result"] != null)
+            {
+                o = JObject.FromObject(new
+                {
+                    result = new
+                    {
+                        value = obj["result"],
+                        type = obj["resultType"],
+                        description = obj["resultDescription"]
+                    }
+                });
+            }
+            else
+            {
+                o = JObject.FromObject(new
+                {
+                    result = new
+                    {
+                        value = obj
+                    }
+                });
+            }
+            bool resultHasError = obj["hasException"] != null && obj["hasException"].Value<bool>();
+            if (resultHasError)
+            {
+                return new Result(obj["exception"] as JObject, resultHasError, obj);
+            }
+            return new Result(o, false, obj);
         }
 
-        public static Result Ok(JObject ok) => new Result(ok, null);
+        public static Result Ok(JObject ok) => new Result(ok, false);
 
         public static Result OkFromObject(object ok) => Ok(JObject.FromObject(ok));
 
-        public static Result Err(JObject err) => new Result(null, err);
+        public static Result Err(JObject err) => new Result(err, true);
 
-        public static Result Err(string msg) => new Result(null, JObject.FromObject(new { message = msg }));
+        public static Result Err(string msg) => new Result(JObject.FromObject(new { message = msg }), true);
 
-        public static Result Exception(Exception e) => new Result(null, JObject.FromObject(new { message = e.Message }));
+        public static Result UserVisibleErr(JObject result) => new Result { Value = result };
+
+        public static Result Exception(Exception e) => new Result(JObject.FromObject(new { message = e.Message }), true);
 
         public JObject ToJObject(MessageId target)
         {
@@ -186,11 +281,11 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public override string ToString()
         {
-            return $"[Result: IsOk: {IsOk}, IsErr: {IsErr}, Value: {Value?.ToString()}, Error: {Error?.ToString()} ]";
+            return $"[Result: IsOk: {IsOk}, IsErr: {!IsOk}, Value: {Value?.ToString()}, Error: {Error?.ToString()} ]";
         }
     }
 
-    internal class MonoCommands
+    internal sealed class MonoCommands
     {
         public string expression { get; set; }
         public string objectGroup { get; set; } = "mono-debugger";
@@ -235,10 +330,11 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal static class MonoConstants
     {
         public const string RUNTIME_IS_READY = "mono_wasm_runtime_ready";
+        public const string RUNTIME_IS_READY_ID = "fe00e07a-5519-4dfe-b35a-f867dbaf2e28";
         public const string EVENT_RAISED = "mono_wasm_debug_event_raised:aef14bca-5519-4dfe-b35a-f867abc123ae";
     }
 
-    internal class Frame
+    internal sealed class Frame
     {
         public Frame(MethodInfoWithDebugInformation method, SourceLocation location, int id)
         {
@@ -252,13 +348,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         public int Id { get; private set; }
     }
 
-    internal class Breakpoint
+    internal sealed class Breakpoint
     {
         public SourceLocation Location { get; private set; }
         public int RemoteId { get; set; }
         public BreakpointState State { get; set; }
         public string StackId { get; private set; }
-        public string Condition { get; private set; }
+        public string Condition { get; set; }
         public bool ConditionAlreadyEvaluatedWithError { get; set; }
         public static bool TryParseId(string stackId, out int id)
         {
@@ -312,7 +408,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public string DebugId { get; set; }
         public Dictionary<string, BreakpointRequest> BreakpointRequests { get; } = new Dictionary<string, BreakpointRequest>();
-
+        public int breakpointId;
         public TaskCompletionSource<DebugStore> ready;
         public bool IsRuntimeReady => ready != null && ready.Task.IsCompleted;
         public bool IsSkippingHiddenMethod { get; set; }
@@ -320,6 +416,11 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsResumedAfterBp { get; set; }
         public int ThreadId { get; set; }
         public int Id { get; set; }
+
+        public bool PausedOnWasm { get; set; }
+
+        public string PauseKind { get; set; }
+
         public object AuxData { get; set; }
 
         public PauseOnExceptionsKind PauseOnExceptions { get; set; }
@@ -332,6 +433,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public TaskCompletionSource<DebugStore> Source { get; } = new TaskCompletionSource<DebugStore>();
 
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
+
+        internal int TempBreakpointForSetNextIP { get; set; }
 
         public DebugStore Store
         {
@@ -362,7 +465,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         }
     }
 
-    internal class PerScopeCache
+    internal sealed class PerScopeCache
     {
         public Dictionary<string, JObject> Locals { get; } = new Dictionary<string, JObject>();
         public Dictionary<string, JObject> MemberReferences { get; } = new Dictionary<string, JObject>();

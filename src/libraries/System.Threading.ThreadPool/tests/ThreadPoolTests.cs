@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
@@ -826,7 +827,6 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        // See https://github.com/dotnet/corert/pull/6822
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking()
         {
@@ -923,6 +923,7 @@ namespace System.Threading.ThreadPools.Tests
                 int workItemCount = processorCount + 120;
                 SetBlockingConfigValue("ThreadsToAddWithoutDelay_ProcCountFactor", 1);
                 SetBlockingConfigValue("MaxDelayMs", 1);
+                SetBlockingConfigValue("IgnoreMemoryUsage", true);
 
                 var allWorkItemsUnblocked = new AutoResetEvent(false);
 
@@ -953,17 +954,19 @@ namespace System.Threading.ThreadPools.Tests
                     Assert.True(allWorkItemsUnblocked.WaitOne(30_000));
                 }
 
-                void SetBlockingConfigValue(string name, int value) =>
+                void SetBlockingConfigValue(string name, object value) =>
                     AppContextSetData("System.Threading.ThreadPool.Blocking." + name, value);
 
                 void AppContextSetData(string name, object value)
                 {
-                    typeof(AppContext).InvokeMember(
-                        "SetData",
-                        BindingFlags.ExactBinding | BindingFlags.InvokeMethod | BindingFlags.Public | BindingFlags.Static,
-                        null,
-                        null,
-                        new object[] { name, value });
+                    if (value is bool boolValue)
+                    {
+                        AppContext.SetSwitch(name, boolValue);
+                    }
+                    else
+                    {
+                        AppContext.SetData(name, value);
+                    }
                 }
             }).Dispose();
         }
@@ -1016,6 +1019,47 @@ namespace System.Threading.ThreadPools.Tests
 
                     done.CheckedWait();
                 }).Dispose();
+            }).Dispose();
+        }
+
+        [ConditionalFact(nameof(IsThreadingAndRemoteExecutorSupported))]
+        public void FileStreamFlushAsyncThreadPoolDeadlockTest()
+        {
+            // This test was occasionally causing the deadlock described in https://github.com/dotnet/runtime/pull/68171. Run it
+            // in a remote process to test it with a dedicated thread pool.
+            RemoteExecutor.Invoke(async () =>
+            {
+                const int OneKibibyte = 1 << 10;
+                const int FourKibibytes = OneKibibyte << 2;
+                const int FileSize = 1024;
+
+                using var destinationTempFile = TempFile.Create(CreateArray(FileSize));
+
+                static byte[] CreateArray(int count)
+                {
+                    var result = new byte[count];
+                    const int Seed = 12345;
+                    var random = new Random(Seed);
+                    random.NextBytes(result);
+                    return result;
+                }
+
+                for (int j = 0; j < 100; j++)
+                {
+                    using var fileStream =
+                        new FileStream(
+                            destinationTempFile.Path,
+                            FileMode.Create,
+                            FileAccess.Write,
+                            FileShare.Read,
+                            FourKibibytes,
+                            FileOptions.None);
+                    for (int i = 0; i < FileSize; i++)
+                    {
+                        fileStream.WriteByte(default);
+                        await fileStream.FlushAsync();
+                    }
+                }
             }).Dispose();
         }
 

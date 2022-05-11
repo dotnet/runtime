@@ -202,10 +202,8 @@ emit_byte (MonoDwarfWriter *w, guint8 val)
 static void
 emit_escaped_string (MonoDwarfWriter *w, char *value)
 {
-	int i, len;
-
-	len = strlen (value);
-	for (i = 0; i < len; ++i) {
+	size_t len = (int)strlen (value);
+	for (int i = 0; i < len; ++i) {
 		char c = value [i];
 		if (!(isalnum (c))) {
 			switch (c) {
@@ -619,7 +617,8 @@ mono_dwarf_escape_path (const char *name)
 {
 	if (strchr (name, '\\')) {
 		char *s;
-		int len, i, j;
+		size_t len;
+		int i, j;
 
 		len = strlen (name);
 		s = (char *)g_malloc0 ((len + 1) * 2);
@@ -926,7 +925,7 @@ static char*
 emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 {
 	char *die, *pointer_die, *reference_die;
-	char *full_name, *p;
+	char *full_name;
 	gpointer iter;
 	MonoClassField *field;
 	const char *fdie;
@@ -964,7 +963,7 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 	 * gdb doesn't support namespaces for non-C++ dwarf objects, so use _
 	 * to separate components.
 	 */
-	for (p = full_name; *p; p ++)
+	for (char *p = full_name; *p; p ++)
 		if (*p == '.')
 			*p = '_';
 
@@ -1094,9 +1093,9 @@ emit_class_dwarf_info (MonoDwarfWriter *w, MonoClass *klass, gboolean vtype)
 				p = buf;
 				*p ++= DW_OP_plus_uconst;
 				if (m_class_is_valuetype (klass) && vtype)
-					encode_uleb128 (field->offset - MONO_ABI_SIZEOF (MonoObject), p, &p);
+					encode_uleb128 (m_field_get_offset (field) - MONO_ABI_SIZEOF (MonoObject), p, &p);
 				else
-					encode_uleb128 (field->offset, p, &p);
+					encode_uleb128 (m_field_get_offset (field), p, &p);
 
 				emit_byte (w, p - buf);
 				emit_bytes (w, buf, p - buf);
@@ -1339,10 +1338,10 @@ token_handler (MonoDisHelper *dh, MonoMethod *method, guint32 token)
 		if (method->wrapper_type) {
 			cmethod = (MonoMethod *)data;
 		} else {
-			ERROR_DECL (error);
 			cmethod = mono_get_method_checked (m_class_get_image (method->klass), token, NULL, NULL, error);
 			if (!cmethod)
 				g_error ("Could not load method due to %s", mono_error_get_message (error)); /* FIXME don't swallow the error */
+			mono_error_assert_ok (error);
 		}
 		desc = mono_method_full_name (cmethod, TRUE);
 		res = g_strdup_printf ("<%s>", desc);
@@ -1658,7 +1657,6 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 		/* No debug info, XDEBUG mode */
 		char *name, *dis;
 		const guint8 *ip = header->code;
-		int prev_line, prev_native_offset;
 		int *il_to_line;
 
 		/*
@@ -1681,7 +1679,7 @@ emit_line_number_info (MonoDwarfWriter *w, MonoMethod *method,
 
 		// FIXME: Optimize this
 		while (ip < header->code + header->code_size) {
-			int il_offset = ip - header->code;
+			il_offset = ip - header->code;
 
 			/* Emit IL */
 			w->il_file_line_index ++;

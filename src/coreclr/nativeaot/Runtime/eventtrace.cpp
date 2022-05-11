@@ -2496,8 +2496,8 @@ void ETW::TypeSystemLog::SendObjectAllocatedEvent(Object* pObject)
         // over 10K in size.
         if (size < 10000 && typeLoggingInfo.dwAllocsSkippedForSample < typeLoggingInfo.dwAllocsToSkipPerSample)
         {
-            // Update hash table's copy of type logging info with these values.  Sucks that
-            // we're doing another hash table lookup here.  Could instead have used LookupPtr()
+            // Update hash table's copy of type logging info with these values. Unfortunate that
+            // we're doing another hash table lookup here. Could instead have used LookupPtr()
             // if it gave us back a non-const pointer, and then we could have updated in-place
             AddOrReplaceTypeLoggingInfo(pLoggedTypesFromModule, &typeLoggingInfo);
             if (fCreatedNew)
@@ -4253,7 +4253,7 @@ void ETW::MethodLog::StubInitialized(ULONGLONG ullHelperStartAddress, LPCWSTR pH
 /**********************************************************/
 /* This is called by the runtime when helpers with stubs are initialized */
 /**********************************************************/
-void ETW::MethodLog::StubsInitialized(PVOID* pHelperStartAddresss, PVOID* pHelperNames, LONG lNoOfHelpers)
+void ETW::MethodLog::StubsInitialized(PVOID* pHelperStartAddress, PVOID* pHelperNames, LONG lNoOfHelpers)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -4263,9 +4263,9 @@ void ETW::MethodLog::StubsInitialized(PVOID* pHelperStartAddresss, PVOID* pHelpe
     {
         for (int i = 0; i < lNoOfHelpers; i++)
         {
-            if (pHelperStartAddresss[i])
+            if (pHelperStartAddress[i])
             {
-                StubInitialized((ULONGLONG)pHelperStartAddresss[i], (LPCWSTR)pHelperNames[i]);
+                StubInitialized((ULONGLONG)pHelperStartAddress[i], (LPCWSTR)pHelperNames[i]);
             }
         }
     }

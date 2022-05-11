@@ -581,7 +581,6 @@ struct InlineCandidateInfo : public GuardedDevirtualizationCandidateInfo
     CORINFO_CLASS_HANDLE   clsHandle;
     CORINFO_CONTEXT_HANDLE exactContextHnd;
     GenTree*               retExpr;
-    DWORD                  dwRestrictions;
     unsigned               preexistingSpillTemp;
     unsigned               clsAttr;
     unsigned               methAttr;
@@ -604,7 +603,7 @@ struct LateDevirtualizationInfo
 
 struct InlArgInfo
 {
-    GenTree* argNode;                     // caller node for this argument
+    CallArg* arg;                         // the caller argument
     GenTree* argBashTmpNode;              // tmp node created, if it may be replaced with actual arg
     unsigned argTmpNum;                   // the argument tmp number
     unsigned argIsUsed : 1;               // is this arg used at all?
@@ -668,8 +667,7 @@ struct InlineInfo
         return numberOfGcRefLocals > 0;
     }
 
-    bool     thisDereferencedFirst;
-    unsigned typeContextArg;
+    bool thisDereferencedFirst;
 
 #ifdef FEATURE_SIMD
     bool hasSIMDTypeArgLocalOrReturn;

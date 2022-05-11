@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Security;
 
@@ -831,12 +832,5 @@ namespace System.Data.Common
                 _name = name;
             }
         }
-
-        [GeneratedDllImport(Interop.Libraries.Advapi32, EntryPoint = "CreateWellKnownSid", SetLastError = true, CharSet = CharSet.Unicode)]
-        internal static partial int CreateWellKnownSid(
-            int sidType,
-            byte[]? domainSid,
-            [MarshalAs(UnmanagedType.LPArray, SizeParamIndex = 3)] out byte[] resultSid,
-            ref uint resultSidLength);
     }
 }

@@ -9,7 +9,7 @@ using System.Runtime.Versioning;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class DSACng : DSA
+    public sealed partial class DSACng : DSA, IRuntimeAlgorithm
     {
         /// <summary>
         ///     Create a DSACng algorithm with a random 2048 bit key pair.
@@ -44,16 +44,6 @@ namespace System.Security.Cryptography
 
         public override string SignatureAlgorithm => "DSA";
         public override string? KeyExchangeAlgorithm => null;
-
-        // Need to override since base methods throw a "override me" exception: makes SignData/VerifyData function.
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            CngCommon.HashData(data, offset, count, hashAlgorithm);
-
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            CngCommon.HashData(data, hashAlgorithm);
-
-        protected override bool TryHashData(ReadOnlySpan<byte> source, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            CngCommon.TryHashData(source, destination, hashAlgorithm, out bytesWritten);
 
         private void ForceSetKeySize(int newKeySize)
         {

@@ -36,49 +36,54 @@ namespace System.Numerics.Tests
         [OuterLoop]
         public static void RunParseToStringTests(CultureInfo culture)
         {
-            byte[] tempByteArray1 = new byte[0];
-            using (new ThreadCultureChange(culture))
+            Test();
+            BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);
+            void Test()
             {
-                //default style
-                VerifyDefaultParse(s_random);
-
-                //single NumberStyles
-                VerifyNumberStyles(NumberStyles.None, s_random);
-                VerifyNumberStyles(NumberStyles.AllowLeadingWhite, s_random);
-                VerifyNumberStyles(NumberStyles.AllowTrailingWhite, s_random);
-                VerifyNumberStyles(NumberStyles.AllowLeadingSign, s_random);
-                VerifyNumberStyles(NumberStyles.AllowTrailingSign, s_random);
-                VerifyNumberStyles(NumberStyles.AllowParentheses, s_random);
-                VerifyNumberStyles(NumberStyles.AllowDecimalPoint, s_random);
-                VerifyNumberStyles(NumberStyles.AllowThousands, s_random);
-                VerifyNumberStyles(NumberStyles.AllowExponent, s_random);
-                VerifyNumberStyles(NumberStyles.AllowCurrencySymbol, s_random);
-                VerifyNumberStyles(NumberStyles.AllowHexSpecifier, s_random);
-
-                //composite NumberStyles
-                VerifyNumberStyles(NumberStyles.Integer, s_random);
-                VerifyNumberStyles(NumberStyles.HexNumber, s_random);
-                VerifyNumberStyles(NumberStyles.Number, s_random);
-                VerifyNumberStyles(NumberStyles.Float, s_random);
-                VerifyNumberStyles(NumberStyles.Currency, s_random);
-                VerifyNumberStyles(NumberStyles.Any, s_random);
-
-                //invalid number style
-                // ******InvalidNumberStyles
-                NumberStyles invalid = (NumberStyles)0x7c00;
-                AssertExtensions.Throws<ArgumentException>("style", () =>
+                byte[] tempByteArray1 = new byte[0];
+                using (new ThreadCultureChange(culture))
                 {
-                    BigInteger.Parse("1", invalid).ToString("d");
-                });
-                AssertExtensions.Throws<ArgumentException>("style", () =>
-                {
-                    BigInteger junk;
-                    BigInteger.TryParse("1", invalid, null, out junk);
-                    Assert.Equal("1", junk.ToString("d"));
-                });
+                    //default style
+                    VerifyDefaultParse(s_random);
 
-                //FormatProvider tests
-                RunFormatProviderParseStrings();
+                    //single NumberStyles
+                    VerifyNumberStyles(NumberStyles.None, s_random);
+                    VerifyNumberStyles(NumberStyles.AllowLeadingWhite, s_random);
+                    VerifyNumberStyles(NumberStyles.AllowTrailingWhite, s_random);
+                    VerifyNumberStyles(NumberStyles.AllowLeadingSign, s_random);
+                    VerifyNumberStyles(NumberStyles.AllowTrailingSign, s_random);
+                    VerifyNumberStyles(NumberStyles.AllowParentheses, s_random);
+                    VerifyNumberStyles(NumberStyles.AllowDecimalPoint, s_random);
+                    VerifyNumberStyles(NumberStyles.AllowThousands, s_random);
+                    VerifyNumberStyles(NumberStyles.AllowExponent, s_random);
+                    VerifyNumberStyles(NumberStyles.AllowCurrencySymbol, s_random);
+                    VerifyNumberStyles(NumberStyles.AllowHexSpecifier, s_random);
+
+                    //composite NumberStyles
+                    VerifyNumberStyles(NumberStyles.Integer, s_random);
+                    VerifyNumberStyles(NumberStyles.HexNumber, s_random);
+                    VerifyNumberStyles(NumberStyles.Number, s_random);
+                    VerifyNumberStyles(NumberStyles.Float, s_random);
+                    VerifyNumberStyles(NumberStyles.Currency, s_random);
+                    VerifyNumberStyles(NumberStyles.Any, s_random);
+
+                    //invalid number style
+                    // ******InvalidNumberStyles
+                    NumberStyles invalid = (NumberStyles)0x7c00;
+                    AssertExtensions.Throws<ArgumentException>("style", () =>
+                    {
+                        BigInteger.Parse("1", invalid).ToString("d");
+                    });
+                    AssertExtensions.Throws<ArgumentException>("style", () =>
+                    {
+                        BigInteger junk;
+                        BigInteger.TryParse("1", invalid, null, out junk);
+                        Assert.Equal("1", junk.ToString("d"));
+                    });
+
+                    //FormatProvider tests
+                    RunFormatProviderParseStrings();
+                }
             }
         }
 
@@ -93,16 +98,26 @@ namespace System.Numerics.Tests
         [InlineData("123456789\0", 0, 10, "123456789")]
         public void Parse_Subspan_Success(string input, int offset, int length, string expected)
         {
-            Eval(BigInteger.Parse(input.AsSpan(offset, length)), expected);
-            Assert.True(BigInteger.TryParse(input.AsSpan(offset, length), out BigInteger test));
-            Eval(test, expected);
+            Test();
+            BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);
+            void Test()
+            {
+                Eval(BigInteger.Parse(input.AsSpan(offset, length)), expected);
+                Assert.True(BigInteger.TryParse(input.AsSpan(offset, length), out BigInteger test));
+                Eval(test, expected);
+            }
         }
 
         [Fact]
         public void Parse_EmptySubspan_Fails()
         {
-            Assert.False(BigInteger.TryParse("12345".AsSpan(0, 0), out BigInteger result));
-            Assert.Equal(0, result);
+            Test();
+            BigNumberTools.Utils.RunWithFakeThreshold("s_naiveThreshold", 0, Test);
+            void Test()
+            {
+                Assert.False(BigInteger.TryParse("12345".AsSpan(0, 0), out BigInteger result));
+                Assert.Equal(0, result);
+            }
         }
 
         [Fact]
@@ -879,9 +894,10 @@ namespace System.Numerics.Tests
                 x = -x;
             }
 
+            string actual;
             if (x == 0)
             {
-                Assert.Equal("0", expected);
+                actual = "0";
             }
             else
             {
@@ -892,10 +908,9 @@ namespace System.Numerics.Tests
                     x = x / 10;
                 }
                 number.Reverse();
-                string actual = new string(number.ToArray());
-
-                Assert.Equal(expected, actual);
+                actual = new string(number.ToArray());
             }
+            Assert.Equal(expected, actual);
         }
     }
 }

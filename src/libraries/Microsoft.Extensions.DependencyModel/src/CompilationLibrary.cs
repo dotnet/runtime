@@ -32,10 +32,8 @@ namespace Microsoft.Extensions.DependencyModel
             string? hashPath)
             : base(type, name, version, hash, dependencies, serviceable, path, hashPath)
         {
-            if (assemblies == null)
-            {
-                throw new ArgumentNullException(nameof(assemblies));
-            }
+            ThrowHelper.ThrowIfNull(assemblies);
+
             Assemblies = assemblies.ToArray();
         }
 

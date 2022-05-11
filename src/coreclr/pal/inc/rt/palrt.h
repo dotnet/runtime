@@ -950,6 +950,7 @@ typedef VOID (NTAPI *WAITORTIMERCALLBACK)(PVOID, BOOLEAN);
 #define PROCESSOR_ARCHITECTURE_IA32_ON_WIN64    10
 #define PROCESSOR_ARCHITECTURE_NEUTRAL          11
 #define PROCESSOR_ARCHITECTURE_ARM64            12
+#define PROCESSOR_ARCHITECTURE_LOONGARCH64      13
 
 #define PROCESSOR_ARCHITECTURE_UNKNOWN 0xFFFF
 
@@ -1213,6 +1214,24 @@ typedef struct _DISPATCHER_CONTEXT {
     PVOID HandlerData;
     PVOID HistoryTable;
     BOOLEAN ControlPcIsUnwound;
+} DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
+
+#elif defined(HOST_LOONGARCH64)
+
+typedef struct _DISPATCHER_CONTEXT {
+    ULONG64 ControlPc;
+    ULONG64 ImageBase;
+    PRUNTIME_FUNCTION FunctionEntry;
+    ULONG64 EstablisherFrame;
+    ULONG64 TargetPc;
+    PCONTEXT ContextRecord;
+    PEXCEPTION_ROUTINE LanguageHandler;
+    PVOID HandlerData;
+    PVOID HistoryTable;
+    ULONG64 ScopeIndex;
+    BOOLEAN ControlPcIsUnwound;
+    PBYTE  NonVolatileRegisters;
+    ULONG64 Reserved;
 } DISPATCHER_CONTEXT, *PDISPATCHER_CONTEXT;
 
 #elif defined(HOST_S390X)

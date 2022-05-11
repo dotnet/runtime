@@ -30,12 +30,11 @@ namespace System.Composition.Hosting.Core
         /// <returns>The composed object graph.</returns>
         public static object Run(LifetimeContext outermostLifetimeContext, CompositeActivator compositionRootActivator)
         {
-            if (outermostLifetimeContext == null)
+            if (outermostLifetimeContext is null)
             {
                 throw new ArgumentNullException(nameof(outermostLifetimeContext));
             }
-
-            if (compositionRootActivator == null)
+            if (compositionRootActivator is null)
             {
                 throw new ArgumentNullException(nameof(compositionRootActivator));
             }
@@ -55,8 +54,10 @@ namespace System.Composition.Hosting.Core
         /// <param name="action">Action to run.</param>
         public void AddNonPrerequisiteAction(Action action)
         {
-            if (action == null)
+            if (action is null)
+            {
                 throw new ArgumentNullException(nameof(action));
+            }
 
             if (_nonPrerequisiteActions == null)
                 _nonPrerequisiteActions = new List<Action>();
@@ -71,7 +72,7 @@ namespace System.Composition.Hosting.Core
         /// <param name="action">Action to run.</param>
         public void AddPostCompositionAction(Action action)
         {
-            if (action == null)
+            if (action is null)
             {
                 throw new ArgumentNullException(nameof(action));
             }

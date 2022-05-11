@@ -614,7 +614,6 @@ typedef struct _DacGlobals
 #endif // TARGET_ARM
 
     ULONG fn__ThePreStubPatchLabel;
-    ULONG fn__PrecodeFixupThunk;
 #ifdef FEATURE_COMINTEROP
     ULONG fn__Unknown_AddRef;
     ULONG fn__Unknown_AddRefSpecial;
@@ -1612,7 +1611,7 @@ public:
         return DacGlobalBase() + *m_rvaPtr;
     }
 
-    // This is only testing the the pointer memory is available but does not verify
+    // This is only testing the pointer memory is available but does not verify
     // the memory that it points to.
     //
     bool IsValidPtr(void) const

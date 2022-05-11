@@ -18,7 +18,7 @@ namespace System.Security.Cryptography.X509Certificates
         }
 
         public X509Extension(Oid oid, byte[] rawData, bool critical)
-            : this(oid, rawData.AsSpanParameter(nameof(rawData)), critical)
+            : this(oid, (ReadOnlySpan<byte>)(rawData ?? throw new ArgumentNullException(nameof(rawData))), critical)
         {
         }
 
@@ -38,7 +38,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Extension(Oid oid, ReadOnlySpan<byte> rawData, bool critical)
             : base(oid, rawData)
         {
-            if (base.Oid == null || base.Oid.Value == null)
+            if (base.Oid?.Value == null)
                 throw new ArgumentNullException(nameof(oid));
             if (base.Oid.Value.Length == 0)
                 throw new ArgumentException(SR.Format(SR.Arg_EmptyOrNullString_Named, "oid.Value"), nameof(oid));
@@ -72,8 +72,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public override void CopyFrom(AsnEncodedData asnEncodedData)
         {
-            if (asnEncodedData == null)
-                throw new ArgumentNullException(nameof(asnEncodedData));
+            ArgumentNullException.ThrowIfNull(asnEncodedData);
 
             X509Extension? extension = asnEncodedData as X509Extension;
             if (extension == null)

@@ -8,7 +8,7 @@ namespace Microsoft.CSharp
 {
     internal sealed partial class CSharpCodeGenerator
     {
-        private CompilerResults FromFileBatch(CompilerParameters options, string[] fileNames)
+        private static CompilerResults FromFileBatch(CompilerParameters options, string[] fileNames)
         {
             throw new PlatformNotSupportedException();
         }

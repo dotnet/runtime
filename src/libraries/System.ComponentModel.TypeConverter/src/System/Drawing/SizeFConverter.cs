@@ -17,7 +17,7 @@ namespace System.Drawing
             return sourceType == typeof(string) || base.CanConvertFrom(context, sourceType);
         }
 
-        public override bool CanConvertTo(ITypeDescriptorContext? context, Type? destinationType)
+        public override bool CanConvertTo(ITypeDescriptorContext? context, [NotNullWhen(true)] Type? destinationType)
         {
             return destinationType == typeof(InstanceDescriptor) || base.CanConvertTo(context, destinationType);
         }
@@ -60,10 +60,7 @@ namespace System.Drawing
 
         public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
-            if (destinationType == null)
-            {
-                throw new ArgumentNullException(nameof(destinationType));
-            }
+            ArgumentNullException.ThrowIfNull(destinationType);
 
             if (value is SizeF size)
             {
@@ -98,10 +95,7 @@ namespace System.Drawing
 
         public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
-            if (propertyValues == null)
-            {
-                throw new ArgumentNullException(nameof(propertyValues));
-            }
+            ArgumentNullException.ThrowIfNull(propertyValues);
 
             object? width = propertyValues["Width"];
             object? height = propertyValues["Height"];

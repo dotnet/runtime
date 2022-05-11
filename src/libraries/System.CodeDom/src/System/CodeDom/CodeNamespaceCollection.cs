@@ -29,7 +29,7 @@ namespace System.CodeDom
 
         public void AddRange(CodeNamespace[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -42,7 +42,7 @@ namespace System.CodeDom
 
         public void AddRange(CodeNamespaceCollection value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

@@ -10,8 +10,7 @@ namespace System.Security.Cryptography
     {
         public override byte[] DeriveKeyMaterial(ECDiffieHellmanPublicKey otherPartyPublicKey)
         {
-            if (otherPartyPublicKey == null)
-                throw new ArgumentNullException(nameof(otherPartyPublicKey));
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
 
             if (otherPartyPublicKey is ECDiffieHellmanCngPublicKey otherKey)
             {
@@ -42,8 +41,8 @@ namespace System.Security.Cryptography
 
         public byte[] DeriveKeyMaterial(CngKey otherPartyPublicKey)
         {
-            if (otherPartyPublicKey == null)
-                throw new ArgumentNullException(nameof(otherPartyPublicKey));
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+
             if (otherPartyPublicKey.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(otherPartyPublicKey));
             if (otherPartyPublicKey.KeySize != KeySize)
@@ -98,8 +97,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public SafeNCryptSecretHandle DeriveSecretAgreementHandle(ECDiffieHellmanPublicKey otherPartyPublicKey)
         {
-            if (otherPartyPublicKey == null)
-                throw new ArgumentNullException(nameof(otherPartyPublicKey));
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
 
             if (otherPartyPublicKey is ECDiffieHellmanCngPublicKey otherKey)
             {
@@ -128,8 +126,8 @@ namespace System.Security.Cryptography
         /// </summary>
         public SafeNCryptSecretHandle DeriveSecretAgreementHandle(CngKey otherPartyPublicKey)
         {
-            if (otherPartyPublicKey == null)
-                throw new ArgumentNullException(nameof(otherPartyPublicKey));
+            ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+
             if (otherPartyPublicKey.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(otherPartyPublicKey));
             if (otherPartyPublicKey.KeySize != KeySize)

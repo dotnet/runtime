@@ -23,14 +23,8 @@ namespace System.Net
 
         public void Add(Uri uriPrefix, string authType, NetworkCredential cred)
         {
-            if (uriPrefix == null)
-            {
-                throw new ArgumentNullException(nameof(uriPrefix));
-            }
-            if (authType == null)
-            {
-                throw new ArgumentNullException(nameof(authType));
-            }
+            ArgumentNullException.ThrowIfNull(uriPrefix);
+            ArgumentNullException.ThrowIfNull(authType);
 
             if ((cred is SystemNetworkCredential)
                 && !((string.Equals(authType, NegotiationInfoClass.NTLM, StringComparison.OrdinalIgnoreCase))
@@ -143,14 +137,8 @@ namespace System.Net
 
         public NetworkCredential? GetCredential(Uri uriPrefix, string authType)
         {
-            if (uriPrefix == null)
-            {
-                throw new ArgumentNullException(nameof(uriPrefix));
-            }
-            if (authType == null)
-            {
-                throw new ArgumentNullException(nameof(authType));
-            }
+            ArgumentNullException.ThrowIfNull(uriPrefix);
+            ArgumentNullException.ThrowIfNull(authType);
 
             if (_cache == null)
             {

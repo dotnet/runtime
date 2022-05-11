@@ -1,0 +1,41 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Library</OutputType>
+    <TargetFrameworks>netstandard2.0;netcoreapp3.1</TargetFrameworks>
+    <RootNamespace>Microsoft.Diagnostics.NETCore.Client</RootNamespace>
+    <Description>.NET Core Diagnostics Client Library</Description>
+    <VersionPrefix>0.2.0</VersionPrefix>
+    <IsPackable>true</IsPackable>
+    <PackageTags>Diagnostic</PackageTags>
+    <PackageReleaseNotes>$(Description)</PackageReleaseNotes>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <IncludeSymbols>true</IncludeSymbols>
+    <IsShipping>true</IsShipping>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(GitHubRepositoryName)' == 'runtime'">
+    <DefineConstants>$(DefineConstants);DIAGNOSTICS_RUNTIME</DefineConstants>
+    <NoWarn>CS1591,CS8073,CS0162</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Bcl.AsyncInterfaces" Version="$(MicrosoftBclAsyncInterfacesVersion)" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="$(MicrosoftExtensionsLoggingVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="dotnet-counters" />
+    <InternalsVisibleTo Include="dotnet-dsrouter" />
+    <InternalsVisibleTo Include="dotnet-monitor" />
+    <InternalsVisibleTo Include="dotnet-trace" />
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.Monitoring" />
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.Monitoring.EventPipe" />
+    <!-- Temporary until Diagnostic Apis are finalized-->
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.Monitoring.WebApi" />
+    <InternalsVisibleTo Include="Microsoft.Diagnostics.NETCore.Client.UnitTests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Condition="'$(GitHubRepositoryName)' == 'runtime'" Include="**/*.cs" />
+  </ItemGroup>
+</Project>

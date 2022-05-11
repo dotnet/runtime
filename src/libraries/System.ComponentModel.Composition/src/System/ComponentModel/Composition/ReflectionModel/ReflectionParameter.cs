@@ -13,10 +13,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionParameter(ParameterInfo parameter)
         {
-            if (parameter == null)
-            {
-                throw new ArgumentNullException(nameof(parameter));
-            }
+            ArgumentNullException.ThrowIfNull(parameter);
 
             _parameter = parameter;
         }

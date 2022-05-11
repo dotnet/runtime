@@ -16,10 +16,7 @@ namespace System.Xml.Serialization
             this Type targetType,
             object? data, out object? returnValue)
         {
-            if (targetType == null)
-            {
-                throw new ArgumentNullException(nameof(targetType));
-            }
+            ArgumentNullException.ThrowIfNull(targetType);
 
             returnValue = null;
 

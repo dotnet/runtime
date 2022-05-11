@@ -36,10 +36,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            if (pbeParameters == null)
-            {
-                throw new ArgumentNullException(nameof(pbeParameters));
-            }
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,

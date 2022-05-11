@@ -46,8 +46,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static byte[] EncodeExtension(OidCollection enhancedKeyUsages)
         {
-            if (enhancedKeyUsages == null)
-                throw new ArgumentNullException(nameof(enhancedKeyUsages));
+            ArgumentNullException.ThrowIfNull(enhancedKeyUsages);
+
             return X509Pal.Instance.EncodeX509EnhancedKeyUsageExtension(enhancedKeyUsages);
         }
 

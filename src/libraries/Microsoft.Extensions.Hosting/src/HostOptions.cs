@@ -15,7 +15,7 @@ namespace Microsoft.Extensions.Hosting
         /// <summary>
         /// The default timeout for <see cref="IHost.StopAsync(System.Threading.CancellationToken)"/>.
         /// </summary>
-        public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(5);
+        public TimeSpan ShutdownTimeout { get; set; } = TimeSpan.FromSeconds(30);
 
         /// <summary>
         /// The behavior the <see cref="IHost"/> will follow when any of

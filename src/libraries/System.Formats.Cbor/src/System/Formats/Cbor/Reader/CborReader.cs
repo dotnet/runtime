@@ -66,9 +66,9 @@ namespace System.Formats.Cbor
         /// <summary>Reads the next CBOR data item, returning a <see cref="ReadOnlyMemory{T}" /> view of the encoded value. For indefinite length encodings this includes the break byte.</summary>
         /// <param name="disableConformanceModeChecks"><see langword="true" /> to disable conformance mode validation for the read value, equivalent to using <see cref="CborConformanceMode.Lax" />; otherwise, <see langword="false" />.</param>
         /// <returns>A view of the encoded value as a contiguous region of memory.</returns>
-        /// <exception cref="CborContentException">The data item is not a valid CBOR data item encoding.
-        /// -or-
-        /// The CBOR encoding is not valid under the current conformance mode.</exception>
+        /// <exception cref="CborContentException"><para>The data item is not a valid CBOR data item encoding.</para>
+        /// <para>-or-</para>
+        /// <para>The CBOR encoding is not valid under the current conformance mode.</para></exception>
         public ReadOnlyMemory<byte> ReadEncodedValue(bool disableConformanceModeChecks = false)
         {
             // keep a snapshot of the current offset

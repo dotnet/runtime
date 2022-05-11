@@ -61,7 +61,7 @@ namespace CoreclrTestLib
         public static extern bool Process32NextW(IntPtr snapshot, ref ProcessEntry32W entry);
     }
 
-    static class libproc
+    static class @libproc
     {
         [DllImport(nameof(libproc))]
         private static extern int proc_listchildpids(int ppid, int[] buffer, int byteSize);

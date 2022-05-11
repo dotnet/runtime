@@ -305,7 +305,7 @@ namespace Microsoft.Extensions.DependencyInjection.ServiceLookup
             }
         }
 
-        private CallSiteResultCacheLocation GetCommonCacheLocation(CallSiteResultCacheLocation locationA, CallSiteResultCacheLocation locationB)
+        private static CallSiteResultCacheLocation GetCommonCacheLocation(CallSiteResultCacheLocation locationA, CallSiteResultCacheLocation locationB)
         {
             return (CallSiteResultCacheLocation)Math.Max((int)locationA, (int)locationB);
         }

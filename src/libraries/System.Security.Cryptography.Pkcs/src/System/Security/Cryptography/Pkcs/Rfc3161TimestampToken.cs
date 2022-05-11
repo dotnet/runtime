@@ -124,7 +124,7 @@ namespace System.Security.Cryptography.Pkcs
             [NotNullWhen(true)] out X509Certificate2? signerCertificate,
             X509Certificate2Collection? extraCandidates = null)
         {
-            if (hashAlgorithmId == null)
+            if (hashAlgorithmId is null)
             {
                 throw new ArgumentNullException(nameof(hashAlgorithmId));
             }
@@ -156,7 +156,7 @@ namespace System.Security.Cryptography.Pkcs
             [NotNullWhen(true)] out X509Certificate2? signerCertificate,
             X509Certificate2Collection? extraCandidates = null)
         {
-            if (signerInfo == null)
+            if (signerInfo is null)
             {
                 throw new ArgumentNullException(nameof(signerInfo));
             }

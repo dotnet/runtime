@@ -39,17 +39,15 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Satisfied(CompositionContract contract, ExportDescriptorPromise target, bool isPrerequisite, object site)
         {
-            if (contract == null)
+            if (contract is null)
             {
                 throw new ArgumentNullException(nameof(contract));
             }
-
-            if (target == null)
+            if (target is null)
             {
                 throw new ArgumentNullException(nameof(target));
             }
-
-            if (site == null)
+            if (site is null)
             {
                 throw new ArgumentNullException(nameof(site));
             }
@@ -66,12 +64,11 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Missing(CompositionContract contract, object site)
         {
-            if (contract == null)
+            if (contract is null)
             {
                 throw new ArgumentNullException(nameof(contract));
             }
-
-            if (site == null)
+            if (site is null)
             {
                 throw new ArgumentNullException(nameof(site));
             }
@@ -89,17 +86,15 @@ namespace System.Composition.Hosting.Core
         /// <param name="contract">The contract required by the dependency.</param>
         public static CompositionDependency Oversupplied(CompositionContract contract, IEnumerable<ExportDescriptorPromise> targets, object site)
         {
-            if (contract == null)
+            if (contract is null)
             {
                 throw new ArgumentNullException(nameof(contract));
             }
-
-            if (targets == null)
+            if (targets is null)
             {
                 throw new ArgumentNullException(nameof(targets));
             }
-
-            if (site == null)
+            if (site is null)
             {
                 throw new ArgumentNullException(nameof(site));
             }

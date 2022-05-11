@@ -223,7 +223,7 @@ namespace System.Collections
 
         // Note: this constructor is a bogus constructor that does nothing
         // and is for use only with SyncHashtable.
-        internal Hashtable(bool trash)
+        internal Hashtable(bool _)
         {
         }
 
@@ -343,10 +343,9 @@ namespace System.Collections
 
         [Obsolete("This constructor has been deprecated. Use Hashtable(IDictionary, float, IEqualityComparer) instead.")]
         public Hashtable(IDictionary d, float loadFactor, IHashCodeProvider? hcp, IComparer? comparer)
-            : this(d != null ? d.Count : 0, loadFactor, hcp, comparer)
+            : this(d?.Count ?? 0, loadFactor, hcp, comparer)
         {
-            if (d == null)
-                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
+            ArgumentNullException.ThrowIfNull(d);
 
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext())
@@ -354,10 +353,9 @@ namespace System.Collections
         }
 
         public Hashtable(IDictionary d, float loadFactor, IEqualityComparer? equalityComparer)
-            : this(d != null ? d.Count : 0, loadFactor, equalityComparer)
+            : this(d?.Count ?? 0, loadFactor, equalityComparer)
         {
-            if (d == null)
-                throw new ArgumentNullException(nameof(d), SR.ArgumentNull_Dictionary);
+            ArgumentNullException.ThrowIfNull(d);
 
             IDictionaryEnumerator e = d.GetEnumerator();
             while (e.MoveNext())
@@ -474,10 +472,7 @@ namespace System.Collections
         //
         public virtual bool ContainsKey(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             // Take a snapshot of buckets, in case another thread resizes table
             Bucket[] lbuckets = _buckets;
@@ -572,8 +567,8 @@ namespace System.Collections
         // a given index.  Note that this only copies values, and not keys.
         public virtual void CopyTo(Array array, int arrayIndex)
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Array);
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (arrayIndex < 0)
@@ -631,11 +626,7 @@ namespace System.Collections
         {
             get
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-                }
-
+                ArgumentNullException.ThrowIfNull(key);
 
                 // Take a snapshot of buckets, in case another thread does a resize
                 Bucket[] lbuckets = _buckets;
@@ -839,10 +830,7 @@ namespace System.Collections
         // exists in the hashtable, an exception is thrown.
         private void Insert(object key, object? nvalue, bool add)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             if (_count >= _loadsize)
             {
@@ -980,10 +968,7 @@ namespace System.Collections
         //
         public virtual void Remove(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             Debug.Assert(!_isWriterInProgress, "Race condition detected in usages of Hashtable - multiple threads appear to be writing to a Hashtable instance simultaneously!  Don't do that - use Hashtable.Synchronized.");
 
@@ -1031,17 +1016,14 @@ namespace System.Collections
         //
         public static Hashtable Synchronized(Hashtable table)
         {
-            if (table == null)
-                throw new ArgumentNullException(nameof(table));
+            ArgumentNullException.ThrowIfNull(table);
+
             return new SyncHashtable(table);
         }
 
         public virtual void GetObjectData(SerializationInfo info, StreamingContext context)
         {
-            if (info == null)
-            {
-                throw new ArgumentNullException(nameof(info));
-            }
+            ArgumentNullException.ThrowIfNull(info);
 
             // This is imperfect - it only works well if all other writes are
             // also using our synchronized wrapper.  But it's still a good idea.
@@ -1205,8 +1187,8 @@ namespace System.Collections
 
             public void CopyTo(Array array, int arrayIndex)
             {
-                if (array == null)
-                    throw new ArgumentNullException(nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 if (arrayIndex < 0)
@@ -1241,8 +1223,8 @@ namespace System.Collections
 
             public void CopyTo(Array array, int arrayIndex)
             {
-                if (array == null)
-                    throw new ArgumentNullException(nameof(array));
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (array.Rank != 1)
                     throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
                 if (arrayIndex < 0)
@@ -1329,10 +1311,8 @@ namespace System.Collections
 
             public override bool ContainsKey(object key)
             {
-                if (key == null)
-                {
-                    throw new ArgumentNullException(nameof(key), SR.ArgumentNull_Key);
-                }
+                ArgumentNullException.ThrowIfNull(key);
+
                 return _table.ContainsKey(key);
             }
 
@@ -1525,10 +1505,7 @@ namespace System.Collections
 
             public HashtableDebugView(Hashtable hashtable)
             {
-                if (hashtable == null)
-                {
-                    throw new ArgumentNullException(nameof(hashtable));
-                }
+                ArgumentNullException.ThrowIfNull(hashtable);
 
                 _hashtable = hashtable;
             }

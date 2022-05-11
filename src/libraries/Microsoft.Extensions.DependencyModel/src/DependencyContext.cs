@@ -22,26 +22,11 @@ namespace Microsoft.Extensions.DependencyModel
             IEnumerable<RuntimeLibrary> runtimeLibraries,
             IEnumerable<RuntimeFallbacks> runtimeGraph)
         {
-            if (target == null)
-            {
-                throw new ArgumentNullException(nameof(target));
-            }
-            if (compilationOptions == null)
-            {
-                throw new ArgumentNullException(nameof(compilationOptions));
-            }
-            if (compileLibraries == null)
-            {
-                throw new ArgumentNullException(nameof(compileLibraries));
-            }
-            if (runtimeLibraries == null)
-            {
-                throw new ArgumentNullException(nameof(runtimeLibraries));
-            }
-            if (runtimeGraph == null)
-            {
-                throw new ArgumentNullException(nameof(runtimeGraph));
-            }
+            ThrowHelper.ThrowIfNull(target);
+            ThrowHelper.ThrowIfNull(compilationOptions);
+            ThrowHelper.ThrowIfNull(compileLibraries);
+            ThrowHelper.ThrowIfNull(runtimeLibraries);
+            ThrowHelper.ThrowIfNull(runtimeGraph);
 
             Target = target;
             CompilationOptions = compilationOptions;
@@ -65,10 +50,7 @@ namespace Microsoft.Extensions.DependencyModel
 
         public DependencyContext Merge(DependencyContext other)
         {
-            if (other == null)
-            {
-                throw new ArgumentNullException(nameof(other));
-            }
+            ThrowHelper.ThrowIfNull(other);
 
             return new DependencyContext(
                 Target,

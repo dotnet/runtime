@@ -29,10 +29,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         public static X509Certificate2 CopyWithPrivateKey(this X509Certificate2 certificate, RSA privateKey)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
-            if (privateKey == null)
-                throw new ArgumentNullException(nameof(privateKey));
+            ArgumentNullException.ThrowIfNull(certificate);
+            ArgumentNullException.ThrowIfNull(privateKey);
 
             if (certificate.HasPrivateKey)
                 throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);

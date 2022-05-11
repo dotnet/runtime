@@ -110,10 +110,7 @@ namespace System.Net.Http
 
         public virtual void Add(HttpContent content)
         {
-            if (content == null)
-            {
-                throw new ArgumentNullException(nameof(content));
-            }
+            ArgumentNullException.ThrowIfNull(content);
 
             _nestedContent.Add(content);
         }

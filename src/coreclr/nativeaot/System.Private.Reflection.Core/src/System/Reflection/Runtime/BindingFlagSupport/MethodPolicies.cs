@@ -38,7 +38,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
 
         public sealed override bool ImplicitlyOverrides(MethodInfo baseMember, MethodInfo derivedMember)
         {
-            // TODO (https://github.com/dotnet/corert/issues/1896) Comparing signatures is lame. The runtime and/or toolchain should have a way of sharing this info.
+            // TODO (https://github.com/dotnet/corert/issues/1896) Comparing signatures is fragile. The runtime and/or toolchain should have a way of sharing this info.
             return AreNamesAndSignaturesEqual(baseMember, derivedMember);
         }
 

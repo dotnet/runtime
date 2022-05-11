@@ -106,7 +106,7 @@ public class RuntimeConfigParserTask : Task
 
     /// Just write the dictionary out to a blob as a count followed by
     /// a length-prefixed UTF8 encoding of each key and value
-    private void ConvertDictionaryToBlob(IReadOnlyDictionary<string, string> properties, BlobBuilder builder)
+    private static void ConvertDictionaryToBlob(IReadOnlyDictionary<string, string> properties, BlobBuilder builder)
     {
         int count = properties.Count;
 

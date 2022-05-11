@@ -18,11 +18,15 @@ namespace Internal.TypeSystem
     {
         /// <summary>
         /// Resolves interface method '<paramref name="interfaceMethod"/>' to a method on '<paramref name="currentType"/>'
-        /// that implements the the method.
+        /// that implements the method.
         /// </summary>
         public abstract MethodDesc ResolveInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);
 
         public abstract MethodDesc ResolveVariantInterfaceMethodToVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);
+
+        public abstract MethodDesc ResolveInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);
+
+        public abstract MethodDesc ResolveVariantInterfaceMethodToStaticVirtualMethodOnType(MethodDesc interfaceMethod, TypeDesc currentType);
 
         public abstract DefaultInterfaceMethodResolution ResolveInterfaceMethodToDefaultImplementationOnType(MethodDesc interfaceMethod, TypeDesc currentType, out MethodDesc impl);
 

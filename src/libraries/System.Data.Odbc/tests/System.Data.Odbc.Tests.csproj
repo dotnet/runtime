@@ -4,7 +4,8 @@
   </PropertyGroup>
   <!-- DesignTimeBuild requires all the TargetFramework Derived Properties to not be present in the first property group. -->
   <PropertyGroup>
-    <DefineConstants Condition="'$(TargetsWindows)' == 'true' or $([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(DefineConstants);TargetsWindows</DefineConstants>
+    <TargetPlatformIdentifier>$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)'))</TargetPlatformIdentifier>
+    <DefineConstants Condition="'$(TargetPlatformIdentifier)' == 'windows' or $([MSBuild]::GetTargetFrameworkIdentifier('$(TargetFramework)')) == '.NETFramework'">$(DefineConstants);TargetsWindows</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="DependencyCheckTest.cs" />
@@ -18,28 +19,28 @@
     <Compile Include="TestCommon\CheckConnStrSetupFactAttribute.cs" />
     <Compile Include="OdbcParameterTests.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsLinux)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Linux'">
     <Compile Include="$(CommonPath)Interop\Linux\Interop.Libraries.cs"
              Link="Common\Interop\Linux\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsOSX)' == 'true' or '$(TargetsiOS)' == 'true' or '$(TargetstvOS)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'OSX' or '$(TargetPlatformIdentifier)' == 'iOS' or '$(TargetPlatformIdentifier)' == 'tvOS'">
     <Compile Include="$(CommonPath)Interop\OSX\Interop.Libraries.cs"
              Link="Common\Interop\OSX\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsFreeBSD)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'FreeBSD'">
     <Compile Include="$(CommonPath)Interop\FreeBSD\Interop.Libraries.cs"
              Link="Common\Interop\FreeBSD\Interop.Libraries.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows' or '$(TargetFrameworkIdentifier)' == '.NETFramework'">
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="ConnectionStrings.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' != 'true' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' != 'windows' and '$(TargetFrameworkIdentifier)' != '.NETFramework'">
     <Compile Include="ConnectionStrings.Unix.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">

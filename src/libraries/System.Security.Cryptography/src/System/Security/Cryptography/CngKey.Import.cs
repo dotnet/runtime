@@ -107,8 +107,7 @@ namespace System.Security.Cryptography
             CngKeyBlobFormat format,
             CngProvider provider)
         {
-            if (keyBlob == null)
-                throw new ArgumentNullException(nameof(keyBlob));
+            ArgumentNullException.ThrowIfNull(keyBlob);
 
             return Import(new ReadOnlySpan<byte>(keyBlob), curveName, format, provider);
         }
@@ -119,10 +118,8 @@ namespace System.Security.Cryptography
             CngKeyBlobFormat format,
             CngProvider provider)
         {
-            if (format == null)
-                throw new ArgumentNullException(nameof(format));
-            if (provider == null)
-                throw new ArgumentNullException(nameof(provider));
+            ArgumentNullException.ThrowIfNull(format);
+            ArgumentNullException.ThrowIfNull(provider);
 
             SafeNCryptProviderHandle providerHandle = provider.OpenStorageProvider();
             SafeNCryptKeyHandle? keyHandle;

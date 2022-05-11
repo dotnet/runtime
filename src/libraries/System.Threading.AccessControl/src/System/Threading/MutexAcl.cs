@@ -117,10 +117,8 @@ namespace System.Threading
 
         private static OpenExistingResult OpenExistingWorker(string name, MutexRights rights, out Mutex? result)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentException(SR.Argument_EmptyName, nameof(name));

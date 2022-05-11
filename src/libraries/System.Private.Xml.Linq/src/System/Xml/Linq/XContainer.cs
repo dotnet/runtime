@@ -28,7 +28,8 @@ namespace System.Xml.Linq
 
         internal XContainer(XContainer other)
         {
-            if (other == null) throw new ArgumentNullException(nameof(other));
+            ArgumentNullException.ThrowIfNull(other);
+
             if (other.content is string)
             {
                 this.content = other.content;

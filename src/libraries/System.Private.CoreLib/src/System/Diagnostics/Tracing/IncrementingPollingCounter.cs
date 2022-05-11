@@ -22,9 +22,6 @@ namespace System.Diagnostics.Tracing
     /// Unlike IncrementingEventCounter, this takes in a polling callback that it can call to update
     /// its own metric periodically.
     /// </summary>
-#if NETCOREAPP
-    [UnsupportedOSPlatform("browser")]
-#endif
     public partial class IncrementingPollingCounter : DiagnosticCounter
     {
         /// <summary>
@@ -37,8 +34,10 @@ namespace System.Diagnostics.Tracing
         /// <param name="totalValueProvider">The delegate to invoke to get the total value for this counter.</param>
         public IncrementingPollingCounter(string name, EventSource eventSource, Func<double> totalValueProvider) : base(name, eventSource)
         {
-            if (totalValueProvider == null)
+            if (totalValueProvider is null)
+            {
                 throw new ArgumentNullException(nameof(totalValueProvider));
+            }
 
             _totalValueProvider = totalValueProvider;
             Publish();

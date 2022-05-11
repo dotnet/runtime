@@ -76,10 +76,7 @@ namespace System.Net.Http
             get => _underlyingHandler.CookieContainer;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 _underlyingHandler.CookieContainer = value;
             }

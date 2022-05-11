@@ -1383,7 +1383,7 @@ namespace System.Data
 
         internal void CheckColumnConstraint(DataRow row, DataRowAction action)
         {
-            if (_table!.UpdatingCurrent(row, action))
+            if (DataTable.UpdatingCurrent(row, action))
             {
                 CheckNullable(row);
                 CheckMaxLength(row);
@@ -1639,14 +1639,14 @@ namespace System.Data
             dataType == typeof(SqlInt16) ||
             dataType == typeof(SqlDecimal);
 
-        private bool IsColumnMappingValid(StorageType typeCode, MappingType mapping) =>
+        private static bool IsColumnMappingValid(StorageType typeCode, MappingType mapping) =>
             !((mapping != MappingType.Element) && DataStorage.IsTypeCustomType(typeCode));
 
         internal bool IsCustomType => _storage != null ?
             _storage._isCustomDefinedType :
             DataStorage.IsTypeCustomType(DataType);
 
-        internal bool IsValueCustomTypeInstance(object value) =>
+        internal static bool IsValueCustomTypeInstance(object value) =>
             // if instance is not a storage supported type (built in or SQL types)
             (DataStorage.IsTypeCustomType(value.GetType()) && !(value is Type));
 
@@ -1782,8 +1782,6 @@ namespace System.Data
         }
 
         private bool ShouldSerializeDefaultValue() => !DefaultValueIsNull;
-
-        internal void OnSetDataSet() { }
 
         // Returns the <see cref='System.Data.DataColumn.Expression'/> of the column, if one exists.
         public override string ToString() => _expression == null ?

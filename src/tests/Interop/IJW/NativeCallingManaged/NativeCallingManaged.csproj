@@ -16,8 +16,8 @@
     <Compile Include="NativeCallingManaged.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../IjwNativeCallingManagedDll/CMakeLists.txt" />
-    <ProjectReference Include="../ijwhostmock/CMakeLists.txt" />
+    <CMakeProjectReference Include="../IjwNativeCallingManagedDll/CMakeLists.txt" />
+    <CMakeProjectReference Include="../ijwhostmock/CMakeLists.txt" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
   </ItemGroup>
 </Project>

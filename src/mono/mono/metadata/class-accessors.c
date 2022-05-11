@@ -447,6 +447,12 @@ mono_class_set_is_com_object (MonoClass *klass)
 #endif
 }
 
+void
+mono_class_set_is_simd_type (MonoClass *klass, gboolean is_simd)
+{
+	klass->simd_type = is_simd;
+}
+
 MonoType*
 mono_class_gtd_get_canonical_inst (MonoClass *klass)
 {
@@ -602,6 +608,7 @@ mono_class_get_metadata_update_info (MonoClass *klass)
 		return (MonoClassMetadataUpdateInfo *)get_pointer_property (klass, PROP_METADATA_UPDATE_INFO);
 	case MONO_CLASS_GINST:
 	case MONO_CLASS_GPARAM:
+	case MONO_CLASS_ARRAY:
 	case MONO_CLASS_POINTER:
 	case MONO_CLASS_GC_FILLER:
 		return NULL;

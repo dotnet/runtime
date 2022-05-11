@@ -35,7 +35,6 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Indicates that this version of runtime supports virtual static members of interfaces.
         /// </summary>
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
 
         /// <summary>
@@ -50,9 +49,7 @@ namespace System.Runtime.CompilerServices
                 case ByRefFields:
                 case UnmanagedSignatureCallingConvention:
                 case DefaultImplementationsOfInterfaces:
-#pragma warning disable CA2252
                 case VirtualStaticsInInterfaces:
-#pragma warning restore CA2252
                     return true;
                 case nameof(IsDynamicCodeSupported):
                     return IsDynamicCodeSupported;

@@ -14,11 +14,11 @@ namespace System.Text.Json.Serialization.Tests
         public virtual async Task InitOnlyProperties(Type type)
         {
             // Init-only property included by default.
-            object obj = await JsonSerializerWrapperForString.DeserializeWrapper(@"{""MyInt"":1}", type);
+            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
             Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
 
             // Init-only properties can be serialized.
-            Assert.Equal(@"{""MyInt"":1}", await JsonSerializerWrapperForString.SerializeWrapper(obj));
+            Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj));
         }
 
         [Theory]
@@ -28,11 +28,11 @@ namespace System.Text.Json.Serialization.Tests
         public async Task NonPublicInitOnlySetter_Without_JsonInclude_Fails(Type type)
         {
             // Non-public init-only property setter ignored.
-            object obj = await JsonSerializerWrapperForString.DeserializeWrapper(@"{""MyInt"":1}", type);
+            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
             Assert.Equal(0, (int)type.GetProperty("MyInt").GetValue(obj));
 
             // Public getter can be used for serialization.
-            Assert.Equal(@"{""MyInt"":0}", await JsonSerializerWrapperForString.SerializeWrapper(obj, type));
+            Assert.Equal(@"{""MyInt"":0}", await Serializer.SerializeWrapper(obj, type));
         }
 
         [Theory]
@@ -42,11 +42,11 @@ namespace System.Text.Json.Serialization.Tests
         public virtual async Task NonPublicInitOnlySetter_With_JsonInclude(Type type)
         {
             // Non-public init-only property setter included with [JsonInclude].
-            object obj = await JsonSerializerWrapperForString.DeserializeWrapper(@"{""MyInt"":1}", type);
+            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
             Assert.Equal(1, (int)type.GetProperty("MyInt").GetValue(obj));
 
             // Init-only properties can be serialized.
-            Assert.Equal(@"{""MyInt"":1}", await JsonSerializerWrapperForString.SerializeWrapper(obj));
+            Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj));
         }
 
         public class ClassWithInitOnlyProperty

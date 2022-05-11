@@ -1927,7 +1927,7 @@ namespace System.Data.OleDb
             _nextAccessorForRetrieval++;
         }
 
-        private int IndexOf(Hashtable hash, string name)
+        private static int IndexOf(Hashtable hash, string name)
         {
             // via case sensitive search, first match with lowest ordinal matches
             object? index = hash[name];

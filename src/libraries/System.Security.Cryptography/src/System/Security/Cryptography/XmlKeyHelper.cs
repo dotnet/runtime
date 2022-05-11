@@ -14,10 +14,7 @@ namespace System.Security.Cryptography
     {
         internal static ParseState ParseDocument(string xmlString)
         {
-            if (xmlString == null)
-            {
-                throw new ArgumentNullException(nameof(xmlString));
-            }
+            ArgumentNullException.ThrowIfNull(xmlString);
 
             try
             {

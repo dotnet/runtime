@@ -23,7 +23,7 @@ class ClassLayout
 
     const unsigned m_isValueClass : 1;
     INDEBUG(unsigned m_gcPtrsInitialized : 1;)
-    // The number of GC pointers in this layout. Since the the maximum size is 2^32-1 the count
+    // The number of GC pointers in this layout. Since the maximum size is 2^32-1 the count
     // can fit in at most 30 bits.
     unsigned m_gcPtrCount : 30;
 
@@ -37,6 +37,9 @@ class ClassLayout
 
     // Class name as reported by ICorJitInfo::getClassName
     INDEBUG(const char* m_className;)
+
+    // Shortened class name as constructed by Compiler::eeGetShortClassName()
+    INDEBUG(const char16_t* m_shortClassName;)
 
     // ClassLayout instances should only be obtained via ClassLayoutTable.
     friend class ClassLayoutTable;
@@ -52,13 +55,16 @@ class ClassLayout
         , m_gcPtrs(nullptr)
 #ifdef DEBUG
         , m_className("block")
+        , m_shortClassName(u"block")
 #endif
     {
     }
 
     static ClassLayout* Create(Compiler* compiler, CORINFO_CLASS_HANDLE classHandle);
 
-    ClassLayout(CORINFO_CLASS_HANDLE classHandle, bool isValueClass, unsigned size DEBUGARG(const char* className))
+    ClassLayout(CORINFO_CLASS_HANDLE classHandle,
+                bool                 isValueClass,
+                unsigned size DEBUGARG(const char* className) DEBUGARG(const char16_t* shortClassName))
         : m_classHandle(classHandle)
         , m_size(size)
         , m_isValueClass(isValueClass)
@@ -69,6 +75,7 @@ class ClassLayout
         , m_gcPtrs(nullptr)
 #ifdef DEBUG
         , m_className(className)
+        , m_shortClassName(shortClassName)
 #endif
     {
         assert(size != 0);
@@ -88,11 +95,18 @@ public:
     }
 
 #ifdef DEBUG
+
     const char* GetClassName() const
     {
         return m_className;
     }
-#endif
+
+    const char16_t* GetShortClassName() const
+    {
+        return m_shortClassName;
+    }
+
+#endif // DEBUG
 
     bool IsValueClass() const
     {

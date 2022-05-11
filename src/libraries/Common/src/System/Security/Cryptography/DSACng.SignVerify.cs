@@ -19,10 +19,7 @@ namespace System.Security.Cryptography
 
         public override byte[] CreateSignature(byte[] rgbHash)
         {
-            if (rgbHash == null)
-            {
-                throw new ArgumentNullException(nameof(rgbHash));
-            }
+            ArgumentNullException.ThrowIfNull(rgbHash);
 
             Span<byte> stackBuf = stackalloc byte[WindowsMaxQSize];
             ReadOnlySpan<byte> source = AdjustHashSizeIfNecessary(rgbHash, stackBuf);
@@ -75,14 +72,8 @@ namespace System.Security.Cryptography
 
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
         {
-            if (rgbHash == null)
-            {
-                throw new ArgumentNullException(nameof(rgbHash));
-            }
-            if (rgbSignature == null)
-            {
-                throw new ArgumentNullException(nameof(rgbSignature));
-            }
+            ArgumentNullException.ThrowIfNull(rgbHash);
+            ArgumentNullException.ThrowIfNull(rgbSignature);
 
             return VerifySignatureCore(rgbHash, rgbSignature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }

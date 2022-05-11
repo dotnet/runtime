@@ -22,8 +22,7 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public RSACng(CngKey key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             if (key.AlgorithmGroup != CngAlgorithmGroup.Rsa)
                 throw new ArgumentException(SR.Cryptography_ArgRSARequiresRSAKey, nameof(key));

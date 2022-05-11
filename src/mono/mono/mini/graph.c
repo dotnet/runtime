@@ -21,7 +21,7 @@
 static char *
 convert_name (const char *str)
 {
-	int i, j, len = strlen (str);
+	size_t i, j, len = strlen (str);
 	char *res = (char *)g_malloc (len * 2);
 
 	j = 0;

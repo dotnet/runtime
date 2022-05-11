@@ -40,6 +40,7 @@ namespace ILCompiler.DependencyAnalysis
         DefaultConstructor,
         TypeHandleForCasting,
         ObjectAllocator,
+        ConstrainedDirectCall,
     }
 
     public partial class ReadyToRunHelperNode : AssemblyStubNode, INodeWithDebugInfo

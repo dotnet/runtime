@@ -14,7 +14,7 @@ namespace System.Collections.Generic.Tests
         [Fact]
         public void Constructor()
         {
-            var builder = new LargeArrayBuilder<T>(initialize: true);
+            var builder = new LargeArrayBuilder<T>();
 
             Assert.Equal(0, builder.Count);
             Assert.Same(Array.Empty<T>(), builder.ToArray());
@@ -24,8 +24,8 @@ namespace System.Collections.Generic.Tests
         [MemberData(nameof(EnumerableData))]
         public void AddCountAndToArray(IEnumerable<T> seed)
         {
-            var builder1 = new LargeArrayBuilder<T>(initialize: true);
-            var builder2 = new LargeArrayBuilder<T>(initialize: true);
+            var builder1 = new LargeArrayBuilder<T>();
+            var builder2 = new LargeArrayBuilder<T>();
 
             int count = 0;
             foreach (T item in seed)
@@ -63,7 +63,7 @@ namespace System.Collections.Generic.Tests
         [MemberData(nameof(EnumerableData))]
         public void AddRange(IEnumerable<T> seed)
         {
-            var builder = new LargeArrayBuilder<T>(initialize: true);
+            var builder = new LargeArrayBuilder<T>();
 
             // Call AddRange multiple times and verify contents w/ each iteration.
             for (int i = 1; i <= 10; i++)
@@ -81,7 +81,7 @@ namespace System.Collections.Generic.Tests
         {
             var array = new T[seed.Count()];
 
-            var builder = new LargeArrayBuilder<T>(initialize: true);
+            var builder = new LargeArrayBuilder<T>();
             builder.AddRange(seed);
             builder.CopyTo(array, index, count);
 

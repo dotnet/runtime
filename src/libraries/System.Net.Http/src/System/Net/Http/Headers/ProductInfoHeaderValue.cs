@@ -28,10 +28,7 @@ namespace System.Net.Http.Headers
 
         public ProductInfoHeaderValue(ProductHeaderValue product)
         {
-            if (product == null)
-            {
-                throw new ArgumentNullException(nameof(product));
-            }
+            ArgumentNullException.ThrowIfNull(product);
 
             _product = product;
         }

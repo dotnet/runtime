@@ -50,8 +50,8 @@ namespace System.Collections.Generic
         // pushed onto the stack in the same order they are read by the enumerator.
         public Stack(IEnumerable<T> collection)
         {
-            if (collection == null)
-                throw new ArgumentNullException(nameof(collection));
+            ArgumentNullException.ThrowIfNull(collection);
+
             _array = EnumerableHelpers.ToArray(collection, out _size);
         }
 
@@ -96,14 +96,11 @@ namespace System.Collections.Generic
         // Copies the stack into an array.
         public void CopyTo(T[] array, int arrayIndex)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - arrayIndex < _size)
@@ -122,10 +119,7 @@ namespace System.Collections.Generic
 
         void ICollection.CopyTo(Array array, int arrayIndex)
         {
-            if (array == null)
-            {
-                throw new ArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (array.Rank != 1)
             {
@@ -139,7 +133,7 @@ namespace System.Collections.Generic
 
             if (arrayIndex < 0 || arrayIndex > array.Length)
             {
-                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(arrayIndex), arrayIndex, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
             }
 
             if (array.Length - arrayIndex < _size)

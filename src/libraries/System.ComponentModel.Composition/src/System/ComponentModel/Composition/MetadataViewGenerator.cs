@@ -90,10 +90,7 @@ namespace System.ComponentModel.Composition
 
         public static MetadataViewFactory GetMetadataViewFactory(Type viewType)
         {
-            if (viewType == null)
-            {
-                throw new ArgumentNullException(nameof(viewType));
-            }
+            ArgumentNullException.ThrowIfNull(viewType);
 
             if (!viewType.IsInterface)
             {
@@ -139,10 +136,8 @@ namespace System.ComponentModel.Composition
 
         public static TMetadataView CreateMetadataView<TMetadataView>(MetadataViewFactory metadataViewFactory, IDictionary<string, object?> metadata)
         {
-            if (metadataViewFactory == null)
-            {
-                throw new ArgumentNullException(nameof(metadataViewFactory));
-            }
+            ArgumentNullException.ThrowIfNull(metadataViewFactory);
+
             // we are simulating the Activator.CreateInstance behavior by wrapping everything in a TargetInvocationException
             try
             {

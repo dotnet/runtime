@@ -1,29 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// For each dynamic assembly there will be two AssemblyBuilder objects: the "internal"
-// AssemblyBuilder object and the "external" AssemblyBuilder object.
-//  1.  The "internal" object is the real assembly object that the VM creates and knows about. However,
-//      you can perform RefEmit operations on it only if you have its granted permission. From the AppDomain
-//      and other "internal" objects like the "internal" ModuleBuilders and runtime types, you can only
-//      get the "internal" objects. This is to prevent low-trust code from getting a hold of the dynamic
-//      AssemblyBuilder/ModuleBuilder/TypeBuilder/MethodBuilder/etc other people have created by simply
-//      enumerating the AppDomain and inject code in it.
-//  2.  The "external" object is merely an wrapper of the "internal" object and all operations on it
-//      are directed to the internal object. This is the one you get by calling DefineDynamicAssembly
-//      on AppDomain and the one you can always perform RefEmit operations on. You can get other "external"
-//      objects from the "external" AssemblyBuilder, ModuleBuilder, TypeBuilder, MethodBuilder, etc. Note
-//      that VM doesn't know about this object. So every time we call into the VM we need to pass in the
-//      "internal" object.
-//
-// "internal" and "external" ModuleBuilders are similar
-
 using System.Collections.Generic;
+using System.Configuration.Assemblies;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.SymbolStore;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Runtime.Loader;
@@ -32,130 +17,21 @@ using System.Threading;
 
 namespace System.Reflection.Emit
 {
-    // When the user calls AppDomain.DefineDynamicAssembly the loader creates a new InternalAssemblyBuilder.
-    // This InternalAssemblyBuilder can be retrieved via a call to Assembly.GetAssemblies() by untrusted code.
-    // In the past, when InternalAssemblyBuilder was AssemblyBuilder, the untrusted user could down cast the
-    // Assembly to an AssemblyBuilder and emit code with the elevated permissions of the trusted code which
-    // originally created the AssemblyBuilder via DefineDynamicAssembly. Today, this can no longer happen
-    // because the Assembly returned via AssemblyGetAssemblies() will be an InternalAssemblyBuilder.
-
-    // Only the caller of DefineDynamicAssembly will get an AssemblyBuilder.
-    // There is a 1-1 relationship between InternalAssemblyBuilder and AssemblyBuilder.
-    // AssemblyBuilder is composed of its InternalAssemblyBuilder.
-    // The AssemblyBuilder data members (e.g. m_foo) were changed to properties which then delegate
-    // the access to the composed InternalAssemblyBuilder. This way, AssemblyBuilder simply wraps
-    // InternalAssemblyBuilder and still operates on InternalAssemblyBuilder members.
-    // This also makes the change transparent to the loader. This is good because most of the complexity
-    // of Assembly building is in the loader code so not touching that code reduces the chance of
-    // introducing new bugs.
-    internal sealed class InternalAssemblyBuilder : RuntimeAssembly
-    {
-        private InternalAssemblyBuilder() { }
-
-        public override bool Equals(object? obj)
-        {
-            if (obj == null)
-            {
-                return false;
-            }
-
-            if (obj is InternalAssemblyBuilder)
-            {
-                return (object)this == obj;
-            }
-
-            return obj.Equals(this);
-        }
-
-        public override int GetHashCode() => base.GetHashCode();
-
-        // Assembly methods that are overridden by AssemblyBuilder should be overridden by InternalAssemblyBuilder too
-        #region Methods inherited from Assembly
-
-        public override string[] GetManifestResourceNames()
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
-        public override FileStream GetFile(string name)
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
-        public override FileStream[] GetFiles(bool getResourceModules)
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        public override Stream? GetManifestResourceStream(Type type, string name)
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        public override Stream? GetManifestResourceStream(string name)
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        public override ManifestResourceInfo? GetManifestResourceInfo(string resourceName)
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        public override string Location => string.Empty;
-
-        [RequiresAssemblyFiles(ThrowingMessageInRAF)]
-        public override string? CodeBase => throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-
-        [RequiresUnreferencedCode("Types might be removed")]
-        public override Type[] GetExportedTypes()
-        {
-            throw new NotSupportedException(SR.NotSupported_DynamicAssembly);
-        }
-
-        public override string ImageRuntimeVersion => Assembly.GetExecutingAssembly().ImageRuntimeVersion;
-
-        #endregion
-    }
-
     public sealed partial class AssemblyBuilder : Assembly
     {
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        private static extern RuntimeModule GetInMemoryAssemblyModule(RuntimeAssembly assembly);
-
         #region Internal Data Members
 
-        // This is only valid in the "external" AssemblyBuilder
-        internal AssemblyBuilderData _assemblyData;
-        private readonly InternalAssemblyBuilder _internalAssemblyBuilder;
-        private ModuleBuilder _manifestModuleBuilder;
+        internal readonly AssemblyBuilderAccess _access;
+        private readonly RuntimeAssembly _internalAssembly;
+        private readonly ModuleBuilder _manifestModuleBuilder;
         // Set to true if the manifest module was returned by code:DefineDynamicModule to the user
         private bool _isManifestModuleUsedAsDefinedModule;
 
-        private const string ManifestModuleName = "RefEmit_InMemoryManifestModule";
-
-        internal ModuleBuilder GetModuleBuilder(InternalModuleBuilder module)
-        {
-            Debug.Assert(module != null);
-            Debug.Assert(InternalAssembly == module.Assembly);
-
-            lock (SyncRoot)
-            {
-                // in CoreCLR there is only one module in each dynamic assembly, the manifest module
-                if (_manifestModuleBuilder.InternalModule == module)
-                {
-                    return _manifestModuleBuilder;
-                }
-
-                throw new ArgumentException(null, nameof(module));
-            }
-        }
+        private const int AssemblyDefToken = 0x20000001;
 
         internal object SyncRoot => InternalAssembly.SyncRoot;
 
-        internal InternalAssemblyBuilder InternalAssembly => _internalAssemblyBuilder;
+        internal RuntimeAssembly InternalAssembly => _internalAssembly;
 
         #endregion
 
@@ -163,46 +39,33 @@ namespace System.Reflection.Emit
 
         internal AssemblyBuilder(AssemblyName name,
                                  AssemblyBuilderAccess access,
-                                 ref StackCrawlMark stackMark,
+                                 Assembly? callingAssembly,
                                  AssemblyLoadContext? assemblyLoadContext,
-                                 IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
+                                 IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+
             if (access != AssemblyBuilderAccess.Run && access != AssemblyBuilderAccess.RunAndCollect)
             {
                 throw new ArgumentException(SR.Format(SR.Arg_EnumIllegalVal, (int)access), nameof(access));
             }
-
-            // Clone the name in case the caller modifies it underneath us.
-            name = (AssemblyName)name.Clone();
-
-            // Scan the assembly level attributes for any attributes which modify how we create the
-            // assembly. Currently, we look for any attribute which modifies the security transparency
-            // of the assembly.
-            List<CustomAttributeBuilder>? assemblyAttributes = null;
-            if (unsafeAssemblyAttributes != null)
+            if (callingAssembly == null)
             {
-                // Create a copy to ensure that it cannot be modified from another thread
-                // as it is used further below.
-                assemblyAttributes = new List<CustomAttributeBuilder>(unsafeAssemblyAttributes);
+                // Called either from interop or async delegate invocation. Rejecting because we don't
+                // know how to set the correct context of the new dynamic assembly.
+                throw new InvalidOperationException();
             }
 
-            Assembly? retAssembly = null;
-            CreateDynamicAssembly(ObjectHandleOnStack.Create(ref name),
-                                  new StackCrawlMarkHandle(ref stackMark),
-                                  (int)access,
-                                  ObjectHandleOnStack.Create(ref assemblyLoadContext),
-                                  ObjectHandleOnStack.Create(ref retAssembly));
-            _internalAssemblyBuilder = (InternalAssemblyBuilder)retAssembly!;
+            _access = access;
 
-            _assemblyData = new AssemblyBuilderData(access);
+            _internalAssembly = CreateDynamicAssembly(assemblyLoadContext ?? AssemblyLoadContext.GetLoadContext(callingAssembly)!, name, access);
 
             // Make sure that ManifestModule is properly initialized
             // We need to do this before setting any CustomAttribute
-            InitManifestModule();
+            // Note that this ModuleBuilder cannot be used for RefEmit yet
+            // because it hasn't been initialized.
+            // However, it can be used to set the custom attribute on the Assembly
+            _manifestModuleBuilder = new ModuleBuilder(this, (RuntimeModule)InternalAssembly.ManifestModule);
 
             if (assemblyAttributes != null)
             {
@@ -213,85 +76,92 @@ namespace System.Reflection.Emit
             }
         }
 
-        [MemberNotNull(nameof(_manifestModuleBuilder))]
-        private void InitManifestModule()
-        {
-            InternalModuleBuilder modBuilder = (InternalModuleBuilder)GetInMemoryAssemblyModule(InternalAssembly);
-
-            // Note that this ModuleBuilder cannot be used for RefEmit yet
-            // because it hasn't been initialized.
-            // However, it can be used to set the custom attribute on the Assembly
-            _manifestModuleBuilder = new ModuleBuilder(this, modBuilder);
-
-            // We are only setting the name in the managed ModuleBuilderData here.
-            // The name in the underlying metadata will be set when the
-            // manifest module is created during CreateDynamicAssembly.
-
-            // This name needs to stay in sync with that used in
-            // Assembly::Init to call ReflectionModule::Create (in VM)
-            _manifestModuleBuilder.Init(ManifestModuleName);
-
-            _isManifestModuleUsedAsDefinedModule = false;
-        }
-
         #endregion
 
         #region DefineDynamicAssembly
 
-        /// <summary>
-        /// If an AssemblyName has a public key specified, the assembly is assumed
-        /// to have a strong name and a hash will be computed when the assembly
-        /// is saved.
-        /// </summary>
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(AssemblyName name, AssemblyBuilderAccess access)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalDefineDynamicAssembly(name,
                                                  access,
-                                                 ref stackMark,
+                                                 Assembly.GetCallingAssembly(),
                                                  AssemblyLoadContext.CurrentContextualReflectionContext,
                                                  null);
         }
 
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
+        [RequiresDynamicCode("Defining a dynamic assembly requires dynamic code.")]
+        [DynamicSecurityMethod] // Required to make Assembly.GetCallingAssembly reliable.
         public static AssemblyBuilder DefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
             IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
-            StackCrawlMark stackMark = StackCrawlMark.LookForMyCaller;
             return InternalDefineDynamicAssembly(name,
                                                  access,
-                                                 ref stackMark,
+                                                 Assembly.GetCallingAssembly(),
                                                  AssemblyLoadContext.CurrentContextualReflectionContext,
                                                  assemblyAttributes);
         }
 
-        [GeneratedDllImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
-        private static partial void CreateDynamicAssembly(ObjectHandleOnStack name,
-                                                         StackCrawlMarkHandle stackMark,
-                                                         int access,
-                                                         ObjectHandleOnStack assemblyLoadContext,
-                                                         ObjectHandleOnStack retAssembly);
+        [LibraryImport(RuntimeHelpers.QCall, EntryPoint = "AppDomain_CreateDynamicAssembly")]
+        private static unsafe partial void CreateDynamicAssembly(ObjectHandleOnStack assemblyLoadContext,
+                                                                 NativeAssemblyNameParts* pAssemblyName,
+                                                                 AssemblyHashAlgorithm hashAlgId,
+                                                                 AssemblyBuilderAccess access,
+                                                                 ObjectHandleOnStack retAssembly);
+
+        private static unsafe RuntimeAssembly CreateDynamicAssembly(AssemblyLoadContext assemblyLoadContext, AssemblyName name, AssemblyBuilderAccess access)
+        {
+            RuntimeAssembly? retAssembly = null;
+
+            byte[]? publicKey = name.GetPublicKey();
+
+            fixed (char* pName = name.Name)
+            fixed (char* pCultureName = name.CultureName)
+            fixed (byte* pPublicKey = publicKey)
+            {
+                NativeAssemblyNameParts nameParts = default;
+
+                nameParts._flags = name.RawFlags;
+                nameParts._pName = pName;
+                nameParts._pCultureName = pCultureName;
+
+                nameParts._pPublicKeyOrToken = pPublicKey;
+                nameParts._cbPublicKeyOrToken = (publicKey != null) ? publicKey.Length : 0;
+
+                nameParts.SetVersion(name.Version, defaultValue: 0);
+
+#pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
+                CreateDynamicAssembly(ObjectHandleOnStack.Create(ref assemblyLoadContext),
+                                  &nameParts,
+                                  name.HashAlgorithm,
+                                  access,
+                                  ObjectHandleOnStack.Create(ref retAssembly));
+#pragma warning restore SYSLIB0037
+            }
+
+            return retAssembly!;
+        }
 
         private static readonly object s_assemblyBuilderLock = new object();
 
         internal static AssemblyBuilder InternalDefineDynamicAssembly(
             AssemblyName name,
             AssemblyBuilderAccess access,
-            ref StackCrawlMark stackMark,
+            Assembly? callingAssembly,
             AssemblyLoadContext? assemblyLoadContext,
-            IEnumerable<CustomAttributeBuilder>? unsafeAssemblyAttributes)
+            IEnumerable<CustomAttributeBuilder>? assemblyAttributes)
         {
             lock (s_assemblyBuilderLock)
             {
                 // We can only create dynamic assemblies in the current domain
                 return new AssemblyBuilder(name,
                                            access,
-                                           ref stackMark,
+                                           callingAssembly,
                                            assemblyLoadContext,
-                                           unsafeAssemblyAttributes);
+                                           assemblyAttributes);
             }
         }
         #endregion
@@ -303,7 +173,6 @@ namespace System.Reflection.Emit
         /// modules within an Assembly with the same name. This dynamic module is
         /// a transient module.
         /// </summary>
-        [DynamicSecurityMethod] // Methods containing StackCrawlMark local var has to be marked DynamicSecurityMethod.
         public ModuleBuilder DefineDynamicModule(string name)
         {
             lock (SyncRoot)
@@ -326,70 +195,25 @@ namespace System.Reflection.Emit
                 throw new InvalidOperationException(SR.InvalidOperation_NoMultiModuleAssembly);
             }
 
-            Debug.Assert(_assemblyData != null, "_assemblyData is null in DefineDynamicModuleInternal");
+            // We are reusing manifest module as user-defined dynamic module
+            _isManifestModuleUsedAsDefinedModule = true;
 
-            // Init(...) has already been called on _manifestModuleBuilder in InitManifestModule()
-            ModuleBuilder dynModule = _manifestModuleBuilder;
-
-            _assemblyData._moduleBuilderList.Add(dynModule);
-
-            if (dynModule == _manifestModuleBuilder)
-            {
-                // We are reusing manifest module as user-defined dynamic module
-                _isManifestModuleUsedAsDefinedModule = true;
-            }
-
-            return dynModule;
+            return _manifestModuleBuilder;
         }
 
         #endregion
 
-        internal static void CheckContext(params Type[]?[]? typess)
+        /// <summary>
+        /// Helper to ensure the type name is unique underneath assemblyBuilder.
+        /// </summary>
+        internal void CheckTypeNameConflict(string strTypeName, TypeBuilder? enclosingType)
         {
-            if (typess == null)
-            {
-                return;
-            }
-
-            foreach (Type[]? types in typess)
-            {
-                if (types != null)
-                {
-                    CheckContext(types);
-                }
-            }
+            _manifestModuleBuilder.CheckTypeNameConflict(strTypeName, enclosingType);
         }
 
-        internal static void CheckContext(params Type?[]? types)
-        {
-            if (types == null)
-            {
-                return;
-            }
+        public override bool Equals(object? obj) => base.Equals(obj);
 
-            foreach (Type? type in types)
-            {
-                if (type == null)
-                {
-                    continue;
-                }
-
-                if (type.Module == null || type.Module.Assembly == null)
-                {
-                    throw new ArgumentException(SR.Argument_TypeNotValid);
-                }
-
-                if (type.Module.Assembly == typeof(object).Module.Assembly)
-                {
-                    continue;
-                }
-            }
-        }
-
-        public override bool Equals(object? obj) => InternalAssembly.Equals(obj);
-
-        // Need a dummy GetHashCode to pair with Equals
-        public override int GetHashCode() => InternalAssembly.GetHashCode();
+        public override int GetHashCode() => base.GetHashCode();
 
         #region ICustomAttributeProvider Members
         public override object[] GetCustomAttributes(bool inherit) =>
@@ -462,12 +286,11 @@ namespace System.Reflection.Emit
         {
             ArgumentException.ThrowIfNullOrEmpty(name);
 
-            for (int i = 0; i < _assemblyData._moduleBuilderList.Count; i++)
+            if (_isManifestModuleUsedAsDefinedModule)
             {
-                ModuleBuilder moduleBuilder = _assemblyData._moduleBuilderList[i];
-                if (moduleBuilder._moduleData._moduleName.Equals(name))
+                if (ModuleBuilder.ManifestModuleName == name)
                 {
-                    return moduleBuilder;
+                    return _manifestModuleBuilder;
                 }
             }
             return null;
@@ -478,20 +301,14 @@ namespace System.Reflection.Emit
         /// </summary>
         public void SetCustomAttribute(ConstructorInfo con, byte[] binaryAttribute)
         {
-            if (con == null)
-            {
-                throw new ArgumentNullException(nameof(con));
-            }
-            if (binaryAttribute == null)
-            {
-                throw new ArgumentNullException(nameof(binaryAttribute));
-            }
+            ArgumentNullException.ThrowIfNull(con);
+            ArgumentNullException.ThrowIfNull(binaryAttribute);
 
             lock (SyncRoot)
             {
                 TypeBuilder.DefineCustomAttribute(
                     _manifestModuleBuilder,     // pass in the in-memory assembly module
-                    AssemblyBuilderData.AssemblyDefToken,
+                    AssemblyDefToken,
                     _manifestModuleBuilder.GetConstructorToken(con),
                     binaryAttribute);
             }
@@ -502,14 +319,11 @@ namespace System.Reflection.Emit
         /// </summary>
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-            {
-                throw new ArgumentNullException(nameof(customBuilder));
-            }
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             lock (SyncRoot)
             {
-                customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyBuilderData.AssemblyDefToken);
+                customBuilder.CreateCustomAttribute(_manifestModuleBuilder, AssemblyDefToken);
             }
         }
     }

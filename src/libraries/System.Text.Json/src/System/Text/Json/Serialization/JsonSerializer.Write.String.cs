@@ -25,6 +25,7 @@ namespace System.Text.Json
         /// and <see cref="SerializeAsync{TValue}(IO.Stream, TValue, JsonSerializerOptions?, Threading.CancellationToken)"/>.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static string Serialize<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
             Type runtimeType = GetRuntimeType(value);
@@ -54,6 +55,7 @@ namespace System.Text.Json
         /// and <see cref="SerializeAsync(IO.Stream, object?, Type, JsonSerializerOptions?, Threading.CancellationToken)"/>.
         /// </remarks>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static string Serialize(
             object? value,
             Type inputType,
@@ -111,9 +113,9 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize(object? value, Type inputType, JsonSerializerContext context)
         {
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             Type type = GetRuntimeTypeAndValidateInputType(value, inputType);
@@ -121,11 +123,11 @@ namespace System.Text.Json
             return WriteStringUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
-        private static string WriteStringUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
+        private static string WriteStringUsingGeneratedSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             JsonSerializerOptions options = jsonTypeInfo.Options;
@@ -141,11 +143,11 @@ namespace System.Text.Json
             }
         }
 
-        private static string WriteStringUsingSerializer<TValue>(in TValue value, JsonTypeInfo? jsonTypeInfo)
+        private static string WriteStringUsingSerializer<TValue>(in TValue value, JsonTypeInfo jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             JsonSerializerOptions options = jsonTypeInfo.Options;

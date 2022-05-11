@@ -71,8 +71,8 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static byte[] Encode(string distinguishedName, X500DistinguishedNameFlags flags)
         {
-            if (distinguishedName == null)
-                throw new ArgumentNullException(nameof(distinguishedName));
+            ArgumentNullException.ThrowIfNull(distinguishedName);
+
             ThrowIfInvalid(flags);
 
             return X509Pal.Instance.X500DistinguishedNameEncode(distinguishedName, flags);

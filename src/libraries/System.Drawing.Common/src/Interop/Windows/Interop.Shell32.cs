@@ -3,12 +3,19 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
 internal static partial class Interop
 {
     internal static partial class Shell32
     {
-        [DllImport(Libraries.Shell32, CharSet = CharSet.Unicode)]
-        internal static extern unsafe IntPtr ExtractAssociatedIcon(HandleRef hInst, char* iconPath, ref int index);
+        [LibraryImport(Libraries.Shell32, EntryPoint = "ExtractAssociatedIconW")]
+        internal static unsafe partial IntPtr ExtractAssociatedIcon(
+#if NET7_0_OR_GREATER
+            [MarshalUsing(typeof(HandleRefMarshaller))]
+#endif
+            HandleRef hInst, char* iconPath, ref int index);
     }
 }

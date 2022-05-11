@@ -1,8 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-using System;
-
 namespace System.Runtime.InteropServices.JavaScript
 {
     /// <summary>
@@ -14,7 +12,7 @@ namespace System.Runtime.InteropServices.JavaScript
     /// allows executing code in the global scope, prompting better programming habits and allowing for more efficient
     /// code minification.
     /// </remarks>
-    public class Function : CoreObject
+    public class Function : JSObject
     {
         public Function(params object[] args) : base(nameof(Function), args)
         { }

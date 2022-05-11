@@ -184,8 +184,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> passwordBytes,
             PbeParameters pbeParameters)
         {
-            if (pbeParameters == null)
-                throw new ArgumentNullException(nameof(pbeParameters));
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             return CngPkcs8.ExportEncryptedPkcs8PrivateKey(
                 this,
@@ -197,10 +196,7 @@ namespace System.Security.Cryptography
             ReadOnlySpan<char> password,
             PbeParameters pbeParameters)
         {
-            if (pbeParameters == null)
-            {
-                throw new ArgumentNullException(nameof(pbeParameters));
-            }
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
@@ -224,8 +220,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
-                throw new ArgumentNullException(nameof(pbeParameters));
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
@@ -246,8 +241,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
-                throw new ArgumentNullException(nameof(pbeParameters));
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,

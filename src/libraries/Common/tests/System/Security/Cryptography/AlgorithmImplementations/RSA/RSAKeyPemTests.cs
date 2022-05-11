@@ -400,7 +400,7 @@ AWvBUt33Sozc+dF0l7NGLAWL2tqkkpyDQuKn6UgYz/vxkFeQAVfSuaJVR+fUlHg0
 N4lD7/hJq7b+yYPhlN3Fvvt8M9MtRg1TLAve67CA2v4TITHB06M/ELe3y42bZuLW
 CA7ffFk=
 -----END ENCRYPTED PRIVATE KEY-----";
-                rsa.ImportFromEncryptedPem(pem, "test");
+                rsa.ImportFromEncryptedPem(pem, (ReadOnlySpan<char>)"test");
                 RSAParameters rsaParameters = rsa.ExportParameters(true);
 
                 ImportExport.AssertKeyEquals(TestData.DiminishedDPParameters, rsaParameters);

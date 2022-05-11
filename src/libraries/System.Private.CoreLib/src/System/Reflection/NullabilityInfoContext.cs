@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -65,10 +65,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(ParameterInfo parameterInfo)
         {
-            if (parameterInfo is null)
-            {
-                throw new ArgumentNullException(nameof(parameterInfo));
-            }
+            ArgumentNullException.ThrowIfNull(parameterInfo);
 
             EnsureIsSupported();
 
@@ -128,7 +125,7 @@ namespace System.Reflection
             return (MethodInfo)GetMemberMetadataDefinition(method);
         }
 
-        private void CheckNullabilityAttributes(NullabilityInfo nullability, IList<CustomAttributeData> attributes)
+        private static void CheckNullabilityAttributes(NullabilityInfo nullability, IList<CustomAttributeData> attributes)
         {
             var codeAnalysisReadState = NullabilityState.Unknown;
             var codeAnalysisWriteState = NullabilityState.Unknown;
@@ -181,10 +178,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(PropertyInfo propertyInfo)
         {
-            if (propertyInfo is null)
-            {
-                throw new ArgumentNullException(nameof(propertyInfo));
-            }
+            ArgumentNullException.ThrowIfNull(propertyInfo);
 
             EnsureIsSupported();
 
@@ -237,10 +231,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(EventInfo eventInfo)
         {
-            if (eventInfo is null)
-            {
-                throw new ArgumentNullException(nameof(eventInfo));
-            }
+            ArgumentNullException.ThrowIfNull(eventInfo);
 
             EnsureIsSupported();
 
@@ -257,10 +248,7 @@ namespace System.Reflection
         /// <returns><see cref="NullabilityInfo" /></returns>
         public NullabilityInfo Create(FieldInfo fieldInfo)
         {
-            if (fieldInfo is null)
-            {
-                throw new ArgumentNullException(nameof(fieldInfo));
-            }
+            ArgumentNullException.ThrowIfNull(fieldInfo);
 
             EnsureIsSupported();
 
@@ -312,7 +300,7 @@ namespace System.Reflection
             return false;
         }
 
-        private NotAnnotatedStatus PopulateAnnotationInfo(IList<CustomAttributeData> customAttributes)
+        private static NotAnnotatedStatus PopulateAnnotationInfo(IList<CustomAttributeData> customAttributes)
         {
             foreach (CustomAttributeData attribute in customAttributes)
             {
@@ -409,11 +397,11 @@ namespace System.Reflection
                     attribute.AttributeType.Namespace == CompilerServicesNameSpace &&
                     attribute.ConstructorArguments.Count == 1)
                 {
-                    return new(attribute.ConstructorArguments[0].Value);
+                    return new NullableAttributeStateParser(attribute.ConstructorArguments[0].Value);
                 }
             }
 
-            return new(null);
+            return new NullableAttributeStateParser(null);
         }
 
         private void TryLoadGenericMetaTypeNullability(MemberInfo memberInfo, NullabilityInfo nullability)

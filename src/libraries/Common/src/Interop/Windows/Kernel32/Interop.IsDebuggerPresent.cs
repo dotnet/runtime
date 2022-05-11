@@ -8,7 +8,8 @@ internal static partial class Interop
 {
     internal static partial class Kernel32
     {
-        [DllImport(Libraries.Kernel32)]
-        internal static extern bool IsDebuggerPresent();
+        [LibraryImport(Libraries.Kernel32)]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        internal static partial bool IsDebuggerPresent();
     }
 }

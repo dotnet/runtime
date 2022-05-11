@@ -184,7 +184,7 @@ namespace System.Net.Mime
 
         // returns true if the offset is of the form [+|-]dddd and
         // within the range 0000 to 9959
-        internal void ValidateAndGetTimeZoneOffsetValues(string offset, out bool positive, out int hours, out int minutes)
+        internal static void ValidateAndGetTimeZoneOffsetValues(string offset, out bool positive, out int hours, out int minutes)
         {
             Debug.Assert(!string.IsNullOrEmpty(offset), "violation of precondition: offset must not be null or empty");
             Debug.Assert(offset != UnknownTimeZoneDefaultOffset, "Violation of precondition: do not pass an unknown offset");
@@ -219,7 +219,7 @@ namespace System.Net.Mime
         }
 
         // returns true if the time zone short hand is all alphabetical characters
-        internal void ValidateTimeZoneShortHandValue(string value)
+        internal static void ValidateTimeZoneShortHandValue(string value)
         {
             // time zones can't be empty
             Debug.Assert(!string.IsNullOrEmpty(value), "violation of precondition: offset must not be null or empty");
@@ -235,14 +235,14 @@ namespace System.Net.Mime
         }
 
         // formats a date only.  Does not include time zone
-        internal string FormatDate(DateTime value) => value.ToString("ddd, dd MMM yyyy HH:mm:ss", CultureInfo.InvariantCulture);
+        internal static string FormatDate(DateTime value) => value.ToString("ddd, dd MMM yyyy HH:mm:ss", CultureInfo.InvariantCulture);
 
         // parses the date and time zone
         // postconditions:
         // return value is valid DateTime representation of the Date portion of data
         // timeZone is the portion of data which should contain the time zone data
         // timeZone is NOT evaluated by ParseValue
-        internal DateTime ParseValue(string data, out string timeZone)
+        internal static DateTime ParseValue(string data, out string timeZone)
         {
             // check that there is something to parse
             if (string.IsNullOrEmpty(data))
@@ -309,7 +309,7 @@ namespace System.Net.Mime
 
         // if this returns true, timeZone is the correct TimeSpan representation of the input
         // if it returns false then the time zone is unknown and so timeZone must be ignored
-        internal bool TryParseTimeZoneString(string timeZoneString, out TimeSpan timeZone)
+        internal static bool TryParseTimeZoneString(string timeZoneString, out TimeSpan timeZone)
         {
             // see if the zone is the special unspecified case, a numeric offset, or a shorthand string
             if (timeZoneString == UnknownTimeZoneDefaultOffset)
@@ -352,7 +352,7 @@ namespace System.Net.Mime
             }
         }
 
-        internal TimeSpan ValidateAndGetSanitizedTimeSpan(TimeSpan span)
+        internal static TimeSpan ValidateAndGetSanitizedTimeSpan(TimeSpan span)
         {
             // sanitize the time span by removing the seconds and milliseconds.  Days are not handled here
             TimeSpan sanitizedTimeSpan = new TimeSpan(span.Days, span.Hours, span.Minutes, 0, 0);
@@ -367,7 +367,7 @@ namespace System.Net.Mime
         }
 
         // precondition:  span must be sanitized and within a valid range
-        internal string TimeSpanToOffset(TimeSpan span)
+        internal static string TimeSpanToOffset(TimeSpan span)
         {
             Debug.Assert(span.Seconds == 0, "Span had seconds value");
             Debug.Assert(span.Milliseconds == 0, "Span had milliseconds value");

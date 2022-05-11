@@ -3,6 +3,7 @@
 
 using System;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.TypeInfos;
 
 namespace System.Reflection.Runtime.Dispensers
@@ -15,7 +16,7 @@ namespace System.Reflection.Runtime.Dispensers
         //
         // Note: If your K is a valuetype, use CreateDispenserV() instead. Some algorithms will not be available for use.
         //
-        public static Dispenser<K, V> CreateDispenser<K, V>(DispenserScenario scenario, Func<K, V> factory)
+        public static Dispenser<K, V> CreateDispenser<K, [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)]V>(DispenserScenario scenario, Func<K, V> factory)
             where K : class, IEquatable<K>
             where V : class
         {

@@ -10,7 +10,7 @@ using System.Security;
 
 public class one_pass
 {
-    public Random r = new Random(request.RandomSeed);
+    public Random r = new Random(Request.RandomSeed);
 
 [SecuritySafeCritical]
 public one_pass ()
@@ -20,7 +20,7 @@ public one_pass ()
         int allocation_volume = 100000;
         float survival_rate = 0.6f;
         int steady_state_factor = 5;
-        request[] requests = new request[n_requests];
+        Request[] requests = new Request[n_requests];
         int inst_requests = 0;
         int total_reqs = 0;
         int nreqs_to_steady = 0;
@@ -36,7 +36,7 @@ public one_pass ()
             {
                 inst_requests++;
             }
-            requests [i] = new request (allocation_volume, survival_rate);
+            requests [i] = new Request (allocation_volume, survival_rate);
 
             if (inst_requests == n_requests)
             {
@@ -61,14 +61,14 @@ public one_pass ()
 }
 
 
-public class request
+public class Request
 {
     Object[] survivors;
     GCHandle pin;
-    public Random r = new Random(request.RandomSeed);
+    public Random r = new Random(Request.RandomSeed);
 
     [SecuritySafeCritical]
-    public request (int alloc_volume, float surv_fraction)
+    public Request (int alloc_volume, float surv_fraction)
     {
         survivors = new Object [1 + (int)(alloc_volume*surv_fraction)/100];
         int i = 0;

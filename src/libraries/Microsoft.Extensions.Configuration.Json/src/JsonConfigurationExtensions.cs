@@ -64,10 +64,8 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddJsonFile(this IConfigurationBuilder builder, IFileProvider? provider, string path, bool optional, bool reloadOnChange)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ThrowHelper.ThrowIfNull(builder);
+
             if (string.IsNullOrEmpty(path))
             {
                 throw new ArgumentException(SR.Error_InvalidFilePath, nameof(path));
@@ -100,10 +98,7 @@ namespace Microsoft.Extensions.Configuration
         /// <returns>The <see cref="IConfigurationBuilder"/>.</returns>
         public static IConfigurationBuilder AddJsonStream(this IConfigurationBuilder builder, Stream stream)
         {
-            if (builder == null)
-            {
-                throw new ArgumentNullException(nameof(builder));
-            }
+            ThrowHelper.ThrowIfNull(builder);
 
             return builder.Add<JsonStreamConfigurationSource>(s => s.Stream = stream);
         }

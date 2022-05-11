@@ -25,10 +25,7 @@ namespace System.Net.Http
 
         private static byte[] GetContentByteArray(IEnumerable<KeyValuePair<string?, string?>> nameValueCollection)
         {
-            if (nameValueCollection == null)
-            {
-                throw new ArgumentNullException(nameof(nameValueCollection));
-            }
+            ArgumentNullException.ThrowIfNull(nameValueCollection);
 
             // Encode and concatenate data
             StringBuilder builder = new StringBuilder();

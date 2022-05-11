@@ -60,7 +60,7 @@
 //         code:Frame which marks the location on the stack where the last managed method frame is. This
 //         allows the GC to start crawling the stack from there (essentially skip over the unmanaged frames).
 //     * That the thread will not reenter managed code if the global variable code:g_TrapReturningThreads is
-//         set (it will call code:Thread.RareDisablePreemptiveGC first which will block if a a suspension is
+//         set (it will call code:Thread.RareDisablePreemptiveGC first which will block if a suspension is
 //         in progress)
 //
 // The basic idea is that the suspension logic in code:Thread.SuspendRuntime first sets the global variable
@@ -3075,6 +3075,14 @@ private:
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) // GCCOVER
     static void __stdcall RedirectedHandledJITCaseForGCStress();
 #endif // defined(HAVE_GCCOVER) && USE_REDIRECT_FOR_GCSTRESS
+
+#ifdef TARGET_X86
+    // RtlRestoreContext is available on x86, but relatively recently.
+    // RestoreContextSimulated uses SEH machinery for a similar result on legacy OS-es.
+    // This function should not be used on new OS-es as the pattern is not
+    // guaranteed to continue working in the future.
+    static void RestoreContextSimulated(Thread* pThread, CONTEXT* pCtx, void* pFrame, DWORD dwLastError);
+#endif
 
     friend void CPFH_AdjustContextForThreadSuspensionRace(T_CONTEXT *pContext, Thread *pThread);
 #endif // FEATURE_HIJACK && !TARGET_UNIX

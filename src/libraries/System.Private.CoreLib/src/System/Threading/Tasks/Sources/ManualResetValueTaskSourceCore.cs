@@ -117,10 +117,8 @@ namespace System.Threading.Tasks.Sources
         /// <param name="flags">The flags describing the behavior of the continuation.</param>
         public void OnCompleted(Action<object?> continuation, object? state, short token, ValueTaskSourceOnCompletedFlags flags)
         {
-            if (continuation == null)
-            {
-                throw new ArgumentNullException(nameof(continuation));
-            }
+            ArgumentNullException.ThrowIfNull(continuation);
+
             ValidateToken(token);
 
             if ((flags & ValueTaskSourceOnCompletedFlags.FlowExecutionContext) != 0)

@@ -5,8 +5,14 @@
 
 using System;
 using System.Runtime.CompilerServices;
+using Xunit;
 
-class Test2
+public class
+#if XASSEM
+Test2_xassem
+#else
+Test2
+#endif
 {
     public static string[] teststr2 = new string[] { "\u3F2Aarray element 0", "array element 1\uCB53", "array \u47BBelement 2" };
 
@@ -118,7 +124,8 @@ class Test2
         return passed;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         if (TestSameObjRef())
         {

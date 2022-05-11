@@ -77,13 +77,8 @@ namespace System.Collections.Specialized
         ///    case-insensitive comparer.</para>
         /// </devdoc>
         public NameValueCollection(int capacity, NameValueCollection col)
-            : base(capacity, (col != null ? col.Comparer : null))
+            : base(capacity, col != null ? col.Comparer : throw new ArgumentNullException(nameof(col)))
         {
-            if (col == null)
-            {
-                throw new ArgumentNullException(nameof(col));
-            }
-
             this.Comparer = col.Comparer;
             Add(col);
         }
@@ -159,10 +154,7 @@ namespace System.Collections.Specialized
         /// </devdoc>
         public void Add(NameValueCollection c)
         {
-            if (c == null)
-            {
-                throw new ArgumentNullException(nameof(c));
-            }
+            ArgumentNullException.ThrowIfNull(c);
 
             InvalidateCachedArrays();
 
@@ -200,10 +192,7 @@ namespace System.Collections.Specialized
 
         public void CopyTo(Array dest, int index)
         {
-            if (dest == null)
-            {
-                throw new ArgumentNullException(nameof(dest));
-            }
+            ArgumentNullException.ThrowIfNull(dest);
 
             if (dest.Rank != 1)
             {

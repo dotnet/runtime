@@ -96,10 +96,7 @@ namespace System.Security.Principal
 
         public override IdentityReference Translate(Type targetType)
         {
-            if (targetType == null)
-            {
-                throw new ArgumentNullException(nameof(targetType));
-            }
+            ArgumentNullException.ThrowIfNull(targetType);
 
             if (targetType == typeof(NTAccount))
             {
@@ -160,10 +157,7 @@ namespace System.Security.Principal
 
         internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceAccounts, Type targetType, out bool someFailed)
         {
-            if (sourceAccounts == null)
-            {
-                throw new ArgumentNullException(nameof(sourceAccounts));
-            }
+            ArgumentNullException.ThrowIfNull(sourceAccounts);
 
             if (targetType == typeof(SecurityIdentifier))
             {
@@ -206,12 +200,9 @@ namespace System.Security.Principal
         #region Private methods
 
 
-        private static IdentityReferenceCollection TranslateToSids(IdentityReferenceCollection sourceAccounts, out bool someFailed)
+        private static unsafe IdentityReferenceCollection TranslateToSids(IdentityReferenceCollection sourceAccounts, out bool someFailed)
         {
-            if (sourceAccounts == null)
-            {
-                throw new ArgumentNullException(nameof(sourceAccounts));
-            }
+            ArgumentNullException.ThrowIfNull(sourceAccounts);
 
             if (sourceAccounts.Count == 0)
             {
@@ -307,7 +298,7 @@ namespace System.Security.Principal
 
                 if (ReturnCode == 0 || ReturnCode == Interop.StatusOptions.STATUS_SOME_NOT_MAPPED)
                 {
-                    SidsPtr.Initialize((uint)sourceAccounts.Count, (uint)Marshal.SizeOf<Interop.LSA_TRANSLATED_SID2>());
+                    SidsPtr.Initialize((uint)sourceAccounts.Count, (uint)sizeof(Interop.LSA_TRANSLATED_SID2));
                     ReferencedDomainsPtr.InitializeReferencedDomainsList();
                     Interop.LSA_TRANSLATED_SID2[] translatedSids = new Interop.LSA_TRANSLATED_SID2[sourceAccounts.Count];
                     SidsPtr.ReadArray(0, translatedSids, 0, translatedSids.Length);

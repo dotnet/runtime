@@ -94,10 +94,7 @@ namespace System.Net
 
         public Uri? GetProxy(Uri destination)
         {
-            if (destination == null)
-            {
-                throw new ArgumentNullException(nameof(destination));
-            }
+            ArgumentNullException.ThrowIfNull(destination);
 
             return IsBypassed(destination) ? destination : Address;
         }
@@ -178,10 +175,7 @@ namespace System.Net
 
         public bool IsBypassed(Uri host)
         {
-            if (host == null)
-            {
-                throw new ArgumentNullException(nameof(host));
-            }
+            ArgumentNullException.ThrowIfNull(host);
 
             return
                 Address == null ||

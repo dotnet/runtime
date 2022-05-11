@@ -73,27 +73,15 @@ namespace System.ComponentModel.Design.Serialization
         {
             get
             {
-                if (sourceOwner == null)
-                {
-                    throw new ArgumentNullException(nameof(sourceOwner));
-                }
-                if (sourceMember == null)
-                {
-                    throw new ArgumentNullException(nameof(sourceMember));
-                }
+                ArgumentNullException.ThrowIfNull(sourceOwner);
+                ArgumentNullException.ThrowIfNull(sourceMember);
 
                 return GetRelationship(new MemberRelationship(sourceOwner, sourceMember));
             }
             set
             {
-                if (sourceOwner == null)
-                {
-                    throw new ArgumentNullException(nameof(sourceOwner));
-                }
-                if (sourceMember == null)
-                {
-                    throw new ArgumentNullException(nameof(sourceMember));
-                }
+                ArgumentNullException.ThrowIfNull(sourceOwner);
+                ArgumentNullException.ThrowIfNull(sourceMember);
 
                 SetRelationship(new MemberRelationship(sourceOwner, sourceMember), value);
             }
@@ -199,8 +187,11 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public MemberRelationship(object owner, MemberDescriptor member)
         {
-            Owner = owner ?? throw new ArgumentNullException(nameof(owner));
-            Member = member ?? throw new ArgumentNullException(nameof(member));
+            ArgumentNullException.ThrowIfNull(owner);
+            ArgumentNullException.ThrowIfNull(member);
+
+            Owner = owner;
+            Member = member;
         }
 
         /// <summary>

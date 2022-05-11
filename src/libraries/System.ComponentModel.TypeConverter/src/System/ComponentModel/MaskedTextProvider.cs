@@ -884,10 +884,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Add(string input, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             testPosition = LastAssignedPosition + 1;
 
@@ -1260,10 +1257,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool InsertAt(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             if (position < 0 || position >= _testString.Length)
             {
@@ -1821,10 +1815,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Replace(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             if (position < 0 || position >= _testString.Length)
             {
@@ -1860,10 +1851,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Replace(string input, int startPosition, int endPosition, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             if (endPosition >= _testString.Length)
             {
@@ -2046,10 +2034,7 @@ namespace System.ComponentModel
         /// </summary>
         public bool Set(string input, out int testPosition, out MaskedTextResultHint resultHint)
         {
-            if (input == null)
-            {
-                throw new ArgumentNullException(nameof(input));
-            }
+            ArgumentNullException.ThrowIfNull(input);
 
             testPosition = 0;
 

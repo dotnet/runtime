@@ -12,7 +12,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class RSAOpenSsl : RSA
+    public sealed partial class RSAOpenSsl : RSA, IRuntimeAlgorithm
     {
         private const int BitsPerByte = 8;
 
@@ -82,10 +82,8 @@ namespace System.Security.Cryptography
 
         public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(padding);
 
             ValidatePadding(padding);
             SafeEvpPKeyHandle key = GetKey();
@@ -113,8 +111,7 @@ namespace System.Security.Cryptography
             RSAEncryptionPadding padding,
             out int bytesWritten)
         {
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(padding);
 
             ValidatePadding(padding);
             SafeEvpPKeyHandle key = GetKey();
@@ -207,10 +204,8 @@ namespace System.Security.Cryptography
 
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(padding);
 
             ValidatePadding(padding);
             SafeEvpPKeyHandle key = GetKey();
@@ -235,10 +230,7 @@ namespace System.Security.Cryptography
 
         public override bool TryEncrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, out int bytesWritten)
         {
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentNullException.ThrowIfNull(padding);
 
             ValidatePadding(padding);
             SafeEvpPKeyHandle? key = GetKey();
@@ -735,15 +727,6 @@ namespace System.Security.Cryptography
             return Interop.Crypto.RsaGenerateKey(KeySize);
         }
 
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
-            AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
-
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
-
-        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
-
         public override byte[] SignHash(byte[] hash, HashAlgorithmName hashAlgorithm, RSASignaturePadding padding)
         {
             ArgumentNullException.ThrowIfNull(hash);
@@ -833,14 +816,8 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             RSASignaturePadding padding)
         {
-            if (hash == null)
-            {
-                throw new ArgumentNullException(nameof(hash));
-            }
-            if (signature == null)
-            {
-                throw new ArgumentNullException(nameof(signature));
-            }
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
 
             return VerifyHash(new ReadOnlySpan<byte>(hash), new ReadOnlySpan<byte>(signature), hashAlgorithm, padding);
         }
@@ -883,10 +860,7 @@ namespace System.Security.Cryptography
 
         private static void ValidatePadding(RSAEncryptionPadding padding)
         {
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentNullException.ThrowIfNull(padding);
 
             // There are currently two defined padding modes:
             // * Oaep has an option (the hash algorithm)
@@ -904,10 +878,7 @@ namespace System.Security.Cryptography
 
         private static void ValidatePadding(RSASignaturePadding padding)
         {
-            if (padding == null)
-            {
-                throw new ArgumentNullException(nameof(padding));
-            }
+            ArgumentNullException.ThrowIfNull(padding);
 
             // RSASignaturePadding currently only has the mode property, so
             // there's no need for a runtime check that PKCS#1 doesn't use

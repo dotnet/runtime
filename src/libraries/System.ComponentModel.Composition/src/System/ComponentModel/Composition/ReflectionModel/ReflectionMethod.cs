@@ -12,10 +12,7 @@ namespace System.ComponentModel.Composition.ReflectionModel
 
         public ReflectionMethod(MethodInfo method)
         {
-            if (method == null)
-            {
-                throw new ArgumentNullException(nameof(method));
-            }
+            ArgumentNullException.ThrowIfNull(method);
 
             _method = method;
         }

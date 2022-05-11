@@ -44,6 +44,18 @@ inline bool isPow2(T i)
     return (i > 0 && ((i - 1) & i) == 0);
 }
 
+template <typename T>
+constexpr bool AreContiguous(T val1, T val2)
+{
+    return (val1 + 1) == val2;
+}
+
+template <typename T, typename... Ts>
+constexpr bool AreContiguous(T val1, T val2, Ts... rest)
+{
+    return ((val1 + 1) == val2) && AreContiguous(val2, rest...);
+}
+
 // Adapter for iterators to a type that is compatible with C++11
 // range-based for loops.
 template <typename TIterator>
@@ -690,6 +702,22 @@ public:
     static double infinite_double();
 
     static float infinite_float();
+
+    static bool isNegative(float val);
+
+    static bool isNegative(double val);
+
+    static bool isNaN(float val);
+
+    static bool isNaN(double val);
+
+    static double maximum(double val1, double val2);
+
+    static float maximum(float val1, float val2);
+
+    static double minimum(double val1, double val2);
+
+    static float minimum(float val1, float val2);
 };
 
 // The CLR requires that critical section locks be initialized via its ClrCreateCriticalSection API...but

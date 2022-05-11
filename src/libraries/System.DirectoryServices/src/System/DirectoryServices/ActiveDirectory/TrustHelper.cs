@@ -55,7 +55,7 @@ namespace System.DirectoryServices.ActiveDirectory
         internal const int TRUST_TYPE_MIT = 0x00000003;
         private const int ERROR_ALREADY_EXISTS = 183;
         private const int ERROR_INVALID_LEVEL = 124;
-        private static readonly char[] s_punctuations = "!@#$%^&*()_-+=[{]};:>|./?".ToCharArray();
+        private const string PasswordCharacterSet = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!@#$%^&*()_-+=[{]};:>|./?";
 
         internal static bool GetTrustedDomainInfoStatus(DirectoryContext context, string? sourceName, string targetName, TRUST_ATTRIBUTE attribute, bool isForest)
         {
@@ -947,30 +947,64 @@ namespace System.DirectoryServices.ActiveDirectory
 
         internal static string CreateTrustPassword()
         {
-            string password = string.Empty;
-            byte[] buf = new byte[PASSWORD_LENGTH];
-            char[] cBuf = new char[PASSWORD_LENGTH];
-
-            using (RandomNumberGenerator RNG = RandomNumberGenerator.Create())
+#if NETCOREAPP3_0_OR_GREATER
+            return string.Create<object?>(PASSWORD_LENGTH, null, static (destination, _) =>
             {
-                RNG.GetBytes(buf);
-                for (int iter = 0; iter < PASSWORD_LENGTH; iter++)
+                for (int i = 0; i < destination.Length; i++)
                 {
-                    int i = (int)(buf[iter] % 87);
-                    if (i < 10)
-                        cBuf[iter] = (char)('0' + i);
-                    else if (i < 36)
-                        cBuf[iter] = (char)('A' + i - 10);
-                    else if (i < 62)
-                        cBuf[iter] = (char)('a' + i - 36);
-                    else
-                        cBuf[iter] = s_punctuations[i - 62];
+                    destination[i] = PasswordCharacterSet[RandomNumberGenerator.GetInt32(PasswordCharacterSet.Length)];
+                }
+            });
+#else
+            char[] cBuf = new char[PASSWORD_LENGTH];
+            byte[] randomBuffer = new byte[1];
+
+            using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+            {
+                for (int i = 0; i < PASSWORD_LENGTH; i++)
+                {
+                    cBuf[i] = PasswordCharacterSet[GetRandomByte(rng, PasswordCharacterSet.Length, randomBuffer)];
                 }
             }
 
-            password = new string(cBuf);
+            return new string(cBuf);
 
-            return password;
+            // This is a private copy of RandomNumberGenerator.GetInt32 that works
+            // on platforms that don't have it. Since this is for a private specific
+            // use, it can be simplified to assume some things about the ranges.
+            // We know the upper-bound is < 255, so we can avoid converting random
+            // bytes to integers and mask a single byte instead. We also know the
+            // lower-bound is 0.
+            // randomBuffer is a scratch buffer that is populated with random data
+            // so we don't allocate an array per-invocation.
+            static int GetRandomByte(RandomNumberGenerator rng, int toExclusive, byte[] randomBuffer)
+            {
+                Debug.Assert(toExclusive > 0 && toExclusive < byte.MaxValue);
+                Debug.Assert(randomBuffer.Length == 1);
+
+                // The total possible range is [0, 255).
+                int range = toExclusive - 1;
+
+                // Create a mask for only the applicable bits.
+                int mask = range;
+                mask |= mask >> 1;
+                mask |= mask >> 2;
+                mask |= mask >> 4;
+                // Don't need >> 8 or >> 16 since it is known the range is less than 255.
+
+                int result;
+
+                do
+                {
+                    rng.GetBytes(randomBuffer);
+                    result = mask & randomBuffer[0];
+                }
+                while (result > range);
+
+                Debug.Assert(result < toExclusive);
+                return result;
+            }
+#endif
         }
 
         private static IntPtr GetTrustedDomainInfo(DirectoryContext targetContext, string? targetName, bool isForest)

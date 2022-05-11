@@ -9,7 +9,7 @@ using Microsoft.Win32.SafeHandles;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class DSAOpenSsl : DSA
+    public sealed partial class DSAOpenSsl : DSA, IRuntimeAlgorithm
     {
         // The biggest key allowed by FIPS 186-4 has N=256 (bit), which
         // maximally produces a 72-byte DER signature.
@@ -193,27 +193,9 @@ namespace System.Security.Cryptography
             return key;
         }
 
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
-        {
-            // we're sealed and the base should have checked this already
-            Debug.Assert(data != null);
-            Debug.Assert(offset >= 0 && offset <= data.Length);
-            Debug.Assert(count >= 0 && count <= data.Length);
-            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
-
-            return AsymmetricAlgorithmHelpers.HashData(data, offset, count, hashAlgorithm);
-        }
-
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
-            AsymmetricAlgorithmHelpers.HashData(data, hashAlgorithm);
-
-        protected override bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten) =>
-            AsymmetricAlgorithmHelpers.TryHashData(data, destination, hashAlgorithm, out bytesWritten);
-
         public override byte[] CreateSignature(byte[] rgbHash)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
+            ArgumentNullException.ThrowIfNull(rgbHash);
 
             SafeDsaHandle key = GetKey();
             int signatureSize = Interop.Crypto.DsaEncodedSignatureSize(key);
@@ -325,14 +307,11 @@ namespace System.Security.Cryptography
 
         public override bool VerifySignature(byte[] rgbHash, byte[] rgbSignature)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
-                throw new ArgumentNullException(nameof(rgbSignature));
+            ArgumentNullException.ThrowIfNull(rgbHash);
+            ArgumentNullException.ThrowIfNull(rgbSignature);
 
             return VerifySignature((ReadOnlySpan<byte>)rgbHash, (ReadOnlySpan<byte>)rgbSignature);
         }
-
 
         public override bool VerifySignature(ReadOnlySpan<byte> hash, ReadOnlySpan<byte> signature) =>
             VerifySignatureCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);

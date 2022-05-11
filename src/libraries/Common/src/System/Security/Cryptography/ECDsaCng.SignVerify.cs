@@ -18,8 +18,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public override byte[] SignHash(byte[] hash)
         {
-            if (hash == null)
-                throw new ArgumentNullException(nameof(hash));
+            ArgumentNullException.ThrowIfNull(hash);
 
             int estimatedSize = KeySize switch
             {
@@ -89,10 +88,8 @@ namespace System.Security.Cryptography
         /// </summary>
         public override bool VerifyHash(byte[] hash, byte[] signature)
         {
-            if (hash == null)
-                throw new ArgumentNullException(nameof(hash));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
 
             return VerifyHashCore(hash, signature, DSASignatureFormat.IeeeP1363FixedFieldConcatenation);
         }

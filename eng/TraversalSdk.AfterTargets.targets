@@ -1,0 +1,25 @@
+<Project>
+
+  <!-- Uses the Microsoft.DotNet.Build.Tasks.TargetFramework package to filter out target frameworks from ProjectReferences. -->
+  <PropertyGroup Condition="'$(FilterTraversalProjectReferences)' == 'true'">
+    <BuildDependsOn>$(BuildDependsOn);ResolveP2PReferences</BuildDependsOn>
+    <CleanDependsOn>$(CleanDependsOn);ResolveP2PReferences</CleanDependsOn>
+    <RebuildDependsOn>$(RebuildDependsOn);ResolveP2PReferences</RebuildDependsOn>
+    <TestDependsOn>$(TestDependsOn);ResolveP2PReferences</TestDependsOn>
+    <VSTestDependsOn>$(VSTestDependsOn);ResolveP2PReferences</VSTestDependsOn>
+    <PackDependsOn>$(PackDependsOn);ResolveP2PReferences</PackDependsOn>
+    <PublishDependsOn>$(PublishDependsOn);ResolveP2PReferences</PublishDependsOn>
+    <GetTargetPathDependsOn>ResolveP2PReferences</GetTargetPathDependsOn>
+    <!-- Filter out ProjectReferences which aren't compatible with the project's TargetFramework. -->
+    <OmitIncompatibleProjectReferences>true</OmitIncompatibleProjectReferences>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(FilterTraversalProjectReferences)' == 'true'">
+    <!-- Override the Traversal SDK setting as filtering relies on the TargetFrameworkProperties being fetched
+         and don't flow the BuildTargetFramework property down. -->
+    <ProjectReference Update="@(ProjectReference)"
+                      SkipGetTargetFrameworkProperties="false"
+                      UndefineProperties="%(UndefineProperties);BuildTargetFramework"  />
+  </ItemGroup>
+
+</Project>

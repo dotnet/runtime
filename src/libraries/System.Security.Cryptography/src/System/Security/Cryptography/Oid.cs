@@ -34,8 +34,8 @@ namespace System.Security.Cryptography
 
         public Oid(Oid oid)
         {
-            if (oid == null)
-                throw new ArgumentNullException(nameof(oid));
+            ArgumentNullException.ThrowIfNull(oid);
+
             _value = oid._value;
             _friendlyName = oid._friendlyName;
             _group = oid._group;
@@ -44,10 +44,7 @@ namespace System.Security.Cryptography
 
         public static Oid FromFriendlyName(string friendlyName, OidGroup group)
         {
-            if (friendlyName == null)
-            {
-                throw new ArgumentNullException(nameof(friendlyName));
-            }
+            ArgumentNullException.ThrowIfNull(friendlyName);
 
             string? oidValue = OidLookup.ToOid(friendlyName, group, fallBackToAllGroups: false);
             if (oidValue == null)
@@ -58,8 +55,7 @@ namespace System.Security.Cryptography
 
         public static Oid FromOidValue(string oidValue, OidGroup group)
         {
-            if (oidValue == null)
-                throw new ArgumentNullException(nameof(oidValue));
+            ArgumentNullException.ThrowIfNull(oidValue);
 
             string? friendlyName = OidLookup.ToFriendlyName(oidValue, group, fallBackToAllGroups: false);
             if (friendlyName == null)

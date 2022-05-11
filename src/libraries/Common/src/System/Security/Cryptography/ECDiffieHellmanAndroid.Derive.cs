@@ -59,12 +59,9 @@ namespace System.Security.Cryptography
 
             public override byte[] DeriveKeyTls(ECDiffieHellmanPublicKey otherPartyPublicKey, byte[] prfLabel, byte[] prfSeed)
             {
-                if (otherPartyPublicKey == null)
-                    throw new ArgumentNullException(nameof(otherPartyPublicKey));
-                if (prfLabel == null)
-                    throw new ArgumentNullException(nameof(prfLabel));
-                if (prfSeed == null)
-                    throw new ArgumentNullException(nameof(prfSeed));
+                ArgumentNullException.ThrowIfNull(otherPartyPublicKey);
+                ArgumentNullException.ThrowIfNull(prfLabel);
+                ArgumentNullException.ThrowIfNull(prfSeed);
 
                 ThrowIfDisposed();
 

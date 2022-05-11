@@ -197,7 +197,7 @@ struct allMemoryKinds
 // BB2 of the corresponding handler to be an "EH successor" of BB1.  Because we
 // make the conservative assumption that control flow can jump from a try block
 // to its handler at any time, the immediate (regular control flow)
-// predecessor(s) of the the first block of a try block are also considered to
+// predecessor(s) of the first block of a try block are also considered to
 // have the first block of the handler as an EH successor.  This makes variables that
 // are "live-in" to the handler become "live-out" for these try-predecessor block,
 // so that they become live-in to the try -- which we require.
@@ -550,6 +550,8 @@ enum BasicBlockFlags : unsigned __int64
     BBF_PARTIAL_COMPILATION_PATCHPOINT  = MAKE_BBFLAG(38), // Block is a partial compilation patchpoint
     BBF_HAS_ALIGN            = MAKE_BBFLAG(39), // BB ends with 'align' instruction
     BBF_TAILCALL_SUCCESSOR   = MAKE_BBFLAG(40), // BB has pred that has potential tail call
+
+    BBF_BACKWARD_JUMP_SOURCE = MAKE_BBFLAG(41), // Block is a source of a backward jump
 
     // The following are sets of flags.
 

@@ -77,7 +77,7 @@ namespace Internal.IL
 
         public bool IsBoxedValueType
         {
-            get { return Kind == StackValueKind.ObjRef && Type.IsValueType; }
+            get { return Kind == StackValueKind.ObjRef && Type != null && Type.IsValueType; }
         }
 
         public StackValue DereferenceByRef()

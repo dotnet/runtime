@@ -23,15 +23,8 @@ namespace Microsoft.Extensions.Configuration
         /// <param name="path">The path to this section.</param>
         public ConfigurationSection(IConfigurationRoot root, string path)
         {
-            if (root == null)
-            {
-                throw new ArgumentNullException(nameof(root));
-            }
-
-            if (path == null)
-            {
-                throw new ArgumentNullException(nameof(path));
-            }
+            ThrowHelper.ThrowIfNull(root);
+            ThrowHelper.ThrowIfNull(path);
 
             _root = root;
             _path = path;

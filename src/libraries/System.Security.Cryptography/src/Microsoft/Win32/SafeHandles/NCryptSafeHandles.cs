@@ -75,8 +75,8 @@ namespace Microsoft.Win32.SafeHandles
         protected SafeNCryptHandle(IntPtr handle, SafeHandle parentHandle)
             : base(true)
         {
-            if (parentHandle == null)
-                throw new ArgumentNullException(nameof(parentHandle));
+            ArgumentNullException.ThrowIfNull(parentHandle);
+
             if (parentHandle.IsClosed || parentHandle.IsInvalid)
                 throw new ArgumentException(SR.Argument_Invalid_SafeHandleInvalidOrClosed, nameof(parentHandle));
 

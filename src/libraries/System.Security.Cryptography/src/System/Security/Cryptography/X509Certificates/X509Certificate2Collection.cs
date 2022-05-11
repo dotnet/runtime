@@ -46,16 +46,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         public int Add(X509Certificate2 certificate)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
+            ArgumentNullException.ThrowIfNull(certificate);
 
             return base.Add(certificate);
         }
 
         public void AddRange(X509Certificate2[] certificates)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
+            ArgumentNullException.ThrowIfNull(certificates);
 
             int i = 0;
             try
@@ -77,8 +75,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void AddRange(X509Certificate2Collection certificates)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
+            ArgumentNullException.ThrowIfNull(certificates);
 
             int i = 0;
             try
@@ -123,8 +120,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public X509Certificate2Collection Find(X509FindType findType, object findValue, bool validOnly)
         {
-            if (findValue == null)
-                throw new ArgumentNullException(nameof(findValue));
+            ArgumentNullException.ThrowIfNull(findValue);
 
             return FindPal.FindFromCollection(this, findType, findValue, validOnly);
         }
@@ -138,8 +134,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Import(byte[] rawData)
         {
-            if (rawData == null)
-                throw new ArgumentNullException(nameof(rawData));
+            ArgumentNullException.ThrowIfNull(rawData);
 
             Import(rawData.AsSpan());
         }
@@ -157,8 +152,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Import(byte[] rawData, string? password, X509KeyStorageFlags keyStorageFlags = 0)
         {
-            if (rawData == null)
-                throw new ArgumentNullException(nameof(rawData));
+            ArgumentNullException.ThrowIfNull(rawData);
 
             Import(rawData.AsSpan(), password.AsSpan(), keyStorageFlags);
         }
@@ -194,9 +188,6 @@ namespace System.Security.Cryptography.X509Certificates
         /// </param>
         public void Import(ReadOnlySpan<byte> rawData, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
         {
-            if (rawData == null)
-                throw new ArgumentNullException(nameof(rawData));
-
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
             using (var safePasswordHandle = new SafePasswordHandle(password))
@@ -213,8 +204,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Import(string fileName, string? password, X509KeyStorageFlags keyStorageFlags = 0)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
+            ArgumentNullException.ThrowIfNull(fileName);
 
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
@@ -239,8 +229,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </param>
         public void Import(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags = 0)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
+            ArgumentNullException.ThrowIfNull(fileName);
 
             X509Certificate.ValidateKeyStorageFlags(keyStorageFlags);
 
@@ -253,24 +242,21 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Insert(int index, X509Certificate2 certificate)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
+            ArgumentNullException.ThrowIfNull(certificate);
 
             base.Insert(index, certificate);
         }
 
         public void Remove(X509Certificate2 certificate)
         {
-            if (certificate == null)
-                throw new ArgumentNullException(nameof(certificate));
+            ArgumentNullException.ThrowIfNull(certificate);
 
             base.Remove(certificate);
         }
 
         public void RemoveRange(X509Certificate2[] certificates)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
+            ArgumentNullException.ThrowIfNull(certificates);
 
             int i = 0;
             try
@@ -292,8 +278,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void RemoveRange(X509Certificate2Collection certificates)
         {
-            if (certificates == null)
-                throw new ArgumentNullException(nameof(certificates));
+            ArgumentNullException.ThrowIfNull(certificates);
 
             int i = 0;
             try
@@ -340,8 +325,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public void ImportFromPemFile(string certPemFilePath)
         {
-            if (certPemFilePath is null)
-                throw new ArgumentNullException(nameof(certPemFilePath));
+            ArgumentNullException.ThrowIfNull(certPemFilePath);
 
             ReadOnlySpan<char> contents = System.IO.File.ReadAllText(certPemFilePath);
             ImportFromPem(contents);

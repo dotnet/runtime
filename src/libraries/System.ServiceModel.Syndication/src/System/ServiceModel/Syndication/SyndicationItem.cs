@@ -50,7 +50,7 @@ namespace System.ServiceModel.Syndication
 
         protected SyndicationItem(SyndicationItem source)
         {
-            if (source == null)
+            if (source is null)
             {
                 throw new ArgumentNullException(nameof(source));
             }
@@ -157,7 +157,7 @@ namespace System.ServiceModel.Syndication
 
         public static TSyndicationItem Load<TSyndicationItem>(XmlReader reader) where TSyndicationItem : SyndicationItem, new()
         {
-            if (reader == null)
+            if (reader is null)
             {
                 throw new ArgumentNullException(nameof(reader));
             }
@@ -181,7 +181,7 @@ namespace System.ServiceModel.Syndication
 
         public void AddPermalink(Uri permalink)
         {
-            if (permalink == null)
+            if (permalink is null)
             {
                 throw new ArgumentNullException(nameof(permalink));
             }

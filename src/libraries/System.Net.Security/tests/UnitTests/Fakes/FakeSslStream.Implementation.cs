@@ -6,6 +6,10 @@ using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 
+// Disable warning about unused or unasiggned variables
+#pragma warning disable CS0649
+#pragma warning disable CS0414
+
 namespace System.Net.Security
 {
     public partial class SslStream
@@ -13,11 +17,37 @@ namespace System.Net.Security
         private class FakeOptions
         {
             public string TargetHost;
+            public EncryptionPolicy EncryptionPolicy;
+            public bool IsServer;
+            public RemoteCertificateValidationCallback? CertValidationDelegate;
+            public LocalCertificateSelectionCallback? CertSelectionDelegate;
+            public X509RevocationMode CertificateRevocationCheckMode;
+
+            public void UpdateOptions(SslServerAuthenticationOptions sslServerAuthenticationOptions)
+            {
+            }
+
+            public void UpdateOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions)
+            {
+            }
+
+            internal void UpdateOptions(ServerOptionsSelectionCallback optionCallback, object? state)
+            {
+            }
         }
 
-        private FakeOptions? _sslAuthenticationOptions;
+        private FakeOptions _sslAuthenticationOptions = new FakeOptions();
+        private SslConnectionInfo _connectionInfo;
+        internal ChannelBinding? GetChannelBinding(ChannelBindingKind kind) => null;
+        private bool _remoteCertificateExposed;
+        private X509Certificate2? LocalClientCertificate;
+        private X509Certificate2? LocalServerCertificate;
+        private bool IsRemoteCertificateAvailable;
+        private bool IsValidContext;
+        private X509Certificate2? _remoteCertificate;
 
-        private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertificateValidationCallback? remoteCallback, LocalCertSelectionCallback? localCallback)
+
+        private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertificateValidationCallback? remoteCallback, LocalCertificateSelectionCallback? localCallback)
         {
             // Without setting (or using) these members you will get a build exception in the unit test project.
             // The code that normally uses these in the main solution is in the implementation of SslStream.
@@ -26,11 +56,7 @@ namespace System.Net.Security
             {
 
             }
-            _context = null;
             _exception = null;
-            _internalBuffer = null;
-            _internalBufferCount = 0;
-            _internalOffset = 0;
             _nestedWrite = 0;
             _handshakeCompleted = false;
         }
@@ -40,10 +66,11 @@ namespace System.Net.Security
             _sslAuthenticationOptions = new FakeOptions() { TargetHost = sslAuthenticationOptions.TargetHost };
         }
 
-        private ValueTask WriteAsyncInternal<TWriteAdapter>(TWriteAdapter writeAdapter, ReadOnlyMemory<byte> buffer)
-            where TWriteAdapter : struct, IReadWriteAdapter => default;
+        private ValueTask WriteAsyncInternal<TWriteAdapter>(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+            where TWriteAdapter : IReadWriteAdapter => default;
 
-        private ValueTask<int> ReadAsyncInternal<TReadAdapter>(TReadAdapter adapter, Memory<byte> buffer) => default;
+        private ValueTask<int> ReadAsyncInternal<TReadAdapter>(Memory<byte> buffer, CancellationToken cancellationToken)
+            where TReadAdapter : IReadWriteAdapter => default;
 
         private bool RemoteCertRequired => default;
 
@@ -54,35 +81,25 @@ namespace System.Net.Security
         // This method assumes that a SSPI context is already in a good shape.
         // For example it is either a fresh context or already authenticated context that needs renegotiation.
         //
-        private Task ProcessAuthenticationAsync(bool isAsync = false, bool isApm = false, CancellationToken cancellationToken = default)
+        private Task ProcessAuthenticationAsync(bool isAsync = false, CancellationToken cancellationToken = default)
         {
-            return Task.Run(() => {});
+            return Task.Run(() => { });
         }
 
-        private Task RenegotiateAsync(AsyncReadWriteAdapter adapter) => throw new PlatformNotSupportedException();
+        private Task RenegotiateAsync<AsyncReadWriteAdapter>(CancellationToken cancellationToken) => throw new PlatformNotSupportedException();
 
         private void ReturnReadBufferIfEmpty()
         {
         }
-    }
 
-    internal class SecureChannel
-    {
-        internal bool IsValidContext => default;
-        internal bool IsServer => default;
-        internal SslConnectionInfo ConnectionInfo => default;
-        internal ChannelBinding GetChannelBinding(ChannelBindingKind kind) => default;
-        internal X509Certificate LocalServerCertificate => default;
-        internal X509Certificate RemoteCertificate => default;
-        internal bool IsRemoteCertificateAvailable => default;
-        internal SslApplicationProtocol NegotiatedApplicationProtocol => default;
-        internal X509Certificate LocalClientCertificate => default;
-        internal X509RevocationMode CheckCertRevocationStatus => default;
-        internal ProtocolToken CreateShutdownToken() => default;
+        private ProtocolToken? CreateShutdownToken()
+        {
+            return null;
+        }
 
         internal static X509Certificate2? FindCertificateWithPrivateKey(object instance, bool isServer, X509Certificate certificate)
         {
-            return certificate as X509Certificate2;
+            return null;
         }
     }
 

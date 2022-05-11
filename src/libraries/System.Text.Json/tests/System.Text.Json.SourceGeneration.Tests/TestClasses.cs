@@ -106,6 +106,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         public HighLowTempsImmutable(int high, int low) => (High, Low) = (high, low);
     }
 
+    public record HighLowTempsRecord(int High, int Low);
+
     public class EmptyPoco
     {
     }
@@ -157,5 +159,38 @@ namespace System.Text.Json.SourceGeneration.Tests
     {
         public string FirstName { get; set; }
         public string LastName { get; set; }
+    }
+
+    public class TypeWithValidationAttributes
+    {
+        [ComponentModel.DataAnnotations.Required(ErrorMessage = "Name is required")]
+        [ComponentModel.DataAnnotations.StringLength(100, ErrorMessage = "Name must not be longer than 100 characters")]
+        public string Name { get; set; }
+
+        [ComponentModel.DataAnnotations.Required]
+        public string Email { get; set; }
+    }
+
+    public class BaseAttribute : Attribute
+    {
+        public string TestProperty { get; set; }
+    }
+
+    public class DerivedAttribute : BaseAttribute
+    { }
+
+    [Derived(TestProperty = "Test")]
+    public class TypeWithDerivedAttribute
+    { }
+
+    [JsonDerivedType(typeof(DerivedClass), "derivedClass")]
+    public class PolymorphicClass
+    {
+        public int Number { get; set; }
+
+        public class DerivedClass : PolymorphicClass
+        {
+            public bool Boolean { get; set; }
+        }
     }
 }

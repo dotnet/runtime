@@ -4,11 +4,19 @@
 using System.Collections.Generic;
 using System.Linq;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace System.Globalization.Tests
 {
     public class NumberFormatInfoCurrencyNegativePattern
     {
+        private readonly ITestOutputHelper _testOutputHelper;
+
+        public NumberFormatInfoCurrencyNegativePattern(ITestOutputHelper testOutputHelper)
+        {
+            _testOutputHelper = testOutputHelper;
+        }
+
         public static IEnumerable<object[]> CurrencyNegativePattern_TestData()
         {
             yield return new object[] { NumberFormatInfo.InvariantInfo, new int[] { 0 } };
@@ -53,6 +61,7 @@ namespace System.Globalization.Tests
             }
 
             NumberFormatInfo format = culture.NumberFormat;
+            _testOutputHelper.WriteLine(locale);
             Assert.Contains(format.CurrencyNegativePattern, NumberFormatInfoData.GetCurrencyNegativePatterns(locale));
         }
 

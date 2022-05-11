@@ -16,6 +16,7 @@ namespace System.Diagnostics
             get { throw null; }
             set { }
         }
+        public static event System.EventHandler<System.Diagnostics.ActivityChangedEventArgs>? CurrentChanged { add { } remove { } }
         public static System.Diagnostics.ActivityIdFormat DefaultIdFormat { get { throw null; } set { } }
         public System.TimeSpan Duration { get { throw null; } }
         public static bool ForceDefaultIdFormat { get { throw null; } set { } }
@@ -24,6 +25,7 @@ namespace System.Diagnostics
             get { throw null; }
         }
 
+        public bool HasRemoteParent { get { throw null; } }
         public bool IsAllDataRequested { get { throw null; } set { throw null; } }
         public bool IsStopped { get { throw null; } }
         public System.Diagnostics.ActivityIdFormat IdFormat { get { throw null; } }
@@ -67,7 +69,23 @@ namespace System.Diagnostics
         protected virtual void Dispose(bool disposing) { throw null; }
         public void SetCustomProperty(string propertyName, object? propertyValue) { throw null; }
         public object? GetCustomProperty(string propertyName) { throw null; }
-        public ActivityContext Context { get { throw null; } }
+        public System.Diagnostics.ActivityContext Context { get { throw null; } }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
+        public System.Diagnostics.Activity.Enumerator<ActivityEvent> EnumerateEvents() { throw null; }
+        public System.Diagnostics.Activity.Enumerator<ActivityLink> EnumerateLinks() { throw null; }
+
+        public struct Enumerator<T>
+        {
+            [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
+            public readonly System.Diagnostics.Activity.Enumerator<T> GetEnumerator() { throw null; }
+            public readonly ref T Current { get { throw null; } }
+            public bool MoveNext() { throw null; }
+        }
+    }
+    public readonly struct ActivityChangedEventArgs
+    {
+        public System.Diagnostics.Activity? Previous { get { throw null; } init { throw null; } }
+        public System.Diagnostics.Activity? Current { get { throw null; } init { throw null; } }
     }
     public class ActivityTagsCollection : System.Collections.Generic.IDictionary<string, object?>
     {
@@ -205,6 +223,7 @@ namespace System.Diagnostics
         public string Name { get { throw null; } }
         public System.DateTimeOffset Timestamp { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> Tags { get { throw null; } }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
     }
     public readonly struct ActivityContext : System.IEquatable<System.Diagnostics.ActivityContext>
     {
@@ -233,6 +252,7 @@ namespace System.Diagnostics
         public static bool operator ==(System.Diagnostics.ActivityLink left, System.Diagnostics.ActivityLink right) { throw null; }
         public static bool operator !=(System.Diagnostics.ActivityLink left, System.Diagnostics.ActivityLink right) { throw null; }
         public override int GetHashCode()  { throw null; }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
     }
     public readonly struct ActivityCreationOptions<T>
     {
@@ -244,6 +264,7 @@ namespace System.Diagnostics
         public System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? Links  { get { throw null; } }
         public System.Diagnostics.ActivityTagsCollection SamplingTags { get { throw null; } }
         public System.Diagnostics.ActivityTraceId TraceId { get { throw null; } }
+        public string? TraceState { get { throw null; } init { throw null; } }
     }
     public delegate System.Diagnostics.ActivitySamplingResult SampleActivity<T>(ref System.Diagnostics.ActivityCreationOptions<T> options);
     public sealed class ActivityListener : IDisposable

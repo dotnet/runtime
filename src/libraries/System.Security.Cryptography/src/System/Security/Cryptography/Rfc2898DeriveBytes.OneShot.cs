@@ -44,10 +44,8 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
-            if (password is null)
-                throw new ArgumentNullException(nameof(password));
-            if (salt is null)
-                throw new ArgumentNullException(nameof(salt));
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(salt);
 
             return Pbkdf2(new ReadOnlySpan<byte>(password), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }
@@ -168,10 +166,8 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             int outputLength)
         {
-            if (password is null)
-                throw new ArgumentNullException(nameof(password));
-            if (salt is null)
-                throw new ArgumentNullException(nameof(salt));
+            ArgumentNullException.ThrowIfNull(password);
+            ArgumentNullException.ThrowIfNull(salt);
 
             return Pbkdf2(password.AsSpan(), new ReadOnlySpan<byte>(salt), iterations, hashAlgorithm, outputLength);
         }

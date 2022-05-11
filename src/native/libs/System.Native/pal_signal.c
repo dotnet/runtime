@@ -38,6 +38,8 @@ static volatile bool* g_hasPosixSignalRegistrations;
 
 static int g_signalPipe[2] = {-1, -1}; // Pipe used between signal handler and worker
 
+static pid_t g_pid;
+
 static int GetSignalMax() // Returns the highest usable signal number.
 {
 #ifdef SIGRTMAX
@@ -294,7 +296,7 @@ void SystemNative_HandleNonCanceledPosixSignal(int32_t signalCode)
 #ifdef HAS_CONSOLE_SIGNALS
             UninitializeTerminal();
 #endif
-            kill(getpid(), signalCode);
+            kill(g_pid, signalCode);
             break;
     }
 }
@@ -341,9 +343,15 @@ static void* SignalHandlerLoop(void* arg)
         bool usePosixSignalHandler = g_hasPosixSignalRegistrations[signalCode - 1];
         if (signalCode == SIGCHLD)
         {
-            // When the original disposition is SIG_IGN, children that terminated did not become zombies.
-            // Since we overwrote the disposition, we have become responsible for reaping those processes.
-            bool reapAll = IsSigIgn(OrigActionFor(signalCode));
+            // By default we only reap managed processes started using the 'Process' class.
+            // This allows other code to start processes without .NET reaping them.
+            //
+            // In two cases we reap all processes (and may inadvertently reap non-managed processes):
+            // - When the original disposition is SIG_IGN, children that terminated did not become zombies.
+            //   Because overwrote the disposition, we have become responsible for reaping those processes.
+            // - pid 1 (the init daemon) is responsible for reaping orphaned children.
+            //   Because containers usually don't have an init daemon .NET may be pid 1.
+            bool reapAll = g_pid == 1 || IsSigIgn(OrigActionFor(signalCode));
             SigChldCallback callback = g_sigChldCallback;
 
             // double-checked locking
@@ -552,6 +560,8 @@ int32_t InitializeSignalHandlingCore()
         return 0;
     }
 
+    g_pid = getpid();
+
     // Create a pipe we'll use to communicate with our worker
     // thread.  We can't do anything interesting in the signal handler,
     // so we instead send a message to another thread that'll do
@@ -584,6 +594,16 @@ int32_t InitializeSignalHandlingCore()
         return 0;
     }
 
+#ifdef HAS_CONSOLE_SIGNALS
+    // Unconditionally register signals for terminal configuration.
+    bool installed = InstallSignalHandler(SIGINT, SA_RESTART);
+    assert(installed);
+    installed = InstallSignalHandler(SIGQUIT, SA_RESTART);
+    assert(installed);
+    installed = InstallSignalHandler(SIGCONT, SA_RESTART);
+    assert(installed);
+#endif
+
     return 1;
 }
 
@@ -612,7 +632,12 @@ void SystemNative_DisablePosixSignalHandling(int signalCode)
     {
         g_hasPosixSignalRegistrations[signalCode - 1] = false;
 
-        if (!(g_consoleTtouHandler && signalCode == SIGTTOU) &&
+        // Don't restore handler when something other than posix handling needs the signal.
+        if (
+#ifdef HAS_CONSOLE_SIGNALS
+            signalCode != SIGINT && signalCode != SIGQUIT && signalCode != SIGCONT &&
+#endif
+            !(g_consoleTtouHandler && signalCode == SIGTTOU) &&
             !(g_sigChldCallback && signalCode == SIGCHLD) &&
             !(g_terminalInvalidationCallback && (signalCode == SIGCONT ||
                                                  signalCode == SIGCHLD ||

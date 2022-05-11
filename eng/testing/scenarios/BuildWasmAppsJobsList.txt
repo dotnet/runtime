@@ -17,3 +17,4 @@ Wasm.Build.Tests.SatelliteAssembliesTests
 Wasm.Build.Tests.WasmBuildAppTest
 Wasm.Build.Tests.WasmNativeDefaultsTests
 Wasm.Build.Tests.WorkloadTests
+Wasm.Build.Tests.WasmTemplateTests

@@ -123,7 +123,7 @@ namespace System.Xml
             Debug.Assert(CurrentNode.NodeType == XmlNodeType.Element);
 #if DEBUG
             // It's not OK to try to read the initial text value for sub-regions, because we do not know how to revert their initial state
-            if (CurrentNode.NodeType == XmlNodeType.Element && mapper.GetTableSchemaForElement((XmlElement)(CurrentNode)) != null)
+            if (CurrentNode.NodeType == XmlNodeType.Element && DataSetMapper.GetTableSchemaForElement((XmlElement)(CurrentNode)) != null)
             {
                 if (CurrentNode != _rowElement)
                 {

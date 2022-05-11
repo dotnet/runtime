@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.Build.Traversal">
+
+  <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
+    <!-- Filter ProjectReferences to build the best matching target framework only. -->
+    <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+  </PropertyGroup>
+
+  <!-- Reference all NetCoreAppCurrent out-of-band ref projects. -->
+  <ItemGroup>
+    <ProjectReference Include="$(MSBuildThisFileDirectory)*\ref\*.csproj"
+                      Exclude="@(ProjectExclusions);
+                               shims\ref\*.csproj;
+                               @(NetCoreAppLibrary->'%(Identity)\ref\%(Identity).csproj')" />
+  </ItemGroup>
+
+</Project>

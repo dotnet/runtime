@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Diagnostics.Tracing;
 using System.Net.Sockets;
 using System.Threading;
-using Microsoft.Extensions.Internal;
 
 namespace System.Net
 {
@@ -61,7 +60,7 @@ namespace System.Net
 
 
         [NonEvent]
-        public ValueStopwatch BeforeResolution(object hostNameOrAddress)
+        public long BeforeResolution(object hostNameOrAddress)
         {
             Debug.Assert(hostNameOrAddress != null);
             Debug.Assert(
@@ -89,20 +88,20 @@ namespace System.Net
                     ResolutionStart(host);
                 }
 
-                return ValueStopwatch.StartNew();
+                return Stopwatch.GetTimestamp();
             }
 
-            return default;
+            return 0;
         }
 
         [NonEvent]
-        public void AfterResolution(ValueStopwatch stopwatch, bool successful)
+        public void AfterResolution(long startingTimestamp, bool successful)
         {
-            if (stopwatch.IsActive)
+            if (startingTimestamp != 0)
             {
                 Interlocked.Decrement(ref _currentLookups);
 
-                _lookupsDuration!.WriteMetric(stopwatch.GetElapsedTime().TotalMilliseconds);
+                _lookupsDuration!.WriteMetric(Stopwatch.GetElapsedTime(startingTimestamp).TotalMilliseconds);
 
                 if (IsEnabled(EventLevel.Informational, EventKeywords.None))
                 {

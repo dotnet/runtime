@@ -23,8 +23,7 @@ namespace System
 
         public static string? GetEnvironmentVariable(string variable)
         {
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
+            ArgumentNullException.ThrowIfNull(variable);
 
             return GetEnvironmentVariableCore(variable);
         }
@@ -34,8 +33,7 @@ namespace System
             if (target == EnvironmentVariableTarget.Process)
                 return GetEnvironmentVariable(variable);
 
-            if (variable == null)
-                throw new ArgumentNullException(nameof(variable));
+            ArgumentNullException.ThrowIfNull(variable);
 
             bool fromMachine = ValidateAndConvertRegistryTarget(target);
             return GetEnvironmentVariableFromRegistry(variable, fromMachine);
@@ -84,8 +82,7 @@ namespace System
 
         public static string ExpandEnvironmentVariables(string name)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (name.Length == 0)
                 return name;

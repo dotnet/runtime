@@ -437,8 +437,7 @@ namespace Internal.Win32
         // so this is a cut-down version that supports on that.
         internal void SetValue(string name, string value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             if (name != null && name.Length > MaxValueLength)
                 throw new ArgumentException(SR.Arg_RegValStrLenBug, nameof(name));

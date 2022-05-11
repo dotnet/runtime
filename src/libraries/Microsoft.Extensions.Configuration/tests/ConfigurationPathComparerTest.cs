@@ -14,6 +14,8 @@ namespace Microsoft.Extensions.Configuration.Test
             ComparerTest(null, null, 0);
             ComparerTest(null, "a", -1);
             ComparerTest("b", null, 1);
+            ComparerTest(null, "a:b", -1);
+            ComparerTest(null, "a:b:c", -1);
         }
 
         [Fact]
@@ -30,6 +32,20 @@ namespace Microsoft.Extensions.Configuration.Test
         {
             ComparerTest("a", "aa", -1);
             ComparerTest("aa", "a", 1);
+        }
+
+        [Fact]
+        public void CompareWithEmpty()
+        {
+            ComparerTest(":", "", 0);
+            ComparerTest(":", "::", 0);
+            ComparerTest(null, "", 0);
+            ComparerTest(":", null, 0);
+            ComparerTest("::", null, 0);
+            ComparerTest(" : : ", null, 1);
+            ComparerTest("b: :a", "b::a", -1);
+            ComparerTest("b:\t:a", "b::a", -1);
+            ComparerTest("b::a: ", "b::a:", 1);
         }
 
         [Fact]

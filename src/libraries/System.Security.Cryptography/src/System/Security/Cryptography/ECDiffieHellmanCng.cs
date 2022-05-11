@@ -22,8 +22,7 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public ECDiffieHellmanCng(CngKey key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             if (key.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(key));
@@ -43,10 +42,7 @@ namespace System.Security.Cryptography
 
             set
             {
-                if (_hashAlgorithm == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value, nameof(value));
 
                 _hashAlgorithm = value;
             }

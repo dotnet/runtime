@@ -108,7 +108,7 @@ namespace System.Xml.Xsl.XsltOld
             return _processor!.Stylesheet.PreserveWhiteSpace(_processor, node);
         }
 
-        private MethodInfo? FindBestMethod(MethodInfo[] methods, bool ignoreCase, bool publicOnly, string name, XPathResultType[]? argTypes)
+        private static MethodInfo? FindBestMethod(MethodInfo[] methods, bool ignoreCase, bool publicOnly, string name, XPathResultType[]? argTypes)
         {
             int length = methods.Length;
             int free = 0;

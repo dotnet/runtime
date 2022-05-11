@@ -20,18 +20,25 @@ namespace ILCompiler
         // These need to provide reasonable defaults so that the user can optionally skip
         // calling the Use/Configure methods and still get something reasonable back.
         private KeyValuePair<string, string>[] _ryujitOptions = Array.Empty<KeyValuePair<string, string>>();
-        private ILProvider _ilProvider = new CoreRTILProvider();
+        private ILProvider _ilProvider = new NativeAotILProvider();
         private ProfileDataManager _profileDataManager;
+        private string _jitPath;
 
         public RyuJitCompilationBuilder(CompilerTypeSystemContext context, CompilationModuleGroup group)
             : base(context, group,
-                  new CoreRTNameMangler(context.Target.IsWindows ? (NodeMangler)new WindowsNodeMangler() : (NodeMangler)new UnixNodeMangler(), false))
+                  new NativeAotNameMangler(context.Target.IsWindows ? (NodeMangler)new WindowsNodeMangler() : (NodeMangler)new UnixNodeMangler(), false))
         {
         }
 
         public RyuJitCompilationBuilder UseProfileData(IEnumerable<string> mibcFiles)
         {
             _profileDataManager = new ProfileDataManager(mibcFiles, _context);
+            return this;
+        }
+
+        public RyuJitCompilationBuilder UseJitPath(string jitPath)
+        {
+            _jitPath = jitPath;
             return this;
         }
 
@@ -108,7 +115,10 @@ namespace ILCompiler
                 options |= RyuJitCompilationOptions.MethodBodyFolding;
 
             if ((_mitigationOptions & SecurityMitigationOptions.ControlFlowGuardAnnotations) != 0)
+            {
+                jitFlagBuilder.Add(CorJitFlag.CORJIT_FLAG_ENABLE_CFG);
                 options |= RyuJitCompilationOptions.ControlFlowGuardAnnotations;
+            }
 
             if (_useDwarf5)
                 options |= RyuJitCompilationOptions.UseDwarf5;
@@ -118,8 +128,8 @@ namespace ILCompiler
 
             var factory = new RyuJitNodeFactory(_context, _compilationGroup, _metadataManager, _interopStubManager, _nameMangler, _vtableSliceProvider, _dictionaryLayoutProvider, GetPreinitializationManager());
 
-            JitConfigProvider.Initialize(_context.Target, jitFlagBuilder.ToArray(), _ryujitOptions);
-            DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(new CompilerComparer()));
+            JitConfigProvider.Initialize(_context.Target, jitFlagBuilder.ToArray(), _ryujitOptions, _jitPath);
+            DependencyAnalyzerBase<NodeFactory> graph = CreateDependencyGraph(factory, new ObjectNode.ObjectNodeComparer(CompilerComparer.Instance));
             return new RyuJitCompilation(graph, factory, _compilationRoots, _ilProvider, _debugInformationProvider, _logger, _devirtualizationManager, _inliningPolicy ?? _compilationGroup, _instructionSetSupport, _profileDataManager, _methodImportationErrorProvider, options, _parallelism);
         }
     }

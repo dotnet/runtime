@@ -44,9 +44,24 @@ namespace System.Collections.Generic
         public void Append(T item)
         {
             int pos = _pos;
-            if (pos >= _span.Length)
-                Grow();
+            if ((uint)pos < (uint)_span.Length)
+            {
+                _span[pos] = item;
+                _pos = pos + 1;
+            }
+            else
+            {
+                AddWithResize(item);
+            }
+        }
 
+        // Hide uncommon path
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private void AddWithResize(T item)
+        {
+            Debug.Assert(_pos == _span.Length);
+            int pos = _pos;
+            Grow();
             _span[pos] = item;
             _pos = pos + 1;
         }

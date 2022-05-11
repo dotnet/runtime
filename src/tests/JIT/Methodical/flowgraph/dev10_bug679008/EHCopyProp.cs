@@ -2,10 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-internal static class Exploit
+public static class Exploit
 {
-    private static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         string s = "my string";
         IntPtr i = Helper.RetypeObject<IntPtr, string>(s);

@@ -98,11 +98,14 @@ namespace System.IO.Packaging
                                 string? contentType,
                                 CompressionOption compressionOption)
         {
-            if (package == null)
+            if (package is null)
+            {
                 throw new ArgumentNullException(nameof(package));
-
-            if (partUri == null)
+            }
+            if (partUri is null)
+            {
                 throw new ArgumentNullException(nameof(partUri));
+            }
 
             Package.ThrowIfCompressionOptionInvalid(compressionOption);
 
@@ -782,7 +785,7 @@ namespace System.IO.Packaging
         //return false. These properties do not throw ObjectDisposedException.
         //So we rely on the values of these properties to determine if a stream
         //has been closed.
-        private bool IsStreamClosed(Stream s)
+        private static bool IsStreamClosed(Stream s)
         {
             return !s.CanRead && !s.CanSeek && !s.CanWrite;
         }

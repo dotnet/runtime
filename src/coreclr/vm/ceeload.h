@@ -87,6 +87,8 @@ class JITInlineTrackingMap;
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
 #elif defined(HOST_ARM64)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
+#elif defined(HOST_LOONGARCH64)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.loongarch64.dll")
 #endif
 
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
@@ -805,9 +807,8 @@ private:
         // unused                   = 0x00000001,
         COMPUTED_GLOBAL_CLASS       = 0x00000002,
 
-        // This flag applies to assembly, but it is stored so it can be cached in ngen image
-        COMPUTED_STRING_INTERNING   = 0x00000004,
-        NO_STRING_INTERNING         = 0x00000008,
+        // unused                   = 0x00000004,
+        // unused                   = 0x00000008,
 
         // This flag applies to assembly, but it is stored so it can be cached in ngen image
         COMPUTED_WRAP_EXCEPTIONS    = 0x00000010,
@@ -1400,7 +1401,7 @@ protected:
     void InitializeStringData(DWORD token, EEStringData *pstrData, CQuickBytes *pqb);
 
     // Resolving
-    OBJECTHANDLE ResolveStringRef(DWORD Token, BaseDomain *pDomain, bool bNeedToSyncWithFixups);
+    OBJECTHANDLE ResolveStringRef(DWORD Token, BaseDomain *pDomain);
 
     CHECK CheckStringRef(RVA rva);
 
@@ -1789,7 +1790,7 @@ public:
     // active execution in one module to another module without
     // involving triggering the file loader to ensure that the
     // destination module is active.  We must explicitly list these
-    // relationships so the the loader can ensure that the activation
+    // relationships so the loader can ensure that the activation
     // constraints are a priori satisfied.
     //
     // Conditional vs. Unconditional describes how we deal with
@@ -2025,13 +2026,6 @@ protected:
 
 public:
     //-----------------------------------------------------------------------------------------
-    // If true,  strings only need to be interned at a per module basis, instead of at a
-    // per appdomain basis, which is the default. Use the module accessor so you don't need
-    // to touch the metadata in the ngen case
-    //-----------------------------------------------------------------------------------------
-    BOOL                    IsNoStringInterning();
-
-    //-----------------------------------------------------------------------------------------
     // Returns a BOOL to indicate if we have computed whether compiler has instructed us to
     // wrap the non-CLS compliant exceptions or not.
     //-----------------------------------------------------------------------------------------
@@ -2182,7 +2176,6 @@ class ReflectionModule : public Module
  protected:
     ICeeGenInternal * m_pCeeFileGen;
 private:
-    Assembly             *m_pCreatingAssembly;
     RefClassWriter       *m_pInMemoryWriter;
 
 
@@ -2218,20 +2211,6 @@ public:
     // Overrides functions to access sections
     virtual TADDR GetIL(RVA target);
     virtual PTR_VOID GetRvaField(RVA rva);
-
-    Assembly* GetCreatingAssembly( void )
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        return m_pCreatingAssembly;
-    }
-
-    void SetCreatingAssembly( Assembly* assembly )
-    {
-        LIMITED_METHOD_CONTRACT;
-
-        m_pCreatingAssembly = assembly;
-    }
 
     ICeeGenInternal *GetCeeGen() {LIMITED_METHOD_CONTRACT;  return m_pCeeFileGen; }
 

@@ -132,9 +132,6 @@
   <data name="Argument_InvalidHandle" xml:space="preserve">
     <value>Handle has been disposed or is invalid.</value>
   </data>
-  <data name="ArgumentNull_Buffer" xml:space="preserve">
-    <value>Buffer cannot be null.</value>
-  </data>
   <data name="ArgumentNull_ServerName" xml:space="preserve">
     <value>serverName cannot be null. Use \".\" for current machine.</value>
   </data>

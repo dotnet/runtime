@@ -29,10 +29,9 @@ namespace System.Security.Cryptography
 
         public ChaCha20Poly1305(byte[] key)
         {
-            ThrowIfNotSupported();
+            ArgumentNullException.ThrowIfNull(key);
 
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ThrowIfNotSupported();
 
             CheckKeySize(key.Length);
             ImportKey(key);
@@ -48,7 +47,11 @@ namespace System.Security.Cryptography
 
         public void Encrypt(byte[] nonce, byte[] plaintext, byte[] ciphertext, byte[] tag, byte[]? associatedData = null)
         {
-            AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
+            ArgumentNullException.ThrowIfNull(nonce);
+            ArgumentNullException.ThrowIfNull(plaintext);
+            ArgumentNullException.ThrowIfNull(ciphertext);
+            ArgumentNullException.ThrowIfNull(tag);
+
             Encrypt((ReadOnlySpan<byte>)nonce, plaintext, ciphertext, tag, associatedData);
         }
 
@@ -65,7 +68,11 @@ namespace System.Security.Cryptography
 
         public void Decrypt(byte[] nonce, byte[] ciphertext, byte[] tag, byte[] plaintext, byte[]? associatedData = null)
         {
-            AeadCommon.CheckArgumentsForNull(nonce, plaintext, ciphertext, tag);
+            ArgumentNullException.ThrowIfNull(nonce);
+            ArgumentNullException.ThrowIfNull(ciphertext);
+            ArgumentNullException.ThrowIfNull(tag);
+            ArgumentNullException.ThrowIfNull(plaintext);
+
             Decrypt((ReadOnlySpan<byte>)nonce, ciphertext, tag, plaintext, associatedData);
         }
 

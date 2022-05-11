@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Keep in sync with https://github.com/dotnet/corert/blob/master/src/Native/ObjWriter/cordebuginfo.h
+// Keep in sync with llvm/tools/objwriter/cordebuginfo.h in current objwriter branch in https://github.com/dotnet/llvm-project repo
 //
 
 /**********************************************************************************/
@@ -145,6 +145,40 @@ public:
         REGNUM_R13,
         REGNUM_R14,
         REGNUM_R15,
+#elif TARGET_LOONGARCH64
+        REGNUM_R0,
+        REGNUM_RA,
+        REGNUM_TP,
+        REGNUM_SP,
+        REGNUM_A0,
+        REGNUM_A1,
+        REGNUM_A2,
+        REGNUM_A3,
+        REGNUM_A4,
+        REGNUM_A5,
+        REGNUM_A6,
+        REGNUM_A7,
+        REGNUM_T0,
+        REGNUM_T1,
+        REGNUM_T2,
+        REGNUM_T3,
+        REGNUM_T4,
+        REGNUM_T5,
+        REGNUM_T6,
+        REGNUM_T7,
+        REGNUM_T8,
+        REGNUM_X0,
+        REGNUM_FP,
+        REGNUM_S0,
+        REGNUM_S1,
+        REGNUM_S2,
+        REGNUM_S3,
+        REGNUM_S4,
+        REGNUM_S5,
+        REGNUM_S6,
+        REGNUM_S7,
+        REGNUM_S8,
+        REGNUM_PC,
 #else
         PORTABILITY_WARNING("Register numbers not defined on this platform")
 #endif
@@ -164,6 +198,8 @@ public:
         REGNUM_FP = REGNUM_R11,
 #endif //REDHAWK
 #elif TARGET_ARM64
+        //Nothing to do here. FP is already alloted.
+#elif TARGET_LOONGARCH64
         //Nothing to do here. FP is already alloted.
 #else
         // RegNum values should be properly defined for this platform

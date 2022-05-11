@@ -3,18 +3,18 @@
 
 // Tests that cpblk/initblk importation sastifies ordering constraints.
 
-.assembly extern System.Runtime { }
+.assembly extern System.Runtime { .publickeytoken = (B0 3F 5F 7F 11 D5 0A 3A ) }
 .assembly extern System.Console { }
 .assembly extern xunit.core {}
 
-.assembly DynBlkOrder {}
+.assembly 'dynblk_order' {}
 
 .typedef [System.Runtime]System.OverflowException as OverflowException
 .typedef [System.Runtime]System.IndexOutOfRangeException as IndexOutOfRangeException
 
-.class DynBlkOrder extends [System.Runtime]System.Object
+.class public DynBlkOrder extends [System.Runtime]System.Object
 {
-    .method static int32 Main()
+    .method public static int32 Main()
     {
         .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
             01 00 00 00

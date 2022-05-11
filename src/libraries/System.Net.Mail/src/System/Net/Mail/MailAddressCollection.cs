@@ -25,20 +25,14 @@ namespace System.Net.Mail
 
         protected override void SetItem(int index, MailAddress item)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             base.SetItem(index, item);
         }
 
         protected override void InsertItem(int index, MailAddress item)
         {
-            if (item == null)
-            {
-                throw new ArgumentNullException(nameof(item));
-            }
+            ArgumentNullException.ThrowIfNull(item);
 
             base.InsertItem(index, item);
         }

@@ -1078,24 +1078,23 @@ HRESULT RegMeta::_DefineMethodSemantics(    // S_OK or error.
     mdToken     tkAssoc,                    // [IN] Association.
     BOOL        bClear)                     // [IN] Specifies whether to delete the exisiting entries.
 {
-    HRESULT      hr = S_OK;
-    MethodSemanticsRec *pRecord = 0;
-    MethodSemanticsRec *pRecord1;           // Use this to recycle a MethodSemantics record.
-    RID         iRecord;
-    HENUMInternal hEnum;
-
-
+    HRESULT             hr          = S_OK;
+    MethodSemanticsRec *pRecord     = NULL;
+    MethodSemanticsRec *pRecord1    = NULL; // Use this to recycle a MethodSemantics record.
+    RID                 iRecord     = 0;
 
     _ASSERTE(TypeFromToken(md) == mdtMethodDef || IsNilToken(md));
     _ASSERTE(RidFromToken(tkAssoc));
+
+    HENUMInternal hEnum;
     HENUMInternal::ZeroEnum(&hEnum);
 
     // Clear all matching records by setting association to a Nil token.
     if (bClear)
     {
-        RID         i;
+        IfFailGo( m_pStgdb->m_MiniMd.FindMethodSemanticsHelper(tkAssoc, &hEnum));
 
-        IfFailGo( m_pStgdb->m_MiniMd.FindMethodSemanticsHelper(tkAssoc, &hEnum) );
+        RID i;
         while (HENUMInternal::EnumNext(&hEnum, (mdToken *)&i))
         {
             IfFailGo(m_pStgdb->m_MiniMd.GetMethodSemanticsRecord(i, &pRecord1));
@@ -1581,10 +1580,10 @@ HRESULT RegMeta::_DefineSetConstant(    // Return hresult.
         (pValue || (pValue == 0 && (dwCPlusTypeFlag == ELEMENT_TYPE_STRING ||
                                     dwCPlusTypeFlag == ELEMENT_TYPE_CLASS))))
     {
-        ConstantRec *pConstRec = 0;
-        RID         iConstRec;
-        ULONG       cbBlob;
-        ULONG       ulValue = 0;
+        ConstantRec* pConstRec  = 0;
+        RID          iConstRec  = 0;
+        ULONG        ulValue    = 0;
+        ULONG        cbBlob;
 
         if (bSearch)
         {

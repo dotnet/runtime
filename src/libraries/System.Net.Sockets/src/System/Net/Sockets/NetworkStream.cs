@@ -43,10 +43,8 @@ namespace System.Net.Sockets
 
         public NetworkStream(Socket socket, FileAccess access, bool ownsSocket)
         {
-            if (socket == null)
-            {
-                throw new ArgumentNullException(nameof(socket));
-            }
+            ArgumentNullException.ThrowIfNull(socket);
+
             if (!socket.Blocking)
             {
                 // Stream.Read*/Write* are incompatible with the semantics of non-blocking sockets, and
@@ -341,6 +339,18 @@ namespace System.Net.Sockets
             Dispose();
         }
 
+        public void Close(TimeSpan timeout) => Close(ToTimeoutMilliseconds(timeout));
+
+        private static int ToTimeoutMilliseconds(TimeSpan timeout)
+        {
+            long totalMilliseconds = (long)timeout.TotalMilliseconds;
+            if (totalMilliseconds < -1 || totalMilliseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMilliseconds;
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (Interlocked.Exchange(ref _disposed, 1) != 0)
@@ -422,12 +432,7 @@ namespace System.Net.Sockets
         public override int EndRead(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-
-            // Validate input parameters.
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             try
             {
@@ -486,12 +491,7 @@ namespace System.Net.Sockets
         public override void EndWrite(IAsyncResult asyncResult)
         {
             ThrowIfDisposed();
-
-            // Validate input parameters.
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
 
             try
             {
@@ -541,7 +541,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken)
+        public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             bool canRead = CanRead; // Prevent race with Dispose.
             ThrowIfDisposed();
@@ -601,7 +601,7 @@ namespace System.Net.Sockets
             }
         }
 
-        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken)
+        public override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             bool canWrite = CanWrite; // Prevent race with Dispose.
             ThrowIfDisposed();

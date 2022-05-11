@@ -17,8 +17,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public CngProperty GetProperty(string name, CngPropertyOptions options)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             byte[]? value = _keyHandle.GetProperty(name, options);
             if (value == null)
@@ -35,8 +34,7 @@ namespace System.Security.Cryptography
         /// </summary>
         public bool HasProperty(string name, CngPropertyOptions options)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             unsafe
             {

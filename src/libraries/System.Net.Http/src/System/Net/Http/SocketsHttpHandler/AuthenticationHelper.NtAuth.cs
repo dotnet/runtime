@@ -154,8 +154,19 @@ namespace System.Net.Http
                             NetEventSource.Info(connection, $"Authentication: {challenge.AuthenticationType}, SPN: {spn}");
                         }
 
+                        ContextFlagsPal contextFlags = ContextFlagsPal.Connection;
+                        // When connecting to proxy server don't enforce the integrity to avoid
+                        // compatibility issues. The assumption is that the proxy server comes
+                        // from a trusted source. On macOS we always need to enforce the integrity
+                        // to avoid the GSSAPI implementation generating corrupted authentication
+                        // tokens.
+                        if (!isProxyAuth || OperatingSystem.IsMacOS())
+                        {
+                            contextFlags |= ContextFlagsPal.InitIntegrity;
+                        }
+
                         ChannelBinding? channelBinding = connection.TransportContext?.GetChannelBinding(ChannelBindingKind.Endpoint);
-                        NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, ContextFlagsPal.Connection | ContextFlagsPal.InitIntegrity, channelBinding);
+                        NTAuthentication authContext = new NTAuthentication(isServer: false, challenge.SchemeName, challenge.Credential, spn, contextFlags, channelBinding);
                         string? challengeData = challenge.ChallengeData;
                         try
                         {
@@ -176,8 +187,15 @@ namespace System.Net.Http
                                 SetRequestAuthenticationHeaderValue(request, new AuthenticationHeaderValue(challenge.SchemeName, challengeResponse), isProxyAuth);
 
                                 response = await InnerSendAsync(request, async, isProxyAuth, connectionPool, connection, cancellationToken).ConfigureAwait(false);
-                                if (authContext.IsCompleted || !TryGetRepeatedChallenge(response, challenge.SchemeName, isProxyAuth, out challengeData))
+                                if (authContext.IsCompleted || !TryGetChallengeDataForScheme(challenge.SchemeName, GetResponseAuthenticationHeaderValues(response, isProxyAuth), out challengeData))
                                 {
+                                    break;
+                                }
+
+                                if (!IsAuthenticationChallenge(response, isProxyAuth))
+                                {
+                                    // Tail response for Negoatiate on successful authentication. Validate it before we proceed.
+                                    authContext.GetOutgoingBlob(challengeData);
                                     break;
                                 }
 

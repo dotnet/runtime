@@ -4,7 +4,6 @@
 using System.Threading;
 using System.Diagnostics.Tracing;
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 
 namespace System.Diagnostics.Tracing
 {
@@ -51,6 +50,7 @@ namespace System.Diagnostics.Tracing
         {
             public const EventOpcode IOEnqueue = (EventOpcode)13;
             public const EventOpcode IODequeue = (EventOpcode)14;
+            public const EventOpcode IOPack = (EventOpcode)15;
             public const EventOpcode Wait = (EventOpcode)90;
             public const EventOpcode Sample = (EventOpcode)100;
             public const EventOpcode Adjustment = (EventOpcode)101;
@@ -271,6 +271,19 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(63, 4, data);
         }
 
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIOEnqueue(NativeOverlapped* nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIOEnqueue(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode(),
+                    false);
+            }
+        }
+
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
         [NonEvent]
@@ -306,6 +319,18 @@ namespace System.Diagnostics.Tracing
             WriteEventCore(64, 3, data);
         }
 
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIODequeue(NativeOverlapped* nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword | Keywords.ThreadTransferKeyword))
+            {
+                ThreadPoolIODequeue(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+            }
+        }
+
         // TODO: This event is fired for minor compat with CoreCLR in this case. Consider removing this method and use
         // FrameworkEventSource's thread transfer send/receive events instead at callers.
         [NonEvent]
@@ -337,6 +362,41 @@ namespace System.Diagnostics.Tracing
             data[1].Size = sizeof(ushort);
             data[1].Reserved = 0;
             WriteEventCore(60, 2, data);
+        }
+
+        [NonEvent]
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        public unsafe void ThreadPoolIOPack(NativeOverlapped* nativeOverlapped)
+        {
+            if (IsEnabled(EventLevel.Verbose, Keywords.ThreadingKeyword))
+            {
+                ThreadPoolIOPack(
+                    (IntPtr)nativeOverlapped,
+                    (IntPtr)OverlappedData.GetOverlappedFromNative(nativeOverlapped).GetHashCode());
+            }
+        }
+
+#if !ES_BUILD_STANDALONE
+        [System.Diagnostics.CodeAnalysis.UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:UnrecognizedReflectionPattern",
+                   Justification = EventSourceSuppressMessage)]
+#endif
+        [Event(65, Level = EventLevel.Verbose, Message = Messages.IO, Task = Tasks.ThreadPool, Opcode = Opcodes.IOPack, Version = 0, Keywords = Keywords.ThreadingKeyword)]
+        private unsafe void ThreadPoolIOPack(
+            IntPtr NativeOverlapped,
+            IntPtr Overlapped,
+            ushort ClrInstanceID = DefaultClrInstanceId)
+        {
+            EventData* data = stackalloc EventData[3];
+            data[0].DataPointer = NativeOverlapped;
+            data[0].Size        = sizeof(IntPtr);
+            data[0].Reserved    = 0;
+            data[1].DataPointer = Overlapped;
+            data[1].Size        = sizeof(IntPtr);
+            data[1].Reserved    = 0;
+            data[2].DataPointer = (IntPtr)(&ClrInstanceID);
+            data[2].Size        = sizeof(ushort);
+            data[2].Reserved    = 0;
+            WriteEventCore(65, 3, data);
         }
     }
 }

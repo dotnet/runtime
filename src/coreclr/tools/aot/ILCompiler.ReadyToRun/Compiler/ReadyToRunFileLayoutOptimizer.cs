@@ -92,7 +92,7 @@ namespace ILCompiler
             }
 
             var newNodesArray = nodes.ToArray();
-            newNodesArray.MergeSortAllowDuplicates(new SortableDependencyNode.ObjectNodeComparer(new CompilerComparer()));
+            newNodesArray.MergeSortAllowDuplicates(new SortableDependencyNode.ObjectNodeComparer(CompilerComparer.Instance));
             return newNodesArray.ToImmutableArray();
 
             void ApplySortToDependencies(DependencyNodeCore<NodeFactory> node, int depth)

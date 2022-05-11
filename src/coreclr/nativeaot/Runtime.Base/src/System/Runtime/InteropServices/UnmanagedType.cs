@@ -3,5 +3,8 @@
 
 namespace System.Runtime.InteropServices
 {
-    public class UnmanagedType { }
+    // Included because the C# compiler requires it for the unmanaged constraint
+    public enum UnmanagedType
+    {
+    }
 }

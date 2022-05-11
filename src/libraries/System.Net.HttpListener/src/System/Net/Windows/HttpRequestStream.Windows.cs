@@ -219,10 +219,7 @@ namespace System.Net
         {
             if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(this, $"asyncResult: {asyncResult}");
 
-            if (asyncResult == null)
-            {
-                throw new ArgumentNullException(nameof(asyncResult));
-            }
+            ArgumentNullException.ThrowIfNull(asyncResult);
             HttpRequestStreamAsyncResult? castedAsyncResult = asyncResult as HttpRequestStreamAsyncResult;
             if (castedAsyncResult == null || castedAsyncResult.AsyncObject != this)
             {

@@ -32,18 +32,15 @@ namespace System.Security.Cryptography
         [RequiresUnreferencedCode(CryptoConfig.CreateFromNameUnreferencedCodeMessage)]
         public static new ECDsa? Create(string algorithm)
         {
-            if (algorithm == null)
-            {
-                throw new ArgumentNullException(nameof(algorithm));
-            }
+            ArgumentNullException.ThrowIfNull(algorithm);
 
             return CryptoConfig.CreateFromName(algorithm) as ECDsa;
         }
 
         public virtual byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
+
             // hashAlgorithm is verified in the overload
 
             return SignData(data, 0, data.Length, hashAlgorithm);
@@ -275,8 +272,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] SignHash(byte[] hash, DSASignatureFormat signatureFormat)
         {
-            if (hash == null)
-                throw new ArgumentNullException(nameof(hash));
+            ArgumentNullException.ThrowIfNull(hash);
+
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -430,8 +427,7 @@ namespace System.Security.Cryptography
 
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
 
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm);
         }
@@ -659,6 +655,7 @@ namespace System.Security.Cryptography
         {
             ArgumentNullException.ThrowIfNull(data);
             ArgumentNullException.ThrowIfNull(signature);
+
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
@@ -695,18 +692,22 @@ namespace System.Security.Cryptography
         public override string? KeyExchangeAlgorithm => null;
         public override string SignatureAlgorithm => "ECDsa";
 
-        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
-        {
-            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-        }
+        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
-        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
-        {
-            throw new NotSupportedException(SR.NotSupported_SubclassOverride);
-        }
+        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
+            HashOneShotHelpers.HashData(hashAlgorithm, data);
 
         protected virtual bool TryHashData(ReadOnlySpan<byte> data, Span<byte> destination, HashAlgorithmName hashAlgorithm, out int bytesWritten)
         {
+            // If this is an algorithm that we ship, then we can use the hash one-shot.
+            if (this is IRuntimeAlgorithm)
+            {
+                return HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
+            }
+
+            // If this is not our algorithm implementation, for compatibility purposes we need to
+            // call out to the HashData virtual.
             // Use ArrayPool.Shared instead of CryptoPool because the array is passed out.
             byte[] array = ArrayPool<byte>.Shared.Rent(data.Length);
             bool returnArray = false;
@@ -831,10 +832,9 @@ namespace System.Security.Cryptography
         /// </exception>
         public bool VerifyHash(byte[] hash, byte[] signature, DSASignatureFormat signatureFormat)
         {
-            if (hash == null)
-                throw new ArgumentNullException(nameof(hash));
-            if (signature == null)
-                throw new ArgumentNullException(nameof(signature));
+            ArgumentNullException.ThrowIfNull(hash);
+            ArgumentNullException.ThrowIfNull(signature);
+
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 

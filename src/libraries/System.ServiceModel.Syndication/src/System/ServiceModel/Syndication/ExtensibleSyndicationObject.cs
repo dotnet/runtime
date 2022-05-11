@@ -65,10 +65,11 @@ namespace System.ServiceModel.Syndication
 
         internal void LoadElementExtensions(XmlReader readerOverUnparsedExtensions, int maxExtensionSize)
         {
-            if (readerOverUnparsedExtensions == null)
+            if (readerOverUnparsedExtensions is null)
             {
                 throw new ArgumentNullException(nameof(readerOverUnparsedExtensions));
             }
+
             if (maxExtensionSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(maxExtensionSize));
@@ -86,7 +87,7 @@ namespace System.ServiceModel.Syndication
 
         internal void WriteAttributeExtensions(XmlWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }
@@ -103,7 +104,7 @@ namespace System.ServiceModel.Syndication
 
         internal void WriteElementExtensions(XmlWriter writer, Func<string, string, bool> shouldSkipElement = null)
         {
-            if (writer == null)
+            if (writer is null)
             {
                 throw new ArgumentNullException(nameof(writer));
             }

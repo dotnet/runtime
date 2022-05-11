@@ -400,7 +400,7 @@ namespace System.Diagnostics.Tracing
             decreaseTabLevel()
             writeOutput(outputFile, "}\n")
             decreaseTabLevel()
-            writeOutput(outputFile, "}")
+            writeOutput(outputFile, "}\n")
 
 def main(argv):
 

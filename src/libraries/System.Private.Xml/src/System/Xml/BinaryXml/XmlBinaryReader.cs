@@ -655,8 +655,7 @@ namespace System.Xml
             }
             else
             {
-                if (null == name)
-                    throw new ArgumentNullException(nameof(name));
+                ArgumentNullException.ThrowIfNull(name);
                 if (null == ns)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
@@ -706,8 +705,7 @@ namespace System.Xml
             }
             else
             {
-                if (null == name)
-                    throw new ArgumentNullException(nameof(name));
+                ArgumentNullException.ThrowIfNull(name);
                 if (null == ns)
                     ns = string.Empty;
                 int index = LocateAttribute(name, ns);
@@ -3275,7 +3273,7 @@ namespace System.Xml
             }
         }
 
-        private Type?[] GenerateTokenTypeMap()
+        private static Type?[] GenerateTokenTypeMap()
         {
             Type?[] map = new Type[256];
             map[(int)BinXmlToken.XSD_BOOLEAN] = typeof(bool);
@@ -3607,7 +3605,7 @@ namespace System.Xml
             }
         }
 
-        private int XsdKatmaiTimeScaleToValueLength(byte scale)
+        private static int XsdKatmaiTimeScaleToValueLength(byte scale)
         {
             if (scale > 7)
             {
@@ -4182,7 +4180,7 @@ namespace System.Xml
             }
         }
 
-        private XmlValueConverter GetValueConverter(XmlTypeCode typeCode)
+        private static XmlValueConverter GetValueConverter(XmlTypeCode typeCode)
         {
             XmlSchemaSimpleType xsst = DatatypeImplementation.GetSimpleTypeFromTypeCode(typeCode);
             return xsst.ValueConverter;

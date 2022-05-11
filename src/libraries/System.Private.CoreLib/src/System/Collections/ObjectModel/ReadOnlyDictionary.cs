@@ -22,7 +22,9 @@ namespace System.Collections.ObjectModel
 
         public ReadOnlyDictionary(IDictionary<TKey, TValue> dictionary)
         {
-            m_dictionary = dictionary ?? throw new ArgumentNullException(nameof(dictionary));
+            ArgumentNullException.ThrowIfNull(dictionary);
+
+            m_dictionary = dictionary;
         }
 
         protected IDictionary<TKey, TValue> Dictionary => m_dictionary;
@@ -107,10 +109,7 @@ namespace System.Collections.ObjectModel
 
         private static bool IsCompatibleKey(object key)
         {
-            if (key == null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             return key is TKey;
         }
@@ -256,7 +255,9 @@ namespace System.Collections.ObjectModel
 
             internal KeyCollection(ICollection<TKey> collection)
             {
-                _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+                ArgumentNullException.ThrowIfNull(collection);
+
+                _collection = collection;
             }
 
             void ICollection<TKey>.Add(TKey item)
@@ -310,7 +311,9 @@ namespace System.Collections.ObjectModel
 
             internal ValueCollection(ICollection<TValue> collection)
             {
-                _collection = collection ?? throw new ArgumentNullException(nameof(collection));
+                ArgumentNullException.ThrowIfNull(collection);
+
+                _collection = collection;
             }
 
             void ICollection<TValue>.Add(TValue item)

@@ -11,17 +11,13 @@ namespace System.Reflection
         // intended user of this constructor.
         internal SignatureConstructedGenericType(Type genericTypeDefinition, Type[] typeArguments)
         {
-            if (genericTypeDefinition is null)
-                throw new ArgumentNullException(nameof(genericTypeDefinition));
-
-            if (typeArguments is null)
-                throw new ArgumentNullException(nameof(typeArguments));
+            ArgumentNullException.ThrowIfNull(genericTypeDefinition);
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
             typeArguments = (Type[])(typeArguments.Clone());
             for (int i = 0; i < typeArguments.Length; i++)
             {
-                if (typeArguments[i] is null)
-                    throw new ArgumentNullException(nameof(typeArguments));
+                ArgumentNullException.ThrowIfNull(typeArguments[i], nameof(typeArguments));
             }
 
             _genericTypeDefinition = genericTypeDefinition;

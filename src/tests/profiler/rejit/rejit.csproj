@@ -8,7 +8,7 @@
     <!-- This test provides no interesting scenarios for GCStress -->
     <GCStressIncompatible>true</GCStressIncompatible>
     <!-- The test launches a secondary process and process launch creates
-    an infinite event loop in the SocketAsyncEngine on Linux. Since 
+    an infinite event loop in the SocketAsyncEngine on Linux. Since
     runincontext loads even framework assemblies into the unloadable
     context, locals in this loop prevent unloading -->
     <UnloadabilityIncompatible>true</UnloadabilityIncompatible>
@@ -17,6 +17,6 @@
     <Compile Include="$(MSBuildProjectName).cs" />
     <ProjectReference Include="$(TestSourceDir)Common/CoreCLRTestLibrary/CoreCLRTestLibrary.csproj" />
     <ProjectReference Include="../common/profiler_common.csproj" />
-    <ProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
+    <CMakeProjectReference Include="$(MSBuildThisFileDirectory)/../native/CMakeLists.txt" />
   </ItemGroup>
 </Project>

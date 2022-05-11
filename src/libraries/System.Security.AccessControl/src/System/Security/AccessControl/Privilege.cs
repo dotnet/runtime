@@ -363,10 +363,7 @@ namespace System.Security.AccessControl
 
         public Privilege(string privilegeName)
         {
-            if (privilegeName == null)
-            {
-                throw new ArgumentNullException(nameof(privilegeName));
-            }
+            ArgumentNullException.ThrowIfNull(privilegeName);
 
             this.luid = LuidFromPrivilege(privilegeName);
         }

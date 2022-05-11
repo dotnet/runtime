@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.DotNet.SharedFramework.Sdk">
+
+  <PropertyGroup>
+    <IsPackable>false</IsPackable>
+    <FrameworkListOutputPath>$(MicrosoftNetCoreAppRefPackDataDir)FrameworkList.xml</FrameworkListOutputPath>
+  </PropertyGroup>
+
+  <Target Name="GetGenerateFrameworkListFileInputs">
+    <ItemGroup>
+      <SharedFrameworkAssemblyWithReferenceAssembly Include="@(SharedFrameworkAssembly->HasMetadata('ReferenceAssembly'))" />
+      <SharedFrameworkAssemblyWithoutReferenceAssembly Include="@(SharedFrameworkAssembly)"
+                                                       Exclude="@(SharedFrameworkAssemblyWithReferenceAssembly)" />
+
+      <FrameworkListInputFile Include="@(SharedFrameworkAssemblyWithReferenceAssembly->Metadata('ReferenceAssembly'));
+                                       @(SharedFrameworkAssemblyWithoutReferenceAssembly)"
+                              TargetPath="ref/$(NetCoreAppCurrent)"
+                              Condition="!$(NetCoreAppLibraryNoReference.Contains('%(Filename);'))" />
+    </ItemGroup>
+  </Target>
+
+  <UsingTask TaskName="CreateFrameworkListFile" AssemblyFile="$(DotNetSharedFrameworkTaskFile)"/>
+  <Target Name="GenerateFrameworkListFile"
+          DependsOnTargets="GetGenerateFrameworkListFileInputs"
+          AfterTargets="Build"
+          Condition="'@(SharedFrameworkAssembly)' != ''"
+          Inputs="@(FrameworkListInputFile)"
+          Outputs="$(FrameworkListOutputPath)">
+    <ItemGroup>
+      <FrameworkListRootAttribute Include="Name" Value="$(NetCoreAppCurrentBrandName)" />
+      <FrameworkListRootAttribute Include="TargetFrameworkIdentifier" Value="$(NetCoreAppCurrentIdentifier)" />
+      <FrameworkListRootAttribute Include="TargetFrameworkVersion" Value="$(NetCoreAppCurrentVersion)" />
+      <FrameworkListRootAttribute Include="FrameworkName" Value="$(MicrosoftNetCoreAppFrameworkName)" />
+    </ItemGroup>
+
+    <CreateFrameworkListFile Files="@(FrameworkListInputFile)"
+                             TargetFile="$(FrameworkListOutputPath)"
+                             TargetFilePrefixes="ref/;runtimes/"
+                             RootAttributes="@(FrameworkListRootAttribute)" />
+  </Target>
+
+</Project>

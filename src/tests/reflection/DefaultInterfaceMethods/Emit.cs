@@ -117,7 +117,7 @@ class Program
             {
                 ifooType.GetMethod("DefaultMethod").Invoke(o, null);
             }
-            catch (EntryPointNotFoundException)
+            catch (TargetInvocationException ie) when (ie.InnerException is EntryPointNotFoundException)
             {
                 result |= 0x10;
             }
@@ -126,7 +126,7 @@ class Program
             {
                 ifooType.GetMethod("InterfaceMethod").Invoke(o, null);
             }
-            catch (EntryPointNotFoundException)
+            catch (TargetInvocationException ie) when (ie.InnerException is EntryPointNotFoundException)
             {
                 result |= 0x20;
             }

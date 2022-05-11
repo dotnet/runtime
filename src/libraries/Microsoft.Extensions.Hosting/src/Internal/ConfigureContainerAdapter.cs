@@ -11,7 +11,9 @@ namespace Microsoft.Extensions.Hosting.Internal
 
         public ConfigureContainerAdapter(Action<HostBuilderContext, TContainerBuilder> action)
         {
-            _action = action ?? throw new ArgumentNullException(nameof(action));
+            ThrowHelper.ThrowIfNull(action);
+
+            _action = action;
         }
 
         public void ConfigureContainer(HostBuilderContext hostContext, object containerBuilder)

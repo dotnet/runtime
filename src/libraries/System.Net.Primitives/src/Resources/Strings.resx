@@ -114,4 +114,7 @@
   <data name="bad_endpoint_string" xml:space="preserve">
     <value>An invalid IPEndPoint was specified.</value>
   </data>
+  <data name="PlatformNotSupported_NetPrimitives" xml:space="preserve">
+    <value>System.Net.Primitives is not supported on this platform.</value>
+  </data>
 </root>

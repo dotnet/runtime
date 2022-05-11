@@ -15,10 +15,7 @@ namespace System.Net.Security
         [CLSCompliant(false)]
         public CipherSuitesPolicy(IEnumerable<TlsCipherSuite> allowedCipherSuites)
         {
-            if (allowedCipherSuites == null)
-            {
-                throw new ArgumentNullException(nameof(allowedCipherSuites));
-            }
+            ArgumentNullException.ThrowIfNull(allowedCipherSuites);
 
             Pal = new CipherSuitesPolicyPal(allowedCipherSuites);
         }

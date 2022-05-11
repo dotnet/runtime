@@ -15,10 +15,20 @@ namespace System.Threading.Channels
         /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
         /// <param name="options">Options that guide the behavior of the channel.</param>
         /// <returns>The created channel.</returns>
-        public static Channel<T> CreateUnbounded<T>(UnboundedChannelOptions options) =>
-            options == null ? throw new ArgumentNullException(nameof(options)) :
-            options.SingleReader ? new SingleConsumerUnboundedChannel<T>(!options.AllowSynchronousContinuations) :
-            (Channel<T>)new UnboundedChannel<T>(!options.AllowSynchronousContinuations);
+        public static Channel<T> CreateUnbounded<T>(UnboundedChannelOptions options)
+        {
+            if (options is null)
+            {
+                throw new ArgumentNullException(nameof(options));
+            }
+
+            if (options.SingleReader)
+            {
+                return new SingleConsumerUnboundedChannel<T>(!options.AllowSynchronousContinuations);
+            }
+
+            return new UnboundedChannel<T>(!options.AllowSynchronousContinuations);
+        }
 
         /// <summary>Creates a channel with the specified maximum capacity.</summary>
         /// <typeparam name="T">Specifies the type of data in the channel.</typeparam>
@@ -54,7 +64,7 @@ namespace System.Threading.Channels
         /// <returns>The created channel.</returns>
         public static Channel<T> CreateBounded<T>(BoundedChannelOptions options, Action<T>? itemDropped)
         {
-            if (options == null)
+            if (options is null)
             {
                 throw new ArgumentNullException(nameof(options));
             }

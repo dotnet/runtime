@@ -24,14 +24,15 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static void Serialize<TValue>(
             Utf8JsonWriter writer,
             TValue value,
             JsonSerializerOptions? options = null)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
             Type runtimeType = GetRuntimeType(value);
@@ -57,15 +58,16 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static void Serialize(
             Utf8JsonWriter writer,
             object? value,
             Type inputType,
             JsonSerializerOptions? options = null)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
@@ -89,14 +91,13 @@ namespace System.Text.Json
         /// </exception>
         public static void Serialize<TValue>(Utf8JsonWriter writer, TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
-
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             WriteUsingGeneratedSerializer(writer, value, jsonTypeInfo);
@@ -125,14 +126,13 @@ namespace System.Text.Json
         /// </exception>
         public static void Serialize(Utf8JsonWriter writer, object? value, Type inputType, JsonSerializerContext context)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
-
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);

@@ -25,6 +25,7 @@
 // OTHER DEALINGS IN THE SOFTWARE.
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Tests;
 using Xunit;
 
 namespace System.Text.Json.Tests
@@ -130,13 +131,6 @@ namespace System.Text.Json.Tests
             p2.Spouse = p1;
             Assert.Throws<JsonException> (() => JsonSerializer.Serialize(p1));
         }
-    }
-
-    public class PersonReference
-    {
-        internal Guid Id { get; set; }
-        public string Name { get; set; }
-        public PersonReference Spouse { get; set; }
     }
 
     public class CommentTestObject

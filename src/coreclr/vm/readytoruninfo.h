@@ -66,7 +66,7 @@ class ReadyToRunInfo
     PTR_CORCOMPILE_IMPORT_SECTION   m_pImportSections;
     DWORD                           m_nImportSections;
 
-    bool                            m_readyToRunCodeDisabled;
+    bool                            m_readyToRunCodeDisabled; // Is 
 
     NativeFormat::NativeReader      m_nativeReader;
     NativeFormat::NativeArray       m_methodDefEntryPoints;
@@ -125,7 +125,13 @@ public:
     void DisableAllR2RCode()
     {
         LIMITED_METHOD_CONTRACT;
-        m_readyToRunCodeDisabled = TRUE;
+        m_readyToRunCodeDisabled = true;
+    }
+
+    bool ReadyToRunCodeDisabled()
+    {
+        LIMITED_METHOD_CONTRACT;
+        return m_readyToRunCodeDisabled;
     }
 
     BOOL HasNonShareablePInvokeStubs()

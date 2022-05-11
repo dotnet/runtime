@@ -14,8 +14,7 @@ namespace System.Security.Principal
 
         public GenericPrincipal(IIdentity identity, string[]? roles)
         {
-            if (identity == null)
-                throw new ArgumentNullException(nameof(identity));
+            ArgumentNullException.ThrowIfNull(identity);
 
             m_identity = identity;
             if (roles != null)

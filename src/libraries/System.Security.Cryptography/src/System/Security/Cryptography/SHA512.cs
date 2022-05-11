@@ -48,8 +48,7 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(byte[] source)
         {
-            if (source is null)
-                throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(source);
 
             return HashData(new ReadOnlySpan<byte>(source));
         }

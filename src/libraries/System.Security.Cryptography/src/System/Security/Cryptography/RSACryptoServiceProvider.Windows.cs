@@ -9,7 +9,7 @@ using Internal.Cryptography;
 
 namespace System.Security.Cryptography
 {
-    public sealed partial class RSACryptoServiceProvider : RSA, ICspAsymmetricAlgorithm
+    public sealed partial class RSACryptoServiceProvider : RSA, ICspAsymmetricAlgorithm, IRuntimeAlgorithm
     {
         private int _keySize;
         private readonly CspParameters _parameters;
@@ -263,10 +263,7 @@ namespace System.Security.Cryptography
         /// <returns>decrypted data</returns>
         public byte[] Decrypt(byte[] rgb, bool fOAEP)
         {
-            if (rgb == null)
-            {
-                throw new ArgumentNullException(nameof(rgb));
-            }
+            ArgumentNullException.ThrowIfNull(rgb);
 
             // Save the KeySize value to a local because it has non-trivial cost.
             int keySize = KeySize;
@@ -321,10 +318,7 @@ namespace System.Security.Cryptography
         /// <returns>Encrypted key</returns>
         public byte[] Encrypt(byte[] rgb, bool fOAEP)
         {
-            if (rgb == null)
-            {
-                throw new ArgumentNullException(nameof(rgb));
-            }
+            ArgumentNullException.ThrowIfNull(rgb);
 
             if (fOAEP)
             {
@@ -370,7 +364,7 @@ namespace System.Security.Cryptography
         /// This method helps Acquire the default CSP and avoids the need for static SafeProvHandle
         /// in CapiHelper class
         /// </summary>
-        private SafeProvHandle AcquireSafeProviderHandle()
+        private static SafeProvHandle AcquireSafeProviderHandle()
         {
             SafeProvHandle safeProvHandle;
             CapiHelper.AcquireCsp(new CspParameters(CapiHelper.DefaultRsaProviderType), out safeProvHandle);
@@ -442,8 +436,8 @@ namespace System.Security.Cryptography
         public byte[] SignData(byte[] buffer, int offset, int count, object halg)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
-            HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);
-            byte[] hashVal = hash.ComputeHash(buffer, offset, count);
+            HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
+            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, new ReadOnlySpan<byte>(buffer, offset, count));
             return SignHash(hashVal, calgHash);
         }
 
@@ -457,8 +451,8 @@ namespace System.Security.Cryptography
         public byte[] SignData(byte[] buffer, object halg)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
-            HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);
-            byte[] hashVal = hash.ComputeHash(buffer);
+            HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
+            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, buffer);
             return SignHash(hashVal, calgHash);
         }
 
@@ -472,8 +466,8 @@ namespace System.Security.Cryptography
         public byte[] SignData(Stream inputStream, object halg)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
-            HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);
-            byte[] hashVal = hash.ComputeHash(inputStream);
+            HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
+            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, inputStream);
             return SignHash(hashVal, calgHash);
         }
 
@@ -486,8 +480,8 @@ namespace System.Security.Cryptography
         /// <returns>The RSA signature for the specified data.</returns>
         public byte[] SignHash(byte[] rgbHash, string? str)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
+            ArgumentNullException.ThrowIfNull(rgbHash);
+
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
 
@@ -522,8 +516,8 @@ namespace System.Security.Cryptography
         public bool VerifyData(byte[] buffer, object halg, byte[] signature)
         {
             int calgHash = CapiHelper.ObjToHashAlgId(halg);
-            HashAlgorithm hash = CapiHelper.ObjToHashAlgorithm(halg);
-            byte[] hashVal = hash.ComputeHash(buffer);
+            HashAlgorithmName hashAlgorithmName = CapiHelper.AlgIdToHashAlgorithmName(calgHash);
+            byte[] hashVal = HashOneShotHelpers.HashData(hashAlgorithmName, buffer);
             return VerifyHash(hashVal, calgHash, signature);
         }
 
@@ -532,10 +526,8 @@ namespace System.Security.Cryptography
         /// </summary>
         public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
-                throw new ArgumentNullException(nameof(rgbSignature));
+            ArgumentNullException.ThrowIfNull(rgbHash);
+            ArgumentNullException.ThrowIfNull(rgbSignature);
 
             int calgHash = CapiHelper.NameOrOidToHashAlgId(str, OidGroup.HashAlgorithm);
             return VerifyHash(rgbHash, calgHash, rgbSignature);
@@ -560,10 +552,8 @@ namespace System.Security.Cryptography
         /// </summary>
         private static bool IsPublic(byte[] keyBlob)
         {
-            if (keyBlob == null)
-            {
-                throw new ArgumentNullException(nameof(keyBlob));
-            }
+            ArgumentNullException.ThrowIfNull(keyBlob);
+
             // The CAPI RSA public key representation consists of the following sequence:
             //  - BLOBHEADER
             //  - RSAPUBKEY
@@ -580,45 +570,6 @@ namespace System.Security.Cryptography
             return true;
         }
 
-        protected override byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
-        {
-            // we're sealed and the base should have checked this already
-            Debug.Assert(data != null);
-            Debug.Assert(count >= 0 && count <= data.Length);
-            Debug.Assert(offset >= 0 && offset <= data.Length - count);
-            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
-
-            using (HashAlgorithm hash = GetHashAlgorithm(hashAlgorithm))
-            {
-                return hash.ComputeHash(data, offset, count);
-            }
-        }
-
-        protected override byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
-        {
-            // we're sealed and the base should have checked this already
-            Debug.Assert(data != null);
-            Debug.Assert(!string.IsNullOrEmpty(hashAlgorithm.Name));
-
-            using (HashAlgorithm hash = GetHashAlgorithm(hashAlgorithm))
-            {
-                return hash.ComputeHash(data);
-            }
-        }
-
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "MD5 is used when the user asks for it.")]
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5350", Justification = "SHA1 is used when the user asks for it.")]
-        private static HashAlgorithm GetHashAlgorithm(HashAlgorithmName hashAlgorithm) =>
-            hashAlgorithm.Name switch
-            {
-                "MD5" => MD5.Create(),
-                "SHA1" => SHA1.Create(),
-                "SHA256" => SHA256.Create(),
-                "SHA384" => SHA384.Create(),
-                "SHA512" => SHA512.Create(),
-                _ => throw new CryptographicException(SR.Cryptography_UnknownHashAlgorithm, hashAlgorithm.Name),
-            };
-
         private static int GetAlgorithmId(HashAlgorithmName hashAlgorithm) =>
             hashAlgorithm.Name switch
             {
@@ -632,10 +583,8 @@ namespace System.Security.Cryptography
 
         public override byte[] Encrypt(byte[] data, RSAEncryptionPadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(padding);
 
             if (padding == RSAEncryptionPadding.Pkcs1)
             {
@@ -653,10 +602,8 @@ namespace System.Security.Cryptography
 
         public override byte[] Decrypt(byte[] data, RSAEncryptionPadding padding)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
-            if (padding == null)
-                throw new ArgumentNullException(nameof(padding));
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(padding);
 
             if (padding == RSAEncryptionPadding.Pkcs1)
             {

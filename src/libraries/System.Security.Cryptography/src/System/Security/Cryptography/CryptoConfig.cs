@@ -306,12 +306,10 @@ namespace System.Security.Cryptography
 #if BROWSER
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
-            if (algorithm == null)
-                throw new ArgumentNullException(nameof(algorithm));
+            ArgumentNullException.ThrowIfNull(algorithm);
             if (!algorithm.IsVisible)
                 throw new ArgumentException(SR.Cryptography_AlgorithmTypesMustBeVisible, nameof(algorithm));
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
+            ArgumentNullException.ThrowIfNull(names);
 
             string[] algorithmNames = new string[names.Length];
             Array.Copy(names, algorithmNames, algorithmNames.Length);
@@ -337,8 +335,7 @@ namespace System.Security.Cryptography
         [RequiresUnreferencedCode("The default algorithm implementations might be removed, use strong type references like 'RSA.Create()' instead.")]
         public static object? CreateFromName(string name, params object?[]? args)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
 #if BROWSER
             switch (name)
@@ -494,10 +491,8 @@ namespace System.Security.Cryptography
 #if BROWSER
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
-            if (oid == null)
-                throw new ArgumentNullException(nameof(oid));
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
+            ArgumentNullException.ThrowIfNull(oid);
+            ArgumentNullException.ThrowIfNull(names);
 
             string[] oidNames = new string[names.Length];
             Array.Copy(names, oidNames, oidNames.Length);
@@ -526,8 +521,7 @@ namespace System.Security.Cryptography
 #if BROWSER
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             appOidHT.TryGetValue(name, out string? oidName);
 
@@ -552,8 +546,7 @@ namespace System.Security.Cryptography
 #if BROWSER
             throw new PlatformNotSupportedException(SR.SystemSecurityCryptography_PlatformNotSupported);
 #else
-            if (str == null)
-                throw new ArgumentNullException(nameof(str));
+            ArgumentNullException.ThrowIfNull(str);
 
             string[] oidString = str.Split('.'); // valid ASN.1 separator
             uint[] oidNums = new uint[oidString.Length];

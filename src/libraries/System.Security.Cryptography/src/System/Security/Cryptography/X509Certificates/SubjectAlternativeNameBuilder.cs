@@ -35,16 +35,14 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void AddUri(Uri uri)
         {
-            if (uri == null)
-                throw new ArgumentNullException(nameof(uri));
+            ArgumentNullException.ThrowIfNull(uri);
 
             AddGeneralName(new GeneralNameAsn { Uri = uri.AbsoluteUri.ToString() });
         }
 
         public void AddIpAddress(IPAddress ipAddress)
         {
-            if (ipAddress == null)
-                throw new ArgumentNullException(nameof(ipAddress));
+            ArgumentNullException.ThrowIfNull(ipAddress);
 
             AddGeneralName(new GeneralNameAsn { IPAddress = ipAddress.GetAddressBytes() });
         }

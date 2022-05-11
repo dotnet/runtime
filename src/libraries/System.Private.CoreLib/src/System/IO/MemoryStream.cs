@@ -61,8 +61,7 @@ namespace System.IO
 
         public MemoryStream(byte[] buffer, bool writable)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+            ArgumentNullException.ThrowIfNull(buffer);
 
             _buffer = buffer;
             _length = _capacity = buffer.Length;
@@ -82,8 +81,8 @@ namespace System.IO
 
         public MemoryStream(byte[] buffer, int index, int count, bool writable, bool publiclyVisible)
         {
-            if (buffer == null)
-                throw new ArgumentNullException(nameof(buffer), SR.ArgumentNull_Buffer);
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
@@ -119,21 +118,13 @@ namespace System.IO
 
         protected override void Dispose(bool disposing)
         {
-            try
+            if (disposing)
             {
-                if (disposing)
-                {
-                    _isOpen = false;
-                    _writable = false;
-                    _expandable = false;
-                    // Don't set buffer to null - allow TryGetBuffer, GetBuffer & ToArray to work.
-                    _lastReadTask = default;
-                }
-            }
-            finally
-            {
-                // Call base.Close() to cleanup async IO resources
-                base.Dispose(disposing);
+                _isOpen = false;
+                _writable = false;
+                _expandable = false;
+                // Don't set buffer to null - allow TryGetBuffer, GetBuffer & ToArray to work.
+                _lastReadTask = default;
             }
         }
 
@@ -771,8 +762,7 @@ namespace System.IO
         // Writes this MemoryStream to another stream.
         public virtual void WriteTo(Stream stream)
         {
-            if (stream == null)
-                throw new ArgumentNullException(nameof(stream), SR.ArgumentNull_Stream);
+            ArgumentNullException.ThrowIfNull(stream);
 
             EnsureNotClosed();
 

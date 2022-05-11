@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+#pragma warning disable CA1852 // some projects include types derived from this
+
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
@@ -133,6 +135,7 @@ namespace System.Threading.Tasks
         /// <summary>Register the continuation to invoke when the operation completes.</summary>
         public void UnsafeOnCompleted(Action continuation) => OnCompleted(continuation);
 
+#pragma warning disable CA1822
         [Conditional("DEBUG")]
         private void AssertResultConsistency(bool expectedCompleted)
         {
@@ -147,5 +150,6 @@ namespace System.Threading.Tasks
             }
 #endif
         }
+#pragma warning restore CA1822
     }
 }

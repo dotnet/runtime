@@ -11,10 +11,7 @@ namespace System.IO
 
         public DriveInfo(string driveName)
         {
-            if (driveName == null)
-            {
-                throw new ArgumentNullException(nameof(driveName));
-            }
+            ArgumentNullException.ThrowIfNull(driveName);
 
             _name = NormalizeDriveName(driveName);
         }

@@ -246,8 +246,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </param>
         public byte[] CreateSigningRequest(X509SignatureGenerator signatureGenerator)
         {
-            if (signatureGenerator == null)
-                throw new ArgumentNullException(nameof(signatureGenerator));
+            ArgumentNullException.ThrowIfNull(signatureGenerator);
 
             X501Attribute[] attributes = Array.Empty<X501Attribute>();
 
@@ -419,8 +418,8 @@ namespace System.Security.Cryptography.X509Certificates
             DateTimeOffset notAfter,
             ReadOnlySpan<byte> serialNumber)
         {
-            if (issuerCertificate == null)
-                throw new ArgumentNullException(nameof(issuerCertificate));
+            ArgumentNullException.ThrowIfNull(issuerCertificate);
+
             if (!issuerCertificate.HasPrivateKey)
                 throw new ArgumentException(SR.Cryptography_CertReq_IssuerRequiresPrivateKey, nameof(issuerCertificate));
             if (notAfter < notBefore)
@@ -598,10 +597,9 @@ namespace System.Security.Cryptography.X509Certificates
             DateTimeOffset notAfter,
             ReadOnlySpan<byte> serialNumber)
         {
-            if (issuerName == null)
-                throw new ArgumentNullException(nameof(issuerName));
-            if (generator == null)
-                throw new ArgumentNullException(nameof(generator));
+            ArgumentNullException.ThrowIfNull(issuerName);
+            ArgumentNullException.ThrowIfNull(generator);
+
             if (notAfter < notBefore)
                 throw new ArgumentException(SR.Cryptography_CertReq_DatesReversed);
             if (serialNumber == null || serialNumber.Length < 1)
@@ -687,7 +685,7 @@ namespace System.Security.Cryptography.X509Certificates
             return ret;
         }
 
-        private ArraySegment<byte> NormalizeSerialNumber(ReadOnlySpan<byte> serialNumber)
+        private static ArraySegment<byte> NormalizeSerialNumber(ReadOnlySpan<byte> serialNumber)
         {
             byte[] newSerialNumber;
 

@@ -25,8 +25,11 @@ namespace System.IO.Enumeration
 
         internal FileSystemEnumerable(string directory, FindTransform transform, EnumerationOptions? options, bool isNormalized)
         {
-            _directory = directory ?? throw new ArgumentNullException(nameof(directory));
-            _transform = transform ?? throw new ArgumentNullException(nameof(transform));
+            ArgumentNullException.ThrowIfNull(directory);
+            ArgumentNullException.ThrowIfNull(transform);
+
+            _directory = directory;
+            _transform = transform;
             _options = options ?? EnumerationOptions.Default;
 
             // We need to create the enumerator up front to ensure that we throw I/O exceptions for

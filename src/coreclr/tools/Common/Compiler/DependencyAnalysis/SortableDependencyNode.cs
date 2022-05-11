@@ -66,7 +66,7 @@ namespace ILCompiler.DependencyAnalysis
 
 
             //
-            // CoreRT Nodes
+            // NativeAOT Nodes
             //
             MetadataNode,
             ResourceDataNode,

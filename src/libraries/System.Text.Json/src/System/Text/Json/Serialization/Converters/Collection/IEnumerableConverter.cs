@@ -3,6 +3,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization.Converters
 {
@@ -14,6 +15,8 @@ namespace System.Text.Json.Serialization.Converters
         : JsonCollectionConverter<TCollection, object?>
         where TCollection : IEnumerable
     {
+        private readonly bool _isDeserializable = typeof(TCollection).IsAssignableFrom(typeof(List<object?>));
+
         protected override void Add(in object? value, ref ReadStack state)
         {
             ((List<object?>)state.Current.ReturnValue!).Add(value);
@@ -21,7 +24,7 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            if (!TypeToConvert.IsAssignableFrom(RuntimeType))
+            if (!_isDeserializable)
             {
                 ThrowHelper.ThrowNotSupportedException_CannotPopulateCollection(TypeToConvert, ref reader, ref state);
             }
@@ -67,11 +70,11 @@ namespace System.Text.Json.Serialization.Converters
                     state.Current.CollectionEnumerator = enumerator;
                     return false;
                 }
+
+                state.Current.EndCollectionElement();
             } while (enumerator.MoveNext());
 
             return true;
         }
-
-        internal override Type RuntimeType => typeof(List<object?>);
     }
 }

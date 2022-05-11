@@ -65,6 +65,11 @@ namespace System.Net.Http
                 return null;
             }
 
+            if (value == ":")
+            {
+                return CredentialCache.DefaultNetworkCredentials;
+            }
+
             value = Uri.UnescapeDataString(value);
 
             string password = "";
@@ -199,7 +204,20 @@ namespace System.Net.Http
                     ub.Password = Uri.EscapeDataString(password);
                 }
 
-                return ub.Uri;
+                Uri uri = ub.Uri;
+
+                // if both user and password exist and are empty we should preserve that and use default credentials.
+                // UriBuilder does not handle that now e.g. does not distinguish between empty and missing.
+                if (user == "" && password == "")
+                {
+                    string[] tokens = uri.ToString().Split('/', 3);
+                    if (tokens.Length == 3)
+                    {
+                        uri = new Uri($"{tokens[0]}//:@{tokens[2]}");
+                    }
+                }
+
+                return uri;
             }
             catch { };
             return null;

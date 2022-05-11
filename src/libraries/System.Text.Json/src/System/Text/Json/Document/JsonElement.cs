@@ -113,8 +113,10 @@ namespace System.Text.Json
         /// </exception>
         public JsonElement GetProperty(string propertyName)
         {
-            if (propertyName == null)
-                throw new ArgumentNullException(nameof(propertyName));
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
 
             if (TryGetProperty(propertyName, out JsonElement property))
             {
@@ -234,8 +236,10 @@ namespace System.Text.Json
         /// <seealso cref="EnumerateObject"/>
         public bool TryGetProperty(string propertyName, out JsonElement value)
         {
-            if (propertyName == null)
-                throw new ArgumentNullException(nameof(propertyName));
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
 
             return TryGetProperty(propertyName.AsSpan(), out value);
         }
@@ -1302,9 +1306,9 @@ namespace System.Text.Json
         /// </exception>
         public void WriteTo(Utf8JsonWriter writer)
         {
-            if (writer == null)
+            if (writer is null)
             {
-                throw new ArgumentNullException(nameof(writer));
+                ThrowHelper.ThrowArgumentNullException(nameof(writer));
             }
 
             CheckValidInstance();

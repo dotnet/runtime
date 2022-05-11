@@ -913,10 +913,8 @@ namespace System.Xml
         // Reads to the following element with the given Name.
         public virtual bool ReadToFollowing(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
             // atomize name
             name = NameTable.Add(name);
 
@@ -934,11 +932,7 @@ namespace System.Xml
         // Reads to the following element with the given LocalName and NamespaceURI.
         public virtual bool ReadToFollowing(string localName, string namespaceURI)
         {
-            if (string.IsNullOrEmpty(localName))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
-            }
-
+            ArgumentException.ThrowIfNullOrEmpty(localName);
             ArgumentNullException.ThrowIfNull(namespaceURI);
 
             // atomize local name and namespace
@@ -959,10 +953,8 @@ namespace System.Xml
         // Reads to the first descendant of the current element with the given Name.
         public virtual bool ReadToDescendant(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
+
             // save the element or root depth
             int parentDepth = Depth;
             if (NodeType != XmlNodeType.Element)
@@ -1001,12 +993,9 @@ namespace System.Xml
         // Reads to the first descendant of the current element with the given LocalName and NamespaceURI.
         public virtual bool ReadToDescendant(string localName, string namespaceURI)
         {
-            if (string.IsNullOrEmpty(localName))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
-            }
-
+            ArgumentException.ThrowIfNullOrEmpty(localName);
             ArgumentNullException.ThrowIfNull(namespaceURI);
+
             // save the element or root depth
             int parentDepth = Depth;
             if (NodeType != XmlNodeType.Element)
@@ -1046,10 +1035,7 @@ namespace System.Xml
         // Reads to the next sibling of the current element with the given Name.
         public virtual bool ReadToNextSibling(string name)
         {
-            if (string.IsNullOrEmpty(name))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(name, nameof(name));
-            }
+            ArgumentException.ThrowIfNullOrEmpty(name);
 
             // atomize name
             name = NameTable.Add(name);
@@ -1074,11 +1060,7 @@ namespace System.Xml
         // Reads to the next sibling of the current element with the given LocalName and NamespaceURI.
         public virtual bool ReadToNextSibling(string localName, string namespaceURI)
         {
-            if (string.IsNullOrEmpty(localName))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
-            }
-
+            ArgumentException.ThrowIfNullOrEmpty(localName);
             ArgumentNullException.ThrowIfNull(namespaceURI);
 
             // atomize local name and namespace
@@ -1428,11 +1410,7 @@ namespace System.Xml
 
         internal void CheckElement(string localName, string namespaceURI)
         {
-            if (string.IsNullOrEmpty(localName))
-            {
-                throw XmlConvert.CreateInvalidNameArgumentException(localName, nameof(localName));
-            }
-
+            ArgumentException.ThrowIfNullOrEmpty(localName);
             ArgumentNullException.ThrowIfNull(namespaceURI);
 
             if (NodeType != XmlNodeType.Element)

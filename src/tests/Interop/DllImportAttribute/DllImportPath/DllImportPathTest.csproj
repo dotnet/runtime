@@ -17,6 +17,6 @@
     <BashCLRTestPreCommands>$(BashCLRTestPreCommands);$(PathEnvSetupCommands)</BashCLRTestPreCommands>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="CMakeLists.txt" />
+    <CMakeProjectReference Include="CMakeLists.txt" />
   </ItemGroup>
 </Project>

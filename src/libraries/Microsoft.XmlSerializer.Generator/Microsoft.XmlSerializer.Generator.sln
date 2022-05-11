@@ -1,21 +1,21 @@
 ﻿Microsoft Visual Studio Solution File, Format Version 12.00
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TestUtilities", "..\Common\tests\TestUtilities\TestUtilities.csproj", "{C1E5B103-D955-40DB-A385-8E5FF9EEBA4E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "dotnet-Microsoft.XmlSerializer.Generator", "src\Microsoft.XmlSerializer.Generator.csproj", "{3C8417AB-8E73-4EBF-B090-1367F3D23468}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.XmlSerializer.Generator", "src\Microsoft.XmlSerializer.Generator.csproj", "{3C8417AB-8E73-4EBF-B090-1367F3D23468}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.XmlSerializer.Generator.Tests", "tests\Microsoft.XmlSerializer.Generator.Tests.csproj", "{A90B6063-66BB-486C-8267-43AC8F9C5196}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SerializableAssembly", "tests\SerializableAssembly.csproj", "{9D614FC7-0A88-4E85-B8A9-25FFFD71C47A}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\ref\System.Runtime.CompilerServices.Unsafe.csproj", "{B3EA9B7E-FB07-4906-8878-C9DC04988ABC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "LibraryImportGenerator", "..\System.Runtime.InteropServices\gen\LibraryImportGenerator\LibraryImportGenerator.csproj", "{2307F11D-6FF4-45B0-9FA2-7B9807647E2B}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Runtime.CompilerServices.Unsafe", "..\System.Runtime.CompilerServices.Unsafe\src\System.Runtime.CompilerServices.Unsafe.ilproj", "{5E286F47-DA0D-4F8A-A831-38F2426B23D3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Microsoft.Interop.SourceGeneration", "..\System.Runtime.InteropServices\gen\Microsoft.Interop.SourceGeneration\Microsoft.Interop.SourceGeneration.csproj", "{B1A05556-02FE-4BC0-89E4-4C6CC751675B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{BA160273-1658-4D63-8BB0-BEDDA0DAF20D}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{CC406051-3EEC-4E4F-8152-2F1BE15D61BA}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ref", "ref", "{9F85FD72-A640-4607-966D-36FF8C229268}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "gen", "gen", "{A3A8F98E-3524-4E5A-87C5-5324FD52E296}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,14 +39,14 @@ Global
 		{9D614FC7-0A88-4E85-B8A9-25FFFD71C47A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{9D614FC7-0A88-4E85-B8A9-25FFFD71C47A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{9D614FC7-0A88-4E85-B8A9-25FFFD71C47A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B3EA9B7E-FB07-4906-8878-C9DC04988ABC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B3EA9B7E-FB07-4906-8878-C9DC04988ABC}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B3EA9B7E-FB07-4906-8878-C9DC04988ABC}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B3EA9B7E-FB07-4906-8878-C9DC04988ABC}.Release|Any CPU.Build.0 = Release|Any CPU
-		{5E286F47-DA0D-4F8A-A831-38F2426B23D3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{5E286F47-DA0D-4F8A-A831-38F2426B23D3}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{5E286F47-DA0D-4F8A-A831-38F2426B23D3}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{5E286F47-DA0D-4F8A-A831-38F2426B23D3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2307F11D-6FF4-45B0-9FA2-7B9807647E2B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2307F11D-6FF4-45B0-9FA2-7B9807647E2B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2307F11D-6FF4-45B0-9FA2-7B9807647E2B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2307F11D-6FF4-45B0-9FA2-7B9807647E2B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B1A05556-02FE-4BC0-89E4-4C6CC751675B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B1A05556-02FE-4BC0-89E4-4C6CC751675B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B1A05556-02FE-4BC0-89E4-4C6CC751675B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B1A05556-02FE-4BC0-89E4-4C6CC751675B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -56,8 +56,8 @@ Global
 		{A90B6063-66BB-486C-8267-43AC8F9C5196} = {BA160273-1658-4D63-8BB0-BEDDA0DAF20D}
 		{9D614FC7-0A88-4E85-B8A9-25FFFD71C47A} = {BA160273-1658-4D63-8BB0-BEDDA0DAF20D}
 		{3C8417AB-8E73-4EBF-B090-1367F3D23468} = {CC406051-3EEC-4E4F-8152-2F1BE15D61BA}
-		{5E286F47-DA0D-4F8A-A831-38F2426B23D3} = {CC406051-3EEC-4E4F-8152-2F1BE15D61BA}
-		{B3EA9B7E-FB07-4906-8878-C9DC04988ABC} = {9F85FD72-A640-4607-966D-36FF8C229268}
+		{2307F11D-6FF4-45B0-9FA2-7B9807647E2B} = {A3A8F98E-3524-4E5A-87C5-5324FD52E296}
+		{B1A05556-02FE-4BC0-89E4-4C6CC751675B} = {A3A8F98E-3524-4E5A-87C5-5324FD52E296}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {E4BEDA84-BAED-4E86-B18F-8417E2FD10BB}

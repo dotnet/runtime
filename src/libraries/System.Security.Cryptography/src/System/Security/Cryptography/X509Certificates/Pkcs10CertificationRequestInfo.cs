@@ -22,10 +22,8 @@ namespace System.Security.Cryptography.X509Certificates
             PublicKey publicKey,
             IEnumerable<X501Attribute> attributes)
         {
-            if (subject == null)
-                throw new ArgumentNullException(nameof(subject));
-            if (publicKey == null)
-                throw new ArgumentNullException(nameof(publicKey));
+            ArgumentNullException.ThrowIfNull(subject);
+            ArgumentNullException.ThrowIfNull(publicKey);
 
             Subject = subject;
             PublicKey = publicKey;

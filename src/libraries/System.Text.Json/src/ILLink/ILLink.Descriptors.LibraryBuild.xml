@@ -1,0 +1,8 @@
+<linker>
+  <assembly fullname="System.Text.Json">
+    <type fullname="System.Text.Json.JsonSerializerOptions/CachingContext">
+      <!-- Internal API used by tests only. -->
+      <method name="get_Count" />
+    </type>
+  </assembly>
+</linker>

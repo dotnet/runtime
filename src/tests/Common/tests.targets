@@ -79,9 +79,12 @@
   </Target>
 
   <Target Name="RunSingleMergedTest">
-    <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" Condition="'$(TargetOS)' != 'windows'" />
-    <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile)" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" />
-    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" />
+    <Exec Command="chmod +x $(TestWrapperScript)" WorkingDirectory="$(BaseOutputPathWithConfig)" EchoOff="true" Condition="'$(TargetOS)' != 'windows'" />
+    <Exec Command="$(TestWrapperScript) &gt;$(RedirectOutputToFile)" WorkingDirectory="$(BaseOutputPathWithConfig)" Timeout="$(__TestTimeout)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="MergedTestExitCode" />
+    </Exec>
+    <Copy SourceFiles="$(TestResultsXmlFile)" DestinationFiles="$(TestResultsCopyTo)" Condition="'$(MergedTestExitCode)' == '0'" />
+    <Message Importance="High" Text="Error running test group '$(TestWrapperScript)' - exit code $(MergedTestExitCode)" Condition="'$(MergedTestExitCode)' != '0'" />
   </Target>
 
   <Target Name="RunMergedTests" DependsOnTargets="PrepareTestsToRun">

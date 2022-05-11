@@ -100,7 +100,7 @@ namespace System.Drawing
         /// <summary>
         ///     Advances the frame in the specified image. The new frame is drawn the next time the image is rendered.
         /// </summary>
-        public static void UpdateFrames(Image image)
+        public static void UpdateFrames(Image? image)
         {
             if (image == null || s_imageInfoList == null)
             {

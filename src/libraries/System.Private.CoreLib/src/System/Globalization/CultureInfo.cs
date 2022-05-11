@@ -101,11 +101,6 @@ namespace System.Globalization
         // The culture used in the user interface. This is mostly used to load correct localized resources.
         private static volatile CultureInfo? s_userDefaultUICulture;
 
-        // WARNING: We allow diagnostic tools to directly inspect these three members (s_InvariantCultureInfo, s_DefaultThreadCurrentUICulture and s_DefaultThreadCurrentCulture)
-        // See https://github.com/dotnet/corert/blob/master/Documentation/design-docs/diagnostics/diagnostics-tools-contract.md for more details.
-        // Please do not change the type, the name, or the semantic usage of this member without understanding the implication for tools.
-        // Get in touch with the diagnostics team if you have questions.
-
         // The Invariant culture;
         private static readonly CultureInfo s_InvariantCultureInfo = new CultureInfo(CultureData.Invariant, isReadOnly: true);
 
@@ -166,10 +161,7 @@ namespace System.Globalization
 
         public CultureInfo(string name, bool useUserOverride)
         {
-            if (name == null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             // Get our data providing record
             CultureData? cultureData = CultureData.GetCultureData(name, useUserOverride);
@@ -245,10 +237,7 @@ namespace System.Globalization
         /// </summary>
         internal CultureInfo(string cultureName, string textAndCompareCultureName)
         {
-            if (cultureName == null)
-            {
-                throw new ArgumentNullException(nameof(cultureName), SR.ArgumentNull_String);
-            }
+            ArgumentNullException.ThrowIfNull(textAndCompareCultureName);
 
             CultureData? cultureData = CultureData.GetCultureData(cultureName, false) ??
                 throw new CultureNotFoundException(nameof(cultureName), cultureName, GetCultureNotSupportedExceptionMessage());
@@ -397,10 +386,7 @@ namespace System.Globalization
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 if (s_asyncLocalCurrentCulture == null)
                 {
@@ -420,10 +406,7 @@ namespace System.Globalization
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 CultureInfo.VerifyCultureName(value, true);
 
@@ -750,10 +733,7 @@ namespace System.Globalization
             }
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _numInfo = value;
@@ -780,10 +760,7 @@ namespace System.Globalization
 
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _dateTimeInfo = value;
@@ -973,10 +950,7 @@ namespace System.Globalization
 
         public static CultureInfo ReadOnly(CultureInfo ci)
         {
-            if (ci == null)
-            {
-                throw new ArgumentNullException(nameof(ci));
-            }
+            ArgumentNullException.ThrowIfNull(ci);
 
             if (ci.IsReadOnly)
             {
@@ -1085,11 +1059,7 @@ namespace System.Globalization
         /// </summary>
         public static CultureInfo GetCultureInfo(string name)
         {
-            // Make sure we have a valid, non-zero length string as name
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             name = CultureData.AnsiToLower(name);
             Dictionary<string, CultureInfo> nameTable = CachedCulturesByName;
@@ -1125,14 +1095,8 @@ namespace System.Globalization
         /// </summary>
         public static CultureInfo GetCultureInfo(string name, string altName)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
-            if (altName is null)
-            {
-                throw new ArgumentNullException(nameof(altName));
-            }
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(altName);
 
             name = CultureData.AnsiToLower(name);
             altName = CultureData.AnsiToLower(altName);
@@ -1170,10 +1134,7 @@ namespace System.Globalization
 
         public static CultureInfo GetCultureInfo(string name, bool predefinedOnly)
         {
-            if (name is null)
-            {
-                throw new ArgumentNullException(nameof(name));
-            }
+            ArgumentNullException.ThrowIfNull(name);
 
             if (predefinedOnly && !GlobalizationMode.Invariant)
             {

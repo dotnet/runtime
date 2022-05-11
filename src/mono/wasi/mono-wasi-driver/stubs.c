@@ -20,3 +20,5 @@ void mono_log_write_syslog (const char *a, int b, int c, const char *d) { assert
 
 void mono_runtime_setup_stat_profiler () { assert(0); }
 int mono_thread_state_init_from_handle (int *tctx, int *info, void *sigctx) { assert(0); return 0; }
+
+void syslog(int pri, const char *fmt, int ignored) { assert (0); }

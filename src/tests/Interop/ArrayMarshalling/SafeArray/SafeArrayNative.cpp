@@ -26,14 +26,14 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE XorBoolArray(SAFEARRAY* d, BOOL*
 
     VARIANT_BOOL* values;
     RETURN_IF_FAILED(::SafeArrayAccessData(d, (void**)&values));
-    
+
     for(long i = lowerBoundIndex; i <= upperBoundIndex; i++)
     {
         *result ^= values[i] == VARIANT_TRUE ? TRUE : FALSE;
     }
 
     RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
-    
+
     return S_OK;
 }
 
@@ -58,7 +58,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE MeanDecimalArray(SAFEARRAY* d, D
 
     DECIMAL* values;
     RETURN_IF_FAILED(::SafeArrayAccessData(d, (void**)&values));
-    
+
     for(long i = lowerBoundIndex; i <= upperBoundIndex; i++)
     {
         DECIMAL lhs = sum;
@@ -71,7 +71,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE MeanDecimalArray(SAFEARRAY* d, D
     VarDecDiv(&sum, &numElements, result);
 
     RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
-    
+
     return S_OK;
 }
 
@@ -94,7 +94,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE SumCurrencyArray(SAFEARRAY* d, C
 
     CY* values;
     RETURN_IF_FAILED(::SafeArrayAccessData(d, (void**)&values));
-    
+
     for(long i = lowerBoundIndex; i <= upperBoundIndex; i++)
     {
         CY lhs = sum;
@@ -104,7 +104,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE SumCurrencyArray(SAFEARRAY* d, C
     *result = sum;
 
     RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
-    
+
     return S_OK;
 }
 
@@ -165,7 +165,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE ReverseStrings(SAFEARRAY* d)
 
     void** values;
     RETURN_IF_FAILED(::SafeArrayAccessData(d, (void**)&values));
-    
+
     for(long i = lowerBoundIndex; i <= upperBoundIndex; i++)
     {
         if (elementType == VT_LPSTR)
@@ -189,7 +189,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE ReverseStrings(SAFEARRAY* d)
     }
 
     RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
-    
+
     return S_OK;
 }
 
@@ -211,7 +211,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyInterfaceArray(SAFEARRAY* 
 
     IUnknown** values;
     RETURN_IF_FAILED(::SafeArrayAccessData(d, (void**)&values));
-    
+
     for(long i = lowerBoundIndex; i <= upperBoundIndex; i++)
     {
         values[i]->AddRef();
@@ -219,7 +219,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE VerifyInterfaceArray(SAFEARRAY* 
     }
 
     RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
-    
+
     return S_OK;
 }
 
@@ -242,7 +242,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE MeanVariantIntArray(SAFEARRAY* d
 
     VARIANT* values;
     RETURN_IF_FAILED(::SafeArrayAccessData(d, (void**)&values));
-    
+
     for(long i = lowerBoundIndex; i <= upperBoundIndex; i++)
     {
         if (values[i].vt != VT_I4)
@@ -250,14 +250,14 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE MeanVariantIntArray(SAFEARRAY* d
             RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
             return E_INVALIDARG;
         }
-        
+
         *result += values[i].intVal;
     }
 
     *result /= upperBoundIndex - lowerBoundIndex + 1;
 
     RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
-    
+
     return S_OK;
 }
 
@@ -280,9 +280,9 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE DistanceBetweenDates(SAFEARRAY* 
 
     DATE* values;
     RETURN_IF_FAILED(::SafeArrayAccessData(d, (void**)&values));
-    
+
     bool haveLastValue = false;
-    DATE lastValue;
+    DATE lastValue = {};
 
     for(long i = lowerBoundIndex; i <= upperBoundIndex; i++)
     {
@@ -296,7 +296,7 @@ extern "C" DLL_EXPORT HRESULT STDMETHODCALLTYPE DistanceBetweenDates(SAFEARRAY* 
     }
 
     RETURN_IF_FAILED(::SafeArrayUnaccessData(d));
-    
+
     return S_OK;
 }
 

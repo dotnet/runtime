@@ -23,7 +23,8 @@ namespace System.Security.Cryptography
             }
             set
             {
-                _hashAlgorithm = value ?? throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
+                _hashAlgorithm = value;
             }
         }
 
@@ -39,8 +40,7 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public ECDsaCng(CngKey key)
         {
-            if (key == null)
-                throw new ArgumentNullException(nameof(key));
+            ArgumentNullException.ThrowIfNull(key);
 
             if (!IsEccAlgorithmGroup(key.AlgorithmGroup))
                 throw new ArgumentException(SR.Cryptography_ArgECDsaRequiresECDsaKey, nameof(key));
@@ -129,6 +129,7 @@ namespace System.Security.Cryptography
                 out bytesWritten);
         }
 
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public void FromXmlString(string xml, ECKeyXmlFormat format)
             => throw new PlatformNotSupportedException();
 
@@ -141,6 +142,7 @@ namespace System.Security.Cryptography
         public byte[] SignData(Stream data)
             => SignData(data, new HashAlgorithmName(HashAlgorithm.Algorithm));
 
+        [Obsolete(Obsoletions.EccXmlExportImportMessage, DiagnosticId = Obsoletions.EccXmlExportImportDiagId, UrlFormat = Obsoletions.SharedUrlFormat)]
         public string ToXmlString(ECKeyXmlFormat format)
             => throw new PlatformNotSupportedException();
 

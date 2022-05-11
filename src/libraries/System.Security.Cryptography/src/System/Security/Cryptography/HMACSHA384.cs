@@ -35,10 +35,7 @@ namespace System.Security.Cryptography
 
         public HMACSHA384(byte[] key)
         {
-            if (key is null)
-            {
-                throw new ArgumentNullException(nameof(key));
-            }
+            ArgumentNullException.ThrowIfNull(key);
 
             this.HashName = HashAlgorithmNames.SHA384;
             _hMacCommon = new HMACCommon(HashAlgorithmNames.SHA384, key, BlockSize);
@@ -75,11 +72,7 @@ namespace System.Security.Cryptography
             }
             set
             {
-                if (value is null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
-
+                ArgumentNullException.ThrowIfNull(value);
                 _hMacCommon.ChangeKey(value);
                 base.Key = _hMacCommon.ActualKey!;
             }
@@ -110,10 +103,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public static byte[] HashData(byte[] key, byte[] source)
         {
-            if (key is null)
-                throw new ArgumentNullException(nameof(key));
-            if (source is null)
-                throw new ArgumentNullException(nameof(source));
+            ArgumentNullException.ThrowIfNull(key);
+            ArgumentNullException.ThrowIfNull(source);
 
             return HashData(new ReadOnlySpan<byte>(key), new ReadOnlySpan<byte>(source));
         }
@@ -252,6 +243,7 @@ namespace System.Security.Cryptography
         public static byte[] HashData(byte[] key, Stream source)
         {
             ArgumentNullException.ThrowIfNull(key);
+
             return HashData(new ReadOnlySpan<byte>(key), source);
         }
 

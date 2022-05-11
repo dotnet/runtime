@@ -112,7 +112,8 @@ namespace System.Runtime.Serialization
             DataContractResolver? dataContractResolver,
             bool serializeReadOnlyTypes)
         {
-            CheckNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
+
             _rootType = type;
 
             if (knownTypes != null)

@@ -9,10 +9,14 @@ namespace System
     {
         // Systems without the Windows registry pretend that it's always empty.
 
+#pragma warning disable IDE0060
         private static string? GetEnvironmentVariableFromRegistry(string variable, bool fromMachine) => null;
+#pragma warning restore IDE0060
 
-        private static void SetEnvironmentVariableFromRegistry(string variable, string? value, bool fromMachine) { }
+        static partial void SetEnvironmentVariableFromRegistry(string variable, string? value, bool fromMachine);
 
+#pragma warning disable IDE0060
         private static IDictionary GetEnvironmentVariablesFromRegistry(bool fromMachine) => new Hashtable();
+#pragma warning restore IDE0060
     }
 }

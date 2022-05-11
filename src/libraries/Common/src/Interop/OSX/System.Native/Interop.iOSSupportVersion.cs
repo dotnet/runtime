@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Sys
     {
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_iOSSupportVersion", CharSet = CharSet.Ansi)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_iOSSupportVersion", StringMarshalling = StringMarshalling.Utf8)]
         internal static partial string iOSSupportVersion();
     }
 }

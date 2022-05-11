@@ -5,6 +5,7 @@ using System.Buffers;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 using System.Runtime.ExceptionServices;
 using System.Runtime.Versioning;
 using System.Text;
@@ -27,13 +28,13 @@ namespace System.IO
         internal const int DefaultBufferSize = 4096;
 
         public static StreamReader OpenText(string path)
-            => new StreamReader(path ?? throw new ArgumentNullException(nameof(path)));
+            => new StreamReader(path);
 
         public static StreamWriter CreateText(string path)
-            => new StreamWriter(path ?? throw new ArgumentNullException(nameof(path)), append: false);
+            => new StreamWriter(path, append: false);
 
         public static StreamWriter AppendText(string path)
-            => new StreamWriter(path ?? throw new ArgumentNullException(nameof(path)), append: true);
+            => new StreamWriter(path, append: true);
 
         /// <summary>
         /// Copies an existing file to a new file.
@@ -79,7 +80,10 @@ namespace System.IO
         // On Windows, Delete will fail for a file that is open for normal I/O
         // or a file that is memory mapped.
         public static void Delete(string path)
-            => FileSystem.DeleteFile(Path.GetFullPath(path ?? throw new ArgumentNullException(nameof(path))));
+        {
+            ArgumentNullException.ThrowIfNull(path);
+            FileSystem.DeleteFile(Path.GetFullPath(path));
+        }
 
         // Tests whether a file exists. The result is true if the file
         // given by the specified path exists; otherwise, the result is
@@ -322,6 +326,30 @@ namespace System.IO
             return ReadLinesIterator.CreateIterator(path, encoding);
         }
 
+        /// <summary>
+        /// Asynchronously reads the lines of a file.
+        /// </summary>
+        /// <param name="path">The file to read.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>The async enumerable that represents all the lines of the file, or the lines that are the result of a query.</returns>
+        public static IAsyncEnumerable<string> ReadLinesAsync(string path, CancellationToken cancellationToken = default)
+            => ReadLinesAsync(path, Encoding.UTF8, cancellationToken);
+
+        /// <summary>
+        /// Asynchronously reads the lines of a file that has a specified encoding.
+        /// </summary>
+        /// <param name="path">The file to read.</param>
+        /// <param name="encoding">The encoding that is applied to the contents of the file.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests. The default value is <see cref="CancellationToken.None"/>.</param>
+        /// <returns>The async enumerable that represents all the lines of the file, or the lines that are the result of a query.</returns>
+        public static IAsyncEnumerable<string> ReadLinesAsync(string path, Encoding encoding, CancellationToken cancellationToken = default)
+        {
+            Validate(path, encoding);
+
+            StreamReader sr = AsyncStreamReader(path, encoding); // Move first streamReader allocation here so to throw related file exception upfront, which will cause known leaking if user never actually foreach's over the enumerable
+            return IterateFileLinesAsync(sr, path, encoding, cancellationToken);
+        }
+
         public static void WriteAllLines(string path, string[] contents)
             => WriteAllLines(path, (IEnumerable<string>)contents);
 
@@ -334,10 +362,7 @@ namespace System.IO
         public static void WriteAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             InternalWriteAllLines(new StreamWriter(path, false, encoding), contents);
         }
 
@@ -371,10 +396,7 @@ namespace System.IO
         public static void AppendAllLines(string path, IEnumerable<string> contents, Encoding encoding)
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             InternalWriteAllLines(new StreamWriter(path, true, encoding), contents);
         }
 
@@ -383,10 +405,8 @@ namespace System.IO
 
         public static void Replace(string sourceFileName, string destinationFileName, string? destinationBackupFileName, bool ignoreMetadataErrors)
         {
-            if (sourceFileName == null)
-                throw new ArgumentNullException(nameof(sourceFileName));
-            if (destinationFileName == null)
-                throw new ArgumentNullException(nameof(destinationFileName));
+            ArgumentNullException.ThrowIfNull(sourceFileName);
+            ArgumentNullException.ThrowIfNull(destinationFileName);
 
             FileSystem.ReplaceFile(
                 Path.GetFullPath(sourceFileName),
@@ -424,11 +444,17 @@ namespace System.IO
 
         [SupportedOSPlatform("windows")]
         public static void Encrypt(string path)
-            => FileSystem.Encrypt(path ?? throw new ArgumentNullException(nameof(path)));
+        {
+            ArgumentNullException.ThrowIfNull(path);
+            FileSystem.Encrypt(path);
+        }
 
         [SupportedOSPlatform("windows")]
         public static void Decrypt(string path)
-            => FileSystem.Decrypt(path ?? throw new ArgumentNullException(nameof(path)));
+        {
+            ArgumentNullException.ThrowIfNull(path);
+            FileSystem.Decrypt(path);
+        }
 
         // If we use the path-taking constructors we will not have FileOptions.Asynchronous set and
         // we will have asynchronous file access faked by the thread pool. We want the real thing.
@@ -645,10 +671,7 @@ namespace System.IO
         public static Task WriteAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: false), contents, cancellationToken);
@@ -693,10 +716,7 @@ namespace System.IO
         public static Task AppendAllLinesAsync(string path, IEnumerable<string> contents, Encoding encoding, CancellationToken cancellationToken = default(CancellationToken))
         {
             Validate(path, encoding);
-
-            if (contents == null)
-                throw new ArgumentNullException(nameof(contents));
-
+            ArgumentNullException.ThrowIfNull(contents);
             return cancellationToken.IsCancellationRequested
                 ? Task.FromCanceled(cancellationToken)
                 : InternalWriteAllLinesAsync(AsyncStreamWriter(path, encoding, append: true), contents, cancellationToken);
@@ -917,6 +937,24 @@ namespace System.IO
             }
 
             return preambleSize + encoding.GetByteCount(contents);
+        }
+
+        private static async IAsyncEnumerable<string> IterateFileLinesAsync(StreamReader sr, string path, Encoding encoding, CancellationToken ctEnumerable, [EnumeratorCancellation] CancellationToken ctEnumerator = default)
+        {
+            if (!sr.BaseStream.CanRead)
+            {
+                sr = AsyncStreamReader(path, encoding);
+            }
+
+            using (sr)
+            {
+                using CancellationTokenSource cts = CancellationTokenSource.CreateLinkedTokenSource(ctEnumerable, ctEnumerator);
+                string? line;
+                while ((line = await sr.ReadLineAsync(cts.Token).ConfigureAwait(false)) is not null)
+                {
+                    yield return line;
+                }
+            }
         }
     }
 }

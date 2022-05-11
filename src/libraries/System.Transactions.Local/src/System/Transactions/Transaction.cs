@@ -286,11 +286,7 @@ namespace System.Transactions
         internal Transaction(IsolationLevel isoLevel, ISimpleTransactionSuperior superior)
         {
             TransactionManager.ValidateIsolationLevel(isoLevel);
-
-            if (superior == null)
-            {
-                throw new ArgumentNullException(nameof(superior));
-            }
+            ArgumentNullException.ThrowIfNull(superior);
 
             _isoLevel = isoLevel;
 
@@ -504,10 +500,7 @@ namespace System.Transactions
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (enlistmentNotification == null)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -558,10 +551,7 @@ namespace System.Transactions
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (singlePhaseNotification == null)
-            {
-                throw new ArgumentNullException(nameof(singlePhaseNotification));
-            }
+            ArgumentNullException.ThrowIfNull(singlePhaseNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -657,10 +647,7 @@ namespace System.Transactions
                 throw new ObjectDisposedException(nameof(Transaction));
             }
 
-            if (enlistmentNotification == null)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -702,10 +689,7 @@ namespace System.Transactions
                 throw new ObjectDisposedException(nameof(Transaction));
             }
 
-            if (singlePhaseNotification == null)
-            {
-                throw new ArgumentNullException(nameof(singlePhaseNotification));
-            }
+            ArgumentNullException.ThrowIfNull(singlePhaseNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -990,10 +974,7 @@ namespace System.Transactions
                 throw new ObjectDisposedException(nameof(Transaction));
             }
 
-            if (promotableSinglePhaseNotification == null)
-            {
-                throw new ArgumentNullException(nameof(promotableSinglePhaseNotification));
-            }
+            ArgumentNullException.ThrowIfNull(promotableSinglePhaseNotification);
 
             if (promoterType == Guid.Empty)
             {
@@ -1042,15 +1023,8 @@ namespace System.Transactions
                 throw new ArgumentException(SR.BadResourceManagerId, nameof(resourceManagerIdentifier));
             }
 
-            if (promotableNotification == null)
-            {
-                throw new ArgumentNullException(nameof(promotableNotification));
-            }
-
-            if (enlistmentNotification == null)
-            {
-                throw new ArgumentNullException(nameof(enlistmentNotification));
-            }
+            ArgumentNullException.ThrowIfNull(promotableNotification);
+            ArgumentNullException.ThrowIfNull(enlistmentNotification);
 
             if (enlistmentOptions != EnlistmentOptions.None && enlistmentOptions != EnlistmentOptions.EnlistDuringPrepareRequired)
             {
@@ -1091,10 +1065,7 @@ namespace System.Transactions
                 throw new ObjectDisposedException(nameof(Transaction));
             }
 
-            if (promotableNotification == null)
-            {
-                throw new ArgumentNullException(nameof(promotableNotification));
-            }
+            ArgumentNullException.ThrowIfNull(promotableNotification);
 
             if (distributedTransactionIdentifier == Guid.Empty)
             {

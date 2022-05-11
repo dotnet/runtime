@@ -158,8 +158,7 @@ namespace System.Security.Cryptography.X509Certificates
         [UnsupportedOSPlatform("browser")]
         public X509Certificate(string fileName, string? password, X509KeyStorageFlags keyStorageFlags)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
+            ArgumentNullException.ThrowIfNull(fileName);
 
             ValidateKeyStorageFlags(keyStorageFlags);
 
@@ -171,8 +170,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         private protected X509Certificate(string fileName, ReadOnlySpan<char> password, X509KeyStorageFlags keyStorageFlags)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
+            ArgumentNullException.ThrowIfNull(fileName);
 
             ValidateKeyStorageFlags(keyStorageFlags);
 
@@ -188,8 +186,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509Certificate(string fileName, SecureString? password, X509KeyStorageFlags keyStorageFlags) : this()
 #pragma warning restore SYSLIB0026
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
+            ArgumentNullException.ThrowIfNull(fileName);
 
             ValidateKeyStorageFlags(keyStorageFlags);
 
@@ -202,8 +199,7 @@ namespace System.Security.Cryptography.X509Certificates
         [UnsupportedOSPlatform("browser")]
         public X509Certificate(X509Certificate cert)
         {
-            if (cert == null)
-                throw new ArgumentNullException(nameof(cert));
+            ArgumentNullException.ThrowIfNull(cert);
 
             if (cert.Pal != null)
             {
@@ -702,7 +698,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
         }
 
-        private void VerifyContentType(X509ContentType contentType)
+        private static void VerifyContentType(X509ContentType contentType)
         {
             if (!(contentType == X509ContentType.Cert || contentType == X509ContentType.SerializedCert || contentType == X509ContentType.Pkcs12))
                 throw new CryptographicException(SR.Cryptography_X509_InvalidContentType);

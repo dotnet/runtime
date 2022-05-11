@@ -159,10 +159,7 @@ namespace System.Collections.Generic
         /// </remarks>
         public PriorityQueue(IEnumerable<(TElement Element, TPriority Priority)> items, IComparer<TPriority>? comparer)
         {
-            if (items is null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
+            ArgumentNullException.ThrowIfNull(items);
 
             _nodes = EnumerableHelpers.ToArray(items, out _size);
             _comparer = InitializeComparer(comparer);
@@ -353,10 +350,7 @@ namespace System.Collections.Generic
         /// </exception>
         public void EnqueueRange(IEnumerable<(TElement Element, TPriority Priority)> items)
         {
-            if (items is null)
-            {
-                throw new ArgumentNullException(nameof(items));
-            }
+            ArgumentNullException.ThrowIfNull(items);
 
             int count = 0;
             var collection = items as ICollection<(TElement Element, TPriority Priority)>;
@@ -419,10 +413,7 @@ namespace System.Collections.Generic
         /// </exception>
         public void EnqueueRange(IEnumerable<TElement> elements, TPriority priority)
         {
-            if (elements is null)
-            {
-                throw new ArgumentNullException(nameof(elements));
-            }
+            ArgumentNullException.ThrowIfNull(elements);
 
             int count;
             if (elements is ICollection<(TElement Element, TPriority Priority)> collection &&
@@ -578,12 +569,12 @@ namespace System.Collections.Generic
         /// <summary>
         /// Gets the index of an element's parent.
         /// </summary>
-        private int GetParentIndex(int index) => (index - 1) >> Log2Arity;
+        private static int GetParentIndex(int index) => (index - 1) >> Log2Arity;
 
         /// <summary>
         /// Gets the index of the first child of an element.
         /// </summary>
-        private int GetFirstChildIndex(int index) => (index << Log2Arity) + 1;
+        private static int GetFirstChildIndex(int index) => (index << Log2Arity) + 1;
 
         /// <summary>
         /// Converts an unordered list into a heap.
@@ -817,10 +808,7 @@ namespace System.Collections.Generic
 
             void ICollection.CopyTo(Array array, int index)
             {
-                if (array is null)
-                {
-                    throw new ArgumentNullException(nameof(array));
-                }
+                ArgumentNullException.ThrowIfNull(array);
 
                 if (array.Rank != 1)
                 {
@@ -834,7 +822,7 @@ namespace System.Collections.Generic
 
                 if (index < 0 || index > array.Length)
                 {
-                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_Index);
+                    throw new ArgumentOutOfRangeException(nameof(index), index, SR.ArgumentOutOfRange_IndexMustBeLessOrEqual);
                 }
 
                 if (array.Length - index < _queue._size)

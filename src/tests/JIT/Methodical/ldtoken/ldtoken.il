@@ -14,29 +14,29 @@
   
 }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_ldtoken_il
 {
-  .class private auto ansi beforefieldinit TestClass
+  .class public auto ansi beforefieldinit TestClass
          extends [mscorlib]System.Object
   {
-    .field family class JitTest.TestClass m_fld
-    .field public static class JitTest.TestClass s_fld
-    .method public hidebysig static class JitTest.TestClass 
-            StaticMethod(class JitTest.TestClass inst) cil managed
+    .field family class JitTest_ldtoken_il.TestClass m_fld
+    .field public static class JitTest_ldtoken_il.TestClass s_fld
+    .method public hidebysig static class JitTest_ldtoken_il.TestClass 
+            StaticMethod(class JitTest_ldtoken_il.TestClass inst) cil managed
     {
       .maxstack  1
-      .locals (class JitTest.TestClass V_0)
-      IL_0000:  newobj     instance void JitTest.TestClass::.ctor()
+      .locals (class JitTest_ldtoken_il.TestClass V_0)
+      IL_0000:  newobj     instance void JitTest_ldtoken_il.TestClass::.ctor()
       IL_0005:  stloc.0
       IL_0006:  br.s       IL_0008
       IL_0008:  ldloc.0
       IL_0009:  ret
     }
-    .method private hidebysig instance class JitTest.TestClass 
-            InstanceMethod(class JitTest.TestClass inst) cil managed
+    .method private hidebysig instance class JitTest_ldtoken_il.TestClass 
+            InstanceMethod(class JitTest_ldtoken_il.TestClass inst) cil managed
     {
       .maxstack  1
-      .locals (class JitTest.TestClass V_0)
+      .locals (class JitTest_ldtoken_il.TestClass V_0)
       IL_0000:  ldarg.0
       IL_0001:  stloc.0
       IL_0002:  br.s       IL_0004
@@ -44,18 +44,18 @@
       IL_0005:  ret
     }
     .method assembly hidebysig newslot virtual 
-            instance class JitTest.TestClass 
-            VirtualMethod(class JitTest.TestClass inst) cil managed
+            instance class JitTest_ldtoken_il.TestClass 
+            VirtualMethod(class JitTest_ldtoken_il.TestClass inst) cil managed
     {
       .maxstack  1
-      .locals (class JitTest.TestClass V_0)
+      .locals (class JitTest_ldtoken_il.TestClass V_0)
       IL_0000:  ldarg.0
       IL_0001:  stloc.0
       IL_0002:  br.s       IL_0004
       IL_0004:  ldloc.0
       IL_0005:  ret
     }
-    .method private hidebysig static int32 Main() cil managed
+    .method public hidebysig static int32 Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
           01 00 00 00
@@ -72,23 +72,23 @@
       ldloca 0
       ldind.i4
       brfalse br1
-      ldtoken field class JitTest.TestClass JitTest.TestClass::m_fld
+      ldtoken field class JitTest_ldtoken_il.TestClass JitTest_ldtoken_il.TestClass::m_fld
       br mg1
 br1:
-      ldtoken field class JitTest.TestClass JitTest.TestClass::s_fld
+      ldtoken field class JitTest_ldtoken_il.TestClass JitTest_ldtoken_il.TestClass::s_fld
 mg1:
       stloc.1
       
       ldloca 0
       ldind.i4
       switch (br2a, br2b)
-      ldtoken method instance class JitTest.TestClass JitTest.TestClass::InstanceMethod(class JitTest.TestClass inst)
+      ldtoken method instance class JitTest_ldtoken_il.TestClass JitTest_ldtoken_il.TestClass::InstanceMethod(class JitTest_ldtoken_il.TestClass inst)
 	  br.s mg2
 br2a:
-      ldtoken method class JitTest.TestClass JitTest.TestClass::StaticMethod(class JitTest.TestClass inst)
+      ldtoken method class JitTest_ldtoken_il.TestClass JitTest_ldtoken_il.TestClass::StaticMethod(class JitTest_ldtoken_il.TestClass inst)
 	  br.s mg2
 br2b:
-      ldtoken method instance class JitTest.TestClass JitTest.TestClass::VirtualMethod(class JitTest.TestClass inst)
+      ldtoken method instance class JitTest_ldtoken_il.TestClass JitTest_ldtoken_il.TestClass::VirtualMethod(class JitTest_ldtoken_il.TestClass inst)
 mg2:
       stloc.2
 
@@ -98,11 +98,11 @@ mg2:
       ldtoken int32
       br mg3
 br3:
-      ldtoken class JitTest.TestClass
+      ldtoken class JitTest_ldtoken_il.TestClass
 mg3:
       stloc.3
 
-      ldtoken method instance class JitTest.TestClass JitTest.TestClass::InstanceMethod(class JitTest.TestClass inst)
+      ldtoken method instance class JitTest_ldtoken_il.TestClass JitTest_ldtoken_il.TestClass::InstanceMethod(class JitTest_ldtoken_il.TestClass inst)
       pop
       
       ldc.i4.s 100

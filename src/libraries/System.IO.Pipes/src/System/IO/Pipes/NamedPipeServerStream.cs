@@ -141,10 +141,8 @@ namespace System.IO.Pipes
         public NamedPipeServerStream(PipeDirection direction, bool isAsync, bool isConnected, SafePipeHandle safePipeHandle)
             : base(direction, PipeTransmissionMode.Byte, 0)
         {
-            if (safePipeHandle == null)
-            {
-                throw new ArgumentNullException(nameof(safePipeHandle));
-            }
+            ArgumentNullException.ThrowIfNull(safePipeHandle);
+
             if (safePipeHandle.IsInvalid)
             {
                 throw new ArgumentException(SR.Argument_InvalidHandle, nameof(safePipeHandle));

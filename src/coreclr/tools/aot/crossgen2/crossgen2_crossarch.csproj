@@ -1,6 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <CrossHostArch>x64</CrossHostArch>
+    <CrossHostArch>$(BuildArchitecture)</CrossHostArch>
     <OutputPath>$(RuntimeBinDir)/$(CrossHostArch)/crossgen2</OutputPath>
     <UseAppHost>false</UseAppHost>
   </PropertyGroup>

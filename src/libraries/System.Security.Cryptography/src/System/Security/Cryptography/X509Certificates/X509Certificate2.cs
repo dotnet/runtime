@@ -431,8 +431,7 @@ namespace System.Security.Cryptography.X509Certificates
         [UnsupportedOSPlatform("browser")]
         public static X509ContentType GetCertContentType(string fileName)
         {
-            if (fileName == null)
-                throw new ArgumentNullException(nameof(fileName));
+            ArgumentNullException.ThrowIfNull(fileName);
 
             // .NET Framework compat: The .NET Framework expands the filename to a full path for the purpose of performing a CAS permission check. While CAS is not present here,
             // we still need to call GetFullPath() so we get the same exception behavior if the fileName is bad.
@@ -770,8 +769,7 @@ namespace System.Security.Cryptography.X509Certificates
         /// </exception>
         public X509Certificate2 CopyWithPrivateKey(ECDiffieHellman privateKey)
         {
-            if (privateKey is null)
-                throw new ArgumentNullException(nameof(privateKey));
+            ArgumentNullException.ThrowIfNull(privateKey);
 
             if (HasPrivateKey)
                 throw new InvalidOperationException(SR.Cryptography_Cert_AlreadyHasPrivateKey);
@@ -851,8 +849,7 @@ namespace System.Security.Cryptography.X509Certificates
         [UnsupportedOSPlatform("browser")]
         public static X509Certificate2 CreateFromPemFile(string certPemFilePath, string? keyPemFilePath = default)
         {
-            if (certPemFilePath is null)
-                throw new ArgumentNullException(nameof(certPemFilePath));
+            ArgumentNullException.ThrowIfNull(certPemFilePath);
 
             ReadOnlySpan<char> certContents = File.ReadAllText(certPemFilePath);
             ReadOnlySpan<char> keyContents = keyPemFilePath is null ? certContents : File.ReadAllText(keyPemFilePath);
@@ -918,8 +915,7 @@ namespace System.Security.Cryptography.X509Certificates
         [UnsupportedOSPlatform("browser")]
         public static X509Certificate2 CreateFromEncryptedPemFile(string certPemFilePath, ReadOnlySpan<char> password, string? keyPemFilePath = default)
         {
-            if (certPemFilePath is null)
-                throw new ArgumentNullException(nameof(certPemFilePath));
+            ArgumentNullException.ThrowIfNull(certPemFilePath);
 
             ReadOnlySpan<char> certContents = File.ReadAllText(certPemFilePath);
             ReadOnlySpan<char> keyContents = keyPemFilePath is null ? certContents : File.ReadAllText(keyPemFilePath);

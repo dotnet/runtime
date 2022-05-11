@@ -41,7 +41,10 @@ namespace System.Configuration
 
         public void CopyTo(PropertyInformation[] array, int index)
         {
-            if (array == null) throw new ArgumentNullException(nameof(array));
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
 
             if (array.Length < Count + index) throw new ArgumentOutOfRangeException(nameof(index));
 

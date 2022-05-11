@@ -17,6 +17,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
     public class LoggerMessageGeneratorParserTests
     {
         [Fact]
+        public async Task Valid_AdditionalAttributes()
+        {
+            Assert.Empty(await RunGenerator($@"
+                using System.Diagnostics.CodeAnalysis;
+                partial class C
+                {{
+                    [SuppressMessage(""CATEGORY1"", ""SOMEID1"")]
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""M1"")]
+                    [SuppressMessage(""CATEGORY2"", ""SOMEID2"")]
+                    static partial void M1(ILogger logger);
+                }}
+            "));
+        }
+
+        [Fact]
         public async Task InvalidMethodName()
         {
             IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@"
@@ -614,6 +629,21 @@ namespace Microsoft.Extensions.Logging.Generators.Tests
 
             Assert.Single(diagnostics);
             Assert.Equal(DiagnosticDescriptors.LoggingMethodIsGeneric.Id, diagnostics[0].Id);
+        }
+
+        [Theory]
+        [InlineData("ref")]
+        [InlineData("in")]
+        public async Task SupportsRefKindsInAndRef(string modifier)
+        {
+            IReadOnlyList<Diagnostic> diagnostics = await RunGenerator(@$"
+                partial class C
+                {{
+                    [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = ""Parameter {{P1}}"")]
+                    static partial void M(ILogger logger, {modifier} int p1);
+                }}");
+
+            Assert.Empty(diagnostics);
         }
 
         [Fact]

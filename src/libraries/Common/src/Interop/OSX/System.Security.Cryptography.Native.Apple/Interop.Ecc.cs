@@ -11,14 +11,14 @@ internal static partial class Interop
 {
     internal static partial class AppleCrypto
     {
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static partial int AppleCryptoNative_EccGenerateKey(
             int keySizeInBits,
             out SafeSecKeyRefHandle pPublicKey,
             out SafeSecKeyRefHandle pPrivateKey,
             out SafeCFErrorHandle pErrorOut);
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_EccGetKeySizeInBits")]
+        [LibraryImport(Libraries.AppleCryptoNative, EntryPoint = "AppleCryptoNative_EccGetKeySizeInBits")]
         internal static partial long EccGetKeySizeInBits(SafeSecKeyRefHandle publicKey);
 
         internal static void EccGenerateKey(

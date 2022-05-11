@@ -5,7 +5,8 @@ using System.Diagnostics;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using Internal.Runtime.CompilerServices;
+
+#pragma warning disable CA1822
 
 namespace System.Collections.Generic
 {

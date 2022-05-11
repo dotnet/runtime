@@ -2,11 +2,12 @@
   <PropertyGroup>
     <TestRuntime>true</TestRuntime>
     <IncludeRemoteExecutor>true</IncludeRemoteExecutor>
-    <TargetFrameworks>$(NetCoreAppCurrent)</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="AssemblyInfo.cs" />
     <Compile Include="Helpers.cs" />
+    <Compile Include="Task\TaskArgumentValidationTests.cs" />
     <Compile Include="XunitAssemblyAttributes.cs" />
     <Compile Include="UnwrapTests.cs" />
     <Compile Include="AggregateExceptionTests.cs" />

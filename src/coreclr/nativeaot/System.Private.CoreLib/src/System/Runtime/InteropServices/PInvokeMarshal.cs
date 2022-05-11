@@ -118,9 +118,10 @@ namespace System.Runtime.InteropServices
                     // Allocate unmanaged memory for GCHandle of delegate and function pointer of open static delegate
                     // We will store this pointer on the context slot of thunk data
                     //
-                    ContextData = Marshal.AllocHGlobal(2 * IntPtr.Size);
                     unsafe
                     {
+                        ContextData = (IntPtr)NativeMemory.Alloc((nuint)(2 * IntPtr.Size));
+
                         ThunkContextData* thunkData = (ThunkContextData*)ContextData;
 
                         // allocate a weak GChandle for the delegate
@@ -148,7 +149,7 @@ namespace System.Runtime.InteropServices
                         }
 
                         // Free the allocated context data memory
-                        Marshal.FreeHGlobal(ContextData);
+                        NativeMemory.Free((void*)ContextData);
                     }
                 }
             }
@@ -185,7 +186,7 @@ namespace System.Runtime.InteropServices
         /// <summary>
         /// Retrieve the corresponding P/invoke instance from the stub
         /// </summary>
-        public static unsafe Delegate GetDelegateForFunctionPointer(IntPtr ptr, RuntimeTypeHandle delegateType)
+        public static unsafe Delegate? GetDelegateForFunctionPointer(IntPtr ptr, RuntimeTypeHandle delegateType)
         {
             if (ptr == IntPtr.Zero)
                 return null;
@@ -367,7 +368,7 @@ namespace System.Runtime.InteropServices
         /// <remarks>Input assumed to be zero terminated. Generates String.Empty for zero length string.
         /// This version is more efficient than ConvertToUnicode in src\Interop\System\Runtime\InteropServices\Marshal.cs in that it can skip calling
         /// MultiByteToWideChar for ASCII string, and it does not need another char[] buffer</remarks>
-        public static unsafe string AnsiStringToString(byte* pchBuffer)
+        public static unsafe string? AnsiStringToString(byte* pchBuffer)
         {
             if (pchBuffer == null)
             {

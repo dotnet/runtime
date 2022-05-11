@@ -1123,7 +1123,7 @@ FCIMPL1(INT64, GCInterface::GetTotalAllocatedBytes, CLR_BOOL precise)
         return current_high;
     }
 
-    INT64 allocated;
+    INT64 allocated = 0;
 
     HELPER_METHOD_FRAME_BEGIN_RET_0();
 
@@ -1895,7 +1895,7 @@ static INT32 RegularGetValueTypeHashCode(MethodTable *mt, void *pObjRef)
         canUseFastGetHashCodeHelper = CanCompareBitsOrUseFastGetHashCode(mt);
     }
 
-    // While we shouln't get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to
+    // While we should not get here directly from ValueTypeHelper::GetHashCode, if we recurse we need to
     // be able to handle getting the hashcode for an embedded structure whose hashcode is computed by the fast path.
     if (canUseFastGetHashCodeHelper)
     {

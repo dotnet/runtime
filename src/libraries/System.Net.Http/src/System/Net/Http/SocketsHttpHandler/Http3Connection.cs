@@ -47,6 +47,10 @@ namespace System.Net.Http
         // A connection-level error will abort any future operations.
         private Exception? _abortException;
 
+        private const int TelemetryStatus_Opened = 1;
+        private const int TelemetryStatus_Closed = 2;
+        private int _markedByTelemetryStatus;
+
         public HttpAuthority Authority => _authority;
         public HttpConnectionPool Pool => _pool;
         public int MaximumRequestHeadersLength => _maximumHeadersLength;
@@ -76,6 +80,12 @@ namespace System.Net.Http
             bool altUsedDefaultPort = pool.Kind == HttpConnectionKind.Http && authority.Port == HttpConnectionPool.DefaultHttpPort || pool.Kind == HttpConnectionKind.Https && authority.Port == HttpConnectionPool.DefaultHttpsPort;
             string altUsedValue = altUsedDefaultPort ? authority.IdnHost : string.Create(CultureInfo.InvariantCulture, $"{authority.IdnHost}:{authority.Port}");
             _altUsedEncodedHeader = QPack.QPackEncoder.EncodeLiteralHeaderFieldWithoutNameReferenceToArray(KnownHeaders.AltUsed.Name, altUsedValue);
+
+            if (HttpTelemetry.Log.IsEnabled())
+            {
+                HttpTelemetry.Log.Http30ConnectionEstablished();
+                _markedByTelemetryStatus = TelemetryStatus_Opened;
+            }
 
             // Errors are observed via Abort().
             _ = SendSettingsAsync();
@@ -148,41 +158,54 @@ namespace System.Net.Http
                     }
 
                 }, CancellationToken.None, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Default);
+
+                if (HttpTelemetry.Log.IsEnabled())
+                {
+                    if (Interlocked.Exchange(ref _markedByTelemetryStatus, TelemetryStatus_Closed) == TelemetryStatus_Opened)
+                    {
+                        HttpTelemetry.Log.Http30ConnectionClosed();
+                    }
+                }
             }
         }
 
-        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, bool async, CancellationToken cancellationToken)
+        public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, long queueStartingTimestamp, CancellationToken cancellationToken)
         {
-            Debug.Assert(async);
-
             // Allocate an active request
             QuicStream? quicStream = null;
             Http3RequestStream? requestStream = null;
-            ValueTask waitTask = default;
 
             try
             {
-                while (true)
+                try
                 {
-                    lock (SyncObj)
+                    QuicConnection? conn = _connection;
+                    if (conn != null)
                     {
-                        if (_connection == null)
+                        if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp == 0)
                         {
-                            break;
+                            queueStartingTimestamp = Stopwatch.GetTimestamp();
                         }
 
-                        if (_connection.GetRemoteAvailableBidirectionalStreamCount() > 0)
+                        quicStream = await conn.OpenBidirectionalStreamAsync(cancellationToken).ConfigureAwait(false);
+
+                        requestStream = new Http3RequestStream(request, this, quicStream);
+                        lock (SyncObj)
                         {
-                            quicStream = _connection.OpenBidirectionalStream();
-                            requestStream = new Http3RequestStream(request, this, quicStream);
                             _activeRequests.Add(quicStream, requestStream);
-                            break;
                         }
-                        waitTask = _connection.WaitForAvailableBidirectionalStreamsAsync(cancellationToken);
                     }
-
-                    // Wait for an available stream (based on QUIC MAX_STREAMS) if there isn't one available yet.
-                    await waitTask.ConfigureAwait(false);
+                }
+                // Swallow any exceptions caused by the connection being closed locally or even disposed due to a race.
+                // Since quicStream will stay `null`, the code below will throw appropriate exception to retry the request.
+                catch (ObjectDisposedException) { }
+                catch (QuicException e) when (!(e is QuicConnectionAbortedException)) { }
+                finally
+                {
+                    if (HttpTelemetry.Log.IsEnabled() && queueStartingTimestamp != 0)
+                    {
+                        HttpTelemetry.Log.Http30RequestLeftQueue(Stopwatch.GetElapsedTime(queueStartingTimestamp).TotalMilliseconds);
+                    }
                 }
 
                 if (quicStream == null)
@@ -344,7 +367,7 @@ namespace System.Net.Http
         {
             try
             {
-                _clientControl = _connection!.OpenUnidirectionalStream();
+                _clientControl = await _connection!.OpenUnidirectionalStreamAsync().ConfigureAwait(false);
                 await _clientControl.WriteAsync(_pool.Settings.Http3SettingsFrame, CancellationToken.None).ConfigureAwait(false);
             }
             catch (Exception ex)

@@ -62,7 +62,7 @@ namespace System.Reflection.Runtime.BindingFlagSupport
             return false;
         }
 
-        private MethodInfo GetAccessorMethod(EventInfo e)
+        private static MethodInfo GetAccessorMethod(EventInfo e)
         {
             MethodInfo accessor = e.AddMethod;
             return accessor;

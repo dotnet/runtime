@@ -65,7 +65,6 @@
 // assignments in a static class constructor are under a lock implicitly.
 
 using System.Runtime.CompilerServices;
-using Internal.Runtime.CompilerServices;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.Runtime.InteropServices
@@ -216,8 +215,8 @@ namespace System.Runtime.InteropServices
         public void ReadArray<T>(ulong byteOffset, T[] array, int index, int count)
             where T : struct
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)
@@ -305,8 +304,8 @@ namespace System.Runtime.InteropServices
         public void WriteArray<T>(ulong byteOffset, T[] array, int index, int count)
             where T : struct
         {
-            if (array == null)
-                throw new ArgumentNullException(nameof(array), SR.ArgumentNull_Buffer);
+            ArgumentNullException.ThrowIfNull(array);
+
             if (index < 0)
                 throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_NeedNonNegNum);
             if (count < 0)

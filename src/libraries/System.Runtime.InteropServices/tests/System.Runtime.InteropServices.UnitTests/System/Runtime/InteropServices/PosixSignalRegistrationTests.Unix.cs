@@ -159,13 +159,20 @@ namespace System.Tests
             }
         }
 
+        [ConditionalFact(nameof(NotMobileAndRemoteExecutable))]
+        [OuterLoop("SIGQUIT will generate a coredump")]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65000", TestPlatforms.OSX)] // large (~6 GB) coredump on OSX leads to timeout on upload
+        public void SignalCanCancelTermination_ExpectedCrash()
+        {
+            SignalCanCancelTermination(PosixSignal.SIGQUIT, false, 131);
+        }
+
         [ConditionalTheory(nameof(NotMobileAndRemoteExecutable))]
         [InlineData(PosixSignal.SIGINT, true, 0)]
         [InlineData(PosixSignal.SIGINT, false, 130)]
         [InlineData(PosixSignal.SIGTERM, true, 0)]
         [InlineData(PosixSignal.SIGTERM, false, 143)]
         [InlineData(PosixSignal.SIGQUIT, true, 0)]
-        [InlineData(PosixSignal.SIGQUIT, false, 131)]
         public void SignalCanCancelTermination(PosixSignal signal, bool cancel, int expectedExitCode)
         {
             // Mono doesn't restore and call SIG_DFL on SIGQUIT.

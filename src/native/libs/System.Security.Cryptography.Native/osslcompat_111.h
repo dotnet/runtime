@@ -60,7 +60,9 @@ unsigned long SSL_CTX_set_options(SSL_CTX* ctx, unsigned long options);
 void SSL_CTX_set_security_level(SSL_CTX* ctx, int32_t level);
 int32_t SSL_is_init_finished(SSL* ssl);
 unsigned long SSL_set_options(SSL* ctx, unsigned long options);
+void SSL_set_post_handshake_auth(SSL *s, int val);
 int SSL_session_reused(SSL* ssl);
+int SSL_verify_client_post_handshake(SSL *s);
 const SSL_METHOD* TLS_method(void);
 const ASN1_TIME* X509_CRL_get0_nextUpdate(const X509_CRL* crl);
 int32_t X509_NAME_get0_der(X509_NAME* x509Name, const uint8_t** pder, size_t* pderlen);
@@ -79,6 +81,8 @@ int32_t X509_get_version(const X509* x509);
 int X509_set1_notAfter(X509* x509, const ASN1_TIME*);
 int X509_set1_notBefore(X509* x509, const ASN1_TIME*);
 int32_t X509_up_ref(X509* x509);
+const char *SSL_SESSION_get0_hostname(const SSL_SESSION *s);
+int SSL_SESSION_set1_hostname(SSL_SESSION *s, const char *hostname);
 
 #if OPENSSL_VERSION_NUMBER < OPENSSL_VERSION_1_0_2_RTM
 int32_t X509_check_host(X509* x509, const char* name, size_t namelen, unsigned int flags, char** peername);

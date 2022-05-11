@@ -534,10 +534,7 @@ namespace System.Net.Http
         protected internal override HttpResponseMessage Send(HttpRequestMessage request,
             CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             if (request.Version.Major >= 2)
             {
@@ -567,10 +564,7 @@ namespace System.Net.Http
 
         protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            if (request == null)
-            {
-                throw new ArgumentNullException(nameof(request), SR.net_http_handler_norequest);
-            }
+            ArgumentNullException.ThrowIfNull(request);
 
             CheckDisposed();
 
@@ -590,7 +584,7 @@ namespace System.Net.Http
             return handler.SendAsync(request, cancellationToken);
         }
 
-        private Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
+        private static Exception? ValidateAndNormalizeRequest(HttpRequestMessage request)
         {
             if (request.Version.Major == 0)
             {

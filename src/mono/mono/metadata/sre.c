@@ -897,8 +897,8 @@ mono_image_get_array_token (MonoDynamicImage *assembly, MonoReflectionArrayMetho
 	mtype = mono_reflection_type_handle_mono_type (parent, error);
 	goto_if_nok (error, fail);
 
-	for (int i = 0; i < nparams; ++i) {
-		sig->params [i] = mono_type_array_get_and_resolve (parameters, i, error);
+	for (guint32 i = 0; i < nparams; ++i) {
+		sig->params [i] = mono_type_array_get_and_resolve (parameters, (int)i, error);
 		goto_if_nok (error, fail);
 	}
 
@@ -1231,31 +1231,32 @@ mono_reflection_dynimage_basic_init (MonoReflectionAssemblyBuilder *assemblyb, M
 	if (assemblyb->culture) {
 		assembly->assembly.aname.culture = mono_string_to_utf8_checked_internal (assemblyb->culture, error);
 		return_if_nok (error);
-	} else
+	} else {
 		assembly->assembly.aname.culture = g_strdup ("");
+	}
 
-        if (assemblyb->version) {
-			char *vstr = mono_string_to_utf8_checked_internal (assemblyb->version, error);
-			if (mono_error_set_pending_exception (error))
-				return;
-			char **version = g_strsplit (vstr, ".", 4);
-			char **parts = version;
-			assembly->assembly.aname.major = atoi (*parts++);
-			assembly->assembly.aname.minor = atoi (*parts++);
-			assembly->assembly.aname.build = *parts != NULL ? atoi (*parts++) : 0;
-			assembly->assembly.aname.revision = *parts != NULL ? atoi (*parts) : 0;
+	if (assemblyb->version) {
+		char *vstr = mono_string_to_utf8_checked_internal (assemblyb->version, error);
+		if (mono_error_set_pending_exception (error))
+			return;
+		char **version = g_strsplit (vstr, ".", 4);
+		char **parts = version;
+		assembly->assembly.aname.major = atoi (*parts++);
+		assembly->assembly.aname.minor = atoi (*parts++);
+		assembly->assembly.aname.build = *parts != NULL ? atoi (*parts++) : 0;
+		assembly->assembly.aname.revision = *parts != NULL ? atoi (*parts) : 0;
 
-			g_strfreev (version);
-			g_free (vstr);
-        } else {
-			assembly->assembly.aname.major = 0;
-			assembly->assembly.aname.minor = 0;
-			assembly->assembly.aname.build = 0;
-			assembly->assembly.aname.revision = 0;
-        }
+		g_strfreev (version);
+		g_free (vstr);
+	} else {
+		assembly->assembly.aname.major = 0;
+		assembly->assembly.aname.minor = 0;
+		assembly->assembly.aname.build = 0;
+		assembly->assembly.aname.revision = 0;
+	}
 
 	if (assemblyb->public_key_token) {
-		for (int i = 0; i < 8 && i < mono_array_length_internal (assemblyb->public_key_token); i++) {
+		for (mono_array_size_t i = 0; i < 8 && i < mono_array_length_internal (assemblyb->public_key_token); i++) {
 			guint8 byte = mono_array_get_internal (assemblyb->public_key_token, guint8, i);
 			sprintf ((char*)(assembly->assembly.aname.public_key_token + 2 * i), "%02x", byte);
 		}
@@ -1381,7 +1382,7 @@ add_custom_modifiers_to_type (MonoType *without_mods, MonoArrayHandle req_array,
 		return without_mods;
 
 	MonoTypeWithModifiers *result;
-	result = mono_image_g_malloc0 (image, mono_sizeof_type_with_mods (total_mods, FALSE));
+	result = mono_image_g_malloc0 (image, (guint)mono_sizeof_type_with_mods (total_mods, FALSE));
 	memcpy (result, without_mods, MONO_SIZEOF_TYPE);
 	result->unmodified.has_cmods = 1;
 	MonoCustomModContainer *cmods = mono_type_get_cmods ((MonoType *)result);
@@ -2043,7 +2044,7 @@ handle_enum:
 		break;
 	case MONO_TYPE_STRING: {
 		char *str;
-		guint32 slen;
+		size_t slen;
 		if (!arg) {
 MONO_DISABLE_WARNING(4309) // truncation of constant
 			*p++ = 0xFF;
@@ -2056,12 +2057,12 @@ MONO_RESTORE_WARNING
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
 			*buflen *= 2;
-			*buflen += slen;
+			*buflen += (guint32)slen;
 			newbuf = (char *)g_realloc (buffer, *buflen);
 			p = newbuf + (p-buffer);
 			buffer = newbuf;
 		}
-		mono_metadata_encode_value (slen, p, &p);
+		mono_metadata_encode_value ((uint32_t)slen, p, &p);
 		memcpy (p, str, slen);
 		p += slen;
 		g_free (str);
@@ -2082,7 +2083,7 @@ handle_type:
 		return_if_nok (error);
 
 		str = type_get_qualified_name (arg_type, NULL);
-		slen = strlen (str);
+		slen = (guint32)strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
 			*buflen *= 2;
@@ -2198,7 +2199,7 @@ MONO_RESTORE_WARNING
 			break;
 		}
 		str = type_get_qualified_name (m_class_get_byval_arg (klass), NULL);
-		slen = strlen (str);
+		slen = (guint32)strlen (str);
 		if ((p-buffer) + 10 + slen >= *buflen) {
 			char *newbuf;
 			*buflen *= 2;
@@ -2226,14 +2227,14 @@ encode_field_or_prop_type (MonoType *type, char *p, char **retp)
 {
 	if (type->type == MONO_TYPE_VALUETYPE && type->data.klass->enumtype) {
 		char *str = type_get_qualified_name (type, NULL);
-		int slen = strlen (str);
+		size_t slen = strlen (str);
 
 		*p++ = 0x55;
 		/*
 		 * This seems to be optional...
 		 * *p++ = 0x80;
 		 */
-		mono_metadata_encode_value (slen, p, &p);
+		mono_metadata_encode_value ((uint32_t)slen, p, &p);
 		memcpy (p, str, slen);
 		p += slen;
 		g_free (str);
@@ -2256,7 +2257,7 @@ encode_field_or_prop_type (MonoType *type, char *p, char **retp)
 static void
 encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char **retbuffer, char **retp, guint32 *buflen, MonoType *type, char *name, MonoObject *value, MonoError *error)
 {
-	int len;
+	size_t len;
 
 	error_init (error);
 
@@ -2277,7 +2278,7 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 	if ((p-buffer) + 20 + len >= *buflen) {
 		char *newbuf;
 		*buflen *= 2;
-		*buflen += len;
+		*buflen += (guint32)len;
 		newbuf = (char *)g_realloc (buffer, *buflen);
 		p = newbuf + (p-buffer);
 		buffer = newbuf;
@@ -2286,7 +2287,7 @@ encode_named_val (MonoReflectionAssembly *assembly, char *buffer, char *p, char 
 	encode_field_or_prop_type (type, p, &p);
 
 	len = strlen (name);
-	mono_metadata_encode_value (len, p, &p);
+	mono_metadata_encode_value ((uint32_t)len, p, &p);
 	memcpy (p, name, len);
 	p += len;
 	encode_cattr_value (assembly->assembly, buffer, p, &buffer, &p, buflen, type, value, NULL, error);
@@ -2406,7 +2407,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 		MonoObject *prop;
 
 		for (i = 0; i < mono_array_length_internal (properties); ++i) {
-			MonoType *ptype;
+			MonoType *ptype = NULL;
 			char *pname;
 
 			prop = (MonoObject *)mono_array_get_internal (properties, gpointer, i);
@@ -2430,7 +2431,7 @@ mono_reflection_get_custom_attrs_blob_checked (MonoReflectionAssembly *assembly,
 		MonoObject *field;
 
 		for (i = 0; i < mono_array_length_internal (fields); ++i) {
-			MonoType *ftype;
+			MonoType *ftype = NULL;
 			char *fname;
 
 			field = (MonoObject *)mono_array_get_internal (fields, gpointer, i);
@@ -2858,7 +2859,6 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 	MonoReflectionMethodAux *method_aux;
 	MonoImage *image;
 	gboolean dynamic;
-	int i;
 
 	error_init (error);
 	/*
@@ -2921,7 +2921,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 			   !(m->iflags & METHOD_IMPL_ATTRIBUTE_RUNTIME)) {
 		MonoMethodHeader *header;
 		guint32 code_size;
-		gint32 max_stack, i;
+		gint32 max_stack;
 		gint32 num_locals = 0;
 		gint32 num_clauses = 0;
 		guint8 *code;
@@ -2955,7 +2955,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		header->init_locals = rmb->init_locals;
 		header->num_locals = num_locals;
 
-		for (i = 0; i < num_locals; ++i) {
+		for (gint32 i = 0; i < num_locals; ++i) {
 			MonoReflectionLocalBuilder *lb =
 				mono_array_get_internal (rmb->ilgen->locals, MonoReflectionLocalBuilder*, i);
 
@@ -2991,7 +2991,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		m->is_generic = TRUE;
 		mono_method_set_generic_container (m, container);
 
-		for (i = 0; i < count; i++) {
+		for (int i = 0; i < count; i++) {
 			MonoReflectionGenericParam *gp =
 				mono_array_get_internal (rmb->generic_params, MonoReflectionGenericParam*, i);
 			MonoType *gp_type = mono_reflection_type_get_handle ((MonoReflectionType*)gp, error);
@@ -3011,7 +3011,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		 * This is a valid SRE case, but the resulting method signature must be encoded using the proper
 		 * generic parameters.
 		 */
-		for (i = 0; i < m->signature->param_count; ++i) {
+		for (gint32 i = 0; i < m->signature->param_count; ++i) {
 			MonoType *t = m->signature->params [i];
 			if (t->type == MONO_TYPE_MVAR) {
 				MonoGenericParam *gparam =  t->data.generic_param;
@@ -3032,14 +3032,13 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 	if (rmb->refs) {
 		MonoMethodWrapper *mw = (MonoMethodWrapper*)m;
-		int i;
 		void **data;
 
 		m->wrapper_type = MONO_WRAPPER_DYNAMIC_METHOD;
 
 		mw->method_data = data = image_g_new (image, gpointer, rmb->nrefs + 1);
 		data [0] = GUINT_TO_POINTER (rmb->nrefs);
-		for (i = 0; i < rmb->nrefs; ++i)
+		for (guint32 i = 0; i < rmb->nrefs; ++i)
 			data [i + 1] = rmb->refs [i];
 	}
 
@@ -3050,7 +3049,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 		if (!method_aux)
 			method_aux = image_g_new0 (image, MonoReflectionMethodAux, 1);
 		method_aux->param_names = image_g_new0 (image, char *, mono_method_signature_internal (m)->param_count + 1);
-		for (i = 0; i <= m->signature->param_count; ++i) {
+		for (gint32 i = 0; i <= m->signature->param_count; ++i) {
 			MonoReflectionParamBuilder *pb;
 			if ((pb = mono_array_get_internal (rmb->pinfo, MonoReflectionParamBuilder*, i))) {
 				if ((i > 0) && (pb->attrs)) {
@@ -3096,7 +3095,7 @@ reflection_methodbuilder_to_mono_method (MonoClass *klass,
 
 	/* Parameter marshalling */
 	if (rmb->pinfo)
-		for (i = 0; i < mono_array_length_internal (rmb->pinfo); ++i) {
+		for (mono_array_size_t i = 0; i < mono_array_length_internal (rmb->pinfo); ++i) {
 			MonoReflectionParamBuilder *pb;
 			if ((pb = mono_array_get_internal (rmb->pinfo, MonoReflectionParamBuilder*, i))) {
 				if (pb->marshal_info) {
@@ -3564,7 +3563,7 @@ typebuilder_setup_one_field (MonoDynamicImage *dynamic_image, MonoClass *klass, 
 		if ((fb->attrs & FIELD_ATTRIBUTE_HAS_FIELD_RVA) && (rva_data = fb->rva_data)) {
 			char *base = mono_array_addr_internal (rva_data, char, 0);
 			size_t size = mono_array_length_internal (rva_data);
-			char *data = (char *)mono_image_alloc (klass->image, size);
+			char *data = (char *)mono_image_alloc (klass->image, (guint)size);
 			memcpy (data, base, size);
 			def_value_out->data = data;
 		}
@@ -3866,7 +3865,7 @@ ves_icall_TypeBuilder_create_runtime_class (MonoReflectionTypeBuilderHandle ref_
 	 * The IsByRefLike attribute only applies to value types and enums. This matches CoreCLR behavior.
 	 */
 	if (klass->enumtype || klass->valuetype)
-		klass->is_byreflike = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_tb), is_byreflike_set);
+		klass->is_byreflike = MONO_HANDLE_GETVAL (MONO_HANDLE_CAST (MonoReflectionTypeBuilder, ref_tb), is_byreflike_set) != 0;
 
 	/* enums are done right away */
 	if (!klass->enumtype)

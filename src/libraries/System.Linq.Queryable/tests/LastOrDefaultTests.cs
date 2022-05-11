@@ -96,5 +96,16 @@ namespace System.Linq.Tests.LegacyTests
             var val = (new int[] { 0, 1, 2 }).AsQueryable().LastOrDefault(n => n > 1);
             Assert.Equal(2, val);
         }
+
+        [Fact]
+        public void LastOrDefault_OverloadResolution_Regression()
+        {
+            // Regression test for https://github.com/dotnet/runtime/issues/65419
+            object? result = new object[] { 1, "" }.AsQueryable().LastOrDefault(x => x is int);
+            Assert.IsType<int>(result);
+
+            result = Array.Empty<object>().AsQueryable().LastOrDefault(1);
+            Assert.IsType<int>(result);
+        }
     }
 }

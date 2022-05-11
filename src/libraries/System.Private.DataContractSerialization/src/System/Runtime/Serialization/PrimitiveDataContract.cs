@@ -104,13 +104,13 @@ namespace System.Runtime.Serialization
             xmlWriter.WriteAnyType(obj);
         }
 
-        protected object HandleReadValue(object obj, XmlObjectSerializerReadContext context)
+        protected static object HandleReadValue(object obj, XmlObjectSerializerReadContext context)
         {
             context.AddNewObject(obj);
             return obj;
         }
 
-        protected bool TryReadNullAtTopLevel(XmlReaderDelegator reader)
+        protected static bool TryReadNullAtTopLevel(XmlReaderDelegator reader)
         {
             Attributes attributes = new Attributes();
             attributes.Read(reader);
@@ -847,7 +847,7 @@ namespace System.Runtime.Serialization
         public override object? ReadXmlValue(XmlReaderDelegator reader, XmlObjectSerializerReadContext? context)
         {
             object obj;
-            if (reader.IsEmptyElement)
+            if (XmlReaderDelegator.IsEmptyElement)
             {
                 reader.Skip();
                 obj = new object();

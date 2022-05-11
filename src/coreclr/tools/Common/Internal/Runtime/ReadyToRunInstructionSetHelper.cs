@@ -43,6 +43,7 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.ARM64_Vector64: return null;
                             case InstructionSet.ARM64_Vector128: return null;
                             case InstructionSet.ARM64_Dczva: return null;
+                            case InstructionSet.ARM64_Rcpc: return ReadyToRunInstructionSet.Rcpc;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -88,6 +89,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X64_Vector256: return null;
                             case InstructionSet.X64_AVXVNNI: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X64_AVXVNNI_X64: return ReadyToRunInstructionSet.AvxVnni;
+                            case InstructionSet.X64_MOVBE: return ReadyToRunInstructionSet.Movbe;
+                            case InstructionSet.X64_MOVBE_X64: return ReadyToRunInstructionSet.Movbe;
 
                             default: throw new Exception("Unknown instruction set");
                         }
@@ -133,6 +136,8 @@ namespace Internal.ReadyToRunConstants
                             case InstructionSet.X86_Vector256: return null;
                             case InstructionSet.X86_AVXVNNI: return ReadyToRunInstructionSet.AvxVnni;
                             case InstructionSet.X86_AVXVNNI_X64: return null;
+                            case InstructionSet.X86_MOVBE: return ReadyToRunInstructionSet.Movbe;
+                            case InstructionSet.X86_MOVBE_X64: return null;
 
                             default: throw new Exception("Unknown instruction set");
                         }

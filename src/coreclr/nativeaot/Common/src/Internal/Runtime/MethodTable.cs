@@ -7,7 +7,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 using Internal.NativeFormat;
-using Internal.Runtime.CompilerServices;
 
 using Debug = System.Diagnostics.Debug;
 
@@ -201,6 +200,9 @@ namespace Internal.Runtime
                 return SupportsRelativePointers;
             }
         }
+
+        [Intrinsic]
+        internal static extern MethodTable* Of<T>();
 
         private ushort _usComponentSize;
         private ushort _usFlags;
@@ -1590,7 +1592,7 @@ namespace Internal.Runtime
         // This is a function pointer with the following signature IntPtr()(MethodTable* targetType, MethodTable* interfaceType, ushort slot)
         private delegate*<MethodTable*, MethodTable*, ushort, IntPtr> _dynamicTypeSlotDispatchResolve;
 
-        // Starting address for the the binary module corresponding to this dynamic module.
+        // Starting address for the binary module corresponding to this dynamic module.
         private delegate*<ExceptionIDs, Exception> _getRuntimeException;
 
 #if TYPE_LOADER_IMPLEMENTATION

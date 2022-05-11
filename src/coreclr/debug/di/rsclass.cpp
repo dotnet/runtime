@@ -335,7 +335,7 @@ HRESULT CordbClass::GetStaticFieldValue2(CordbModule * pModule,
                      !pFieldData->m_fFldIsTLS);
 
     TargetBuffer remoteValue(pRmtStaticValue, CordbValue::GetSizeForType(pType, fIsBoxed ? kBoxed : kUnboxed));
-    ICorDebugValue * pValue;
+    ICorDebugValue * pValue = NULL;
 
     EX_TRY
     {
@@ -618,7 +618,7 @@ HRESULT CordbClass::SetJMCStatus(BOOL fIsUserCode)
 }
 
 //-----------------------------------------------------------------------------
-// We have to go the the EE to find out if a class is a value
+// We have to go the EE to find out if a class is a value
 // class or not.  This is because there is no flag for this, but rather
 // it depends on whether the class subclasses System.ValueType (apart
 // from System.Enum...).  Replicating all that resoultion logic
@@ -920,7 +920,7 @@ HRESULT FieldData::GetFieldSignature(CordbModule *pModule,
 // Initializes an instance of EnCHangingFieldInfo.
 // Arguments:
 //     input:  fStatic       - flag to indicate whether the EnC field is static
-//             pObject       - For instance fields, the Object instance containing the the sync-block.
+//             pObject       - For instance fields, the Object instance containing the sync-block.
 //                             For static fields (if this is being called from GetStaticFieldValue) object is NULL.
 //             fieldToken    - token for the EnC field
 //             metadataToken - metadata token for this instance of CordbClass
@@ -974,7 +974,7 @@ void CordbClass::InitEnCFieldInfo(EnCHangingFieldInfo * pEncField,
 // Get information via the DAC about a field added with Edit and Continue.
 // Arguments:
 //     input: fStatic       - flag to indicate whether the EnC field is static
-//            pObject       - For instance fields, the Object instance containing the the sync-block.
+//            pObject       - For instance fields, the Object instance containing the sync-block.
 //                            For static fields (if this is being called from GetStaticFieldValue) object is NULL.
 //            fieldToken    - token for the EnC field
 //     output: pointer to an initialized instance of FieldData that has been added to the appropriate table
@@ -1029,7 +1029,7 @@ FieldData * CordbClass::GetEnCFieldFromDac(BOOL               fStatic,
 //
 // Arguments:
 //     input:  fldToken - field of interest to get.
-//             pObject  - For instance fields, the Object instance containing the the sync-block.
+//             pObject  - For instance fields, the Object instance containing the sync-block.
 //                        For static fields (if this is being called from GetStaticFieldValue) object is NULL.
 //     output: ppFieldData - the FieldData matching the fldToken.
 //

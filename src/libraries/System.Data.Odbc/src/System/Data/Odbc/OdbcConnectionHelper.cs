@@ -52,7 +52,7 @@ namespace System.Data.Odbc
             }
         }
 
-        internal DbConnectionFactory ConnectionFactory
+        internal static DbConnectionFactory ConnectionFactory
         {
             get
             {
@@ -167,7 +167,6 @@ namespace System.Data.Odbc
                 _poolGroup = null;
                 Close();
             }
-            DisposeMe(disposing);
             base.Dispose(disposing);
         }
 

@@ -18,10 +18,7 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DefaultSerializationProviderAttribute(Type providerType)
         {
-            if (providerType == null)
-            {
-                throw new ArgumentNullException(nameof(providerType));
-            }
+            ArgumentNullException.ThrowIfNull(providerType);
 
             ProviderTypeName = providerType.AssemblyQualifiedName!;
         }
@@ -31,10 +28,7 @@ namespace System.ComponentModel.Design.Serialization
         /// </summary>
         public DefaultSerializationProviderAttribute(string providerTypeName)
         {
-            if (providerTypeName == null)
-            {
-                throw new ArgumentNullException(nameof(providerTypeName));
-            }
+            ArgumentNullException.ThrowIfNull(providerTypeName);
 
             ProviderTypeName = providerTypeName;
         }

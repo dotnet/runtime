@@ -17,6 +17,8 @@
 #include <sys/sysctl.h>
 #elif defined(_WIN32)
 #include <windows.h>
+#elif HAVE_GETAUXVAL
+#include <sys/auxv.h>
 #endif
 
 #ifdef __cplusplus
@@ -74,8 +76,8 @@ static inline char* minipal_getexepath(void)
     return strdup("/managed");
 #else
 #if HAVE_GETAUXVAL && defined(AT_EXECFN)
-    const char* path = (const char *)getauxval(AT_EXECFN);
-    if (path)
+    const char* path = (const char *)(getauxval(AT_EXECFN));
+    if (path && !errno)
     {
         return realpath(path, NULL);
     }

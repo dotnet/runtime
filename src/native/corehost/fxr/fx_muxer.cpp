@@ -466,7 +466,7 @@ namespace
             }
             else
             {
-                rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
+                rc = fx_resolver_t::resolve_frameworks_for_app(host_info, app_config.get_is_multilevel_lookup_disabled(), override_settings, app_config, fx_definitions, mode == host_mode_t::muxer ? app_candidate.c_str() : nullptr);
                 if (rc != StatusCode::Success)
                 {
                     return rc;
@@ -620,7 +620,7 @@ namespace
             return StatusCode::InvalidConfigFile;
         }
 
-        rc = fx_resolver_t::resolve_frameworks_for_app(host_info, override_settings, app_config, fx_definitions);
+        rc = fx_resolver_t::resolve_frameworks_for_app(host_info, app_config.get_is_multilevel_lookup_disabled(), override_settings, app_config, fx_definitions);
         if (rc != StatusCode::Success)
             return rc;
 
@@ -1066,15 +1066,17 @@ int fx_muxer_t::handle_cli(
         }
         else if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
         {
+            resolver.print_global_file_path();
             command_line::print_muxer_info(host_info.dotnet_root);
             return StatusCode::Success;
         }
 
-        trace::error(_X("Could not execute because the application was not found or a compatible .NET SDK is not installed."));
-        trace::error(_X("Possible reasons for this include:"));
-        trace::error(_X("  * You intended to execute a .NET program:"));
-        trace::error(_X("      The application '%s' does not exist."), app_candidate.c_str());
-        trace::error(_X("  * You intended to execute a .NET SDK command:"));
+        trace::error(
+            _X("The command could not be loaded, possibly because:\n")
+            _X("  * You intended to execute a .NET application:\n")
+            _X("      The application '%s' does not exist.\n")
+            _X("  * You intended to execute a .NET SDK command:"),
+            app_candidate.c_str());
         resolver.print_resolution_error(host_info.dotnet_root, _X("      "));
 
         return StatusCode::LibHostSdkFindFailure;
@@ -1122,6 +1124,7 @@ int fx_muxer_t::handle_cli(
 
     if (pal::strcasecmp(_X("--info"), argv[1]) == 0)
     {
+        resolver.print_global_file_path();
         command_line::print_muxer_info(host_info.dotnet_root);
     }
 

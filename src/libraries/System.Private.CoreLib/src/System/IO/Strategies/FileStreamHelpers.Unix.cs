@@ -8,8 +8,10 @@ namespace System.IO.Strategies
     // this type defines a set of stateless FileStream/FileStreamStrategy helper methods
     internal static partial class FileStreamHelpers
     {
+#pragma warning disable IDE0060
         private static OSFileStreamStrategy ChooseStrategyCore(SafeFileHandle handle, FileAccess access, bool isAsync) =>
             new UnixFileStreamStrategy(handle, access);
+#pragma warning restore IDE0060
 
         private static FileStreamStrategy ChooseStrategyCore(string path, FileMode mode, FileAccess access, FileShare share, FileOptions options, long preallocationSize) =>
             new UnixFileStreamStrategy(path, mode, access, share, options, preallocationSize);
@@ -28,7 +30,7 @@ namespace System.IO.Strategies
             return result;
         }
 
-        internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin, bool closeInvalidHandle = false) =>
+        internal static long Seek(SafeFileHandle handle, long offset, SeekOrigin origin) =>
             CheckFileCall(Interop.Sys.LSeek(handle, offset, (Interop.Sys.SeekWhence)(int)origin), handle.Path); // SeekOrigin values are the same as Interop.libc.SeekWhence values
 
         internal static void ThrowInvalidArgument(SafeFileHandle handle) =>
@@ -56,7 +58,7 @@ namespace System.IO.Strategies
 
         internal static void Lock(SafeFileHandle handle, bool canWrite, long position, long length)
         {
-            if (OperatingSystem.IsOSXLike())
+            if (OperatingSystem.IsOSXLike() || OperatingSystem.IsFreeBSD())
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
             }
@@ -66,7 +68,7 @@ namespace System.IO.Strategies
 
         internal static void Unlock(SafeFileHandle handle, long position, long length)
         {
-            if (OperatingSystem.IsOSXLike())
+            if (OperatingSystem.IsOSXLike() || OperatingSystem.IsFreeBSD())
             {
                 throw new PlatformNotSupportedException(SR.PlatformNotSupported_OSXFileLocking);
             }

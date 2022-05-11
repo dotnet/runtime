@@ -107,7 +107,15 @@ namespace System.IO
                 return false;
             }
 
-            return ExistsCore(fullPath);
+            bool result = ExistsCore(fullPath, out bool isDirectory);
+            if (result && PathInternal.IsDirectorySeparator(fullPath[fullPath.Length - 1]))
+            {
+                // Some sys-calls remove all trailing slashes and may give false positives for existing files.
+                // We want to make sure that if the path ends in a trailing slash, it's truly a directory.
+                return isDirectory;
+            }
+
+            return result;
         }
 
         /// <summary>
@@ -297,8 +305,7 @@ namespace System.IO
         /// </exception>
         public static bool IsPathFullyQualified(string path)
         {
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
+            ArgumentNullException.ThrowIfNull(path);
 
             return IsPathFullyQualified(path.AsSpan());
         }
@@ -338,34 +345,34 @@ namespace System.IO
 
         public static string Combine(string path1, string path2)
         {
-            if (path1 == null || path2 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1) : nameof(path2));
+            ArgumentNullException.ThrowIfNull(path1);
+            ArgumentNullException.ThrowIfNull(path2);
 
             return CombineInternal(path1, path2);
         }
 
         public static string Combine(string path1, string path2, string path3)
         {
-            if (path1 == null || path2 == null || path3 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : nameof(path3));
+            ArgumentNullException.ThrowIfNull(path1);
+            ArgumentNullException.ThrowIfNull(path2);
+            ArgumentNullException.ThrowIfNull(path3);
 
             return CombineInternal(path1, path2, path3);
         }
 
         public static string Combine(string path1, string path2, string path3, string path4)
         {
-            if (path1 == null || path2 == null || path3 == null || path4 == null)
-                throw new ArgumentNullException((path1 == null) ? nameof(path1) : (path2 == null) ? nameof(path2) : (path3 == null) ? nameof(path3) : nameof(path4));
+            ArgumentNullException.ThrowIfNull(path1);
+            ArgumentNullException.ThrowIfNull(path2);
+            ArgumentNullException.ThrowIfNull(path3);
+            ArgumentNullException.ThrowIfNull(path4);
 
             return CombineInternal(path1, path2, path3, path4);
         }
 
         public static string Combine(params string[] paths)
         {
-            if (paths == null)
-            {
-                throw new ArgumentNullException(nameof(paths));
-            }
+            ArgumentNullException.ThrowIfNull(paths);
 
             int maxSize = 0;
             int firstComponent = 0;
@@ -375,10 +382,7 @@ namespace System.IO
 
             for (int i = 0; i < paths.Length; i++)
             {
-                if (paths[i] == null)
-                {
-                    throw new ArgumentNullException(nameof(paths));
-                }
+                ArgumentNullException.ThrowIfNull(paths[i], nameof(paths));
 
                 if (paths[i].Length == 0)
                 {
@@ -475,25 +479,49 @@ namespace System.IO
 
         public static string Join(string? path1, string? path2)
         {
-            return Join(path1.AsSpan(), path2.AsSpan());
+            if (string.IsNullOrEmpty(path1))
+                return path2 ?? string.Empty;
+
+            if (string.IsNullOrEmpty(path2))
+                return path1;
+
+            return JoinInternal(path1, path2);
         }
 
         public static string Join(string? path1, string? path2, string? path3)
         {
-            return Join(path1.AsSpan(), path2.AsSpan(), path3.AsSpan());
+            if (string.IsNullOrEmpty(path1))
+                return Join(path2, path3);
+
+            if (string.IsNullOrEmpty(path2))
+                return Join(path1, path3);
+
+            if (string.IsNullOrEmpty(path3))
+                return Join(path1, path2);
+
+            return JoinInternal(path1, path2, path3);
         }
 
         public static string Join(string? path1, string? path2, string? path3, string? path4)
         {
-            return Join(path1.AsSpan(), path2.AsSpan(), path3.AsSpan(), path4.AsSpan());
+            if (string.IsNullOrEmpty(path1))
+                return Join(path2, path3, path4);
+
+            if (string.IsNullOrEmpty(path2))
+                return Join(path1, path3, path4);
+
+            if (string.IsNullOrEmpty(path3))
+                return Join(path1, path2, path4);
+
+            if (string.IsNullOrEmpty(path4))
+                return Join(path1, path2, path3);
+
+            return JoinInternal(path1, path2, path3, path4);
         }
 
         public static string Join(params string?[] paths)
         {
-            if (paths == null)
-            {
-                throw new ArgumentNullException(nameof(paths));
-            }
+            ArgumentNullException.ThrowIfNull(paths);
 
             if (paths.Length == 0)
             {
@@ -861,15 +889,11 @@ namespace System.IO
 
         private static string GetRelativePath(string relativeTo, string path, StringComparison comparisonType)
         {
-            if (relativeTo == null)
-                throw new ArgumentNullException(nameof(relativeTo));
+            ArgumentNullException.ThrowIfNull(relativeTo);
+            ArgumentNullException.ThrowIfNull(path);
 
             if (PathInternal.IsEffectivelyEmpty(relativeTo.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(relativeTo));
-
-            if (path == null)
-                throw new ArgumentNullException(nameof(path));
-
             if (PathInternal.IsEffectivelyEmpty(path.AsSpan()))
                 throw new ArgumentException(SR.Arg_PathEmpty, nameof(path));
 

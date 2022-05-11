@@ -56,7 +56,11 @@ namespace System.Text.RegularExpressions
         {
             get => _nspace;
             [MemberNotNull(nameof(_nspace))]
-            set => _nspace = value ?? throw new ArgumentNullException(nameof(Namespace));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value, nameof(Namespace));
+                _nspace = value;
+            }
         }
 
         public RegexOptions Options { get; set; }
@@ -65,7 +69,11 @@ namespace System.Text.RegularExpressions
         {
             get => _pattern;
             [MemberNotNull(nameof(_pattern))]
-            set => _pattern = value ?? throw new ArgumentNullException(nameof(Pattern));
+            set
+            {
+                ArgumentNullException.ThrowIfNull(value, nameof(Pattern));
+                _pattern = value;
+            }
         }
     }
 }

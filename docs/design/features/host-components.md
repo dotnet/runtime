@@ -20,7 +20,7 @@ The entry-point typically does just one thing: it finds the `hostfxr` library an
 ## Host FXR
 This library finds and resolves the runtime and all the frameworks the app needs. Then it loads the `hostpolicy` library and transfers control to it.
 
-The host FXR library reads the `.runtimeconfig.json` of the app (and all it's dependent frameworks) and resolves the frameworks. It implements the algorithm for framework resolution as described in [SharedFX Lookup](multilevel-sharedfx-lookup.md) and in [Framework version resolution](framework-version-resolution.md).
+The host FXR library reads the `.runtimeconfig.json` of the app (and all it's dependent frameworks) and resolves the frameworks. It implements the algorithm for framework resolution as described in [SharedFX Lookup](sharedfx-lookup.md) and in [Framework version resolution](framework-version-resolution.md).
 
 In most cases the latest available version of `hostfxr` is used. Self-contained apps use `hostfxr` from the app folder.
 

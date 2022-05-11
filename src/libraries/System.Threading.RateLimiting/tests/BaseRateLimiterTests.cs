@@ -81,6 +81,15 @@ namespace System.Threading.RateLimiting.Test
         public abstract Task CanCancelWaitAsyncBeforeQueuing();
 
         [Fact]
+        public abstract Task CanFillQueueWithNewestFirstAfterCancelingQueuedRequestWithAnotherQueuedRequest();
+
+        [Fact]
+        public abstract Task CanDisposeAfterCancelingQueuedRequest();
+
+        [Fact]
+        public abstract Task CancelUpdatesQueueLimit();
+
+        [Fact]
         public abstract Task CanAcquireResourcesWithAcquireWithQueuedItemsIfNewestFirst();
 
         [Fact]
@@ -97,5 +106,14 @@ namespace System.Threading.RateLimiting.Test
 
         [Fact]
         public abstract Task DisposeAsyncReleasesQueuedAcquires();
+
+        [Fact]
+        public abstract void NullIdleDurationWhenActive();
+
+        [Fact]
+        public abstract Task IdleDurationUpdatesWhenIdle();
+
+        [Fact]
+        public abstract void IdleDurationUpdatesWhenChangingFromActive();
     }
 }

@@ -262,10 +262,7 @@ namespace System
 
             void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
             {
-                if (info == null)
-                {
-                    throw new ArgumentNullException(nameof(info));
-                }
+                ArgumentNullException.ThrowIfNull(info);
 
                 info.AddValue("DateStart", _dateStart); // Do not rename (binary serialization)
                 info.AddValue("DateEnd", _dateEnd); // Do not rename (binary serialization)
@@ -278,10 +275,7 @@ namespace System
 
             private AdjustmentRule(SerializationInfo info, StreamingContext context)
             {
-                if (info == null)
-                {
-                    throw new ArgumentNullException(nameof(info));
-                }
+                ArgumentNullException.ThrowIfNull(info);
 
                 _dateStart = (DateTime)info.GetValue("DateStart", typeof(DateTime))!; // Do not rename (binary serialization)
                 _dateEnd = (DateTime)info.GetValue("DateEnd", typeof(DateTime))!; // Do not rename (binary serialization)

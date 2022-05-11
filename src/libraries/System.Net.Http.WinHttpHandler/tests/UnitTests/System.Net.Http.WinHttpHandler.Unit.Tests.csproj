@@ -3,15 +3,15 @@
     <NoWarn>$(NoWarn);0436</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <StringResourcesPath>../../src/Resources/Strings.resx</StringResourcesPath>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows</TargetFrameworks>
+    <TargetFramework>$(NetCoreAppCurrent)-windows</TargetFramework>
     <DefineConstants>UNITTEST</DefineConstants>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
     <Nullable>annotations</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Net.Http.WinHttpHandler" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true' ">
+  <ItemGroup>
     <Compile Include="$(CommonTestPath)System\Net\SslProtocolSupport.cs"
              Link="CommonTest\System\Net\SslProtocolSupport.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"

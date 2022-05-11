@@ -5,9 +5,11 @@ namespace System
 {
     public partial class MissingMemberException
     {
+#pragma warning disable IDE0060
         internal static string FormatSignature(byte[] signature)
         {
             return "";
         }
+#pragma warning restore IDE0060
     }
 }

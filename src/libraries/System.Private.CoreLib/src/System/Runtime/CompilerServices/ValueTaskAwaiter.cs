@@ -6,8 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Sources;
 
-using Internal.Runtime.CompilerServices;
-
 namespace System.Runtime.CompilerServices
 {
     /// <summary>Provides an awaiter for a <see cref="ValueTask"/>.</summary>

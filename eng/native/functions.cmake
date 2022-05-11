@@ -15,7 +15,7 @@ function(h2inc filename output)
     get_filename_component(path "${filename}" DIRECTORY)
     file(RELATIVE_PATH relative_filename "${CLR_REPO_ROOT_DIR}" "${filename}")
 
-    file(APPEND "${output}" "// File start: ${relative_filename}\n")
+    file(WRITE "${output}" "// File start: ${relative_filename}\n")
 
     # Use of NEWLINE_CONSUME is needed for lines with trailing backslash
     file(STRINGS ${filename} contents NEWLINE_CONSUME)
@@ -397,11 +397,21 @@ function(strip_symbols targetName outputFilename)
         set(strip_command)
       endif ()
 
+      execute_process(
+        COMMAND ${DSYMUTIL} --help
+        OUTPUT_VARIABLE DSYMUTIL_HELP_OUTPUT
+      )
+
+      set(DSYMUTIL_OPTS "--flat")
+      if ("${DSYMUTIL_HELP_OUTPUT}" MATCHES "--minimize")
+        list(APPEND DSYMUTIL_OPTS "--minimize")
+      endif ()
+
       add_custom_command(
         TARGET ${targetName}
         POST_BUILD
         VERBATIM
-        COMMAND ${DSYMUTIL} --flat --minimize ${strip_source_file}
+        COMMAND ${DSYMUTIL} ${DSYMUTIL_OPTS} ${strip_source_file}
         COMMAND ${strip_command}
         COMMENT "Stripping symbols from ${strip_source_file} into file ${strip_destination_file}"
         )

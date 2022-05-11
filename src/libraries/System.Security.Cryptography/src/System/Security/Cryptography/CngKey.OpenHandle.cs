@@ -17,8 +17,8 @@ namespace System.Security.Cryptography
         [SupportedOSPlatform("windows")]
         public static CngKey Open(SafeNCryptKeyHandle keyHandle, CngKeyHandleOpenOptions keyHandleOpenOptions)
         {
-            if (keyHandle == null)
-                throw new ArgumentNullException(nameof(keyHandle));
+            ArgumentNullException.ThrowIfNull(keyHandle);
+
             if (keyHandle.IsClosed || keyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(keyHandle));
 

@@ -35,14 +35,14 @@ namespace System.Data.Common
             return actualPtr;
         }
 
-        [GeneratedDllImport(Interop.Libraries.Kernel32, SetLastError = true)]
+        [LibraryImport(Interop.Libraries.Kernel32, SetLastError = true)]
         internal static partial int ReleaseSemaphore(IntPtr handle, int releaseCount, IntPtr previousCount);
 
-        [GeneratedDllImport(Interop.Libraries.Kernel32, SetLastError = true)]
-        internal static partial int WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, bool bWaitAll, uint dwMilliseconds, bool bAlertable);
+        [LibraryImport(Interop.Libraries.Kernel32, SetLastError = true)]
+        internal static partial int WaitForMultipleObjectsEx(uint nCount, IntPtr lpHandles, [MarshalAs(UnmanagedType.Bool)] bool bWaitAll, uint dwMilliseconds, [MarshalAs(UnmanagedType.Bool)] bool bAlertable);
 
-        [GeneratedDllImport(Interop.Libraries.Kernel32/*, SetLastError=true*/)]
-        internal static partial int WaitForSingleObjectEx(IntPtr lpHandles, uint dwMilliseconds, bool bAlertable);
+        [LibraryImport(Interop.Libraries.Kernel32/*, SetLastError=true*/)]
+        internal static partial int WaitForSingleObjectEx(IntPtr lpHandles, uint dwMilliseconds, [MarshalAs(UnmanagedType.Bool)] bool bAlertable);
 
         internal sealed class Wrapper
         {

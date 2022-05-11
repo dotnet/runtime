@@ -101,7 +101,12 @@ namespace System.Text.Json
         /// </exception>
         public Utf8JsonWriter(IBufferWriter<byte> bufferWriter, JsonWriterOptions options = default)
         {
-            _output = bufferWriter ?? throw new ArgumentNullException(nameof(bufferWriter));
+            if (bufferWriter is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(bufferWriter));
+            }
+
+            _output = bufferWriter;
             _options = options;
 
             if (_options.MaxDepth == 0)
@@ -122,8 +127,11 @@ namespace System.Text.Json
         /// </exception>
         public Utf8JsonWriter(Stream utf8Json, JsonWriterOptions options = default)
         {
-            if (utf8Json == null)
-                throw new ArgumentNullException(nameof(utf8Json));
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
             if (!utf8Json.CanWrite)
                 throw new ArgumentException(SR.StreamNotWritable);
 
@@ -707,7 +715,13 @@ namespace System.Text.Json
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartArray(string propertyName)
-            => WriteStartArray((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteStartArray(propertyName.AsSpan());
+        }
 
         /// <summary>
         /// Writes the beginning of a JSON object with a property name as the key.
@@ -727,7 +741,13 @@ namespace System.Text.Json
         /// OR if this would result in invalid JSON being written (while validation is enabled).
         /// </exception>
         public void WriteStartObject(string propertyName)
-            => WriteStartObject((propertyName ?? throw new ArgumentNullException(nameof(propertyName))).AsSpan());
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteStartObject(propertyName.AsSpan());
+        }
 
         /// <summary>
         /// Writes the beginning of a JSON array with a property name as the key.

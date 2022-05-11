@@ -18,7 +18,7 @@ namespace System.Runtime
     //            but if a class library wants to factor differently (such as putting the GCHandle methods in an
     //            optional library, those methods can be moved to a different file/namespace/dll
 
-    public static class RuntimeImports
+    public static partial class RuntimeImports
     {
         private const string RuntimeLibrary = "*";
 
@@ -85,7 +85,7 @@ namespace System.Runtime
         internal static unsafe Array RhNewArray(EETypePtr pEEType, int length)
             => RhNewArray(pEEType.ToPointer(), length);
 
-        [DllImport(RuntimeLibrary, ExactSpelling = true)]
+        [DllImport(RuntimeLibrary)]
         internal static unsafe extern void RhAllocateNewObject(IntPtr pEEType, uint flags, void* pResult);
 
         [MethodImpl(MethodImplOptions.InternalCall)]

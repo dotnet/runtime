@@ -415,7 +415,7 @@ namespace System.Data.OleDb
             return 0;
         }
 
-        private void FillClose(bool isrecordset, object value)
+        private static void FillClose(bool isrecordset, object value)
         {
             OleDbHResult hr;
             if (isrecordset)

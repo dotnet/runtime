@@ -168,4 +168,7 @@
   <data name="net_Websockets_InvalidPayloadLength" xml:space="preserve">
     <value>The WebSocket received a frame with an invalid payload length.</value>
   </data>
+  <data name="PlatformNotSupported_WebSockets" xml:space="preserve">
+    <value>WebSockets is not supported on this platform.</value>
+  </data>
 </root>

@@ -57,8 +57,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
                 _chainPolicy = value;
             }
         }
@@ -115,17 +114,25 @@ namespace System.Security.Cryptography.X509Certificates
                 if (certificate == null || certificate.Pal == null)
                     throw new ArgumentException(SR.Cryptography_InvalidContextHandle, nameof(certificate));
 
-                if (_chainPolicy != null && _chainPolicy.CustomTrustStore != null)
+                if (_chainPolicy != null)
                 {
-                    if (_chainPolicy.TrustMode == X509ChainTrustMode.System && _chainPolicy.CustomTrustStore.Count > 0)
-                        throw new CryptographicException(SR.Cryptography_CustomTrustCertsInSystemMode);
-
-                    foreach (X509Certificate2 customCertificate in _chainPolicy.CustomTrustStore)
+                    if (_chainPolicy._customTrustStore != null)
                     {
-                        if (customCertificate == null || customCertificate.Handle == IntPtr.Zero)
+                        if (_chainPolicy.TrustMode == X509ChainTrustMode.System && _chainPolicy.CustomTrustStore.Count > 0)
+                            throw new CryptographicException(SR.Cryptography_CustomTrustCertsInSystemMode);
+
+                        foreach (X509Certificate2 customCertificate in _chainPolicy.CustomTrustStore)
                         {
-                            throw new CryptographicException(SR.Cryptography_InvalidTrustCertificate);
+                            if (customCertificate == null || customCertificate.Handle == IntPtr.Zero)
+                            {
+                                throw new CryptographicException(SR.Cryptography_InvalidTrustCertificate);
+                            }
                         }
+                    }
+
+                    if (_chainPolicy.TrustMode == X509ChainTrustMode.CustomRootTrust && _chainPolicy._customTrustStore == null)
+                    {
+                        _chainPolicy._customTrustStore = new X509Certificate2Collection();
                     }
                 }
 

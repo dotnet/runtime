@@ -61,7 +61,7 @@ namespace System.Drawing.Internal
             {
                 Region? clip = null;
 
-#if NETCOREAPP3_1_OR_GREATER
+#if NETCOREAPP
                 if (properties.HasFlag(ApplyGraphicsProperties.Clipping))
                 {
                     g.GetContextInfo(out offset, out clip);

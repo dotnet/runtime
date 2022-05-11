@@ -142,10 +142,7 @@ namespace System.Collections.Concurrent
         public ConcurrentDictionary(IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer)
             : this(comparer)
         {
-            if (collection is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
 
             InitializeFromCollection(collection);
         }
@@ -168,10 +165,7 @@ namespace System.Collections.Concurrent
         public ConcurrentDictionary(int concurrencyLevel, IEnumerable<KeyValuePair<TKey, TValue>> collection, IEqualityComparer<TKey>? comparer)
             : this(concurrencyLevel, DefaultCapacity, growLockArray: false, comparer)
         {
-            if (collection is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(collection));
-            }
+            ArgumentNullException.ThrowIfNull(collection);
 
             InitializeFromCollection(collection);
         }
@@ -678,10 +672,7 @@ namespace System.Collections.Concurrent
         /// </exception>
         void ICollection<KeyValuePair<TKey, TValue>>.CopyTo(KeyValuePair<TKey, TValue>[] array, int index)
         {
-            if (array is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (index < 0)
             {
@@ -1806,10 +1797,7 @@ namespace System.Collections.Concurrent
         /// <paramref name="array"/>.</exception>
         void ICollection.CopyTo(Array array, int index)
         {
-            if (array is null)
-            {
-                ThrowHelper.ThrowArgumentNullException(nameof(array));
-            }
+            ArgumentNullException.ThrowIfNull(array);
 
             if (index < 0)
             {

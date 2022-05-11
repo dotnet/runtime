@@ -1,19 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
-    <Nullable>enable</Nullable>
+    <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)</TargetFrameworks>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\IO\DriveInfo.cs" />
     <Compile Include="System\IO\DriveNotFoundException.cs" />
     <Compile Include="System\IO\DriveType.cs" />
+    <Compile Include="$(CommonPath)DisableRuntimeMarshalling.cs"
+             Link="Common\DisableRuntimeMarshalling.cs" />
     <Compile Include="$(CommonPath)System\HResults.cs"
              Link="Common\System\HResults.cs" />
     <Compile Include="$(CommonPath)System\IO\PathInternal.CaseSensitivity.cs"
              Link="Common\System\IO\PathInternal.CaseSensitivity.cs" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == ''">
+    <Compile Include="System\IO\DriveInfo.UnixOrDefault.cs" />
+    <Compile Include="System\IO\DriveInfo.Default.cs" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="System\IO\Error.cs" />
     <Compile Include="System\IO\DriveInfo.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
@@ -47,8 +52,8 @@
     <Compile Include="$(CoreLibSharedDir)System\IO\DriveInfoInternal.Windows.cs"
              Link="Common\System\IO\DriveInfoInternal.Windows.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true'">
-    <Compile Include="System\IO\DriveInfo.UnixOrBrowser.cs" />
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix'">
+    <Compile Include="System\IO\DriveInfo.UnixOrDefault.cs" />
     <Compile Include="System\IO\DriveInfo.Unix.cs" />
     <Compile Include="$(CommonPath)Interop\Unix\Interop.Libraries.cs"
              Link="Common\Interop\Unix\Interop.Libraries.cs" />
@@ -65,16 +70,9 @@
     <Compile Include="$(CommonPath)Interop\Unix\System.Native\Interop.MountPoints.FormatInfo.cs"
              Link="Common\Interop\Unix\Interop.MountPoints.FormatInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsBrowser)' == 'true' ">
-    <Compile Include="System\IO\DriveInfo.UnixOrBrowser.cs" />
-    <Compile Include="System\IO\DriveInfo.Browser.cs" />
-  </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.IO.FileSystem" />
     <Reference Include="System.Memory" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.CompilerServices.Unsafe" />
-    <Reference Include="System.Runtime.Extensions" />
     <Reference Include="System.Runtime.InteropServices" />
   </ItemGroup>
 </Project>

@@ -19,13 +19,23 @@ namespace System.Security.Cryptography
         public CngProperty(string name, byte[]? value, CngPropertyOptions options)
             : this()
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             Name = name;
             Options = options;
             _lazyHashCode = default(int?);
-            _value = (value == null) ? null : value.CloneByteArray();
+            _value = value.CloneByteArray();
+        }
+
+        internal CngProperty(string name, ReadOnlySpan<byte> value, CngPropertyOptions options)
+            : this()
+        {
+            ArgumentNullException.ThrowIfNull(name);
+
+            Name = name;
+            Options = options;
+            _lazyHashCode = default;
+            _value = value.ToArray();
         }
 
         /// <summary>
@@ -37,10 +47,7 @@ namespace System.Security.Cryptography
         ///     Contents of the property
         /// </summary>
         /// <returns></returns>
-        public byte[]? GetValue()
-        {
-            return (_value == null) ? null : _value.CloneByteArray();
-        }
+        public byte[]? GetValue() => _value.CloneByteArray();
 
         /// <summary>
         ///     Options used to set / get the property

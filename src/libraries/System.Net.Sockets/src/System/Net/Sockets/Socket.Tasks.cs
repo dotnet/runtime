@@ -162,10 +162,7 @@ namespace System.Net.Sockets
         {
             ThrowIfDisposed();
 
-            if (addresses == null)
-            {
-                throw new ArgumentNullException(nameof(addresses));
-            }
+            ArgumentNullException.ThrowIfNull(addresses);
 
             if (addresses.Length == 0)
             {
@@ -240,10 +237,7 @@ namespace System.Net.Sockets
         /// <returns>An asynchronous task that completes when the connection is established.</returns>
         public ValueTask ConnectAsync(string host, int port, CancellationToken cancellationToken)
         {
-            if (host == null)
-            {
-                throw new ArgumentNullException(nameof(host));
-            }
+            ArgumentNullException.ThrowIfNull(host);
 
             EndPoint ep = IPAddress.TryParse(host, out IPAddress? parsedAddress) ? (EndPoint)
                 new IPEndPoint(parsedAddress, port) :
@@ -628,10 +622,7 @@ namespace System.Net.Sockets
         /// <returns>An asynchronous task that completes with the number of bytes sent.</returns>
         public ValueTask<int> SendToAsync(ReadOnlyMemory<byte> buffer, SocketFlags socketFlags, EndPoint remoteEP, CancellationToken cancellationToken = default)
         {
-            if (remoteEP is null)
-            {
-                throw new ArgumentNullException(nameof(remoteEP));
-            }
+            ArgumentNullException.ThrowIfNull(remoteEP);
 
             if (cancellationToken.IsCancellationRequested)
             {
@@ -741,10 +732,8 @@ namespace System.Net.Sockets
 
         private static void ValidateBufferArguments(byte[] buffer, int offset, int size)
         {
-            if (buffer == null)
-            {
-                throw new ArgumentNullException(nameof(buffer));
-            }
+            ArgumentNullException.ThrowIfNull(buffer);
+
             if ((uint)offset > (uint)buffer.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(offset));
@@ -758,10 +747,7 @@ namespace System.Net.Sockets
         /// <summary>Validates the supplied array segment, throwing if its array or indices are null or out-of-bounds, respectively.</summary>
         private static void ValidateBuffer(ArraySegment<byte> buffer)
         {
-            if (buffer.Array == null)
-            {
-                throw new ArgumentNullException(nameof(buffer.Array));
-            }
+            ArgumentNullException.ThrowIfNull(buffer.Array, nameof(buffer.Array));
             if ((uint)buffer.Offset > (uint)buffer.Array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(buffer.Offset));
@@ -775,10 +761,8 @@ namespace System.Net.Sockets
         /// <summary>Validates the supplied buffer list, throwing if it's null or empty.</summary>
         private static void ValidateBuffersList(IList<ArraySegment<byte>> buffers)
         {
-            if (buffers == null)
-            {
-                throw new ArgumentNullException(nameof(buffers));
-            }
+            ArgumentNullException.ThrowIfNull(buffers);
+
             if (buffers.Count == 0)
             {
                 throw new ArgumentException(SR.Format(SR.net_sockets_zerolist, nameof(buffers)), nameof(buffers));
@@ -898,21 +882,6 @@ namespace System.Net.Sockets
             Interlocked.Exchange(ref _multiBufferSendEventArgs, null)?.Dispose();
             Interlocked.Exchange(ref _singleBufferReceiveEventArgs, null)?.Dispose();
             Interlocked.Exchange(ref _singleBufferSendEventArgs, null)?.Dispose();
-        }
-
-        /// <summary>A TaskCompletionSource that carries an extra field of strongly-typed state.</summary>
-        private sealed class StateTaskCompletionSource<TField1, TResult> : TaskCompletionSource<TResult>
-        {
-            internal TField1 _field1 = default!; // always set on construction
-            public StateTaskCompletionSource(object baseState) : base(baseState) { }
-        }
-
-        /// <summary>A TaskCompletionSource that carries several extra fields of strongly-typed state.</summary>
-        private sealed class StateTaskCompletionSource<TField1, TField2, TResult> : TaskCompletionSource<TResult>
-        {
-            internal TField1 _field1 = default!; // always set on construction
-            internal TField2 _field2 = default!; // always set on construction
-            public StateTaskCompletionSource(object baseState) : base(baseState) { }
         }
 
         /// <summary>A SocketAsyncEventArgs with an associated async method builder.</summary>
@@ -1465,9 +1434,9 @@ namespace System.Net.Sockets
                 return new SocketReceiveMessageFromResult() { ReceivedBytes = bytes, RemoteEndPoint = remoteEndPoint, SocketFlags = socketFlags, PacketInformation = packetInformation };
             }
 
-            private void ThrowIncorrectTokenException() => throw new InvalidOperationException(SR.InvalidOperation_IncorrectToken);
+            private static void ThrowIncorrectTokenException() => throw new InvalidOperationException(SR.InvalidOperation_IncorrectToken);
 
-            private void ThrowMultipleContinuationsException() => throw new InvalidOperationException(SR.InvalidOperation_MultipleContinuations);
+            private static void ThrowMultipleContinuationsException() => throw new InvalidOperationException(SR.InvalidOperation_MultipleContinuations);
 
             private void ThrowException(SocketError error, CancellationToken cancellationToken)
             {

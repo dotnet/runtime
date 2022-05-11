@@ -30,8 +30,7 @@ namespace System.Security.Cryptography.X509Certificates
             }
             set
             {
-                if (value == null)
-                    throw new ArgumentNullException(nameof(value));
+                ArgumentNullException.ThrowIfNull(value);
 
                 List[index] = value;
             }
@@ -44,8 +43,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void AddRange(X509Certificate[] value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             for (int i = 0; i < value.Length; i++)
             {
@@ -55,8 +53,7 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void AddRange(X509CertificateCollection value)
         {
-            if (value == null)
-                throw new ArgumentNullException(nameof(value));
+            ArgumentNullException.ThrowIfNull(value);
 
             for (int i = 0; i < value.Count; i++)
             {

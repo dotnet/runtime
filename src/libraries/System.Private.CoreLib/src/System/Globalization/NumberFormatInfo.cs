@@ -82,10 +82,7 @@ namespace System.Globalization
 
         private static void VerifyNativeDigits(string[] nativeDig, string propertyName)
         {
-            if (nativeDig == null)
-            {
-                throw new ArgumentNullException(propertyName, SR.ArgumentNull_Array);
-            }
+            ArgumentNullException.ThrowIfNull(nativeDig);
 
             if (nativeDig.Length != 10)
             {
@@ -280,10 +277,7 @@ namespace System.Globalization
             get => (int[])_currencyGroupSizes.Clone();
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
 
@@ -298,10 +292,7 @@ namespace System.Globalization
             get => (int[])_numberGroupSizes.Clone();
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
 
@@ -316,10 +307,7 @@ namespace System.Globalization
             get => (int[])_percentGroupSizes.Clone();
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 int[] inputSizes = (int[])value.Clone();
@@ -344,10 +332,7 @@ namespace System.Globalization
             get => _currencySymbol;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _currencySymbol = value;
@@ -381,10 +366,7 @@ namespace System.Globalization
             get => _nanSymbol;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _nanSymbol = value;
@@ -471,10 +453,7 @@ namespace System.Globalization
             get => _negativeInfinitySymbol;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _negativeInfinitySymbol = value;
@@ -486,10 +465,7 @@ namespace System.Globalization
             get => _negativeSign;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _negativeSign = value;
@@ -560,10 +536,7 @@ namespace System.Globalization
             get => _positiveInfinitySymbol;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _positiveInfinitySymbol = value;
@@ -575,10 +548,7 @@ namespace System.Globalization
             get => _positiveSign;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _positiveSign = value;
@@ -642,10 +612,7 @@ namespace System.Globalization
             get => _perMilleSymbol;
             set
             {
-                if (value == null)
-                {
-                    throw new ArgumentNullException(nameof(value));
-                }
+                ArgumentNullException.ThrowIfNull(value);
 
                 VerifyWritable();
                 _perMilleSymbol = value;
@@ -681,10 +648,7 @@ namespace System.Globalization
 
         public static NumberFormatInfo ReadOnly(NumberFormatInfo nfi)
         {
-            if (nfi == null)
-            {
-                throw new ArgumentNullException(nameof(nfi));
-            }
+            ArgumentNullException.ThrowIfNull(nfi);
 
             if (nfi.IsReadOnly)
             {

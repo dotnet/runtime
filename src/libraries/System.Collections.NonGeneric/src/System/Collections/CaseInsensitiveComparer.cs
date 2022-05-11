@@ -26,10 +26,8 @@ namespace System.Collections
 
         public CaseInsensitiveComparer(CultureInfo culture)
         {
-            if (culture == null)
-            {
-                throw new ArgumentNullException(nameof(culture));
-            }
+            ArgumentNullException.ThrowIfNull(culture);
+
             _compareInfo = culture.CompareInfo;
         }
 

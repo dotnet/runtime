@@ -99,7 +99,7 @@ namespace System.Net.Http
 
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken token)
         {
-            if (buffer == null)
+            if (buffer is null)
             {
                 throw new ArgumentNullException(nameof(buffer));
             }

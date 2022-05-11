@@ -136,7 +136,7 @@
     <value>Cannot add value because header '{0}' does not support multiple values.</value>
   </data>
   <data name="net_http_headers_invalid_header_name" xml:space="preserve">
-    <value>The header name format is invalid.</value>
+    <value>The header name '{0}' has an invalid format.</value>
   </data>
   <data name="net_http_headers_invalid_value" xml:space="preserve">
     <value>The format of value '{0}' is invalid.</value>
@@ -447,6 +447,9 @@
   <data name="net_nego_protection_level_not_supported" xml:space="preserve">
     <value>Requested protection level is not supported with the GSSAPI implementation currently installed.</value>
   </data>
+  <data name="net_nego_mechanism_not_supported" xml:space="preserve">
+    <value>The security package '{0}' is not supported.</value>
+  </data>
   <data name="net_context_buffer_too_small" xml:space="preserve">
     <value>Insufficient buffer space. Required: {0} Actual: {1}.</value>
   </data>
@@ -590,5 +593,8 @@
   </data>
   <data name="net_http_proxy_tunnel_returned_failure_status_code" xml:space="preserve">
     <value>The proxy tunnel request to proxy '{0}' failed with status code '{1}'."</value>
+  </data>
+  <data name="PlatformNotSupported_NetHttp" xml:space="preserve">
+    <value>System.Net.Http is not supported on this platform.</value>
   </data>
 </root>

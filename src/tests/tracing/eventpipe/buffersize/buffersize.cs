@@ -8,8 +8,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using Microsoft.Diagnostics.Tools.RuntimeClient;
+using System.Text.RegularExpressions;
 using Tracing.Tests.Common;
+using Microsoft.Diagnostics.NETCore.Client;
 
 namespace Tracing.Tests.BufferValidation
 {
@@ -27,20 +28,18 @@ namespace Tracing.Tests.BufferValidation
             // This tests the resilience of message sending with
             // smaller buffers, specifically 1MB and 4MB
 
-            var providers = new List<Provider>()
+            var providers = new List<EventPipeProvider>()
             {
-                new Provider("MyEventSource")
+                new EventPipeProvider("MyEventSource", EventLevel.Verbose)
             };
 
-            var tests = new int[] { 0, 2 }
-                .Select(x => (uint)Math.Pow(2, x))
-                .Select(bufferSize => new SessionConfiguration(circularBufferSizeMB: bufferSize, format: EventPipeSerializationFormat.NetTrace, providers: providers))
-                .Select<SessionConfiguration, Func<int>>(configuration => () => IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, configuration));
+            var buffersizes = new int[] { 0, 2 }
+                .Select(x => (int)Math.Pow(2, x));
 
-            foreach (var test in tests)
+            foreach (var buffersize in buffersizes)
             {
-                var ret = test();
-                if (ret < 0)
+                var ret = IpcTraceTest.RunAndValidateEventCounts(_expectedEventCounts, _eventGeneratingAction, providers, buffersize);
+                if (ret != 100)
                     return ret;
             }
 
@@ -56,7 +55,7 @@ namespace Tracing.Tests.BufferValidation
             { "MyEventSource", -1 }
         };
 
-        private static Action _eventGeneratingAction = () => 
+        private static Action _eventGeneratingAction = () =>
         {
             foreach (var _ in Enumerable.Range(0,1000))
             {

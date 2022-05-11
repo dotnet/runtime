@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 namespace System.Runtime.Serialization
@@ -48,7 +48,9 @@ namespace System.Runtime.Serialization
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private object GetUninitializedObject(Type objType)
+        private static object GetUninitializedObject(
+            [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors)]
+            Type objType)
         {
             return RuntimeHelpers.GetUninitializedObject(objType);
         }

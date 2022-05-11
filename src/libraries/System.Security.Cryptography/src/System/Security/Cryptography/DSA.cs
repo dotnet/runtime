@@ -85,20 +85,16 @@ namespace System.Security.Cryptography
 
         public abstract bool VerifySignature(byte[] rgbHash, byte[] rgbSignature);
 
-        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
-        {
-            throw DerivedClassMustOverride();
-        }
+        protected virtual byte[] HashData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm) =>
+            HashOneShotHelpers.HashData(hashAlgorithm, new ReadOnlySpan<byte>(data, offset, count));
 
-        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm)
-        {
-            throw DerivedClassMustOverride();
-        }
+        protected virtual byte[] HashData(Stream data, HashAlgorithmName hashAlgorithm) =>
+            HashOneShotHelpers.HashData(hashAlgorithm, data);
 
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
+
             // hashAlgorithm is verified in the overload
 
             return SignData(data, 0, data.Length, hashAlgorithm);
@@ -128,6 +124,7 @@ namespace System.Security.Cryptography
         public byte[] SignData(byte[] data, HashAlgorithmName hashAlgorithm, DSASignatureFormat signatureFormat)
         {
             ArgumentNullException.ThrowIfNull(data);
+
             ArgumentException.ThrowIfNullOrEmpty(hashAlgorithm.Name, nameof(hashAlgorithm));
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
@@ -138,6 +135,7 @@ namespace System.Security.Cryptography
         public virtual byte[] SignData(byte[] data, int offset, int count, HashAlgorithmName hashAlgorithm)
         {
             ArgumentNullException.ThrowIfNull(data);
+
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
@@ -192,6 +190,7 @@ namespace System.Security.Cryptography
             DSASignatureFormat signatureFormat)
         {
             ArgumentNullException.ThrowIfNull(data);
+
             if (offset < 0 || offset > data.Length)
                 throw new ArgumentOutOfRangeException(nameof(offset));
             if (count < 0 || count > data.Length - offset)
@@ -294,10 +293,7 @@ namespace System.Security.Cryptography
 
         public bool VerifyData(byte[] data, byte[] signature, HashAlgorithmName hashAlgorithm)
         {
-            if (data == null)
-            {
-                throw new ArgumentNullException(nameof(data));
-            }
+            ArgumentNullException.ThrowIfNull(data);
 
             return VerifyData(data, 0, data.Length, signature, hashAlgorithm);
         }
@@ -403,8 +399,8 @@ namespace System.Security.Cryptography
         /// </exception>
         public byte[] CreateSignature(byte[] rgbHash, DSASignatureFormat signatureFormat)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
+            ArgumentNullException.ThrowIfNull(rgbHash);
+
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -515,6 +511,14 @@ namespace System.Security.Cryptography
             HashAlgorithmName hashAlgorithm,
             out int bytesWritten)
         {
+            // If this is an algorithm that we ship, then we can use the hash one-shot.
+            if (this is IRuntimeAlgorithm)
+            {
+                return HashOneShotHelpers.TryHashData(hashAlgorithm, data, destination, out bytesWritten);
+            }
+
+            // If this is not our algorithm implementation, for compatibility purposes we need to
+            // call out to the HashData virtual.
             byte[] hash = HashSpanToArray(data, hashAlgorithm);
             return Helpers.TryCopyToDestination(hash, destination, out bytesWritten);
         }
@@ -789,10 +793,9 @@ namespace System.Security.Cryptography
         /// </exception>
         public bool VerifySignature(byte[] rgbHash, byte[] rgbSignature, DSASignatureFormat signatureFormat)
         {
-            if (rgbHash == null)
-                throw new ArgumentNullException(nameof(rgbHash));
-            if (rgbSignature == null)
-                throw new ArgumentNullException(nameof(rgbSignature));
+            ArgumentNullException.ThrowIfNull(rgbHash);
+            ArgumentNullException.ThrowIfNull(rgbSignature);
+
             if (!signatureFormat.IsKnownValue())
                 throw DSASignatureFormatHelpers.CreateUnknownValueException(signatureFormat);
 
@@ -910,8 +913,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
-                throw new ArgumentNullException(nameof(pbeParameters));
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,
@@ -934,8 +936,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            if (pbeParameters == null)
-                throw new ArgumentNullException(nameof(pbeParameters));
+            ArgumentNullException.ThrowIfNull(pbeParameters);
 
             PasswordBasedEncryption.ValidatePbeParameters(
                 pbeParameters,

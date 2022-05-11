@@ -12,10 +12,11 @@
 
 // --------------------------------------------------------------------------------
 // Describes information needed to make an OSR transition
-//  - location of Il-visible locals and other important state on the 
+//  - location of IL-visible locals and other important state on the 
 //    original (Tier0) method frame, with respect to top of frame
 //    (hence these offsets will be negative as stack grows down)
 //  - total size of the original frame
+//  - callee save registers saved on the original (Tier0) frame
 //
 // Currently the patchpoint info is independent of the IL offset of the patchpoint.
 //
@@ -36,6 +37,7 @@ struct PatchpointInfo
     // Initialize
     void Initialize(unsigned localCount, int totalFrameSize)
     {
+        m_calleeSaveRegisters     = 0;
         m_totalFrameSize          = totalFrameSize;
         m_numberOfLocals          = localCount;
         m_genericContextArgOffset = -1;
@@ -47,6 +49,7 @@ struct PatchpointInfo
     // Copy
     void Copy(const PatchpointInfo* original)
     {
+        m_calleeSaveRegisters = original->m_calleeSaveRegisters;
         m_genericContextArgOffset = original->m_genericContextArgOffset;
         m_keptAliveThisOffset = original->m_keptAliveThisOffset;
         m_securityCookieOffset = original->m_securityCookieOffset;
@@ -146,28 +149,38 @@ struct PatchpointInfo
         return ((m_offsetAndExposureData[localNum] & EXPOSURE_MASK) != 0);
     }
 
-    void SetIsExposed(unsigned localNum)
-    {
-        m_offsetAndExposureData[localNum] |= EXPOSURE_MASK;
-    }
-
     // FP relative offset of this local in the original method
     int Offset(unsigned localNum) const
     {
-        return (m_offsetAndExposureData[localNum] & ~EXPOSURE_MASK);
+        return (m_offsetAndExposureData[localNum] >> OFFSET_SHIFT);
     }
 
-    void SetOffset(unsigned localNum, int offset)
+    void SetOffsetAndExposure(unsigned localNum, int offset, bool isExposed)
     {
-        m_offsetAndExposureData[localNum] = offset;
+        m_offsetAndExposureData[localNum] = (offset << OFFSET_SHIFT) | (isExposed ? EXPOSURE_MASK : 0);
+    }
+
+    // Callee save registers saved by the original method.
+    // Includes all saves that must be restored (eg includes pushed RBP on x64).
+    //
+    uint64_t CalleeSaveRegisters() const
+    {
+        return m_calleeSaveRegisters;
+    }
+
+    void SetCalleeSaveRegisters(uint64_t registerMask)
+    {
+        m_calleeSaveRegisters = registerMask;
     }
 
 private:
     enum
     {
+        OFFSET_SHIFT = 0x1,
         EXPOSURE_MASK = 0x1
     };
 
+    uint64_t m_calleeSaveRegisters;
     unsigned m_numberOfLocals;
     int      m_totalFrameSize;
     int      m_genericContextArgOffset;

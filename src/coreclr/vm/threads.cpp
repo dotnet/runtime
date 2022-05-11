@@ -376,6 +376,10 @@ void SetThread(Thread* t)
     LIMITED_METHOD_CONTRACT
 
     gCurrentThreadInfo.m_pThread = t;
+    if (t != NULL)
+    {
+        EnsureTlsDestructionMonitor();
+    }
 }
 
 void SetAppDomain(AppDomain* ad)
@@ -1118,23 +1122,18 @@ PCODE AdjustWriteBarrierIP(PCODE controlPc)
 
 #ifdef TARGET_X86
 extern "C" void *JIT_WriteBarrierEAX_Loc;
+#elif TARGET_AMD64
+extern "C" void *JIT_WriteBarrier_Loc;
 #else
 extern "C" void *JIT_WriteBarrier_Loc;
+void *JIT_WriteBarrier_Loc = 0;
 #endif
 
 #ifdef TARGET_ARM64
 extern "C" void (*JIT_WriteBarrier_Table)();
-
-extern "C" void *JIT_WriteBarrier_Loc;
-void *JIT_WriteBarrier_Loc = 0;
-
 extern "C" void *JIT_WriteBarrier_Table_Loc;
 void *JIT_WriteBarrier_Table_Loc = 0;
 #endif // TARGET_ARM64
-
-#ifdef TARGET_ARM
-extern "C" void *JIT_WriteBarrier_Loc = 0;
-#endif // TARGET_ARM
 
 #ifndef TARGET_UNIX
 // g_TlsIndex is only used by the DAC. Disable optimizations around it to prevent it from getting optimized out.
@@ -2191,7 +2190,7 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
 
     default:
         _ASSERTE(!"Bad stack size bucket");
-        break;
+        FALLTHROUGH;
     case StackSize_Large:
         stackSize = 1024 * 1024;
         break;
@@ -2203,7 +2202,6 @@ HANDLE Thread::CreateUtilityThread(Thread::StackSizeBucket stackSizeBucket, LPTH
     HANDLE hThread = CreateThread(NULL, stackSize, start, args, flags, &threadId);
 
     SetThreadName(hThread, pName);
-
 
     if (pThreadId)
         *pThreadId = threadId;
@@ -3330,7 +3328,7 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
         if (numWaiters == 1)
             bWaitAll = FALSE;
 
-        // The check that's supposed to prevent this condition from occuring, in WaitHandleNative::CorWaitMultipleNative,
+        // The check that's supposed to prevent this condition from occurring, in WaitHandleNative::CorWaitMultipleNative,
         // is unfortunately behind FEATURE_COMINTEROP instead of FEATURE_COMINTEROP_APARTMENT_SUPPORT.
         // So on CoreCLR (where FEATURE_COMINTEROP is not currently defined) we can actually reach this point.
         // We can't fix this, because it's a breaking change, so we just won't assert here.
@@ -7934,6 +7932,8 @@ UINT64 Thread::GetTotalThreadPoolCompletionCount()
         GC_TRIGGERS;
     }
     CONTRACTL_END;
+
+    _ASSERTE(!ThreadpoolMgr::UsePortableThreadPoolForIO());
 
     bool usePortableThreadPool = ThreadpoolMgr::UsePortableThreadPool();
 

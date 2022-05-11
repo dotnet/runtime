@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
@@ -22,6 +22,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static JsonDocument SerializeToDocument<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
             Type runtimeType = GetRuntimeType(value);
@@ -47,6 +48,7 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static JsonDocument SerializeToDocument(object? value, Type inputType, JsonSerializerOptions? options = null)
         {
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
@@ -70,9 +72,9 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument SerializeToDocument<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
-            if (jsonTypeInfo == null)
+            if (jsonTypeInfo is null)
             {
-                throw new ArgumentNullException(nameof(jsonTypeInfo));
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
             return WriteDocumentUsingGeneratedSerializer(value, jsonTypeInfo);
@@ -98,9 +100,9 @@ namespace System.Text.Json
         /// </exception>
         public static JsonDocument SerializeToDocument(object? value, Type inputType, JsonSerializerContext context)
         {
-            if (context == null)
+            if (context is null)
             {
-                throw new ArgumentNullException(nameof(context));
+                ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);

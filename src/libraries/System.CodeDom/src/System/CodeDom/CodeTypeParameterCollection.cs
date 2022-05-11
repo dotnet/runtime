@@ -31,7 +31,7 @@ namespace System.CodeDom
 
         public void AddRange(CodeTypeParameter[] value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }
@@ -44,7 +44,7 @@ namespace System.CodeDom
 
         public void AddRange(CodeTypeParameterCollection value)
         {
-            if (value == null)
+            if (value is null)
             {
                 throw new ArgumentNullException(nameof(value));
             }

@@ -213,7 +213,7 @@ namespace System.Data
             }
         }
 
-        internal string QualifiedName(string name)
+        internal static string QualifiedName(string name)
         {
             if (!name.Contains(':'))
                 return Keywords.XSD_PREFIXCOLON + name;

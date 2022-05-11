@@ -18,6 +18,7 @@ namespace System.Net.Http
 
         private long _openedHttp11Connections;
         private long _openedHttp20Connections;
+        private long _openedHttp30Connections;
 
         // NOTE
         // - The 'Start' and 'Stop' suffixes on the following event names have special meaning in EventSource. They
@@ -156,6 +157,21 @@ namespace System.Net.Http
             long count = Interlocked.Decrement(ref _openedHttp20Connections);
             Debug.Assert(count >= 0);
             ConnectionClosed(versionMajor: 2, versionMinor: 0);
+        }
+
+        [NonEvent]
+        public void Http30ConnectionEstablished()
+        {
+            Interlocked.Increment(ref _openedHttp30Connections);
+            ConnectionEstablished(versionMajor: 3, versionMinor: 0);
+        }
+
+        [NonEvent]
+        public void Http30ConnectionClosed()
+        {
+            long count = Interlocked.Decrement(ref _openedHttp30Connections);
+            Debug.Assert(count >= 0);
+            ConnectionClosed(versionMajor: 3, versionMinor: 0);
         }
 
 #if !ES_BUILD_STANDALONE

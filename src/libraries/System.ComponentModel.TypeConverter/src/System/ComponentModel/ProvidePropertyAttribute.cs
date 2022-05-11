@@ -18,10 +18,7 @@ namespace System.ComponentModel
             string propertyName,
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor)] Type receiverType)
         {
-            if (receiverType == null)
-            {
-                throw new ArgumentNullException(nameof(receiverType));
-            }
+            ArgumentNullException.ThrowIfNull(receiverType);
 
             PropertyName = propertyName;
             ReceiverTypeName = receiverType.AssemblyQualifiedName!;

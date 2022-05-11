@@ -216,8 +216,7 @@ namespace System.Security.Cryptography.X509Certificates
         //
         internal static void ValidateOidValue(string keyValue)
         {
-            if (keyValue == null)
-                throw new ArgumentNullException(nameof(keyValue));
+            ArgumentNullException.ThrowIfNull(keyValue);
 
             int len = keyValue.Length;
             if (len < 2)

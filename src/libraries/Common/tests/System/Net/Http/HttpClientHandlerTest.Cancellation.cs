@@ -78,7 +78,10 @@ namespace System.Net.Http.Functional.Tests
                 {
                     await server.AcceptConnectionAsync(connection => serverRelease.Task);
                 }
-                catch { };  // Ignore any closing errors since we did not really process anything.
+                catch (Exception ex)
+                {
+                    _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                }
             });
         }
 
@@ -131,7 +134,11 @@ namespace System.Net.Http.Functional.Tests
                     {
                         clientFinished.SetResult(true);
                         await serverTask;
-                    } catch { }
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 });
             }
         }
@@ -188,13 +195,18 @@ namespace System.Net.Http.Functional.Tests
                     {
                         clientFinished.SetResult(true);
                         await serverTask;
-                    } catch { }
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 });
             }
         }
 
         [Theory]
         [MemberData(nameof(ThreeBools))]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65429", typeof(PlatformDetection), nameof(PlatformDetection.IsNodeJS))]
         public async Task GetAsync_CancelDuringResponseBodyReceived_Unbuffered_TaskCanceledQuickly(bool chunkedTransfer, bool connectionClose, bool readOrCopyToAsync)
         {
             if (LoopbackServerFactory.Version >= HttpVersion20.Value && (chunkedTransfer || connectionClose))
@@ -263,7 +275,11 @@ namespace System.Net.Http.Functional.Tests
                     {
                         clientFinished.SetResult(true);
                         await serverTask;
-                    } catch { }
+                    }
+                    catch (Exception ex)
+                    {
+                        _output.WriteLine($"Ignored exception:{Environment.NewLine}{ex}");
+                    }
                 });
             }
         }

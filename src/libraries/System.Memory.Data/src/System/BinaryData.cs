@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.ComponentModel;
@@ -6,6 +6,8 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -56,6 +58,22 @@ namespace System
         }
 
         /// <summary>
+        /// Creates a <see cref="BinaryData"/> instance by serializing the provided object to JSON
+        /// using <see cref="JsonSerializer"/>.
+        /// </summary>
+        /// <param name="jsonSerializable">The object that will be serialized to JSON using
+        /// <see cref="JsonSerializer"/>.</param>
+        /// <param name="context">The <see cref="JsonSerializerContext" /> to use when serializing to JSON.</param>
+        /// <param name="type">The type to use when serializing the data. If not specified, <see cref="object.GetType"/> will
+        /// be used to determine the type.</param>
+        public BinaryData(object? jsonSerializable, JsonSerializerContext context, Type? type = default)
+        {
+            type ??= jsonSerializable?.GetType() ?? typeof(object);
+
+            _bytes = JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, type, context);
+        }
+
+        /// <summary>
         /// Creates a <see cref="BinaryData"/> instance by wrapping the
         /// provided bytes.
         /// </summary>
@@ -72,7 +90,7 @@ namespace System
         /// <param name="data">The string data.</param>
         public BinaryData(string data)
         {
-            if (data == null)
+            if (data is null)
             {
                 throw new ArgumentNullException(nameof(data));
             }
@@ -112,7 +130,7 @@ namespace System
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
         public static BinaryData FromStream(Stream stream)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -129,7 +147,7 @@ namespace System
         /// <returns>A value representing all of the data remaining in <paramref name="stream"/>.</returns>
         public static Task<BinaryData> FromStreamAsync(Stream stream, CancellationToken cancellationToken = default)
         {
-            if (stream == null)
+            if (stream is null)
             {
                 throw new ArgumentNullException(nameof(stream));
             }
@@ -190,6 +208,17 @@ namespace System
         }
 
         /// <summary>
+        /// Creates a <see cref="BinaryData"/> instance by serializing the provided object using
+        /// the <see cref="JsonSerializer"/>.
+        /// </summary>
+        /// <typeparam name="T">The type to use when serializing the data.</typeparam>
+        /// <param name="jsonSerializable">The data to use.</param>
+        /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> to use when serializing to JSON.</param>
+        /// <returns>A value representing the UTF-8 encoding of the JSON representation of <paramref name="jsonSerializable" />.</returns>
+        public static BinaryData FromObjectAsJson<T>(T jsonSerializable, JsonTypeInfo<T> jsonTypeInfo)
+            => new BinaryData(JsonSerializer.SerializeToUtf8Bytes(jsonSerializable, jsonTypeInfo));
+
+        /// <summary>
         /// Converts the value of this instance to a string using UTF-8.
         /// </summary>
         /// <remarks>
@@ -201,10 +230,16 @@ namespace System
         /// <returns>
         /// A string from the value of this instance, using UTF-8 to decode the bytes.
         /// </returns>
-        /// <seealso cref="ToObjectFromJson{String}" />
+        /// <seealso cref="ToObjectFromJson{String}(JsonSerializerOptions)" />
         public override unsafe string ToString()
         {
             ReadOnlySpan<byte> span = _bytes.Span;
+
+            if (span.IsEmpty)
+            {
+                return string.Empty;
+            }
+
             fixed (byte* ptr = span)
             {
                 return Encoding.UTF8.GetString(ptr, span.Length);
@@ -242,6 +277,17 @@ namespace System
         {
             return JsonSerializer.Deserialize<T>(_bytes.Span, options);
         }
+
+        /// <summary>
+        /// Converts the <see cref="BinaryData"/> to the specified type using
+        /// <see cref="JsonSerializer"/>.
+        /// </summary>
+        /// <typeparam name="T">The type that the data should be
+        /// converted to.</typeparam>
+        /// <param name="jsonTypeInfo">The <see cref="JsonTypeInfo"/> to use when serializing to JSON.</param>
+        /// <returns>The data converted to the specified type.</returns>
+        public T? ToObjectFromJson<T>(JsonTypeInfo<T> jsonTypeInfo)
+            => JsonSerializer.Deserialize<T>(_bytes.Span, jsonTypeInfo);
 
         /// <summary>
         /// Defines an implicit conversion from a <see cref="BinaryData" /> to a <see cref="ReadOnlyMemory{Byte}"/>.

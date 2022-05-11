@@ -62,7 +62,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public XPathDocumentElementChildIterator(XPathDocumentNavigator parent, string name, string namespaceURI) : base(parent)
         {
-            if (namespaceURI == null) throw new ArgumentNullException(nameof(namespaceURI));
+            ArgumentNullException.ThrowIfNull(namespaceURI);
 
             _localName = parent.NameTable.Get(name);
             _namespaceUri = namespaceURI;
@@ -175,7 +175,7 @@ namespace MS.Internal.Xml.Cache
         /// </summary>
         public XPathDocumentElementDescendantIterator(XPathDocumentNavigator root, string name, string namespaceURI, bool matchSelf) : base(root)
         {
-            if (namespaceURI == null) throw new ArgumentNullException(nameof(namespaceURI));
+            ArgumentNullException.ThrowIfNull(namespaceURI);
 
             _localName = root.NameTable.Get(name);
             _namespaceUri = namespaceURI;

@@ -20,7 +20,7 @@ namespace Microsoft.Extensions.Caching.Memory
         /// <summary>
         /// Gets or set the value of the cache entry.
         /// </summary>
-        object Value { get; set; }
+        object? Value { get; set; }
 
         /// <summary>
         /// Gets or sets an absolute expiration date for the cache entry.

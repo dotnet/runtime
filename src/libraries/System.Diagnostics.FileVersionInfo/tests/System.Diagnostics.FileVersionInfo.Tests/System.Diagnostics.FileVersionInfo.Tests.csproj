@@ -3,7 +3,7 @@
     <TargetFrameworks>$(NetCoreAppCurrent)-windows;$(NetCoreAppCurrent)-Unix;$(NetCoreAppCurrent)-Browser</TargetFrameworks>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IgnoreForCI Condition="'$(TargetOS)' == 'Browser'">true</IgnoreForCI>
-    <EnableDllImportGenerator>true</EnableDllImportGenerator>
+    <EnableLibraryImportGenerator>true</EnableLibraryImportGenerator>
   </PropertyGroup>
   <ItemGroup>
     <!-- Checked in test binaries for FileVersionInfoTest -->
@@ -29,14 +29,14 @@
     <Compile Include="FileVersionInfoTest.cs" />
     <Compile Include="AssemblyInfo.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsWindows)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="FileVersionInfoTest.Windows.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Interop.Libraries.cs"
              Link="ProductionCode\Common\Interop\Windows\Interop.Libraries.cs" />
     <Compile Include="$(CommonPath)Interop\Windows\Kernel32\Interop.VerLanguageName.cs"
              Link="ProductionCode\Common\Interop\Windows\Kernel32\Interop.VerLanguageName.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetsUnix)' == 'true' or '$(TargetsBrowser)' == 'true'">
+  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'Unix' or '$(TargetPlatformIdentifier)' == 'Browser'">
     <Compile Include="FileVersionInfoTest.Unix.cs" />
   </ItemGroup>
   <ItemGroup>

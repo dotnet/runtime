@@ -24,8 +24,7 @@ namespace System.Resources
         // Doesn't close the Stream when done.
         public void AddResource(string name, Stream? value)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
 
             if (_resourceList == null)
                 throw new InvalidOperationException(SR.InvalidOperation_ResourceWriterSaved);
@@ -35,20 +34,17 @@ namespace System.Resources
 
         public void AddResourceData(string name, string typeName, byte[] serializedData)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
-            if (serializedData == null)
-                throw new ArgumentNullException(nameof(serializedData));
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(typeName);
+            ArgumentNullException.ThrowIfNull(serializedData);
 
             AddResourceData(name, typeName, (object)serializedData);
         }
 
-        private string ResourceReaderTypeName { get => ResourceReaderFullyQualifiedName; }
-        private string ResourceSetTypeName { get => ResSetTypeName; }
+        private static string ResourceReaderTypeName => ResourceReaderFullyQualifiedName;
+        private static string ResourceSetTypeName => ResSetTypeName;
 
-        private void WriteData(BinaryWriter writer, object dataContext)
+        private static void WriteData(BinaryWriter writer, object dataContext)
         {
             byte[]? data = dataContext as byte[];
 

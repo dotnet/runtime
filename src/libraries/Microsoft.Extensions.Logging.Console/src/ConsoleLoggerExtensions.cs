@@ -46,10 +46,7 @@ namespace Microsoft.Extensions.Logging
         /// <param name="configure">A delegate to configure the <see cref="ConsoleLogger"/>.</param>
         public static ILoggingBuilder AddConsole(this ILoggingBuilder builder, Action<ConsoleLoggerOptions> configure)
         {
-            if (configure == null)
-            {
-                throw new ArgumentNullException(nameof(configure));
-            }
+            ThrowHelper.ThrowIfNull(configure);
 
             builder.AddConsole();
             builder.Services.Configure(configure);
@@ -111,10 +108,8 @@ namespace Microsoft.Extensions.Logging
         internal static ILoggingBuilder AddConsoleWithFormatter<TOptions>(this ILoggingBuilder builder, string name, Action<TOptions> configure)
             where TOptions : ConsoleFormatterOptions
         {
-            if (configure == null)
-            {
-                throw new ArgumentNullException(nameof(configure));
-            }
+            ThrowHelper.ThrowIfNull(configure);
+
             builder.AddFormatterWithName(name);
             builder.Services.Configure(configure);
 
@@ -152,10 +147,7 @@ namespace Microsoft.Extensions.Logging
             where TOptions : ConsoleFormatterOptions
             where TFormatter : ConsoleFormatter
         {
-            if (configure == null)
-            {
-                throw new ArgumentNullException(nameof(configure));
-            }
+            ThrowHelper.ThrowIfNull(configure);
 
             builder.AddConsoleFormatter<TFormatter, TOptions>();
             builder.Services.Configure(configure);
