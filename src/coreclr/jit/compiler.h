@@ -3911,8 +3911,10 @@ private:
 
     void impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call);
 
-    bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType) const;
+public:
+    static bool impCheckImplicitArgumentCoercion(var_types sigType, var_types nodeType);
 
+private:
     void impPopReverseCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call, unsigned skipReverseCount);
 
     //---------------- Spilling the importer stack ----------------------------
@@ -4136,10 +4138,7 @@ private:
                            InlineCandidateInfo**  ppInlineCandidateInfo,
                            InlineResult*          inlineResult);
 
-    void impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
-                                GenTree*      curArgVal,
-                                unsigned      argNum,
-                                InlineResult* inlineResult);
+    void impInlineRecordArgInfo(InlineInfo* pInlineInfo, CallArg* arg, unsigned argNum, InlineResult* inlineResult);
 
     void impInlineInitVars(InlineInfo* pInlineInfo);
 
@@ -4457,8 +4456,6 @@ public:
                                        BasicBlock* nonCanonicalBlock,
                                        BasicBlock* canonicalBlock,
                                        flowList*   predEdge);
-
-    GenTree* fgCheckCallArgUpdate(GenTree* parent, GenTree* child, var_types origType);
 
 #if defined(FEATURE_EH_FUNCLETS) && defined(TARGET_ARM)
     // Sometimes we need to defer updating the BBF_FINALLY_TARGET bit. fgNeedToAddFinallyTargetBits signals
@@ -5313,7 +5310,6 @@ public:
         fgWalkPostFn* wtpoVisitorFn;
         void*         pCallbackData; // user-provided data
         GenTree*      parent;        // parent of current node, provided to callback
-        GenTreeStack* parentStack;   // stack of parent nodes, if asked for
         bool          wtprLclsOnly;  // whether to only visit lclvar nodes
 #ifdef DEBUG
         bool printModified; // callback can use this
@@ -10714,7 +10710,6 @@ public:
             case GT_NULLCHECK:
             case GT_PUTARG_REG:
             case GT_PUTARG_STK:
-            case GT_PUTARG_TYPE:
             case GT_RETURNTRAP:
             case GT_NOP:
             case GT_FIELD:
@@ -10992,14 +10987,14 @@ public:
     }
 };
 
-template <bool computeStack, bool doPreOrder, bool doPostOrder, bool doLclVarsOnly, bool useExecutionOrder>
+template <bool doPreOrder, bool doPostOrder, bool doLclVarsOnly, bool useExecutionOrder>
 class GenericTreeWalker final
-    : public GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>
+    : public GenTreeVisitor<GenericTreeWalker<doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>
 {
 public:
     enum
     {
-        ComputeStack      = computeStack,
+        ComputeStack      = false,
         DoPreOrder        = doPreOrder,
         DoPostOrder       = doPostOrder,
         DoLclVarsOnly     = doLclVarsOnly,
@@ -11011,16 +11006,11 @@ private:
 
 public:
     GenericTreeWalker(Compiler::fgWalkData* walkData)
-        : GenTreeVisitor<GenericTreeWalker<computeStack, doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(
+        : GenTreeVisitor<GenericTreeWalker<doPreOrder, doPostOrder, doLclVarsOnly, useExecutionOrder>>(
               walkData->compiler)
         , m_walkData(walkData)
     {
         assert(walkData != nullptr);
-
-        if (computeStack)
-        {
-            walkData->parentStack = &this->m_ancestors;
-        }
     }
 
     Compiler::fgWalkResult PreOrderVisit(GenTree** use, GenTree* user)

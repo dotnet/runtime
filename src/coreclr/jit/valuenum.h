@@ -1130,9 +1130,17 @@ private:
             static_assert_no_msg(NumArgs == sizeof...(VNs));
         }
 
-        // operator== specialized for NumArgs=1..4 in .cpp as MSVC does not do
-        // a good job of unrolling the loop in a naive version.
-        bool operator==(const VNDefFuncApp& y) const;
+        bool operator==(const VNDefFuncApp& y) const
+        {
+            bool result = m_func == y.m_func;
+            // Intentionally written without early-out or MSVC cannot unroll this.
+            for (size_t i = 0; i < NumArgs; i++)
+            {
+                result = result && m_args[i] == y.m_args[i];
+            }
+
+            return result;
+        }
     };
 
     // We will allocate value numbers in "chunks".  Each chunk will have the same type and "constness".
@@ -1383,9 +1391,17 @@ private:
     template <size_t NumArgs>
     struct VNDefFuncAppKeyFuncs : public JitKeyFuncsDefEquals<VNDefFuncApp<NumArgs>>
     {
-        // GetHashCode specialized for NumArgs=1..4 in .cpp as MSVC does not do
-        // a good job of unrolling the loop in a naive version.
-        static unsigned GetHashCode(const VNDefFuncApp<NumArgs>& val);
+        static unsigned GetHashCode(const VNDefFuncApp<NumArgs>& val)
+        {
+            unsigned hashCode = val.m_func;
+            for (size_t i = 0; i < NumArgs; i++)
+            {
+                hashCode = (hashCode << 8) | (hashCode >> 24);
+                hashCode ^= val.m_args[i];
+            }
+
+            return hashCode;
+        }
     };
 
     typedef VNMap<VNFunc> VNFunc0ToValueNumMap;

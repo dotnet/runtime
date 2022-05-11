@@ -4256,6 +4256,7 @@ public static partial class DataContractSerializerTests
     }
 
     [ActiveIssue("https://github.com/dotnet/runtime/issues/1417", TestPlatforms.OSX)]
+    [SkipOnPlatform(TestPlatforms.Browser, "Causes a stack overflow")]
     [Fact]
     public static void DCS_DeeplyLinkedData()
     {

@@ -421,10 +421,11 @@ bool Compiler::optJumpThread(BasicBlock* const block, BasicBlock* const domBlock
                 assert(tree->OperIs(GT_JTRUE));
                 if ((tree->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT)
                 {
-                    // However, be conservative if block is in a try as we might not
-                    // have a full picture of EH flow.
+                    // However, be conservative if the blocks are not in the
+                    // same EH region, as we might not be able to fully
+                    // describe control flow between them.
                     //
-                    if (!block->hasTryIndex())
+                    if (BasicBlock::sameEHRegion(block, domBlock))
                     {
                         // We will ignore the side effect on this tree.
                         //

@@ -15,14 +15,13 @@ namespace System.Net.Security
 {
     public partial class SslStream
     {
-        private SslAuthenticationOptions? _sslAuthenticationOptions;
-
+        private readonly SslAuthenticationOptions _sslAuthenticationOptions = new SslAuthenticationOptions();
         private int _nestedAuth;
         private bool _isRenego;
 
         private TlsFrameHelper.TlsFrameInfo _lastFrame;
 
-        private object _handshakeLock => _sslAuthenticationOptions!;
+        private object _handshakeLock => _sslAuthenticationOptions;
         private volatile TaskCompletionSource<bool>? _handshakeWaiter;
 
         private bool _receivedEOF;
@@ -33,67 +32,6 @@ namespace System.Net.Security
         // 2 = SslStream disposed, connection closed
         private int _connectionOpenedStatus;
 
-        private void ValidateCreateContext(SslClientAuthenticationOptions sslClientAuthenticationOptions, RemoteCertificateValidationCallback? remoteCallback, LocalCertSelectionCallback? localCallback)
-        {
-            ThrowIfExceptional();
-
-            if (_context != null && _context.IsValidContext)
-            {
-                throw new InvalidOperationException(SR.net_auth_reauth);
-            }
-
-            if (_context != null && IsServer)
-            {
-                throw new InvalidOperationException(SR.net_auth_client_server);
-            }
-
-            ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions.TargetHost, nameof(sslClientAuthenticationOptions.TargetHost));
-
-            _exception = null;
-            try
-            {
-                _sslAuthenticationOptions = new SslAuthenticationOptions(sslClientAuthenticationOptions, remoteCallback, localCallback);
-                _context = new SecureChannel(_sslAuthenticationOptions, this);
-            }
-            catch (Win32Exception e)
-            {
-                throw new AuthenticationException(SR.net_auth_SSPI, e);
-            }
-        }
-
-        private void ValidateCreateContext(SslAuthenticationOptions sslAuthenticationOptions)
-        {
-            ThrowIfExceptional();
-
-            if (_context != null && _context.IsValidContext)
-            {
-                throw new InvalidOperationException(SR.net_auth_reauth);
-            }
-
-            if (_context != null && !IsServer)
-            {
-                throw new InvalidOperationException(SR.net_auth_client_server);
-            }
-
-            _exception = null;
-            _sslAuthenticationOptions = sslAuthenticationOptions;
-
-            try
-            {
-                _context = new SecureChannel(_sslAuthenticationOptions, this);
-            }
-            catch (Win32Exception e)
-            {
-                throw new AuthenticationException(SR.net_auth_SSPI, e);
-            }
-        }
-
-        private bool RemoteCertRequired => _context == null || _context.RemoteCertRequired;
-
-        private object? SyncLock => _context;
-
-        private int MaxDataSize => _context!.MaxDataSize;
-
         private void SetException(Exception e)
         {
             Debug.Assert(e != null, $"Expected non-null Exception to be passed to {nameof(SetException)}");
@@ -103,7 +41,7 @@ namespace System.Net.Security
                 _exception = ExceptionDispatchInfo.Capture(e);
             }
 
-            _context?.Close();
+            CloseContext();
         }
 
         //
@@ -112,7 +50,7 @@ namespace System.Net.Security
         private void CloseInternal()
         {
             _exception = s_disposedSentinel;
-            _context?.Close();
+            CloseContext();
 
             // Ensure a Read operation is not in progress,
             // block potential reads since SslStream is disposing.
@@ -152,7 +90,7 @@ namespace System.Net.Security
                     return new SecurityStatusPal(SecurityStatusPalErrorCode.TryAgain);
                 }
 
-                return _context!.Encrypt(buffer, ref outBuffer, out outSize);
+                return Encrypt(buffer, ref outBuffer, out outSize);
             }
         }
 
@@ -171,21 +109,21 @@ namespace System.Net.Security
             else
             {
                 return isAsync ?
-                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken) :
-                    ForceAuthenticationAsync<SyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken);
+                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken) :
+                    ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken);
             }
         }
 
         private async Task ProcessAuthenticationWithTelemetryAsync(bool isAsync, CancellationToken cancellationToken)
         {
-            NetSecurityTelemetry.Log.HandshakeStart(_context!.IsServer, _sslAuthenticationOptions!.TargetHost);
+            NetSecurityTelemetry.Log.HandshakeStart(IsServer, _sslAuthenticationOptions!.TargetHost);
             long startingTimestamp = Stopwatch.GetTimestamp();
 
             try
             {
                 Task task = isAsync?
-                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken) :
-                    ForceAuthenticationAsync<SyncReadWriteAdapter>(_context!.IsServer, null, cancellationToken);
+                    ForceAuthenticationAsync<AsyncReadWriteAdapter>(IsServer, null, cancellationToken) :
+                    ForceAuthenticationAsync<SyncReadWriteAdapter>(IsServer, null, cancellationToken);
 
                 await task.ConfigureAwait(false);
 
@@ -197,7 +135,7 @@ namespace System.Net.Security
             }
             catch (Exception ex)
             {
-                NetSecurityTelemetry.Log.HandshakeFailed(_context.IsServer, startingTimestamp, ex.Message);
+                NetSecurityTelemetry.Log.HandshakeFailed(IsServer, startingTimestamp, ex.Message);
                 throw;
             }
         }
@@ -250,7 +188,7 @@ namespace System.Net.Security
                 _isRenego = true;
 
 
-                SecurityStatusPal status = _context!.Renegotiate(out byte[]? nextmsg);
+                SecurityStatusPal status = Renegotiate(out byte[]? nextmsg);
 
                 if (nextmsg is { Length: > 0 })
                 {
@@ -319,7 +257,7 @@ namespace System.Net.Security
             {
                 if (!receiveFirst)
                 {
-                    message = _context!.NextMessage(reAuthenticationData);
+                    message = NextMessage(reAuthenticationData);
                     if (message.Size > 0)
                     {
                         await TIOAdapter.WriteAsync(InnerStream, message.Payload!, 0, message.Size, cancellationToken).ConfigureAwait(false);
@@ -520,7 +458,7 @@ namespace System.Net.Security
                 _buffer.DiscardEncrypted(frameSize);
             }
 
-            return _context!.NextMessage(availableData.Slice(0, chunkSize));
+            return NextMessage(availableData.Slice(0, chunkSize));
         }
 
         //
@@ -554,7 +492,7 @@ namespace System.Net.Security
         //
         private bool CompleteHandshake(ref ProtocolToken? alertToken, out SslPolicyErrors sslPolicyErrors, out X509ChainStatusFlags chainStatus)
         {
-            _context!.ProcessHandshakeSuccess();
+            ProcessHandshakeSuccess();
 
             if (_nestedAuth != 1)
             {
@@ -565,7 +503,7 @@ namespace System.Net.Security
                 return true;
             }
 
-            if (!_context.VerifyRemoteCertificate(_sslAuthenticationOptions!.CertValidationDelegate, _sslAuthenticationOptions!.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
+            if (!VerifyRemoteCertificate(_sslAuthenticationOptions!.CertValidationDelegate, _sslAuthenticationOptions!.CertificateContext?.Trust, ref alertToken, out sslPolicyErrors, out chainStatus))
             {
                 _handshakeCompleted = false;
                 return false;
@@ -790,7 +728,7 @@ namespace System.Net.Security
                 ThrowIfExceptionalOrNotAuthenticated();
 
                 // Decrypt will decrypt in-place and modify these to point to the actual decrypted data, which may be smaller.
-                status = _context!.Decrypt(_buffer.EncryptedSpanSliced(frameSize), out int decryptedOffset, out int decryptedCount);
+                status = Decrypt(_buffer.EncryptedSpanSliced(frameSize), out int decryptedOffset, out int decryptedCount);
                 _buffer.OnDecrypted(decryptedOffset, decryptedCount, frameSize);
 
                 if (status.ErrorCode == SecurityStatusPalErrorCode.Renegotiate)
