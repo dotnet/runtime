@@ -129,6 +129,19 @@
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Security.Cryptography.OpenSsl\tests\System.Security.Cryptography.OpenSsl.Tests.csproj" />
   </ItemGroup>
 
+  <ItemGroup Condition="$(OutputRid.StartsWith('linux-bionic')) and '$(TargetArchitecture)' == 'x64' and '$(RunDisabledAndroidTests)' != 'true'">
+    <!-- Fails on Helix, cannot repro locally -->
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.Tasks.Parallel\tests\System.Threading.Tasks.Parallel.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Threading.ThreadPool\tests\System.Threading.ThreadPool.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.FileProviders.Physical\tests\Microsoft.Extensions.FileProviders.Physical.Tests.csproj" />
+
+    <!-- Timeout on Helix, cannot repro locally>
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Security\tests\FunctionalTests\System.Net.Security.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Requests\tests\System.Net.Requests.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Mail\tests\Functional\System.Net.Mail.Functional.Tests.csproj" />
+    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.IO.FileSystem\tests\DisabledFileLockingTests\System.IO.FileSystem.DisabledFileLocking.Tests.csproj" />
+  </ItemGroup>
+
   <ItemGroup Condition="('$(TargetOS)' == 'Android' or $(OutputRid.StartsWith('linux-bionic'))) and '$(RunDisabledAndroidTests)' != 'true'">
     <!-- Tests time out intermittently -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Hosting\tests\UnitTests\Microsoft.Extensions.Hosting.Unit.Tests.csproj" />
