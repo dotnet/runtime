@@ -6,7 +6,7 @@
 
 namespace System.Numerics
 {
-    public readonly partial struct BigInteger : System.IComparable, System.IComparable<System.Numerics.BigInteger>, System.IEquatable<System.Numerics.BigInteger>, System.IFormattable, System.ISpanFormattable
+    public readonly partial struct BigInteger : System.IComparable, System.IComparable<System.Numerics.BigInteger>, System.IEquatable<System.Numerics.BigInteger>, System.IFormattable, System.IParsable<System.Numerics.BigInteger>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.BigInteger>, System.Numerics.IAdditionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IAdditiveIdentity<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IBinaryInteger<System.Numerics.BigInteger>, System.Numerics.IBinaryNumber<System.Numerics.BigInteger>, System.Numerics.IBitwiseOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IComparisonOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IDecrementOperators<System.Numerics.BigInteger>, System.Numerics.IDivisionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IEqualityOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IIncrementOperators<System.Numerics.BigInteger>, System.Numerics.IModulusOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IMultiplicativeIdentity<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IMultiplyOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.INumber<System.Numerics.BigInteger>, System.Numerics.INumberBase<System.Numerics.BigInteger>, System.Numerics.IShiftOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.ISignedNumber<System.Numerics.BigInteger>, System.Numerics.ISubtractionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IUnaryNegationOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>, System.Numerics.IUnaryPlusOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>
     {
         private readonly object _dummy;
         private readonly int _dummyPrimitive;
@@ -29,16 +29,25 @@ namespace System.Numerics
         public static System.Numerics.BigInteger MinusOne { get { throw null; } }
         public static System.Numerics.BigInteger One { get { throw null; } }
         public int Sign { get { throw null; } }
+        static System.Numerics.BigInteger System.Numerics.IAdditiveIdentity<System.Numerics.BigInteger, System.Numerics.BigInteger>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.BigInteger System.Numerics.IMultiplicativeIdentity<System.Numerics.BigInteger, System.Numerics.BigInteger>.MultiplicativeIdentity { get { throw null; } }
+        static System.Numerics.BigInteger System.Numerics.ISignedNumber<System.Numerics.BigInteger>.NegativeOne { get { throw null; } }
         public static System.Numerics.BigInteger Zero { get { throw null; } }
         public static System.Numerics.BigInteger Abs(System.Numerics.BigInteger value) { throw null; }
         public static System.Numerics.BigInteger Add(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        public static System.Numerics.BigInteger Clamp(System.Numerics.BigInteger value, System.Numerics.BigInteger min, System.Numerics.BigInteger max) { throw null; }
         public static int Compare(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public int CompareTo(long other) { throw null; }
         public int CompareTo(System.Numerics.BigInteger other) { throw null; }
         public int CompareTo(object? obj) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public int CompareTo(ulong other) { throw null; }
+        public static System.Numerics.BigInteger CopySign(System.Numerics.BigInteger value, System.Numerics.BigInteger sign) { throw null; }
+        public static System.Numerics.BigInteger CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public static System.Numerics.BigInteger CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public static System.Numerics.BigInteger CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static System.Numerics.BigInteger Divide(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor) { throw null; }
+        public static (System.Numerics.BigInteger Quotient, System.Numerics.BigInteger Remainder) DivRem(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public static System.Numerics.BigInteger DivRem(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor, out System.Numerics.BigInteger remainder) { throw null; }
         public bool Equals(long other) { throw null; }
         public bool Equals(System.Numerics.BigInteger other) { throw null; }
@@ -49,11 +58,17 @@ namespace System.Numerics
         public int GetByteCount(bool isUnsigned = false) { throw null; }
         public override int GetHashCode() { throw null; }
         public static System.Numerics.BigInteger GreatestCommonDivisor(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        public static bool IsNegative(System.Numerics.BigInteger value) { throw null; }
+        public static bool IsPow2(System.Numerics.BigInteger value) { throw null; }
+        public static System.Numerics.BigInteger LeadingZeroCount(System.Numerics.BigInteger value) { throw null; }
         public static double Log(System.Numerics.BigInteger value) { throw null; }
         public static double Log(System.Numerics.BigInteger value, double baseValue) { throw null; }
         public static double Log10(System.Numerics.BigInteger value) { throw null; }
+        public static System.Numerics.BigInteger Log2(System.Numerics.BigInteger value) { throw null; }
         public static System.Numerics.BigInteger Max(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        public static System.Numerics.BigInteger MaxMagnitude(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
         public static System.Numerics.BigInteger Min(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        public static System.Numerics.BigInteger MinMagnitude(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
         public static System.Numerics.BigInteger ModPow(System.Numerics.BigInteger value, System.Numerics.BigInteger exponent, System.Numerics.BigInteger modulus) { throw null; }
         public static System.Numerics.BigInteger Multiply(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public static System.Numerics.BigInteger Negate(System.Numerics.BigInteger value) { throw null; }
@@ -78,6 +93,7 @@ namespace System.Numerics
         public static explicit operator short (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator int (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator long (System.Numerics.BigInteger value) { throw null; }
+        public static explicit operator nint (System.Numerics.BigInteger value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator sbyte (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator float (System.Numerics.BigInteger value) { throw null; }
@@ -87,6 +103,8 @@ namespace System.Numerics
         public static explicit operator uint (System.Numerics.BigInteger value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator ulong (System.Numerics.BigInteger value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator nuint (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator System.Numerics.BigInteger (float value) { throw null; }
         public static bool operator >(long left, System.Numerics.BigInteger right) { throw null; }
         public static bool operator >(System.Numerics.BigInteger left, long right) { throw null; }
@@ -106,6 +124,7 @@ namespace System.Numerics
         public static implicit operator System.Numerics.BigInteger (short value) { throw null; }
         public static implicit operator System.Numerics.BigInteger (int value) { throw null; }
         public static implicit operator System.Numerics.BigInteger (long value) { throw null; }
+        public static implicit operator System.Numerics.BigInteger (nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Numerics.BigInteger (sbyte value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -114,6 +133,8 @@ namespace System.Numerics
         public static implicit operator System.Numerics.BigInteger (uint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Numerics.BigInteger (ulong value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.BigInteger (nuint value) { throw null; }
         public static System.Numerics.BigInteger operator ++(System.Numerics.BigInteger value) { throw null; }
         public static bool operator !=(long left, System.Numerics.BigInteger right) { throw null; }
         public static bool operator !=(System.Numerics.BigInteger left, long right) { throw null; }
@@ -144,24 +165,44 @@ namespace System.Numerics
         public static System.Numerics.BigInteger operator -(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public static System.Numerics.BigInteger operator -(System.Numerics.BigInteger value) { throw null; }
         public static System.Numerics.BigInteger operator +(System.Numerics.BigInteger value) { throw null; }
+        public static System.Numerics.BigInteger operator >>>(System.Numerics.BigInteger value, int shiftAmount) { throw null; }
         public static System.Numerics.BigInteger Parse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
+        public static System.Numerics.BigInteger Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.BigInteger Parse(string value) { throw null; }
         public static System.Numerics.BigInteger Parse(string value, System.Globalization.NumberStyles style) { throw null; }
         public static System.Numerics.BigInteger Parse(string value, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.BigInteger Parse(string value, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.BigInteger PopCount(System.Numerics.BigInteger value) { throw null; }
         public static System.Numerics.BigInteger Pow(System.Numerics.BigInteger value, int exponent) { throw null; }
         public static System.Numerics.BigInteger Remainder(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor) { throw null; }
+        public static System.Numerics.BigInteger RotateLeft(System.Numerics.BigInteger value, int rotateAmount) { throw null; }
+        public static System.Numerics.BigInteger RotateRight(System.Numerics.BigInteger value, int rotateAmount) { throw null; }
         public static System.Numerics.BigInteger Subtract(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.IAdditionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked +(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        int System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.GetByteCount() { throw null; }
+        long System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<System.Numerics.BigInteger>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.IDecrementOperators<System.Numerics.BigInteger>.operator checked --(System.Numerics.BigInteger value) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.IDivisionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked /(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.IIncrementOperators<System.Numerics.BigInteger>.operator checked ++(System.Numerics.BigInteger value) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.IMultiplyOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked *(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        static int System.Numerics.INumber<System.Numerics.BigInteger>.Sign(System.Numerics.BigInteger value) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.ISubtractionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked -(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.IUnaryNegationOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked -(System.Numerics.BigInteger value) { throw null; }
         public byte[] ToByteArray() { throw null; }
         public byte[] ToByteArray(bool isUnsigned = false, bool isBigEndian = false) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.BigInteger TrailingZeroCount(System.Numerics.BigInteger value) { throw null; }
+        public static bool TryCreate<TOther>(TOther value, out System.Numerics.BigInteger result) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> value, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, out System.Numerics.BigInteger result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false) { throw null; }
     }
