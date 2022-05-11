@@ -23,11 +23,6 @@ System.BinaryData</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Text.Json\src\System.Text.Json.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Memory" Version="$(SystemMemoryVersion)" />
   </ItemGroup>

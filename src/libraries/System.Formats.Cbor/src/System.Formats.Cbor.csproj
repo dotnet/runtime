@@ -47,15 +47,6 @@ System.Formats.Cbor.CborWriter</PackageDescription>
     <Compile Include="System\Formats\Cbor\HalfHelpers.netstandard.cs" />
     <Compile Include="System\Formats\Cbor\Writer\CborWriter.Simple.netstandard.cs" />
   </ItemGroup>
-    
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
-    <Reference Include="System.Collections" />
-    <Reference Include="System.Memory" />
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Numerics" />
-    <Reference Include="System.Text.Encoding.Extensions" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
 
   <ItemGroup Condition="'$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <PackageReference Include="System.Buffers" Version="$(SystemBuffersVersion)" />

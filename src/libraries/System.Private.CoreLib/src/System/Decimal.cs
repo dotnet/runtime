@@ -1189,10 +1189,19 @@ namespace System
         {
             if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
             {
+                var lo64 = _lo64;
+                var hi32 = _hi32;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
+                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
+                }
+
                 ref byte address = ref MemoryMarshal.GetReference(destination);
 
-                Unsafe.WriteUnaligned(ref address, _lo64);
-                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), _hi32);
+                Unsafe.WriteUnaligned(ref address, lo64);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), hi32);
 
                 bytesWritten = sizeof(ulong) + sizeof(uint);
                 return true;

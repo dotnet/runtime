@@ -60,7 +60,7 @@ unsigned __int64 getTimeStamp() {
 #if defined(HOST_X86) && !defined(HOST_UNIX)
 
 /*********************************************************************************/
-/* Get the the frequency cooresponding to 'getTimeStamp'.  For x86, this is the
+/* Get the frequency cooresponding to 'getTimeStamp'.  For x86, this is the
    frequency of the RDTSC instruction, which is just the clock rate of the CPU.
    This can vary due to power management, so this is at best a rough approximation.
 */
@@ -108,7 +108,7 @@ unsigned __int64 getTickFrequency()
 
 
 /*********************************************************************************/
-/* Get the the frequency cooresponding to 'getTimeStamp'.  For non-x86
+/* Get the frequency cooresponding to 'getTimeStamp'.  For non-x86
    architectures, this is just the performance counter frequency.
 */
 unsigned __int64 getTickFrequency()
@@ -899,14 +899,14 @@ void StressLog::LogMsg(unsigned level, unsigned facility, const StressLogMsg &ms
             if (msgs == 0)
                 return;
         }
-#ifdef HOST_WINDOWS 
+#ifdef HOST_WINDOWS
         // On Linux, this cast: (va_list)msg.m_args gives a compile error
         msgs->LogMsg(facility, msg.m_cArgs, msg.m_format, (va_list)msg.m_args);
 #else
-        msgs->LogMsg(facility, msg.m_cArgs, msg.m_format, 
-        msg.m_args[0], msg.m_args[1], msg.m_args[2], msg.m_args[3], 
-        msg.m_args[4], msg.m_args[5], msg.m_args[6], msg.m_args[7], 
-        msg.m_args[8], msg.m_args[9], msg.m_args[10], msg.m_args[11], 
+        msgs->LogMsg(facility, msg.m_cArgs, msg.m_format,
+        msg.m_args[0], msg.m_args[1], msg.m_args[2], msg.m_args[3],
+        msg.m_args[4], msg.m_args[5], msg.m_args[6], msg.m_args[7],
+        msg.m_args[8], msg.m_args[9], msg.m_args[10], msg.m_args[11],
         msg.m_args[12], msg.m_args[13], msg.m_args[14], msg.m_args[15]);
 #endif //HOST_WINDOWS
     }
@@ -966,7 +966,7 @@ void* __cdecl ThreadStressLog::operator new(size_t n, const NoThrow&) NOEXCEPT
 #endif //HOST_WINDOWS
 }
 
-void __cdecl ThreadStressLog::operator delete(void* p) 
+void __cdecl ThreadStressLog::operator delete(void* p)
 {
     if (StressLogChunk::s_memoryMapped)
         return; // Giving up, we will just leak it instead of building a sophisticated allocator

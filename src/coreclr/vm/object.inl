@@ -191,7 +191,7 @@ inline /* static */ unsigned ArrayBase::GetLowerBoundsOffset(MethodTable* pMT)
         sizeof(INT32);
 }
 
-// Get the element type for the array, this works whether the the element
+// Get the element type for the array, this works whether the element
 // type is stored in the array or not
 inline TypeHandle ArrayBase::GetArrayElementTypeHandle() const
 {

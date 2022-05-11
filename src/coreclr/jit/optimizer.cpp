@@ -572,15 +572,16 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         reportAfter();
     }
 
-    if ((skipUnmarkLoop == false) &&                  //
-        block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        //
-        block->bbJumpDest->isLoopHead() &&            //
-        (block->bbJumpDest->bbNum <= block->bbNum) && //
-        fgDomsComputed &&                             //
+    if ((skipUnmarkLoop == false) &&                  // If we don't want to unmark this loop...
+        block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        // This block reaches conditionally or always
+        block->bbJumpDest->isLoopHead() &&            // to a loop head...
+        (fgCurBBEpochSize == fgBBNumMax + 1) &&       // We didn't add new blocks since last renumber...
+        (block->bbJumpDest->bbNum <= block->bbNum) && // This is a backedge...
+        fgDomsComputed &&                             // Given the doms are computed and valid...
         (fgCurBBEpochSize == fgDomBBcount + 1) &&     //
-        fgReachable(block->bbJumpDest, block))
+        fgReachable(block->bbJumpDest, block))        // Block's destination is reachable from block...
     {
-        optUnmarkLoopBlocks(block->bbJumpDest, block);
+        optUnmarkLoopBlocks(block->bbJumpDest, block); // Unscale the blocks in such loop.
     }
 }
 
@@ -1134,6 +1135,15 @@ bool Compiler::optExtractInitTestIncr(
     // Check if we have the incr stmt before the test stmt, if we don't,
     // check if incr is part of the loop "top".
     Statement* incrStmt = testStmt->GetPrevStmt();
+
+    // If we've added profile instrumentation, we may need to skip past a BB counter update.
+    //
+    if (opts.jitFlags->IsSet(JitFlags::JIT_FLAG_BBINSTR) && (incrStmt != nullptr) &&
+        incrStmt->GetRootNode()->IsBlockProfileUpdate())
+    {
+        incrStmt = incrStmt->GetPrevStmt();
+    }
+
     if (incrStmt == nullptr || optIsLoopIncrTree(incrStmt->GetRootNode()) == BAD_VAR_NUM)
     {
         if (top == nullptr || top->bbStmtList == nullptr || top->bbStmtList->GetPrevStmt() == nullptr)
@@ -5250,7 +5260,6 @@ bool Compiler::optNarrowTree(GenTree* tree, var_types srct, var_types dstt, Valu
                 }
                 break;
 
-            case GT_CLS_VAR:
             case GT_LCL_FLD:
                 goto NARROW_IND;
             default:
@@ -5579,10 +5588,6 @@ Compiler::fgWalkResult Compiler::optIsVarAssgCB(GenTree** pTree, fgWalkData* dat
 
             varRefKinds refs = varTypeIsGC(tree->TypeGet()) ? VR_IND_REF : VR_IND_SCL;
             desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | refs);
-        }
-        else if (destOper == GT_CLS_VAR)
-        {
-            desc->ivaMaskInd = varRefKinds(desc->ivaMaskInd | VR_GLB_VAR);
         }
         else if (destOper == GT_IND)
         {
@@ -6403,7 +6408,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
         updateLoopNum = updateParentLoopNum;
     }
 
-    // If the update block is not the the header of a loop containing
+    // If the update block is not the header of a loop containing
     // block, we can also ignore the update.
     //
     if (!optLoopContains(updateLoopNum, loopNum))
@@ -6520,6 +6525,15 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             if (node->TypeGet() == TYP_STRUCT)
             {
                 return false;
+            }
+            else if (node->OperIs(GT_NULLCHECK))
+            {
+                // If a null-check is for `this` object, it is safe to
+                // hoist it out of the loop. Assertionprop will get rid
+                // of left over nullchecks present inside the loop. Also,
+                // since NULLCHECK has no value, it will never be CSE,
+                // hence this check is not present in optIsCSEcandidate().
+                return true;
             }
 
             // Tree must be a suitable CSE candidate for us to be able to hoist it.
@@ -6704,8 +6718,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             // isCctorDependent and isAddressWhoseDereferenceWouldBeCctorDependent, but we don't for
             // simplicity/throughput; the constant itself would be considered non-hoistable anyway, since
             // optIsCSEcandidate returns false for constants.
-            bool treeIsCctorDependent = ((tree->OperIs(GT_CLS_VAR) && ((tree->gtFlags & GTF_CLS_VAR_INITCLASS) != 0)) ||
-                                         (tree->OperIs(GT_CNS_INT) && ((tree->gtFlags & GTF_ICON_INITCLASS) != 0)));
+            bool treeIsCctorDependent     = tree->OperIs(GT_CNS_INT) && ((tree->gtFlags & GTF_ICON_INITCLASS) != 0);
             bool treeIsInvariant          = true;
             bool treeHasHoistableChildren = false;
             int  childCount;
@@ -7842,6 +7855,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         GenTreeArrAddr* arrAddr  = nullptr;
                         GenTree*        baseAddr = nullptr;
                         FieldSeqNode*   fldSeq   = nullptr;
+                        ssize_t         offset   = 0;
 
                         if (arg->IsArrayAddr(&arrAddr))
                         {
@@ -7853,7 +7867,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                             // Conservatively assume byrefs may alias this array element
                             memoryHavoc |= memoryKindSet(ByrefExposed);
                         }
-                        else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
+                        else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
                         {
                             assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
 
@@ -7882,13 +7896,6 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                     {
                         memoryHavoc |= memoryKindSet(ByrefExposed);
                     }
-                }
-                else if (lhs->OperGet() == GT_CLS_VAR)
-                {
-                    AddModifiedFieldAllContainingLoops(mostNestedLoop, lhs->AsClsVar()->gtClsVarHnd,
-                                                       FieldKindForVN::SimpleStatic);
-                    // Conservatively assume byrefs may alias this static field
-                    memoryHavoc |= memoryKindSet(ByrefExposed);
                 }
                 // Otherwise, must be local lhs form.  I should assert that.
                 else if (lhs->OperGet() == GT_LCL_VAR)

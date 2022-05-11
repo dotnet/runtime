@@ -496,7 +496,7 @@ void GetContextPointers(unw_cursor_t *cursor, unw_context_t *unwContext, KNONVOL
 #ifndef HOST_WINDOWS
 
 // Frame pointer relative offset of a local containing a pointer to the windows style context of a location
-// where a hardware exception occured.
+// where a hardware exception occurred.
 int g_hardware_exception_context_locvar_offset = 0;
 
 BOOL PAL_VirtualUnwind(CONTEXT *context, KNONVOLATILE_CONTEXT_POINTERS *contextPointers)

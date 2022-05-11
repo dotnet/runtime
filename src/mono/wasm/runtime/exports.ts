@@ -46,14 +46,14 @@ import {
 import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
     mono_method_resolve,
-    mono_wasm_compile_function,
+    mono_wasm_compile_function_ref,
     mono_wasm_get_by_index_ref, mono_wasm_get_global_object_ref, mono_wasm_get_object_property_ref,
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
-    mono_wasm_invoke_js_with_args, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
+    mono_wasm_invoke_js_with_args_ref, mono_wasm_set_by_index_ref, mono_wasm_set_object_property_ref
 } from "./method-calls";
 import { mono_wasm_typed_array_copy_to_ref, mono_wasm_typed_array_from_ref, mono_wasm_typed_array_copy_from_ref, mono_wasm_load_bytes_into_heap } from "./buffers";
-import { mono_wasm_cancel_promise } from "./cancelable-promise";
+import { mono_wasm_cancel_promise_ref } from "./cancelable-promise";
 import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
@@ -328,7 +328,7 @@ export const __linker_exports: any = {
     mono_wasm_trace_logger,
 
     // also keep in sync with corebindings.c
-    mono_wasm_invoke_js_with_args,
+    mono_wasm_invoke_js_with_args_ref,
     mono_wasm_get_object_property_ref,
     mono_wasm_set_object_property_ref,
     mono_wasm_get_by_index_ref,
@@ -340,13 +340,13 @@ export const __linker_exports: any = {
     mono_wasm_typed_array_copy_to_ref,
     mono_wasm_typed_array_from_ref,
     mono_wasm_typed_array_copy_from_ref,
-    mono_wasm_cancel_promise,
+    mono_wasm_cancel_promise_ref,
     mono_wasm_web_socket_open_ref,
     mono_wasm_web_socket_send,
     mono_wasm_web_socket_receive,
     mono_wasm_web_socket_close_ref,
     mono_wasm_web_socket_abort,
-    mono_wasm_compile_function,
+    mono_wasm_compile_function_ref,
 
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,

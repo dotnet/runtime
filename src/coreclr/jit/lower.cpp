@@ -418,6 +418,13 @@ GenTree* Lowering::LowerNode(GenTree* node)
         }
         break;
 
+#if defined(FEATURE_HW_INTRINSICS) && defined(TARGET_XARCH)
+        case GT_BSWAP:
+        case GT_BSWAP16:
+            LowerBswapOp(node->AsOp());
+            break;
+#endif // FEATURE_HW_INTRINSICS && TARGET_XARCH
+
         default:
             break;
     }
@@ -645,14 +652,14 @@ GenTree* Lowering::LowerSwitch(GenTree* node)
     if (TargetOS::IsUnix && TargetArchitecture::IsArm32)
     {
         // Force using an inlined jumping instead switch table generation.
-        // Switch jump table is generated with incorrect values in CoreRT case,
+        // Switch jump table is generated with incorrect values in NativeAOT case,
         // so any large switch will crash after loading to PC any such value.
         // I think this is due to the fact that we use absolute addressing
-        // instead of relative. But in CoreRT is used as a rule relative
+        // instead of relative. But in NativeAOT is used as a rule relative
         // addressing when we generate an executable.
         // See also https://github.com/dotnet/runtime/issues/8683
         // Also https://github.com/dotnet/coreclr/pull/13197
-        useJumpSequence = useJumpSequence || comp->IsTargetAbi(CORINFO_CORERT_ABI);
+        useJumpSequence = useJumpSequence || comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
     }
 
     // If we originally had 2 unique successors, check to see whether there is a unique
@@ -1314,10 +1321,6 @@ GenTree* Lowering::NewPutArg(GenTreeCall* call, GenTree* arg, CallArg* callArg, 
     DISPNODE(putArg);
     JITDUMP("\n");
 
-    if (arg->gtFlags & GTF_LATE_ARG)
-    {
-        putArg->gtFlags |= GTF_LATE_ARG;
-    }
     return putArg;
 }
 
@@ -1343,20 +1346,7 @@ void Lowering::LowerArg(GenTreeCall* call, CallArg* callArg, bool late)
 
     JITDUMP("lowering arg : ");
     DISPNODE(arg);
-
-    // No assignments should remain by Lowering.
-    assert(!arg->OperIs(GT_ASG));
-    assert(!arg->OperIsPutArgStk());
-
-    // Assignments/stores at this level are not really placing an argument.
-    // They are setting up temporary locals that will later be placed into
-    // outgoing regs or stack.
-    // Note that atomic ops may be stores and still produce a value.
-    if (!arg->IsValue())
-    {
-        assert((arg->OperIsStore() && !arg->IsValue()) || arg->IsNothingNode() || arg->OperIsCopyBlkOp());
-        return;
-    }
+    assert(arg->IsValue());
 
     var_types type = arg->TypeGet();
 
@@ -2348,7 +2338,9 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             // morph, sequence and lower, to avoid redoing that for the actual target.
             GenTree*     targetPlaceholder = comp->gtNewZeroConNode(callTarget->TypeGet());
             GenTreeCall* validate          = comp->gtNewHelperCallNode(CORINFO_HELP_VALIDATE_INDIRECT_CALL, TYP_VOID);
-            validate->gtArgs.PushFront(comp, targetPlaceholder, WellKnownArg::ValidateIndirectCallTarget);
+            NewCallArg   newArg =
+                NewCallArg::Primitive(targetPlaceholder).WellKnown(WellKnownArg::ValidateIndirectCallTarget);
+            validate->gtArgs.PushFront(comp, newArg);
 
             comp->fgMorphTree(validate);
 
@@ -2395,7 +2387,10 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 #ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
             // Now insert the call target as an extra argument.
             //
-            CallArg* targetArg = call->gtArgs.PushBack(comp, nullptr, WellKnownArg::DispatchIndirectCallTarget);
+            NewCallArg callTargetNewArg =
+                NewCallArg::Primitive(callTarget).WellKnown(WellKnownArg::DispatchIndirectCallTarget);
+            CallArg* targetArg = call->gtArgs.PushBack(comp, callTargetNewArg);
+            targetArg->SetEarlyNode(nullptr);
             targetArg->SetLateNode(callTarget);
             call->gtArgs.PushLateBack(targetArg);
 
@@ -3550,9 +3545,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
             // Create the assignment node.
             lclStore->ChangeOper(GT_STORE_OBJ);
             GenTreeBlk* objStore = lclStore->AsObj();
-            // Only the GTF_LATE_ARG flag (if present) is preserved.
-            objStore->gtFlags &= GTF_LATE_ARG;
-            objStore->gtFlags |= GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
+            objStore->gtFlags    = GTF_ASG | GTF_IND_NONFAULTING | GTF_IND_TGT_NOT_HEAP;
 #ifndef JIT32_GCENCODER
             objStore->gtBlkOpGcUnsafe = false;
 #endif
@@ -3855,7 +3848,7 @@ void Lowering::LowerCallStruct(GenTreeCall* call)
 #endif // FEATURE_SIMD
                 // importer has a separate mechanism to retype calls to helpers,
                 // keep it for now.
-                assert(user->TypeIs(TYP_REF) || (user->TypeIs(TYP_I_IMPL) && comp->IsTargetAbi(CORINFO_CORERT_ABI)));
+                assert(user->TypeIs(TYP_REF) || (user->TypeIs(TYP_I_IMPL) && comp->IsTargetAbi(CORINFO_NATIVEAOT_ABI)));
                 assert(call->IsHelperCall());
                 assert(returnType == user->TypeGet());
                 break;
@@ -4355,10 +4348,13 @@ void Lowering::InsertPInvokeMethodProlog()
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
     GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
 
-    call->gtArgs.PushBack(comp, frameAddr, WellKnownArg::PInvokeFrame);
+    NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
+    call->gtArgs.PushBack(comp, frameAddrArg);
 // for x86/arm32 don't pass the secretArg.
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    call->gtArgs.PushBack(comp, PhysReg(REG_SECRET_STUB_PARAM), WellKnownArg::SecretStubParam);
+    NewCallArg stubParamArg =
+        NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM)).WellKnown(WellKnownArg::SecretStubParam);
+    call->gtArgs.PushBack(comp, stubParamArg);
 #endif
 
     // some sanity checks on the frame list root vardsc
@@ -6425,7 +6421,7 @@ void Lowering::CheckCallArg(GenTree* arg)
 {
     if (!arg->IsValue() && !arg->OperIsPutArgStk())
     {
-        assert(arg->OperIsStore() || arg->IsNothingNode() || arg->OperIsCopyBlkOp());
+        assert(arg->OperIsStore() || arg->OperIsCopyBlkOp());
         return;
     }
 
@@ -7383,7 +7379,7 @@ void Lowering::LowerSIMD(GenTreeSIMD* simdNode)
 
             CORINFO_FIELD_HANDLE hnd =
                 comp->GetEmitter()->emitBlkConst(constArgValues, cnsSize, cnsAlign, simdNode->GetSimdBaseType());
-            GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(GT_CLS_VAR_ADDR, TYP_I_IMPL, hnd, nullptr);
+            GenTree* clsVarAddr = new (comp, GT_CLS_VAR_ADDR) GenTreeClsVar(TYP_I_IMPL, hnd);
             BlockRange().InsertBefore(simdNode, clsVarAddr);
             simdNode->ChangeOper(GT_IND);
             simdNode->AsOp()->gtOp1 = clsVarAddr;

@@ -12,6 +12,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
+using BrowserDebugProxy;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -386,7 +387,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             DebugStore store = await RuntimeReady(id, token);
 
                             Log("verbose", $"BP req {args}");
-                            await SetBreakpoint(id, store, request, !loaded, token);
+                            await SetBreakpoint(id, store, request, !loaded, false, token);
                         }
 
                         if (loaded)
@@ -475,16 +476,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!DotnetObjectId.TryParse(args?["objectId"], out DotnetObjectId objectId))
                             break;
 
-                        var valueOrError = await RuntimeGetPropertiesInternal(id, objectId, args, token, true);
+                        var valueOrError = await RuntimeGetObjectMembers(id, objectId, args, token, true);
                         if (valueOrError.IsError)
                         {
                             logger.LogDebug($"Runtime.getProperties: {valueOrError.Error}");
                             SendResponse(id, valueOrError.Error.Value, token);
+                            return true;
                         }
-                        else
+                        if (valueOrError.Value.JObject == null)
                         {
-                            SendResponse(id, Result.OkFromObject(valueOrError.Value), token);
+                            SendResponse(id, Result.Err($"Failed to get properties for '{objectId}'"), token);
+                            return true;
                         }
+                        SendResponse(id, Result.OkFromObject(valueOrError.Value.JObject), token);
                         return true;
                     }
 
@@ -662,8 +666,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             switch (objectId.Scheme)
             {
+                case "method":
+                    args["details"] = await context.SdbAgent.GetMethodProxy(objectId.ValueAsJson, token);
+                    break;
                 case "object":
-                case "methodId":
                     args["details"] = await context.SdbAgent.GetObjectProxy(objectId.Value, token);
                     break;
                 case "valuetype":
@@ -679,12 +685,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     args["details"] = await context.SdbAgent.GetArrayValuesProxy(objectId.Value, token);
                     break;
                 case "cfo_res":
-                {
                     Result cfo_res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(RuntimeId, args), token);
                     cfo_res = Result.OkFromObject(new { result = cfo_res.Value?["result"]?["value"]});
                     SendResponse(id, cfo_res, token);
                     return true;
-                }
                 case "scope":
                 {
                     SendResponse(id,
@@ -707,7 +711,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
                 var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
                 retDebuggerCmdReader.ReadByte(); //number of objects returned.
-                var obj = await context.SdbAgent.CreateJObjectForVariableValue(retDebuggerCmdReader, "ret", false, -1, false, token);
+                var obj = await context.SdbAgent.CreateJObjectForVariableValue(retDebuggerCmdReader, "ret", token);
                 /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
                 res = Result.OkFromObject(new { result = obj["value"]});
                 SendResponse(id, res, token);
@@ -738,83 +742,69 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<ValueOrError<JToken>> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
+        internal async Task<ValueOrError<GetMembersResult>> RuntimeGetObjectMembers(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
         {
             var context = GetContext(id);
-            var accessorPropertiesOnly = false;
-            GetObjectCommandOptions objectValuesOpt = GetObjectCommandOptions.WithProperties;
+            GetObjectCommandOptions getObjectOptions = GetObjectCommandOptions.WithProperties;
             if (args != null)
             {
                 if (args["accessorPropertiesOnly"] != null && args["accessorPropertiesOnly"].Value<bool>())
                 {
-                    objectValuesOpt |= GetObjectCommandOptions.AccessorPropertiesOnly;
-                    accessorPropertiesOnly = true;
+                    getObjectOptions |= GetObjectCommandOptions.AccessorPropertiesOnly;
                 }
                 if (args["ownProperties"] != null && args["ownProperties"].Value<bool>())
                 {
-                    objectValuesOpt |= GetObjectCommandOptions.OwnProperties;
+                    getObjectOptions |= GetObjectCommandOptions.OwnProperties;
                 }
             }
-            try {
+            try
+            {
                 switch (objectId.Scheme)
                 {
                     case "scope":
-                    {
                         Result resScope = await GetScopeProperties(id, objectId.Value, token);
                         return resScope.IsOk
-                            ? ValueOrError<JToken>.WithValue(sortByAccessLevel ? resScope.Value : resScope.Value?["result"])
-                            : ValueOrError<JToken>.WithError(resScope);
-                    }
+                            ? ValueOrError<GetMembersResult>.WithValue(
+                                new GetMembersResult((JArray)resScope.Value?["result"], sortByAccessLevel: false))
+                            : ValueOrError<GetMembersResult>.WithError(resScope);
                     case "valuetype":
-                    {
-                        var valType = context.SdbAgent.GetValueTypeClass(objectId.Value);
-                        if (valType == null)
-                            return ValueOrError<JToken>.WithError($"Internal Error: No valuetype found for {objectId}.");
-                        var resValue = await valType.GetValues(context.SdbAgent, accessorPropertiesOnly, token);
+                        var resValue = await MemberObjectsExplorer.GetValueTypeMemberValues(
+                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: false);
                         return resValue switch
                         {
-                            null => ValueOrError<JToken>.WithError($"Could not get properties for {objectId}"),
-                            _ => ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resValue }) : resValue)
+                            null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),
+                            _ => ValueOrError<GetMembersResult>.WithValue(resValue)
                         };
-                    }
                     case "array":
-                    {
                         var resArr = await context.SdbAgent.GetArrayValues(objectId.Value, token);
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resArr }) : resArr);
-                    }
-                    case "methodId":
-                    {
-                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId, objectId.SubValue, null, token);
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = new JArray(resMethod) }) : new JArray(resMethod));
-                    }
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(resArr));
+                    case "method":
+                        var resMethod = await context.SdbAgent.InvokeMethod(objectId, token);
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(new JArray(resMethod)));
                     case "object":
-                    {
-                        var resObj = await context.SdbAgent.GetObjectValues(objectId.Value, objectValuesOpt, token, sortByAccessLevel);
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? resObj[0] : resObj);
-                    }
+                        var resObj = await MemberObjectsExplorer.GetObjectMemberValues(
+                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
+                        return ValueOrError<GetMembersResult>.WithValue(resObj);
                     case "pointer":
-                    {
                         var resPointer = new JArray { await context.SdbAgent.GetPointerContent(objectId.Value, token) };
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resPointer }) : resPointer);
-                    }
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(resPointer));
                     case "cfo_res":
-                    {
                         Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, objectId.Value, args), token);
                         string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
                         if (res.IsOk && value_json_str == null)
-                            return ValueOrError<JToken>.WithError($"Internal error: Could not find expected __value_as_json_string__ field in the result: {res}");
+                            return ValueOrError<GetMembersResult>.WithError(
+                                $"Internal error: Could not find expected __value_as_json_string__ field in the result: {res}");
 
                         return value_json_str != null
-                                    ? ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = JArray.Parse(value_json_str) }) : JArray.Parse(value_json_str))
-                                    : ValueOrError<JToken>.WithError(res);
-                    }
+                                    ? ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(JArray.Parse(value_json_str)))
+                                    : ValueOrError<GetMembersResult>.WithError(res);
                     default:
-                        return ValueOrError<JToken>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
+                        return ValueOrError<GetMembersResult>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
                 }
             }
             catch (Exception ex)
             {
-                return ValueOrError<JToken>.WithError($"RuntimeGetProperties: Failed to get properties for {objectId}: {ex}");
+                return ValueOrError<GetMembersResult>.WithError($"RuntimeGetProperties: Failed to get properties for {objectId}: {ex}");
             }
         }
 
@@ -869,8 +859,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             var assemblyName = await context.SdbAgent.GetAssemblyNameFromModule(moduleId, token);
             DebugStore store = await LoadStore(sessionId, token);
             AssemblyInfo asm = store.GetAssemblyByName(assemblyName);
-            foreach (var method in DebugStore.EnC(asm, meta_buf, pdb_buf))
-                await ResetBreakpoint(sessionId, method, token);
+            var methods = DebugStore.EnC(asm, meta_buf, pdb_buf);
+            foreach (var method in methods)
+            {
+                await ResetBreakpoint(sessionId, store, method, token);
+            }
+            var files = methods.Distinct(new MethodInfo.SourceComparer());
+            foreach (var file in files)
+            {
+                JObject scriptSource = JObject.FromObject(file.Source.ToScriptSource(context.Id, context.AuxData));
+                Log("debug", $"sending after update {file.Source.Url} {context.Id} {sessionId.sessionId}");
+                await SendEvent(sessionId, "Debugger.scriptParsed", scriptSource, token);
+            }
             return true;
         }
 
@@ -884,9 +884,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             foreach (var req in context.BreakpointRequests.Values)
             {
-                if (req.Method != null && req.Method.Assembly.Id == method.Info.Assembly.Id && req.Method.Token == method.Info.Token)
+                if (req.TryResolve(method.Info.Source))
                 {
-                    await SetBreakpoint(sessionId, context.store, req, true, token);
+                    await SetBreakpoint(sessionId, context.store, req, true, true, token);
                 }
             }
             return true;
@@ -1051,9 +1051,15 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             return true;
         }
+
+        internal virtual void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Result res)
+        {
+        }
+
         internal async Task<bool> OnReceiveDebuggerAgentEvent(SessionId sessionId, JObject args, CancellationToken token)
         {
             Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
+            SaveLastDebuggerAgentBufferReceivedToContext(sessionId, res);
             if (!res.IsOk)
                 return false;
 
@@ -1089,7 +1095,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string reason = "exception";
                         int object_id = retDebuggerCmdReader.ReadInt32();
                         var caught = retDebuggerCmdReader.ReadByte();
-                        var exceptionObject = await context.SdbAgent.GetObjectValues(object_id, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
+                        var exceptionObject = await MemberObjectsExplorer.GetObjectMemberValues(
+                            context.SdbAgent, object_id, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
                         var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("_message"));
                         var data = JObject.FromObject(new
                         {
@@ -1404,7 +1411,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (req.TryResolve(source))
                 {
-                    await SetBreakpoint(sessionId, context.store, req, true, token);
+                    await SetBreakpoint(sessionId, context.store, req, true, false, token);
                 }
             }
         }
@@ -1482,7 +1489,19 @@ namespace Microsoft.WebAssembly.Diagnostics
             return store;
         }
 
-        private async Task ResetBreakpoint(SessionId msg_id, MethodInfo method, CancellationToken token)
+        private static IEnumerable<IGrouping<SourceId, SourceLocation>> GetBPReqLocations(DebugStore store, BreakpointRequest req)
+        {
+            var comparer = new SourceLocation.LocationComparer();
+            // if column is specified the frontend wants the exact matches
+            // and will clear the bp if it isn't close enoug
+            IEnumerable<IGrouping<SourceId, SourceLocation>> locations = store.FindBreakpointLocations(req)
+                .Distinct(comparer)
+                .Where(l => l.Line == req.Line && (req.Column == 0 || l.Column == req.Column))
+                .OrderBy(l => l.Column)
+                .GroupBy(l => l.Id);
+            return locations;
+        }
+        private async Task ResetBreakpoint(SessionId msg_id, DebugStore store, MethodInfo method, CancellationToken token)
         {
             ExecutionContext context = GetContext(msg_id);
             foreach (var req in context.BreakpointRequests.Values)
@@ -1490,7 +1509,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (req.Method != null)
                 {
                     if (req.Method.Assembly.Id == method.Assembly.Id && req.Method.Token == method.Token) {
-                        await RemoveBreakpoint(msg_id, JObject.FromObject(new {breakpointId = req.Id}), true, token);
+                        var locations = GetBPReqLocations(store, req);
+                        foreach (IGrouping<SourceId, SourceLocation> sourceId in locations)
+                        {
+                            SourceLocation loc = sourceId.First();
+                            if (req.Locations.Any(b => b.Location.IlLocation.Offset != loc.IlLocation.Offset))
+                            {
+                                await RemoveBreakpoint(msg_id, JObject.FromObject(new {breakpointId = req.Id}), true, token);
+                                break;
+                            }
+                        }
                     }
                 }
             }
@@ -1518,29 +1546,21 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             if (!isEnCReset)
                 context.BreakpointRequests.Remove(bpid);
-            else
-                breakpointRequest.Locations = new List<Breakpoint>();
         }
 
-        protected async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, CancellationToken token)
+        protected async Task SetBreakpoint(SessionId sessionId, DebugStore store, BreakpointRequest req, bool sendResolvedEvent, bool fromEnC, CancellationToken token)
         {
             ExecutionContext context = GetContext(sessionId);
-            if (req.Locations.Any())
+            if ((!fromEnC && req.Locations.Any()) || (fromEnC && req.Locations.Any(bp => bp.State == BreakpointState.Active)))
             {
-                Log("debug", $"locations already loaded for {req.Id}");
+                if (!fromEnC)
+                    Log("debug", $"locations already loaded for {req.Id}");
                 return;
             }
 
-            var comparer = new SourceLocation.LocationComparer();
-            // if column is specified the frontend wants the exact matches
-            // and will clear the bp if it isn't close enoug
-            IEnumerable<IGrouping<SourceId, SourceLocation>> locations = store.FindBreakpointLocations(req)
-                .Distinct(comparer)
-                .Where(l => l.Line == req.Line && (req.Column == 0 || l.Column == req.Column))
-                .OrderBy(l => l.Column)
-                .GroupBy(l => l.Id);
+            var locations = GetBPReqLocations(store, req);
 
-            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, GetContext(sessionId).IsRuntimeReady);
+            logger.LogDebug("BP request for '{req}' runtime ready {context.RuntimeReady}", req, context.IsRuntimeReady);
 
             var breakpoints = new List<Breakpoint>();
 
@@ -1550,7 +1570,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 req.Method = loc.IlLocation.Method;
                 if (req.Method.DebuggerAttrInfo.HasDebuggerHidden)
                     continue;
-
                 Breakpoint bp = await SetMonoBreakpoint(sessionId, req.Id, loc, req.Condition, token);
 
                 // If we didn't successfully enable the breakpoint
@@ -1658,7 +1677,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return false;
 
                     using (var reader = new StreamReader(data))
-                        source = await reader.ReadToEndAsync();
+                        source = await reader.ReadToEndAsync(token);
                 }
                 SendResponse(msg_id, Result.OkFromObject(new { scriptSource = source }), token);
             }

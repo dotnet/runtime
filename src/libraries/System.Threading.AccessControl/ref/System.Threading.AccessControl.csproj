@@ -9,19 +9,6 @@
     <Compile Include="System.Threading.AccessControl.netframework.cs" Condition="'$(TargetFrameworkIdentifier)' == 'NETFramework'" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.AccessControl\ref\System.Security.AccessControl.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Principal.Windows\ref\System.Security.Principal.Windows.csproj" />
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Threading\ref\System.Threading.csproj" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and '$(TargetFramework)' != '$(NetCoreAppCurrent)'">
-    <Reference Include="System.Runtime" />
-    <Reference Include="System.Security.AccessControl" />
-    <Reference Include="System.Security.Principal.Windows" />
-    <Reference Include="System.Threading" />
-  </ItemGroup>
-
   <ItemGroup Condition="'$(TargetFramework)' == 'netstandard2.0'">
     <PackageReference Include="System.Security.AccessControl" Version="$(SystemSecurityAccessControlVersion)" />
     <PackageReference Include="System.Security.Principal.Windows" Version="$(SystemSecurityPrincipalWindowsVersion)" />

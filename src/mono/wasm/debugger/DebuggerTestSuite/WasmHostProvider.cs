@@ -109,7 +109,7 @@ internal abstract class WasmHostProvider : IDisposable
         {
             _process.CancelErrorRead();
             _process.CancelOutputRead();
-            _process.Kill(entireProcessTree: true);
+            _process.Kill();
             _process.WaitForExit();
             _process.Close();
 

@@ -2364,7 +2364,7 @@ interface ICorDebugAppDomain4 : IUnknown
 
 /* ------------------------------------------------------------------------- *
  * Assembly interface
- * An ICorDebugAssembly instance corresponds to a a managed assembly loaded
+ * An ICorDebugAssembly instance corresponds to a managed assembly loaded
  * into a specific AppDomain in the CLR.  For assemblies shared between multiple
  * AppDomains (eg. CoreLib), there will be a separate ICorDebugAssembly instance
  * per AppDomain in which it is used.
@@ -6637,7 +6637,7 @@ interface ICorDebugObjectValue : ICorDebugValue
     HRESULT GetContext([out] ICorDebugContext **ppContext);
 
     /*
-     * IsValueClass returns true if the the class of this object is
+     * IsValueClass returns true if the class of this object is
      * a value class.
      */
 

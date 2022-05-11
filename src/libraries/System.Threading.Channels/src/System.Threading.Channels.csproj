@@ -8,6 +8,7 @@ Commonly Used Types:
 System.Threading.Channel
 System.Threading.Channel&lt;T&gt;</PackageDescription>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System\VoidResult.cs" />
     <Compile Include="System\Threading\Channels\AsyncOperation.cs" />
@@ -41,13 +42,15 @@ System.Threading.Channel&lt;T&gt;</PackageDescription>
     <Compile Include="$(CommonPath)System\Collections\Generic\Deque.cs"
              Link="Common\System\Collections\Generic\Deque.cs" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp'">
+
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.Concurrent" />
     <Reference Include="System.Runtime" />
     <Reference Include="System.Threading" />
     <Reference Include="System.Threading.ThreadPool" />
   </ItemGroup>
+
   <ItemGroup Condition="!$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'netstandard2.1'))">
     <PackageReference Include="System.Threading.Tasks.Extensions" Version="$(SystemThreadingTasksExtensionsVersion)" />
   </ItemGroup>

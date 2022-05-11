@@ -974,7 +974,7 @@ void CodeGen::genPutArgStk(GenTreePutArgStk* treeNode)
             }
 
             // If we have an HFA we can't have any GC pointers,
-            // if not then the max size for the the struct is 16 bytes
+            // if not then the max size for the struct is 16 bytes
             if (isHfa)
             {
                 noway_assert(!layout->HasGCPtr());
@@ -4685,7 +4685,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
-    //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|
@@ -4716,7 +4716,7 @@ void CodeGen::genPushCalleeSavedRegisters()
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/LR; multiple of 8 bytes
     //      |-----------------------|
-    //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|

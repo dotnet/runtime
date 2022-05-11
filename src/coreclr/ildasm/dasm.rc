@@ -79,6 +79,7 @@ BEGIN
     IDS_USAGE_15            L"  /QUOTEALLNAMES      Include all names into single quotes.\n"
     IDS_USAGE_15A           L"  /NOCA               Suppress output of custom attributes.\n"
     IDS_USAGE_15B           L"  /CAVERBAL           Output CA blobs in verbal form (default - in binary form).\n"
+    IDS_USAGE_16            L"  /R2RNATIVEMETADATA  Output the metadata from the R2R Native manifest.\n"
     IDS_USAGE_17            L"The following options are valid for file/console output only:\n"
     IDS_USAGE_18            L"Options for EXE and DLL files:\n"
     IDS_USAGE_19            L"  /UTF8               Use UTF-8 encoding for output (default - ANSI).\n"

@@ -3,13 +3,13 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <NoWarn>$(NoWarn);CS0809</NoWarn>
   </PropertyGroup>
+
   <ItemGroup>
     <Compile Include="System.Security.Cryptography.Csp.Forwards.cs" />
   </ItemGroup>
+
   <ItemGroup>
-    <ProjectReference Include="..\..\System.Runtime\ref\System.Runtime.csproj" />
-    <ProjectReference Include="..\..\System.Runtime.InteropServices\ref\System.Runtime.InteropServices.csproj" />
-    <ProjectReference Include="..\..\System.Security.Cryptography.Algorithms\ref\System.Security.Cryptography.Algorithms.csproj" />
-    <ProjectReference Include="..\..\System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime\ref\System.Runtime.csproj" />
+    <ProjectReference Include="$(LibrariesProjectRoot)System.Security.Cryptography\ref\System.Security.Cryptography.csproj" />
   </ItemGroup>
 </Project>

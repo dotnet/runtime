@@ -422,7 +422,7 @@ namespace Internal.Reflection.Execution
                 // All methods referred from this blob are contained in the same type. The first UINT in the blob is a reloc to that MethodTable
                 if (RuntimeAugments.SupportsRelativePointers)
                 {
-                    // CoreRT uses 32bit relative relocs
+                    // 32bit relative relocs
                     declaringTypeHandle = RuntimeAugments.CreateRuntimeTypeHandle((IntPtr)(pBlobAsBytes + *(int*)pBlobAsBytes));
                 }
                 else
@@ -454,7 +454,7 @@ namespace Internal.Reflection.Execution
 
                 if (RuntimeAugments.SupportsRelativePointers)
                 {
-                    // CoreRT uses 32bit relative relocs
+                    // 32bit relative relocs
                     int* pRelPtr32 = &((int*)pBlobAsBytes)[index + 1];
                     dynamicInvokeMethod = (IntPtr)((byte*)pRelPtr32 + *pRelPtr32);
                 }

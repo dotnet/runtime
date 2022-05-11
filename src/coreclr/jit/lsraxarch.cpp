@@ -643,12 +643,6 @@ int LinearScan::BuildNode(GenTree* tree)
             break;
 #endif
 
-        case GT_CLS_VAR:
-            // These nodes are eliminated by rationalizer.
-            JITDUMP("Unexpected node %s in Lower.\n", GenTree::OpName(tree->OperGet()));
-            unreached();
-            break;
-
         case GT_INDEX_ADDR:
         {
             assert(dstCount == 1);

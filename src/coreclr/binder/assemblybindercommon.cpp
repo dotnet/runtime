@@ -30,6 +30,7 @@
 extern HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToBindWithin,
                                                  BINDER_SPACE::AssemblyName *pAssemblyName,
                                                  DefaultAssemblyBinder *pDefaultBinder,
+                                                 AssemblyBinder *pBinder,
                                                  BINDER_SPACE::Assembly **ppLoadedAssembly);
 
 #endif // !defined(DACCESS_COMPILE)
@@ -1153,9 +1154,10 @@ namespace BINDER_SPACE
 
 #if !defined(DACCESS_COMPILE)
 HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pManagedAssemblyLoadContextToBindWithin,
-                                                            /* in */ AssemblyName       *pAssemblyName,
+                                                            /* in */ AssemblyName *pAssemblyName,
                                                             /* in */ DefaultAssemblyBinder *pDefaultBinder,
-                                                            /* out */ Assembly           **ppAssembly)
+                                                            /* in */ AssemblyBinder *pBinder,
+                                                            /* out */ Assembly **ppAssembly)
 {
     HRESULT hr = E_FAIL;
 
@@ -1164,7 +1166,7 @@ HRESULT AssemblyBinderCommon::BindUsingHostAssemblyResolver(/* in */ INT_PTR pMa
     // RuntimeInvokeHostAssemblyResolver will perform steps 2-4 of CustomAssemblyBinder::BindAssemblyByName.
     BINDER_SPACE::Assembly *pLoadedAssembly = NULL;
     hr = RuntimeInvokeHostAssemblyResolver(pManagedAssemblyLoadContextToBindWithin,
-                                           pAssemblyName, pDefaultBinder, &pLoadedAssembly);
+                                           pAssemblyName, pDefaultBinder, pBinder, &pLoadedAssembly);
     if (SUCCEEDED(hr))
     {
         _ASSERTE(pLoadedAssembly != NULL);

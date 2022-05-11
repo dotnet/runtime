@@ -49,7 +49,7 @@ internal class FirefoxProvider : WasmHostProvider
                                     {
                                         // FIXME: instead of this, we can wait for the port to open
                                         //for running debugger tests on firefox
-                                        if (str?.Contains("[GFX1-]: RenderCompositorSWGL failed mapping default framebuffer, no dt") == true)
+                                        if (str?.Contains("console.log: \"ready\"") == true)
                                             return $"http://localhost:{remoteDebuggingPort}";
 
                                         return null;
@@ -130,6 +130,7 @@ internal class FirefoxProvider : WasmHostProvider
             user_pref("devtools.chrome.enabled", true);
             user_pref("devtools.debugger.remote-enabled", true);
             user_pref("devtools.debugger.prompt-connection", false);
+            user_pref("devtools.console.stdout.content", true);
             """;
 
         string profilePath = Path.GetFullPath(Path.Combine(DebuggerTestBase.DebuggerTestAppPath, $"test-profile-{Id}"));

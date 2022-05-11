@@ -16,10 +16,7 @@
              Link="Common\System\Collections\CompatibleComparer.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.ComponentModel.Primitives" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Threading" />
   </ItemGroup>
 </Project>

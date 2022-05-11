@@ -169,7 +169,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55901")]
         public async Task SendMoreThanStreamLimitRequestsConcurrently_LastWaits(int streamLimit)
         {
             // This combination leads to a hang manifesting in CI only. Disabling it until there's more time to investigate.
@@ -1058,7 +1057,8 @@ namespace System.Net.Http.Functional.Tests
 
             var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
 
-            Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10)); ;
+            Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10));
+
             // Send headers
             await requestStream.FlushAsync();
 
