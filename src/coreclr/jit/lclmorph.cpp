@@ -972,7 +972,7 @@ private:
     {
         assert(val.IsLocation());
 
-        ClassLayout*   indirLayout = ClassLayout::NO_LAYOUT;
+        ClassLayout*   indirLayout = nullptr;
         IndirTransform transform   = SelectLocalIndirTransform(val, user, &indirLayout);
 
         if (transform == IndirTransform::None)
@@ -1173,7 +1173,7 @@ private:
             return IndirTransform::None;
         }
 
-        ClassLayout* indirLayout = ClassLayout::NO_LAYOUT;
+        ClassLayout* indirLayout = nullptr;
 
         if (indir->OperIs(GT_FIELD))
         {
@@ -1198,7 +1198,7 @@ private:
         };
 
         // We're only processing TYP_STRUCT variables now.
-        assert(varDsc->GetLayout() != ClassLayout::NO_LAYOUT);
+        assert(varDsc->GetLayout() != nullptr);
 
         StructMatch match = StructMatch::Partial;
         if (val.Offset() == 0)
