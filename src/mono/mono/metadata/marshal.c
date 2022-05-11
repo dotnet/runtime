@@ -6188,7 +6188,7 @@ get_marshal_cb (void)
 #ifdef ENABLE_ILGEN
 		mono_marshal_lightweight_init ();
 #else
-		mono_marshal_ligthweight_noilgen_init ();
+		mono_marshal_noilgen_init ();
 #endif
 	}
 	return &marshal_lightweight_cb;

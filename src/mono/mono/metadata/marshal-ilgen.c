@@ -41,6 +41,7 @@ mono_install_marshal_callbacks_ilgen (MonoMarshalIlgenCallbacks *cb)
 	ilgen_cb_inited = TRUE;
 }
 
+
 static void
 emit_struct_free (MonoMethodBuilder *mb, MonoClass *klass, int struct_var)
 {
@@ -2803,7 +2804,7 @@ mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 }
 
-#ifdef ENABLE_ILGEN
+
 void
 mono_marshal_ilgen_init (void)
 {
@@ -2827,4 +2828,4 @@ mono_marshal_ilgen_init (void)
 #endif
 	mono_install_marshal_callbacks_ilgen (&cb);
 }
-#endif // ENABLE_ILGEN
+
