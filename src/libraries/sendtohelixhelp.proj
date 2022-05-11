@@ -5,7 +5,7 @@
        to send test jobs to Helix.
   -->
   <PropertyGroup>
-    <WindowsShell Condition="'$(TargetOS)' == 'windows' or '$(BrowserHost)' == 'windows' or $(HelixTargetQueue.ToLowerInvariant().Contains('windows'))">true</WindowsShell>
+    <WindowsShell Condition="'$(TargetOS)' == 'windows' or '$(BrowserHost)' == 'windows' or ($(TargetRuntimeIdentifier.ToLowerInvariant().StartsWith('linux-bionic')) and $(HelixTargetQueue.ToLowerInvariant().Contains('windows')))">true</WindowsShell>
 
     <!-- Set Helix build to build number if available -->
     <HelixBuild Condition="'$(HelixBuild)' == ''">$(BUILD_BUILDNUMBER)</HelixBuild>
