@@ -25,6 +25,7 @@
                       IncludeReferenceAssemblyInPackage="true" />
     <!-- Only include the 4.0 version in the ref pack, since targeting net6.0 requires Roslyn 4.0 -->
     <AnalyzerReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj"
-                       Pack="true" />
+                       Pack="true"
+                       ReferenceAnalyzer="false" />
   </ItemGroup>
 </Project>

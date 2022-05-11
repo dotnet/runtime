@@ -47,7 +47,7 @@
 
   <!-- AnalyzerReference items are transformed to ProjectReferences with the required analyzer metadata. -->
   <ItemGroup>
-    <ProjectReference Include="@(AnalyzerReference)"
+    <ProjectReference Include="@(AnalyzerReference->WithMetadataValue('ReferenceAnalyzer', ''))"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false"
                       Pack="false" />

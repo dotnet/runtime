@@ -39,9 +39,11 @@ Microsoft.Extensions.Logging.Abstractions.NullLogger</PackageDescription>
   <ItemGroup>
     <AnalyzerReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn3.11.csproj"
                        Pack="true"
+                       ReferenceAnalyzer="false"
                        Condition="'$(DotNetBuildFromSource)' != 'true'" />
     <AnalyzerReference Include="..\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj"
-                       Pack="true" />
+                       Pack="true"
+                       ReferenceAnalyzer="false" />
   </ItemGroup>
 
 </Project>
