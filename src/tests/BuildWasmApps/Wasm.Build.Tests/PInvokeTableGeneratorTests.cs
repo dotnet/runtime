@@ -28,13 +28,13 @@ namespace Wasm.Build.Tests
                 {
                     public static int Main(string[] args)
                     {
-                        _testOutput.WriteLine($""Main running"");
+                        Console.WriteLine($""Main running"");
                         if (args.Length > 0)
                         {
                             // We don't want to run this, because we can't call variadic functions
-                            _testOutput.WriteLine($""sum_three: {sum_three(7, 14, 21)}"");
-                            _testOutput.WriteLine($""sum_two: {sum_two(3, 6)}"");
-                            _testOutput.WriteLine($""sum_one: {sum_one(5)}"");
+                            Console.WriteLine($""sum_three: {sum_three(7, 14, 21)}"");
+                            Console.WriteLine($""sum_two: {sum_two(3, 6)}"");
+                            Console.WriteLine($""sum_one: {sum_one(5)}"");
                         }
                         return 42;
                     }
@@ -65,7 +65,7 @@ namespace Wasm.Build.Tests
                 {
                     public static int Main()
                     {
-                        _testOutput.WriteLine($""Main running"");
+                        Console.WriteLine($""Main running"");
                         return 42;
                     }
 
@@ -97,7 +97,7 @@ namespace Wasm.Build.Tests
                 {
                     public static int Main()
                     {
-                        _testOutput.WriteLine($""Main running"");
+                        Console.WriteLine($""Main running"");
                         return 42;
                     }
 

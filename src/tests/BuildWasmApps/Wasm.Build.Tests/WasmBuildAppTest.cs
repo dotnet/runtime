@@ -41,7 +41,7 @@ namespace Wasm.Build.Tests
             public class TestClass {
                 public static async Task<int> Main()
                 {
-                    _testOutput.WriteLine(""Hello, World!"");
+                    Console.WriteLine(""Hello, World!"");
                     return await Task.FromResult(42);
                 }
             }", buildArgs, host, id);
@@ -57,7 +57,7 @@ namespace Wasm.Build.Tests
                 public class TestClass {
                     public static int Main()
                     {
-                        _testOutput.WriteLine(""Hello, World!"");
+                        Console.WriteLine(""Hello, World!"");
                         return 42;
                     }
                 }", buildArgs, host, id);
@@ -67,10 +67,10 @@ namespace Wasm.Build.Tests
             public class TestClass {
                 public static int Main()
                 {
-                    _testOutput.WriteLine($""tc: {Environment.TickCount}, tc64: {Environment.TickCount64}"");
+                    Console.WriteLine($""tc: {Environment.TickCount}, tc64: {Environment.TickCount64}"");
 
                     // if this gets printed, then we didn't crash!
-                    _testOutput.WriteLine(""Hello, World!"");
+                    Console.WriteLine(""Hello, World!"");
                     return 42;
                 }
             }";
@@ -99,7 +99,7 @@ namespace Wasm.Build.Tests
                 using System.Runtime.CompilerServices;
 
                 var config = AppContext.GetData(""test_runtimeconfig_json"");
-                _testOutput.WriteLine ($""test_runtimeconfig_json: {(string)config}"");
+                Console.WriteLine ($""test_runtimeconfig_json: {(string)config}"");
                 return 42;
             ";
 
@@ -137,7 +137,7 @@ namespace Wasm.Build.Tests
                 using System.Runtime.CompilerServices;
 
                 var config = AppContext.GetData(""System.Threading.ThreadPool.MaxThreads"");
-                _testOutput.WriteLine ($""System.Threading.ThreadPool.MaxThreads: {(string)config}"");
+                Console.WriteLine ($""System.Threading.ThreadPool.MaxThreads: {(string)config}"");
                 return 42;
             ";
 
