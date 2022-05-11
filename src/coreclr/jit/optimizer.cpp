@@ -2626,7 +2626,7 @@ void Compiler::optIdentifyLoopsForAlignment()
                 }
                 else
                 {
-                    JITDUMP("Skip alignment for " FMT_LP " that starts at " FMT_BB " weight=" FMT_WT ".\n", loopInd,
+                    JITDUMP(";; Skip alignment for " FMT_LP " that starts at " FMT_BB " weight=" FMT_WT ".\n", loopInd,
                             top->bbNum, topWeight);
                 }
             }

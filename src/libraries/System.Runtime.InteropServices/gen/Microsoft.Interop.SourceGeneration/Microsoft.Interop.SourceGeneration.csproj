@@ -5,6 +5,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <RunAnalyzers>true</RunAnalyzers>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
 
   <ItemGroup>
