@@ -374,52 +374,90 @@ namespace System.Text.Json
                 options.InitializeForReflectionSerializer();
             }
 
-            return CreateAsyncEnumerableDeserializer(utf8Json, options, cancellationToken);
-
-            [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
-            [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-            static async IAsyncEnumerable<TValue> CreateAsyncEnumerableDeserializer(
-                Stream utf8Json,
-                JsonSerializerOptions options,
-                [EnumeratorCancellation] CancellationToken cancellationToken)
-            {
-                var bufferState = new ReadBufferState(options.DefaultBufferSize);
-                // Hardcode the queue converter to avoid accidental use of custom converters
-                JsonConverter converter = QueueOfTConverter<Queue<TValue>, TValue>.Instance;
-                JsonTypeInfo jsonTypeInfo = CreateQueueJsonTypeInfo<TValue>(converter, options);
-                ReadStack readStack = default;
-                jsonTypeInfo.EnsureConfigured();
-                readStack.Initialize(jsonTypeInfo, supportContinuation: true);
-                var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
-
-                try
-                {
-                    do
-                    {
-                        bufferState = await ReadFromStreamAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
-                        ContinueDeserialize<Queue<TValue>>(ref bufferState, ref jsonReaderState, ref readStack, converter, options);
-                        if (readStack.Current.ReturnValue is Queue<TValue> queue)
-                        {
-                            while (queue.Count > 0)
-                            {
-                                yield return queue.Dequeue();
-                            }
-                        }
-                    }
-                    while (!bufferState.IsFinalBlock);
-                }
-                finally
-                {
-                    bufferState.Dispose();
-                }
-            }
+            JsonTypeInfo jsonTypeInfo = options.GetOrAddJsonTypeInfoForRootType(typeof(TValue));
+            return CreateAsyncEnumerableDeserializer<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
-        [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Workaround for https://github.com/mono/linker/issues/1416. All usages are marked as unsafe.")]
-        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
-        private static JsonTypeInfo CreateQueueJsonTypeInfo<TValue>(JsonConverter queueConverter, JsonSerializerOptions queueOptions) =>
-                new ReflectionJsonTypeInfo<Queue<TValue>>(queueConverter, queueOptions);
+        /// <summary>
+        /// Wraps the UTF-8 encoded text into an <see cref="IAsyncEnumerable{TValue}" />
+        /// that can be used to deserialize root-level JSON arrays in a streaming manner.
+        /// </summary>
+        /// <typeparam name="TValue">The element type to deserialize asynchronously.</typeparam>
+        /// <returns>An <see cref="IAsyncEnumerable{TValue}" /> representation of the provided JSON array.</returns>
+        /// <param name="utf8Json">JSON data to parse.</param>
+        /// <param name="jsonTypeInfo">Metadata about the element type to convert.</param>
+        /// <param name="cancellationToken">The <see cref="System.Threading.CancellationToken"/> that can be used to cancel the read operation.</param>
+        /// <returns>An <typeparamref name="TValue"/> representation of the JSON value.</returns>
+        /// <exception cref="System.ArgumentNullException">
+        /// <paramref name="utf8Json"/> or <paramref name="jsonTypeInfo"/> is <see langword="null"/>.
+        /// </exception>
+        public static IAsyncEnumerable<TValue?> DeserializeAsyncEnumerable<TValue>(
+            Stream utf8Json,
+            JsonTypeInfo<TValue> jsonTypeInfo,
+            CancellationToken cancellationToken = default)
+        {
+            if (utf8Json is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(utf8Json));
+            }
+
+            if (jsonTypeInfo is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
+            }
+
+            return CreateAsyncEnumerableDeserializer<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
+        }
+
+        private static async IAsyncEnumerable<TValue> CreateAsyncEnumerableDeserializer<TValue>(
+            Stream utf8Json,
+            JsonTypeInfo jsonTypeInfo,
+            [EnumeratorCancellation] CancellationToken cancellationToken)
+        {
+            JsonSerializerOptions options = jsonTypeInfo.Options;
+            JsonTypeInfo<Queue<TValue>> queueTypeInfo =
+                JsonMetadataServices.CreateQueueInfo<Queue<TValue>, TValue>(
+                    options: options,
+                    collectionInfo: new()
+                    {
+                        ObjectCreator = () => new Queue<TValue>(),
+                        ElementInfo = jsonTypeInfo,
+                        NumberHandling = options.NumberHandling
+                    });
+
+            var bufferState = new ReadBufferState(options.DefaultBufferSize);
+            ReadStack readStack = default;
+            queueTypeInfo.EnsureConfigured();
+            readStack.Initialize(queueTypeInfo, supportContinuation: true);
+            var jsonReaderState = new JsonReaderState(options.GetReaderOptions());
+
+            try
+            {
+                do
+                {
+                    bufferState = await ReadFromStreamAsync(utf8Json, bufferState, cancellationToken).ConfigureAwait(false);
+                    ContinueDeserialize<Queue<TValue>>(
+                        ref bufferState,
+                        ref jsonReaderState,
+                        ref readStack,
+                        queueTypeInfo.PropertyInfoForTypeInfo.ConverterBase,
+                        options);
+
+                    if (readStack.Current.ReturnValue is Queue<TValue> queue)
+                    {
+                        while (queue.Count > 0)
+                        {
+                            yield return queue.Dequeue();
+                        }
+                    }
+                }
+                while (!bufferState.IsFinalBlock);
+            }
+            finally
+            {
+                bufferState.Dispose();
+            }
+        }
 
         internal static async ValueTask<TValue?> ReadAllAsync<TValue>(
             Stream utf8Json,

@@ -630,7 +630,7 @@ bool CoffNativeCodeManager::UnwindStackFrame(MethodInfo *    pMethodInfo,
 }
 
 // Convert the return kind that was encoded by RyuJIT to the
-// value that CoreRT runtime can understand and support.
+// enum used by the runtime.
 GCRefKind GetGcRefKind(ReturnKind returnKind)
 {
     static_assert((GCRefKind)ReturnKind::RT_Scalar == GCRK_Scalar, "ReturnKind::RT_Scalar does not match GCRK_Scalar");
@@ -704,11 +704,6 @@ bool CoffNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
 #else
     return false;
 #endif // defined(TARGET_AMD64)
-}
-
-void CoffNativeCodeManager::UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo)
-{
-    // @TODO: CORERT: UnsynchronizedHijackMethodLoops
 }
 
 PTR_VOID CoffNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)
@@ -805,7 +800,7 @@ bool CoffNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
 
         // Read target type
         {
-            // @TODO: CORERT: Compress EHInfo using type table index scheme
+            // @TODO: Compress EHInfo using type table index scheme
             // https://github.com/dotnet/corert/issues/972
             uint32_t typeRVA = *((PTR_UInt32&)pEnumState->pEHInfo)++;
             pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(m_moduleBase + typeRVA);

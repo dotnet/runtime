@@ -2256,10 +2256,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 int methodId = await FindDebuggerProxyConstructorIdFor(typeId, token);
                 if (methodId == -1)
-                {
-                    logger.LogInformation($"GetValuesFromDebuggerProxyAttribute: could not find proxy constructor id for objectId {objectId}");
                     return null;
-                }
 
                 using var ctorArgsWriter = new MonoBinaryWriter();
                 ctorArgsWriter.Write((byte)ValueTypeId.Null);
@@ -2284,7 +2281,6 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
 
                 var retMethod = await InvokeMethod(ctorArgsWriter.GetParameterBuffer(), methodId, token);
-                logger.LogInformation($"* GetValuesFromDebuggerProxyAttribute got from InvokeMethod: {retMethod}");
                 if (!DotnetObjectId.TryParse(retMethod?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId dotnetObjectId))
                     throw new Exception($"Invoking .ctor ({methodId}) for DebuggerTypeProxy on type {typeId} returned {retMethod}");
 
@@ -2296,7 +2292,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             catch (Exception e)
             {
-                logger.LogInformation($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
+                logger.LogDebug($"Could not evaluate DebuggerTypeProxyAttribute of type {await GetTypeName(typeId, token)} - {e}");
             }
 
             return null;

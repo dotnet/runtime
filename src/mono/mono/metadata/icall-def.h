@@ -166,8 +166,9 @@ NOHANDLES(ICALL(EVENTPIPE_7, "GetNextEvent", ves_icall_System_Diagnostics_Tracin
 NOHANDLES(ICALL(EVENTPIPE_8, "GetProvider", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetProvider))
 NOHANDLES(ICALL(EVENTPIPE_9, "GetRuntimeCounterValue", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetRuntimeCounterValue))
 NOHANDLES(ICALL(EVENTPIPE_10, "GetSessionInfo", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetSessionInfo))
-NOHANDLES(ICALL(EVENTPIPE_11, "GetWaitHandle", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_GetWaitHandle))
-NOHANDLES(ICALL(EVENTPIPE_12, "WriteEventData", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData))
+NOHANDLES(ICALL(EVENTPIPE_12, "SignalSession", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_SignalSession))
+NOHANDLES(ICALL(EVENTPIPE_14, "WaitForSessionSignal", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WaitForSessionSignal))
+NOHANDLES(ICALL(EVENTPIPE_13, "WriteEventData", ves_icall_System_Diagnostics_Tracing_EventPipeInternal_WriteEventData))
 
 ICALL_TYPE(NATIVE_RUNTIME_EVENT_SOURCE, "System.Diagnostics.Tracing.NativeRuntimeEventSource", NATIVE_RUNTIME_EVENT_SOURCE_1)
 NOHANDLES(ICALL(NATIVE_RUNTIME_EVENT_SOURCE_1, "LogThreadPoolIODequeue", ves_icall_System_Diagnostics_Tracing_NativeRuntimeEventSource_LogThreadPoolIODequeue))
