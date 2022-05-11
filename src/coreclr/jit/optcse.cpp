@@ -2312,7 +2312,7 @@ public:
             If we are unable to enregister the CSE then the cse-use-cost is IND_COST
             and the cse-def-cost is also IND_COST.
 
-            If we want to be conservative we use IND_COST as the the value
+            If we want to be conservative we use IND_COST as the value
             for both cse-def-cost and cse-use-cost and then we never introduce
             a CSE that could pessimize the execution time of the method.
 

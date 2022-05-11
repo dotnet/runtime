@@ -854,7 +854,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 // to high addresses. This means that integer registers are saved at lower addresses than floatint-point/SIMD
 // registers. However, when genSaveFpLrWithAllCalleeSavedRegisters is true, the integer registers are stored
 // at higher addresses than floating-point/SIMD registers, that is, the relative order of these two classes
-// is reveresed. This is done to put the saved frame pointer very high in the frame, for simplicity.
+// is reversed. This is done to put the saved frame pointer very high in the frame, for simplicity.
 //
 // TODO: We could always put integer registers at the higher addresses, if desired, to remove this special
 // case. It would cause many asm diffs when first implemented.

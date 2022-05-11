@@ -325,6 +325,24 @@ function processArguments(incomingArguments) {
         } else if (currentArg.startsWith("--working-dir=")) {
             const arg = currentArg.substring("--working-dir=".length);
             working_dir = arg;
+        } else if (currentArg.startsWith("--fetch-random-delay=")) {
+            const arg = currentArg.substring("--fetch-random-delay=".length);
+            if (is_browser) {
+                const delayms = Number.parseInt(arg) || 100;
+                const originalFetch = globalThis.fetch;
+                globalThis.fetch = async (url, options) => {
+                    // random sleep
+                    const ms = delayms + (Math.random() * delayms);
+                    console.log(`fetch ${url} started ${ms}`)
+                    await new Promise(resolve => setTimeout(resolve, ms));
+                    console.log(`fetch ${url} delayed ${ms}`)
+                    const res = await originalFetch(url, options);
+                    console.log(`fetch ${url} done ${ms}`)
+                    return res;
+                }
+            } else {
+                console.warn("--fetch-random-delay only works on browser")
+            }
         } else {
             break;
         }

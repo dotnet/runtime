@@ -470,7 +470,7 @@ namespace System.Speech.Internal.ObjectTokens
             if (index >= 0)
             {
                 firstKey = registryPath.Substring(0, index);
-                registryPath = registryPath.Substring(index + 1, registryPath.Length - index - 1);
+                registryPath = registryPath.Substring(index + 1);
             }
             else
             {

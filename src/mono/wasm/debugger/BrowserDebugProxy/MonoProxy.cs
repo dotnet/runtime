@@ -1677,7 +1677,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return false;
 
                     using (var reader = new StreamReader(data))
-                        source = await reader.ReadToEndAsync();
+                        source = await reader.ReadToEndAsync(token);
                 }
                 SendResponse(msg_id, Result.OkFromObject(new { scriptSource = source }), token);
             }

@@ -269,7 +269,7 @@
       <Architectures>x64;x86;arm;arm64</Architectures>
       <Versions>7;8;81;10</Versions>
     </RuntimeGroup>
-    <!-- add corert to all RIDs -->
+
     <RuntimeGroupWithQualifiers Include="@(RuntimeGroup)" />
 
     <!-- root RIDs -->

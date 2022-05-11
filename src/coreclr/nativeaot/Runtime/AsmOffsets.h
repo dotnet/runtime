@@ -94,12 +94,12 @@ ASM_OFFSET(   18,    28, CallDescrData, pReturnBuffer)
 // constant to find to BogusFunction(), and build.
 //
 // Here's a sample compiler error:
-// In file included from corert/src/Native/Runtime/AsmOffsetsVerify.cpp:38:
-// corert/src/Native/Runtime/Full/../AsmOffsets.h:117:61: error: calling a private constructor of class
+// In file included from nativeaot/Runtime/AsmOffsetsVerify.cpp:38:
+// nativeaot/Runtime/Full/../AsmOffsets.h:117:61: error: calling a private constructor of class
 //      'AsmOffsets::FindCompileTimeConstant<25>'
 //    FindCompileTimeConstant<offsetof(ExInfo, m_passNumber)> bogus_variable;
 //                                                            ^
-// corert/src/Native/Runtime/Full/../AsmOffsets.h:111:5: note: declared private here
+// nativeaot/Runtime/Full/../AsmOffsets.h:111:5: note: declared private here
 //    FindCompileTimeConstant();
 //    ^
 template<size_t N>
