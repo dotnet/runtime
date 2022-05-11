@@ -47,10 +47,12 @@
 
   <!-- AnalyzerReference items are transformed to ProjectReferences with the required analyzer metadata. -->
   <ItemGroup>
-    <ProjectReference Include="@(AnalyzerReference->WithMetadataValue('ReferenceAnalyzer', ''))"
-                      OutputItemType="Analyzer"
+    <ProjectReference Include="@(AnalyzerReference)"
                       ReferenceOutputAssembly="false"
+                      OutputItemType="Analyzer"
                       Pack="false" />
+    <ProjectReference Update="@(AnalyzerReference->WithMetadataValue('ReferenceAnalyzer', 'false'))"
+                      OutputItemType="" />
   </ItemGroup>
 
   <Target Name="ConfigureGenerators"
