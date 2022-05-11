@@ -66,7 +66,7 @@ class EventPipeFileSession implements EventPipeSession {
         this._state = State.Initialized;
         this._sessionID = sessionID;
         this._tracePath = tracePath;
-        console.debug (`EventPipe session ${sessionID} started`);
+        console.debug (`EventPipe session ${this.sessionID} created`);
     }
 
     start = () => {
