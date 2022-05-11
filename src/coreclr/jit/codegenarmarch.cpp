@@ -2816,16 +2816,16 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     regNumber             srcReg = srcAddrBaseReg;
 
 #ifdef DEBUG
-    bool                  isSrcRegAddrAlignmentKnown = false;
-    bool                  isDstRegAddrAlignmentKnown = false;
+    bool isSrcRegAddrAlignmentKnown = false;
+    bool isDstRegAddrAlignmentKnown = false;
 #endif
-    
+
     if (srcLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &fpBased);
 
-        srcReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
+        srcReg = fpBased ? REG_FPBASE : REG_SPBASE;
         helper.SetSrcOffset(baseAddr + srcOffset);
 
 #ifdef DEBUG
@@ -2840,7 +2840,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
-        dstReg                     = fpBased ? REG_FPBASE : REG_SPBASE;
+        dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
         helper.SetDstOffset(baseAddr + dstOffset);
 
 #ifdef DEBUG
