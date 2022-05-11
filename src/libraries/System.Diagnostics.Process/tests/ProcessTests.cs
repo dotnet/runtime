@@ -938,7 +938,7 @@ namespace System.Diagnostics.Tests
             {
                 using (var p = Process.GetProcessById(_process.Id))
                 {
-                    Assert.Equal(_process.StartTime, p.StartTime);
+                    Assert.Equal(_process.StartTime, p.StartTime, precision: TimeSpan.FromMilliseconds(10));
                 }
             }
         }

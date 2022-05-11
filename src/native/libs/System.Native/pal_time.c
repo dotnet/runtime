@@ -18,9 +18,10 @@
 
 enum
 {
-    SecondsToMicroSeconds = 1000000,   // 10^6
-    SecondsToNanoSeconds = 1000000000, // 10^9
-    MicroSecondsToNanoSeconds = 1000   // 10^3
+    MicroSecondsToNanoSeconds = 1000,   // 10^3
+    SecondsToNanoSeconds = 1000000000,  // 10^9
+    SecondsToTicks = 10000000,          // 10^7
+    TicksToNanoSeconds = 100,           // 10^2
 };
 
 int32_t SystemNative_UTimensat(const char* path, TimeSpec* times)
@@ -68,6 +69,29 @@ uint64_t SystemNative_GetTimestamp()
 #endif
 }
 
+int64_t SystemNative_GetBootTimeTicks()
+{
+#ifdef TARGET_LINUX
+    struct timespec ts;
+
+    int result = clock_gettime(CLOCK_BOOTTIME, &ts);
+    assert(result == 0); // only possible errors are if the given clockId isn't supported or &ts is an invalid address
+    (void)result; // suppress unused parameter warning in release builds
+
+    int64_t sinceBootTicks = (ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
+
+    result = clock_gettime(CLOCK_REALTIME_COARSE, &ts);
+    assert(result == 0);
+
+    int64_t sinceEpochTicks = (ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
+    const int64_t UnixEpochTicks = 621355968000000000;
+
+    return UnixEpochTicks + sinceEpochTicks - sinceBootTicks;
+#else
+    return -1;
+#endif
+}
+
 int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
 {
     uint64_t kernelTime = 0;
@@ -82,7 +106,7 @@ int32_t SystemNative_GetCpuUtilization(ProcessCpuInformation* previousCpuInfo)
     else
     {
         kernelTime =
-            ((uint64_t)(resUsage.ru_stime.tv_sec) * SecondsToNanoSeconds) + 
+            ((uint64_t)(resUsage.ru_stime.tv_sec) * SecondsToNanoSeconds) +
             ((uint64_t)(resUsage.ru_stime.tv_usec) * MicroSecondsToNanoSeconds);
         userTime =
             ((uint64_t)(resUsage.ru_utime.tv_sec) * SecondsToNanoSeconds) +

@@ -19,10 +19,6 @@ internal static partial class Interop
         private const string FileDescriptorDirectoryName = "/fd/";
         private const string TaskDirectoryName = "/task/";
 
-        internal const string SelfExeFilePath = RootPath + "self" + ExeFileName;
-        internal const string SelfCmdLineFilePath = RootPath + "self" + CmdLineFileName;
-        internal const string ProcStatFilePath = RootPath + "stat";
-
         internal struct ParsedStat
         {
             // Commented out fields are available in the stat data file but
