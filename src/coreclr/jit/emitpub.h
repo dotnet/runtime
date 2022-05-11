@@ -76,7 +76,7 @@ const char* emitOffsetToLabel(unsigned offs);
 /*                   Output target-independent instructions             */
 /************************************************************************/
 
-void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0);
+void emitIns_J(instruction ins, BasicBlock* dst, int instrCount = 0, bool isJmpAlways = false);
 
 /************************************************************************/
 /*                   Emit initialized data sections                     */

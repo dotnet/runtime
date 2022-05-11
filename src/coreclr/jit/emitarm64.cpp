@@ -8402,7 +8402,7 @@ void emitter::emitIns_J_R_I(instruction ins, emitAttr attr, BasicBlock* dst, reg
     appendToCurIG(id);
 }
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount, bool isJmpAlways)
 {
     insFormat fmt = IF_NONE;
 

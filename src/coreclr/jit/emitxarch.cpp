@@ -7464,7 +7464,7 @@ void emitter::emitSetShortJump(instrDescJmp* id)
  *       to jump: positive is forward, negative is backward.
  */
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 */)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 */, bool isJmpAlways /* = false */)
 {
     UNATIVE_OFFSET sz;
     instrDescJmp*  id = emitNewInstrJmp();
@@ -7492,6 +7492,8 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
         id->idDebugOnlyInfo()->idFinallyCall = true;
     }
 #endif // DEBUG
+
+    id->idSetJmpAlwaysFlag(isJmpAlways);
 
     id->idjShort = 0;
     if (dst != nullptr)
@@ -13671,6 +13673,13 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_LABEL:
         case IF_SWR_LABEL:
             assert(id->idGCref() == GCT_NONE);
+            if (!id->idIsBound())
+            {
+                printf("instruction has IF_LABEL flag ");
+                emitDispIns(id,false,false,false);
+                printf("but should not have\n");
+                assert(0);
+            }
             assert(id->idIsBound());
 
             // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?

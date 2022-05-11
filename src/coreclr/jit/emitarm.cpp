@@ -4334,7 +4334,7 @@ void emitter::emitSetMediumJump(instrDescJmp* id)
  *     branch. Thus, we can handle branch offsets of imm24 instead of just imm20.
  */
 
-void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 */)
+void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 */, bool isJmpAlways /* = false */)
 {
     insFormat fmt = IF_NONE;
 

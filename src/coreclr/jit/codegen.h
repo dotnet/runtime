@@ -26,6 +26,7 @@ public:
     virtual void genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode);
 
     void genGenerateMachineCode();
+    void genUpdateLiveRangesForTruncatedIGs();
     void genEmitMachineCode();
     void genEmitUnwindDebugGCandEH();
 
@@ -1473,7 +1474,7 @@ protected:
 public:
     void instGen(instruction ins);
 
-    void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock);
+    void inst_JMP(emitJumpKind jmp, BasicBlock* tgtBlock, bool isJmpAlways = false);
 
     void inst_SET(emitJumpKind condition, regNumber reg);
 

@@ -50,6 +50,11 @@ int emitLocation::GetInsNum() const
     return emitGetInsNumFromCodePos(codePos);
 }
 
+void emitLocation::SetInsNum(int insNum)
+{
+    codePos = emitGetInsNumFromCodePos(insNum) + (emitGetInsOfsFromCodePos(codePos) << 16);
+}
+
 // Get the instruction offset in the current instruction group, which must be a funclet prolog group.
 // This is used to find an instruction offset used in unwind data.
 // TODO-AMD64-Bug?: We only support a single main function prolog group, but allow for multiple funclet prolog
@@ -3864,6 +3869,21 @@ void emitter::emitDispGCinfo()
     printf("\n\n");
 }
 
+void emitter::emitDispJumpList()
+{
+    printf("Emitter Jump List:\n");
+    unsigned int jmpCount = 0;
+    instrDescJmp* jmp         = emitJumpList;
+    instrDescJmp* previousJmp = nullptr;
+    while (jmp)
+    {
+        emitDispIns(jmp, false, false, false, 0, nullptr, 0, jmp->idjIG);
+        jmpCount += 1;
+        jmp = jmp->idjNext;
+    }
+    printf("  total jump count: %u\n", jmpCount);
+}
+
 #endif // DEBUG
 
 /*****************************************************************************
@@ -4103,6 +4123,298 @@ void emitter::emitDispCommentForHandle(size_t handle, GenTreeFlags flag)
 }
 
 /*****************************************************************************
+ *  Checks all jumps in the jump list to see if they are unconditional jumps
+ * generated at the end of BB_ALWAYS basic blocks and whether they are now a jump
+ * to the next instruction, this can happen when the following basic block emitted
+ * no instructions
+ *
+ * returns true if any jumps have been removed, otherwise returns false
+ */
+bool emitter::emitRemoveJumpToNextInst()
+{
+#ifdef TARGET_XARCH
+#ifdef DEBUG
+    if (emitComp->verbose)
+    {
+        printf("*************** In emitRemoveJumpToNextInst()\n");
+    }
+    if (EMIT_INSTLIST_VERBOSE)
+    {
+        printf("\nInstruction list before unconditional jump to next instruction removal:\n\n");
+        emitDispIGlist(true);
+    }
+    if (EMITVERBOSE)
+    {
+        emitDispJumpList();
+    }
+#endif
+
+    instrDescJmp*  jmp;
+    UNATIVE_OFFSET adjIG;
+    UNATIVE_OFFSET adjLJ;
+    insGroup*      lstIG;
+    int            removedCount = 0;
+    int            jmp_removal  = 1;
+    bool           jmpRemoved   = false;
+
+    /*****************************************************************************/
+    /* If we iterate to look for more jumps to shorten, we start again here.     */
+    /*****************************************************************************/
+
+AGAIN:
+
+    lstIG = nullptr;
+    adjLJ = 0;
+    adjIG = 0;
+    // try to remove unconditional jumps at the end of a group to the next group
+
+    jmp                       = emitJumpList;
+    instrDescJmp* previousJmp = nullptr;
+    while (jmp)
+    {
+        // if the jump is unconditional then it is a candidate
+        if (jmp->idInsFmt() == IF_LABEL && emitIsUncondJump(jmp) && !jmp->idjKeepLong && jmp->idGetJmpAlwaysFlag())
+        {
+            // unset the flag so that we know it has been processed already
+            jmp->idSetJmpAlwaysFlag(0);
+
+            // target group is not bound yet so use the cookie to fetch it
+            insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
+
+            // if the target group is the next instruction group
+            if (targetGroup != nullptr && jmp->idjIG->igNext == targetGroup)
+            {
+                insGroup* group            = jmp->idjIG;
+                unsigned  instructionCount = group->igInsCnt;
+
+                if (instructionCount > 0)
+                {
+                    BYTE*      dataPtr               = group->igData;
+                    instrDesc* instructionDescriptor = nullptr;
+
+                    do
+                    {
+                        instructionDescriptor = (instrDesc*)dataPtr;
+                        dataPtr += emitSizeOfInsDsc(instructionDescriptor);
+                    } while (--instructionCount);
+
+                    assert(instructionDescriptor != nullptr);
+                    // instructionDescriptor is now the last instruction in the group
+
+                    if (instructionDescriptor->idIns() == jmp->idIns() && jmp == instructionDescriptor)
+                    {
+                        CLANG_FORMAT_COMMENT_ANCHOR
+                        // the last instruction in the group is the jmp we're looking for
+                        // and it jumps to the next instruction group so we don't really need it
+
+#ifdef DEBUG
+                        if (EMITVERBOSE)
+                        {
+                            printf("Removing unconditional jump [%08X/%03u] from the last instruction in IG%02u to "
+                                   "the next IG IG%02u label %s\n",
+                                   dspPtr(jmp), jmp->idDebugOnlyInfo()->idNum, group->igNum, targetGroup->igNum,
+                                   emitLabelString(targetGroup));
+                        }
+#endif
+                        UNATIVE_OFFSET sizeRemoved = instructionDescriptor->idCodeSize();
+
+                        // set state needed at the end of the loop in ADJUST_GROUP
+                        adjIG      = sizeRemoved;
+                        lstIG      = group;
+                        jmpRemoved = true;
+
+                        // unlink the jump
+                        if (previousJmp != nullptr)
+                        {
+                            previousJmp->idjNext = jmp->idjNext;
+                            // if it's the last jump then set it to the previous
+                            if (jmp == emitJumpLast)
+                            {
+                                emitJumpLast = previousJmp;
+                            }
+                        }
+                        else
+                        {
+                            assert(jmp == emitJumpList);
+                            emitJumpList = jmp->idjNext;
+                        }
+                        jmp->idjNext = nullptr;
+
+
+
+#if DEBUG
+                        // clear the instruction data
+                        memset((BYTE*)instructionDescriptor, 0, instructionDescriptor->idCodeSize());
+#endif
+
+                        // remove the instruction from the group
+                        group->igInsCnt -= 1;
+                        group->igSize -= sizeRemoved;
+                        emitTotalCodeSize -= sizeRemoved;
+
+                        // flag the group as resized and recounted
+                        group->igFlags |= (IGF_UPD_ISZ | IGF_UPD_ICOUNT);
+
+                        //emitRemoveLabelOnlyUsedBy(jmp);
+
+                        // cleanup
+                        instructionDescriptor = nullptr;
+                        jmp                   = nullptr;
+                        removedCount += 1;
+
+                        // jump to adjusting the size
+                        goto ADJUST_GROUP;
+                    }
+                }
+            }
+        }
+
+        previousJmp = jmp;
+        if (jmp != nullptr)
+        {
+            jmp = jmp->idjNext;
+        }
+    }
+
+    jmp   = nullptr;
+    lstIG = nullptr;
+    adjLJ = 0;
+    adjIG = 0;
+
+ADJUST_GROUP:
+
+    /* Did we adjust any jumps? */
+    if (adjIG)
+    {
+        /* Adjust offsets of any remaining blocks */
+
+        assert(lstIG);
+
+        for (;;)
+        {
+            lstIG = lstIG->igNext;
+            if (!lstIG)
+            {
+                break;
+            }
+#ifdef DEBUG
+            if (EMITVERBOSE)
+            {
+                printf("Adjusted offset of " FMT_BB " from %04X to %04X\n", lstIG->igNum, lstIG->igOffs,
+                       lstIG->igOffs - adjIG);
+            }
+#endif
+            lstIG->igOffs -= adjIG;
+            assert(IsCodeAligned(lstIG->igOffs));
+        }
+
+#ifdef DEBUG
+        if (EMITVERBOSE)
+        {
+            printf("Total shrinkage = %3u\n", adjIG);
+        }
+#endif
+
+        if (jmpRemoved)
+        {
+            jmp_removal++;
+#ifdef DEBUG
+            if (EMITVERBOSE)
+            {
+                printf("Iterating branch removal. Iteration = %d\n", jmp_removal);
+            }
+#endif
+            jmpRemoved = false;
+            goto AGAIN;
+        }
+    }
+#ifdef DEBUG
+    if (EMIT_INSTLIST_VERBOSE)
+    {
+        printf("\nLabels list after unconditional jump to next instruction removal:\n\n");
+        emitDispIGlist(false);
+    }
+    if (EMITVERBOSE)
+    {
+        emitDispJumpList();
+    }
+#endif
+    if (emitComp->verbose)
+    {
+        printf("emitRemoveJumpToNextInst removed %d jumps\n", removedCount);
+    }
+    return removedCount > 0;
+#else
+    return 0;
+#endif // TARGET_XARCH
+}
+
+void emitter::emitRemoveLabelOnlyUsedBy(instrDescJmp* jmpFrom)
+{
+    int           useCount = 0;
+    insGroup*     jmpFromTargetGroup = (insGroup*)emitCodeGetCookie(jmpFrom->idAddr()->iiaBBlabel);
+
+    {
+        instrDescJmp* jmp      = emitJumpList;
+        while (jmp)
+        {
+            insGroup* jmpTargetGroup = ((insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel));
+            if (jmp != jmpFrom && jmpTargetGroup == jmpFromTargetGroup)
+            {
+                useCount += 1;
+            }
+            jmp = jmp->idjNext;
+        }
+        jmp = nullptr;
+    }
+
+    if (useCount == 0)
+    {
+#if DEBUG
+        if (emitComp->verbose)
+        {
+            printf("found unused label %s\n", emitLabelString(jmpFromTargetGroup));
+        }
+#endif 
+
+
+        if (jmpFromTargetGroup->igInsCnt > 0)
+        {
+            assert(jmpFrom->idAddr()->iiaBBlabel !=nullptr);
+            jmpFrom->idAddr()->iiaBBlabel = nullptr;
+
+            instrDesc* firstTargtInstruction = (instrDesc*)jmpFromTargetGroup->igData;
+            if ((firstTargtInstruction->idInsFmt() & IF_LABEL) != 0)
+            {
+                firstTargtInstruction->idInsFmt((insFormat)(firstTargtInstruction->idInsFmt() ^ IF_LABEL));
+
+#if DEBUG
+                if (emitComp->verbose)
+                {
+                    printf("removed IF_LABEL from ");
+                    emitDispIns(firstTargtInstruction, false, false, false);
+                    printf(" in ");
+                    emitLabelString(jmpFromTargetGroup);
+                    printf("\n");
+                }
+#endif
+            }
+
+            assert((firstTargtInstruction->idInsFmt() & IF_LABEL) == 0);
+        }
+        else
+        {
+#if DEBUG
+            if (emitComp->verbose)
+            {
+                printf("found %d uses of label %s\n",useCount, emitLabelString(jmpFromTargetGroup));
+            }
+#endif 
+        }
+    }
+}
+
+/*****************************************************************************
  *  Bind targets of relative jumps to choose the smallest possible encoding.
  *  X86 and AMD64 have a small and large encoding.
  *  ARM has a small, medium, and large encoding. The large encoding is a pseudo-op
@@ -4125,6 +4437,10 @@ void emitter::emitJumpDistBind()
     {
         printf("\nInstruction list before jump distance binding:\n\n");
         emitDispIGlist(true);
+    }
+    if (EMITVERBOSE)
+    {
+        emitDispJumpList();
     }
 #endif
 

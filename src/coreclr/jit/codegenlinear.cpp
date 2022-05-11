@@ -753,7 +753,7 @@ void CodeGen::genCodeForBBlist()
                 break;
 
             case BBJ_ALWAYS:
-                inst_JMP(EJ_jmp, block->bbJumpDest);
+                inst_JMP(EJ_jmp, block->bbJumpDest, false);
                 FALLTHROUGH;
 
             case BBJ_COND:

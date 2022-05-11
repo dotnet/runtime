@@ -160,6 +160,7 @@ public:
     }
 
     int GetInsNum() const;
+    void SetInsNum(int insNum);
 
     bool operator!=(const emitLocation& other) const
     {
@@ -279,6 +280,7 @@ struct insGroup
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
 #define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
                                   // without updating the IG's size/offsets.
+#define IGF_UPD_ICOUNT 0x1000
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -670,7 +672,14 @@ protected:
             _idCnsReloc = (EA_IS_CNS_RELOC(attr) ? 1 : 0);
             _idDspReloc = (EA_IS_DSP_RELOC(attr) ? 1 : 0);
         }
-
+        void idSetJmpAlwaysFlag(bool value)
+        {
+            _idIsJmpAlways = value ? 1 : 0;
+        }
+        bool idGetJmpAlwaysFlag()
+        {
+            return _idIsJmpAlways == 1;
+        }
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:   17 bits
@@ -775,8 +784,9 @@ protected:
 
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
         unsigned _idDspReloc : 1; // LargeDsp is an RVA and needs reloc tag
+        unsigned _idIsJmpAlways : 1;
 
-#define ID_EXTRA_RELOC_BITS (2)
+#define ID_EXTRA_RELOC_BITS (3)
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
@@ -1723,6 +1733,7 @@ protected:
     void emitDispIG(insGroup* ig, insGroup* igPrev = nullptr, bool verbose = false);
     void emitDispIGlist(bool verbose = false);
     void emitDispGCinfo();
+    void emitDispJumpList();
     void emitDispClsVar(CORINFO_FIELD_HANDLE fldHnd, ssize_t offs, bool reloc = false);
     void emitDispFrameRef(int varx, int disp, int offs, bool asmfm);
     void emitDispInsAddr(BYTE* code);
@@ -1998,6 +2009,8 @@ private:
     instrDescJmp* emitJumpList;       // list of local jumps in method
     instrDescJmp* emitJumpLast;       // last of local jumps in method
     void          emitJumpDistBind(); // Bind all the local jumps in method
+    bool          emitRemoveJumpToNextInst();
+    void          emitRemoveLabelOnlyUsedBy(instrDescJmp* jmpFrom);
 
 #if FEATURE_LOOP_ALIGN
     instrDescAlign* emitCurIGAlignList;   // list of align instructions in current IG
