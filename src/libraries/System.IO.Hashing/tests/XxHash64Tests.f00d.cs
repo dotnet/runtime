@@ -40,6 +40,8 @@ namespace System.IO.Hashing.Tests
         private const string SixtyThreeBytes3 = SixtyThreeBytes + SixtyThreeBytes + SixtyThreeBytes;
         private const string ThirtyTwoBytes = "This string has 32 ASCII bytes..";
         private const string ThirtyTwoBytes3 = ThirtyTwoBytes + ThirtyTwoBytes + ThirtyTwoBytes;
+        private const string SixteenBytes = "0123456789ABCDEF";
+        private const string SixteenBytes3 = SixteenBytes + SixteenBytes + SixteenBytes;
 
         protected static IEnumerable<TestCase> TestCaseDefinitions { get; } =
             new[]
@@ -93,7 +95,11 @@ namespace System.IO.Hashing.Tests
                 new TestCase(
                     $"{ThirtyTwoBytes} (x3)",
                     Encoding.ASCII.GetBytes(ThirtyTwoBytes3),
-                    "B358EB96B8E3E7AD")
+                    "B358EB96B8E3E7AD"),
+                new TestCase(
+                    $"{SixteenBytes} (x3)",
+                    Encoding.ASCII.GetBytes(SixteenBytes3),
+                    "C9B96062B49FEC42"),
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash64(Seed);

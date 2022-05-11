@@ -63,8 +63,8 @@ namespace System.IO.Hashing
         /// <param name="source">The data to process.</param>
         public override void Append(ReadOnlySpan<byte> source)
         {
-            // Every time we've read 16 bytes, process the stripe.
-            // Data that isn't perfectly mod-16 gets stored in a holdback
+            // Every time we've read 32 bytes, process the stripe.
+            // Data that isn't perfectly mod-32 gets stored in a holdback
             // buffer.
 
             int held = _length & 0x1F;
@@ -73,7 +73,7 @@ namespace System.IO.Hashing
             {
                 int remain = StripeSize - held;
 
-                if (source.Length > remain)
+                if (source.Length >= remain)
                 {
                     source.Slice(0, remain).CopyTo(_holdback.AsSpan(held));
                     _state.ProcessStripe(_holdback);

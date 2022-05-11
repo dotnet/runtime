@@ -38,6 +38,8 @@ namespace System.IO.Hashing.Tests
         private const string DotNetNCHashing3 = DotNetNCHashing + DotNetNCHashing + DotNetNCHashing;
         private const string SixteenBytes = ".NET Hashes This";
         private const string SixteenBytes3 = SixteenBytes + SixteenBytes + SixteenBytes;
+        private const string EightBytes = "Hashing!";
+        private const string EightBytes3 = EightBytes + EightBytes + EightBytes;
 
         protected static IEnumerable<TestCase> TestCaseDefinitions { get; } =
             new[]
@@ -83,7 +85,11 @@ namespace System.IO.Hashing.Tests
                 new TestCase(
                     $"{SixteenBytes} (x3)",
                     Encoding.ASCII.GetBytes(SixteenBytes3),
-                    "B38A9A45")
+                    "B38A9A45"),                
+                new TestCase(
+                    $"{EightBytes} (x3)",
+                    Encoding.ASCII.GetBytes(EightBytes3),
+                    "C7A3D1CB"),
             };
 
         protected override NonCryptographicHashAlgorithm CreateInstance() => new XxHash32(Seed);
