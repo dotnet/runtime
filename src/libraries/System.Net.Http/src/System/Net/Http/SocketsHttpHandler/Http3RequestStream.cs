@@ -116,8 +116,15 @@ namespace System.Net.Http
             // If true, dispose the stream upon return. Will be set to false if we're duplex or returning content.
             bool disposeSelf = true;
 
-            // Link the input token with _requestBodyCancellationSource, so cancellation will trigger on GoAway() or Abort().
-            CancellationTokenRegistration linkedTokenRegistration = cancellationToken.UnsafeRegister(cts => ((CancellationTokenSource)cts!).Cancel(), _requestBodyCancellationSource);
+            bool duplex = _request.Content != null && _request.Content.AllowDuplex;
+            CancellationTokenRegistration linkedTokenRegistration = default;
+
+            // If we have duplex content, then don't propagate the cancellation to the request body task.
+            if (!duplex)
+            {
+                // Link the input token with _requestBodyCancellationSource, so cancellation will trigger on GoAway() or Abort().
+                linkedTokenRegistration = cancellationToken.UnsafeRegister(cts => ((CancellationTokenSource)cts!).Cancel(), _requestBodyCancellationSource);
+            }
 
             try
             {
