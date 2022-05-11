@@ -53,13 +53,8 @@ Follow these steps to prepare your machine to collect a performance trace.
 	> export COMPlus_EnableEventLog=1
 	> ```
 
-    > [!NOTE]
-    > COMPlus_PerfMapEnabled will cause the .NET runtime to write a file containing symbolic information for managed code to the disk. Depending on the performance of your disk and the amount of managed code in the application this could have a significant performance overhead.
-
-	> ```bash
-	> export COMPlus_PerfMapEnabled=1
-	> export COMPlus_EnableEventLog=1
-	> ```
+   Note:
+   COMPlus_PerfMapEnabled will cause the .NET runtime to write a file containing symbolic information for managed code to the disk. Depending on the performance of your disk and the amount of managed code in the application this could have a significant performance overhead.
 
 3. **[Trace]** Start collection.
 
