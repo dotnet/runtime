@@ -370,9 +370,7 @@ mono_marshal_noilgen_init (void)
 	MonoMarshalLightweightCallbacks lightweight_cb;
 	MonoMarshalIlgenCallbacks ilgen_cb;
 
-
 	lightweight_cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
-	
 	lightweight_cb.emit_marshal_scalar = emit_marshal_scalar_noilgen;
 	lightweight_cb.emit_castclass = emit_castclass_noilgen;
 	lightweight_cb.emit_struct_to_ptr = emit_struct_to_ptr_noilgen;
