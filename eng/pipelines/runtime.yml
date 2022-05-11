@@ -753,7 +753,6 @@ jobs:
       buildConfig: Debug
       platforms:
       - Linux_arm
-      - Linux_musl_arm64
       - windows_x86
       jobParameters:
         condition: >-
@@ -815,7 +814,6 @@ jobs:
   parameters:
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-      - Linux_arm
       - Linux_musl_arm
       - Linux_musl_arm64
       - windows_x86
@@ -829,6 +827,7 @@ jobs:
   parameters:
     buildConfig: Release
     platforms:
+      - Linux_arm
       - OSX_arm64
       - OSX_x64
       - Linux_x64
@@ -1133,14 +1132,14 @@ jobs:
 # ________________________________________
 # | Platform         | PR      | Rolling |
 # | ---------------- | ------- | ------- |
-# | linux-musl-arm64 | Debug   | Release |
 # | linux-arm        | Debug   | Release |
 # | windows-x86      | Debug   | Release |
 # | Linux-musl-x64   | Debug   | Release |
+# | OSX-x64          | Debug   | Release |
 # | Linux-musl-arm   | Release | Release |
+# | linux-musl-arm64 | Release | Release |
 # | Linux-x64        | Release | Release |
 # | Windows-x64      | Release | Release |
-# | OSX-x64          | Debug   | Release |
 
 #
 # Debug (PR) / Release (rolling) Libraries Test Execution against a checked runtime
@@ -1151,7 +1150,6 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Linux_musl_arm64
     - Linux_arm
     - windows_x86
     - Linux_musl_x64
@@ -1175,6 +1173,7 @@ jobs:
     buildConfig: Release
     platforms:
     - Linux_musl_arm
+    - Linux_musl_arm64
     - Linux_x64
     - windows_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
