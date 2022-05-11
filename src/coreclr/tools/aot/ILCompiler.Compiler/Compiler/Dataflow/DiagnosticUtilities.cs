@@ -72,7 +72,7 @@ namespace ILCompiler.Dataflow
                     decoded = property.GetDecodedCustomAttribute("System.Diagnostics.CodeAnalysis", requiresAttributeName);
                     break;
                 default:
-                    Debug.Fail(member.GetType().ToString());
+                    Debug.Fail("Trying to operate with unsupported TypeSystemEntity " + member.GetType().ToString());
                     break;
             }
             if (!decoded.HasValue)
@@ -155,8 +155,8 @@ namespace ILCompiler.Dataflow
             if (TryGetRequiresAttribute(method, requiresAttribute, out attribute))
                 return true;
 
-            if ((method.Signature.IsStatic || method.IsConstructor) && method.OwningType is not null &&
-                TryGetRequiresAttribute(method.OwningType, requiresAttribute, out attribute))
+            if ((method.Signature.IsStatic || method.IsConstructor) && method.OwningType is TypeDesc owningType &&
+                !owningType.IsArray && TryGetRequiresAttribute(owningType, requiresAttribute, out attribute))
                 return true;
 
             return false;
@@ -164,7 +164,7 @@ namespace ILCompiler.Dataflow
 
         internal static bool DoesFieldRequire(this FieldDesc field, string requiresAttribute, [NotNullWhen(returnValue: true)] out CustomAttributeValue<TypeDesc>? attribute)
         {
-            if (!field.IsStatic || field.OwningType is null)
+            if (!field.IsStatic || field.OwningType is not TypeDesc owningType || owningType.IsArray)
             {
                 attribute = null;
                 return false;
