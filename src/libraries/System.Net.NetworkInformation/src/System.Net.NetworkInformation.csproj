@@ -221,7 +221,4 @@
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' != '' and '$(TargetPlatformIdentifier)' != 'windows'">
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
-  <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'linux'">
-    <Reference Include="System.Net.Socket" />
-  </ItemGroup>
 </Project>
