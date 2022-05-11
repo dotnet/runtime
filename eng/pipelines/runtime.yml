@@ -752,7 +752,6 @@ jobs:
       jobTemplate: /eng/pipelines/libraries/build-job.yml
       buildConfig: Debug
       platforms:
-      - Linux_arm
       - windows_x86
       jobParameters:
         condition: >-
@@ -819,6 +818,7 @@ jobs:
       - windows_x86
       - windows_arm
       - windows_arm64
+      - Linux_arm
     jobParameters:
       liveRuntimeBuildConfig: release
       liveLibrariesBuildConfig: Release
@@ -827,7 +827,6 @@ jobs:
   parameters:
     buildConfig: Release
     platforms:
-      - Linux_arm
       - OSX_arm64
       - OSX_x64
       - Linux_x64
@@ -1132,7 +1131,7 @@ jobs:
 # ________________________________________
 # | Platform         | PR      | Rolling |
 # | ---------------- | ------- | ------- |
-# | linux-arm        | Debug   | Release |
+# | Linux-arm64      | Debug   | Release |
 # | windows-x86      | Debug   | Release |
 # | Linux-musl-x64   | Debug   | Release |
 # | OSX-x64          | Debug   | Release |
@@ -1150,9 +1149,9 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    - Linux_arm
     - windows_x86
     - Linux_musl_x64
+    - Linux_arm64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
