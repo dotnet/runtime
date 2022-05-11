@@ -151,8 +151,10 @@ namespace LibraryImportGenerator.UnitTests
             // Structs
             yield return new[] { CodeSnippets.BlittableStructParametersAndModifiers(string.Empty) };
             yield return new[] { CodeSnippets.BlittableStructParametersAndModifiers(CodeSnippets.DisableRuntimeMarshalling) };
-            yield return new[] { CodeSnippets.NonBlittableUserDefinedTypeToBlittableNativeType(string.Empty) };
-            yield return new[] { CodeSnippets.NonBlittableUserDefinedTypeToBlittableNativeType(CodeSnippets.DisableRuntimeMarshalling) };
+            yield return new[] { CodeSnippets.ValidateDisableRuntimeMarshalling.TypeUsage(string.Empty)
+                + CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType };
+            yield return new[] { CodeSnippets.ValidateDisableRuntimeMarshalling.TypeUsage(CodeSnippets.DisableRuntimeMarshalling)
+                + CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType };
 
             // SafeHandle
             yield return new[] { CodeSnippets.BasicParametersAndModifiers("Microsoft.Win32.SafeHandles.SafeFileHandle") };

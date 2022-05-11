@@ -122,10 +122,12 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="source">Source to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
+        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="preprocessorSymbols">Prepocessor symbols</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string source, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null)
         {
-            return CreateCompilation(new[] { source }, targetFramework, outputKind, preprocessorSymbols);
+            return CreateCompilation(new[] { source }, targetFramework, outputKind, refs, preprocessorSymbols);
         }
 
         /// <summary>
@@ -134,14 +136,17 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="sources">Sources to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
+        /// <param name="refs">Addtional metadata references</param>
+        /// <param name="preprocessorSymbols">Prepocessor symbols</param>
         /// <returns>The resulting compilation</returns>
-        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<string>? preprocessorSymbols = null)
+        public static Task<Compilation> CreateCompilation(string[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null, IEnumerable<string>? preprocessorSymbols = null)
         {
             return CreateCompilation(
                 sources.Select(source =>
                     CSharpSyntaxTree.ParseText(source, new CSharpParseOptions(LanguageVersion.Preview, preprocessorSymbols: preprocessorSymbols))).ToArray(),
                 targetFramework,
-                outputKind);
+                outputKind,
+                refs);
         }
 
         /// <summary>
@@ -150,8 +155,9 @@ namespace LibraryImportGenerator.UnitTests
         /// <param name="sources">Sources to compile</param>
         /// <param name="targetFramework">Target framework of the compilation</param>
         /// <param name="outputKind">Output type</param>
+        /// <param name="refs">Addtional metadata references</param>
         /// <returns>The resulting compilation</returns>
-        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary)
+        public static async Task<Compilation> CreateCompilation(SyntaxTree[] sources, TestTargetFramework targetFramework = TestTargetFramework.Net, OutputKind outputKind = OutputKind.DynamicallyLinkedLibrary, IEnumerable<MetadataReference>? refs = null)
         {
             var referenceAssemblies = await GetReferenceAssemblies(targetFramework);
 
@@ -159,6 +165,11 @@ namespace LibraryImportGenerator.UnitTests
             if (targetFramework is TestTargetFramework.Net)
             {
                 referenceAssemblies = referenceAssemblies.Add(GetAncillaryReference());
+            }
+
+            if (refs is not null)
+            {
+                referenceAssemblies = referenceAssemblies.AddRange(refs);
             }
 
             return CSharpCompilation.Create("compilation",

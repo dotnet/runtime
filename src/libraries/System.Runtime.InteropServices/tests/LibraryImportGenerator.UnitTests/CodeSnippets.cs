@@ -635,28 +635,6 @@ partial class Test
         [MarshalUsing(typeof({nativeTypeName}))] out {typeName} pOut);
 }}
 ";
-
-        private static string NonBlittableUserDefinedTypeWithNativeType() => $@"
-struct S
-{{
-    public string s;
-}}
-
-[CustomTypeMarshaller(typeof(S))]
-struct Native
-{{
-    private System.IntPtr p;
-    public Native(S s)
-    {{
-        p = System.IntPtr.Zero;
-    }}
-
-    public S ToManaged() => new S {{ s = string.Empty }};
-}}
-";
-
-        public static string NonBlittableUserDefinedTypeToBlittableNativeType(string attr) => MarshalUsingParametersAndModifiers("S", "Native", attr) + NonBlittableUserDefinedTypeWithNativeType();
-
         public static string BasicNonBlittableUserDefinedType(bool defineNativeMarshalling = true) => $@"
 {(defineNativeMarshalling ? "[NativeMarshalling(typeof(Native))]" : string.Empty)}
 struct S
@@ -1546,5 +1524,28 @@ partial struct Basic
 }
 ";
 
+        public static class ValidateDisableRuntimeMarshalling
+        {
+            public static string NonBlittableUserDefinedTypeWithNativeType = $@"
+public struct S
+{{
+    public string s;
+}}
+
+[CustomTypeMarshaller(typeof(S))]
+public struct Native
+{{
+    private System.IntPtr p;
+    public Native(S s)
+    {{
+        p = System.IntPtr.Zero;
+    }}
+
+    public S ToManaged() => new S {{ s = string.Empty }};
+}}
+";
+
+            public static string TypeUsage(string attr) => MarshalUsingParametersAndModifiers("S", "Native", attr);
+        }
     }
 }
