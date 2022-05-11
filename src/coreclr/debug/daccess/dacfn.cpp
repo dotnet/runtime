@@ -17,10 +17,6 @@
 
 #include "gcinterface.h"
 #include "gcinterface.dac.h"
-
-DacTableInfo g_dacTableInfo;
-DacGlobals g_dacGlobals;
-
 struct DacHostVtPtrs
 {
 #define VPTR_CLASS(name) PVOID name;
@@ -124,6 +120,18 @@ DacGlobalBase(void)
     }
 
     return g_dacImpl->m_globalBase;
+}
+
+DacGlobals*
+DacGlobalValues(void)
+{
+    if (!g_dacImpl)
+    {
+        DacError(E_UNEXPECTED);
+        UNREACHABLE();
+    }
+
+    return &g_dacImpl->m_dacGlobals;
 }
 
 HRESULT
@@ -584,12 +592,12 @@ DacInstantiateClassByVTable(TADDR addr, ULONG32 minSize, bool throwEx)
     // class identity.
     //
 
-#define VPTR_CLASS(name)                       \
-    if (vtAddr == g_dacGlobals.name##__vtAddr) \
-    {                                          \
-        size = sizeof(name);                   \
-        hostVtPtr = g_dacHostVtPtrs.name;      \
-    }                                          \
+#define VPTR_CLASS(name)                        \
+    if (vtAddr == DacGlobalValues()->name##__vtAddr) \
+    {                                           \
+        size = sizeof(name);                    \
+        hostVtPtr = g_dacHostVtPtrs.name;       \
+    }                                           \
     else
 #include <vptr_list.h>
 #undef VPTR_CLASS
@@ -1128,7 +1136,7 @@ PWSTR    DacGetVtNameW(TADDR targetVtable)
 {
     PWSTR pszRet = NULL;
 
-    TADDR *targ = &g_dacGlobals.EEJitManager__vtAddr;
+    TADDR *targ = &DacGlobalValues()->EEJitManager__vtAddr;
     TADDR *targStart = targ;
     for (ULONG i = 0; i < sizeof(g_dacHostVtPtrs) / sizeof(PVOID); i++)
     {
@@ -1154,7 +1162,7 @@ DacGetTargetVtForHostVt(LPCVOID vtHost, bool throwEx)
     // target vtable table, so just iterate to a match
     // return the matching entry.
     host = &g_dacHostVtPtrs.EEJitManager;
-    targ = &g_dacGlobals.EEJitManager__vtAddr;
+    targ = &DacGlobalValues()->EEJitManager__vtAddr;
     for (i = 0; i < sizeof(g_dacHostVtPtrs) / sizeof(PVOID); i++)
     {
         if (*host == vtHost)

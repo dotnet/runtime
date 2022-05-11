@@ -3090,8 +3090,6 @@ private:
 //
 //----------------------------------------------------------------------------
 
-LONG ClrDataAccess::s_procInit;
-
 ClrDataAccess::ClrDataAccess(ICorDebugDataTarget * pTarget, ICLRDataTarget * pLegacyTarget/*=0*/)
 {
     SUPPORTS_DAC_HOST_ONLY;     // ctor does no marshalling - don't check with DacCop
@@ -5568,12 +5566,8 @@ ClrDataAccess::Initialize(void)
     // multiple initializations as each one will
     // copy the same data into the globals and so
     // cannot interfere with each other.
-    if (!s_procInit)
-    {
-        IfFailRet(GetDacGlobals());
-        IfFailRet(DacGetHostVtPtrs());
-        s_procInit = true;
-    }
+    IfFailRet(GetDacGlobalValues());
+    IfFailRet(DacGetHostVtPtrs());
 
     //
     // DAC is now setup and ready to use
@@ -6976,7 +6970,7 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
 {
 #ifdef USE_DAC_TABLE_RVA
 #ifdef DAC_TABLE_SIZE
-    if (DAC_TABLE_SIZE != sizeof(g_dacGlobals))
+    if (DAC_TABLE_SIZE != sizeof(DacGlobals))
     {
         return E_INVALIDARG;
     }
@@ -6994,7 +6988,7 @@ GetDacTableAddress(ICorDebugDataTarget* dataTarget, ULONG64 baseAddress, PULONG6
 }
 
 HRESULT
-ClrDataAccess::GetDacGlobals()
+ClrDataAccess::GetDacGlobalValues()
 {
     ULONG64 dacTableAddress;
     HRESULT hr = GetDacTableAddress(m_pTarget, m_globalBase, &dacTableAddress);
@@ -7002,11 +6996,11 @@ ClrDataAccess::GetDacGlobals()
     {
         return hr;
     }
-    if (FAILED(ReadFromDataTarget(m_pTarget, dacTableAddress, (BYTE*)&g_dacGlobals, sizeof(g_dacGlobals))))
+    if (FAILED(ReadFromDataTarget(m_pTarget, dacTableAddress, (BYTE*)&m_dacGlobals, sizeof(m_dacGlobals))))
     {
         return CORDBG_E_MISSING_DEBUGGER_EXPORTS;
     }
-    if (g_dacGlobals.ThreadStore__s_pThreadStore == NULL)
+    if (m_dacGlobals.ThreadStore__s_pThreadStore == NULL)
     {
         return CORDBG_E_UNSUPPORTED;
     }

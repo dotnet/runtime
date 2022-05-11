@@ -558,22 +558,6 @@ typedef UIntTarget TADDR;
 // which reflects the host pointer size.
 typedef UIntTarget TSIZE_T;
 
-// Information stored in the DAC table of interest to the DAC implementation
-// Note that this information is shared between all instantiations of ClrDataAccess, so initialize
-// it just once in code:ClrDataAccess.GetDacGlobals (rather than use fields in ClrDataAccess);
-struct DacTableInfo
-{
-    // On Windows, the first DWORD is the 32-bit timestamp read out of the runtime dll's debug directory.
-    // The remaining 3 DWORDS must all be 0.
-    // On Mac, this is the 16-byte UUID of the runtime dll.
-    // It is used to validate that mscorwks is the same version as mscordacwks
-    uint32_t dwID0;
-    uint32_t dwID1;
-    uint32_t dwID2;
-    uint32_t dwID3;
-};
-extern DacTableInfo g_dacTableInfo;
-
 //
 // The following table contains all the global information that data access needs to begin
 // operation.  All of the values stored here are global addresses.
