@@ -568,11 +568,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("\\u0032\\u0030\\u0032\\u0032\\u002D\\u0030\\u0035\\u002D\\u0031\\u0030", "2022-05-10")]
         [InlineData("0001-01-01")] // DateOnly.MinValue
         [InlineData("9999-12-31")] // DateOnly.MaxValue
-        // Support arbitrary ISO dates
-        [InlineData("2022-05-10T20:53:01", "2022-05-10")]
-        [InlineData("2022-05-10T20:53:01.3552286", "2022-05-10")]
-        [InlineData("2022-05-10T20:53:01.3552286+01:00", "2022-05-10")]
-        [InlineData("2022-05-10T20:53Z", "2022-05-10")]
         public static void DateOnly_Read_Success(string json, string? actual = null)
         {
             DateOnly value = JsonSerializer.Deserialize<DateOnly>($"\"{json}\"");
@@ -586,11 +581,6 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("\\u0032\\u0030\\u0032\\u0032\\u002D\\u0030\\u0035\\u002D\\u0031\\u0030", "2022-05-10")]
         [InlineData("0001-01-01")] // DateOnly.MinValue
         [InlineData("9999-12-31")] // DateOnly.MaxValue
-        // Support arbitrary ISO dates
-        [InlineData("2022-05-10T20:53:01", "2022-05-10")]
-        [InlineData("2022-05-10T20:53:01.3552286", "2022-05-10")]
-        [InlineData("2022-05-10T20:53:01.3552286+01:00", "2022-05-10")]
-        [InlineData("2022-05-10T20:53Z", "2022-05-10")]
         public static void DateOnly_ReadDictionaryKey_Success(string json, string? actual = null)
         {
             Dictionary<DateOnly, int> expectedDict = new() { [DateOnly.Parse(actual ?? json)] = 0 };
@@ -616,6 +606,11 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("\t2022-05-10")] // Otherwise valid but has invalid json character
         [InlineData("\\t2022-05-10")] // Otherwise valid but has leading whitespace
         [InlineData("2022-05-10   ")] // Otherwise valid but has trailing whitespace
+        // Fail on arbitrary ISO dates
+        [InlineData("2022-05-10T20:53:01")]
+        [InlineData("2022-05-10T20:53:01.3552286")]
+        [InlineData("2022-05-10T20:53:01.3552286+01:00")]
+        [InlineData("2022-05-10T20:53Z")]
         [InlineData("\\u0030\\u0035\\u002F\\u0031\\u0030\\u002F\\u0032\\u0030\\u0032\\u0032")]
         [InlineData("00:00:01")]
         [InlineData("23:59:59")]

@@ -312,20 +312,8 @@
   <data name="InvalidComparison" xml:space="preserve">
     <value>Cannot compare the value of a token type '{0}' to text.</value>
   </data>
-  <data name="FormatDateTime" xml:space="preserve">
-    <value>The JSON value is not in a supported DateTime format.</value>
-  </data>
-  <data name="FormatDateTimeOffset" xml:space="preserve">
-    <value>The JSON value is not in a supported DateTimeOffset format.</value>
-  </data>
-  <data name="FormatTimeSpan" xml:space="preserve">
-    <value>The JSON value is not in a supported TimeSpan format.</value>
-  </data>
-  <data name="FormatGuid" xml:space="preserve">
-    <value>The JSON value is not in a supported Guid format.</value>
-  </data>
-  <data name="FormatVersion" xml:space="preserve">
-    <value>The JSON value is not in a supported Version format.</value>
+  <data name="UnsupportedFormat" xml:space="preserve">
+    <value>The JSON value is not in a supported {0} format.</value>
   </data>
   <data name="ExpectedStartOfPropertyOrValueAfterComment" xml:space="preserve">
     <value>'{0}' is an invalid start of a property name or value, after a comment.</value>
@@ -517,9 +505,6 @@
   </data>
   <data name="DefaultIgnoreConditionInvalid" xml:space="preserve">
     <value>The value cannot be 'JsonIgnoreCondition.Always'.</value>
-  </data>
-  <data name="FormatBoolean" xml:space="preserve">
-    <value>The JSON value is not in a supported Boolean format.</value>
   </data>
   <data name="DictionaryKeyTypeNotSupported" xml:space="preserve">
     <value>The type '{0}' is not a supported dictionary key using converter of type '{1}'.</value>
