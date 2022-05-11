@@ -825,7 +825,7 @@ namespace System.Management
             if (strTemp.Length > 0)
             {
                 string strFirstChar = strTemp.Substring(0, 1).ToUpperInvariant();
-                strTemp = strFirstChar + strTemp.Substring(1, strTemp.Length - 1);
+                strTemp = strFirstChar + strTemp.Substring(1);
             }
 
             return strTemp;
@@ -7142,7 +7142,7 @@ namespace System.Management
                 else
                 {
                     string strTemp = OffsetMins.ToString();
-                    UtcString = "-" + strTemp.Substring(1, strTemp.Length-1).PadLeft(3,'0');
+                    UtcString = "-" + strTemp.Substring(1).PadLeft(3,'0');
                 }
             */
 

@@ -8,24 +8,16 @@ using System.Net.Security;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
-using static System.Net.Quic.Implementations.MsQuic.Internal.MsQuicNativeMethods;
+using Microsoft.Quic;
+using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
-    internal sealed class SafeMsQuicConfigurationHandle : SafeHandle
+    internal sealed class SafeMsQuicConfigurationHandle : MsQuicSafeHandle
     {
-        public override bool IsInvalid => handle == IntPtr.Zero;
-
-        public SafeMsQuicConfigurationHandle()
-            : base(IntPtr.Zero, ownsHandle: true)
+        public unsafe SafeMsQuicConfigurationHandle(QUIC_HANDLE* handle)
+            : base(handle, ptr => MsQuicApi.Api.ApiTable->ConfigurationClose((QUIC_HANDLE*)ptr), SafeHandleType.Configuration)
         { }
-
-        protected override bool ReleaseHandle()
-        {
-            MsQuicApi.Api.ConfigurationCloseDelegate(handle);
-            SetHandle(IntPtr.Zero);
-            return true;
-        }
 
         // TODO: consider moving the static code from here to keep all the handle classes small and simple.
         public static SafeMsQuicConfigurationHandle Create(QuicClientConnectionOptions options)
@@ -130,50 +122,42 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             Debug.Assert(!MsQuicApi.Api.Registration.IsInvalid);
 
-            var settings = new QuicSettings
-            {
-                IsSetFlags = QuicSettingsIsSetFlags.PeerBidiStreamCount |
-                             QuicSettingsIsSetFlags.PeerUnidiStreamCount,
-                PeerBidiStreamCount = (ushort)options.MaxBidirectionalStreams,
-                PeerUnidiStreamCount = (ushort)options.MaxUnidirectionalStreams
-            };
+            QUIC_SETTINGS settings = default(QUIC_SETTINGS);
+            settings.IsSet.PeerUnidiStreamCount = 1;
+            settings.PeerUnidiStreamCount = (ushort)options.MaxUnidirectionalStreams;
+            settings.IsSet.PeerBidiStreamCount = 1;
+            settings.PeerBidiStreamCount = (ushort)options.MaxBidirectionalStreams;
 
+            settings.IsSet.IdleTimeoutMs = 1;
             if (options.IdleTimeout != Timeout.InfiniteTimeSpan)
             {
                 if (options.IdleTimeout <= TimeSpan.Zero) throw new Exception("IdleTimeout must not be negative.");
-
-                ulong ms = (ulong)options.IdleTimeout.Ticks / TimeSpan.TicksPerMillisecond;
-                if (ms > (1ul << 62) - 1) throw new Exception("IdleTimeout is too large (max 2^62-1 milliseconds)");
-
                 settings.IdleTimeoutMs = (ulong)options.IdleTimeout.TotalMilliseconds;
             }
             else
             {
                 settings.IdleTimeoutMs = 0;
             }
-            settings.IsSetFlags |= QuicSettingsIsSetFlags.IdleTimeoutMs;
 
-            uint status;
-            SafeMsQuicConfigurationHandle? configurationHandle;
+            SafeMsQuicConfigurationHandle configurationHandle;
             X509Certificate2[]? intermediates = null;
 
-            MemoryHandle[]? handles = null;
-            QuicBuffer[]? buffers = null;
+            QUIC_HANDLE* handle;
+            using var msquicBuffers = new MsQuicBuffers();
+            msquicBuffers.Initialize(alpnProtocols, alpnProtocol => alpnProtocol.Protocol);
+            ThrowIfFailure(MsQuicApi.Api.ApiTable->ConfigurationOpen(
+                MsQuicApi.Api.Registration.QuicHandle,
+                msquicBuffers.Buffers,
+                (uint)alpnProtocols.Count,
+                &settings,
+                (uint)sizeof(QUIC_SETTINGS),
+                (void*)IntPtr.Zero,
+                &handle), "ConfigurationOpen failed");
+            configurationHandle = new SafeMsQuicConfigurationHandle(handle);
+
             try
             {
-                MsQuicAlpnHelper.Prepare(alpnProtocols, out handles, out buffers);
-                status = MsQuicApi.Api.ConfigurationOpenDelegate(MsQuicApi.Api.Registration, (QuicBuffer*)Marshal.UnsafeAddrOfPinnedArrayElement(buffers, 0), (uint)alpnProtocols.Count, ref settings, (uint)sizeof(QuicSettings), context: IntPtr.Zero, out configurationHandle);
-            }
-            finally
-            {
-                MsQuicAlpnHelper.Return(ref handles, ref buffers);
-            }
-
-            QuicExceptionHelpers.ThrowIfFailed(status, "ConfigurationOpen failed.");
-
-            try
-            {
-                CredentialConfig config = default;
+                QUIC_CREDENTIAL_CONFIG config = default;
                 config.Flags = flags; // TODO: consider using LOAD_ASYNCHRONOUS with a callback.
 
                 if (cipherSuitesPolicy != null)
@@ -188,17 +172,17 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                     intermediates = certificateContext.IntermediateCertificates;
                 }
 
+                int status;
                 if (certificate != null)
                 {
                     if (OperatingSystem.IsWindows())
                     {
-                        config.Type = QUIC_CREDENTIAL_TYPE.CONTEXT;
-                        config.Certificate = certificate.Handle;
-                        status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
+                        config.Type = QUIC_CREDENTIAL_TYPE.CERTIFICATE_CONTEXT;
+                        config.CertificateContext = (void*)certificate.Handle;
+                        status = MsQuicApi.Api.ApiTable->ConfigurationLoadCredential(configurationHandle.QuicHandle, &config);
                     }
                     else
                     {
-                        CredentialConfigCertificatePkcs12 pkcs12Config;
                         byte[] asn1;
 
                         if (intermediates?.Length > 0)
@@ -217,32 +201,35 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
                             asn1 = certificate.Export(X509ContentType.Pkcs12);
                         }
 
-                        fixed (void* ptr = asn1)
+                        fixed (byte* ptr = asn1)
                         {
-                            pkcs12Config.Asn1Blob = (IntPtr)ptr;
-                            pkcs12Config.Asn1BlobLength = (uint)asn1.Length;
-                            pkcs12Config.PrivateKeyPassword = IntPtr.Zero;
+                            QUIC_CERTIFICATE_PKCS12 pkcs12Config = new QUIC_CERTIFICATE_PKCS12
+                            {
+                                Asn1Blob = ptr,
+                                Asn1BlobLength = (uint)asn1.Length,
+                                PrivateKeyPassword = (sbyte*)IntPtr.Zero
+                            };
 
-                            config.Type = QUIC_CREDENTIAL_TYPE.PKCS12;
-                            config.Certificate = (IntPtr)(&pkcs12Config);
-                            status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
+                            config.Type = QUIC_CREDENTIAL_TYPE.CERTIFICATE_PKCS12;
+                            config.CertificatePkcs12 = &pkcs12Config;
+                            status = MsQuicApi.Api.ApiTable->ConfigurationLoadCredential(configurationHandle.QuicHandle, &config);
                         }
                     }
                 }
                 else
                 {
                     config.Type = QUIC_CREDENTIAL_TYPE.NONE;
-                    status = MsQuicApi.Api.ConfigurationLoadCredentialDelegate(configurationHandle, ref config);
+                    status = MsQuicApi.Api.ApiTable->ConfigurationLoadCredential(configurationHandle.QuicHandle, &config);
                 }
 
 #if TARGET_WINDOWS
                 if ((Interop.SECURITY_STATUS)status == Interop.SECURITY_STATUS.AlgorithmMismatch && MsQuicApi.Tls13MayBeDisabled)
                 {
-                    throw new QuicException(SR.net_ssl_app_protocols_invalid, null, (int)status);
+                    throw new MsQuicException(status, SR.net_ssl_app_protocols_invalid);
                 }
 #endif
 
-                QuicExceptionHelpers.ThrowIfFailed(status, "ConfigurationLoadCredential failed.");
+                ThrowIfFailure(status, "ConfigurationLoadCredential failed");
             }
             catch
             {

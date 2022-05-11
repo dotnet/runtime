@@ -117,7 +117,7 @@ namespace System.Security.Cryptography
                 start++;
             }
 
-            WriteCryptoBinary(name, valBuf.Slice(start, valBuf.Length - start), builder);
+            WriteCryptoBinary(name, valBuf.Slice(start), builder);
         }
 
         internal static void WriteCryptoBinary(string name, ReadOnlySpan<byte> value, StringBuilder builder)
