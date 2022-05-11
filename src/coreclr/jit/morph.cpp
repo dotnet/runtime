@@ -5066,12 +5066,13 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     JITDUMP("fgMorphArrayIndex (before remorph):\n")
     DISPTREE(tree)
 
-    tree = fgMorphTree(tree);
+    GenTree* morphedTree = fgMorphTree(tree);
+    DBEXEC(morphedTree != tree, morphedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
 
     JITDUMP("fgMorphArrayIndex (after remorph):\n")
-    DISPTREE(tree)
+    DISPTREE(morphedTree)
 
-    return tree;
+    return morphedTree;
 }
 
 #ifdef TARGET_X86
