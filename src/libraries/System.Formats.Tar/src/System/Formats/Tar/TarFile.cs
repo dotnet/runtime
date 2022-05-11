@@ -166,8 +166,7 @@ namespace System.Formats.Tar
                 throw new DirectoryNotFoundException(string.Format(SR.IO_PathNotFound_Path, destinationDirectoryName));
             }
 
-            // FileMode.Open, FileAccess.Read and FileShare.Read are default FileStreamOptions
-            using FileStream archive = new(sourceFileName, new FileStreamOptions());
+            using FileStream archive = File.OpenRead(sourceFileName);
 
             ExtractToDirectoryInternal(archive, destinationDirectoryName, overwriteFiles, leaveOpen: false);
         }

@@ -101,7 +101,7 @@ namespace System.Formats.Tar.Tests
             string path = GetTarFilePath(compressionMethod, format, testCaseName);
             MemoryStream ms = new();
             // FileMode.Open, FileAccess.Read and FileShare.Read are default FileStreamOptions
-            using (FileStream fs = new FileStream(path, new FileStreamOptions()))
+            using (FileStream fs = File.OpenRead(path))
             {
                 fs.CopyTo(ms);
             }
