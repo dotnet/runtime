@@ -20,8 +20,9 @@ namespace System.Reflection.Metadata
             // compat: normalize Nil token to empty array to match original behavior of AssemblyName.GetAssemblyName()
             byte[]? publicKeyOrToken = !publicKeyOrTokenHandle.IsNil ? GetBlobBytes(publicKeyOrTokenHandle) : Array.Empty<byte>();
 
-            var assemblyName = new AssemblyName(name)
+            var assemblyName = new AssemblyName()
             {
+                Name = name,
                 Version = version,
                 CultureName = cultureName,
 #pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
