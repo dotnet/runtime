@@ -21,8 +21,6 @@ namespace System.Net.Http
             /// infinite chunk length is sent.  This value is arbitrary and can be changed as needed.
             /// </remarks>
             private const int MaxChunkBytesAllowed = 16 * 1024;
-            /// <summary>How long a trailing header can be.  This value is arbitrary and can be changed as needed.</summary>
-            private const int MaxTrailingHeaderLength = 16 * 1024;
             /// <summary>The number of bytes remaining in the chunk.</summary>
             private ulong _chunkBytesRemaining;
             /// <summary>The current state of the parsing state machine for the chunked response.</summary>
@@ -297,6 +295,9 @@ namespace System.Net.Http
                             else
                             {
                                 _state = ParsingState.ConsumeTrailers;
+                                // Apply the MaxResponseHeadersLength limit to all trailing headers.
+                                // The limit is applied to regular response headers and trailing headers separately.
+                                _connection._allowedReadLineBytes = _connection.MaxResponseHeadersLength;
                                 goto case ParsingState.ConsumeTrailers;
                             }
 
@@ -343,7 +344,6 @@ namespace System.Net.Http
 
                             while (true)
                             {
-                                _connection._allowedReadLineBytes = MaxTrailingHeaderLength;
                                 if (!_connection.TryReadNextLine(out currentLine))
                                 {
                                     break;
