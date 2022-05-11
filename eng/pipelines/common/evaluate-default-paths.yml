@@ -27,6 +27,7 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
+      - eng/pipelines/runtime.yml
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
@@ -64,6 +65,7 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
+      - eng/pipelines/runtime.yml
     - subset: runtimetests
       include:
       - src/tests/*
