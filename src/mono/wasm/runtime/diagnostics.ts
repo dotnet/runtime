@@ -3,6 +3,7 @@ import cwraps from "./cwraps";
 import type { EventPipeSessionOptions } from "./types";
 import type { Int32Ptr, VoidPtr } from "./types/emscripten";
 import * as memory from "./memory";
+import { toBase64StringImpl } from './base64';
 
 /// An EventPipe session object represents a single diagnostic tracing session that is collecting
 /// events from the runtime and managed libraries.  There may be multiple active sessions at the same time.
@@ -70,16 +71,8 @@ class EventPipeFileSession implements EventPipeSession {
             throw new Error (`session is in state ${this._state}, not 'Done'`);
         }
         const data = Module.FS_readFile(this._tracePath, { encoding: "binary" }) as Uint8Array;
-        return `data:application/octet-stream;base64,${dataUriEncode(data)}`;
+        return `data:application/octet-stream;base64,${toBase64StringImpl(data)}`;
     }
-}
-function dataUriEncode (data: Uint8Array): string {
-    const CHUNK_SZ = 0x8000;
-    const c: string[] = [];
-    for (let i=0; i < data.length; i+=CHUNK_SZ) {
-        c.push(String.fromCharCode(... data.subarray(i, i+CHUNK_SZ)));
-    }
-    return btoa(c.join(""));
 }
 
 export interface Diagnostics {
