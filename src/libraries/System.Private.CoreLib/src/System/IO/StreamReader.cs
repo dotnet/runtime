@@ -881,22 +881,13 @@ namespace System.IO
 
         private async Task<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
         {
-
             static char[] ResizeOrPoolNewArray(char[]? array, int atLeastSpace)
             {
-                if (array == null) return ArrayPool<char>.Shared.Rent(atLeastSpace);
+                if (array == null)
+                    return ArrayPool<char>.Shared.Rent(atLeastSpace);
 
                 char[] newArr = ArrayPool<char>.Shared.Rent(array.Length + atLeastSpace);
-                try
-                {
-                    Array.Copy(array, newArr, array.Length);
-                }
-                catch
-                {
-                    ArrayPool<char>.Shared.Return(newArr);
-                    throw;
-                }
-
+                Array.Copy(array, newArr, array.Length);
                 ArrayPool<char>.Shared.Return(array);
                 return newArr;
             }
