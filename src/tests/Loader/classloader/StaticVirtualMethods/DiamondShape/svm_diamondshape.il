@@ -61,7 +61,7 @@
 .class interface private abstract auto ansi IFoo2
        implements IFoo
 {
-  .method public hidebysig final 
+  .method public hidebysig
           static int32  Foo(int32 a) cil managed
   {
     .override method int32 IFoo::Foo(int32)
@@ -87,7 +87,7 @@
 .class interface private abstract auto ansi IFooEx
        implements IFoo
 {
-  .method public hidebysig final 
+  .method public hidebysig
           static int32  IFoo.Foo(int32 a) cil managed
   {
     .override method int32 IFoo::Foo(int32)
@@ -109,11 +109,26 @@
   } // end of method IFooEx::IFoo.Foo
 } // end of class IFooEx
 
+.class interface private abstract auto ansi IFooExReabstract
+       implements IFooEx
+{
+  .method public hidebysig abstract final
+          static int32  IFoo.Foo(int32 a) cil managed;
+}
+
 .class private auto ansi beforefieldinit FooClass
        extends [mscorlib]System.Object
        implements IFoo2,
                   IFoo,
                   IFooEx
+{
+} // end of class FooClass
+
+.class private auto ansi beforefieldinit FooClassReabstract
+       extends [mscorlib]System.Object
+       implements IFoo2,
+                  IFoo,
+                  IFooExReabstract
 {
 } // end of class FooClass
 
@@ -137,7 +152,7 @@
 .class interface private abstract auto ansi I2
        implements I1
 {
-  .method private hidebysig final 
+  .method private hidebysig
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -162,7 +177,7 @@
 .class interface private abstract auto ansi I3
        implements I1
 {
-  .method private hidebysig final 
+  .method private hidebysig
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -189,7 +204,7 @@
                   I1,
                   I3
 {
-  .method private hidebysig final 
+  .method private hidebysig
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -211,6 +226,38 @@
   } // end of method I4::I1.Func   
 } // end of class I4
 
+.class interface private abstract auto ansi I4Reabstract
+       implements I4
+{
+  .method private hidebysig final abstract
+          static int32  I1.Func(int32 a) cil managed;
+} // end of class I4Reabstract
+
+.class interface private abstract auto ansi I4Reimplement
+       implements I4Reabstract
+{
+  .method private hidebysig
+          static int32  I1.Func(int32 a) cil managed
+  {
+    .override method int32 I1::Func(int32)
+    // Code size       20 (0x14)
+    .maxstack  2
+    .locals init (int32 V_0)
+    IL_0000:  nop
+    IL_0001:  ldstr      "At I4Reimplement.Func"
+    IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
+    IL_000b:  nop
+    IL_000c:  ldarg.0
+    IL_000d:  ldc.i4.3
+    IL_000e:  add
+    IL_000f:  stloc.0
+    IL_0010:  br.s       IL_0012
+
+    IL_0012:  ldloc.0
+    IL_0013:  ret
+  } // end of method I4Reimplement::I1.Func
+} // end of class I4Reimplement
+
 .class private auto ansi beforefieldinit I4Class
        extends [mscorlib]System.Object
        implements I4,
@@ -219,6 +266,15 @@
                   I3
 {
 } // end of class I4Class
+
+.class private auto ansi beforefieldinit I4ReimplementClass
+       extends [mscorlib]System.Object
+       implements I4Reimplement,
+                  I2,
+                  I1,
+                  I3
+{
+} // end of class I4ReimplementClass
 
 .class private auto ansi sealed beforefieldinit I4Struct
        extends [mscorlib]System.ValueType
@@ -232,7 +288,7 @@
 .class interface private abstract auto ansi I5
        implements I1
 {
-  .method private hidebysig final 
+  .method private hidebysig
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -257,7 +313,7 @@
 .class interface private abstract auto ansi I6
        implements I1
 {
-  .method private hidebysig final 
+  .method private hidebysig
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -284,7 +340,7 @@
                   I1,
                   I6
 {
-  .method private hidebysig final 
+  .method private hidebysig
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -315,7 +371,7 @@
                   I5,
                   I6
 {
-  .method private hidebysig final 
+  .method private hidebysig
           static int32  I1.Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -399,7 +455,7 @@
 .class interface private abstract auto ansi GI2`1<T>
        implements class GI1`1<!T>
 {
-.method private hidebysig final 
+.method private hidebysig
           static int32  'GI1<T>.Func'<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
     .override  method int32 class GI1`1<!T>::Func<[1]>(class [mscorlib]System.Type[]&)
@@ -456,7 +512,7 @@
 .class interface private abstract auto ansi GI3`1<T>
        implements class GI1`1<!T>
 {
-.method private hidebysig final 
+.method private hidebysig
           static int32  'GI1<T>.Func'<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
     .override  method int32 class GI1`1<!T>::Func<[1]>(class [mscorlib]System.Type[]&)
@@ -515,7 +571,7 @@
                   class GI1`1<!T>,
                   class GI3`1<!T>
 {
- .method private hidebysig final 
+ .method private hidebysig
           static int32  'GI1<T>.Func'<S>([out] class [mscorlib]System.Type[]& types) cil managed
   {
     .override  method int32 class GI1`1<!T>::Func<[1]>(class [mscorlib]System.Type[]&)
@@ -665,7 +721,7 @@
                 ldstr      "Expecting exception on FooClass"
                 call       void Test::Assert(bool, string)
                 nop
-                leave.s    IL_004ab
+                leave.s    IL_004aa
 
     }  // end .try
     catch [System.Runtime]System.Runtime.AmbiguousImplementationException
@@ -676,6 +732,40 @@
                 ldloc.s    V_6
                 callvirt   instance string [mscorlib]System.Object::ToString()
                 call       string [mscorlib]System.String::Concat(string, string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                leave.s    IL_004aa
+
+    }  // end handler
+
+    IL_004aa:   nop
+                ldstr      "Calling IFoo.Foo on FooClassReabstract - expecting exception."
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+    .try
+    {
+                nop
+                ldc.i4.s   10
+                constrained. valuetype [svm_diamondshape]FooStruct
+                call         int32 IFoo::Foo(int32)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on FooStruct"
+                call       void Test::Assert(bool,
+                                             string)
+                nop
+                leave.s    IL_004ab
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_6
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_6
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string,
+                                                                  string)
                 call       void [mscorlib]System.Console::WriteLine(string)
                 nop
                 leave.s    IL_004ab
@@ -1038,6 +1128,18 @@
     IL_0020:  ldstr      "Expecting I1.Func to land on I4.Func"
     IL_0025:  call       void Test::Assert(bool, string)
     IL_002a:  nop
+
+              ldstr      "Calling I1.Func on I4ReimplementClass - expecting I4Reimplement.Func"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   10
+              constrained. class I4ReimplementClass
+              call       int32 I1::Func(int32)
+              ldc.i4.s   14
+              ceq
+              ldstr      "Expecting I1.Func to land on I4Reimplement.Func"
+              call       void Test::Assert(bool, string)
+              nop
 
               ldstr      "Calling I1.Func on I4Class as a delegate - expecting I4.Func"
               call       void [mscorlib]System.Console::WriteLine(string)
