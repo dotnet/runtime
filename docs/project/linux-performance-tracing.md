@@ -54,7 +54,7 @@ Follow these steps to prepare your machine to collect a performance trace.
 	> ```
 
     > [!NOTE]
-    > COMPlus_PerfMapEnabled will cause the .NET runtime to write a file containing symbolic information for jitted code to the disk. Depending on the performance of your disk and the amount of jitted code in the application this could have a significant performance overhead.
+    > COMPlus_PerfMapEnabled will cause the .NET runtime to write a file containing symbolic information for managed code to the disk. Depending on the performance of your disk and the amount of managed code in the application this could have a significant performance overhead.
 
 	> ```bash
 	> export COMPlus_PerfMapEnabled=1
