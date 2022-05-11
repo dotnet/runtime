@@ -57,6 +57,11 @@
     <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-mt-eventpipe\Wasm.Browser.ThreadsEP.Sample.csproj" />
   </ItemGroup>
 
+  <!-- Samples that require a perf-tracing wasm runtime -->
+  <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(WasmEnablePerfTracing)' != 'true'" >
+    <ProjectExclusions Include="$(MonoProjectRoot)sample\wasm\browser-eventpipe\Wasm.Browser.EventPipe.Sample.csproj" />
+  </ItemGroup>
+
   <!-- Wasm aot on all platforms -->
   <ItemGroup Condition="'$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true' and '$(RunAOTCompilation)' == 'true'">
     <!-- https://github.com/dotnet/runtime/issues/66118 -->
