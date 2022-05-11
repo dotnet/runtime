@@ -539,9 +539,9 @@ mono_wasm_event_pipe_enable (const char *output_path,
 			     /* void *callback_additional_data, */
 			     int32_t *out_session_id)
 {
-  if (out_session_id)
-    *out_session_id = 0;
-  return 0;
+	if (out_session_id)
+		*out_session_id = 0;
+	return 0;
 }
 
 
