@@ -1440,7 +1440,7 @@ ISpGrammarResourceLoader
                     //  - Modify SAPI so LoadCmdFromFile works with dictation Uris.
                     //  - Modify the engine and use a regular grammar with a special ruleref to dictation.
                     //  - Call back to the Grammar and let it manage the loading activation.
-                    string topicName = string.IsNullOrEmpty(uri.Fragment) ? null : uri.Fragment.Substring(1, uri.Fragment.Length - 1);
+                    string topicName = string.IsNullOrEmpty(uri.Fragment) ? null : uri.Fragment.Substring(1);
                     sapiGrammar.LoadDictation(topicName, SPLOADOPTIONS.SPLO_STATIC);
                 }
                 else

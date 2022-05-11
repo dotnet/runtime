@@ -14519,7 +14519,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
 #if defined(LATE_DISASM)
         // GT_CNS_INT is considered small, so ReplaceWith() won't copy all fields
-        if ((tree->gtOper == GT_CNS_INT) && tree->IsIconHandle())
+        if (tree->IsIconHandle())
         {
             copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
         }
