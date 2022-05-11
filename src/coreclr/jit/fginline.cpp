@@ -721,7 +721,7 @@ Compiler::fgWalkResult Compiler::fgLateDevirtualization(GenTree** pTree, fgWalkD
             const bool             isLateDevirtualization = true;
             const bool             explicitTailCall       = call->IsTailPrefixedCall();
 
-            if ((call->gtCallMoreFlags & GTF_CALL_M_LATE_DEVIRT) != 0)
+            if ((call->gtCallMoreFlags & GTF_CALL_M_HAS_LATE_DEVIRT_INFO) != 0)
             {
                 context = call->gtLateDevirtualizationInfo->exactContextHnd;
                 // Note: we might call this multiple times for the same trees.
