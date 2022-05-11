@@ -205,15 +205,18 @@ void Compiler::optCopyProp(Statement* stmt, GenTreeLclVarCommon* tree, unsigned 
             continue;
         }
 
-        var_types newLclType = newLclVarDsc->TypeGet();
-        if (!newLclVarDsc->lvNormalizeOnLoad())
+        if (tree->OperIs(GT_LCL_VAR))
         {
-            newLclType = genActualType(newLclType);
-        }
+            var_types newLclType = newLclVarDsc->TypeGet();
+            if (!newLclVarDsc->lvNormalizeOnLoad())
+            {
+                newLclType = genActualType(newLclType);
+            }
 
-        if (newLclType != tree->TypeGet())
-        {
-            continue;
+            if (newLclType != tree->TypeGet())
+            {
+                continue;
+            }
         }
 
 #ifdef DEBUG
@@ -388,8 +391,7 @@ void Compiler::optBlockCopyProp(BasicBlock* block, LclNumToLiveDefsMap* curSsaNa
 
                 optCopyPropPushDef(tree, lclDefNode, lclNum, curSsaName);
             }
-            // TODO-CQ: propagate on LCL_FLDs too.
-            else if (tree->OperIs(GT_LCL_VAR) && ((tree->gtFlags & GTF_VAR_DEF) == 0))
+            else if (tree->OperIs(GT_LCL_VAR, GT_LCL_FLD) && ((tree->gtFlags & GTF_VAR_DEF) == 0))
             {
                 const unsigned lclNum = optIsSsaLocal(tree->AsLclVarCommon());
 

@@ -2112,25 +2112,22 @@ public:
 
     bool IsIconHandle() const
     {
-        assert(gtOper == GT_CNS_INT);
-        return (gtFlags & GTF_ICON_HDL_MASK) ? true : false;
+        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
     }
 
     bool IsIconHandle(GenTreeFlags handleType) const
     {
-        assert(gtOper == GT_CNS_INT);
-        assert((handleType & GTF_ICON_HDL_MASK) != 0); // check that handleType is one of the valid GTF_ICON_* values
+        // check that handleType is one of the valid GTF_ICON_* values
+        assert((handleType & GTF_ICON_HDL_MASK) != 0);
         assert((handleType & ~GTF_ICON_HDL_MASK) == 0);
-        return (gtFlags & GTF_ICON_HDL_MASK) == handleType;
+        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
     }
 
-    // Return just the part of the flags corresponding to the GTF_ICON_*_HDL flag. For example,
-    // GTF_ICON_SCOPE_HDL. The tree node must be a const int, but it might not be a handle, in which
-    // case we'll return zero.
+    // Return just the part of the flags corresponding to the GTF_ICON_*_HDL flag.
+    // For non-icon handle trees, returns GTF_EMPTY.
     GenTreeFlags GetIconHandleFlag() const
     {
-        assert(gtOper == GT_CNS_INT);
-        return (gtFlags & GTF_ICON_HDL_MASK);
+        return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
@@ -2138,12 +2135,6 @@ public:
     {
         assert(gtOper == GT_CNS_INT);
         gtFlags &= ~GTF_ICON_HDL_MASK;
-    }
-
-    // Return true if the two GT_CNS_INT trees have the same handle flag (GTF_ICON_*_HDL).
-    static bool SameIconHandleFlag(GenTree* t1, GenTree* t2)
-    {
-        return t1->GetIconHandleFlag() == t2->GetIconHandleFlag();
     }
 
     bool IsCall() const

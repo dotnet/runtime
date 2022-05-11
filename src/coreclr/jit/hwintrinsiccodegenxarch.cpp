@@ -427,6 +427,11 @@ void CodeGen::genHWIntrinsic(GenTreeHWIntrinsic* node)
         case InstructionSet_POPCNT_X64:
             genPOPCNTIntrinsic(node);
             break;
+        case InstructionSet_X86Serialize:
+        case InstructionSet_X86Serialize_X64:
+            genX86SerializeIntrinsic(node);
+            break;
+
         default:
             unreached();
             break;
@@ -1955,6 +1960,35 @@ void CodeGen::genXCNTIntrinsic(GenTreeHWIntrinsic* node, instruction ins)
         GetEmitter()->emitIns_R_R(INS_xor, EA_4BYTE, targetReg, targetReg);
     }
     genHWIntrinsic_R_RM(node, ins, emitTypeSize(node->TypeGet()), targetReg, op1);
+}
+
+//------------------------------------------------------------------------
+// genX86SerializeIntrinsic: Generates the code for an X86 serialize hardware intrinsic node
+//
+// Arguments:
+//    node - The hardware intrinsic node
+//
+void CodeGen::genX86SerializeIntrinsic(GenTreeHWIntrinsic* node)
+{
+    NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
+
+    genConsumeMultiOpOperands(node);
+
+    switch (intrinsicId)
+    {
+        case NI_X86Serialize_Serialize:
+        {
+            assert(node->GetSimdBaseType() == TYP_UNKNOWN);
+            GetEmitter()->emitIns(INS_serialize);
+            break;
+        }
+
+        default:
+            unreached();
+            break;
+    }
+
+    genProduceReg(node);
 }
 
 #endif // FEATURE_HW_INTRINSICS

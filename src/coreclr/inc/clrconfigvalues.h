@@ -766,6 +766,7 @@ RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE3_4,       W("EnableSSE3_4"),       1
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE41,        W("EnableSSE41"),        1, "Allows SSE4.1+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSE42,        W("EnableSSE42"),        1, "Allows SSE4.2+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableSSSE3,        W("EnableSSSE3"),        1, "Allows SSSE3+ hardware intrinsics to be disabled")
+RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableX86Serialize, W("EnableX86Serialize"), 1, "Allows X86Serialize+ hardware intrinsics to be disabled")
 #elif defined(TARGET_ARM64)
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64AdvSimd, W("EnableArm64AdvSimd"), 1, "Allows Arm64 AdvSimd+ hardware intrinsics to be disabled")
 RETAIL_CONFIG_DWORD_INFO(EXTERNAL_EnableArm64Aes,     W("EnableArm64Aes"),     1, "Allows Arm64 Aes+ hardware intrinsics to be disabled")
