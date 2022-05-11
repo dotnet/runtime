@@ -383,7 +383,6 @@ namespace System.Net.Security
         public Task AuthenticateAsClientAsync(SslClientAuthenticationOptions sslClientAuthenticationOptions, CancellationToken cancellationToken = default)
         {
             ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions);
-            ArgumentNullException.ThrowIfNull(sslClientAuthenticationOptions.TargetHost, nameof(sslClientAuthenticationOptions.TargetHost));
 
             ThrowIfExceptional();
             _sslAuthenticationOptions.UpdateOptions(sslClientAuthenticationOptions);

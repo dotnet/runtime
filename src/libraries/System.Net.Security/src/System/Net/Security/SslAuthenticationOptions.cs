@@ -17,8 +17,6 @@ namespace System.Net.Security
 
         internal void UpdateOptions(SslClientAuthenticationOptions sslClientAuthenticationOptions)
         {
-            Debug.Assert(sslClientAuthenticationOptions.TargetHost != null);
-
             if (CertValidationDelegate == null)
             {
                 CertValidationDelegate = sslClientAuthenticationOptions.RemoteCertificateValidationCallback;
