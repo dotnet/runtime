@@ -378,6 +378,8 @@ stages:
       - windows_x64
       - windows_x86
       - Linux_x64
+      - windows_arm64
+      - Linux_arm64
       jobParameters:
         isOfficialBuild: ${{ variables.isOfficialBuild }}
         signBinaries: false
@@ -399,6 +401,8 @@ stages:
       - windows_x64
       - windows_x86
       - Linux_x64
+      - windows_arm64
+      - Linux_arm64
 
   #
   # Build Workloads
