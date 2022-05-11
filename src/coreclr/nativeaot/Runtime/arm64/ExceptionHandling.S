@@ -508,7 +508,7 @@ DonePopping:
         // It was the ThreadAbortException, so rethrow it
         // reset SP
         mov         x1, x0                                     // x1 <- continuation address as exception PC
-        mov         w0, #STATUS_REDHAWK_THREAD_ABORT
+        mov         w0, #STATUS_NATIVEAOT_THREAD_ABORT
         mov         sp, x2
         b           RhpThrowHwEx
 

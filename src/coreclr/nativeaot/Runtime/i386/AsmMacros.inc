@@ -159,8 +159,8 @@ TrapThreadsFlags_None            equ 0
 TrapThreadsFlags_AbortInProgress equ 1
 TrapThreadsFlags_TrapThreads     equ 2
 
-;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-STATUS_REDHAWK_THREAD_ABORT      equ 43h
+;; This must match HwExceptionCode.STATUS_NATIVEAOT_THREAD_ABORT
+STATUS_NATIVEAOT_THREAD_ABORT      equ 43h
 
 ;;
 ;; Rename fields of nested structs
@@ -186,7 +186,7 @@ RhpTrapThreads                              equ _RhpTrapThreads
 
 ifdef FEATURE_GC_STRESS
 THREAD__HIJACKFORGCSTRESS                   equ ?HijackForGcStress@Thread@@SGXPAUPAL_LIMITED_CONTEXT@@@Z
-REDHAWKGCINTERFACE__STRESSGC                equ ?StressGc@RedhawkGCInterface@@SGXXZ
+NATIVEAOTGCINTERFACE__STRESSGC                equ ?StressGc@NativeAOTGCInterface@@SGXXZ
 endif ;; FEATURE_GC_STRESS
 
 ;;
@@ -204,7 +204,7 @@ EXTERN RhRethrow                                : PROC
 
 ifdef FEATURE_GC_STRESS
 EXTERN THREAD__HIJACKFORGCSTRESS                : PROC
-EXTERN REDHAWKGCINTERFACE__STRESSGC             : PROC
+EXTERN NATIVEAOTGCINTERFACE__STRESSGC             : PROC
 endif ;; FEATURE_GC_STRESS
 
 EXTERN G_LOWEST_ADDRESS : DWORD

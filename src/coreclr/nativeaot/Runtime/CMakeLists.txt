@@ -117,8 +117,8 @@ if(WIN32)
   include_directories(windows)
 
   list(APPEND COMMON_RUNTIME_SOURCES
-    windows/PalRedhawkCommon.cpp
-    windows/PalRedhawkMinWin.cpp
+    windows/PalNativeAOTCommon.cpp
+    windows/PalNativeAOTMinWin.cpp
     ${GC_DIR}/windows/gcenv.windows.cpp
     eventtrace.cpp
     rheventtrace.cpp
@@ -165,7 +165,7 @@ else()
   add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
 
   list(APPEND COMMON_RUNTIME_SOURCES
-    unix/PalRedhawkUnix.cpp
+    unix/PalNativeAOTUnix.cpp
     ${GC_DIR}/unix/gcenv.unix.cpp
     ${GC_DIR}/unix/events.cpp
     ${GC_DIR}/unix/cgroup.cpp
@@ -233,7 +233,7 @@ add_definitions(-DFEATURE_CONSERVATIVE_GC)
 add_definitions(-DFEATURE_CUSTOM_IMPORTS)
 add_definitions(-DFEATURE_DYNAMIC_CODE)
 add_compile_definitions($<$<OR:$<CONFIG:Debug>,$<CONFIG:Checked>>:FEATURE_GC_STRESS>)
-add_definitions(-DFEATURE_REDHAWK)
+add_definitions(-DFEATURE_NATIVEAOT)
 add_definitions(-DVERIFY_HEAP)
 add_definitions(-DNATIVEAOT)
 add_definitions(-DFEATURE_CACHED_INTERFACE_DISPATCH)

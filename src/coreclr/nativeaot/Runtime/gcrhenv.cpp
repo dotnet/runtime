@@ -92,12 +92,12 @@ RhConfig * g_pRhConfig = &g_sRhConfig;
 
 uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
 {
-    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle),
+    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_NativeAOT_GC_PublicHandle),
                                             static_cast<GCEventKeyword>(pContext->MatchAnyKeyword),
                                             static_cast<GCEventLevel>(pContext->Level));
 
     if (IsEnabled &&
-        (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PrivateHandle) &&
+        (pContext->RegistrationHandle == Microsoft_Windows_NativeAOT_GC_PrivateHandle) &&
         GCHeapUtilities::IsGCHeapInitialized())
     {
         FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
@@ -109,7 +109,7 @@ uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
     // flick this to force a full GC.
     if (IsEnabled &&
-        (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle) &&
+        (pContext->RegistrationHandle == Microsoft_Windows_NativeAOT_GC_PublicHandle) &&
         GCHeapUtilities::IsGCHeapInitialized() &&
         ((pContext->MatchAnyKeyword & CLR_GCHEAPCOLLECT_KEYWORD) != 0))
     {
@@ -150,18 +150,18 @@ CrstStatic g_SuspendEELock;
 MethodTable g_FreeObjectEEType;
 
 // static
-bool RedhawkGCInterface::InitializeSubsystems()
+bool NativeAOTGCInterface::InitializeSubsystems()
 {
 #ifdef FEATURE_ETW
-    MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
-    MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
 
     // Register the Redhawk event provider with the system.
-    RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Private();
-    RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Public();
+    RH_ETW_REGISTER_Microsoft_Windows_NativeAOT_GC_Private();
+    RH_ETW_REGISTER_Microsoft_Windows_NativeAOT_GC_Public();
 
-    MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PrivateHandle;
-    MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PublicHandle;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_NativeAOT_GC_PrivateHandle;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_NativeAOT_GC_PublicHandle;
 #endif // FEATURE_ETW
 
     // Initialize the special MethodTable used to mark free list entries in the GC heap.
@@ -262,7 +262,7 @@ Object* GcAllocInternal(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElem
     }
 
     // Save the MethodTable for instrumentation purposes.
-    RedhawkGCInterface::SetLastAllocEEType(pEEType);
+    NativeAOTGCInterface::SetLastAllocEEType(pEEType);
 
     Object * pObject = GCHeapUtilities::GetGCHeap()->Alloc(pThread->GetAllocContext(), cbSize, uFlags);
     if (pObject == NULL)
@@ -304,7 +304,7 @@ COOP_PINVOKE_HELPER(void*, RhpGcAlloc, (MethodTable* pEEType, uint32_t uFlags, u
 }
 
 // static
-void RedhawkGCInterface::InitAllocContext(gc_alloc_context * pAllocContext)
+void NativeAOTGCInterface::InitAllocContext(gc_alloc_context * pAllocContext)
 {
     // NOTE: This method is currently unused because the thread's alloc_context is initialized via
     // static initialization of tls_CurrentThread.  If the initial contents of the alloc_context
@@ -315,14 +315,14 @@ void RedhawkGCInterface::InitAllocContext(gc_alloc_context * pAllocContext)
 }
 
 // static
-void RedhawkGCInterface::ReleaseAllocContext(gc_alloc_context * pAllocContext)
+void NativeAOTGCInterface::ReleaseAllocContext(gc_alloc_context * pAllocContext)
 {
     s_DeadThreadsNonAllocBytes += pAllocContext->alloc_limit - pAllocContext->alloc_ptr;
     GCHeapUtilities::GetGCHeap()->FixAllocContext(pAllocContext, NULL, NULL);
 }
 
 // static
-void RedhawkGCInterface::WaitForGCCompletion()
+void NativeAOTGCInterface::WaitForGCCompletion()
 {
     GCHeapUtilities::GetGCHeap()->WaitUntilGCComplete();
 }
@@ -510,7 +510,7 @@ static void EnumGcRefsCallback(void * hCallback, PTR_PTR_VOID pObject, uint32_t 
 }
 
 // static
-void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
+void NativeAOTGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
                                     MethodInfo * pMethodInfo,
                                     PTR_VOID safePointAddress,
                                     REGDISPLAY * pRegisterSet,
@@ -530,7 +530,7 @@ void RedhawkGCInterface::EnumGcRefs(ICodeManager * pCodeManager,
 }
 
 // static
-void RedhawkGCInterface::EnumGcRefsInRegionConservatively(PTR_RtuObjectRef pLowerBound,
+void NativeAOTGCInterface::EnumGcRefsInRegionConservatively(PTR_RtuObjectRef pLowerBound,
                                                           PTR_RtuObjectRef pUpperBound,
                                                           void * pfnEnumCallback,
                                                           void * pvCallbackData)
@@ -539,7 +539,7 @@ void RedhawkGCInterface::EnumGcRefsInRegionConservatively(PTR_RtuObjectRef pLowe
 }
 
 // static
-void RedhawkGCInterface::EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, void * pfnEnumCallback, void * pvCallbackData)
+void NativeAOTGCInterface::EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, void * pfnEnumCallback, void * pvCallbackData)
 {
     ASSERT((GCRK_Object == kind) || (GCRK_Byref == kind));
 
@@ -556,13 +556,13 @@ void RedhawkGCInterface::EnumGcRef(PTR_RtuObjectRef pRef, GCRefKind kind, void *
 #ifndef DACCESS_COMPILE
 
 // static
-void RedhawkGCInterface::BulkEnumGcObjRef(PTR_RtuObjectRef pRefs, uint32_t cRefs, void * pfnEnumCallback, void * pvCallbackData)
+void NativeAOTGCInterface::BulkEnumGcObjRef(PTR_RtuObjectRef pRefs, uint32_t cRefs, void * pfnEnumCallback, void * pvCallbackData)
 {
     GcBulkEnumObjects((PTR_OBJECTREF)pRefs, cRefs, (EnumGcRefCallbackFunc *)pfnEnumCallback, (EnumGcRefScanContext *)pvCallbackData);
 }
 
 // static
-GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_t SizeSection)
+GcSegmentHandle NativeAOTGCInterface::RegisterFrozenSegment(void * pSection, size_t SizeSection)
 {
 #ifdef FEATURE_BASICFREEZE
     segment_info seginfo;
@@ -580,7 +580,7 @@ GcSegmentHandle RedhawkGCInterface::RegisterFrozenSegment(void * pSection, size_
 }
 
 // static
-void RedhawkGCInterface::UnregisterFrozenSegment(GcSegmentHandle segment)
+void NativeAOTGCInterface::UnregisterFrozenSegment(GcSegmentHandle segment)
 {
     GCHeapUtilities::GetGCHeap()->UnregisterFrozenSegment((segment_handle)segment);
 }
@@ -589,7 +589,7 @@ EXTERN_C UInt32_BOOL g_fGcStressStarted;
 UInt32_BOOL g_fGcStressStarted = UInt32_FALSE; // UInt32_BOOL because asm code reads it
 #ifdef FEATURE_GC_STRESS
 // static
-void RedhawkGCInterface::StressGc()
+void NativeAOTGCInterface::StressGc()
 {
     // The GarbageCollect operation below may trash the last win32 error. We save the error here so that it can be
     // restored after the GC operation;
@@ -622,7 +622,7 @@ COOP_PINVOKE_HELPER(void, RhpInitializeGcStress, ())
 // Enumerate every reference field in an object, calling back to the specified function with the given context
 // for each such reference found.
 // static
-void RedhawkGCInterface::ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext)
+void NativeAOTGCInterface::ScanObject(void *pObject, GcScanObjectFunction pfnScanCallback, void *pContext)
 {
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
     GCHeapUtilities::GetGCHeap()->DiagWalkObject((Object*)pObject, (walk_fn)pfnScanCallback, pContext);
@@ -659,7 +659,7 @@ void ScanRootsCallbackWrapper(Object** pObject, EnumGcRefScanContext* pContext, 
 // the context of a GC.
 //
 // static
-void RedhawkGCInterface::ScanStackRoots(Thread *pThread, GcScanRootFunction pfnScanCallback, void *pContext)
+void NativeAOTGCInterface::ScanStackRoots(Thread *pThread, GcScanRootFunction pfnScanCallback, void *pContext)
 {
 #ifndef DACCESS_COMPILE
     ScanRootsContext sContext;
@@ -677,7 +677,7 @@ void RedhawkGCInterface::ScanStackRoots(Thread *pThread, GcScanRootFunction pfnS
 // Enumerate all the object roots located in statics. It is only safe to call this from the context of a GC.
 //
 // static
-void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, void *pContext)
+void NativeAOTGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, void *pContext)
 {
 #ifndef DACCESS_COMPILE
     ScanRootsContext sContext;
@@ -695,7 +695,7 @@ void RedhawkGCInterface::ScanStaticRoots(GcScanRootFunction pfnScanCallback, voi
 // GC.
 //
 // static
-void RedhawkGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext)
+void NativeAOTGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback, void *pContext)
 {
 #if !defined(DACCESS_COMPILE) && defined(FEATURE_EVENT_TRACE)
     ScanRootsContext sContext;
@@ -710,7 +710,7 @@ void RedhawkGCInterface::ScanHandleTableRoots(GcScanRootFunction pfnScanCallback
 
 #ifndef DACCESS_COMPILE
 
-uint32_t RedhawkGCInterface::GetGCDescSize(void * pType)
+uint32_t NativeAOTGCInterface::GetGCDescSize(void * pType)
 {
     MethodTable * pMT = (MethodTable *)pType;
 
@@ -754,23 +754,23 @@ COOP_PINVOKE_HELPER(FC_BOOL_RET, RhCompareObjectContentsAndPadding, (Object* pOb
 // Thread static representing the last allocation.
 // This is used to log the type information for each slow allocation.
 DECLSPEC_THREAD
-MethodTable * RedhawkGCInterface::tls_pLastAllocationEEType = NULL;
+MethodTable * NativeAOTGCInterface::tls_pLastAllocationEEType = NULL;
 
 // Get the last allocation for this thread.
-MethodTable * RedhawkGCInterface::GetLastAllocEEType()
+MethodTable * NativeAOTGCInterface::GetLastAllocEEType()
 {
     return tls_pLastAllocationEEType;
 }
 
 // Set the last allocation for this thread.
-void RedhawkGCInterface::SetLastAllocEEType(MethodTable * pEEType)
+void NativeAOTGCInterface::SetLastAllocEEType(MethodTable * pEEType)
 {
     tls_pLastAllocationEEType = pEEType;
 }
 
-uint64_t RedhawkGCInterface::s_DeadThreadsNonAllocBytes = 0;
+uint64_t NativeAOTGCInterface::s_DeadThreadsNonAllocBytes = 0;
 
-uint64_t RedhawkGCInterface::GetDeadThreadsNonAllocBytes()
+uint64_t NativeAOTGCInterface::GetDeadThreadsNonAllocBytes()
 {
 #ifdef HOST_64BIT
     return s_DeadThreadsNonAllocBytes;
@@ -781,12 +781,12 @@ uint64_t RedhawkGCInterface::GetDeadThreadsNonAllocBytes()
 #endif
 }
 
-void RedhawkGCInterface::DestroyTypedHandle(void * handle)
+void NativeAOTGCInterface::DestroyTypedHandle(void * handle)
 {
     GCHandleUtilities::GetGCHandleManager()->DestroyHandleOfUnknownType((OBJECTHANDLE)handle);
 }
 
-void* RedhawkGCInterface::CreateTypedHandle(void* pObject, int type)
+void* NativeAOTGCInterface::CreateTypedHandle(void* pObject, int type)
 {
     return (void*)GCHandleUtilities::GetGCHandleManager()->GetGlobalHandleStore()->CreateHandleOfType((Object*)pObject, (HandleType)type);
 }

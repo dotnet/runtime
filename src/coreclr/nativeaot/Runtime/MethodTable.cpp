@@ -7,8 +7,8 @@
 #include "rhassert.h"
 #include "rhbinder.h"
 #include "MethodTable.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 
 #include "CommonMacros.inl"
 #include "MethodTable.inl"

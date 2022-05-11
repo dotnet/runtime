@@ -4,8 +4,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
@@ -386,7 +386,7 @@ bool RuntimeInstance::ShouldHijackCallsiteForGcStress(uintptr_t CallsiteIP)
 
 COOP_PINVOKE_HELPER(uint32_t, RhGetGCDescSize, (MethodTable* pEEType))
 {
-    return RedhawkGCInterface::GetGCDescSize(pEEType);
+    return NativeAOTGCInterface::GetGCDescSize(pEEType);
 }
 
 #ifdef FEATURE_CACHED_INTERFACE_DISPATCH

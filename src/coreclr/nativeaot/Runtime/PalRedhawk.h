@@ -20,8 +20,8 @@
 #include "gcenv.structs.h"
 #include "IntrinsicConstants.h"
 
-#ifndef PAL_REDHAWK_INCLUDED
-#define PAL_REDHAWK_INCLUDED
+#ifndef PAL_NATIVEAOT_INCLUDED
+#define PAL_NATIVEAOT_INCLUDED
 
 /* Adapted from intrin.h - For compatibility with <winnt.h>, some intrinsics are __cdecl except on x64 */
 #if defined (_M_X64)
@@ -453,8 +453,8 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define STATUS_SINGLE_STEP                             ((uint32_t   )0x80000004L)
 #define STATUS_ACCESS_VIOLATION                        ((uint32_t   )0xC0000005L)
 #define STATUS_STACK_OVERFLOW                          ((uint32_t   )0xC00000FDL)
-#define STATUS_REDHAWK_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
-#define STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
+#define STATUS_NATIVEAOT_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
+#define STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
 
 #ifdef TARGET_UNIX
 #define NULL_AREA_SIZE                   (4*1024)
@@ -562,12 +562,12 @@ EventDataDescCreate(_Out_ EVENT_DATA_DESCRIPTOR * EventDataDescriptor, _In_opt_ 
 extern uint32_t g_RhNumberOfProcessors;
 
 #ifdef TARGET_UNIX
-#define REDHAWK_PALIMPORT extern "C"
-#define REDHAWK_PALEXPORT extern "C"
-#define REDHAWK_PALAPI
+#define NATIVEAOT_PALIMPORT extern "C"
+#define NATIVEAOT_PALEXPORT extern "C"
+#define NATIVEAOT_PALAPI
 #else
-#define REDHAWK_PALIMPORT EXTERN_C
-#define REDHAWK_PALAPI __stdcall
+#define NATIVEAOT_PALIMPORT EXTERN_C
+#define NATIVEAOT_PALAPI __stdcall
 #endif // TARGET_UNIX
 
 #ifndef DACCESS_COMPILE
@@ -579,28 +579,28 @@ extern uint32_t g_RhNumberOfProcessors;
 #ifndef _INC_WINDOWS
 // Include the list of external functions we wish to access. If we do our job 100% then it will be
 // possible to link without any direct reference to any Win32 library.
-#include "PalRedhawkFunctions.h"
+#include "PalNativeAOTFunctions.h"
 #endif // !_INC_WINDOWS
 #endif // !DACCESS_COMPILE
 
 // The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalInit();
+NATIVEAOT_PALIMPORT bool NATIVEAOT_PALAPI PalInit();
 
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
+NATIVEAOT_PALIMPORT void NATIVEAOT_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound);
 
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx);
+NATIVEAOT_PALIMPORT bool NATIVEAOT_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx);
 
-REDHAWK_PALIMPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount();
+NATIVEAOT_PALIMPORT int32_t NATIVEAOT_PALAPI PalGetProcessCpuCount();
 
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut);
+NATIVEAOT_PALIMPORT bool NATIVEAOT_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut);
 
 // Return value:  number of characters in name string
-REDHAWK_PALIMPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
+NATIVEAOT_PALIMPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase);
 
 #if _WIN32
 
@@ -667,56 +667,56 @@ inline uint8_t * PalNtCurrentTeb()
 EXTERN_C void * __cdecl _alloca(size_t);
 #pragma intrinsic(_alloca)
 
-REDHAWK_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread();
-REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
-REDHAWK_PALIMPORT uint64_t REDHAWK_PALAPI PalGetTickCount64();
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t exitCode);
-REDHAWK_PALIMPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
+NATIVEAOT_PALIMPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* NATIVEAOT_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect);
+NATIVEAOT_PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType);
+NATIVEAOT_PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect);
+NATIVEAOT_PALIMPORT void NATIVEAOT_PALAPI PalSleep(uint32_t milliseconds);
+NATIVEAOT_PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalSwitchToThread();
+NATIVEAOT_PALIMPORT HANDLE NATIVEAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName);
+NATIVEAOT_PALIMPORT uint64_t NATIVEAOT_PALAPI PalGetTickCount64();
+NATIVEAOT_PALIMPORT void NATIVEAOT_PALAPI PalTerminateCurrentProcess(uint32_t exitCode);
+NATIVEAOT_PALIMPORT HANDLE NATIVEAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer);
 
 #ifdef TARGET_UNIX
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
+NATIVEAOT_PALIMPORT void NATIVEAOT_PALAPI PalSetHardwareExceptionHandler(PHARDWARE_EXCEPTION_HANDLER handler);
 #else
-REDHAWK_PALIMPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler);
+NATIVEAOT_PALIMPORT void* NATIVEAOT_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler);
 #endif
 
 typedef uint32_t (__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+NATIVEAOT_PALIMPORT bool NATIVEAOT_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
+NATIVEAOT_PALIMPORT bool NATIVEAOT_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext);
 
 typedef UInt32_BOOL (*PalHijackCallback)(HANDLE hThread, _In_ PAL_LIMITED_CONTEXT* pThreadContext, _In_opt_ void* pCallbackContext);
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ PalHijackCallback callback, _In_opt_ void* pCallbackContext);
+NATIVEAOT_PALIMPORT uint32_t NATIVEAOT_PALAPI PalHijack(HANDLE hThread, _In_ PalHijackCallback callback, _In_opt_ void* pCallbackContext);
 
 #ifdef FEATURE_ETW
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor);
+NATIVEAOT_PALIMPORT bool NATIVEAOT_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor);
 #endif
 
-REDHAWK_PALIMPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer);
+NATIVEAOT_PALIMPORT _Ret_maybenull_ void* NATIVEAOT_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer);
 
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress);
+NATIVEAOT_PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut);
+NATIVEAOT_PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress);
 
-REDHAWK_PALIMPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
+NATIVEAOT_PALIMPORT UInt32_BOOL NATIVEAOT_PALAPI PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
     int thunkBlockSize,
     int thunkBlocksPerMapping);
 
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
+NATIVEAOT_PALIMPORT uint32_t NATIVEAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t count, HANDLE* pHandles, UInt32_BOOL allowReentrantWait);
 
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PalAttachThread(void* thread);
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalDetachThread(void* thread);
+NATIVEAOT_PALIMPORT void NATIVEAOT_PALAPI PalAttachThread(void* thread);
+NATIVEAOT_PALIMPORT bool NATIVEAOT_PALAPI PalDetachThread(void* thread);
 
-REDHAWK_PALIMPORT uint64_t PalGetCurrentThreadIdForLogging();
+NATIVEAOT_PALIMPORT uint64_t PalGetCurrentThreadIdForLogging();
 
-REDHAWK_PALIMPORT void PalPrintFatalError(const char* message);
+NATIVEAOT_PALIMPORT void PalPrintFatalError(const char* message);
 
 #ifdef TARGET_UNIX
-REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);
+NATIVEAOT_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *string2);
 #endif // TARGET_UNIX
 
 #ifdef UNICODE
@@ -734,21 +734,21 @@ REDHAWK_PALIMPORT int32_t __cdecl _stricmp(const char *string1, const char *stri
 #ifdef TARGET_UNIX
 // MSVC directly defines intrinsics for __cpuid and __cpuidex matching the below signatures
 // We define matching signatures for use on Unix platforms.
-REDHAWK_PALIMPORT void __cpuid(int cpuInfo[4], int function_id);
-REDHAWK_PALIMPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
+NATIVEAOT_PALIMPORT void __cpuid(int cpuInfo[4], int function_id);
+NATIVEAOT_PALIMPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id);
 #else
 #include <intrin.h>
 #endif
 
-REDHAWK_PALIMPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport();
-REDHAWK_PALIMPORT bool REDHAWK_PALAPI PalIsAvxEnabled();
+NATIVEAOT_PALIMPORT uint32_t NATIVEAOT_PALAPI xmmYmmStateSupport();
+NATIVEAOT_PALIMPORT bool NATIVEAOT_PALAPI PalIsAvxEnabled();
 
 #endif // defined(HOST_X86) || defined(HOST_AMD64)
 
 #if defined(HOST_ARM64)
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags);
+NATIVEAOT_PALIMPORT void NATIVEAOT_PALAPI PAL_GetCpuCapabilityFlags(int* flags);
 #endif //defined(HOST_ARM64)
 
-#include "PalRedhawkInline.h"
+#include "PalNativeAOTInline.h"
 
-#endif // !PAL_REDHAWK_INCLUDED
+#endif // !PAL_NATIVEAOT_INCLUDED
