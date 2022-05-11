@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequests_Succeeds(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options(){ MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
             {
@@ -125,7 +125,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendStreamLimitRequestsConcurrently_Succeeds(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options(){ MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
             {
@@ -179,7 +179,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options(){ MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
             var lastRequestContentStarted = new TaskCompletionSource();
 
             Task serverTask = Task.Run(async () =>
@@ -195,7 +195,8 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 // Make the last request running independently.
-                var lastRequest = Task.Run(async () => {
+                var lastRequest = Task.Run(async () =>
+                {
                     using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                     await stream.HandleRequestAsync();
                 });
@@ -416,7 +417,7 @@ namespace System.Net.Http.Functional.Tests
                     RequestUri = server.Address,
                     Version = HttpVersion30,
                     VersionPolicy = HttpVersionPolicy.RequestVersionExact,
-                    Content = new ByteAtATimeContent(60*4, Task.CompletedTask, new TaskCompletionSource<bool>(), 250)
+                    Content = new ByteAtATimeContent(60 * 4, Task.CompletedTask, new TaskCompletionSource<bool>(), 250)
                 };
 
                 var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -723,12 +724,12 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient();
 
                 using HttpRequestMessage request = new()
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = server.Address,
-                        Version = HttpVersion30,
-                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                    };
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
                 HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
 
                 Stream stream = await response.Content.ReadAsStreamAsync();
@@ -785,7 +786,7 @@ namespace System.Net.Http.Functional.Tests
 
                 HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
 
-                int contentLength = 2*1024*1024;
+                int contentLength = 2 * 1024 * 1024;
                 var headers = new List<HttpHeaderData>();
                 headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
 
@@ -810,12 +811,12 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient();
 
                 using HttpRequestMessage request = new()
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = server.Address,
-                        Version = HttpVersion30,
-                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                    };
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
                 HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(20));
 
                 Stream stream = await response.Content.ReadAsStreamAsync();
@@ -917,12 +918,12 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient();
 
                 using HttpRequestMessage request = new()
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = server.Address,
-                        Version = HttpVersion30,
-                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                    };
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
                 Assert.Contains("ALPN_NEG_FAILURE", ex.Message);
@@ -1057,7 +1058,7 @@ namespace System.Net.Http.Functional.Tests
 
             var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
 
-            Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10));;
+            Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10)); ;
             // Send headers
             await requestStream.FlushAsync();
 
@@ -1209,8 +1210,6 @@ namespace System.Net.Http.Functional.Tests
                 cts.Cancel();
                 await Task.Delay(250);
 
-                // Http3WriteStream is disposed after cancellation fired
-                await Assert.ThrowsAsync<ObjectDisposedException>(() => requestStream.WriteAsync(message).AsTask());
                 // client is properly canceled
                 await Assert.ThrowsAsync<TaskCanceledException>(() => responseTask);
             });
@@ -1385,9 +1384,9 @@ namespace System.Net.Http.Functional.Tests
 
                 if (graceful)
                 {
-                // HttpClient will retry to send the request, so we cancel the sending itself
-                cts.Cancel();
-                await Assert.ThrowsAnyAsync<OperationCanceledException>(() => responseTask);
+                    // HttpClient will retry to send the request, so we cancel the sending itself
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => responseTask);
                 }
                 else
                 {

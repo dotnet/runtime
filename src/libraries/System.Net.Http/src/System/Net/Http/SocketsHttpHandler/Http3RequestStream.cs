@@ -144,7 +144,7 @@ namespace System.Net.Http
 
                     // End the stream writing if there's no content to send, do it as part of the write so that the FIN flag isn't send in an empty QUIC frame.
                     // Note that there's no need to call Shutdown separately since the FIN flag in the last write is the same thing.
-                    await FlushSendBufferAsync(endStream: _request.Content == null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
+                    await FlushSendBufferAsync(endStream: _request.Content == null, cancellationToken).ConfigureAwait(false);
                 }
 
                 Task sendContentTask;
@@ -159,7 +159,7 @@ namespace System.Net.Http
 
                 // In parallel, send content and read response.
                 // Depending on Expect 100 Continue usage, one will depend on the other making progress.
-                Task readResponseTask = ReadResponseAsync(_requestBodyCancellationSource.Token);
+                Task readResponseTask = ReadResponseAsync(cancellationToken);
                 bool sendContentObserved = false;
 
                 // If we're not doing duplex, wait for content to finish sending here.
@@ -205,7 +205,7 @@ namespace System.Net.Http
                 if (useEmptyResponseContent)
                 {
                     // Drain the response frames to read any trailing headers.
-                    await DrainContentLength0Frames(_requestBodyCancellationSource.Token).ConfigureAwait(false);
+                    await DrainContentLength0Frames(cancellationToken).ConfigureAwait(false);
                     responseContent.SetStream(EmptyReadStream.Instance);
                 }
                 else
@@ -255,7 +255,7 @@ namespace System.Net.Http
                 throw new HttpRequestException(SR.net_http_client_execution_error, abortException);
             }
             // It is possible for user's Content code to throw an unexpected OperationCanceledException.
-            catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token)
+            catch (OperationCanceledException ex) when (ex.CancellationToken == _requestBodyCancellationSource.Token || ex.CancellationToken == cancellationToken)
             {
                 // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
                 if (cancellationToken.IsCancellationRequested)
