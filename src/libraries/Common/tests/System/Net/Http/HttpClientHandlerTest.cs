@@ -229,10 +229,11 @@ namespace System.Net.Http.Functional.Tests
         }
 
         [Theory]
-        [InlineData("[::1234]")]
-        [InlineData("[::1234]:8080")]
+        [InlineData("[::1234]", "[::1234]")]
+        [InlineData("[::1234]:8080", "[::1234]:8080")]
+        [InlineData("[fe80::9c3a:b64d:6249:1de8%2]", "[fe80::9c3a:b64d:6249:1de8]")]
         [SkipOnPlatform(TestPlatforms.Browser, "Proxy not supported on Browser")]
-        public async Task GetAsync_IPv6AddressInHostHeader_CorrectlyFormatted(string host)
+        public async Task GetAsync_IPv6AddressInHostHeader_CorrectlyFormatted(string host, string hostHeader)
         {
             string ipv6Address = "http://" + host;
             bool connectionAccepted = false;
@@ -261,7 +262,7 @@ namespace System.Net.Http.Functional.Tests
             {
                 connectionAccepted = true;
                 List<string> headers = await connection.ReadRequestHeaderAndSendResponseAsync();
-                Assert.Contains($"Host: {host}", headers);
+                Assert.Contains($"Host: {hostHeader}", headers);
             }));
 
             Assert.True(connectionAccepted);
