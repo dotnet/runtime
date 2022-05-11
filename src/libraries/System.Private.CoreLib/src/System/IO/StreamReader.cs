@@ -1016,15 +1016,7 @@ namespace System.IO
             static char[] Resize(char[] array, int atLeastSpace)
             {
                 char[] newArr = ArrayPool<char>.Shared.Rent(array.Length + atLeastSpace);
-                try
-                {
-                    Array.Copy(array, newArr, array.Length);
-                }
-                catch
-                {
-                    ArrayPool<char>.Shared.Return(newArr);
-                    throw;
-                }
+                Array.Copy(array, newArr, array.Length);
                 ArrayPool<char>.Shared.Return(array);
                 return newArr;
             }
