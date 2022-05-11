@@ -1115,8 +1115,23 @@ jobs:
           eq(dependencies.evaluate_paths.outputs['SetPathVars_libraries.containsChange'], true),
           eq(variables['isRollingBuild'], true))
 
+# The next three jobs run checked coreclr + <either debug or release in PR> libraries tests.
+# The matrix looks like the following, where the right columns specify which configurations
+# the libraries tests are built in.
+# ________________________________________
+# | Platform         | PR      | Rolling |
+# | ---------------- | ---     | ------- |
+# | linux-musl-arm64 | Debug   | Release |
+# | linux-arm        | Debug   | Release |
+# | windows-x86      | Debug   | Release |
+# | Linux-musl-x64   | Debug   | Release |
+# | Linux-musl-arm   | Release | Release |
+# | Linux-x64        | Release | Release |
+# | Windows-x64      | Release | Release |
+# | OSX-x64          | Debug   | Release |
+
 #
-# Libraries Test Execution against a checked runtime
+# Debug (PR) / Release (rolling) Libraries Test Execution against a checked runtime
 # Only when the PR contains a coreclr change
 #
 - template: /eng/pipelines/common/platform-matrix.yml
@@ -1124,11 +1139,10 @@ jobs:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
     buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
     platforms:
-    # - windows_arm return this when https://github.com/dotnet/runtime/issues/1097 is fixed.
-    - Linux_arm
-    - Linux_musl_arm
     - Linux_musl_arm64
+    - Linux_arm
     - windows_x86
+    - Linux_musl_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
@@ -1140,17 +1154,17 @@ jobs:
           eq(variables['isRollingBuild'], true))
 
 #
-# Libraries Test Execution against a checked runtime
+# Release Libraries Test Execution against a checked runtime
 # Only if CoreCLR or Libraries is changed
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:
     jobTemplate: /eng/pipelines/libraries/run-test-job.yml
-    buildConfig: ${{ variables.debugOnPrReleaseOnRolling }}
+    buildConfig: Release
     platforms:
-    - windows_x64
+    - Linux_musl_arm
     - Linux_x64
-    - Linux_musl_x64
+    - windows_x64
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     helixQueueGroup: libraries
     jobParameters:
