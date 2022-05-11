@@ -986,8 +986,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 }
 
-                Log("debug", $"frame il offset: {il_pos} method token: {method.Info.Token} assembly name: {method.Info.Assembly.Name}");
-                Log("debug", $"\tmethod {method.Name} location: {location}");
+                // logger.LogTrace($"frame il offset: {il_pos} method token: {method.Info.Token} assembly name: {method.Info.Assembly.Name}");
+                // logger.LogTrace($"\tmethod {method.Name} location: {location}");
                 frames.Add(new Frame(method, location, frame_id));
 
                 callFrames.Add(new
