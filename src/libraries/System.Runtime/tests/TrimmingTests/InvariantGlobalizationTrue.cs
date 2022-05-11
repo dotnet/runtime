@@ -29,7 +29,7 @@ class Program
         }
         
         // Ensure the internal GlobalizationMode class is trimmed correctly.
-        Type globalizationMode = typeof(object).Assembly.GetType("System.Globalization.GlobalizationMode", throwOnError: false);
+        Type globalizationMode = GetCoreLibType("System.Globalization.GlobalizationMode");
 
         if (OperatingSystem.IsWindows())
         {
@@ -55,9 +55,14 @@ class Program
         // On non Windows platforms, the full type is trimmed.
         else if (globalizationMode is not null)
         {
-            return -4;
+            Console.WriteLine("It is expected to have System.Globalization.GlobalizationMode type trimmed in non-Windows platforms");
+            return -5;
         }
 
         return 100;
-    }        
+    }
+
+    // The intention of this method is to ensure the trimmer doesn't preserve the Type.
+    private static Type GetCoreLibType(string name) =>
+        typeof(object).Assembly.GetType(name, throwOnError: false);
 }
