@@ -228,7 +228,7 @@ namespace System.Text.RegularExpressions
                     return input;
                 }
 
-                state.segments.Add(state.inputMemory.Slice(state.prevat, input.Length - state.prevat));
+                state.segments.Add(state.inputMemory.Slice(state.prevat));
             }
             else
             {

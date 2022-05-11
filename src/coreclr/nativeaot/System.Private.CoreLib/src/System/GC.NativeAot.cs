@@ -449,7 +449,7 @@ namespace System
         private static uint s_iteration;
 
         /// <summary>
-        /// Resets the pressure accounting after a gen2 GC has occured.
+        /// Resets the pressure accounting after a gen2 GC has occurred.
         /// </summary>
         private static void CheckCollectionCount()
         {

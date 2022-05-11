@@ -55,7 +55,7 @@ namespace ILCompiler
             ReadyToRunCompilationModuleGroupBase group,
             IEnumerable<string> inputFiles,
             string compositeRootPath)
-            : base(context, group, new CoreRTNameMangler())
+            : base(context, group, new NativeAotNameMangler())
         {
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;

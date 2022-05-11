@@ -2895,53 +2895,6 @@ bool ValueNumStore::SelectIsBeingEvaluatedRecursively(ValueNum map, ValueNum ind
     return false;
 }
 
-// Specialized here as MSVC does not do well with naive version with loop.
-template <>
-bool ValueNumStore::VNDefFuncApp<1>::operator==(const ValueNumStore::VNDefFuncApp<1>& y) const
-{
-    return m_func == y.m_func && m_args[0] == y.m_args[0];
-}
-
-template <>
-bool ValueNumStore::VNDefFuncApp<2>::operator==(const ValueNumStore::VNDefFuncApp<2>& y) const
-{
-    return m_func == y.m_func && m_args[0] == y.m_args[0] && m_args[1] == y.m_args[1];
-}
-
-template <>
-bool ValueNumStore::VNDefFuncApp<3>::operator==(const ValueNumStore::VNDefFuncApp<3>& y) const
-{
-    return m_func == y.m_func && m_args[0] == y.m_args[0] && m_args[1] == y.m_args[1] && m_args[2] == y.m_args[2];
-}
-
-template <>
-bool ValueNumStore::VNDefFuncApp<4>::operator==(const ValueNumStore::VNDefFuncApp<4>& y) const
-{
-    return m_func == y.m_func && m_args[0] == y.m_args[0] && m_args[1] == y.m_args[1] && m_args[2] == y.m_args[2] &&
-           m_args[3] == y.m_args[3];
-}
-
-template <>
-unsigned ValueNumStore::VNDefFuncAppKeyFuncs<1>::GetHashCode(const ValueNumStore::VNDefFuncApp<1>& val)
-{
-    return (val.m_func << 24) + val.m_args[0];
-}
-template <>
-unsigned ValueNumStore::VNDefFuncAppKeyFuncs<2>::GetHashCode(const ValueNumStore::VNDefFuncApp<2>& val)
-{
-    return (val.m_func << 24) + (val.m_args[0] << 8) + val.m_args[1];
-}
-template <>
-unsigned ValueNumStore::VNDefFuncAppKeyFuncs<3>::GetHashCode(const ValueNumStore::VNDefFuncApp<3>& val)
-{
-    return (val.m_func << 24) + (val.m_args[0] << 16) + (val.m_args[1] << 8) + val.m_args[2];
-}
-template <>
-unsigned ValueNumStore::VNDefFuncAppKeyFuncs<4>::GetHashCode(const ValueNumStore::VNDefFuncApp<4>& val)
-{
-    return (val.m_func << 24) + (val.m_args[0] << 16) + (val.m_args[1] << 8) + val.m_args[2] + (val.m_args[3] << 12);
-}
-
 #ifdef DEBUG
 bool ValueNumStore::FixedPointMapSelsTopHasValue(ValueNum map, ValueNum index)
 {
@@ -7299,7 +7252,7 @@ void Compiler::fgValueNumber()
         else if (info.compInitMem || varDsc->lvMustInit ||
                  VarSetOps::IsMember(this, fgFirstBB->bbLiveIn, varDsc->lvVarIndex))
         {
-            // The last clause covers the use-before-def variables (the ones that are live-in to the the first block),
+            // The last clause covers the use-before-def variables (the ones that are live-in to the first block),
             // these are variables that are read before being initialized (at least on some control flow paths)
             // if they are not must-init, then they get VNF_InitVal(i), as with the param case.)
 
@@ -7937,7 +7890,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_BOOL:
-            if (tree->IsCnsIntOrI() && tree->IsIconHandle())
+            if (tree->IsIconHandle())
             {
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
@@ -8719,7 +8672,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // the address of the static itself. Here we will use "nullptr" for the
                     // field sequence and assume the actual static field will be appended to
                     // it later, as part of numbering the method table pointer offset addition.
-                    if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
                     {
                         assert(addrNvnp.BothEqual() && (addrXvnp == vnStore->VNPForEmptyExcSet()));
                         ValueNum boxAddrVN  = addrNvnp.GetLiberal();
@@ -9655,7 +9608,7 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
     // and it is better TP-wise to skip bitcasts "lazily" when doing the
     // selection, as the scenario where they are expected to be common,
     // single-field structs, implies short selection chains.
-    VNFuncApp srcVNFunc;
+    VNFuncApp srcVNFunc{VNF_COUNT};
     if (GetVNFunc(srcVN, &srcVNFunc) && (srcVNFunc.m_func == VNF_BitCast))
     {
         srcVN = srcVNFunc.m_args[0];

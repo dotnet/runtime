@@ -144,11 +144,6 @@
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseDotNetCliVersionFromGlobalJson)' == 'true'">
-    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
@@ -156,6 +151,11 @@
 
   <!-- Ensure that all HelixPreCommand items are ready before this -->
   <Target Name="BuildHelixCommand">
+    <!-- setting DotNetCliVersion here to ensure that it is set to the intended value -->
+    <PropertyGroup Condition="'$(UseDotNetCliVersionFromGlobalJson)' == 'true'">
+      <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+      <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
+    </PropertyGroup>
 
     <PropertyGroup>
       <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>

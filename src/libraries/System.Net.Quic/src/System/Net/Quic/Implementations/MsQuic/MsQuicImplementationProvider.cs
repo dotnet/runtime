@@ -11,11 +11,21 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override QuicListenerProvider CreateListener(QuicListenerOptions options)
         {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
+            }
+
             return new MsQuicListener(options);
         }
 
         internal override QuicConnectionProvider CreateConnection(QuicClientConnectionOptions options)
         {
+            if (!IsSupported)
+            {
+                throw new PlatformNotSupportedException(SR.SystemNetQuic_PlatformNotSupported);
+            }
+
             return new MsQuicConnection(options);
         }
     }

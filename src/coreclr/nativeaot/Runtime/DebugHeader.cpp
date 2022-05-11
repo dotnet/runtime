@@ -65,7 +65,7 @@ static GlobalValueEntry s_GlobalEntries[GlobalEntriesArraySize];
 struct DotNetRuntimeDebugHeader
 {
     // The cookie serves as a sanity check against process corruption or being requested
-    // to treat some other non-.Net module as though it did contain the coreRT runtime.
+    // to treat some other non-.Net module as though it did contain the .Net runtime.
     // It can also be changed if we want to make a breaking change so drastic that
     // earlier debuggers should treat the module as if it had no .Net runtime at all.
     // If the cookie is valid a debugger is safe to assume the Major/Minor version fields

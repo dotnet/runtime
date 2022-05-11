@@ -212,7 +212,7 @@ namespace System.Security.Cryptography
                 // is invalid.
                 // If it is a space or hyphen, and the previous character was
                 // also not a labelchar (another hyphen or space), then we have
-                // two consecutive spaces or hyphens which is is invalid.
+                // two consecutive spaces or hyphens which is invalid.
                 if (!isSpaceOrHyphen || !previousIsLabelChar)
                 {
                     return false;
