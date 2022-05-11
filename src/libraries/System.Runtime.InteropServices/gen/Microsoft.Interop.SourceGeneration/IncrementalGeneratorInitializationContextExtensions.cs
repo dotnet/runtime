@@ -75,7 +75,7 @@ namespace Microsoft.Interop
                 });
 
             context.RegisterSourceOutput(generatedMethods,
-                static (context, source) =>
+                (context, source) =>
                 {
                     context.AddSource(fileName, source);
                 });
