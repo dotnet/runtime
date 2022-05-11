@@ -203,13 +203,6 @@
     </When>
   </Choose>
 
-  <ItemGroup>
-    <ProjectReference Include="@(AnalyzerReference)"
-                      OutputItemType="Analyzer"
-                      ReferenceOutputAssembly="false"
-                      Pack="false" />
-  </ItemGroup>
-
   <Target Name="GetAnalyzerPackFiles"
           DependsOnTargets="$(GenerateNuspecDependsOn)"
           Returns="@(_AnalyzerPackFile)">
@@ -218,11 +211,13 @@
       <_analyzerPath Condition="'$(AnalyzerRoslynVersion)' != ''">$(_analyzerPath)/roslyn$(AnalyzerRoslynVersion)</_analyzerPath>
       <_analyzerPath Condition="'$(AnalyzerLanguage)' != ''">$(_analyzerPath)/$(AnalyzerLanguage)</_analyzerPath>
     </PropertyGroup>
+
     <ItemGroup>
       <_AnalyzerPackFile Include="@(_BuildOutputInPackage)" IsSymbol="false" />
       <_AnalyzerPackFile Include="@(_TargetPathsToSymbols)" IsSymbol="true" />
       <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
     </ItemGroup>
+
     <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'"
            Text="Analyzers must only target netstandard2.0 since they run in the compiler which targets netstandard2.0. The following files were found to target '%(_AnalyzerPackFile.TargetFramework)': @(_AnalyzerPackFile)" />
   </Target>
