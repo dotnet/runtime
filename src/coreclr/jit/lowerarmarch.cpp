@@ -147,7 +147,7 @@ bool Lowering::IsContainableImmed(GenTree* parentNode, GenTree* childNode) const
 
 #ifdef TARGET_ARM64
 //------------------------------------------------------------------------
-// IsContainableBinaryOp: Is the child node containable from the parent node?
+// IsContainableBinaryOp: Is the child node a binary op that is containable from the parent node?
 //
 // Return Value:
 //    True if the child node can be contained.
