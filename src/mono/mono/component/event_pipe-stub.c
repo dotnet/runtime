@@ -22,14 +22,14 @@ mono_wasm_event_pipe_enable (const char *output_path,
 			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
-			     int32_t *out_session_id);
+			     int64_t *out_session_id);
 
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_start_streaming (int32_t session_id);
+mono_wasm_event_pipe_session_start_streaming (const int64_t *session_id);
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_disable (int32_t session_id);
+mono_wasm_event_pipe_session_disable (const int64_t *session_id);
 
 G_END_DECLS
 
@@ -537,7 +537,7 @@ mono_wasm_event_pipe_enable (const char *output_path,
 			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
-			     int32_t *out_session_id)
+			     int64_t *out_session_id)
 {
 	if (out_session_id)
 		*out_session_id = 0;
@@ -546,13 +546,13 @@ mono_wasm_event_pipe_enable (const char *output_path,
 
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_start_streaming (int32_t session_id)
+mono_wasm_event_pipe_session_start_streaming (const int64_t *session_id)
 {
 	g_assert_not_reached ();
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_disable (int32_t session_id)
+mono_wasm_event_pipe_session_disable (const int64_t *session_id)
 {
 	g_assert_not_reached ();
 }

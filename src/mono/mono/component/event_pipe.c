@@ -27,13 +27,13 @@ mono_wasm_event_pipe_enable (const char *output_path,
 			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
-			     int32_t *out_session_id);
+			     int64_t *out_session_id);
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_start_streaming (int32_t session_id);
+mono_wasm_event_pipe_session_start_streaming (const int64_t *session_id);
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_disable (int32_t session_id);
+mono_wasm_event_pipe_session_disable (const int64_t *session_id);
 
 G_END_DECLS
 
@@ -369,7 +369,7 @@ mono_wasm_event_pipe_enable (const char *output_path,
 			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
-			     int32_t *out_session_id)
+			     int64_t *out_session_id)
 {
 	MONO_ENTER_GC_UNSAFE;
 	EventPipeSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4;
@@ -387,25 +387,25 @@ mono_wasm_event_pipe_enable (const char *output_path,
 			       /* callback_data*/ NULL);
   
 	if (out_session_id)
-		*out_session_id = (int32_t)session;
+		*out_session_id = session;
 	MONO_EXIT_GC_UNSAFE;
 	return TRUE;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_start_streaming (int32_t session_id)
+mono_wasm_event_pipe_session_start_streaming (const int64_t *session_id)
 {
 	MONO_ENTER_GC_UNSAFE;
-	ep_start_streaming ((EventPipeSessionID)session_id);
+	ep_start_streaming ((EventPipeSessionID)*session_id);
 	MONO_EXIT_GC_UNSAFE;
 	return TRUE;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_disable (int32_t session_id)
+mono_wasm_event_pipe_session_disable (const int64_t *session_id)
 {
 	MONO_ENTER_GC_UNSAFE;
-	ep_disable ((EventPipeSessionID)session_id);
+	ep_disable ((EventPipeSessionID)*session_id);
 	MONO_EXIT_GC_UNSAFE;
 	return TRUE;
 }

@@ -162,9 +162,9 @@ export interface t_Cwraps {
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
 
     // MONO.diagnostics
-    mono_wasm_event_pipe_enable(outputPath: string, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: Int32Ptr): boolean;
-    mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
-    mono_wasm_event_pipe_session_disable(sessionId: number): boolean;
+    mono_wasm_event_pipe_enable(outputPath: string, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
+    mono_wasm_event_pipe_session_start_streaming(sessionIdPtr: VoidPtr): boolean;
+    mono_wasm_event_pipe_session_disable(sessionIdPtr: VoidPtr): boolean;
 
     //DOTNET
     /**

@@ -1,5 +1,6 @@
 import { Module } from "./imports";
 import { VoidPtr, NativePointer, ManagedPointer } from "./types/emscripten";
+import * as cuint64 from "./cuint64";
 
 const alloca_stack: Array<VoidPtr> = [];
 const alloca_buffer_size = 32 * 1024;
@@ -113,4 +114,16 @@ export function getF32(offset: _MemOffset): number {
 
 export function getF64(offset: _MemOffset): number {
     return Module.HEAPF64[<any>offset >>> 3];
+}
+
+export function getCU64(offset: _MemOffset): cuint64.CUInt64 {
+    const lo = getI32 (offset);
+    const hi = getI32 (<any>offset + 4);
+    return cuint64.pack32(lo, hi);
+}
+
+export function setCU64(offset: _MemOffset, value: cuint64.CUInt64): void {
+    const [lo, hi] = cuint64.unpack32(value);
+    setI32 (offset, lo);
+    setI32 (<any>offset + 4, hi);
 }
