@@ -85,8 +85,17 @@ namespace System.Diagnostics
         {
             get
             {
-               Interlocked.CompareExchange(ref s_bootTimeTicks, Interop.Sys.GetBootTimeTicks(), 0);
-               return new DateTime(s_bootTimeTicks);
+               long bootTimeTicks = Interlocked.Read(ref s_bootTimeTicks);
+               if (bootTimeTicks == 0)
+               {
+                    bootTimeTicks = Interop.Sys.GetBootTimeTicks();
+                    long oldValue = Interlocked.CompareExchange(ref s_bootTimeTicks, bootTimeTicks, 0);
+                    if (oldValue != 0) // a different thread has managed to update the ticks first
+                    {
+                        bootTimeTicks = oldValue; // consistency
+                    }
+               }
+               return new DateTime(bootTimeTicks);
            }
        }
 
