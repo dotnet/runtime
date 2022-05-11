@@ -23,7 +23,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 			[Kept]
 			[KeptBackingField]
 			[KeptAttributeAttribute (typeof (FooAttribute))]
-			public string Value { [Foo] [Kept] [KeptAttributeAttribute (typeof (FooAttribute))] get; [Foo] [Kept] [KeptAttributeAttribute (typeof (FooAttribute))]set; }
+			public string Value { [Foo][Kept][KeptAttributeAttribute (typeof (FooAttribute))] get; [Foo][Kept][KeptAttributeAttribute (typeof (FooAttribute))] set; }
 		}
 
 		[Kept]

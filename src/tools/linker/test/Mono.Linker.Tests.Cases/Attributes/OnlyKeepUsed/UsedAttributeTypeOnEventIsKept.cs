@@ -29,7 +29,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 			[KeptAttributeAttribute (typeof (FooAttribute))]
 			[KeptEventAddMethod]
 			[KeptEventRemoveMethod]
-			public event EventHandler<EventArgs> Something { [Foo] [KeptAttributeAttribute (typeof (FooAttribute))] add { } [Foo] [KeptAttributeAttribute (typeof (FooAttribute))] remove { } }
+			public event EventHandler<EventArgs> Something { [Foo][KeptAttributeAttribute (typeof (FooAttribute))] add { } [Foo][KeptAttributeAttribute (typeof (FooAttribute))] remove { } }
 		}
 
 		[Kept]

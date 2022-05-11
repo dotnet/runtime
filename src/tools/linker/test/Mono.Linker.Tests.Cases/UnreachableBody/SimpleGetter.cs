@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.UnreachableBody
 		class Foo
 		{
 			[Kept]
-			public string Property { [Kept] [ExpectBodyModified] get; set; }
+			public string Property { [Kept][ExpectBodyModified] get; set; }
 		}
 	}
 }

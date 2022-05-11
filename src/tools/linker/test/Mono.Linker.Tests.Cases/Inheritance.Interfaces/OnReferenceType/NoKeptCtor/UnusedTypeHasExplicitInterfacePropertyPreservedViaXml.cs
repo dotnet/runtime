@@ -28,7 +28,7 @@ namespace Mono.Linker.Tests.Cases.Inheritance.Interfaces.OnReferenceType.NoKeptC
 		class A : IBar, IFoo
 		{
 			[Kept]
-			int IFoo.Foo { [Kept] [ExpectBodyModified] get; [Kept] [ExpectBodyModified] set; }
+			int IFoo.Foo { [Kept][ExpectBodyModified] get; [Kept][ExpectBodyModified] set; }
 
 			int IBar.Bar { get; set; }
 		}

@@ -2,6 +2,7 @@
   <PropertyGroup>
     <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and '$([System.IO.Path]::GetFileName($(MSBuildProjectDirectory)))' == 'ref'">true</IsReferenceAssembly>
     <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
+    <NetCoreAppToolCurrent>net7.0</NetCoreAppToolCurrent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(IsReferenceAssembly)' == 'true' ">
     <!-- Since .NET 5 reference assemblies are always produced -->

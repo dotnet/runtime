@@ -21,7 +21,7 @@ namespace Mono.Linker.Tests.Cases.Attributes.OnlyKeepUsed
 			[Foo]
 			[Kept]
 			[KeptBackingField]
-			public string Value { [Foo] [Kept] get; [Foo] [Kept] set; }
+			public string Value { [Foo][Kept] get; [Foo][Kept] set; }
 		}
 
 		class FooAttribute : Attribute

@@ -336,7 +336,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return CompileCSharpAssemblyWithDefaultCompiler (options);
 		}
 
-		protected NPath CompileCSharpAssemblyWithExternalCompiler (string executable, CompilerOptions options, string compilerSpecificArguments)
+		protected static NPath CompileCSharpAssemblyWithExternalCompiler (string executable, CompilerOptions options, string compilerSpecificArguments)
 		{
 			var capturedOutput = new List<string> ();
 			var process = new Process ();
@@ -365,7 +365,7 @@ namespace Mono.Linker.Tests.TestCasesRunner
 			return "mcs";
 		}
 
-		protected string OptionsToCompilerCommandLineArguments (CompilerOptions options, string compilerSpecificArguments)
+		protected static string OptionsToCompilerCommandLineArguments (CompilerOptions options, string compilerSpecificArguments)
 		{
 			var builder = new StringBuilder ();
 			if (!string.IsNullOrEmpty (compilerSpecificArguments))

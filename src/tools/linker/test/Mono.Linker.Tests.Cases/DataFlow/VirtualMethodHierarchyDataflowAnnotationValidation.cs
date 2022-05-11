@@ -245,7 +245,7 @@ namespace Mono.Linker.Tests.Cases.DataFlow
 				"'DynamicallyAccessedMemberTypes' in 'DynamicallyAccessedMembersAttribute' on the generic parameter 'T' of 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.DerivedClass.GenericBaseWithoutDerivedWith<T>()' " +
 				"don't match overridden generic parameter 'T' of 'Mono.Linker.Tests.Cases.DataFlow.VirtualMethodHierarchyDataflowAnnotationValidation.BaseClass.GenericBaseWithoutDerivedWith<T>()'. " +
 				"All overridden members must have the same 'DynamicallyAccessedMembersAttribute' usage.")]
-			public override void GenericBaseWithoutDerivedWith<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)]T> () { }
+			public override void GenericBaseWithoutDerivedWith<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] T> () { }
 
 			[LogDoesNotContain ("DerivedClass.GenericBaseWithDerivedWith_")]
 			public override void GenericBaseWithDerivedWith_<[DynamicallyAccessedMembers (DynamicallyAccessedMemberTypes.PublicConstructors)] T> () { }
