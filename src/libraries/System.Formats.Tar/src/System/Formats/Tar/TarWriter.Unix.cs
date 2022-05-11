@@ -41,7 +41,7 @@ namespace System.Formats.Tar
                 _ => throw new FormatException(string.Format(SR.TarInvalidFormat, Format)),
             };
 
-            if ((entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice) && status.RDev > 0)
+            if (entryType is TarEntryType.BlockDevice or TarEntryType.CharacterDevice)
             {
                 uint major;
                 uint minor;
