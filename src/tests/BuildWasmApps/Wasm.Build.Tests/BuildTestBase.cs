@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
@@ -40,6 +41,8 @@ namespace Wasm.Build.Tests
         protected static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : ([^ ]*)";
         private static Regex s_runtimePackPathRegex;
+        private static int s_testCounter;
+        private readonly int _testIdx;
 
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
@@ -80,7 +83,8 @@ namespace Wasm.Build.Tests
 
         public BuildTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         {
-            output.WriteLine($"{Environment.NewLine}-------- New test --------{Environment.NewLine}");
+            _testIdx = Interlocked.Increment(ref s_testCounter);
+            Console.WriteLine($"-------- New test #{_testIdx} --------");
             _buildContext = buildContext;
             _testOutput = output;
             _logPath = s_buildEnv.LogRootPath; // FIXME:
@@ -823,6 +827,7 @@ namespace Wasm.Build.Tests
 
         public void Dispose()
         {
+            Console.WriteLine($"-------- test done #{_testIdx} --------");
             if (_projectDir != null && _enablePerTestCleanup)
                 _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
         }

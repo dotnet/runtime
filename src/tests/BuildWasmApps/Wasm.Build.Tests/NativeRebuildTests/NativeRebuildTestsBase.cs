@@ -41,7 +41,7 @@ namespace Wasm.Build.NativeRebuild.Tests
                 => ConfigWithAOTData(aot)
                         .Multiply(new object[] { nativeRelinking, invariant })
                         .WithRunHosts(RunHost.V8)
-                        .UnwrapItemsAsArrays().ToList().Dump();
+                        .UnwrapItemsAsArrays().ToList();
         }
 
         internal (BuildArgs BuildArgs, BuildPaths paths) FirstNativeBuild(string programText, bool nativeRelink, bool invariant, BuildArgs buildArgs, string id, string extraProperties="")
