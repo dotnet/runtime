@@ -12,13 +12,6 @@ namespace System.Globalization.Tests
 {
     public class StringNormalizationAllTests
     {
-        private readonly ITestOutputHelper _testOutputHelper;
-
-        public StringNormalizationAllTests(ITestOutputHelper testOutputHelper)
-        {
-            _testOutputHelper = testOutputHelper;
-        }
-
         private string ConvertToString(string codepoints)
         {
             StringBuilder sb = new StringBuilder();
@@ -29,21 +22,6 @@ namespace System.Globalization.Tests
             }
             return sb.ToString();
         }
-
-        // d750-334-11b5,
-        // d750-334-11b5,
-        // 1112-1173-334-11b5,
-        // d750-334-11b5,
-        // 1112-1173-334-11b51a0-334-11b5,
-        // 1110-1169-334-11b5,
-        // d1a0-334-11b5,
-        // 1110-1169-334-11b5
-
-        // d750-334-11b5,
-        // d750-334-11b5,
-        // 1112-1173-334-11b5,
-        // d750-334-11b5,
-        // 1112-1173-334-11b5
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34577", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
@@ -65,15 +43,11 @@ namespace System.Globalization.Tests
 
                     var str = str2.ReadToEnd();
                     var ar = str.Split('\n');
-                    _testOutputHelper.WriteLine($" Length {ar.Length}");
-                    _testOutputHelper.WriteLine(string.Join("\n", ar.Take(150)));
 
                     int index = 0;
                     while (!sr.EndOfStream)
                     {
                         string line = sr.ReadLine();
-
-
                         string[] parts = line.Split(',');
                         Assert.True(parts.Length == 5, $"{line}\n Wrong data at the line {index}. Parts length {parts.Length}");
 

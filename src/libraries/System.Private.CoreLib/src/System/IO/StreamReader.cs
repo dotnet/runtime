@@ -796,7 +796,7 @@ namespace System.IO
             do
             {
                 // Note the following common line feed chars:
-                // \n - UNIX   \r\n - DOS   \r - Mac
+                // \n - UNIX/Mac   \r\n - Windows
                 int i = _charBuffer.AsSpan(_charPos, _charLen - _charPos).IndexOfAny('\r', '\n');
                 if (i >= 0)
                 {
@@ -881,6 +881,7 @@ namespace System.IO
 
         private async Task<string?> ReadLineAsyncInternal(CancellationToken cancellationToken)
         {
+
             static char[] ResizeOrPoolNewArray(char[]? array, int atLeastSpace)
             {
                 if (array == null) return ArrayPool<char>.Shared.Rent(atLeastSpace);
@@ -921,7 +922,7 @@ namespace System.IO
                 do
                 {
                     // Note the following common line feed chars:
-                    // \n - UNIX   \r\n - DOS   \r - Mac
+                    // \n - UNIX/Mac   \r\n - Windows
                     int i = _charBuffer.AsSpan(_charPos, _charLen - _charPos).IndexOfAny('\r', '\n');
                     if (i >= 0)
                     {
@@ -1036,7 +1037,6 @@ namespace System.IO
             {
                 do
                 {
-                    // int tmpCharPos = _charPos;
                     Append(ref rentedArray, lastWrittenIndex, _charBuffer, _charPos, _charLen - _charPos);
                     lastWrittenIndex += _charLen - _charPos;
                     _charPos = _charLen; // We consumed these characters
