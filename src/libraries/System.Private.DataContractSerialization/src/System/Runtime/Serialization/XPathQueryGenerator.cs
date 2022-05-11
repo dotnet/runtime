@@ -26,8 +26,11 @@ namespace System.Runtime.Serialization
 
         // Here you can provide your own root element Xpath which will replace the Xpath of the top level element
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public static string CreateFromDataContractSerializer(Type type!!, MemberInfo[] pathToMember!!, StringBuilder? rootElementXpath, out XmlNamespaceManager namespaces)
+        public static string CreateFromDataContractSerializer(Type type, MemberInfo[] pathToMember, StringBuilder? rootElementXpath, out XmlNamespaceManager namespaces)
         {
+            ArgumentNullException.ThrowIfNull(type);
+            ArgumentNullException.ThrowIfNull(pathToMember);
+
             DataContract currentContract = DataContract.GetDataContract(type);
             ExportContext context;
 

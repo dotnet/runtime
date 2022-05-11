@@ -26,6 +26,29 @@ export const mono_wasm_runtime_is_initialized = new Promise((resolve, reject) =>
 let ctx: DownloadAssetsContext | null = null;
 
 export function configure_emscripten_startup(module: DotnetModule, exportedAPI: DotnetPublicAPI): void {
+    // HACK: Emscripten expects us to provide it a fully qualified path where it can find
+    //  our main script so that it can be loaded from inside of workers, because workers
+    //  have their paths relative to the root instead of relative to our location
+    // In the browser we can create a hyperlink and set its href to a relative URL,
+    //  and the browser will convert it into an absolute one for us
+    if (
+        (typeof (globalThis.document) === "object") &&
+        (typeof (globalThis.document.createElement) === "function")
+    ) {
+        // blazor injects a module preload link element for dotnet.[version].[sha].js
+        const blazorDotNetJS = Array.from (document.head.getElementsByTagName("link")).filter(elt => elt.rel !== undefined && elt.rel == "modulepreload" && elt.href !== undefined && elt.href.indexOf("dotnet") != -1 && elt.href.indexOf (".js") != -1);
+        if (blazorDotNetJS.length == 1) {
+            const hr = blazorDotNetJS[0].href;
+            console.log("determined url of main script to be " + hr);
+            (<any>module)["mainScriptUrlOrBlob"] = hr;
+        } else {
+            const temp = globalThis.document.createElement("a");
+            temp.href = "dotnet.js";
+            console.log("determined url of main script to be " + temp.href);
+            (<any>module)["mainScriptUrlOrBlob"] = temp.href;
+        }
+    }
+
     // these could be overriden on DotnetModuleConfig
     if (!module.preInit) {
         module.preInit = [];
@@ -467,7 +490,8 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
                 });
             }
 
-            Module.addRunDependency(asset.name);
+            const moduleDependencyId = asset.name + (asset.culture || "");
+            Module.addRunDependency(moduleDependencyId);
 
             const sourcesList = asset.load_remote ? config.remote_sources! : [""];
             let error = undefined;
@@ -538,7 +562,7 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
                 if (!isOkToFail)
                     throw error;
             }
-            Module.removeRunDependency(asset.name);
+            Module.removeRunDependency(moduleDependencyId);
 
             return result;
         };

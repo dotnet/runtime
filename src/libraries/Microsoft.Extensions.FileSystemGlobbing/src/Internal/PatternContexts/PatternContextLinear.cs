@@ -10,8 +10,10 @@ namespace Microsoft.Extensions.FileSystemGlobbing.Internal.PatternContexts
     public abstract class PatternContextLinear
         : PatternContext<PatternContextLinear.FrameData>
     {
-        public PatternContextLinear(ILinearPattern pattern!!)
+        public PatternContextLinear(ILinearPattern pattern)
         {
+            ThrowHelper.ThrowIfNull(pattern);
+
             Pattern = pattern;
         }
 

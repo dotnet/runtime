@@ -8,8 +8,13 @@ namespace System.Reflection.TypeLoading
     /// </summary>
     internal abstract partial class RoType
     {
-        public sealed override Type? GetInterface(string name!!, bool ignoreCase)
+        public sealed override Type? GetInterface(string name, bool ignoreCase)
         {
+            if (name is null)
+            {
+                throw new ArgumentNullException(nameof(name));
+            }
+
             name.SplitTypeName(out string ns, out string simpleName);
 
             Type? match = null;

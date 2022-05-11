@@ -24,7 +24,7 @@ namespace System.Reflection
         public virtual Guid ModuleVersionId => throw NotImplemented.ByDesign;
         public virtual string ScopeName => throw NotImplemented.ByDesign;
         public ModuleHandle ModuleHandle => GetModuleHandleImpl();
-        protected virtual ModuleHandle GetModuleHandleImpl() => ModuleHandle.EmptyHandle; // Not an api but declared protected because of Reflection.Core/Corelib divide (when built by CoreRt)
+        protected virtual ModuleHandle GetModuleHandleImpl() => ModuleHandle.EmptyHandle; // Not an api but declared protected because of Reflection.Core/Corelib divide (when built by NativeAOT)
         public virtual void GetPEKind(out PortableExecutableKinds peKind, out ImageFileMachine machine) { throw NotImplemented.ByDesign; }
         public virtual bool IsResource() { throw NotImplemented.ByDesign; }
 
@@ -35,16 +35,21 @@ namespace System.Reflection
         public virtual object[] GetCustomAttributes(Type attributeType, bool inherit) { throw NotImplemented.ByDesign; }
 
         [RequiresUnreferencedCode("Methods might be removed")]
-        public MethodInfo? GetMethod(string name!!)
+        public MethodInfo? GetMethod(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             return GetMethodImpl(name, Module.DefaultLookup, null, CallingConventions.Any, null, null);
         }
 
         [RequiresUnreferencedCode("Methods might be removed")]
         public MethodInfo? GetMethod(string name, Type[] types) => GetMethod(name, Module.DefaultLookup, null, CallingConventions.Any, types, null);
         [RequiresUnreferencedCode("Methods might be removed")]
-        public MethodInfo? GetMethod(string name!!, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types!!, ParameterModifier[]? modifiers)
+        public MethodInfo? GetMethod(string name, BindingFlags bindingAttr, Binder? binder, CallingConventions callConvention, Type[] types, ParameterModifier[]? modifiers)
         {
+            ArgumentNullException.ThrowIfNull(name);
+            ArgumentNullException.ThrowIfNull(types);
+
             for (int i = 0; i < types.Length; i++)
             {
                 ArgumentNullException.ThrowIfNull(types[i], nameof(types));

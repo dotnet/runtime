@@ -111,7 +111,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// A context that redefines the 'native' identifier for a TypePositionInfo to be the marshaller identifier.
     /// </summary>
-    internal class CustomNativeTypeWithToFromNativeValueContext : StubCodeContext
+    internal sealed class CustomNativeTypeWithToFromNativeValueContext : StubCodeContext
     {
         public CustomNativeTypeWithToFromNativeValueContext(StubCodeContext parentContext)
         {
@@ -1161,7 +1161,7 @@ namespace Microsoft.Interop
         /// This handles the case where the native type of a non-blittable managed type is a pointer,
         /// which are unsupported in generic type parameters.
         /// </summary>
-        private class PointerNativeTypeAssignmentRewriter : CSharpSyntaxRewriter
+        private sealed class PointerNativeTypeAssignmentRewriter : CSharpSyntaxRewriter
         {
             private readonly string _nativeIdentifier;
             private readonly PointerTypeSyntax _nativeType;

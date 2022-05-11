@@ -178,6 +178,11 @@ bool DetectCPUFeatures()
                         {
                             g_cpuFeatures |= XArchIntrinsicConstants_Sse42;
 
+                            if ((cpuidInfo[ECX] & (1 << 22)) != 0)                                          // MOVBE
+                            {
+                                g_cpuFeatures |= XArchIntrinsicConstants_Movbe;
+                            }
+
                             if ((cpuidInfo[ECX] & (1 << 23)) != 0)                                          // POPCNT
                             {
                                 g_cpuFeatures |= XArchIntrinsicConstants_Popcnt;
@@ -261,7 +266,8 @@ bool DetectCPUFeatures()
 
     if ((g_cpuFeatures & g_requiredCpuFeatures) != g_requiredCpuFeatures)
     {
-        return false;
+        PalPrintFatalError("\nThe required instruction sets are not supported by the current CPU.\n");
+        RhFailFast();
     }
 #endif // HOST_X86|| HOST_AMD64 || HOST_ARM64
 

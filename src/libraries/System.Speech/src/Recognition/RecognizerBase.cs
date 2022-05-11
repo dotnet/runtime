@@ -2813,8 +2813,8 @@ ISpGrammarResourceLoader
         /// </summary>
         private void FireSignalProblemOccurredEvent(AudioSignalProblem audioSignalProblem)
         {
-            EventHandler<AudioSignalProblemOccurredEventArgs> audioSignalProblemOccuredHandler = _audioSignalProblemOccurredDelegate;
-            if (audioSignalProblemOccuredHandler != null)
+            EventHandler<AudioSignalProblemOccurredEventArgs> audioSignalProblemOccurredHandler = _audioSignalProblemOccurredDelegate;
+            if (audioSignalProblemOccurredHandler != null)
             {
                 TimeSpan recognizerPosition = TimeSpan.Zero;
                 TimeSpan audioPosition = TimeSpan.Zero;
@@ -2837,7 +2837,7 @@ ISpGrammarResourceLoader
                     throw ExceptionFromSapiCreateRecognizerError(e);
                 }
 
-                _asyncWorkerUI.PostOperation(audioSignalProblemOccuredHandler, this, new AudioSignalProblemOccurredEventArgs(audioSignalProblem, AudioLevel, audioPosition, recognizerPosition));
+                _asyncWorkerUI.PostOperation(audioSignalProblemOccurredHandler, this, new AudioSignalProblemOccurredEventArgs(audioSignalProblem, AudioLevel, audioPosition, recognizerPosition));
             }
         }
 

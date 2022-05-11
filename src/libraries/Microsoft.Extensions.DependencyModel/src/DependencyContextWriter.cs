@@ -13,8 +13,11 @@ namespace Microsoft.Extensions.DependencyModel
 {
     public class DependencyContextWriter
     {
-        public void Write(DependencyContext context!!, Stream stream!!)
+        public void Write(DependencyContext context, Stream stream)
         {
+            ThrowHelper.ThrowIfNull(context);
+            ThrowHelper.ThrowIfNull(stream);
+
             // Custom encoder is required to fix https://github.com/dotnet/core-setup/issues/7137
             // Since the JSON is only written to a file that is read by the SDK (and not transmitted over the wire),
             // it is safe to skip escaping certain characters in this scenario

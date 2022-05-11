@@ -16,8 +16,10 @@ namespace Microsoft.Extensions.Logging.Configuration
             _configurations = configurations;
         }
 
-        public IConfiguration GetConfiguration(Type providerType!!)
+        public IConfiguration GetConfiguration(Type providerType)
         {
+            ThrowHelper.ThrowIfNull(providerType);
+
             string fullName = providerType.FullName!;
             string? alias = ProviderAliasUtilities.GetAlias(providerType);
             var configurationBuilder = new ConfigurationBuilder();

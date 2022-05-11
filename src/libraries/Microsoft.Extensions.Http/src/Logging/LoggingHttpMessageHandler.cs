@@ -25,8 +25,10 @@ namespace Microsoft.Extensions.Http.Logging
         /// </summary>
         /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> is <see langword="null"/>.</exception>
-        public LoggingHttpMessageHandler(ILogger logger!!)
+        public LoggingHttpMessageHandler(ILogger logger)
         {
+            ThrowHelper.ThrowIfNull(logger);
+
             _logger = logger;
         }
 
@@ -36,26 +38,35 @@ namespace Microsoft.Extensions.Http.Logging
         /// <param name="logger">The <see cref="ILogger"/> to log to.</param>
         /// <param name="options">The <see cref="HttpClientFactoryOptions"/> used to configure the <see cref="LoggingHttpMessageHandler"/> instance.</param>
         /// <exception cref="ArgumentNullException"><paramref name="logger"/> or <paramref name="options"/> is <see langword="null"/>.</exception>
-        public LoggingHttpMessageHandler(ILogger logger!!, HttpClientFactoryOptions options!!)
+        public LoggingHttpMessageHandler(ILogger logger, HttpClientFactoryOptions options)
         {
+            ThrowHelper.ThrowIfNull(logger);
+            ThrowHelper.ThrowIfNull(options);
+
             _logger = logger;
             _options = options;
         }
 
         /// <inheritdoc />
         /// <remarks>Loggs the request to and response from the sent <see cref="HttpRequestMessage"/>.</remarks>
-        protected async override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
+            ThrowHelper.ThrowIfNull(request);
+            return Core(request, cancellationToken);
 
-            // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's
-            // not really anything to surround.
-            Log.RequestStart(_logger, request, shouldRedactHeaderValue);
-            var stopwatch = ValueStopwatch.StartNew();
-            HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
-            Log.RequestEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
+            async Task<HttpResponseMessage> Core(HttpRequestMessage request, CancellationToken cancellationToken)
+            {
+                Func<string, bool> shouldRedactHeaderValue = _options?.ShouldRedactHeaderValue ?? _shouldNotRedactHeaderValue;
 
-            return response;
+                // Not using a scope here because we always expect this to be at the end of the pipeline, thus there's
+                // not really anything to surround.
+                Log.RequestStart(_logger, request, shouldRedactHeaderValue);
+                var stopwatch = ValueStopwatch.StartNew();
+                HttpResponseMessage response = await base.SendAsync(request, cancellationToken).ConfigureAwait(false);
+                Log.RequestEnd(_logger, response, stopwatch.GetElapsedTime(), shouldRedactHeaderValue);
+
+                return response;
+            }
         }
 
         // Used in tests.

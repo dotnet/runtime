@@ -325,6 +325,12 @@ namespace
         *sub_key = dotnet_key_path + pal::string_t(_X("\\Setup\\InstalledVersions\\")) + get_arch();
         *value = _X("InstallLocation");
     }
+
+    pal::string_t registry_path_as_string(const HKEY& key_hive, const pal::string_t& sub_key, const pal::char_t* value)
+    {
+        assert(key_hive == HKEY_CURRENT_USER || key_hive == HKEY_LOCAL_MACHINE);
+        return (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
+    }
 }
 
 pal::string_t pal::get_dotnet_self_registered_config_location()
@@ -334,7 +340,7 @@ pal::string_t pal::get_dotnet_self_registered_config_location()
     const pal::char_t* value;
     get_dotnet_install_location_registry_path(&key_hive, &sub_key, &value);
 
-    return (key_hive == HKEY_CURRENT_USER ? _X("HKCU\\") : _X("HKLM\\")) + sub_key + _X("\\") + value;
+    return registry_path_as_string(key_hive, sub_key, value);
 }
 
 bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
@@ -355,13 +361,24 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     const pal::char_t* value;
     get_dotnet_install_location_registry_path(&hkeyHive, &sub_key, &value);
 
+    if (trace::is_enabled())
+        trace::verbose(_X("Looking for architecture-specific registry value in '%s'."), registry_path_as_string(hkeyHive, sub_key, value).c_str());
+
     // Must use RegOpenKeyEx to be able to specify KEY_WOW64_32KEY to access the 32-bit registry in all cases.
     // The RegGetValue has this option available only on Win10.
     HKEY hkey = NULL;
     LSTATUS result = ::RegOpenKeyExW(hkeyHive, sub_key.c_str(), 0, KEY_READ | KEY_WOW64_32KEY, &hkey);
     if (result != ERROR_SUCCESS)
     {
-        trace::verbose(_X("Can't open the SDK installed location registry key, result: 0x%X"), result);
+        if (result == ERROR_FILE_NOT_FOUND)
+        {
+            trace::verbose(_X("The registry key ['%s'] does not exist."), sub_key.c_str());
+        }
+        else
+        {
+            trace::verbose(_X("Failed to open the registry key. Error code: 0x%X"), result);
+        }
+
         return false;
     }
 
@@ -370,7 +387,7 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     result = ::RegGetValueW(hkey, nullptr, value, RRF_RT_REG_SZ, nullptr, nullptr, &size);
     if (result != ERROR_SUCCESS || size == 0)
     {
-        trace::verbose(_X("Can't get the size of the SDK location registry value or it's empty, result: 0x%X"), result);
+        trace::verbose(_X("Failed to get the size of the install location registry value or it's empty. Error code: 0x%X"), result);
         ::RegCloseKey(hkey);
         return false;
     }
@@ -380,13 +397,14 @@ bool pal::get_dotnet_self_registered_dir(pal::string_t* recv)
     result = ::RegGetValueW(hkey, nullptr, value, RRF_RT_REG_SZ, nullptr, &buffer[0], &size);
     if (result != ERROR_SUCCESS)
     {
-        trace::verbose(_X("Can't get the value of the SDK location registry value, result: 0x%X"), result);
+        trace::verbose(_X("Failed to get the value of the install location registry value. Error code: 0x%X"), result);
         ::RegCloseKey(hkey);
         return false;
     }
 
     recv->assign(buffer.data());
     ::RegCloseKey(hkey);
+    trace::verbose(_X("Found registered install location '%s'."), recv->c_str());
     return true;
 }
 
@@ -791,39 +809,43 @@ bool pal::is_running_in_wow64()
 }
 
 typedef BOOL (WINAPI* is_wow64_process2)(
-  HANDLE hProcess,
-  USHORT *pProcessMachine,
-  USHORT *pNativeMachine
+    HANDLE hProcess,
+    USHORT *pProcessMachine,
+    USHORT *pNativeMachine
 );
 
 bool pal::is_emulating_x64()
 {
-    USHORT pProcessMachine, pNativeMachine;
+#if defined(TARGET_AMD64)
     auto kernel32 = LoadLibraryExW(L"kernel32.dll", NULL, LOAD_LIBRARY_SEARCH_SYSTEM32);
-    if (kernel32)
+    if (kernel32 == nullptr)
     {
-        is_wow64_process2 isWow64Process2Func = (is_wow64_process2)GetProcAddress(kernel32, "IsWow64Process2");
-        if (!isWow64Process2Func)
-        {
-            // Could not find IsWow64Process2.
-            return false;
-        }
-
-        if (!isWow64Process2Func(GetCurrentProcess(), &pProcessMachine, &pNativeMachine))
-        {
-            // IsWow64Process2 failed. Log the error and continue.
-            trace::info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
-            return false;
-        }
-
-        // Check if we are running an x64 process on a non-x64 windows machine.
-        return pProcessMachine != pNativeMachine && pProcessMachine == IMAGE_FILE_MACHINE_AMD64;
+        // Loading kernel32.dll failed, log the error and continue.
+        trace::info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
+        return false;
     }
 
-    // Loading kernel32.dll failed, log the error and continue.
-    trace::info(_X("Could not load 'kernel32.dll': %u"), GetLastError());
+    is_wow64_process2 is_wow64_process2_func = (is_wow64_process2)::GetProcAddress(kernel32, "IsWow64Process2");
+    if (is_wow64_process2_func == nullptr)
+    {
+        // Could not find IsWow64Process2.
+        return false;
+    }
 
+    USHORT process_machine;
+    USHORT native_machine;
+    if (!is_wow64_process2_func(GetCurrentProcess(), &process_machine, &native_machine))
+    {
+        // IsWow64Process2 failed. Log the error and continue.
+        trace::info(_X("Call to IsWow64Process2 failed: %u"), GetLastError());
+        return false;
+    }
+
+    // If we are running targeting x64 on a non-x64 machine, we are emulating
+    return native_machine != IMAGE_FILE_MACHINE_AMD64;
+#else
     return false;
+#endif
 }
 
 bool pal::are_paths_equal_with_normalized_casing(const string_t& path1, const string_t& path2)

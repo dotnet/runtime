@@ -41,7 +41,6 @@ namespace CoreclrTestLib
             using (var outputWriter = new StreamWriter(outputStream))
             using (var errorWriter = new StreamWriter(errorStream))
             {
-                //Validate inputs
                 if ((platform != "android") && (platform != "apple"))
                 {
                     outputWriter.WriteLine($"Incorrect value of platform. Provided {platform}. Valid strings are android and apple.");

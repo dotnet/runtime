@@ -212,9 +212,9 @@ static partial byte Method__PInvoke__(ushort* s);
 
 <!-- Links -->
 [src-MarshallingAttributeInfo]: /src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/MarshallingAttributeInfo.cs
-[src-MarshallingGenerator]: /src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/DllImportGenerator/Marshalling/MarshallingGenerator.cs
-[src-StubCodeContext]: /src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/DllImportGenerator/StubCodeContext.cs
-[src-TypePositionInfo]: /src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/DllImportGenerator/TypePositionInfo.cs
+[src-MarshallingGenerator]: /src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/Marshalling/MarshallingGenerator.cs
+[src-StubCodeContext]: /src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/StubCodeContext.cs
+[src-TypePositionInfo]: /src/libraries/System.Runtime.InteropServices/gen/Microsoft.Interop.SourceGeneration/TypePositionInfo.cs
 
 [DllImportAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.dllimportattribute
 [MarshalAsAttribute]: https://docs.microsoft.com/dotnet/api/system.runtime.interopservices.marshalasattribute

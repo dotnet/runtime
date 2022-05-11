@@ -214,8 +214,10 @@ namespace System.Security.Cryptography.X509Certificates
         // Enforce that no dot starts or ends the Oid, and disallow double dots.
         // Enforce there is at least one dot separator.
         //
-        internal static void ValidateOidValue(string keyValue!!)
+        internal static void ValidateOidValue(string keyValue)
         {
+            ArgumentNullException.ThrowIfNull(keyValue);
+
             int len = keyValue.Length;
             if (len < 2)
                 throw new ArgumentException(SR.Argument_InvalidOidValue);

@@ -26,8 +26,10 @@ namespace System.Net.Http.Headers
             _date = date;
         }
 
-        public RangeConditionHeaderValue(EntityTagHeaderValue entityTag!!)
+        public RangeConditionHeaderValue(EntityTagHeaderValue entityTag)
         {
+            ArgumentNullException.ThrowIfNull(entityTag);
+
             _entityTag = entityTag;
         }
 

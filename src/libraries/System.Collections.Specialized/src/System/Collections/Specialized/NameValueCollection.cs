@@ -76,8 +76,8 @@ namespace System.Collections.Specialized
         ///    using the default case-insensitive hash code provider and the default
         ///    case-insensitive comparer.</para>
         /// </devdoc>
-        public NameValueCollection(int capacity, NameValueCollection col!!)
-            : base(capacity, col.Comparer)
+        public NameValueCollection(int capacity, NameValueCollection col)
+            : base(capacity, col != null ? col.Comparer : throw new ArgumentNullException(nameof(col)))
         {
             this.Comparer = col.Comparer;
             Add(col);
@@ -152,8 +152,10 @@ namespace System.Collections.Specialized
         /// <devdoc>
         /// <para>Copies the entries in the specified <see cref='System.Collections.Specialized.NameValueCollection'/> to the current <see cref='System.Collections.Specialized.NameValueCollection'/>.</para>
         /// </devdoc>
-        public void Add(NameValueCollection c!!)
+        public void Add(NameValueCollection c)
         {
+            ArgumentNullException.ThrowIfNull(c);
+
             InvalidateCachedArrays();
 
             int n = c.Count;
@@ -188,8 +190,10 @@ namespace System.Collections.Specialized
             BaseClear();
         }
 
-        public void CopyTo(Array dest!!, int index)
+        public void CopyTo(Array dest, int index)
         {
+            ArgumentNullException.ThrowIfNull(dest);
+
             if (dest.Rank != 1)
             {
                 throw new ArgumentException(SR.Arg_MultiRank, nameof(dest));

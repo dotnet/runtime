@@ -47,7 +47,7 @@ namespace System.Text.RegularExpressions.Generator
             // - Diagnostic in the case of a failure that should end the compilation
             // - (RegexMethod regexMethod, string runnerFactoryImplementation, Dictionary<string, string[]> requiredHelpers) in the case of valid regex
             // - (RegexMethod regexMethod, string reason, Diagnostic diagnostic) in the case of a limited-support regex
-            IncrementalValueProvider<ImmutableArray<object?>> codeOrDiagnostics =
+            IncrementalValueProvider<ImmutableArray<object>> codeOrDiagnostics =
                 context.SyntaxProvider
 
                 // Find all MethodDeclarationSyntax nodes attributed with RegexGenerator and gather the required information.
@@ -94,11 +94,11 @@ namespace System.Text.RegularExpressions.Generator
             // and raise all of the created diagnostics.
             context.RegisterSourceOutput(codeOrDiagnostics.Combine(compilationDataProvider), static (context, compilationDataAndResults) =>
             {
-                ImmutableArray<object?> results = compilationDataAndResults.Left;
+                ImmutableArray<object> results = compilationDataAndResults.Left;
 
                 // Report any top-level diagnostics.
                 bool allFailures = true;
-                foreach (object? result in results)
+                foreach (object result in results)
                 {
                     if (result is Diagnostic d)
                     {

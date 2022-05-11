@@ -118,14 +118,13 @@ namespace System.Reflection.Emit
         [DynamicDependency(nameof(owner))]  // Automatically keeps all previous fields too due to StructLayout
         private DynamicMethod(string name, MethodAttributes attributes, CallingConventions callingConvention, Type? returnType, Type[]? parameterTypes, Type? owner, Module? m, bool skipVisibility, bool anonHosted, bool typeOwner)
         {
-            if (name == null)
-                throw new ArgumentNullException(nameof(name));
+            ArgumentNullException.ThrowIfNull(name);
             if (returnType == null)
                 returnType = typeof(void);
-            if (owner == null && typeOwner)
-                throw new ArgumentNullException(nameof(owner));
-            if ((m == null) && !anonHosted)
-                throw new ArgumentNullException(nameof(m));
+            if (typeOwner)
+                ArgumentNullException.ThrowIfNull(owner);
+            if (!anonHosted)
+                ArgumentNullException.ThrowIfNull(m);
             if (parameterTypes != null)
             {
                 for (int i = 0; i < parameterTypes.Length; ++i)
@@ -194,8 +193,7 @@ namespace System.Reflection.Emit
 
         public sealed override Delegate CreateDelegate(Type delegateType)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
             if (deleg != null)
                 return deleg;
 
@@ -207,8 +205,7 @@ namespace System.Reflection.Emit
 
         public sealed override Delegate CreateDelegate(Type delegateType, object? target)
         {
-            if (delegateType == null)
-                throw new ArgumentNullException(nameof(delegateType));
+            ArgumentNullException.ThrowIfNull(delegateType);
 
             CreateDynMethod();
 
@@ -243,8 +240,10 @@ namespace System.Reflection.Emit
             return new object[] { new MethodImplAttribute((MethodImplOptions)GetMethodImplementationFlags()) };
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
             {
                 // avoid calling CreateInstance() in the common case where the type is Attribute
@@ -342,8 +341,7 @@ namespace System.Reflection.Emit
 
         public override bool IsDefined(Type attributeType, bool inherit)
         {
-            if (attributeType == null)
-                throw new ArgumentNullException(nameof(attributeType));
+            ArgumentNullException.ThrowIfNull(attributeType);
 
             if (attributeType.IsAssignableFrom(typeof(MethodImplAttribute)))
                 return true;

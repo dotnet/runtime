@@ -58,7 +58,7 @@ class PublicGen : CsWriter
         }
 
         //
-        // HandleType enum is not the the schema
+        // HandleType enum is not the schema
         //
         EmitEnum(
             new RecordDef(

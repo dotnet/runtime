@@ -14,41 +14,17 @@ if(POLICY CMP0075)
     cmake_policy(SET CMP0075 NEW)
 endif()
 
-if (CLR_CMAKE_TARGET_ANDROID)
-    set(PAL_UNIX_NAME \"ANDROID\")
-elseif (CLR_CMAKE_TARGET_BROWSER)
-    set(PAL_UNIX_NAME \"BROWSER\")
-elseif (CLR_CMAKE_TARGET_LINUX)
-    set(PAL_UNIX_NAME \"LINUX\")
-elseif (CLR_CMAKE_TARGET_OSX)
-    set(PAL_UNIX_NAME \"OSX\")
-
+if (CLR_CMAKE_TARGET_OSX)
     # Xcode's clang does not include /usr/local/include by default, but brew's does.
     # This ensures an even playing field.
     include_directories(SYSTEM /usr/local/include)
-elseif (CLR_CMAKE_TARGET_MACCATALYST)
-    set(PAL_UNIX_NAME \"MACCATALYST\")
-elseif (CLR_CMAKE_TARGET_IOS)
-    set(PAL_UNIX_NAME \"IOS\")
-elseif (CLR_CMAKE_TARGET_TVOS)
-    set(PAL_UNIX_NAME \"TVOS\")
 elseif (CLR_CMAKE_TARGET_FREEBSD)
-    set(PAL_UNIX_NAME \"FREEBSD\")
     include_directories(SYSTEM ${CROSS_ROOTFS}/usr/local/include)
     set(CMAKE_REQUIRED_INCLUDES ${CROSS_ROOTFS}/usr/local/include)
-elseif (CLR_CMAKE_TARGET_NETBSD)
-    set(PAL_UNIX_NAME \"NETBSD\")
 elseif (CLR_CMAKE_TARGET_SUNOS)
-    if (CLR_CMAKE_TARGET_ILLUMOS)
-        set(PAL_UNIX_NAME \"ILLUMOS\")
-    else ()
-        set(PAL_UNIX_NAME \"SOLARIS\")
-    endif ()
     # requires /opt/tools when building in Global Zone (GZ)
     include_directories(SYSTEM /opt/local/include /opt/tools/include)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fstack-protector")
-else ()
-    message(FATAL_ERROR "Unknown platform. Cannot define PAL_UNIX_NAME, used by RuntimeInformation.")
 endif ()
 
 if(CLR_CMAKE_USE_SYSTEM_LIBUNWIND)
@@ -1121,6 +1097,20 @@ check_c_source_compiles(
     }
     "
     HAVE_BUILTIN_MUL_OVERFLOW)
+
+check_symbol_exists(
+    makedev
+    sys/file.h
+    HAVE_MAKEDEV_FILEH)
+
+check_symbol_exists(
+    makedev
+    sys/sysmacros.h
+    HAVE_MAKEDEV_SYSMACROSH)
+
+if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH)
+  message(FATAL_ERROR "Cannot find the makedev function on this platform.")
+endif()
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in

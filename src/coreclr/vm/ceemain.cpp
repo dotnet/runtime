@@ -72,7 +72,7 @@
 // * file:..\inc\corhdr.h#ManagedHeader - From a data structure point of view, this is the entry point into
 //     the runtime. This is how all other data in the EXE are found.
 //
-// * code:ICorJitCompiler#EEToJitInterface - This is the interface from the the EE to the Just in time (JIT)
+// * code:ICorJitCompiler#EEToJitInterface - This is the interface from the EE to the Just in time (JIT)
 //     compiler. The interface to the JIT is relatively simple (compileMethod), however the EE provides a
 //     rich set of callbacks so the JIT can get all the information it needs. See also
 //     file:../../Documentation/botr/ryujit-overview.md for general information on the JIT.
@@ -158,7 +158,6 @@
 #include "syncclean.hpp"
 #include "typeparse.h"
 #include "debuginfostore.h"
-#include "eemessagebox.h"
 #include "finalizerthread.h"
 #include "threadsuspend.h"
 #include "disassembler.h"
@@ -179,9 +178,6 @@
 #include "win32threadpool.h"
 
 #include <shlwapi.h>
-
-#include "bbsweep.h"
-
 
 #ifdef FEATURE_COMINTEROP
 #include "runtimecallablewrapper.h"
@@ -427,44 +423,6 @@ void InitializeStartupFlags()
     g_heap_type = ((flags & STARTUP_SERVER_GC) && GetCurrentProcessCpuCount() > 1) ? GC_HEAP_SVR : GC_HEAP_WKS;
     g_IGCHoardVM = (flags & STARTUP_HOARD_GC_VM) == 0 ? 0 : 1;
 }
-
-
-// BBSweepStartFunction is the first function to execute in the BBT sweeper thread.
-// It calls WatchForSweepEvent where we wait until a sweep occurs.
-DWORD __stdcall BBSweepStartFunction(LPVOID lpArgs)
-{
-    CONTRACTL
-    {
-        THROWS;
-        GC_TRIGGERS;
-        MODE_PREEMPTIVE;
-    }
-    CONTRACTL_END;
-
-    class CLRBBSweepCallback : public ICLRBBSweepCallback
-    {
-        virtual HRESULT WriteProfileData()
-        {
-            BEGIN_ENTRYPOINT_NOTHROW
-            WRAPPER_NO_CONTRACT;
-            Module::WriteAllModuleProfileData(false);
-            END_ENTRYPOINT_NOTHROW;
-            return S_OK;
-        }
-    } clrCallback;
-
-    EX_TRY
-    {
-        g_BBSweep.WatchForSweepEvents(&clrCallback);
-    }
-    EX_CATCH
-    {
-    }
-    EX_END_CATCH(RethrowTerminalExceptions)
-
-    return 0;
-}
-
 
 //-----------------------------------------------------------------------------
 
@@ -795,25 +753,6 @@ void EEStartupHelper()
         // Monitors, Crsts, and SimpleRWLocks all use the same spin heuristics
         // Cache the (potentially user-overridden) values now so they are accessible from asm routines
         InitializeSpinConstants();
-
-
-        // Cross-process named objects are not supported in PAL
-        // (see CorUnix::InternalCreateEvent - src/pal/src/synchobj/event.cpp)
-#if !defined(TARGET_UNIX)
-        // Initialize the sweeper thread.
-        if (g_pConfig->GetZapBBInstr() != NULL)
-        {
-            DWORD threadID;
-            HANDLE hBBSweepThread = ::CreateThread(NULL,
-                                                   0,
-                                                   (LPTHREAD_START_ROUTINE) BBSweepStartFunction,
-                                                   NULL,
-                                                   0,
-                                                   &threadID);
-            _ASSERTE(hBBSweepThread);
-            g_BBSweep.SetBBSweepThreadHandle(hBBSweepThread);
-        }
-#endif // TARGET_UNIX
 
 #ifdef FEATURE_INTERPRETER
         Interpreter::Initialize();
@@ -1223,9 +1162,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
     STRESS_LOG1(LF_STARTUP, LL_INFO10, "EEShutDown entered unloading = %d", fIsDllUnloading);
 
 #ifdef _DEBUG
-    if (_DbgBreakCount)
-        _ASSERTE(!"An assert was hit before EE Shutting down");
-
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_BreakOnEEShutdown))
         _ASSERTE(!"Shutting down EE!");
 #endif
@@ -1255,9 +1191,6 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         // Indicate the EE is the shut down phase.
         g_fEEShutDown |= ShutDown_Start;
 
-        // Terminate the BBSweep thread
-        g_BBSweep.ShutdownBBSweepThread();
-
         if (!g_fProcessDetach && !g_fFastExitProcess)
         {
             g_fEEShutDown |= ShutDown_Finalize1;
@@ -1271,7 +1204,7 @@ void STDMETHODCALLTYPE EEShutDownHelper(BOOL fIsDllUnloading)
         if (!g_fProcessDetach)
         {
             // Convert key locks into "shutdown" mode. A lock in shutdown mode means:
-            // - Only the finalizer/helper/shutdown threads will be able to take the the lock.
+            // - Only the finalizer/helper/shutdown threads will be able to take the lock.
             // - Any other thread that tries takes it will just get redirected to an endless WaitForEndOfShutdown().
             //
             // The only managed code that should run after this point is the finalizers for shutdown.
@@ -1432,12 +1365,7 @@ part2:
                 g_fEEShutDown |= ShutDown_Phase2;
 
                 // Shutdown finalizer before we suspend all background threads. Otherwise we
-                // never get to finalize anything. Obviously.
-
-#ifdef _DEBUG
-                if (_DbgBreakCount)
-                    _ASSERTE(!"An assert was hit After Finalizer run");
-#endif
+                // never get to finalize anything.
 
                 // No longer process exceptions
                 g_fNoExceptions = true;
@@ -1488,11 +1416,6 @@ part2:
 #if USE_DISASSEMBLER
                 Disassembler::StaticClose();
 #endif // USE_DISASSEMBLER
-
-#ifdef _DEBUG
-                if (_DbgBreakCount)
-                    _ASSERTE(!"EE Shutting down after an assert");
-#endif
 
                 WriteJitHelperCountToSTRESSLOG();
 
@@ -2011,7 +1934,7 @@ static void TerminateDebugger(void)
 // Impl for UtilLoadStringRC Callback: In VM, we let the thread decide culture
 // copy culture name into szBuffer and return length
 // ---------------------------------------------------------------------------
-extern BOOL g_fFatalErrorOccuredOnGCThread;
+extern BOOL g_fFatalErrorOccurredOnGCThread;
 static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 {
     CONTRACTL
@@ -2033,7 +1956,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 #if 0 // Enable and test if/once the unmanaged runtime is localized
         Thread * pThread = GetThreadNULLOk();
 
-        // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
+        // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
         // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
         // getting localized with a non-default thread-specific culture.
         // A canonical stack trace that gets here is a fatal error in the GC that comes through:
@@ -2049,7 +1972,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
         // coreclr.dll!EventReporter::EventReporter
         // coreclr.dll!EEPolicy::LogFatalError
         // coreclr.dll!EEPolicy::HandleFatalError
-        if (pThread != NULL && !g_fFatalErrorOccuredOnGCThread) {
+        if (pThread != NULL && !g_fFatalErrorOccurredOnGCThread) {
 
             // Switch to cooperative mode, since we'll be looking at managed objects
             // and we don't want them moving on us.
@@ -2163,7 +2086,7 @@ static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
     Thread * pThread = GetThreadNULLOk();
 
 #if 0 // Enable and test if/once the unmanaged runtime is localized
-    // When fatal errors have occured our invariants around GC modes may be broken and attempting to transition to co-op may hang
+    // When fatal errors have occurred our invariants around GC modes may be broken and attempting to transition to co-op may hang
     // indefinately. We want to ensure a clean exit so rather than take the risk of hang we take a risk of the error resource not
     // getting localized with a non-default thread-specific culture.
     // A canonical stack trace that gets here is a fatal error in the GC that comes through:
@@ -2179,7 +2102,7 @@ static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
     // coreclr.dll!EventReporter::EventReporter
     // coreclr.dll!EEPolicy::LogFatalError
     // coreclr.dll!EEPolicy::HandleFatalError
-    if (pThread != NULL && !g_fFatalErrorOccuredOnGCThread)
+    if (pThread != NULL && !g_fFatalErrorOccurredOnGCThread)
     {
 
         // Switch to cooperative mode, since we'll be looking at managed objects

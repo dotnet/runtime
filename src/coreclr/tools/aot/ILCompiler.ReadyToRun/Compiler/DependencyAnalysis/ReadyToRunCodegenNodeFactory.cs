@@ -63,6 +63,8 @@ namespace ILCompiler.DependencyAnalysis
 
         public CompositeImageSettings CompositeImageSettings { get; set; }
 
+        public ulong ImageBase;
+
         public bool MarkingComplete => _markingComplete;
 
         public void SetMarkingComplete()
@@ -155,7 +157,8 @@ namespace ILCompiler.DependencyAnalysis
             CopiedCorHeaderNode corHeaderNode,
             DebugDirectoryNode debugDirectoryNode,
             ResourceData win32Resources,
-            ReadyToRunFlags flags)
+            ReadyToRunFlags flags,
+            ulong imageBase)
         {
             TypeSystemContext = context;
             CompilationModuleGroup = compilationModuleGroup;
@@ -167,6 +170,7 @@ namespace ILCompiler.DependencyAnalysis
             DebugDirectoryNode = debugDirectoryNode;
             Resolver = compilationModuleGroup.Resolver;
             Header = new GlobalHeaderNode(Target, flags);
+            ImageBase = imageBase;
             if (!win32Resources.IsEmpty)
                 Win32ResourcesNode = new Win32ResourcesNode(win32Resources);
 

@@ -9,7 +9,7 @@ namespace System.Runtime.InteropServices
     public class HandleCollectorTests
     {
         private const int LowLimitSize = 20;
-        private const int HighLimitSize = 100000;
+        private const int HighLimitSize = 100_000;
 
         [Theory]
         [InlineData(null, 0)]
@@ -128,6 +128,7 @@ namespace System.Runtime.InteropServices
             for (int i = 0; i < LowLimitSize + 1; ++i)
             {
                 HandleLimitTester hlt = new HandleLimitTester(lowLimitCollector);
+                Assert.True(lowLimitCollector.Count <= i + 1);
             }
 
             // HandleLimitTester does the decrement on the HandleCollector during finalization, so we wait for pending finalizers.
@@ -142,6 +143,7 @@ namespace System.Runtime.InteropServices
             for (int i = 0; i < HighLimitSize + 10; ++i)
             {
                 HandleLimitTester hlt = new HandleLimitTester(highLimitCollector);
+                Assert.True(highLimitCollector.Count <= i + 1);
             }
 
             // HandleLimitTester does the decrement on the HandleCollector during finalization, so we wait for pending finalizers.
@@ -155,11 +157,15 @@ namespace System.Runtime.InteropServices
 
         private sealed class HandleLimitTester
         {
-            private HandleCollector _collector;
+            private readonly HandleCollector _collector;
+            private readonly int[] _pressure;
 
             internal HandleLimitTester(HandleCollector collector)
             {
                 _collector = collector;
+                // Adding an allocation to ensure memory pressure exists so the call to
+                // GC.Collect() in the Add() method below will have something to do.
+                _pressure = new int[1_000];
                 _collector.Add();
                 GC.KeepAlive(this);
             }

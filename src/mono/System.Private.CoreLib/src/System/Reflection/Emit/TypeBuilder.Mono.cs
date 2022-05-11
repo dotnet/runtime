@@ -268,8 +268,7 @@ namespace System.Reflection.Emit
 
         public void AddInterfaceImplementation([DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)] Type interfaceType)
         {
-            if (interfaceType == null)
-                throw new ArgumentNullException(nameof(interfaceType));
+            ArgumentNullException.ThrowIfNull(interfaceType);
 
             check_not_created();
 
@@ -577,10 +576,8 @@ namespace System.Reflection.Emit
 
         public void DefineMethodOverride(MethodInfo methodInfoBody, MethodInfo methodInfoDeclaration)
         {
-            if (methodInfoBody == null)
-                throw new ArgumentNullException(nameof(methodInfoBody));
-            if (methodInfoDeclaration == null)
-                throw new ArgumentNullException(nameof(methodInfoDeclaration));
+            ArgumentNullException.ThrowIfNull(methodInfoBody);
+            ArgumentNullException.ThrowIfNull(methodInfoDeclaration);
             check_not_created();
             if (methodInfoBody.DeclaringType != this)
                 throw new ArgumentException("method body must belong to this type");
@@ -1302,16 +1299,14 @@ namespace System.Reflection.Emit
 
             if (!IsGenericTypeDefinition)
                 throw new InvalidOperationException("not a generic type definition");
-            if (typeArguments == null)
-                throw new ArgumentNullException(nameof(typeArguments));
+            ArgumentNullException.ThrowIfNull(typeArguments);
 
             if (generic_params!.Length != typeArguments.Length)
                 throw new ArgumentException(string.Format("The type or method has {0} generic parameter(s) but {1} generic argument(s) where provided. A generic argument must be provided for each generic parameter.", generic_params.Length, typeArguments.Length), nameof(typeArguments));
 
             foreach (Type t in typeArguments)
             {
-                if (t == null)
-                    throw new ArgumentNullException(nameof(typeArguments));
+                ArgumentNullException.ThrowIfNull(t, nameof(typeArguments));
             }
 
             Type[] copy = new Type[typeArguments.Length];
@@ -1335,8 +1330,7 @@ namespace System.Reflection.Emit
 
         public void SetCustomAttribute(CustomAttributeBuilder customBuilder)
         {
-            if (customBuilder == null)
-                throw new ArgumentNullException(nameof(customBuilder));
+            ArgumentNullException.ThrowIfNull(customBuilder);
 
             string? attrname = customBuilder.Ctor.ReflectedType!.FullName;
             if (attrname == "System.Runtime.InteropServices.StructLayoutAttribute")
@@ -1465,8 +1459,7 @@ namespace System.Reflection.Emit
         public EventBuilder DefineEvent(string name, EventAttributes attributes, Type eventtype)
         {
             check_name(nameof(name), name);
-            if (eventtype == null)
-                throw new ArgumentNullException(nameof(eventtype));
+            ArgumentNullException.ThrowIfNull(eventtype);
             check_not_created();
 
             EventBuilder res = new EventBuilder(this, name, attributes, eventtype);
@@ -1487,8 +1480,7 @@ namespace System.Reflection.Emit
 
         public FieldBuilder DefineInitializedData(string name, byte[] data, FieldAttributes attributes)
         {
-            if (data == null)
-                throw new ArgumentNullException(nameof(data));
+            ArgumentNullException.ThrowIfNull(data);
 
             FieldBuilder res = DefineUninitializedData(name, data.Length, attributes);
             res.SetRVAData(data);
@@ -1717,8 +1709,7 @@ namespace System.Reflection.Emit
 
         public GenericTypeParameterBuilder[] DefineGenericParameters(params string[] names)
         {
-            if (names == null)
-                throw new ArgumentNullException(nameof(names));
+            ArgumentNullException.ThrowIfNull(names);
             if (names.Length == 0)
                 throw new ArgumentException(SR.Arg_EmptyArray, nameof(names));
 
@@ -1726,8 +1717,8 @@ namespace System.Reflection.Emit
             for (int i = 0; i < names.Length; i++)
             {
                 string item = names[i];
-                if (item == null)
-                    throw new ArgumentNullException(nameof(names));
+                ArgumentNullException.ThrowIfNull(item, nameof(names));
+
                 generic_params[i] = new GenericTypeParameterBuilder(this, null, item, i);
             }
 

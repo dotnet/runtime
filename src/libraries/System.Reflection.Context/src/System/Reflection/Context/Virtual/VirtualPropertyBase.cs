@@ -15,8 +15,11 @@ namespace System.Reflection.Context.Virtual
         private Type? _declaringType;
         private ParameterInfo[]? _indexedParameters;
 
-        protected VirtualPropertyBase(Type propertyType, string name!!, CustomReflectionContext context)
+        protected VirtualPropertyBase(Type propertyType, string name, CustomReflectionContext context)
         {
+            if (name is null)
+                throw new ArgumentNullException(nameof(name));
+
             if (name.Length == 0)
                 throw new ArgumentException("", nameof(name));
 

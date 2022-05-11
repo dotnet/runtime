@@ -433,10 +433,10 @@
     <value>The key is too small for the requested operation.</value>
   </data>
   <data name="Cryptography_MatchBlockSize" xml:space="preserve">
-    <value>The specified plaintext size is not valid for the the padding and block size.</value>
+    <value>The specified plaintext size is not valid for the padding and block size.</value>
   </data>
   <data name="Cryptography_MatchFeedbackSize" xml:space="preserve">
-    <value>The specified plaintext size is not valid for the the padding and feedback size.</value>
+    <value>The specified plaintext size is not valid for the padding and feedback size.</value>
   </data>
   <data name="Cryptography_Encryption_MessageTooLong" xml:space="preserve">
     <value>The message exceeds the maximum allowable length for the chosen options ({0}).</value>

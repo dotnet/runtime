@@ -261,8 +261,13 @@ namespace System.Diagnostics
         /// <param name="arrayIndex">The zero-based index in <paramref name="array" /> at which copying begins.</param>
         /// <exception cref="T:System.ArgumentNullException"> <paramref name="array" /> is null.</exception>
         /// <exception cref="T:System.ArgumentOutOfRangeException"> <paramref name="arrayIndex " /> is less than 0 or greater that or equal the <paramref name="array" /> length.</exception>
-        public readonly void CopyTo(KeyValuePair<string, object?>[] array!!, int arrayIndex)
+        public readonly void CopyTo(KeyValuePair<string, object?>[] array, int arrayIndex)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if ((uint)arrayIndex >= array.Length)
             {
                 throw new ArgumentOutOfRangeException(nameof(arrayIndex));

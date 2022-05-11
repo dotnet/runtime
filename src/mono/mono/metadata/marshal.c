@@ -1666,7 +1666,7 @@ get_wrapper_target_class (MonoImage *image)
 	 * - can't put all wrappers into an mscorlib class, because they reference
 	 *   metadata (signature) so they should be put into the same image as the
 	 *   method they wrap, so they are unloaded together.
-	 * - putting them into a class with a type initalizer could cause the
+	 * - putting them into a class with a type initializer could cause the
 	 *   initializer to be executed which can be a problem if the wrappers are
 	 *   shared.
 	 * - putting them into an inflated class can cause problems if the the
@@ -3561,7 +3561,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	csig = mono_metadata_signature_dup_full (get_method_image (method), sig);
 	mono_marshal_set_callconv_from_modopt (method, csig, FALSE);
 
-	mspecs = g_new (MonoMarshalSpec*, sig->param_count + 1);
+	mspecs = g_new0 (MonoMarshalSpec*, sig->param_count + 1);
 	mono_method_get_marshal_info (method, mspecs);
 
 	if (mono_class_try_get_suppress_gc_transition_attribute_class ()) {
@@ -5421,20 +5421,6 @@ gpointer
 ves_icall_System_Runtime_InteropServices_Marshal_GetFunctionPointerForDelegateInternal (MonoDelegateHandle delegate, MonoError *error)
 {
 	return mono_delegate_to_ftnptr_impl (delegate, error);
-}
-
-MonoBoolean
-ves_icall_System_Runtime_InteropServices_Marshal_IsPinnableType (MonoQCallTypeHandle type_handle)
-{
-	MonoClass *klass = mono_class_from_mono_type_internal (type_handle.type);
-
-	if (m_class_get_rank (klass)) {
-		MonoClass *eklass = m_class_get_element_class (klass);
-		if (m_class_is_primitive (eklass))
-			return TRUE;
-		return eklass != mono_defaults.object_class && m_class_is_blittable (eklass);
-	} else
-		return m_class_is_blittable (klass);
 }
 
 /**
