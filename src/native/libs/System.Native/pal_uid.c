@@ -254,7 +254,7 @@ int32_t SystemNative_GetUName(uint32_t uid, char* buffer, int32_t bufferSize)
     while ((pwd = getpwuid(uid)) == NULL && errno == EINTR);
 
     size_t unameLength = strlen(pwd->pw_name);
-    if (errno < 0 || unameLength <= 0 || unameLength > (size_t)bufferSize)
+    if (errno < 0 || unameLength == 0 || unameLength > (size_t)bufferSize)
     {
         buffer = NULL;
         return -1;
@@ -279,7 +279,7 @@ int32_t SystemNative_GetGName(uint32_t gid, char* buffer, int32_t bufferSize)
     while ((grp = getgrgid(gid)) == NULL && errno == EINTR);
 
     size_t gnameLength = strlen(grp->gr_name);
-    if (errno < 0 || gnameLength <= 0 || gnameLength > (size_t)bufferSize)
+    if (errno < 0 || gnameLength == 0 || gnameLength > (size_t)bufferSize)
     {
         buffer = NULL;
         return -1;
