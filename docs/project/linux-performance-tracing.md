@@ -46,7 +46,15 @@ Follow these steps to prepare your machine to collect a performance trace.
 
 ## Collecting a Trace ##
 1. Have two shell windows available - one for controlling tracing, referred to as **[Trace]**, and one for running the application, referred to as **[App]**.
-2. **[App]** Setup the application shell - this enables tracing configuration inside of CoreCLR. This incurs a significant performance overhead (10-20%).
+2. **[App]** Setup the application shell - this enables tracing configuration inside of CoreCLR.
+
+    > ```bash
+	> export COMPlus_PerfMapEnabled=1
+	> export COMPlus_EnableEventLog=1
+	> ```
+
+    > [!NOTE]
+    > COMPlus_PerfMapEnabled will cause the .NET runtime to write a file containing symbolic information for jitted code to the disk. Depending on the performance of your disk and the amount of jitted code in the application this could have a significant performance overhead.
 
 	> ```bash
 	> export COMPlus_PerfMapEnabled=1
