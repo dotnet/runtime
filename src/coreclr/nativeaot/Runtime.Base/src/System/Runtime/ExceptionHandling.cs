@@ -377,9 +377,9 @@ namespace System.Runtime
 
         private enum HwExceptionCode : uint
         {
-            STATUS_REDHAWK_NULL_REFERENCE = 0x00000000u,
-            STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE = 0x00000042u,
-            STATUS_REDHAWK_THREAD_ABORT = 0x00000043u,
+            STATUS_NativeAOT_NULL_REFERENCE = 0x00000000u,
+            STATUS_NativeAOT_UNMANAGED_HELPER_NULL_REFERENCE = 0x00000042u,
+            STATUS_NativeAOT_THREAD_ABORT = 0x00000043u,
 
             STATUS_DATATYPE_MISALIGNMENT = 0x80000002u,
             STATUS_ACCESS_VIOLATION = 0xC0000005u,
@@ -497,11 +497,11 @@ namespace System.Runtime
 
             switch (exceptionCode)
             {
-                case (uint)HwExceptionCode.STATUS_REDHAWK_NULL_REFERENCE:
+                case (uint)HwExceptionCode.STATUS_NativeAOT_NULL_REFERENCE:
                     exceptionId = ExceptionIDs.NullReference;
                     break;
 
-                case (uint)HwExceptionCode.STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE:
+                case (uint)HwExceptionCode.STATUS_NativeAOT_UNMANAGED_HELPER_NULL_REFERENCE:
                     // The write barrier where the actual fault happened has been unwound already.
                     // The IP of this fault needs to be treated as return address, not as IP of
                     // faulting instruction.
@@ -509,7 +509,7 @@ namespace System.Runtime
                     exceptionId = ExceptionIDs.NullReference;
                     break;
 
-                case (uint)HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT:
+                case (uint)HwExceptionCode.STATUS_NativeAOT_THREAD_ABORT:
                     exceptionToThrow = InternalCalls.RhpGetThreadAbortException();
                     break;
 
@@ -518,7 +518,7 @@ namespace System.Runtime
                     break;
 
                 // N.B. -- AVs that have a read/write address lower than 64k are already transformed to
-                //         HwExceptionCode.REDHAWK_NULL_REFERENCE prior to calling this routine.
+                //         HwExceptionCode.NativeAOT_NULL_REFERENCE prior to calling this routine.
                 case (uint)HwExceptionCode.STATUS_ACCESS_VIOLATION:
                     exceptionId = ExceptionIDs.AccessViolation;
                     break;

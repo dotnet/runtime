@@ -2,8 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// This header provides Redhawk-specific ETW code and macros, to allow sharing of common
-// ETW code between Redhawk and desktop CLR.
+// This header provides NativeAOT-specific ETW code and macros, to allow sharing of common
+// ETW code between NativeAOT and desktop CLR.
 //
 #ifndef __RHEVENTTRACE_INCLUDED
 #define __RHEVENTTRACE_INCLUDED
@@ -13,12 +13,12 @@
 
 // FireEtwGCPerHeapHistorySpecial() has to be defined manually rather than via the manifest because it does
 // not have a standard signature.
-#define FireEtwGCPerHeapHistorySpecial(DataPerHeap, DataSize, ClrId) (MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory)) ? Template_GCPerHeapHistorySpecial(Microsoft_Windows_Redhawk_GC_PrivateHandle, &GCPerHeapHistory, DataPerHeap, DataSize, ClrId) : 0
+#define FireEtwGCPerHeapHistorySpecial(DataPerHeap, DataSize, ClrId) (MICROSOFT_WINDOWS_NativeAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled && PalEventEnabled(Microsoft_Windows_NativeAOT_GC_PrivateHandle, &GCPerHeapHistory)) ? Template_GCPerHeapHistorySpecial(Microsoft_Windows_NativeAOT_GC_PrivateHandle, &GCPerHeapHistory, DataPerHeap, DataSize, ClrId) : 0
 
 // Map the CLR private provider to our version so we can avoid inserting more #ifdef's in the code.
-#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context
-#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context
-#define Microsoft_Windows_DotNETRuntimeHandle Microsoft_Windows_Redhawk_GC_PublicHandle
+#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PRIVATE_PROVIDER_Context MICROSOFT_WINDOWS_NativeAOT_GC_PRIVATE_PROVIDER_Context
+#define MICROSOFT_WINDOWS_DOTNETRUNTIME_PROVIDER_Context MICROSOFT_WINDOWS_NativeAOT_GC_PUBLIC_PROVIDER_Context
+#define Microsoft_Windows_DotNETRuntimeHandle Microsoft_Windows_NativeAOT_GC_PublicHandle
 
 #define CLR_GC_KEYWORD 0x1
 #define CLR_FUSION_KEYWORD 0x4
@@ -78,7 +78,7 @@ namespace ETW
     class TypeSystemLog
     {
     public:
-        // This enum is unused on Redhawk, but remains here to keep Redhawk / desktop CLR
+        // This enum is unused on NativeAOT, but remains here to keep NativeAOT / desktop CLR
         // code shareable.
         enum TypeLogBehavior
         {

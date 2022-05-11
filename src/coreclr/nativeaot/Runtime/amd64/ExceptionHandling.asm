@@ -505,7 +505,7 @@ endif
         je      @f
 
         ;; It was the ThreadAbortException, so rethrow it
-        mov     rcx, STATUS_REDHAWK_THREAD_ABORT
+        mov     rcx, STATUS_NativeAOT_THREAD_ABORT
         mov     rdx, rax                                            ;; rdx <- continuation address as exception RIP
         mov     rsp, r8                                             ;; reset the SP to resume SP value
         jmp     RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception

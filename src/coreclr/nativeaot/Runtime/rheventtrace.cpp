@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Redhawk-specific ETW helper code.
+// NativeAOT-specific ETW helper code.
 //
-// When Redhawk does stuff substantially different from desktop CLR, the
-// Redhawk-specific implementations should go here.
+// When NativeAOT does stuff substantially different from desktop CLR, the
+// NativeAOT-specific implementations should go here.
 //
 #include "common.h"
 #include "gcenv.h"
@@ -18,7 +18,7 @@
 #include "shash.h"
 #include "eventtracepriv.h"
 #include "shash.inl"
-#include "palredhawk.h"
+#include "palNativeAOT.h"
 
 #if defined(FEATURE_EVENT_TRACE)
 
@@ -36,7 +36,7 @@
 //
 // Arguments:
 //      * thAsAddr - MethodTable to log
-//      * typeLogBehavior - Ignored in Redhawk builds
+//      * typeLogBehavior - Ignored in NativeAOT builds
 //
 
 void BulkTypeEventLogger::LogTypeAndParameters(uint64_t thAsAddr, ETW::TypeSystemLog::TypeLogBehavior typeLogBehavior)
@@ -338,9 +338,9 @@ void BulkTypeEventLogger::Cleanup()
 // Arguments:
 //      * pBulkTypeEventLogger - If our caller is keeping track of batched types, it
 //          passes this to us so we can use it to batch the current type (GC heap walk
-//          does this).  In Redhawk builds this should not be NULL.
+//          does this).  In NativeAOT builds this should not be NULL.
 //      * thAsAddr - MethodTable to batch
-//      * typeLogBehavior - Unused in Redhawk builds
+//      * typeLogBehavior - Unused in NativeAOT builds
 //
 
 void ETW::TypeSystemLog::LogTypeAndParametersIfNecessary(BulkTypeEventLogger * pLogger, uint64_t thAsAddr, ETW::TypeSystemLog::TypeLogBehavior typeLogBehavior)

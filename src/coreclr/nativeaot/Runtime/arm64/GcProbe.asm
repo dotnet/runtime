@@ -377,7 +377,7 @@ EXTRA_SAVE_SIZE equ (32*16)
     NESTED_ENTRY RhpGcStressProbe
         PROLOG_PROBE_FRAME x2, x3, x12,
 
-        bl          $REDHAWKGCINTERFACE__STRESSGC
+        bl          $NativeAOTGCINTERFACE__STRESSGC
 
         EPILOG_PROBE_FRAME
     NESTED_END RhpGcStressProbe
@@ -405,7 +405,7 @@ EXTRA_SAVE_SIZE equ (32*16)
 
 1
         FREE_PROBE_FRAME 0, {true}
-        EPILOG_NOP mov w0, #STATUS_REDHAWK_THREAD_ABORT
+        EPILOG_NOP mov w0, #STATUS_NativeAOT_THREAD_ABORT
         EPILOG_NOP mov x1, lr ;; return address as exception PC
         EPILOG_NOP b RhpThrowHwEx
     NESTED_END RhpGcProbeRare

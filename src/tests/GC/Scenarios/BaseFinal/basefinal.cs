@@ -90,7 +90,7 @@ namespace DefaultNamespace {
         {
 
             mv_Obj = new BaseFinal();
-            //Printing GetTotalMemory is commented out so that the test can build on RedHawk
+            //Printing GetTotalMemory is commented out so that the test can build on NativeAOT
             //Console.WriteLine("before test started, the heapsize is {0}", GC.GetTotalMemory(false));
 
             for( int i=1; i< 1000; i++)

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Helper functions that are p/invoked from redhawkm in order to expose handle table functionality to managed
+// Helper functions that are p/invoked from NativeAOTm in order to expose handle table functionality to managed
 // code. These p/invokes are special in that the handle table code requires we remain in co-operative mode
 // (since these routines mutate the handle tables which are also accessed during garbage collections). The
 // binder has special knowledge of these methods and doesn't generate the normal code to transition out of the

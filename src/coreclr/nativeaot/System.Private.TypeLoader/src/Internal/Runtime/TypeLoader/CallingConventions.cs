@@ -161,7 +161,7 @@ namespace Internal.Runtime.CallConverter
                 return CorElementType.ELEMENT_TYPE_BYREF;
             }
 
-            // The core redhawk runtime has a slightly different concept of what CorElementType should be for a type. It matches for primitive and enum types
+            // The core NativeAOT runtime has a slightly different concept of what CorElementType should be for a type. It matches for primitive and enum types
             // but for other types, it doesn't match the needs in this file.
             EETypeElementType rhCorElementType = _eeType->ElementType;
 

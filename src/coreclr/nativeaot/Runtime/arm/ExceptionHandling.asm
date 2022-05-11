@@ -369,7 +369,7 @@ DonePopping
         ;; It was the ThreadAbortException, so rethrow it
         ;; reset SP
         mov         r1, r0                                     ;; r1 <- continuation address as exception PC
-        mov         r0, #STATUS_REDHAWK_THREAD_ABORT
+        mov         r0, #STATUS_NativeAOT_THREAD_ABORT
         mov         sp, r2
         b           RhpThrowHwEx
 

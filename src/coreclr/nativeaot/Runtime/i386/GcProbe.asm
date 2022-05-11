@@ -211,7 +211,7 @@ SynchronousRendezVous:
 
         HijackFixupEpilog
 Abort:
-        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
+        mov         ecx, STATUS_NativeAOT_THREAD_ABORT
         pop         edx
         pop         eax         ;; ecx was pushed here, but we don't care for its value
         pop         ebp
@@ -222,7 +222,7 @@ RhpGcProbe  endp
 
 ifdef FEATURE_GC_STRESS
 ;;
-;; Set the Thread state and invoke RedhawkGCInterface::StressGC().
+;; Set the Thread state and invoke NativeAOTGCInterface::StressGC().
 ;;
 ;; Assumes EBX is the Thread pointer.
 ;;
@@ -238,7 +238,7 @@ ifdef FEATURE_GC_STRESS
 ;;
 StressGC macro
         mov         [ebx + OFFSETOF__Thread__m_pHackPInvokeTunnel], esp
-        call        REDHAWKGCINTERFACE__STRESSGC
+        call        NativeAOTGCINTERFACE__STRESSGC
 endm
 
 ;;

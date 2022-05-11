@@ -5,10 +5,10 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
+#include "PalNativeAOTCommon.h"
 #include "CommonMacros.inl"
 #include "volatile.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOT.h"
 #include "rhassert.h"
 
 #include "slist.h"
@@ -36,7 +36,7 @@
 #include "GCMemoryHelpers.inl"
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C REDHAWK_API void* REDHAWK_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
+EXTERN_C NativeAOT_API void* NativeAOT_CALLCONV RhpGcAlloc(MethodTable *pEEType, uint32_t uFlags, uintptr_t numElements, void * pTransitionFrame);
 
 struct gc_alloc_context
 {
@@ -496,7 +496,7 @@ COOP_PINVOKE_HELPER(void, RhpMemoryBarrier, ())
 }
 
 #if defined(USE_PORTABLE_HELPERS)
-EXTERN_C REDHAWK_API void* __cdecl RhAllocateThunksMapping()
+EXTERN_C NativeAOT_API void* __cdecl RhAllocateThunksMapping()
 {
     return NULL;
 }

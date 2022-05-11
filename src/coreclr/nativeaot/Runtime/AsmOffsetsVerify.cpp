@@ -4,7 +4,7 @@
 #include "gcenv.h"
 #include "gcheaputilities.h"
 #include "rhassert.h"
-#include "RedhawkWarnings.h"
+#include "NativeAOTWarnings.h"
 #include "slist.h"
 #include "gcrhinterface.h"
 #include "varint.h"

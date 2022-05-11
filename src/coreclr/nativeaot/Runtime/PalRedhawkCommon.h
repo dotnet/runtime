@@ -2,16 +2,16 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Provide common definitions between the Redhawk and the Redhawk PAL implementation. This header file is used
-// (rather than PalRedhawk.h) since the PAL implementation is built in a different environment than Redhawk
+// Provide common definitions between the NativeAOT and the NativeAOT PAL implementation. This header file is used
+// (rather than PalNativeAOT.h) since the PAL implementation is built in a different environment than NativeAOT
 // code. For instance both environments may provide a definition of various common macros such as NULL.
 //
 // This header contains only environment neutral definitions (i.e. using only base C++ types and compositions
 // of those types) and can thus be included from either environment without issue.
 //
 
-#ifndef __PAL_REDHAWK_COMMON_INCLUDED
-#define __PAL_REDHAWK_COMMON_INCLUDED
+#ifndef __PAL_NativeAOT_COMMON_INCLUDED
+#define __PAL_NativeAOT_COMMON_INCLUDED
 
 #include "rhassert.h"
 
@@ -161,4 +161,4 @@ extern ThreadExitCallback g_threadExitCallback;
 typedef int32_t (*PHARDWARE_EXCEPTION_HANDLER)(uintptr_t faultCode, uintptr_t faultAddress, PAL_LIMITED_CONTEXT* palContext, uintptr_t* arg0Reg, uintptr_t* arg1Reg);
 #endif
 
-#endif // __PAL_REDHAWK_COMMON_INCLUDED
+#endif // __PAL_NativeAOT_COMMON_INCLUDED

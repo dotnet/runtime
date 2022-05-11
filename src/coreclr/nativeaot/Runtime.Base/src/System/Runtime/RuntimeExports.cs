@@ -301,7 +301,7 @@ namespace System.Runtime
         }
 
         // Use DllImport here instead of LibraryImport because this file is used by Test.CoreLib.
-        [DllImport(Redhawk.BaseName)]
+        [DllImport(NativeAOT.BaseName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(CallConvCdecl) })]
         private static unsafe extern int RhpGetCurrentThreadStackTrace(IntPtr* pOutputBuffer, uint outputBufferLength, UIntPtr addressInCurrentFrame);
 

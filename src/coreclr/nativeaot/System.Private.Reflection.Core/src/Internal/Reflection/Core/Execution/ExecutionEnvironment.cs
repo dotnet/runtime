@@ -16,7 +16,7 @@ using System.Reflection.Runtime.MethodInfos;
 namespace Internal.Reflection.Core.Execution
 {
     //
-    // This class abstracts the underlying Redhawk (or whatever execution engine) runtime and exposes the services
+    // This class abstracts the underlying NativeAOT (or whatever execution engine) runtime and exposes the services
     // that I.R.Core.Execution needs.
     //
     public abstract class ExecutionEnvironment

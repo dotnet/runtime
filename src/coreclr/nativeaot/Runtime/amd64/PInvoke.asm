@@ -114,7 +114,7 @@ NoWait:
         test        dword ptr [rbx + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
         jz          Done
 
-        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        mov         rcx, STATUS_NativeAOT_THREAD_ABORT
         pop         rbx
         pop         rdx                 ; return address as exception RIP
         jmp         RhpThrowHwEx        ; Throw the ThreadAbortException as a special kind of hardware exception

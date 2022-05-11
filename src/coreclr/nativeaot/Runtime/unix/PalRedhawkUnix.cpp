@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Implementation of the Redhawk Platform Abstraction Layer (PAL) library when Unix is the platform.
+// Implementation of the NativeAOT Platform Abstraction Layer (PAL) library when Unix is the platform.
 //
 
 #include <stdio.h>
@@ -402,9 +402,9 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-// The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
+// The NativeAOT PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalInit()
 {
 #ifndef USE_PORTABLE_HELPERS
     if (!InitializeHardwareExceptionHandling())
@@ -499,18 +499,18 @@ extern "C" bool PalDetachThread(void* thread)
 }
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalAllocateThunksFromTemplate(HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, void** newThunksOut)
 {
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress)
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalFreeThunksFromTemplate(void *pBaseAddress)
 {
     PORTABILITY_ASSERT("UNIXTODO: Implement this function");
 }
 #endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
@@ -520,7 +520,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     return UInt32_TRUE;
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
+NativeAOT_PALEXPORT void NativeAOT_PALAPI PalSleep(uint32_t milliseconds)
 {
 #if HAVE_CLOCK_NANOSLEEP
     timespec endTime;
@@ -542,7 +542,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
 #endif // HAVE_CLOCK_NANOSLEEP
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI __stdcall PalSwitchToThread()
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI __stdcall PalSwitchToThread()
 {
     // sched_yield yields to another thread in the current process. This implementation
     // won't work well for cross-process synchronization.
@@ -565,7 +565,7 @@ extern "C" UInt32_BOOL CloseHandle(HANDLE handle)
     return success ? UInt32_TRUE : UInt32_FALSE;
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const wchar_t* pName)
+NativeAOT_PALEXPORT HANDLE NativeAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ const wchar_t* pName)
 {
     UnixEvent event = UnixEvent(manualReset, initialState);
     if (!event.Initialize())
@@ -585,7 +585,7 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTR
 
 typedef uint32_t(__stdcall *BackgroundCallback)(_In_opt_ void* pCallbackContext);
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, UInt32_BOOL highPriority)
 {
 #ifdef HOST_WASM
     // No threads, so we can't start one
@@ -624,12 +624,12 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
     return st == 0;
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, UInt32_FALSE);
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
 #ifdef HOST_WASM
     // WASMTODO: No threads so we can't start the finalizer thread
@@ -643,7 +643,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCal
 // to return monotonically increasing counts and avoid being affected by changes
 // to the system clock (either due to drift or due to explicit changes to system
 // time).
-REDHAWK_PALEXPORT uint64_t REDHAWK_PALAPI PalGetTickCount64()
+NativeAOT_PALEXPORT uint64_t NativeAOT_PALAPI PalGetTickCount64()
 {
     uint64_t retval = 0;
 
@@ -686,7 +686,7 @@ REDHAWK_PALEXPORT uint64_t REDHAWK_PALAPI PalGetTickCount64()
     return retval;
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
+NativeAOT_PALEXPORT HANDLE NativeAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     HANDLE moduleHandle = NULL;
 
@@ -704,12 +704,12 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
     return moduleHandle;
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalIsAvxEnabled()
 {
     return true;
 }
 
-REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
+NativeAOT_PALEXPORT void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow
     // message, so there is not much that can be done here.
@@ -741,7 +741,7 @@ static int W32toUnixAccessControl(uint32_t flProtect)
     return prot;
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, size_t size, uint32_t allocationType, uint32_t protect)
+NativeAOT_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* NativeAOT_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, size_t size, uint32_t allocationType, uint32_t protect)
 {
     // TODO: thread safety!
 
@@ -798,7 +798,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_
     return NULL;
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size, uint32_t freeType)
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalVirtualFree(_In_ void* pAddress, size_t size, uint32_t freeType)
 {
     ASSERT(((freeType & MEM_RELEASE) != MEM_RELEASE) || size == 0);
     ASSERT((freeType & (MEM_RELEASE | MEM_DECOMMIT)) != (MEM_RELEASE | MEM_DECOMMIT));
@@ -808,14 +808,14 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress,
     return UInt32_TRUE;
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect)
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, size_t size, uint32_t protect)
 {
     int unixProtect = W32toUnixAccessControl(protect);
 
     return mprotect(pAddress, size, unixProtect) == 0;
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
+NativeAOT_PALEXPORT _Ret_maybenull_ void* NativeAOT_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
 {
     static void* pBuffer;
     return PalInterlockedExchangePointer(&pBuffer, pNewBuffer);
@@ -937,7 +937,7 @@ extern "C" uint16_t RtlCaptureStackBackTrace(uint32_t arg1, uint32_t arg2, void*
 
 typedef uint32_t (__stdcall *HijackCallback)(HANDLE hThread, _In_ PAL_LIMITED_CONTEXT* pThreadContext, _In_opt_ void* pCallbackContext);
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ HijackCallback callback, _In_opt_ void* pCallbackContext)
+NativeAOT_PALEXPORT uint32_t NativeAOT_PALAPI PalHijack(HANDLE hThread, _In_ HijackCallback callback, _In_opt_ void* pCallbackContext)
 {
     // UNIXTODO: Implement PalHijack
     return E_FAIL;
@@ -954,7 +954,7 @@ extern "C" uint32_t WaitForSingleObjectEx(HANDLE handle, uint32_t milliseconds, 
     return unixHandle->GetObject()->Wait(milliseconds);
 }
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
+NativeAOT_PALEXPORT uint32_t NativeAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
 {
     // Only a single handle wait for event is supported
     ASSERT(handleCount == 1);
@@ -968,7 +968,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
 
 #if !__has_builtin(_mm_pause)
 extern "C" void _mm_pause()
-// Defined for implementing PalYieldProcessor in PalRedhawk.h
+// Defined for implementing PalYieldProcessor in PalNativeAOT.h
 {
 #if defined(HOST_AMD64) || defined(HOST_X86)
   __asm__ volatile ("pause");
@@ -983,7 +983,7 @@ extern "C" int32_t _stricmp(const char *string1, const char *string2)
 
 uint32_t g_RhNumberOfProcessors;
 
-REDHAWK_PALEXPORT int32_t PalGetProcessCpuCount()
+NativeAOT_PALEXPORT int32_t PalGetProcessCpuCount()
 {
     ASSERT(g_RhNumberOfProcessors > 0);
     return g_RhNumberOfProcessors;
@@ -995,7 +995,7 @@ __thread void* pStackLowOut = NULL;
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
-REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
+NativeAOT_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
 {
     if (pStackHighOut == NULL)
     {
@@ -1043,7 +1043,7 @@ REDHAWK_PALEXPORT bool PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out
 //
 // Return value:  number of characters in name string
 //
-REDHAWK_PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
+NativeAOT_PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
 #if defined(HOST_WASM)
     // Emscripten's implementation of dladdr corrupts memory and doesn't have the real name, so make up a name instead
@@ -1123,7 +1123,7 @@ extern "C" uint64_t PalGetCurrentThreadIdForLogging()
 
 #if defined(HOST_X86) || defined(HOST_AMD64)
 
-REDHAWK_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
+NativeAOT_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
     // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
@@ -1134,7 +1134,7 @@ REDHAWK_PALEXPORT void __cpuid(int cpuInfo[4], int function_id)
         );
 }
 
-REDHAWK_PALEXPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
+NativeAOT_PALEXPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunction_id)
 {
     // Based on the Clang implementation provided in cpuid.h:
     // https://github.com/llvm/llvm-project/blob/master/clang/lib/Headers/cpuid.h
@@ -1145,7 +1145,7 @@ REDHAWK_PALEXPORT void __cpuidex(int cpuInfo[4], int function_id, int subFunctio
         );
 }
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
+NativeAOT_PALEXPORT uint32_t NativeAOT_PALAPI xmmYmmStateSupport()
 {
     DWORD eax;
     __asm("  xgetbv\n" \
@@ -1170,7 +1170,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI xmmYmmStateSupport()
 #endif
 
 // Based on PAL_GetJitCpuCapabilityFlags from CoreCLR (jitsupport.cpp)
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
+NativeAOT_PALEXPORT void NativeAOT_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 {
     *flags = 0;
 

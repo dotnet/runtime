@@ -7,7 +7,7 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
+#include "PalNativeAOTCommon.h"
 #include "regdisplay.h"
 #include "ICodeManager.h"
 #include "CoffNativeCodeManager.h"

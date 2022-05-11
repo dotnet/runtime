@@ -100,7 +100,7 @@ NoWait:
         test        dword ptr [ebx + OFFSETOF__PInvokeTransitionFrame__m_Flags], PTFF_THREAD_ABORT
         jz          Done
 
-        mov         ecx, STATUS_REDHAWK_THREAD_ABORT
+        mov         ecx, STATUS_NativeAOT_THREAD_ABORT
         pop         ebx
         pop         ebp
         pop         edx                 ; return address as exception RIP

@@ -305,7 +305,7 @@ __PPF_ThreadReg SETS "r2"
     NESTED_ENTRY RhpGcStressProbe
         PROLOG_PROBE_FRAME r2, r3, r12
 
-        bl          $REDHAWKGCINTERFACE__STRESSGC
+        bl          $NativeAOTGCINTERFACE__STRESSGC
 
         EPILOG_PROBE_FRAME
     NESTED_END RhpGcStressProbe
@@ -337,7 +337,7 @@ __PPF_ThreadReg SETS "r2"
 
 1
         FREE_PROBE_FRAME
-        EPILOG_NOP mov         r0, #STATUS_REDHAWK_THREAD_ABORT
+        EPILOG_NOP mov         r0, #STATUS_NativeAOT_THREAD_ABORT
         EPILOG_NOP mov         r1, lr ;; return address as exception PC
         EPILOG_BRANCH RhpThrowHwEx
 
@@ -581,7 +581,7 @@ DREG_SZ equ     (SIZEOF__PAL_LIMITED_CONTEXT - (OFFSETOF__PAL_LIMITED_CONTEXT__L
     NESTED_ENTRY RhpGCStressProbeForEHJump
         EHJumpProbeProlog
 
-        bl          $REDHAWKGCINTERFACE__STRESSGC
+        bl          $NativeAOTGCINTERFACE__STRESSGC
 
         EHJumpProbeEpilog
     NESTED_END RhpGCStressProbeForEHJump

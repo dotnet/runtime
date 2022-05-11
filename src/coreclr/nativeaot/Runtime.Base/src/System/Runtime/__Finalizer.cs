@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 
 //
-// Implements the single finalizer thread for a Redhawk instance. Essentially waits for an event to fire
+// Implements the single finalizer thread for a NativeAOT instance. Essentially waits for an event to fire
 // indicating finalization is necessary then drains the queue of pending finalizable objects, calling the
 // finalize method for each one.
 //
@@ -58,7 +58,7 @@ namespace System.Runtime
                     return;
 
                 // Call the finalizer on the current target object. If the finalizer throws we'll fail
-                // fast via normal Redhawk exception semantics (since we don't attempt to catch
+                // fast via normal NativeAOT exception semantics (since we don't attempt to catch
                 // anything).
                 ((delegate*<object, void>)target.GetMethodTable()->FinalizerCode)(target);
             }

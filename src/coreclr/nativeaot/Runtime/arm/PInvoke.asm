@@ -85,7 +85,7 @@ NoWait
         tst         r0, #PTFF_THREAD_ABORT
         beq         NoAbort
         EPILOG_POP  {r0,r1}         ; hijack target address as exception PC
-        EPILOG_NOP  mov r0, #STATUS_REDHAWK_THREAD_ABORT
+        EPILOG_NOP  mov r0, #STATUS_NativeAOT_THREAD_ABORT
         EPILOG_BRANCH RhpThrowHwEx
 NoAbort
         EPILOG_POP  {r0,pc}

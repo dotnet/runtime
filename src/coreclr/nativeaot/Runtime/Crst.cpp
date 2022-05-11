@@ -3,8 +3,8 @@
 #include "common.h"
 #include "CommonTypes.h"
 #include "CommonMacros.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "holder.h"
 #include "Crst.h"
 

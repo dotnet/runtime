@@ -245,7 +245,7 @@ namespace Internal.Runtime.TypeLoader
             if (!(interfaceType.GetTypeDefinition() is MetadataType))
             {
                 // If the interface open type is not a metadata type, this must be an interface not known in the metadata world.
-                // Use the redhawk resolver for this directly.
+                // Use the NativeAOT resolver for this directly.
                 TypeDesc pregeneratedType = LazyVTableResolver.GetMostDerivedPregeneratedOrTemplateLoadedType(targetType);
                 pregeneratedType.RetrieveRuntimeTypeHandleIfPossible();
                 interfaceType.RetrieveRuntimeTypeHandleIfPossible();

@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Implementation of the Redhawk Platform Abstraction Layer (PAL) library when MinWin is the platform. In this
-// case most or all of the import requirements which Redhawk has can be satisfied via a forwarding export to
+// Implementation of the NativeAOT Platform Abstraction Layer (PAL) library when MinWin is the platform. In this
+// case most or all of the import requirements which NativeAOT has can be satisfied via a forwarding export to
 // some native MinWin library. Therefore most of the work is done in the .def file and there is very little
 // code here.
 //
-// Note that in general we don't want to assume that Windows and Redhawk global definitions can co-exist.
+// Note that in general we don't want to assume that Windows and NativeAOT global definitions can co-exist.
 // Since this code must include Windows headers to do its job we can't therefore safely include general
-// Redhawk header files.
+// NativeAOT header files.
 //
 #include "common.h"
 #include <windows.h>
@@ -32,8 +32,8 @@ uint32_t PalEventWrite(REGHANDLE arg1, const EVENT_DESCRIPTOR * arg2, uint32_t a
 #include "gcenv.h"
 
 
-#define REDHAWK_PALEXPORT extern "C"
-#define REDHAWK_PALAPI __stdcall
+#define NativeAOT_PALEXPORT extern "C"
+#define NativeAOT_PALAPI __stdcall
 
 // Index for the fiber local storage of the attached thread pointer
 static uint32_t g_flsIndex = FLS_OUT_OF_INDEXES;
@@ -134,9 +134,9 @@ void InitializeCurrentProcessCpuCount()
     g_RhNumberOfProcessors = count;
 }
 
-// The Redhawk PAL must be initialized before any of its exports can be called. Returns true for a successful
+// The NativeAOT PAL must be initialized before any of its exports can be called. Returns true for a successful
 // initialization and false on failure.
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalInit()
 {
     // We use fiber detach callbacks to run our thread shutdown code because the fiber detach
     // callback is made without the OS loader lock
@@ -162,7 +162,7 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalInit()
 // or if the thread was already registered with a different fiber.
 // Parameters:
 //  thread        - thread to attach
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
+NativeAOT_PALEXPORT void NativeAOT_PALAPI PalAttachThread(void* thread)
 {
     void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
 
@@ -184,7 +184,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalAttachThread(void* thread)
 //  thread        - thread to detach
 // Return:
 //  true if the thread was detached, false if there was no attached thread
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalDetachThread(void* thread)
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalDetachThread(void* thread)
 {
     ASSERT(g_flsIndex != FLS_OUT_OF_INDEXES);
     void* threadFromCurrentFiber = FlsGetValue(g_flsIndex);
@@ -217,7 +217,7 @@ extern "C" uint64_t PalGetCurrentThreadIdForLogging()
 }
 
 #if !defined(USE_PORTABLE_HELPERS) && !defined(FEATURE_RX_THUNKS)
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalAllocateThunksFromTemplate(_In_ HANDLE hTemplateModule, uint32_t templateRva, size_t templateSize, _Outptr_result_bytebuffer_(templateSize) void** newThunksOut)
 {
 #ifdef XBOX_ONE
     return E_NOTIMPL;
@@ -248,7 +248,7 @@ cleanup:
 #endif
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress)
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalFreeThunksFromTemplate(_In_ void *pBaseAddress)
 {
 #ifdef XBOX_ONE
     return TRUE;
@@ -258,7 +258,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalFreeThunksFromTemplate(_In_ void
 }
 #endif // !USE_PORTABLE_HELPERS && !FEATURE_RX_THUNKS
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalMarkThunksAsValidCallTargets(
     void *virtualAddress,
     int thunkSize,
     int thunksPerBlock,
@@ -270,7 +270,7 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalMarkThunksAsValidCallTargets(
     return TRUE;
 }
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
+NativeAOT_PALEXPORT uint32_t NativeAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL alertable, uint32_t timeout, uint32_t handleCount, HANDLE* pHandles, UInt32_BOOL allowReentrantWait)
 {
     if (!allowReentrantWait)
     {
@@ -297,22 +297,22 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalCompatibleWaitAny(UInt32_BOOL alert
     }
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalSleep(uint32_t milliseconds)
+NativeAOT_PALEXPORT void NativeAOT_PALAPI PalSleep(uint32_t milliseconds)
 {
     return Sleep(milliseconds);
 }
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalSwitchToThread()
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalSwitchToThread()
 {
     return SwitchToThread();
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
+NativeAOT_PALEXPORT HANDLE NativeAOT_PALAPI PalCreateEventW(_In_opt_ LPSECURITY_ATTRIBUTES pEventAttributes, UInt32_BOOL manualReset, UInt32_BOOL initialState, _In_opt_z_ LPCWSTR pName)
 {
     return CreateEventW(pEventAttributes, manualReset, initialState, pName);
 }
 
-REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx)
+NativeAOT_PALEXPORT _Success_(return) bool NativeAOT_PALAPI PalGetThreadContext(HANDLE hThread, _Out_ PAL_LIMITED_CONTEXT * pCtx)
 {
     CONTEXT win32ctx;
 
@@ -391,7 +391,7 @@ REDHAWK_PALEXPORT _Success_(return) bool REDHAWK_PALAPI PalGetThreadContext(HAND
 }
 
 
-REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ PalHijackCallback callback, _In_opt_ void* pCallbackContext)
+NativeAOT_PALEXPORT uint32_t NativeAOT_PALAPI PalHijack(HANDLE hThread, _In_ PalHijackCallback callback, _In_opt_ void* pCallbackContext)
 {
     if (hThread == INVALID_HANDLE_VALUE)
     {
@@ -419,7 +419,7 @@ REDHAWK_PALEXPORT uint32_t REDHAWK_PALAPI PalHijack(HANDLE hThread, _In_ PalHija
     return result;
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalStartBackgroundWork(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext, BOOL highPriority)
 {
     HANDLE hThread = CreateThread(
         NULL,
@@ -442,27 +442,27 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundWork(_In_ BackgroundCall
     return true;
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalStartBackgroundGCThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, FALSE);
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalStartFinalizerThread(_In_ BackgroundCallback callback, _In_opt_ void* pCallbackContext)
 {
     return PalStartBackgroundWork(callback, pCallbackContext, TRUE);
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor)
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalEventEnabled(REGHANDLE regHandle, _In_ const EVENT_DESCRIPTOR* eventDescriptor)
 {
     return !!EventEnabled(regHandle, eventDescriptor);
 }
 
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalTerminateCurrentProcess(uint32_t arg2)
+NativeAOT_PALEXPORT void NativeAOT_PALAPI PalTerminateCurrentProcess(uint32_t arg2)
 {
     TerminateProcess(GetCurrentProcess(), arg2);
 }
 
-REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
+NativeAOT_PALEXPORT HANDLE NativeAOT_PALAPI PalGetModuleHandleFromPointer(_In_ void* pointer)
 {
     // The runtime is not designed to be unloadable today. Use GET_MODULE_HANDLE_EX_FLAG_PIN to prevent
     // the module from ever unloading.
@@ -479,7 +479,7 @@ REDHAWK_PALEXPORT HANDLE REDHAWK_PALAPI PalGetModuleHandleFromPointer(_In_ void*
     return (HANDLE)module;
 }
 
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalIsAvxEnabled()
 {
     typedef DWORD64(WINAPI* PGETENABLEDXSTATEFEATURES)();
     PGETENABLEDXSTATEFEATURES pfnGetEnabledXStateFeatures = NULL;
@@ -504,12 +504,12 @@ REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalIsAvxEnabled()
     return TRUE;
 }
 
-REDHAWK_PALEXPORT void* REDHAWK_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
+NativeAOT_PALEXPORT void* NativeAOT_PALAPI PalAddVectoredExceptionHandler(uint32_t firstHandler, _In_ PVECTORED_EXCEPTION_HANDLER vectoredHandler)
 {
     return AddVectoredExceptionHandler(firstHandler, vectoredHandler);
 }
 
-REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
+NativeAOT_PALEXPORT void PalPrintFatalError(const char* message)
 {
     // Write the message using lowest-level OS API available. This is used to print the stack overflow
     // message, so there is not much that can be done here.
@@ -517,14 +517,14 @@ REDHAWK_PALEXPORT void PalPrintFatalError(const char* message)
     WriteFile(GetStdHandle(STD_ERROR_HANDLE), message, (DWORD)strlen(message), &dwBytesWritten, NULL);
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* REDHAWK_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect)
+NativeAOT_PALEXPORT _Ret_maybenull_ _Post_writable_byte_size_(size) void* NativeAOT_PALAPI PalVirtualAlloc(_In_opt_ void* pAddress, uintptr_t size, uint32_t allocationType, uint32_t protect)
 {
     return VirtualAlloc(pAddress, size, allocationType, protect);
 }
 
 #pragma warning (push)
 #pragma warning (disable:28160) // warnings about invalid potential parameter combinations that would cause VirtualFree to fail - those are asserted for below
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType)
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalVirtualFree(_In_ void* pAddress, uintptr_t size, uint32_t freeType)
 {
     assert(((freeType & MEM_RELEASE) != MEM_RELEASE) || size == 0);
     assert((freeType & (MEM_RELEASE | MEM_DECOMMIT)) != (MEM_RELEASE | MEM_DECOMMIT));
@@ -534,13 +534,13 @@ REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualFree(_In_ void* pAddress,
 }
 #pragma warning (pop)
 
-REDHAWK_PALEXPORT UInt32_BOOL REDHAWK_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect)
+NativeAOT_PALEXPORT UInt32_BOOL NativeAOT_PALAPI PalVirtualProtect(_In_ void* pAddress, uintptr_t size, uint32_t protect)
 {
     DWORD oldProtect;
     return VirtualProtect(pAddress, size, protect, &oldProtect);
 }
 
-REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
+NativeAOT_PALEXPORT _Ret_maybenull_ void* NativeAOT_PALAPI PalSetWerDataBuffer(_In_ void* pNewBuffer)
 {
     static void* pBuffer;
     return InterlockedExchangePointer(&pBuffer, pNewBuffer);
@@ -550,7 +550,7 @@ REDHAWK_PALEXPORT _Ret_maybenull_ void* REDHAWK_PALAPI PalSetWerDataBuffer(_In_ 
 
 #include "IntrinsicConstants.h"
 
-REDHAWK_PALIMPORT void REDHAWK_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
+NativeAOT_PALIMPORT void NativeAOT_PALAPI PAL_GetCpuCapabilityFlags(int* flags)
 {
     *flags = 0;
 

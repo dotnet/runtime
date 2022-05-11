@@ -954,7 +954,7 @@ public:
     static BOOL CanEnableGCNumaAware();
     static void InitNumaNodeInfo();
 
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NativeAOT)
 public: 	// functions
 
     static LPVOID VirtualAllocExNuma(HANDLE hProc, LPVOID lpAddr, SIZE_T size,
@@ -1010,7 +1010,7 @@ public:
     static bool GetCPUGroupInfo(PUSHORT total_groups, DWORD* max_procs_per_group);
     //static void PopulateCPUUsageArray(void * infoBuffer, ULONG infoSize);
 
-#if !defined(FEATURE_REDHAWK)
+#if !defined(FEATURE_NativeAOT)
 public:
     static BOOL GetLogicalProcessorInformationEx(LOGICAL_PROCESSOR_RELATIONSHIP relationship,
 		   SYSTEM_LOGICAL_PROCESSOR_INFORMATION_EX *slpiex, PDWORD count);
