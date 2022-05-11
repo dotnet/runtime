@@ -4,8 +4,12 @@
 
 EXECUTION_DIR=$(realpath `dirname $0`)
 RUNTIME_PATH="$2"
-XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 TEST_SCRIPT="$(basename $ASSEMBLY_NAME .dll).sh"
+if [[ -z "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
+        XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
+else
+        XHARNESS_OUT="$HELIX_WORKITEM_UPLOAD_ROOT/xharness-output"
+fi
 
 if [[ -n "$3" ]]; then
     ADDITIONAL_ARGS=${@:5}
