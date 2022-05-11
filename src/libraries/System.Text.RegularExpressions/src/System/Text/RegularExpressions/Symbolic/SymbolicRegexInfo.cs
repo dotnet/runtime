@@ -12,7 +12,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private const uint CanBeNullableMask = 8;
         private const uint ContainsSomeAnchorMask = 16;
         private const uint StartsWithSomeAnchorMask = 32;
-        private const uint IsBacktrackingEndMask = 64;
+        private const uint IsHighPriorityNullableMask = 64;
 
         private readonly uint _info;
 
@@ -20,7 +20,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal static SymbolicRegexInfo Create(bool isAlwaysNullable = false, bool canBeNullable = false,
             bool startsWithLineAnchor = false, bool startsWithSomeAnchor = false, bool containsSomeAnchor = false,
-            bool isLazyLoop = false, bool isBacktrackingEnd = false)
+            bool isLazyLoop = false, bool isHighPriorityNullable = false)
         {
             uint i = 0;
 
@@ -54,9 +54,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 i |= IsLazyLoopMask;
             }
 
-            if (isBacktrackingEnd)
+            if (isHighPriorityNullable)
             {
-                i |= IsBacktrackingEndMask;
+                i |= IsHighPriorityNullableMask;
             }
 
             return new SymbolicRegexInfo(i);
@@ -74,7 +74,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public bool IsLazyLoop => (_info & IsLazyLoopMask) != 0;
 
-        public bool IsBacktrackingEnd => (_info & IsBacktrackingEndMask) != 0;
+        public bool IsHighPriorityNullable => (_info & IsHighPriorityNullableMask) != 0;
 
         /// <summary>
         /// Depricated
@@ -96,7 +96,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// The alternation remains a backtracking end if the left alternative is a backtracking end.
+        /// The alternation remains high priority nullable if the left alternative is so.
         /// All other info properties are the logical disjunction of the resepctive info properties
         /// except that IsLazyLoop is false.
         /// </summary>
@@ -107,7 +107,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 startsWithLineAnchor: left_info.StartsWithLineAnchor || right_info.StartsWithLineAnchor,
                 startsWithSomeAnchor: left_info.StartsWithSomeAnchor || right_info.StartsWithSomeAnchor,
                 containsSomeAnchor: left_info.ContainsSomeAnchor || right_info.ContainsSomeAnchor,
-                isBacktrackingEnd: left_info.IsBacktrackingEnd);
+                isHighPriorityNullable: left_info.IsHighPriorityNullable);
 
         /// <summary>
         /// Depricated
@@ -132,7 +132,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Concatenation remains a backtracking end if both left and right are backtracking ends.
+        /// Concatenation remains high priority nullable if both left and right are so.
         /// Nullability is conjunctive and other properies are essentially disjunctive,
         /// except that IsLazyLoop is false.
         /// </summary>
@@ -143,12 +143,12 @@ namespace System.Text.RegularExpressions.Symbolic
                 startsWithLineAnchor: left_info.StartsWithLineAnchor || (left_info.CanBeNullable && right_info.StartsWithLineAnchor),
                 startsWithSomeAnchor: left_info.StartsWithSomeAnchor || (left_info.CanBeNullable && right_info.StartsWithSomeAnchor),
                 containsSomeAnchor: left_info.ContainsSomeAnchor || right_info.ContainsSomeAnchor,
-                isBacktrackingEnd: left_info.IsBacktrackingEnd && right_info.IsBacktrackingEnd);
+                isHighPriorityNullable: left_info.IsHighPriorityNullable && right_info.IsHighPriorityNullable);
 
         /// <summary>
         /// Inherits anchor visibility from the loop body.
         /// Is nullable if either the body is nullable or if the lower bound is 0.
-        /// Is a backtracking end if is lazy and the lower bound is 0.
+        /// Is high priority nullable when lazy and the lower bound is 0.
         /// </summary>
         public static SymbolicRegexInfo Loop(SymbolicRegexInfo body_info, int lowerBound, bool isLazy)
         {
@@ -161,15 +161,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 i |= IsAlwaysNullableMask | CanBeNullableMask;
                 if (isLazy)
                 {
-                    i |= IsBacktrackingEndMask;
-                }
-                else
-                {
-                    // TBD: if the body of the loop is a backtracking end
-                    // the loop could remain so too even though not lazy itself
-                    // (should be compared with backtracking engine semantics)
-                    // in which case this unmasking goes away
-                    i &= ~IsBacktrackingEndMask;
+                    i |= IsHighPriorityNullableMask;
                 }
             }
 

@@ -540,5 +540,29 @@ namespace System.Text.RegularExpressions.Symbolic
                 bdd_min < min ? 1 :
                 Ordinal.CompareTo(other.Ordinal);
         }
+
+        /// <summary>Gets how many characters this BDD represents</summary>
+        public uint Cardinality
+        {
+            get
+            {
+                if (IsEmpty)
+                {
+                    return 0;
+                }
+                if (IsFull)
+                {
+                    return ushort.MaxValue;
+                }
+
+                (uint Lower, uint Upper)[] ranges = BDDRangeConverter.ToRanges(this);
+                uint result = 0;
+                for (int i = 0; i < ranges.Length; i++)
+                {
+                    result += ranges[i].Upper - ranges[i].Lower + 1;
+                }
+                return result;
+            }
+        }
     }
 }

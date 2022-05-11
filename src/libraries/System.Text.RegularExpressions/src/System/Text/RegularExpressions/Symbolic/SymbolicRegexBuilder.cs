@@ -73,7 +73,7 @@ namespace System.Text.RegularExpressions.Symbolic
         // capturing states that have been created
         internal HashSet<DfaMatchingState<TSet>> _capturingStateCache = new();
 
-        internal Dictionary<(SymbolicRegexNode<TSet>, TSet elem, uint context), SymbolicRegexNode<TSet>> _derivativeCache = new();
+        internal Dictionary<(SymbolicRegexNode<TSet>, TSet elem, uint context, bool IsBackTracking), SymbolicRegexNode<TSet>> _derivativeCache = new();
 
         internal readonly Dictionary<(SymbolicRegexNodeKind,
             SymbolicRegexNode<TSet>?, // _left

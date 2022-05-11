@@ -51,9 +51,6 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>If true then the state is a dead-end, rejects all inputs.</summary>
         internal bool IsNothing => Node.IsNothing;
 
-        /// <summary>If true this is a nullable state where backtracking ends.</summary>
-        internal bool IsBacktrackEnd => Node.IsBacktrackEnd;
-
         /// <summary>If true then state starts with a ^ or $ or \Z</summary>
         internal bool StartsWithLineAnchor => Node._info.StartsWithLineAnchor;
 

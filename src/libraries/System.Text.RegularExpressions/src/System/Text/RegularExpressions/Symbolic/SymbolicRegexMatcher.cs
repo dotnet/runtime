@@ -542,16 +542,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         {
                             return 1;
                         }
-
-                        // Return early to match backtracking semantics.
-                        if (TStateHandler.IsBacktrackingEnd(ref state))
-                        {
-                            return -1;
-                        }
                     }
-
-                    // a backtracking end state must also be nullable
-                    Debug.Assert(!TStateHandler.IsBacktrackingEnd(ref state));
 
                     // If the state is a dead end, such that we can't transition anywhere else, end the search.
                     if (TStateHandler.IsDeadend(ref state))
@@ -1008,7 +999,6 @@ namespace System.Text.RegularExpressions.Symbolic
             public static abstract int FixedLength(ref CurrentState state);
             public static abstract bool IsInitialState(ref CurrentState state);
             public static abstract bool TakeTransition(SymbolicRegexBuilder<TSet> builder, ref CurrentState state, int mintermId);
-            public static abstract bool IsBacktrackingEnd(ref CurrentState state);
         }
 
         /// <summary>An <see cref="IStateHandler"/> for operating over <see cref="CurrentState"/> instances configured as DFA states.</summary>
@@ -1023,10 +1013,6 @@ namespace System.Text.RegularExpressions.Symbolic
             /// <summary>Gets whether this is a dead-end state, meaning there are no transitions possible out of the state.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
             public static bool IsDeadend(ref CurrentState state) => state.DfaState!.IsDeadend;
-
-            /// <summary>Gets whether this is a nullable state where backtracking ends.</summary>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsBacktrackingEnd(ref CurrentState state) => state.DfaState!.IsBacktrackEnd;
 
             /// <summary>Gets the length of any fixed-length marker that exists for this state, or -1 if there is none.</summary>
             [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -1100,10 +1086,6 @@ namespace System.Text.RegularExpressions.Symbolic
             /// <summary>Gets whether this is a dead-end state, meaning there are no transitions possible out of the state.</summary>
             /// <remarks>In NFA mode, an empty set of states means that it is a dead end.</remarks>
             public static bool IsDeadend(ref CurrentState state) => state.NfaState!.NfaStateSet.Count == 0;
-
-            /// <summary>Not applicable in NFA mode, returns false</summary>
-            [MethodImpl(MethodImplOptions.AggressiveInlining)]
-            public static bool IsBacktrackingEnd(ref CurrentState state) => false;
 
             /// <summary>Gets the length of any fixed-length marker that exists for this state, or -1 if there is none.</summary>
             /// <summary>In NFA mode, there are no fixed-length markers.</summary>
