@@ -142,6 +142,7 @@
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
     <UseDotNetCliVersionFromGlobalJson>true</UseDotNetCliVersionFromGlobalJson>
     <NeedsDotNetSdk>true</NeedsDotNetSdk>
+    <EnableAzurePipelinesReporter>true</EnableAzurePipelinesReporter>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(NeedsDotNetSdk)' == 'true'">
