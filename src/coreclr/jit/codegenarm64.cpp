@@ -3129,8 +3129,9 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
 
         if (divisorOp->IsIntegralConst(0))
         {
+            // TODO: Remove this code.
             // We unconditionally throw a divide by zero exception
-            genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
+            //genJumpToThrowHlpBlk(EJ_jmp, SCK_DIV_BY_ZERO);
 
             // We still need to call genProduceReg
             genProduceReg(tree);
@@ -3164,9 +3165,10 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 }
                 else // insert check for divison by zero
                 {
+                    // TODO: Remove this code.
                     // Check if the divisor is zero throw a DivideByZeroException
-                    emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
-                    genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+                    //emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
+                    //genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
                 }
 
                 if (checkDividend)
@@ -3202,10 +3204,11 @@ void CodeGen::genCodeForDivMod(GenTreeOp* tree)
                 //
                 if (!divisorOp->IsCnsIntOrI())
                 {
+                    // TODO: Remove this code.
                     // divisorOp is not a constant, so it could be zero
                     //
-                    emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
-                    genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
+                    //emit->emitIns_R_I(INS_cmp, size, divisorReg, 0);
+                    //genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
                 }
                 genCodeForBinary(tree);
             }

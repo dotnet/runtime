@@ -81,7 +81,7 @@ GTNODE(ADDR             , GenTreeOp          ,0,GTK_UNOP|DBK_NOTLIR)    // addre
 GTNODE(BOUNDS_CHECK     , GenTreeBoundsChk   ,0,GTK_BINOP|GTK_EXOP|GTK_NOVALUE) // a bounds check - for arrays/spans/SIMDs/HWINTRINSICs
 
 #ifdef TARGET_ARM64
-GTNODE(CHK_DIV_BY_ZERO  , GenTreeOp          ,0,GTK_UNOP|GTK_EXOP|GTK_NOVALUE) // a divide-by-zero check - for integers
+GTNODE(CHK_DIV_BY_ZERO  , GenTreeOp          ,0,GTK_UNOP|GTK_NOVALUE) // a divide-by-zero check - for integers
 #endif
 
 GTNODE(IND              , GenTreeIndir       ,0,GTK_UNOP)                       // Load indirection

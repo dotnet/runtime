@@ -10720,6 +10720,9 @@ public:
             case GT_ARR_ADDR:
             case GT_KEEPALIVE:
             case GT_INC_SATURATE:
+#ifdef TARGET_ARM64
+            case GT_CHK_DIV_BY_ZERO:
+#endif
             {
                 GenTreeUnOp* const unOp = node->AsUnOp();
                 if (unOp->gtOp1 != nullptr)

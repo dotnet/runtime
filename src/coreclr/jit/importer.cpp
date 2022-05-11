@@ -13500,6 +13500,21 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     }
                 }
 
+#ifdef TARGET_ARM64
+                if ((oper == GT_DIV || oper == GT_MOD) && varTypeIsIntOrI(type))
+                {
+                    unsigned tmpNum       = lvaGrabTemp(true DEBUGARG("divisor expr"));
+                    GenTree* divisorAsg   = gtNewTempAssign(tmpNum, op2);
+                    GenTree* divisor      = gtNewLclvNode(tmpNum, op2->TypeGet());
+                    GenTree* chkDivByZero =
+                        new (this, GT_CHK_DIV_BY_ZERO) GenTreeOp(GT_CHK_DIV_BY_ZERO, TYP_VOID, divisorAsg, nullptr);
+
+                    chkDivByZero->gtFlags |= GTF_SIDE_EFFECT | GTF_DONT_CSE;
+
+                    op2 = gtNewOperNode(GT_COMMA, divisor->TypeGet(), chkDivByZero, gtCloneExpr(divisor));
+                }
+#endif
+
                 // We can generate a TYP_FLOAT operation that has a TYP_DOUBLE operand
                 //
                 if (varTypeIsFloating(type) && varTypeIsFloating(op1->gtType) && varTypeIsFloating(op2->gtType))
