@@ -212,7 +212,7 @@ jobs:
       extraStepsTemplate: /eng/pipelines/libraries/helix.yml
       extraStepsParameters:
         creator: dotnet-bot
-        testRunNamePrefixSuffix: Mono_$(_BuildConfig)
+        testRunNamePrefixSuffix: Mono_$(_BuildConfig)_LinuxBionic
 
 #
 # Build the whole product using Mono for Android and run runtime tests with Android devices
