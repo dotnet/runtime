@@ -83,7 +83,16 @@ namespace HttpStress
                     {
                         case "+":
                         case "*":
-                            ko.ListenAnyIP(port, ConfigureListenOptions);
+                            // Workaround for a msquic bug: can't connect via IPv4 when listening on IPv6
+                            // https://github.com/microsoft/msquic/issues/2704
+                            if (configuration.HttpVersion == HttpVersion.Version30)
+                            {
+                                ko.Listen(IPAddress.Any, port, ConfigureListenOptions);
+                            }
+                            else
+                            {
+                                ko.ListenAnyIP(port, ConfigureListenOptions);
+                            }
                             break;
                         default:
                             IPAddress iPAddress = Dns.GetHostAddresses(hostname).First();
@@ -118,9 +127,9 @@ namespace HttpStress
                         else
                         {
                             listenOptions.Protocols =
-                                configuration.HttpVersion ==  HttpVersion.Version20 ?
+                                configuration.HttpVersion == HttpVersion.Version20 ?
                                 HttpProtocols.Http2 :
-                                HttpProtocols.Http1 ;
+                                HttpProtocols.Http1;
                         }
                     }
                 });
@@ -139,7 +148,8 @@ namespace HttpStress
                     try
                     {
                         File.Delete(filename);
-                    } catch {}
+                    }
+                    catch { }
                 }
 
                 loggerConfiguration = loggerConfiguration
