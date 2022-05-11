@@ -1120,7 +1120,7 @@ jobs:
 # the libraries tests are built in.
 # ________________________________________
 # | Platform         | PR      | Rolling |
-# | ---------------- | ---     | ------- |
+# | ---------------- | ------- | ------- |
 # | linux-musl-arm64 | Debug   | Release |
 # | linux-arm        | Debug   | Release |
 # | windows-x86      | Debug   | Release |

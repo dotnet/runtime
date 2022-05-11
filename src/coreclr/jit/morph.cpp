@@ -4253,6 +4253,7 @@ GenTree* Compiler::fgMorphMultiregStructArg(CallArg* arg)
 }
 
 //------------------------------------------------------------------------
+//
 // fgMorphLclArgToFieldlist: Morph a GT_LCL_VAR node to a GT_FIELD_LIST of its promoted fields
 //
 // Arguments:
