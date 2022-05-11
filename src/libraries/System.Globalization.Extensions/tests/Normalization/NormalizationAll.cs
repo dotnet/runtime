@@ -6,7 +6,6 @@ using System.Text;
 using System.IO;
 using System.Linq;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace System.Globalization.Tests
 {
@@ -34,16 +33,6 @@ namespace System.Globalization.Tests
             {
                 using (StreamReader sr = new StreamReader(stream))
                 {
-                    using var str1 = typeof(StringNormalizationAllTests).GetTypeInfo().Assembly
-                        .GetManifestResourceStream(PlatformDetection.IsWindows7
-                            ? "NormalizationDataWin7"
-                            : "NormalizationDataWin8");
-
-                    using var str2 = new StreamReader(str1);
-
-                    var str = str2.ReadToEnd();
-                    var ar = str.Split('\n');
-
                     int index = 0;
                     while (!sr.EndOfStream)
                     {
