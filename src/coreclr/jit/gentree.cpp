@@ -9726,7 +9726,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
     char  buf[32];
     char* bufp = &buf[0];
 
-    if ((tree->gtOper == GT_CNS_INT) && tree->IsIconHandle())
+    if (tree->IsIconHandle())
     {
         sprintf_s(bufp, sizeof(buf), " %s(h)%c", name, 0);
     }
@@ -16674,7 +16674,7 @@ unsigned GenTreeIndir::Size() const
 
 bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
 {
-    return comp->opts.compReloc && (gtOper == GT_CNS_INT) && IsIconHandle();
+    return comp->opts.compReloc && IsIconHandle();
 }
 
 //------------------------------------------------------------------------
@@ -16817,7 +16817,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     {
         // If one operand has a field sequence, the other operand must not have one
         // as the order of fields in that case would not be well-defined.
-        if (AsOp()->gtOp1->IsCnsIntOrI() && AsOp()->gtOp1->IsIconHandle())
+        if (AsOp()->gtOp1->IsIconHandle())
         {
             assert(!AsOp()->gtOp2->IsCnsIntOrI() || !AsOp()->gtOp2->IsIconHandle());
             baseAddr = AsOp()->gtOp2;
@@ -16838,7 +16838,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
 
         assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
     }
-    else if (IsCnsIntOrI() && IsIconHandle(GTF_ICON_STATIC_HDL))
+    else if (IsIconHandle(GTF_ICON_STATIC_HDL))
     {
         assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
         baseAddr = this;

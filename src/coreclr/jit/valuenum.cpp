@@ -7890,7 +7890,7 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         case TYP_BYTE:
         case TYP_UBYTE:
         case TYP_BOOL:
-            if (tree->IsCnsIntOrI() && tree->IsIconHandle())
+            if (tree->IsIconHandle())
             {
                 tree->gtVNPair.SetBoth(
                     vnStore->VNForHandle(ssize_t(tree->AsIntConCommon()->IconValue()), tree->GetIconHandleFlag()));
@@ -8672,7 +8672,7 @@ void Compiler::fgValueNumberTree(GenTree* tree)
                     // the address of the static itself. Here we will use "nullptr" for the
                     // field sequence and assume the actual static field will be appended to
                     // it later, as part of numbering the method table pointer offset addition.
-                    if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
+                    if (addr->IsIconHandle(GTF_ICON_STATIC_BOX_PTR))
                     {
                         assert(addrNvnp.BothEqual() && (addrXvnp == vnStore->VNPForEmptyExcSet()));
                         ValueNum boxAddrVN  = addrNvnp.GetLiberal();
