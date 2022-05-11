@@ -290,16 +290,9 @@ namespace System.Net.Http.Functional.Tests
             }
         }
 
-        private async ValueTask ReadToFillAsync(Stream stream, Memory<byte> buffer)
+        private ValueTask ReadToFillAsync(Stream stream, Memory<byte> buffer)
         {
-            while (!buffer.IsEmpty)
-            {
-                int bytesRead = await stream.ReadAsync(buffer).ConfigureAwait(false);
-                if (bytesRead == 0)
-                    throw new Exception("Incomplete request");
-
-                buffer = buffer.Slice(bytesRead);
-            }
+            return stream.ReadExactlyAsync(buffer);
         }
 
         public async ValueTask DisposeAsync()

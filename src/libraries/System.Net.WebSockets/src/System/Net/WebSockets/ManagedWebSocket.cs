@@ -779,13 +779,16 @@ namespace System.Net.WebSockets
                                 totalBytesReceived += receiveBufferBytesToCopy;
                             }
 
-                            while (totalBytesReceived < limit)
+                            if (totalBytesReceived < limit)
                             {
-                                int numBytesRead = await _stream.ReadAsync(header.Compressed ?
-                                        _inflater!.Memory.Slice(totalBytesReceived, limit - totalBytesReceived) :
-                                        payloadBuffer.Slice(totalBytesReceived, limit - totalBytesReceived),
-                                    cancellationToken).ConfigureAwait(false);
-                                if (numBytesRead <= 0)
+                                int bytesToRead = limit - totalBytesReceived;
+                                Memory<byte> readBuffer = header.Compressed ?
+                                    _inflater!.Memory.Slice(totalBytesReceived, bytesToRead) :
+                                    payloadBuffer.Slice(totalBytesReceived, bytesToRead);
+
+                                int numBytesRead = await _stream.ReadAtLeastAsync(readBuffer, bytesToRead,
+                                    throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                                if (numBytesRead < bytesToRead)
                                 {
                                     ThrowEOFUnexpected();
                                     break;
@@ -1359,17 +1362,13 @@ namespace System.Net.WebSockets
                 _receiveBufferOffset = 0;
 
                 // While we don't have enough data, read more.
-                while (_receiveBufferCount < minimumRequiredBytes)
+                int numRead = await _stream.ReadAtLeastAsync(_receiveBuffer.Slice(_receiveBufferCount), minimumRequiredBytes,
+                    throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (numRead < minimumRequiredBytes)
                 {
-                    int numRead = await _stream.ReadAsync(_receiveBuffer.Slice(_receiveBufferCount), cancellationToken).ConfigureAwait(false);
-                    Debug.Assert(numRead >= 0, $"Expected non-negative bytes read, got {numRead}");
-                    if (numRead <= 0)
-                    {
-                        ThrowEOFUnexpected();
-                        break;
-                    }
-                    _receiveBufferCount += numRead;
+                    ThrowEOFUnexpected();
                 }
+                _receiveBufferCount += numRead;
             }
         }
 

@@ -888,6 +888,8 @@ namespace System
                     return "anyOf";
                 case ExceptionArgument.overlapped:
                     return "overlapped";
+                case ExceptionArgument.minimumBytes:
+                    return "minimumBytes";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1160,6 +1162,7 @@ namespace System
         stream,
         anyOf,
         overlapped,
+        minimumBytes,
     }
 
     //

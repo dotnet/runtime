@@ -332,6 +332,48 @@ namespace System.IO
             }
         }
 
+        public async ValueTask ReadExactlyAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
+            _ = await ReadAtLeastAsyncCore(buffer, buffer.Length, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
+
+        public async ValueTask ReadExactlyAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+
+            _ = await ReadAtLeastAsyncCore(buffer.AsMemory(offset, count), count, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
+        }
+
+        public ValueTask<int> ReadAtLeastAsync(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true, CancellationToken cancellationToken = default)
+        {
+            ValidateReadAtLeastArguments(buffer.Length, minimumBytes);
+
+            return ReadAtLeastAsyncCore(buffer, minimumBytes, throwOnEndOfStream: true, cancellationToken);
+        }
+
+        // No argument checking is done here. It is up to the caller.
+        private async ValueTask<int> ReadAtLeastAsyncCore(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken)
+        {
+            int totalRead = 0;
+            do
+            {
+                int read = await ReadAsync(buffer.Slice(totalRead), cancellationToken).ConfigureAwait(false);
+                if (read == 0)
+                {
+                    if (throwOnEndOfStream)
+                    {
+                        ThrowHelper.ThrowEndOfFileException();
+                    }
+                    else
+                    {
+                        return totalRead;
+                    }
+                }
+
+                totalRead += read;
+            } while (totalRead < minimumBytes);
+
+            return totalRead;
+        }
+
 #if NATIVEAOT // TODO: https://github.com/dotnet/corert/issues/3251
         private static bool HasOverriddenBeginEndRead() => true;
 
@@ -701,6 +743,48 @@ namespace System.IO
             return r == 0 ? -1 : oneByteArray[0];
         }
 
+        public void ReadExactly(Span<byte> buffer) =>
+            _ = ReadAtLeastCore(buffer, buffer.Length, throwOnEndOfStream: true);
+
+        public void ReadExactly(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+
+            _ = ReadAtLeastCore(buffer.AsSpan(offset, count), count, throwOnEndOfStream: true);
+        }
+
+        public int ReadAtLeast(Span<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true)
+        {
+            ValidateReadAtLeastArguments(buffer.Length, minimumBytes);
+
+            return ReadAtLeastCore(buffer, minimumBytes, throwOnEndOfStream);
+        }
+
+        // No argument checking is done here. It is up to the caller.
+        private int ReadAtLeastCore(Span<byte> buffer, int minimumBytes, bool throwOnEndOfStream)
+        {
+            int totalRead = 0;
+            do
+            {
+                int read = Read(buffer.Slice(totalRead));
+                if (read == 0)
+                {
+                    if (throwOnEndOfStream)
+                    {
+                        ThrowHelper.ThrowEndOfFileException();
+                    }
+                    else
+                    {
+                        return totalRead;
+                    }
+                }
+
+                totalRead += read;
+            } while (totalRead < minimumBytes);
+
+            return totalRead;
+        }
+
         public abstract void Write(byte[] buffer, int offset, int count);
 
         public virtual void Write(ReadOnlySpan<byte> buffer)
@@ -754,6 +838,20 @@ namespace System.IO
             if ((uint)count > buffer.Length - offset)
             {
                 ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.count, ExceptionResource.Argument_InvalidOffLen);
+            }
+        }
+
+        private static void ValidateReadAtLeastArguments(int bufferLength, int minimumBytes)
+        {
+            if (minimumBytes < 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumBytes, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+            }
+
+            if (bufferLength < minimumBytes)
+            {
+                // TODO: pick the right exception message here
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumBytes);
             }
         }
 
