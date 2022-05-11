@@ -746,7 +746,7 @@ namespace Internal.Runtime.TypeLoader
                 targetVirtualMethod = newlyFoundVirtualMethod;
 
                 // The pregenerated type must be the one that implements the interface method
-                // Call into Redhawk to deal with this.
+                // Call into NativeAOT to deal with this.
                 if ((newlyFoundVirtualMethod == null) && (instanceDefTypeToExamine != null))
                 {
                     ushort interfaceSlot;

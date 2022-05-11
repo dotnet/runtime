@@ -8,8 +8,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "gcrhinterface.h"
@@ -238,7 +238,7 @@ void ReaderWriterLock::AcquireWriteLock()
             // be released until GC is finished.
             if (m_fBlockOnGc && ThreadStore::IsTrapThreadsRequested())
             {
-                RedhawkGCInterface::WaitForGCCompletion();
+                NativeAOTGCInterface::WaitForGCCompletion();
             }
 
             if (g_RhNumberOfProcessors <= 1)

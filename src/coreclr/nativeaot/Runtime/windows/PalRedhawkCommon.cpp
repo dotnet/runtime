@@ -2,12 +2,12 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// Implementation of the portions of the Redhawk Platform Abstraction Layer (PAL) library that are common among
+// Implementation of the portions of the NativeAOT Platform Abstraction Layer (PAL) library that are common among
 // multiple PAL variants.
 //
-// Note that in general we don't want to assume that Windows and Redhawk global definitions can co-exist.
+// Note that in general we don't want to assume that Windows and NativeAOT global definitions can co-exist.
 // Since this code must include Windows headers to do its job we can't therefore safely include general
-// Redhawk header files.
+// NativeAOT header files.
 //
 
 #include <windows.h>
@@ -16,19 +16,19 @@
 #include <evntprov.h>
 #include "CommonTypes.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include <winternl.h>
 #include "CommonMacros.h"
 #include "rhassert.h"
 
 
-#define REDHAWK_PALEXPORT extern "C"
-#define REDHAWK_PALAPI __stdcall
+#define NativeAOT_PALEXPORT extern "C"
+#define NativeAOT_PALAPI __stdcall
 
 
 // Given the OS handle of a loaded module, compute the upper and lower virtual address bounds (inclusive).
-REDHAWK_PALEXPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound)
+NativeAOT_PALEXPORT void NativeAOT_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_ uint8_t ** ppLowerBound, _Out_ uint8_t ** ppUpperBound)
 {
     BYTE *pbModule = (BYTE*)hOsHandle;
     DWORD cbModule;
@@ -45,7 +45,7 @@ REDHAWK_PALEXPORT void REDHAWK_PALAPI PalGetModuleBounds(HANDLE hOsHandle, _Out_
 
 uint32_t g_RhNumberOfProcessors;
 
-REDHAWK_PALEXPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount()
+NativeAOT_PALEXPORT int32_t NativeAOT_PALAPI PalGetProcessCpuCount()
 {
     ASSERT(g_RhNumberOfProcessors > 0);
     return g_RhNumberOfProcessors;
@@ -54,7 +54,7 @@ REDHAWK_PALEXPORT int32_t REDHAWK_PALAPI PalGetProcessCpuCount()
 // Retrieves the entire range of memory dedicated to the calling thread's stack.  This does
 // not get the current dynamic bounds of the stack, which can be significantly smaller than
 // the maximum bounds.
-REDHAWK_PALEXPORT bool REDHAWK_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
+NativeAOT_PALEXPORT bool NativeAOT_PALAPI PalGetMaximumStackBounds(_Out_ void** ppStackLowOut, _Out_ void** ppStackHighOut)
 {
     // VirtualQuery on the address of a local variable to get the allocation
     // base of the stack.  Then use the StackBase field in the TEB to give
@@ -147,7 +147,7 @@ typedef struct _TEB {
 //NOTE:  This implementation exists because calling GetModuleFileName is not wack compliant.  if we later decide
 //       that the framework package containing mrt100_app no longer needs to be wack compliant, this should be
 //       removed and the windows implementation of GetModuleFileName should be substitued on windows.
-REDHAWK_PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
+NativeAOT_PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOut, HANDLE moduleBase)
 {
     TEB* pTEB = NtCurrentTeb();
     LIST_ENTRY* pStartLink = &(pTEB->ProcessEnvironmentBlock->Ldr->InMemoryOrderModuleList);
@@ -172,7 +172,7 @@ REDHAWK_PALEXPORT int32_t PalGetModuleFileName(_Out_ const TCHAR** pModuleNameOu
     return 0;
 }
 
-REDHAWK_PALEXPORT uint64_t REDHAWK_PALAPI PalGetTickCount64()
+NativeAOT_PALEXPORT uint64_t NativeAOT_PALAPI PalGetTickCount64()
 {
     return GetTickCount64();
 }

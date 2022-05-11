@@ -9,7 +9,7 @@ using System.Collections.Generic;
 namespace Internal.Reflection.Core.Execution
 {
     //
-    // This class abstracts the underlying Redhawk (or whatever execution engine) runtime that sets and gets fields.
+    // This class abstracts the underlying NativeAOT (or whatever execution engine) runtime that sets and gets fields.
     //
     public abstract class FieldAccessor
     {

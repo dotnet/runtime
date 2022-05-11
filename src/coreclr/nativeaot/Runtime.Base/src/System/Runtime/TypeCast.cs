@@ -754,7 +754,7 @@ namespace System.Runtime
 #else
             if (array is null)
             {
-                // TODO: If both array and obj are null, we're likely going to throw Redhawk's NullReferenceException.
+                // TODO: If both array and obj are null, we're likely going to throw NativeAOT's NullReferenceException.
                 //       This should blame the caller.
                 throw obj.MethodTable->GetClasslibException(ExceptionIDs.NullReference);
             }

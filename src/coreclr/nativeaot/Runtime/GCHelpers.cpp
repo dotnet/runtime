@@ -13,7 +13,7 @@
 
 #include "gcrhinterface.h"
 
-#include "PalRedhawkCommon.h"
+#include "PalNativeAOTCommon.h"
 #include "slist.h"
 #include "varint.h"
 #include "regdisplay.h"
@@ -25,7 +25,7 @@
 #include "threadstore.inl"
 #include "thread.inl"
 
-EXTERN_C REDHAWK_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uMode)
+EXTERN_C NativeAOT_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uMode)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -40,7 +40,7 @@ EXTERN_C REDHAWK_API void __cdecl RhpCollect(uint32_t uGeneration, uint32_t uMod
     pCurThread->EnablePreemptiveMode();
 }
 
-EXTERN_C REDHAWK_API int64_t __cdecl RhpGetGcTotalMemory()
+EXTERN_C NativeAOT_API int64_t __cdecl RhpGetGcTotalMemory()
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -56,7 +56,7 @@ EXTERN_C REDHAWK_API int64_t __cdecl RhpGetGcTotalMemory()
     return ret;
 }
 
-EXTERN_C REDHAWK_API int32_t __cdecl RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
+EXTERN_C NativeAOT_API int32_t __cdecl RhpStartNoGCRegion(int64_t totalSize, UInt32_BOOL hasLohSize, int64_t lohSize, UInt32_BOOL disallowFullBlockingGC)
 {
     Thread *pCurThread = ThreadStore::GetCurrentThread();
     ASSERT(!pCurThread->IsCurrentThreadInCooperativeMode());
@@ -71,7 +71,7 @@ EXTERN_C REDHAWK_API int32_t __cdecl RhpStartNoGCRegion(int64_t totalSize, UInt3
     return result;
 }
 
-EXTERN_C REDHAWK_API int32_t __cdecl RhpEndNoGCRegion()
+EXTERN_C NativeAOT_API int32_t __cdecl RhpEndNoGCRegion()
 {
     ASSERT(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode());
 
@@ -269,7 +269,7 @@ COOP_PINVOKE_HELPER(void, RhGetMemoryInfo, (RH_GH_MEMORY_INFO* pData, int kind))
 
 COOP_PINVOKE_HELPER(int64_t, RhGetTotalAllocatedBytes, ())
 {
-    uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - RedhawkGCInterface::GetDeadThreadsNonAllocBytes();
+    uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - NativeAOTGCInterface::GetDeadThreadsNonAllocBytes();
 
     // highest reported allocated_bytes. We do not want to report a value less than that even if unused_bytes has increased.
     static uint64_t high_watermark;
@@ -287,7 +287,7 @@ COOP_PINVOKE_HELPER(int64_t, RhGetTotalAllocatedBytes, ())
     return current_high;
 }
 
-EXTERN_C REDHAWK_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
+EXTERN_C NativeAOT_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
 {
     int64_t allocated;
 
@@ -296,7 +296,7 @@ EXTERN_C REDHAWK_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
 
     GCToEEInterface::SuspendEE(SUSPEND_REASON::SUSPEND_FOR_GC);
 
-    allocated = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - RedhawkGCInterface::GetDeadThreadsNonAllocBytes();
+    allocated = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - NativeAOTGCInterface::GetDeadThreadsNonAllocBytes();
 
     FOREACH_THREAD(pThread)
     {
@@ -312,7 +312,7 @@ EXTERN_C REDHAWK_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
 
 extern Object* GcAllocInternal(MethodTable* pEEType, uint32_t uFlags, uintptr_t cbSize, Thread* pThread);
 
-EXTERN_C REDHAWK_API void RhAllocateNewArray(MethodTable* pArrayEEType, uint32_t numElements, uint32_t flags, Array** pResult)
+EXTERN_C NativeAOT_API void RhAllocateNewArray(MethodTable* pArrayEEType, uint32_t numElements, uint32_t flags, Array** pResult)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 
@@ -326,7 +326,7 @@ EXTERN_C REDHAWK_API void RhAllocateNewArray(MethodTable* pArrayEEType, uint32_t
     pThread->EnablePreemptiveMode();
 }
 
-EXTERN_C REDHAWK_API void RhAllocateNewObject(MethodTable* pEEType, uint32_t flags, Object** pResult)
+EXTERN_C NativeAOT_API void RhAllocateNewObject(MethodTable* pEEType, uint32_t flags, Object** pResult)
 {
     Thread* pThread = ThreadStore::GetCurrentThread();
 

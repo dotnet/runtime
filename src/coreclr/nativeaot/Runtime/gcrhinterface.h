@@ -2,9 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 //
-// This header contains the definition of an interface between the GC/HandleTable portions of the Redhawk
-// codebase and the regular Redhawk code. The former has all sorts of legacy environmental requirements (see
-// gcrhenv.h) that we don't wish to pull into the rest of Redhawk.
+// This header contains the definition of an interface between the GC/HandleTable portions of the NativeAOT
+// codebase and the regular NativeAOT code. The former has all sorts of legacy environmental requirements (see
+// gcrhenv.h) that we don't wish to pull into the rest of NativeAOT.
 //
 // Since this file is included in both worlds it has no dependencies and uses a very simple subset of types
 // etc. so that it will build cleanly in both. The actual implementation of the class defined here is in
@@ -64,7 +64,7 @@ typedef DPTR(RtuObjectRef) PTR_RtuObjectRef;
 // describe these callbacks. Unfortunately the signatures aren't very specific: we don't want to reference
 // Object* or Object** from this module, see the comment for RtuObjectRef, but this very narrow category of
 // callers can't use RtuObjectRef (they really do need to drill down into the Object). The lesser evil here is
-// to be a bit loose in the signature rather than exposing the Object class to the rest of Redhawk.
+// to be a bit loose in the signature rather than exposing the Object class to the rest of NativeAOT.
 
 // Callback when enumerating objects on the GC heap or objects referenced from instance fields of another
 // object. The GC dictates the shape of this signature (we're hijacking functionality originally developed for
@@ -99,7 +99,7 @@ typedef void * GcSegmentHandle;
 #error unexpected pointer size
 #endif
 
-class RedhawkGCInterface
+class NativeAOTGCInterface
 {
 public:
     // Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in

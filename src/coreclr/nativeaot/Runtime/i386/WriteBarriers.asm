@@ -220,7 +220,7 @@ endm
 DEFINE_CHECKED_WRITE_BARRIER ECX, EDX
 DEFINE_WRITE_BARRIER ECX, EDX
 
-;; Need some more write barriers to run CLR compiled MDIL on Redhawk - commented out for now
+;; Need some more write barriers to run CLR compiled MDIL on NativeAOT - commented out for now
 ;; DEFINE_WRITE_BARRIER EDX, EAX
 ;; DEFINE_WRITE_BARRIER EDX, ECX
 ;; DEFINE_WRITE_BARRIER EDX, EBX

@@ -9,8 +9,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
@@ -46,14 +46,14 @@ COOP_PINVOKE_HELPER(void, RhDebugBreak, ())
 }
 
 // Busy spin for the given number of iterations.
-EXTERN_C REDHAWK_API void __cdecl RhSpinWait(int32_t iterations)
+EXTERN_C NativeAOT_API void __cdecl RhSpinWait(int32_t iterations)
 {
     YieldProcessorNormalizationInfo normalizationInfo;
     YieldProcessorNormalizedForPreSkylakeCount(normalizationInfo, iterations);
 }
 
 // Yield the cpu to another thread ready to process, if one is available.
-EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhYield()
+EXTERN_C NativeAOT_API UInt32_BOOL __cdecl RhYield()
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -62,7 +62,7 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhYield()
     return PalSwitchToThread();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhFlushProcessWriteBuffers()
+EXTERN_C NativeAOT_API void __cdecl RhFlushProcessWriteBuffers()
 {
     // This must be called via p/invoke -- it's a wait operation and we don't want to block thread suspension on this.
     ASSERT_MSG(!ThreadStore::GetCurrentThread()->IsCurrentThreadInCooperativeMode(),
@@ -71,7 +71,7 @@ EXTERN_C REDHAWK_API void __cdecl RhFlushProcessWriteBuffers()
     PalFlushProcessWriteBuffers();
 }
 
-// Get the list of currently loaded Redhawk modules (as OS HMODULE handles). The caller provides a reference
+// Get the list of currently loaded NativeAOT modules (as OS HMODULE handles). The caller provides a reference
 // to an array of pointer-sized elements and we return the total number of modules currently loaded (whether
 // that is less than, equal to or greater than the number of elements in the array). If there are more modules
 // loaded than the array will hold then the array is filled to capacity and the caller can tell further
@@ -360,36 +360,36 @@ COOP_PINVOKE_HELPER(void*, RhGetUniversalTransitionThunk, ())
 
 extern CrstStatic g_CastCacheLock;
 
-EXTERN_C REDHAWK_API void __cdecl RhpAcquireCastCacheLock()
+EXTERN_C NativeAOT_API void __cdecl RhpAcquireCastCacheLock()
 {
     g_CastCacheLock.Enter();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhpReleaseCastCacheLock()
+EXTERN_C NativeAOT_API void __cdecl RhpReleaseCastCacheLock()
 {
     g_CastCacheLock.Leave();
 }
 
 extern CrstStatic g_ThunkPoolLock;
 
-EXTERN_C REDHAWK_API void __cdecl RhpAcquireThunkPoolLock()
+EXTERN_C NativeAOT_API void __cdecl RhpAcquireThunkPoolLock()
 {
     g_ThunkPoolLock.Enter();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhpReleaseThunkPoolLock()
+EXTERN_C NativeAOT_API void __cdecl RhpReleaseThunkPoolLock()
 {
     g_ThunkPoolLock.Leave();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhpGetTickCount64()
+EXTERN_C NativeAOT_API void __cdecl RhpGetTickCount64()
 {
     PalGetTickCount64();
 }
 
 EXTERN_C int32_t __cdecl RhpCalculateStackTraceWorker(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame);
 
-EXTERN_C REDHAWK_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
+EXTERN_C NativeAOT_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutputBuffer, uint32_t outputBufferLength, void* pAddressInCurrentFrame)
 {
     // This must be called via p/invoke rather than RuntimeImport to make the stack crawlable.
 
@@ -400,12 +400,12 @@ EXTERN_C REDHAWK_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutput
 
 COOP_PINVOKE_HELPER(void*, RhpRegisterFrozenSegment, (void* pSegmentStart, size_t length))
 {
-    return RedhawkGCInterface::RegisterFrozenSegment(pSegmentStart, length);
+    return NativeAOTGCInterface::RegisterFrozenSegment(pSegmentStart, length);
 }
 
 COOP_PINVOKE_HELPER(void, RhpUnregisterFrozenSegment, (void* pSegmentHandle))
 {
-    RedhawkGCInterface::UnregisterFrozenSegment((GcSegmentHandle)pSegmentHandle);
+    NativeAOTGCInterface::UnregisterFrozenSegment((GcSegmentHandle)pSegmentHandle);
 }
 
 COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManagerHandle *pModule, int32_t headerId, int32_t* length))
@@ -432,7 +432,7 @@ COOP_PINVOKE_HELPER(int32_t, RhGetProcessCpuCount, ())
 }
 
 #if defined(TARGET_X86) || defined(TARGET_AMD64)
-EXTERN_C REDHAWK_API void __cdecl RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
+EXTERN_C NativeAOT_API void __cdecl RhCpuIdEx(int* cpuInfo, int functionId, int subFunctionId)
 {
     __cpuidex(cpuInfo, functionId, subFunctionId);
 }

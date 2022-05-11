@@ -324,7 +324,7 @@ namespace Internal.Runtime.TypeLoader
             if (conversionInfo.CalleeHasParamType)
             {
                 // In this case the call converter is an instantiating stub wrapping an unboxing thunk.
-                // Use the redhawk GetCodeTarget to see through the unboxing stub and get the real underlying method
+                // Use the NativeAOT GetCodeTarget to see through the unboxing stub and get the real underlying method
                 // and the instantiation arg does not need changing.
                 underlyingTargetMethod = RuntimeAugments.GetCodeTarget(conversionInfo.TargetFunctionPointer);
                 newInstantiatingArg = conversionInfo.InstantiatingStubArgument;

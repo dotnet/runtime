@@ -12,17 +12,17 @@
 
 #include "common.h"
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NativeAOT
 
 #include "commontypes.h"
 #include "daccess.h"
 #include "debugmacrosext.h"
-#include "palredhawkcommon.h"
+#include "palNativeAOTcommon.h"
 #include "gcrhenv.h"
 #define Win32EventWrite PalEtwEventWrite
 #define InterlockedExchange64 PalInterlockedExchange64
 
-#else // !FEATURE_REDHAWK
+#else // !FEATURE_NativeAOT
 
 #include "eventtrace.h"
 #include "winbase.h"
@@ -40,7 +40,7 @@
 #include "runtimecallablewrapper.h"
 #endif
 
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NativeAOT
 
 #include "eventtracepriv.h"
 
@@ -56,13 +56,13 @@ DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_RUNDOWN_PROVIDER_DOTNET_Con
 DOTNET_TRACE_CONTEXT MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_DOTNET_Context = { MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_EVENTPIPE_Context, &MICROSOFT_WINDOWS_DOTNETRUNTIME_STRESS_PROVIDER_LTTNG_Context };
 #endif // HOST_UNIX
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NativeAOT
 volatile LONGLONG ETW::GCLog::s_l64LastClientSequenceNumber = 0;
-#else // FEATURE_REDHAWK
+#else // FEATURE_NativeAOT
 Volatile<LONGLONG> ETW::GCLog::s_l64LastClientSequenceNumber = 0;
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NativeAOT
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NativeAOT
 
 //---------------------------------------------------------------------------------------
 // Helper macros to determine which version of the Method events to use
@@ -419,7 +419,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
 }
 
 #endif // !defined(HOST_UNIX)
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NativeAOT
 
 /****************************************************************************/
 /* Methods that are called from the runtime */
@@ -434,7 +434,7 @@ ETW::SamplingLog::EtwStackWalkStatus ETW::SamplingLog::SaveCurrentStack(int skip
    when the private CLR provider is enabled */
 /***************************************************************************/
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NativeAOT
 
 VOID ETW::GCLog::GCSettingsEvent()
 {
@@ -454,12 +454,12 @@ VOID ETW::GCLog::GCSettingsEvent()
     }
 };
 
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NativeAOT
 
 
 //---------------------------------------------------------------------------------------
-// Code for sending GC heap object events is generally the same for both FEATURE_REDHAWK
-// and !FEATURE_REDHAWK builds
+// Code for sending GC heap object events is generally the same for both FEATURE_NativeAOT
+// and !FEATURE_NativeAOT builds
 //---------------------------------------------------------------------------------------
 
 bool s_forcedGCInProgress = false;
@@ -865,10 +865,10 @@ VOID ETW::GCLog::ForceGC(LONGLONG l64ClientSequenceNumber)
     }
     CONTRACTL_END;
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NativeAOT
     if (!IsGarbageCollectorFullyInitialized())
         return;
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NativeAOT
 
     InterlockedExchange64(&s_l64LastClientSequenceNumber, l64ClientSequenceNumber);
 
@@ -937,7 +937,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
 
     HRESULT hr = E_FAIL;
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NativeAOT
     // Caller should ensure we're past startup.
     _ASSERTE(IsGarbageCollectorFullyInitialized());
 
@@ -962,7 +962,7 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
         // Need to switch to cooperative mode as the thread will access managed
         // references (through reference tracker callbacks).
         GCX_COOP();
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NativeAOT
 
         ForcedGCHolder forcedGCHolder;
 
@@ -971,11 +971,11 @@ HRESULT ETW::GCLog::ForceGCForDiagnostics()
             false,  // low_memory_p
             collection_blocking);
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NativeAOT
     }
     EX_CATCH { }
     EX_END_CATCH(RethrowTerminalExceptions);
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NativeAOT
 
     return hr;
 }
@@ -1594,11 +1594,11 @@ void BulkStaticsLogger::LogAllStatics()
 //---------------------------------------------------------------------------------------
 
 BulkTypeValue::BulkTypeValue() : cTypeParameters(0)
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NativeAOT
 , ullSingleTypeParameter(0)
-#else // FEATURE_REDHAWK
+#else // FEATURE_NativeAOT
 , sName()
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NativeAOT
 , rgTypeParameters()
 {
     LIMITED_METHOD_CONTRACT;
@@ -1622,13 +1622,13 @@ void BulkTypeValue::Clear()
 
     ZeroMemory(&fixedSizedData, sizeof(fixedSizedData));
     cTypeParameters = 0;
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NativeAOT
     ullSingleTypeParameter = 0;
     rgTypeParameters.Release();
-#else // FEATURE_REDHAWK
+#else // FEATURE_NativeAOT
     sName.Clear();
     rgTypeParameters.Clear();
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NativeAOT
 }
 
 //---------------------------------------------------------------------------------------
@@ -1707,7 +1707,7 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
     m_nBulkTypeValueByteCount = 0;
 }
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NativeAOT
 
 //---------------------------------------------------------------------------------------
 //
@@ -2009,7 +2009,7 @@ void BulkTypeEventLogger::LogTypeAndParameters(ULONGLONG thAsAddr, ETW::TypeSyst
     }
 }
 
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NativeAOT
 
 // Holds state that batches of roots, nodes, edges, and types as the GC walks the heap
 // at the end of a collection.
@@ -2224,9 +2224,9 @@ VOID ETW::GCLog::RootReference(
     switch (nRootKind)
     {
     case kEtwGCRootKindStack:
-#if !defined (FEATURE_REDHAWK) && (defined(GC_PROFILING) || defined (DACCESS_COMPILE))
+#if !defined (FEATURE_NativeAOT) && (defined(GC_PROFILING) || defined (DACCESS_COMPILE))
         pvRootID = profilingScanContext->pMD;
-#endif // !defined (FEATURE_REDHAWK) && (defined(GC_PROFILING) || defined (DACCESS_COMPILE))
+#endif // !defined (FEATURE_NativeAOT) && (defined(GC_PROFILING) || defined (DACCESS_COMPILE))
         break;
 
     case kEtwGCRootKindHandle:
@@ -2611,7 +2611,7 @@ VOID ETW::ThreadLog::FireThreadDC(Thread * pThread)
         GetClrInstanceId());
 }
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NativeAOT
 
 // TypeSystemLog implementation
 //
@@ -4700,10 +4700,10 @@ extern "C"
 
     }
 }
-#endif // FEATURE_REDHAWK
+#endif // FEATURE_NativeAOT
 
 #endif // HOST_UNIX
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NativeAOT
 
 /****************************************************************************/
 /* This is called by the runtime when an exception is thrown */
@@ -7605,7 +7605,7 @@ void ETW::CompilationLog::TieredCompilation::Runtime::SendBackgroundJitStop(UINT
     FireEtwTieredCompilationBackgroundJitStop(GetClrInstanceId(), pendingMethodCount, jittedMethodCount);
 }
 
-#endif // !FEATURE_REDHAWK
+#endif // !FEATURE_NativeAOT
 
 #ifdef FEATURE_PERFTRACING
 #include "eventpipeadapter.h"

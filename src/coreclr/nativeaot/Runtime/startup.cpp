@@ -4,8 +4,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "gcrhinterface.h"
@@ -95,7 +95,7 @@ static bool InitDLL(HANDLE hPalInstance)
 
     STARTUP_TIMELINE_EVENT(NONGC_INIT_COMPLETE);
 
-    if (!RedhawkGCInterface::InitializeSubsystems())
+    if (!NativeAOTGCInterface::InitializeSubsystems())
         return false;
 
     STARTUP_TIMELINE_EVENT(GC_INIT_COMPLETE);

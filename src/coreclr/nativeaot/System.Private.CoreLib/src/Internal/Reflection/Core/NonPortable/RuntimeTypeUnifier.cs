@@ -54,7 +54,7 @@ namespace Internal.Reflection.Core.NonPortable
         // TypeTable mapping raw RuntimeTypeHandles (normalized or otherwise) to Types.
         //
         // Unlike most unifier tables, RuntimeTypeHandleToRuntimeTypeCache exists for fast lookup, not unification. It hashes and compares
-        // on the raw IntPtr value of the RuntimeTypeHandle. Because Redhawk can and does create multiple EETypes for the same
+        // on the raw IntPtr value of the RuntimeTypeHandle. Because NativeAOT can and does create multiple EETypes for the same
         // semantically identical type, the same RuntimeType can legitimately appear twice in this table. The factory, however,
         // does a second lookup in the true unifying tables rather than creating the Type itself.
         // Thus, the one-to-one relationship between Type reference identity and Type semantic identity is preserved.

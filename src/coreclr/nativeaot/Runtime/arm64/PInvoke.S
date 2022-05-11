@@ -128,7 +128,7 @@ NoWait:
         tbz         x10, #PTFF_THREAD_ABORT_BIT, NoAbort
 
         EPILOG_RESTORE_REG_PAIR_INDEXED fp, lr, 0x10
-        mov w0, #STATUS_REDHAWK_THREAD_ABORT
+        mov w0, #STATUS_NativeAOT_THREAD_ABORT
         mov x1, lr          // hijack target address as exception PC
         b RhpThrowHwEx
 

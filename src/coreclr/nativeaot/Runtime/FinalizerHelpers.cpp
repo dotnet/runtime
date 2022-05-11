@@ -29,12 +29,12 @@ GPTR_DECL(Thread, g_pFinalizerThread);
 CLREventStatic g_FinalizerEvent;
 CLREventStatic g_FinalizerDoneEvent;
 
-// Finalizer method implemented by redhawkm.
+// Finalizer method implemented by NativeAOTm.
 extern "C" void __cdecl ProcessFinalizers();
 
 // Unmanaged front-end to the finalizer thread. We require this because at the point the GC creates the
-// finalizer thread we're still executing the DllMain for RedhawkU. At that point we can't run managed code
-// successfully (in particular module initialization code has not run for RedhawkM). Instead this method waits
+// finalizer thread we're still executing the DllMain for NativeAOTU. At that point we can't run managed code
+// successfully (in particular module initialization code has not run for NativeAOTM). Instead this method waits
 // for the first finalization request (by which time everything must be up and running) and kicks off the
 // managed portion of the thread at that point.
 uint32_t WINAPI FinalizerStart(void* pContext)
@@ -94,12 +94,12 @@ void RhEnableFinalization()
     g_FinalizerEvent.Set();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhInitializeFinalizerThread()
+EXTERN_C NativeAOT_API void __cdecl RhInitializeFinalizerThread()
 {
     g_FinalizerEvent.Set();
 }
 
-EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
+EXTERN_C NativeAOT_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowReentrantWait)
 {
     // This must be called via p/invoke rather than RuntimeImport since it blocks and could starve the GC if
     // called in cooperative mode.
@@ -120,7 +120,7 @@ EXTERN_C REDHAWK_API void __cdecl RhWaitForPendingFinalizers(UInt32_BOOL allowRe
 
 // Block the current thread until at least one object needs to be finalized (returns true) or memory is low
 // (returns false and the finalizer thread should initiate a garbage collection).
-EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
+EXTERN_C NativeAOT_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
 {
     // We can wait for two events; finalization queue has been populated and low memory resource notification.
     // But if the latter is signalled we shouldn't wait on it again immediately -- if the garbage collection
@@ -176,7 +176,7 @@ EXTERN_C REDHAWK_API UInt32_BOOL __cdecl RhpWaitForFinalizerRequest()
 }
 
 // Indicate that the current round of finalizations is complete.
-EXTERN_C REDHAWK_API void __cdecl RhpSignalFinalizationComplete()
+EXTERN_C NativeAOT_API void __cdecl RhpSignalFinalizationComplete()
 {
     g_FinalizerDoneEvent.Set();
 }
