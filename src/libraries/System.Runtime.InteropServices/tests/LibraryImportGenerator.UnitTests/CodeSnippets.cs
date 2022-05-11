@@ -931,6 +931,22 @@ struct Native
 }
 ";
 
+        public static string CustomStructMarshallingNativeToManagedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S", DisableRuntimeMarshalling) + @"
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+    public bool b;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out)]
+struct Native
+{
+    private int i;
+    public S ToManaged() => new S { b = i != 0 };
+}
+";
+
         public static string CustomStructMarshallingManagedToNativeOnlyReturnValue => BasicReturnType("S", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(Native))]
 [StructLayout(LayoutKind.Sequential)]
@@ -947,6 +963,22 @@ struct Native
     {
         i = s.b ? 1 : 0;
     }
+}
+";
+
+        public static string CustomStructMarshallingNativeToManagedOnlyReturnValue => BasicReturnType("S", DisableRuntimeMarshalling) + @"
+[NativeMarshalling(typeof(Native))]
+struct S
+{
+    public bool b;
+}
+
+[StructLayout(LayoutKind.Sequential)]
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out)]
+struct Native
+{
+    private int i;
+    public S ToManaged() => new S { b = i != 0 };
 }
 ";
 

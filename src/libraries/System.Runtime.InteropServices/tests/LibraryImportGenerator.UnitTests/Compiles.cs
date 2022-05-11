@@ -171,6 +171,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomStructMarshallingPinnableParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshallingNativeTypePinnable };
             yield return new[] { CodeSnippets.CustomStructMarshallingMarshalUsingParametersAndModifiers };
+            yield return new[] { CodeSnippets.CustomStructMarshallingNativeToManagedOnlyOutParameter };
+            yield return new[] { CodeSnippets.CustomStructMarshallingNativeToManagedOnlyReturnValue };
             yield return new[] { CodeSnippets.ArrayMarshallingWithCustomStructElement };
             yield return new[] { CodeSnippets.ArrayMarshallingWithCustomStructElementWithValueProperty };
 
