@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>$(NetCoreAppCurrent);$(NetCoreAppCurrent)-iOS;$(NetCoreAppCurrent)-tvOS;$(NetCoreAppCurrent)-MacCatalyst</TargetFrameworks>
-    <NoWarn>$(NoWarn);NU1703</NoWarn>
   </PropertyGroup>
   <ItemGroup>
     <AssembliesBeingTested Include="Microsoft.CSharp" />
