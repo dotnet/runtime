@@ -13,9 +13,9 @@
 G_BEGIN_DECLS
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_enable (const char *output_path,
+mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 			     uint32_t circular_buffer_size_in_mb,
-			     const char *providers,
+			     const ep_char8_t *providers,
 			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
 			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
 			     /* bool */ gboolean rundown_requested,
@@ -528,9 +528,9 @@ mono_component_event_pipe_init (void)
 #ifdef HOST_WASM
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_enable (const char *output_path,
+mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 			     uint32_t circular_buffer_size_in_mb,
-			     const char *providers,
+			     const ep_char8_t *providers,
 			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
 			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
 			     /* bool */ gboolean rundown_requested,
