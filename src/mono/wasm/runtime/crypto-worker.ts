@@ -41,17 +41,19 @@ export function init_crypto(): void {
     ) {
         const chan = LibraryChannel.create(1024); // 1024 is the buffer size in char units.
         const worker = new Worker("dotnet-crypto-worker.js");
-        if (chan && worker) {
-            mono_wasm_crypto = {
-                channel: chan,
-                worker: worker,
-            };
-            worker.postMessage({
-                comm_buf: chan.get_comm_buffer(),
-                msg_buf: chan.get_msg_buffer(),
-                msg_char_len: chan.get_msg_len()
-            });
-        }
+        mono_wasm_crypto = {
+            channel: chan,
+            worker: worker,
+        };
+        worker.postMessage({
+            comm_buf: chan.get_comm_buffer(),
+            msg_buf: chan.get_msg_buffer(),
+            msg_char_len: chan.get_msg_len()
+        });
+        worker.onerror = event => {
+            console.warn(`MONO_WASM: Error in Crypto WebWorker. Cryptography digest calls will fallback to managed implementation. Error: ${event.message}`);
+            mono_wasm_crypto = null;
+        };
     }
 }
 
