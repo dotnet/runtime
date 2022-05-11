@@ -7,7 +7,7 @@
 export type CUInt64 = readonly [number, number];
 
 export function toBigInt (x: CUInt64): bigint {
-    return BigInt(x[0]) << BigInt(32) | BigInt(x[1]);
+    return BigInt(x[0]) | BigInt(x[1]) << BigInt(32);
 }
 
 export function fromBigInt (x: bigint): CUInt64 {
