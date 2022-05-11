@@ -112,6 +112,7 @@ namespace System.IO.Hashing.Tests
                     $"{ThirtyTwoBytes} (x3)",
                     Encoding.ASCII.GetBytes(ThirtyTwoBytes3),
                     "975E3E6FE7E67FBC"),
+                // 16 * 3 bytes, filling the holdback buffer exactly on the second Append call.
                 new TestCase(
                     $"{SixteenBytes} (x3)",
                     Encoding.ASCII.GetBytes(SixteenBytes3),

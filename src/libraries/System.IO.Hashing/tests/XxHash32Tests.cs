@@ -99,7 +99,7 @@ namespace System.IO.Hashing.Tests
                     $"{SixteenBytes} (x3)",
                     Encoding.ASCII.GetBytes(SixteenBytes3),
                     "29DA7472"),
-                // 8 * 3 bytes, filling the holdback bufffer exactly on the second Append call.
+                // 8 * 3 bytes, filling the holdback buffer exactly on the second Append call.
                 new TestCase(
                     $"{EightBytes} (x3)",
                     Encoding.ASCII.GetBytes(EightBytes3),
