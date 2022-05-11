@@ -68,8 +68,16 @@ namespace System
             }
 #if TARGET_64BIT
             // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+            if (RuntimeHelpers.IsKnownConstant(start) && start == 0)
+            {
+                if ((uint)length > (uint)array.Length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+            else
+            {
+                if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
 #else
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -361,8 +369,16 @@ namespace System
         {
 #if TARGET_64BIT
             // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)_length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+            if (RuntimeHelpers.IsKnownConstant(start) && start == 0)
+            {
+                if ((uint)length > (uint)_length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+            else
+            {
+                if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)_length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
 #else
             if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();

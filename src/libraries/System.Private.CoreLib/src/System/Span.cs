@@ -73,8 +73,16 @@ namespace System
                 ThrowHelper.ThrowArrayTypeMismatchException();
 #if TARGET_64BIT
             // See comment in Span<T>.Slice for how this works.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+            if (RuntimeHelpers.IsKnownConstant(start) && start == 0)
+            {
+                if ((uint)length > (uint)array.Length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+            else
+            {
+                if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)array.Length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
 #else
             if ((uint)start > (uint)array.Length || (uint)length > (uint)(array.Length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
@@ -413,8 +421,17 @@ namespace System
             // of this is that if either input is negative or if the input sum overflows past Int32.MaxValue,
             // that information is captured correctly in the comparison against the backing _length field.
             // We don't use this same mechanism in a 32-bit process due to the overhead of 64-bit arithmetic.
-            if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)_length)
-                ThrowHelper.ThrowArgumentOutOfRangeException();
+            // We special-case "start == 0" to optimize codegen since the pattern Slice(0, ...) is so common.
+            if (RuntimeHelpers.IsKnownConstant(start) && start == 0)
+            {
+                if ((uint)length > (uint)_length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
+            else
+            {
+                if ((ulong)(uint)start + (ulong)(uint)length > (ulong)(uint)_length)
+                    ThrowHelper.ThrowArgumentOutOfRangeException();
+            }
 #else
             if ((uint)start > (uint)_length || (uint)length > (uint)(_length - start))
                 ThrowHelper.ThrowArgumentOutOfRangeException();
