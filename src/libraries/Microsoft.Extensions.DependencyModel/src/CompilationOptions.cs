@@ -47,7 +47,7 @@ namespace Microsoft.Extensions.DependencyModel
             emitEntryPoint: null,
             generateXmlDocumentation: null);
 
-        public CompilationOptions(IEnumerable<string?> defines!!,
+        public CompilationOptions(IEnumerable<string?> defines,
             string? languageVersion,
             string? platform,
             bool? allowUnsafe,
@@ -60,6 +60,8 @@ namespace Microsoft.Extensions.DependencyModel
             bool? emitEntryPoint,
             bool? generateXmlDocumentation)
         {
+            ThrowHelper.ThrowIfNull(defines);
+
             Defines = defines.ToArray();
             LanguageVersion = languageVersion;
             Platform = platform;

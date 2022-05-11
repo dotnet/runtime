@@ -15,7 +15,7 @@ namespace System.ComponentModel
     /// </summary>
     public class ReferenceConverter : TypeConverter
     {
-        private static readonly string s_none = SR.toStringNone;
+        private static readonly string s_none = SR.GetResourceString(nameof(SR.toStringNone), "(none)");
         private readonly Type _type;
 
         /// <summary>

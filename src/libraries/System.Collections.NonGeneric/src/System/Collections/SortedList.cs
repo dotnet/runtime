@@ -151,8 +151,8 @@ namespace System.Collections
         // by the keys of all entries in the given dictionary as well as keys
         // subsequently added to the sorted list.
         //
-        public SortedList(IDictionary d!!, IComparer? comparer)
-            : this(comparer, d.Count)
+        public SortedList(IDictionary d, IComparer? comparer)
+            : this(comparer, d?.Count ?? throw new ArgumentNullException(nameof(d)))
         {
             d.Keys.CopyTo(keys, 0);
             d.Values.CopyTo(values, 0);
@@ -170,8 +170,10 @@ namespace System.Collections
         // Adds an entry with the given key and value to this sorted list. An
         // ArgumentException is thrown if the key is already present in the sorted list.
         //
-        public virtual void Add(object key!!, object? value)
+        public virtual void Add(object key, object? value)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             int i = Array.BinarySearch(keys, 0, _size, key, comparer);
             if (i >= 0)
                 throw new ArgumentException(SR.Format(SR.Argument_AddingDuplicate_OldAndNewKeys, GetKey(i), key));
@@ -329,8 +331,10 @@ namespace System.Collections
         }
 
         // Copies the values in this SortedList to an array.
-        public virtual void CopyTo(Array array!!, int arrayIndex)
+        public virtual void CopyTo(Array array, int arrayIndex)
         {
+            ArgumentNullException.ThrowIfNull(array);
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (arrayIndex < 0)
@@ -477,8 +481,10 @@ namespace System.Collections
         // the given key does not occur in this sorted list. Null is an invalid
         // key value.
         //
-        public virtual int IndexOfKey(object key!!)
+        public virtual int IndexOfKey(object key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             int ret = Array.BinarySearch(keys, 0, _size, key, comparer);
             return ret >= 0 ? ret : -1;
         }
@@ -549,8 +555,10 @@ namespace System.Collections
 
         // Returns a thread-safe SortedList.
         //
-        public static SortedList Synchronized(SortedList list!!)
+        public static SortedList Synchronized(SortedList list)
         {
+            ArgumentNullException.ThrowIfNull(list);
+
             return new SyncSortedList(list);
         }
 
@@ -726,8 +734,10 @@ namespace System.Collections
                 }
             }
 
-            public override int IndexOfKey(object key!!)
+            public override int IndexOfKey(object key)
             {
+                ArgumentNullException.ThrowIfNull(key);
+
                 lock (_root)
                 {
                     return _list.IndexOfKey(key);
@@ -1089,8 +1099,10 @@ namespace System.Collections
         {
             private readonly SortedList _sortedList;
 
-            public SortedListDebugView(SortedList sortedList!!)
+            public SortedListDebugView(SortedList sortedList)
             {
+                ArgumentNullException.ThrowIfNull(sortedList);
+
                 _sortedList = sortedList;
             }
 

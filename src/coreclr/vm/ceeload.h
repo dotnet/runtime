@@ -87,6 +87,8 @@ class JITInlineTrackingMap;
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm.dll")
 #elif defined(HOST_ARM64)
 #define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.arm64.dll")
+#elif defined(HOST_LOONGARCH64)
+#define NATIVE_SYMBOL_READER_DLL W("Microsoft.DiaSymReader.Native.loongarch64.dll")
 #endif
 
 typedef DPTR(JITInlineTrackingMap) PTR_JITInlineTrackingMap;
@@ -1788,7 +1790,7 @@ public:
     // active execution in one module to another module without
     // involving triggering the file loader to ensure that the
     // destination module is active.  We must explicitly list these
-    // relationships so the the loader can ensure that the activation
+    // relationships so the loader can ensure that the activation
     // constraints are a priori satisfied.
     //
     // Conditional vs. Unconditional describes how we deal with

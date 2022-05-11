@@ -22,7 +22,6 @@
 #include "comcallablewrapper.h"
 #include "../md/compiler/custattr.h"
 #include "siginfo.hpp"
-#include "eemessagebox.h"
 #include "finalizerthread.h"
 #include "interoplibinterface.h"
 
@@ -134,15 +133,6 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
                             PrintToStdOutW(message.GetUnicode());
                         else
                             PrintToStdOutW(W("No exception info available"));
-                    }
-
-                    if (g_pConfig->ShouldExposeExceptionsInCOMToMsgBox())
-                    {
-                        GCX_PREEMP();
-                        if (!message.IsEmpty())
-                            EEMessageBoxNonLocalizedDebugOnly((LPWSTR)message.GetUnicode(), W(".NET exception in COM"), MB_ICONSTOP | MB_OK);
-                        else
-                            EEMessageBoxNonLocalizedDebugOnly(W("No exception information available"), W(".NET exception in COM"),MB_ICONSTOP | MB_OK);
                     }
                 }
                 EX_CATCH

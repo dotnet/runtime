@@ -47,31 +47,10 @@ namespace System.Net
             return errors;
         }
 
-        //
-        // Extracts a remote certificate upon request.
-        //
-        internal static X509Certificate2? GetRemoteCertificate(SafeDeleteContext securityContext)
-        {
-            return GetRemoteCertificate(securityContext, null);
-        }
-
-        internal static X509Certificate2? GetRemoteCertificate(
-            SafeDeleteContext? securityContext,
-            out X509Certificate2Collection? remoteCertificateStore)
-        {
-            if (securityContext == null)
-            {
-                remoteCertificateStore = null;
-                return null;
-            }
-
-            remoteCertificateStore = new X509Certificate2Collection();
-            return GetRemoteCertificate(securityContext, remoteCertificateStore);
-        }
-
         private static X509Certificate2? GetRemoteCertificate(
             SafeDeleteContext securityContext,
-            X509Certificate2Collection? remoteCertificateStore)
+            bool retrieveChainCertificates,
+            ref X509Chain? chain)
         {
             if (securityContext == null)
             {
@@ -91,12 +70,14 @@ namespace System.Net
             {
                 long chainSize = Interop.AppleCrypto.X509ChainGetChainSize(chainHandle);
 
-                if (remoteCertificateStore != null)
+                if (retrieveChainCertificates)
                 {
+                    chain ??= new X509Chain();
+
                     for (int i = 0; i < chainSize; i++)
                     {
                         IntPtr certHandle = Interop.AppleCrypto.X509ChainGetCertificateAtIndex(chainHandle, i);
-                        remoteCertificateStore.Add(new X509Certificate2(certHandle));
+                        chain.ChainPolicy.ExtraStore.Add(new X509Certificate2(certHandle));
                     }
                 }
 

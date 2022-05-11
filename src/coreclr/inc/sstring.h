@@ -192,7 +192,7 @@ private:
     // Set this string to the UTF8 character
     void SetUTF8(CHAR character);
 
-    // This this string to the given literal. We share the mem and don't make a copy.
+    // Set this string to the given literal. We share the mem and don't make a copy.
     void SetLiteral(const CHAR *literal);
     void SetLiteral(const WCHAR *literal);
 

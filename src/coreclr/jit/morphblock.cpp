@@ -46,10 +46,6 @@ protected:
     GenTree*             m_dstAddr            = nullptr;
     ssize_t              m_dstAddOff          = 0;
 
-#if defined(DEBUG)
-    bool m_isLateArg = false;
-#endif // DEBUG
-
     enum class BlockTransformation
     {
         Undefined,
@@ -129,8 +125,6 @@ GenTree* MorphInitBlockHelper::Morph()
     PrepareDst();
     PrepareSrc();
 
-    INDEBUG(m_isLateArg = (m_asg->gtFlags & GTF_LATE_ARG) != 0);
-
     TrySpecialCases();
 
     if (m_transformationDecision == BlockTransformation::Undefined)
@@ -155,17 +149,6 @@ GenTree* MorphInitBlockHelper::Morph()
 
     assert(m_transformationDecision != BlockTransformation::Undefined);
     assert(m_result != nullptr);
-
-    if (m_result != m_asg)
-    {
-        const bool isLateArg = ((m_asg->gtFlags & GTF_LATE_ARG) != 0);
-        assert(m_isLateArg == isLateArg);
-        if (isLateArg)
-        {
-            assert(!m_initBlock && "do not expect a block init as a late arg.");
-            m_result->gtFlags |= GTF_LATE_ARG;
-        }
-    }
 
 #ifdef DEBUG
     if (m_result != m_asg)
@@ -943,11 +926,12 @@ void MorphCopyBlockHelper::MorphStructCases()
         m_dst                     = m_comp->fgMorphBlockOperand(m_dst, asgType, m_blockSize, isBlkReqd);
         m_dst->gtFlags |= GTF_DONT_CSE;
         m_asg->gtOp1 = m_dst;
-        m_asg->gtFlags |= (m_dst->gtFlags & GTF_ALL_EFFECT);
 
-        // Eliminate the "OBJ or BLK" node on the src.
-        m_src        = m_comp->fgMorphBlockOperand(m_src, asgType, m_blockSize, false /*!isBlkReqd*/);
+        m_src        = m_comp->fgMorphBlockOperand(m_src, asgType, m_blockSize, isBlkReqd);
         m_asg->gtOp2 = m_src;
+
+        m_asg->SetAllEffectsFlags(m_dst, m_src);
+        m_asg->gtFlags |= GTF_ASG;
 
         m_result                 = m_asg;
         m_transformationDecision = BlockTransformation::StructBlock;
@@ -1234,10 +1218,10 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 CORINFO_CLASS_HANDLE classHnd = srcVarDsc->GetStructHnd();
                 CORINFO_FIELD_HANDLE fieldHnd =
                     m_comp->info.compCompHnd->getFieldInClass(classHnd, srcFieldVarDsc->lvFldOrdinal);
-                FieldSeqNode* curFieldSeq = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd);
 
-                unsigned  srcFieldOffset = m_comp->lvaGetDesc(srcFieldLclNum)->lvFldOffset;
-                var_types srcType        = srcFieldVarDsc->TypeGet();
+                unsigned      srcFieldOffset = m_comp->lvaGetDesc(srcFieldLclNum)->lvFldOffset;
+                var_types     srcType        = srcFieldVarDsc->TypeGet();
+                FieldSeqNode* curFieldSeq    = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd, srcFieldOffset);
 
                 if (!m_dstUseLclFld)
                 {
@@ -1269,10 +1253,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                     // TODO-1stClassStructs: remove this and implement storing to a field in a struct in a reg.
                     m_comp->lvaSetVarDoNotEnregister(m_dstLclNum DEBUGARG(DoNotEnregisterReason::LocalField));
                 }
-
-                // !!! The destination could be on stack. !!!
-                // This flag will let us choose the correct write barrier.
-                dstFld->gtFlags |= GTF_IND_TGTANYWHERE;
             }
         }
 
@@ -1337,11 +1317,13 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 CORINFO_FIELD_HANDLE fieldHnd =
                     m_comp->info.compCompHnd->getFieldInClass(classHnd,
                                                               m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOrdinal);
-                FieldSeqNode* curFieldSeq = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd);
+
+                unsigned      fldOffset   = m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset;
                 var_types     destType    = m_comp->lvaGetDesc(dstFieldLclNum)->lvType;
+                FieldSeqNode* curFieldSeq = m_comp->GetFieldSeqStore()->CreateSingleton(fieldHnd, fldOffset);
 
                 bool done = false;
-                if (m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset == 0)
+                if (fldOffset == 0)
                 {
                     // If this is a full-width use of the src via a different type, we need to create a
                     // GT_LCL_FLD.
@@ -1368,7 +1350,6 @@ GenTree* MorphCopyBlockHelper::CopyFieldByField()
                 }
                 if (!done)
                 {
-                    unsigned fldOffset = m_comp->lvaGetDesc(dstFieldLclNum)->lvFldOffset;
                     if (!m_srcUseLclFld)
                     {
                         assert(srcAddrClone != nullptr);

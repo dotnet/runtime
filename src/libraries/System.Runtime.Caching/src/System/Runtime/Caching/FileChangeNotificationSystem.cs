@@ -93,8 +93,17 @@ namespace System.Runtime.Caching
             _lock = new object();
         }
 
-        void IFileChangeNotificationSystem.StartMonitoring(string filePath!!, OnChangedCallback onChangedCallback!!, out object state, out DateTimeOffset lastWriteTime, out long fileSize)
+        void IFileChangeNotificationSystem.StartMonitoring(string filePath, OnChangedCallback onChangedCallback, out object state, out DateTimeOffset lastWriteTime, out long fileSize)
         {
+            if (filePath is null)
+            {
+                throw new ArgumentNullException(nameof(filePath));
+            }
+            if (onChangedCallback is null)
+            {
+                throw new ArgumentNullException(nameof(onChangedCallback));
+            }
+
             FileInfo fileInfo = new FileInfo(filePath);
             string dir = Path.GetDirectoryName(filePath);
             DirectoryMonitor dirMon = _dirMonitors[dir] as DirectoryMonitor;
@@ -135,8 +144,17 @@ namespace System.Runtime.Caching
             fileSize = (fileInfo.Exists) ? fileInfo.Length : -1;
         }
 
-        void IFileChangeNotificationSystem.StopMonitoring(string filePath!!, object state!!)
+        void IFileChangeNotificationSystem.StopMonitoring(string filePath, object state)
         {
+            if (filePath is null)
+            {
+                throw new ArgumentNullException(nameof(filePath));
+            }
+            if (state is null)
+            {
+                throw new ArgumentNullException(nameof(state));
+            }
+
             FileChangeEventTarget target = state as FileChangeEventTarget;
             if (target == null)
             {

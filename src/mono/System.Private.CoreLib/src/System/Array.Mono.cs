@@ -99,11 +99,8 @@ namespace System
 
         public static void Copy(Array sourceArray, Array destinationArray, int length)
         {
-            if (sourceArray == null)
-                throw new ArgumentNullException(nameof(sourceArray));
-
-            if (destinationArray == null)
-                throw new ArgumentNullException(nameof(destinationArray));
+            ArgumentNullException.ThrowIfNull(sourceArray);
+            ArgumentNullException.ThrowIfNull(destinationArray);
 
             Copy(sourceArray, sourceArray.GetLowerBound(0), destinationArray,
                 destinationArray.GetLowerBound(0), length);
@@ -116,11 +113,8 @@ namespace System
 
         private static void Copy(Array sourceArray, int sourceIndex, Array destinationArray, int destinationIndex, int length, bool reliable)
         {
-            if (sourceArray == null)
-                throw new ArgumentNullException(nameof(sourceArray));
-
-            if (destinationArray == null)
-                throw new ArgumentNullException(nameof(destinationArray));
+            ArgumentNullException.ThrowIfNull(sourceArray);
+            ArgumentNullException.ThrowIfNull(destinationArray);
 
             if (length < 0)
                 throw new ArgumentOutOfRangeException(nameof(length), SR.ArgumentOutOfRange_NeedNonNegNum);

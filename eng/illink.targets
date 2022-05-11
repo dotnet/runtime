@@ -1,17 +1,10 @@
 <Project>
   <PropertyGroup>
     <IsTrimmable Condition="'$(IsTrimmable)' == ''">true</IsTrimmable>
-    <PrepareResourcesDependsOn>
-      _EmbedILLinkXmls;
-      $(PrepareResourcesDependsOn)
-    </PrepareResourcesDependsOn>
-  </PropertyGroup>
-
-  <PropertyGroup>
-    <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">
-      $(TargetsTriggeredByCompilation);
-      ILLinkTrimAssembly
-    </TargetsTriggeredByCompilation>
+    <PrepareResourcesDependsOn>_EmbedILLinkXmls;$(PrepareResourcesDependsOn)</PrepareResourcesDependsOn>
+    <TargetsTriggeredByCompilation Condition="'$(DesignTimeBuild)' != 'true'">$(TargetsTriggeredByCompilation);ILLinkTrimAssembly</TargetsTriggeredByCompilation>
+    <!-- ApiCompat should perform compatibility checks on the trimmed assemblies. -->
+    <ApiCompatDependsOn>$(ApiCompatDependsOn);ILLinkTrimAssembly</ApiCompatDependsOn>
   </PropertyGroup>
 
   <!-- Inputs and outputs of ILLinkTrimAssembly -->

@@ -2517,11 +2517,20 @@ static SimdIntrinsic advsimd_methods [] = {
 	{SN_ReverseElement16, OP_ARM64_REVN, 16},
 	{SN_ReverseElement32, OP_ARM64_REVN, 32},
 	{SN_ReverseElement8, OP_ARM64_REVN, 8},
+#if LLVM_API_VERSION >= 1400
+	{SN_ReverseElementBits, OP_XOP_OVR_X_X, INTRINS_BITREVERSE},
+#else
 	{SN_ReverseElementBits, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_RBIT},
+#endif
 	{SN_RoundAwayFromZero, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTA},
 	{SN_RoundAwayFromZeroScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTA},
+#if LLVM_API_VERSION >= 1400
+	{SN_RoundToNearest, OP_XOP_OVR_X_X, INTRINS_ROUNDEVEN},
+	{SN_RoundToNearestScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_ROUNDEVEN},
+#else
 	{SN_RoundToNearest, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTN},
 	{SN_RoundToNearestScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTN},
+#endif
 	{SN_RoundToNegativeInfinity, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTM},
 	{SN_RoundToNegativeInfinityScalar, OP_XOP_OVR_SCALAR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTM},
 	{SN_RoundToPositiveInfinity, OP_XOP_OVR_X_X, INTRINS_AARCH64_ADV_SIMD_FRINTP},
@@ -3329,6 +3338,7 @@ static const IntrinGroup supported_x86_intrinsics [] = {
 	{ "Sse42", MONO_CPU_X86_SSE42, sse42_methods, sizeof (sse42_methods) },
 	{ "Ssse3", MONO_CPU_X86_SSSE3, ssse3_methods, sizeof (ssse3_methods) },
 	{ "X86Base", 0, x86base_methods, sizeof (x86base_methods) },
+	{ "X86Serialize", 0, unsupported, sizeof (unsupported) },
 };
 
 static MonoInst*

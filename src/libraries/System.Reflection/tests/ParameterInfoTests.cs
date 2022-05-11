@@ -212,6 +212,7 @@ namespace System.Reflection.Tests
 
         [Theory]
         [MemberData(nameof(s_CustomAttributesTestData))]
+        [ActiveIssue("https://github.com/dotnet/runtimelab/issues/830", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void CustomAttributesTest(Type attrType)
         {
             ParameterInfo parameterInfo = GetParameterInfo(typeof(ParameterInfoMetadata), "MethodWithOptionalDefaultOutInMarshalParam", 0);

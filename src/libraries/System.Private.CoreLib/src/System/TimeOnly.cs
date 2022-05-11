@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Numerics;
 using System.Globalization;
-using System.Runtime.Versioning;
 
 namespace System
 {
@@ -34,13 +33,11 @@ namespace System
         /// <summary>
         /// Represents the smallest possible value of TimeOnly.
         /// </summary>
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static TimeOnly MinValue => new TimeOnly((ulong)MinTimeTicks);
 
         /// <summary>
         /// Represents the largest possible value of TimeOnly.
         /// </summary>
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static TimeOnly MaxValue => new TimeOnly((ulong)MaxTimeTicks);
 
         /// <summary>

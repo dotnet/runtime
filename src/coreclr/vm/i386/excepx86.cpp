@@ -1798,7 +1798,7 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     //
     // In a case when we're nested inside another catch block, the domain in which we're executing may not be the
     // same as the one the domain of the throwable that was just made the current throwable above. Therefore, we
-    // make a special effort to preserve the domain of the throwable as we update the the last thrown object.
+    // make a special effort to preserve the domain of the throwable as we update the last thrown object.
     //
     // This function (COMPlusEndCatch) can also be called by the in-proc debugger helper thread on x86 when
     // an attempt to SetIP takes place to set IP outside the catch clause. In such a case, managed thread object

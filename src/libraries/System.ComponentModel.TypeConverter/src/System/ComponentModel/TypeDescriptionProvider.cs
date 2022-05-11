@@ -154,8 +154,10 @@ namespace System.ComponentModel
         /// method will invoke the parent provider's GetReflectionType method.
         /// </summary>
         [RequiresUnreferencedCode("GetReflectionType is not trim compatible because the Type of object cannot be statically discovered.")]
-        public Type GetReflectionType(object instance!!)
+        public Type GetReflectionType(object instance)
         {
+            ArgumentNullException.ThrowIfNull(instance);
+
             return GetReflectionType(instance.GetType(), instance);
         }
 
@@ -226,8 +228,10 @@ namespace System.ComponentModel
         /// return base.
         /// </summary>
         [RequiresUnreferencedCode("The Type of instance cannot be statically discovered.")]
-        public ICustomTypeDescriptor? GetTypeDescriptor(object instance!!)
+        public ICustomTypeDescriptor? GetTypeDescriptor(object instance)
         {
+            ArgumentNullException.ThrowIfNull(instance);
+
             return GetTypeDescriptor(instance.GetType(), instance);
         }
 
@@ -259,8 +263,10 @@ namespace System.ComponentModel
         /// This method returns true if the type is "supported" by the type descriptor
         /// and its chain of type description providers.
         /// </summary>
-        public virtual bool IsSupportedType(Type type!!)
+        public virtual bool IsSupportedType(Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             if (_parent != null)
             {
                 return _parent.IsSupportedType(type);

@@ -1462,7 +1462,7 @@ bool EECodeManager::IsGcSafe( EECodeInfo     *pCodeInfo,
     return gcInfoDecoder.IsInterruptible();
 }
 
-#if defined(TARGET_ARM) || defined(TARGET_ARM64)
+#if defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
 bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 {
     CONTRACTL {
@@ -1480,7 +1480,7 @@ bool EECodeManager::HasTailCalls( EECodeInfo     *pCodeInfo)
 
     return gcInfoDecoder.HasTailCalls();
 }
-#endif // TARGET_ARM || TARGET_ARM64
+#endif // TARGET_ARM || TARGET_ARM64 || TARGET_LOONGARCH64
 
 #if defined(TARGET_AMD64) && defined(_DEBUG)
 
@@ -6074,7 +6074,7 @@ void EECodeManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
  *  GetAmbientSP
  *
  *  This function computes the zero-depth stack pointer for the given nesting
- *  level within the method given.  Nesting level is the the depth within
+ *  level within the method given.  Nesting level is the depth within
  *  try-catch-finally blocks, and is zero based.  It is up to the caller to
  *  supply a valid nesting level value.
  *

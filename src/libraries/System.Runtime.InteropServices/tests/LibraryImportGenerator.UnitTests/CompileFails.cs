@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -34,6 +35,7 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<char>(StringMarshalling.Utf8), 6, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<char>(StringMarshalling.Custom), 7, 0 };
             yield return new object[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Custom), 7, 0 };
+            yield return new object[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<char>(), 6, 0 };
 
             // Unsupported UnmanagedType
             yield return new object[] { CodeSnippets.MarshalAsParametersAndModifiers<char>(UnmanagedType.I1), 5, 0 };
@@ -168,6 +170,33 @@ namespace LibraryImportGenerator.UnitTests
 
             int compilerErrors = newComp.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error);
             Assert.Equal(expectedCompilerErrors, compilerErrors);
+        }
+
+        [Fact]
+        public async Task ValidateDisableRuntimeMarshallingForBlittabilityCheckFromAssemblyReference()
+        {
+            string assemblySource = $@"
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType}
+";
+            Compilation assemblyComp = await TestUtils.CreateCompilation(assemblySource);
+            TestUtils.AssertPreSourceGeneratorCompilation(assemblyComp);
+
+            var ms = new MemoryStream();
+            Assert.True(assemblyComp.Emit(ms).Success);
+
+            string testSource = CodeSnippets.ValidateDisableRuntimeMarshalling.TypeUsage(string.Empty);
+
+            Compilation testComp = await TestUtils.CreateCompilation(testSource, refs: new[] { MetadataReference.CreateFromImage(ms.ToArray()) });
+            TestUtils.AssertPreSourceGeneratorCompilation(testComp);
+
+            var newComp = TestUtils.RunGenerators(testComp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+
+            // The errors should indicate the DisableRuntimeMarshalling is required.
+            Assert.True(generatorDiags.All(d => d.Id == "SYSLIB1051"));
+
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
         }
     }
 }

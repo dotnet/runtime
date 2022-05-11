@@ -633,66 +633,27 @@ LinearScan::LinearScan(Compiler* theCompiler)
     maxNodeLocation   = 0;
     activeRefPosition = nullptr;
 
-    // Get the value of the environment variable that controls stress for register allocation
     lsraStressMask = JitConfig.JitStressRegs();
 
-#if 0
     if (lsraStressMask != 0)
     {
-        // The code in this #if can be used to debug JitStressRegs issues according to
-        // method hash or method count.
-        // To use, simply set environment variables:
-        //   JitStressRegsHashLo and JitStressRegsHashHi to set the range of method hash, or
-        //   JitStressRegsStart and JitStressRegsEnd to set the range of method count
-        //     (Compiler::jitTotalMethodCount as reported by COMPlus_DumpJittedMethods).
-        unsigned methHash = compiler->info.compMethodHash();
-        char* lostr = getenv("JitStressRegsHashLo");
-        unsigned methHashLo = 0;
-        bool dump = false;
-        if (lostr != nullptr)
+        // See if stress regs is enabled for this method
+        //
+        static ConfigMethodRange JitStressRegsRange;
+        JitStressRegsRange.EnsureInit(JitConfig.JitStressRegsRange());
+        const unsigned methHash = compiler->info.compMethodHash();
+        const bool     inRange  = JitStressRegsRange.Contains(methHash);
+
+        if (!inRange)
         {
-            sscanf_s(lostr, "%x", &methHashLo);
-            dump = true;
-        }
-        char* histr = getenv("JitStressRegsHashHi");
-        unsigned methHashHi = UINT32_MAX;
-        if (histr != nullptr)
-        {
-            sscanf_s(histr, "%x", &methHashHi);
-            dump = true;
-        }
-        if (methHash < methHashLo || methHash > methHashHi)
-        {
+            JITDUMP("*** JitStressRegs = 0x%x -- disabled by JitStressRegsRange\n", lsraStressMask);
             lsraStressMask = 0;
         }
-        // Check method count
-        unsigned count = Compiler::jitTotalMethodCompiled;
-        unsigned start = 0;
-        unsigned end = UINT32_MAX;
-        char* startStr = getenv("JitStressRegsStart");
-        char* endStr = getenv("JitStressRegsEnd");
-        if (startStr != nullptr)
+        else
         {
-            sscanf_s(startStr, "%d", &start);
-            dump = true;
-        }
-        if (endStr != nullptr)
-        {
-            sscanf_s(endStr, "%d", &end);
-            dump = true;
-        }
-        if (count < start || (count > end))
-        {
-            lsraStressMask = 0;
-        }
-        if ((lsraStressMask != 0) && (dump == true))
-        {
-            printf("JitStressRegs = %x for method %d: %s, hash = 0x%x.\n",
-                lsraStressMask, Compiler::jitTotalMethodCompiled, compiler->info.compFullName, compiler->info.compMethodHash());
-            printf("");         // flush
+            JITDUMP("*** JitStressRegs = 0x%x\n", lsraStressMask);
         }
     }
-#endif // 0
 #endif // DEBUG
 
     // Assume that we will enregister local variables if it's not disabled. We'll reset it if we
@@ -2777,7 +2738,7 @@ bool LinearScan::isMatchingConstant(RegRecord* physRegRecord, RefPosition* refPo
 // To select a ref position for spilling.
 // - If refPosition->RegOptional() == false
 //        The RefPosition chosen for spilling will be the lowest weight
-//        of all and if there is is more than one ref position with the
+//        of all and if there is more than one ref position with the
 //        same lowest weight, among them choses the one with farthest
 //        distance to its next reference.
 //
@@ -5261,7 +5222,6 @@ void LinearScan::allocateRegisters()
                 if (physRegRecord->assignedInterval == currentInterval)
                 {
                     unassignPhysRegNoSpill(physRegRecord);
-                    physRegRecord->assignedInterval = nullptr;
                     clearConstantReg(assignedRegister, currentInterval->registerType);
                 }
                 currentRefPosition->moveReg = true;
@@ -9429,10 +9389,6 @@ void LinearScan::DumpOperandDefs(
 {
     assert(operand != nullptr);
     assert(operandString != nullptr);
-    if (operand->OperIs(GT_ARGPLACE))
-    {
-        return;
-    }
 
     int dstCount = ComputeOperandDstCount(operand);
 
