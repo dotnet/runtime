@@ -4,7 +4,6 @@
 using System.Reflection;
 using System.Text;
 using System.IO;
-using System.Linq;
 using Xunit;
 
 namespace System.Globalization.Tests
@@ -38,7 +37,7 @@ namespace System.Globalization.Tests
                     {
                         string line = sr.ReadLine();
                         string[] parts = line.Split(',');
-                        Assert.True(parts.Length == 5, $"{line}\n Wrong data at the line {index}. Parts length {parts.Length}");
+                        Assert.True(parts.Length == 5, $"Wrong data at the line {index}");
 
                         string part0 = ConvertToString(parts[0]);
                         string part1 = ConvertToString(parts[1]);
