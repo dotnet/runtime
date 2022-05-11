@@ -52,6 +52,8 @@ static CORINFO_InstructionSet X64VersionOfIsa(CORINFO_InstructionSet isa)
             return InstructionSet_PCLMULQDQ_X64;
         case InstructionSet_POPCNT:
             return InstructionSet_POPCNT_X64;
+        case InstructionSet_X86Serialize:
+            return InstructionSet_X86Serialize_X64;
         default:
             return InstructionSet_NONE;
     }
@@ -158,6 +160,10 @@ static CORINFO_InstructionSet lookupInstructionSet(const char* className)
     else if (strcmp(className, "X86Base") == 0)
     {
         return InstructionSet_X86Base;
+    }
+    else if (strcmp(className, "X86Serialize") == 0)
+    {
+        return InstructionSet_X86Serialize;
     }
 
     return InstructionSet_ILLEGAL;
@@ -384,6 +390,8 @@ bool HWIntrinsicInfo::isFullyImplementedIsa(CORINFO_InstructionSet isa)
         case InstructionSet_Vector256:
         case InstructionSet_X86Base:
         case InstructionSet_X86Base_X64:
+        case InstructionSet_X86Serialize:
+        case InstructionSet_X86Serialize_X64:
         {
             return true;
         }
@@ -506,6 +514,11 @@ GenTree* Compiler::impSpecialIntrinsic(NamedIntrinsic        intrinsic,
         case InstructionSet_BMI2:
         case InstructionSet_BMI2_X64:
             return impBMI1OrBMI2Intrinsic(intrinsic, method, sig);
+
+        case InstructionSet_X86Serialize:
+        case InstructionSet_X86Serialize_X64:
+            return impSerializeIntrinsic(intrinsic, method, sig);
+
         default:
             return nullptr;
     }
@@ -2282,6 +2295,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
         }
 
         case NI_X86Base_Pause:
+        case NI_X86Serialize_Serialize:
         {
             assert(sig->numArgs == 0);
             assert(JITtype2varType(sig->retType) == TYP_VOID);
@@ -2564,6 +2578,28 @@ GenTree* Compiler::impBMI1OrBMI2Intrinsic(NamedIntrinsic intrinsic, CORINFO_METH
         default:
             return nullptr;
     }
+}
+
+GenTree* Compiler::impSerializeIntrinsic(NamedIntrinsic intrinsic, CORINFO_METHOD_HANDLE method, CORINFO_SIG_INFO* sig)
+{
+    GenTree* retNode = nullptr;
+
+    switch (intrinsic)
+    {
+        case NI_X86Serialize_Serialize:
+        {
+            assert(sig->numArgs == 0);
+            assert(JITtype2varType(sig->retType) == TYP_VOID);
+
+            retNode = gtNewScalarHWIntrinsicNode(TYP_VOID, intrinsic);
+            break;
+        }
+
+        default:
+            return nullptr;
+    }
+
+    return retNode;
 }
 
 #endif // FEATURE_HW_INTRINSICS
