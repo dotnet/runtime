@@ -85,10 +85,14 @@ PALEXPORT int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups);
 
 /**
 * Gets the user name associated with the specified user ID and stores it in the buffer.
+* On failure, returns -1 and sets the buffer to NULL.
+* On success, returns the length of the uname string, and sets buffer to a valid pointer.
 */
 PALEXPORT int32_t SystemNative_GetUName(uint32_t uid, char* buffer, int32_t bufferSize);
 
 /**
 * Gets the user name associated with the specified group ID and stores it in the buffer.
+* On failure, returns -1 and sets the buffer to NULL.
+* On success, returns the length of the gname string, and sets buffer to a valid pointer.
 */
 PALEXPORT int32_t SystemNative_GetGName(uint32_t gid, char* buffer, int32_t bufferSize);
