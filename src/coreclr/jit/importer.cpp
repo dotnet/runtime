@@ -17197,7 +17197,6 @@ GenTree* Compiler::impAssignMultiRegTypeToVar(GenTree*             op,
 // Returns:
 //     True if import was successful (may fail for some inlinees)
 //
-//
 bool Compiler::impReturnInstruction(int prefixFlags, OPCODE& opcode)
 {
     const bool isTailCall = (prefixFlags & PREFIX_TAILCALL) != 0;
