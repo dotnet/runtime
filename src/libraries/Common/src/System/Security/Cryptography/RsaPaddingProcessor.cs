@@ -128,14 +128,13 @@ namespace System.Security.Cryptography
             ReadOnlySpan<byte> source,
             Span<byte> destination)
         {
-            ReadOnlySpan<byte> digestInfoPrefix = GetDigestInfoForAlgorithm(hashAlgorithmName, out _);
-
             // https://tools.ietf.org/html/rfc3447#section-9.2
 
             // 1. H = Hash(M)
             // Done by the caller.
 
             // 2. Encode the DigestInfo value
+            ReadOnlySpan<byte> digestInfoPrefix = GetDigestInfoForAlgorithm(hashAlgorithmName, out _);
             int expectedLength = digestInfoPrefix[^1];
 
             if (source.Length != expectedLength)
@@ -170,7 +169,7 @@ namespace System.Security.Cryptography
         {
             // https://tools.ietf.org/html/rfc3447#section-7.1.1
 
-            GetDigestInfoForAlgorithm(hashAlgorithmName, out int hLen);
+            int hLen = HashLength(hashAlgorithmName);
             byte[]? dbMask = null;
             Span<byte> dbMaskSpan = Span<byte>.Empty;
 
@@ -263,7 +262,7 @@ namespace System.Security.Cryptography
             Span<byte> destination,
             out int bytesWritten)
         {
-            GetDigestInfoForAlgorithm(hashAlgorithmName, out int hLen);
+            int hLen = HashLength(hashAlgorithmName);
 
             // https://tools.ietf.org/html/rfc3447#section-7.1.2
             using (IncrementalHash hasher = IncrementalHash.CreateHash(hashAlgorithmName))
@@ -358,7 +357,7 @@ namespace System.Security.Cryptography
 
         internal static void EncodePss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, Span<byte> destination, int keySize)
         {
-            GetDigestInfoForAlgorithm(hashAlgorithmName, out int hLen);
+            int hLen = HashLength(hashAlgorithmName);
 
             // https://tools.ietf.org/html/rfc3447#section-9.1.1
             int emBits = keySize - 1;
@@ -446,7 +445,7 @@ namespace System.Security.Cryptography
 
         internal static bool VerifyPss(HashAlgorithmName hashAlgorithmName, ReadOnlySpan<byte> mHash, ReadOnlySpan<byte> em, int keySize)
         {
-            GetDigestInfoForAlgorithm(hashAlgorithmName, out int hLen);
+            int hLen = HashLength(hashAlgorithmName);
 
             // https://tools.ietf.org/html/rfc3447#section-9.1.2
 
