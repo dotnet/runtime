@@ -328,19 +328,18 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.SendBuffers.Buffers,
                 (uint)_state.SendBuffers.Count,
                 flags,
-                IntPtr.Zero);
+                (void*)IntPtr.Zero);
 
-            if (!MsQuicStatusHelper.SuccessfulStatusCode(status))
+            if (StatusFailed(status))
             {
                 CleanupWriteFailedState();
                 CleanupSendState(_state);
 
-                if (status == MsQuicStatusCodes.Aborted)
+                if (status == QUIC_STATUS_ABORTED)
                 {
                     throw ThrowHelper.GetConnectionAbortedException(_state.ConnectionState.AbortErrorCode);
                 }
-                QuicExceptionHelpers.ThrowIfFailed(status,
-                    "Could not send data to peer.");
+                ThrowIfFailure(status, "Could not send data to peer.");
             }
 
             return _state.SendResettableCompletionSource.GetTypelessValueTask();
