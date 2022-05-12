@@ -5099,6 +5099,13 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                 costSz = 7; // jump to cold section
                 break;
 
+#ifdef TARGET_ARM64
+            case GT_CHK_DIV_BY_ZERO:
+                costEx = 4; // cmp reg,reg and jae throw (not taken)
+                costSz = 7; // jump to cold section
+                break;
+#endif
+
             case GT_COMMA:
 
                 /* Comma tosses the result of the left operand */
@@ -8339,6 +8346,13 @@ GenTree* Compiler::gtCloneExpr(
                 copy->AsBoundsChk()->gtIndRngFailBB = tree->AsBoundsChk()->gtIndRngFailBB;
                 copy->AsBoundsChk()->gtInxType      = tree->AsBoundsChk()->gtInxType;
                 break;
+
+#ifdef TARGET_ARM64
+            case GT_CHK_DIV_BY_ZERO:
+                copy = new (this, GT_CHK_DIV_BY_ZERO)
+                    GenTreeOp(GT_CHK_DIV_BY_ZERO, tree->TypeGet(), tree->AsOp()->gtOp1, nullptr);
+                break;
+#endif
 
             case GT_LEA:
             {
