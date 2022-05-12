@@ -28,23 +28,25 @@ namespace Sample
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
+        private static long recursiveFib (int n)
+        {
+            if (n < 1)
+                return 0;
+            if (n == 1)
+                return 1;
+            return recursiveFib (n - 1) + recursiveFib (n - 2);
+        }
+
         public static async Task<int> StartAsyncWork()
         {
             CancellationToken ct = GetCancellationToken();
-            int a;
-            int b;
-            const int N = 30;
-            const int expected = 832040;
+            long b;
+            const int N = 35;
+            const long expected = 9227465;
             while (true)
             {
-                a = 0; b = 1;
-                for (int i = 1; i < N; i++)
-                {
-                    int tmp = a + b;
-                    a = b;
-                    b = tmp;
-                    await Task.Delay(1).ConfigureAwait(false);
-                }
+                await Task.Delay(1).ConfigureAwait(false);
+                b = recursiveFib (N);
                 if (ct.IsCancellationRequested)
                     break;
                 iterations++;
