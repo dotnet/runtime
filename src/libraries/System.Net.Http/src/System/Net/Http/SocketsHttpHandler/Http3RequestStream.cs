@@ -117,10 +117,9 @@ namespace System.Net.Http
             bool disposeSelf = true;
 
             bool duplex = _request.Content != null && _request.Content.AllowDuplex;
-            CancellationTokenRegistration linkedTokenRegistration = default;
 
             // Link the input token with _requestBodyCancellationSource, so cancellation will trigger on GoAway() or Abort().
-            linkedTokenRegistration = cancellationToken.UnsafeRegister(cts => ((CancellationTokenSource)cts!).Cancel(), _requestBodyCancellationSource);
+            CancellationTokenRegistration linkedTokenRegistration = cancellationToken.UnsafeRegister(cts => ((CancellationTokenSource)cts!).Cancel(), _requestBodyCancellationSource);
 
             // upon failure, we should cancel the _requestBodyCancellationSource
             bool shouldCancelBody = true;
@@ -203,7 +202,7 @@ namespace System.Net.Http
                 if (useEmptyResponseContent)
                 {
                     // Drain the response frames to read any trailing headers.
-                    await DrainContentLength0Frames(cancellationToken).ConfigureAwait(false);
+                    await DrainContentLength0Frames(_requestBodyCancellationSource.Token).ConfigureAwait(false);
                     responseContent.SetStream(EmptyReadStream.Instance);
                 }
                 else
