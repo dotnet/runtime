@@ -83,16 +83,7 @@ namespace HttpStress
                     {
                         case "+":
                         case "*":
-                            // Workaround for a msquic bug: can't connect via IPv4 when listening on IPv6
-                            // https://github.com/microsoft/msquic/issues/2704
-                            if (configuration.HttpVersion == HttpVersion.Version30)
-                            {
-                                ko.Listen(IPAddress.Any, port, ConfigureListenOptions);
-                            }
-                            else
-                            {
-                                ko.ListenAnyIP(port, ConfigureListenOptions);
-                            }
+                            ko.ListenAnyIP(port, ConfigureListenOptions);
                             break;
                         default:
                             IPAddress iPAddress = Dns.GetHostAddresses(hostname).First();

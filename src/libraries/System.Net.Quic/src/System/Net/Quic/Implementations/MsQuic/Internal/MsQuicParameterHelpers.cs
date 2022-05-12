@@ -4,12 +4,28 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Net.Sockets;
+using Microsoft.Quic;
 using static Microsoft.Quic.MsQuic;
 
 namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicParameterHelpers
     {
+        internal static unsafe QuicAddr GetQuicAddrParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param)
+        {
+            QuicAddr value = default;
+            uint valueLen = (uint)sizeof(QuicAddr);
+
+            ThrowIfFailure(api.ApiTable->GetParam(
+                nativeObject.QuicHandle,
+                param,
+                &valueLen,
+                (byte*)&value), "GetQuicAddrParam failed");
+            Debug.Assert(valueLen == sizeof(QuicAddr));
+
+            return value;
+        }
+
         internal static unsafe IPEndPoint GetIPEndPointParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param)
         {
             // MsQuic always uses storage size as if IPv6 was used
