@@ -4271,6 +4271,9 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_RETURNTRAP:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
+#ifdef TARGET_ARM64
+        case GT_CHK_DIV_BY_ZERO:
+#endif
             visitor(this->AsUnOp()->gtOp1);
             return;
 

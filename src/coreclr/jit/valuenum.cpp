@@ -10795,6 +10795,11 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
                 fgValueNumberAddExceptionSetForBoundsCheck(tree);
                 break;
 
+#ifdef TARGET_ARM64
+            case GT_CHK_DIV_BY_ZERO:
+                break;
+#endif
+
             case GT_LCLHEAP:
                 // It is not necessary to model the StackOverflow exception for GT_LCLHEAP
                 break;

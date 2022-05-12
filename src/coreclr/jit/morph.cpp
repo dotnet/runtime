@@ -11758,6 +11758,13 @@ DONE_MORPHING_CHILDREN:
             fgSetRngChkTarget(tree);
             break;
 
+#ifdef TARGET_ARM64
+        case GT_CHK_DIV_BY_ZERO:
+            assert(varTypeIsIntegralOrI(op1));
+            // TODO: Add fgAddCodeRef for div by zero
+            break;
+#endif
+
         case GT_OBJ:
         case GT_BLK:
         case GT_IND:

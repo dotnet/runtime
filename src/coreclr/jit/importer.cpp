@@ -14032,11 +14032,13 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     GenTree* divisorAsg   = gtNewTempAssign(tmpNum, op2);
                     GenTree* divisor      = gtNewLclvNode(tmpNum, op2->TypeGet());
                     GenTree* chkDivByZero =
-                        new (this, GT_CHK_DIV_BY_ZERO) GenTreeOp(GT_CHK_DIV_BY_ZERO, TYP_VOID, divisorAsg, nullptr);
+                        new (this, GT_CHK_DIV_BY_ZERO) GenTreeOp(GT_CHK_DIV_BY_ZERO, TYP_VOID, divisor, nullptr);
 
                     chkDivByZero->gtFlags |= GTF_SIDE_EFFECT | GTF_DONT_CSE;
 
-                    op2 = gtNewOperNode(GT_COMMA, divisor->TypeGet(), chkDivByZero, gtCloneExpr(divisor));
+                    op2 =
+                        gtNewOperNode(GT_COMMA, divisor->TypeGet(), divisorAsg,
+                                      gtNewOperNode(GT_COMMA, divisor->TypeGet(), chkDivByZero, gtCloneExpr(divisor)));
                 }
 #endif
 

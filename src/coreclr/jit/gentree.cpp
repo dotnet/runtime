@@ -5902,6 +5902,9 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_BSWAP16:
         case GT_KEEPALIVE:
         case GT_INC_SATURATE:
+#ifdef TARGET_ARM64
+        case GT_CHK_DIV_BY_ZERO:
+#endif
             if (operand == this->AsUnOp()->gtOp1)
             {
                 *pUse = &this->AsUnOp()->gtOp1;
@@ -6409,6 +6412,9 @@ bool GenTree::OperMayThrow(Compiler* comp)
         case GT_CKFINITE:
         case GT_INDEX:
         case GT_INDEX_ADDR:
+#ifdef TARGET_ARM64
+        case GT_CHK_DIV_BY_ZERO:
+#endif
             return true;
 
 #ifdef FEATURE_HW_INTRINSICS
