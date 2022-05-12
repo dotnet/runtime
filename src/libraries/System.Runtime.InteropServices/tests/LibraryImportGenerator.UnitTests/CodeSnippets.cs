@@ -679,12 +679,13 @@ partial class Test
 
         public static class CustomStructMarshalling
         {
-            public static string NonBlittableUserDefinedType(bool defineNativeMarshalling = true) => @$"
+            public static string NonBlittableUserDefinedType(bool defineNativeMarshalling = true) => $@"
 {(defineNativeMarshalling ? "[NativeMarshalling(typeof(Native))]" : string.Empty)}
-[StructLayout(LayoutKind.Sequential)]
 struct S
 {{
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     public bool b;
+#pragma warning restore CS0649
 }}
 ";
             private static string NativeTypeIn = @"
@@ -699,11 +700,12 @@ struct Native
 }
 ";
             private static string NativeTypeOut = @"
-[StructLayout(LayoutKind.Sequential)]
 [CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out)]
 struct Native
 {
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     private int i;
+#pragma warning restore CS0649
     public S ToManaged() => new S { b = i != 0 };
 }
 ";
