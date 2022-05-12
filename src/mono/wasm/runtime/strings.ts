@@ -167,9 +167,16 @@ function _store_string_in_intern_table(string: string, root: WasmRoot<MonoString
 }
 
 export function js_string_to_mono_string_interned_root(string: string | symbol, result: WasmRoot<MonoString>): void {
-    const text = (typeof (string) === "symbol")
-        ? (string.description || Symbol.keyFor(string) || "<unknown Symbol>")
-        : string;
+    let text : string | undefined;
+    if (typeof (string) === "symbol") {
+        text = string.description;
+        if (typeof (text) !== "string")
+            text = Symbol.keyFor(string);
+        if (typeof (text) !== "string")
+            text = "<unknown Symbol>";
+    } else if (typeof (string) === "string") {
+        text = string;
+    }
 
     if (typeof(text) !== "string") {
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
