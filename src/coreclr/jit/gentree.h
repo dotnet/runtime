@@ -6169,6 +6169,16 @@ struct GenTreeIndexAddr : public GenTreeOp
     {
     }
 #endif
+
+    bool IsBoundsChecked() const
+    {
+        return (gtFlags & GTF_INX_RNGCHK) != 0;
+    }
+
+    bool IsNotNull() const
+    {
+        return IsBoundsChecked();
+    }
 };
 
 // GenTreeArrAddr - GT_ARR_ADDR, carries information about the array type from morph to VN.
