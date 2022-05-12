@@ -13371,7 +13371,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
     {
         IntegralRange knownPositiveOpRange = IntegralRange::ForNode(knownPositiveOp, this);
         bool          knownPositiveFitsIntoU32 =
-            IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax).Contains(knownPositiveOpRange);
+            IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax).Contains(knownPositiveOpRange);
 
         if (!knownPositiveFitsIntoU32)
         {
