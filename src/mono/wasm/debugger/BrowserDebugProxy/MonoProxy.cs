@@ -1445,9 +1445,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         var entryPoint = context.store.FindEntryPoint();
                         if (entryPoint is not null)
                         {
-                            // FIXME: id
-                            string bpId = "bp://99999";
                             var sourceFile = entryPoint.Assembly.Sources.Single(sf => sf.SourceId == entryPoint.SourceId);
+                            string bpId = $"auto:{entryPoint.StartLocation.Line}:{entryPoint.StartLocation.Column}:{sourceFile.DotNetUrl}";
                             BreakpointRequest request = new(bpId, JObject.FromObject(new
                             {
                                 lineNumber = entryPoint.StartLocation.Line,
