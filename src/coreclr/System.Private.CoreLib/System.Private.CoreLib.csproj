@@ -9,7 +9,7 @@
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
 
     <!-- Force System.Private.CoreLib.dll into a special IL output directory -->
-    <OutputPath>$(RuntimeBinDir)/IL/</OutputPath>
+    <OutputPath>$(RuntimeBinDir)IL\</OutputPath>
     <Configurations>Debug;Release;Checked</Configurations>
     <Platforms>x64;x86;arm;arm64</Platforms>
 
