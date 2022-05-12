@@ -13,6 +13,7 @@ using System.Text.Encodings.Web;
 using System.Text.Json.Tests;
 using System.Threading.Tasks;
 using Xunit;
+using System.Runtime.InteropServices;
 
 namespace System.Text.Json.Serialization.Tests
 {
