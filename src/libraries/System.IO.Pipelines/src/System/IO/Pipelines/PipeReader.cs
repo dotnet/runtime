@@ -38,7 +38,7 @@ namespace System.IO.Pipelines
         /// <remarks>The call returns if the <see cref="System.IO.Pipelines.PipeReader" /> has read the minimumLength specified, or is cancelled or completed.
         ///
         /// Passing a value of 0 for <paramref name="minimumSize" /> will return a <see cref="System.Threading.Tasks.ValueTask{T}" /> that will not complete until
-        /// further data is available. You should instead call <see cref="System.IO.Pipelines.PipeReader.TryRead(System.IO.Pipelines.ReadResult)" /> to avoid a blocking call.</remarks>
+        /// further data is available. You should instead call <see cref="System.IO.Pipelines.PipeReader.TryRead" /> to avoid a blocking call.</remarks>
         public ValueTask<ReadResult> ReadAtLeastAsync(int minimumSize, CancellationToken cancellationToken = default)
         {
             if (minimumSize < 0)
