@@ -1858,12 +1858,27 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp, CORINFO_CLASS_HANDLE structType
 //    structType - value type handle if the temp created is of TYP_STRUCT.
 //
 // Return Value:
-//    A fresh GT_LCL_VAR node referencing the temp which has not been used
+//    A fresh GT_LCL_VAR node referencing the temp which has not been used, or
+//    the same tree is returned if it's already in the form comma temp.
 //
 
 GenTree* Compiler::fgInsertCommaFormTemp(GenTree** ppTree, CORINFO_CLASS_HANDLE structType /*= nullptr*/)
 {
     GenTree* subTree = *ppTree;
+
+    // Check to see if ppTree is already the same structure (comma form temp), if it is, simply return itself.
+    if (subTree->OperIs(GT_COMMA) && subTree->gtGetOp1()->OperIs(GT_ASG) && subTree->gtGetOp2()->OperIs(GT_LCL_VAR))
+    {
+        GenTree* asg = subTree->gtGetOp1();
+        GenTree* lcl = subTree->gtGetOp2();
+
+        GenTree* asgOp1 = asg->gtGetOp1();
+
+        if (asgOp1->OperIs(GT_LCL_VAR) && (asgOp1->AsLclVar()->GetLclNum() == lcl->AsLclVar()->GetLclNum()))
+        {
+            return subTree;
+        }
+    }
 
     unsigned lclNum = lvaGrabTemp(true DEBUGARG("fgInsertCommaFormTemp is creating a new local variable"));
 
