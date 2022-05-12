@@ -165,8 +165,8 @@ namespace System.Net.NetworkInformation.Tests
             }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
-        [Fact]
         [Trait("IPv6", "true")]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
         public async Task IPv6ScopeId_AccessAllValues_Success()
         {
             await Task.Run(() =>
@@ -220,8 +220,8 @@ namespace System.Net.NetworkInformation.Tests
             }).WaitAsync(TestHelper.PassingTestTimeout);
         }
 
-        [Fact]
         [Trait("IPv6", "true")]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
         public async Task IPInfoTest_IPv6Loopback_ProperAddress()
         {
             await Task.Run(() =>
