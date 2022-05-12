@@ -113,7 +113,10 @@
        implements IFooEx
 {
   .method public hidebysig abstract final
-          static int32  IFoo.Foo(int32 a) cil managed;
+          static int32  IFoo.Foo(int32 a) cil managed
+  {
+  } // end of method IFooExReabstract::Func
+
 }
 
 .class private auto ansi beforefieldinit FooClass
@@ -229,8 +232,11 @@
 .class interface private abstract auto ansi I4Reabstract
        implements I4
 {
-  .method private hidebysig final abstract
-          static int32  I1.Func(int32 a) cil managed;
+  .method private hidebysig final abstract virtual
+          static int32  Func(int32 a) cil managed
+  {
+    .override method int32 I1::Func(int32)
+  } // end of I4Reabstract::Func
 } // end of class I4Reabstract
 
 .class interface private abstract auto ansi I4Reimplement
@@ -721,7 +727,7 @@
                 ldstr      "Expecting exception on FooClass"
                 call       void Test::Assert(bool, string)
                 nop
-                leave.s    IL_004aa
+                leave.s    IL_004ab
 
     }  // end .try
     catch [System.Runtime]System.Runtime.AmbiguousImplementationException
@@ -734,46 +740,12 @@
                 call       string [mscorlib]System.String::Concat(string, string)
                 call       void [mscorlib]System.Console::WriteLine(string)
                 nop
-                leave.s    IL_004aa
-
-    }  // end handler
-
-    IL_004aa:   nop
-                ldstr      "Calling IFoo.Foo on FooClassReabstract - expecting exception."
-                call       void [mscorlib]System.Console::WriteLine(string)
-                nop
-    .try
-    {
-                nop
-                ldc.i4.s   10
-                constrained. valuetype [svm_diamondshape]FooStruct
-                call         int32 IFoo::Foo(int32)
-                pop
-                ldc.i4.0
-                ldstr      "Expecting exception on FooStruct"
-                call       void Test::Assert(bool,
-                                             string)
-                nop
-                leave.s    IL_004ab
-
-    }  // end .try
-    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
-    {
-                stloc.s    V_6
-                nop
-                ldstr      "Exception caught: "
-                ldloc.s    V_6
-                callvirt   instance string [mscorlib]System.Object::ToString()
-                call       string [mscorlib]System.String::Concat(string,
-                                                                  string)
-                call       void [mscorlib]System.Console::WriteLine(string)
-                nop
                 leave.s    IL_004ab
 
     }  // end handler
 
     IL_004ab:   nop
-                ldstr      "Calling IFoo.Foo on FooStruct - expecting exception."
+                ldstr      "Calling IFoo.Foo on FooClassReabstract - expecting exception."
                 call       void [mscorlib]System.Console::WriteLine(string)
                 nop
     .try
@@ -807,6 +779,40 @@
     }  // end handler
 
     IL_004ac:   nop
+                ldstr      "Calling IFoo.Foo on FooStruct - expecting exception."
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+    .try
+    {
+                nop
+                ldc.i4.s   10
+                constrained. valuetype [svm_diamondshape]FooStruct
+                call         int32 IFoo::Foo(int32)
+                pop
+                ldc.i4.0
+                ldstr      "Expecting exception on FooStruct"
+                call       void Test::Assert(bool,
+                                             string)
+                nop
+                leave.s    IL_004ad
+
+    }  // end .try
+    catch [System.Runtime]System.Runtime.AmbiguousImplementationException
+    {
+                stloc.s    V_6
+                nop
+                ldstr      "Exception caught: "
+                ldloc.s    V_6
+                callvirt   instance string [mscorlib]System.Object::ToString()
+                call       string [mscorlib]System.String::Concat(string,
+                                                                  string)
+                call       void [mscorlib]System.Console::WriteLine(string)
+                nop
+                leave.s    IL_004ad
+
+    }  // end handler
+
+    IL_004ad:   nop
                 ldstr      "Resolving delegate IFoo.Foo on FooStruct - expecting exception."
                 call       void [mscorlib]System.Console::WriteLine(string)
                 nop
