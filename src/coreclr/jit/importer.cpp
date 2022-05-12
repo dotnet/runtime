@@ -14035,7 +14035,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                     GenTree* chkDivByZero =
                         new (this, GT_CHK_DIV_BY_ZERO) GenTreeOp(GT_CHK_DIV_BY_ZERO, TYP_VOID, divisor, nullptr);
 
-                    chkDivByZero->gtFlags |= GTF_SIDE_EFFECT | GTF_DONT_CSE;
+                    chkDivByZero->gtFlags |= GTF_SIDE_EFFECT;
 
                     op2 =
                         gtNewOperNode(GT_COMMA, divisor->TypeGet(), divisorAsg,

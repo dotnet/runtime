@@ -10206,7 +10206,6 @@ void CodeGen::genCodeForChkDivByZero(GenTreeOp* tree)
 
     GetEmitter()->emitIns_R_I(INS_cmp, emitActualTypeSize(op1->TypeGet()), op1->GetRegNum(), 0);
     genJumpToThrowHlpBlk(EJ_eq, SCK_DIV_BY_ZERO);
-    genProduceReg(op1);
 }
 
 #endif // TARGET_ARM64
