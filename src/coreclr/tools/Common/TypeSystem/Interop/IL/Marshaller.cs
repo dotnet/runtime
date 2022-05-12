@@ -1795,10 +1795,11 @@ namespace Internal.TypeSystem.Interop
             ILEmitter emitter = _ilCodeStreams.Emitter;
             TypeDesc marshaller = Marshaller;
 
-            if (In && !Out && !IsManagedByRef)
-            {
+            if (_marshallerInstance == null)
                 _marshallerInstance = emitter.NewLocal(marshaller);
 
+            if (In && !Out && !IsManagedByRef)
+            {
                 var vBuffer = emitter.NewLocal(Context.GetWellKnownType(WellKnownType.IntPtr));
                 codeStream.EmitLdc(LocalBufferLength);
                 codeStream.Emit(ILOpcode.localloc);
@@ -1821,47 +1822,47 @@ namespace Internal.TypeSystem.Interop
                     new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
                             new TypeDesc[] { Context.GetWellKnownType(WellKnownType.String), spanOfByte }))));
                 codeStream.EmitStLoc(_marshallerInstance.Value);
-
-                codeStream.EmitLdLoca(_marshallerInstance.Value);
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(marshaller.GetKnownMethod("ToNativeValue", null)));
-                StoreNativeValue(codeStream);
             }
             else
             {
                 LoadManagedValue(codeStream);
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(marshaller.GetKnownMethod("ConvertManagedToNative", null)));
-                StoreNativeValue(codeStream);
+                codeStream.Emit(ILOpcode.newobj, emitter.NewToken(marshaller.GetKnownMethod(".ctor",
+                    new MethodSignature(0, 0, Context.GetWellKnownType(WellKnownType.Void),
+                            new TypeDesc[] { Context.GetWellKnownType(WellKnownType.String) }))));
+                codeStream.EmitStLoc(_marshallerInstance.Value);
             }
+
+            codeStream.EmitLdLoca(_marshallerInstance.Value);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(marshaller.GetKnownMethod("ToNativeValue", null)));
+            StoreNativeValue(codeStream);
         }
 
         protected override void TransformNativeToManaged(ILCodeStream codeStream)
         {
-            Debug.Assert(_marshallerInstance is null);
-
             ILEmitter emitter = _ilCodeStreams.Emitter;
             TypeDesc marshaller = Marshaller;
 
-            LoadManagedValue(codeStream);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(marshaller.GetKnownMethod("ConvertNativeToManaged", null)));
-            StoreNativeValue(codeStream);
+            if (_marshallerInstance == null)
+                _marshallerInstance = emitter.NewLocal(marshaller);
+
+            codeStream.EmitLdLoca(_marshallerInstance.Value);
+            LoadNativeValue(codeStream);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(marshaller.GetKnownMethod("FromNativeValue", null)));
+
+            codeStream.EmitLdLoca(_marshallerInstance.Value);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(marshaller.GetKnownMethod("ToManaged", null)));
+            StoreManagedValue(codeStream);
         }
 
         protected override void EmitCleanupManaged(ILCodeStream codeStream)
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
-            if (_marshallerInstance is null)
-            {
-                LoadNativeValue(codeStream);
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                    InteropTypes.GetMarshal(Context).GetKnownMethod("CoTaskMemFree", null)));
-            }
-            else
-            {
-                codeStream.EmitLdLoca(_marshallerInstance.Value);
-                codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                    Marshaller.GetKnownMethod("FreeNative", null)));
-            }
+            Debug.Assert(_marshallerInstance != null);
+
+            codeStream.EmitLdLoca(_marshallerInstance.Value);
+            codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                Marshaller.GetKnownMethod("FreeNative", null)));
         }
     }
 
