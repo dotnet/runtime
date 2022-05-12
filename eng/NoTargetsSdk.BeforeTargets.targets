@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <!-- NoTargets SDK projects don't produce symbols. Set here as Arcade and Directory.Build.props overwrite the SDKs setting. -->
+    <!-- TODO: Remove when https://github.com/microsoft/MSBuildSdks/pull/360 is merged and consumed.
     <DebugSymbols>false</DebugSymbols>
     <DebugType>none</DebugType>
 
