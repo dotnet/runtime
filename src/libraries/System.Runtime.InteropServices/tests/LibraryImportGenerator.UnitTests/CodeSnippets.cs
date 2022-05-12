@@ -635,241 +635,6 @@ partial class Test
         [MarshalUsing(typeof({nativeTypeName}))] out {typeName} pOut);
 }}
 ";
-        public static string BasicNonBlittableUserDefinedType(bool defineNativeMarshalling = true) => $@"
-{(defineNativeMarshalling ? "[NativeMarshalling(typeof(Native))]" : string.Empty)}
-struct S
-{{
-    public bool b;
-}}
-
-[CustomTypeMarshaller(typeof(S))]
-struct Native
-{{
-    private int i;
-    public Native(S s)
-    {{
-        i = s.b ? 1 : 0;
-    }}
-
-    public S ToManaged() => new S {{ b = i != 0 }};
-}}
-";
-
-        public static string CustomStructMarshallingParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + BasicNonBlittableUserDefinedType(defineNativeMarshalling: false);
-
-        public static string CustomStructMarshallingMarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Native", DisableRuntimeMarshalling) + BasicNonBlittableUserDefinedType(defineNativeMarshalling: true);
-
-        public static string CustomStructMarshallingStackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-struct S
-{
-    public bool b;
-}
-
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
-struct Native
-{
-    private int i;
-    public Native(S s, System.Span<byte> b)
-    {
-        i = s.b ? 1 : 0;
-    }
-
-    public S ToManaged() => new S { b = i != 0 };
-}
-";
-        public static string CustomStructMarshallingStackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-struct S
-{
-    public bool b;
-}
-
-[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out, Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
-struct Native
-{
-    private int i;
-    public Native(S s, System.Span<byte> b)
-    {
-        i = s.b ? 1 : 0;
-    }
-
-    public S ToManaged() => new S { b = i != 0 };
-}
-";
-        public static string CustomStructMarshallingOptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-struct S
-{
-    public bool b;
-}
-
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
-struct Native
-{
-    private int i;
-    public Native(S s, System.Span<byte> b)
-    {
-        i = s.b ? 1 : 0;
-    }
-    public Native(S s)
-    {
-        i = s.b ? 1 : 0;
-    }
-
-    public S ToManaged() => new S { b = i != 0 };
-}
-";
-
-        public static string CustomStructMarshallingStackallocValuePropertyParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-struct S
-{
-    public bool b;
-}
-
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 1)]
-struct Native
-{
-    public Native(S s, System.Span<byte> b)
-    {
-    }
-
-    public S ToManaged() => new S { b = true };
-
-    public int ToNativeValue() => throw null;
-    public void FromNativeValue(int value) => throw null;
-}
-";
-        public static string CustomStructMarshallingValuePropertyParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-struct S
-{
-    public bool b;
-}
-
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-struct Native
-{
-    public Native(S s)
-    {
-    }
-
-    public S ToManaged() => new S { b = true };
-
-    public int ToNativeValue() => throw null;
-    public void FromNativeValue(int value) => throw null;
-}
-";
-        public static string CustomStructMarshallingPinnableParametersAndModifiers = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-class S
-{
-    public int i;
-
-    public ref int GetPinnableReference() => ref i;
-}
-
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-unsafe struct Native
-{
-    private int* ptr;
-    public Native(S s)
-    {
-        ptr = (int*)Marshal.AllocHGlobal(sizeof(int));
-        *ptr = s.i;
-    }
-
-    public S ToManaged() => new S { i = *ptr };
-
-    public nint ToNativeValue() => (nint)ptr;
-
-    public void FromNativeValue(nint value) => ptr = (int*)value;
-}
-";
-
-        public static string CustomStructMarshallingNativeTypePinnable = $@"
-using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
-using System;
-
-{DisableRuntimeMarshalling}
-
-[NativeMarshalling(typeof(Native))]
-class S
-{{
-    public byte c;
-}}
-
-[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 1)]
-unsafe ref struct Native
-{{
-    private byte* ptr;
-    private Span<byte> stackBuffer;
-
-    public Native(S s) : this()
-    {{
-        ptr = (byte*)Marshal.AllocCoTaskMem(sizeof(byte));
-        *ptr = s.c;
-        stackBuffer = new Span<byte>(ptr, 1);
-    }}
-
-    public Native(S s, Span<byte> buffer) : this()
-    {{
-        stackBuffer = buffer;
-        stackBuffer[0] = s.c;
-    }}
-
-    public ref byte GetPinnableReference() => ref stackBuffer.GetPinnableReference();
-
-    public S ToManaged()
-    {{
-        return new S {{ c = *ptr }};
-    }}
-
-    public byte* ToNativeValue() => (byte*)Unsafe.AsPointer(ref GetPinnableReference());
-
-    public void FromNativeValue(byte* value) => ptr = value;
-
-    public void FreeNative()
-    {{
-        if (ptr != null)
-        {{
-            Marshal.FreeCoTaskMem((IntPtr)ptr);
-        }}
-    }}
-}}
-
-partial class Test
-{{
-    [LibraryImport(""DoesNotExist"")]
-    public static partial void Method(
-        S s,
-        in S sIn);
-}}
-";
-
-        public static string CustomStructMarshallingByRefValueProperty = BasicParametersAndModifiers("S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-class S
-{
-    public byte c = 0;
-}
-
-[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
-unsafe struct Native
-{
-    private S value;
-
-    public Native(S s) : this()
-    {
-        value = s;
-    }
-
-    public ref byte ToNativeValue() => ref value.c;
-}
-";
 
         public static string BasicParameterWithByRefModifier(string byRefKind, string typeName, string preDeclaration = "") => $@"
 using System.Runtime.InteropServices;
@@ -912,14 +677,18 @@ partial class Test
     public static partial {returnType} Method({parameterType} p);
 }}";
 
-        public static string CustomStructMarshallingManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-[StructLayout(LayoutKind.Sequential)]
+        public static class CustomStructMarshalling
+        {
+            public static string NonBlittableUserDefinedType(bool defineNativeMarshalling = true) => $@"
+{(defineNativeMarshalling ? "[NativeMarshalling(typeof(Native))]" : string.Empty)}
 struct S
-{
+{{
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     public bool b;
-}
-
+#pragma warning restore CS0649
+}}
+";
+            private static string NativeTypeIn = @"
 [CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In)]
 struct Native
 {
@@ -930,32 +699,18 @@ struct Native
     }
 }
 ";
-
-        public static string CustomStructMarshallingNativeToManagedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-struct S
-{
-    public bool b;
-}
-
-[StructLayout(LayoutKind.Sequential)]
+            private static string NativeTypeOut = @"
 [CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out)]
 struct Native
 {
+#pragma warning disable CS0649 // Field is never assigned to, and will always have its default value
     private int i;
+#pragma warning restore CS0649
     public S ToManaged() => new S { b = i != 0 };
 }
 ";
-
-        public static string CustomStructMarshallingManagedToNativeOnlyReturnValue => BasicReturnType("S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-[StructLayout(LayoutKind.Sequential)]
-struct S
-{
-    public bool b;
-}
-
-[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In)]
+            public static string NativeTypeRef = @"
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     private int i;
@@ -963,40 +718,164 @@ struct Native
     {
         i = s.b ? 1 : 0;
     }
-}
-";
 
-        public static string CustomStructMarshallingNativeToManagedOnlyReturnValue => BasicReturnType("S", DisableRuntimeMarshalling) + @"
-[NativeMarshalling(typeof(Native))]
-struct S
-{
-    public bool b;
-}
-
-[StructLayout(LayoutKind.Sequential)]
-[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out)]
-struct Native
-{
-    private int i;
     public S ToManaged() => new S { b = i != 0 };
 }
 ";
+            public static string ManagedToNativeOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                + NonBlittableUserDefinedType()
+                + NativeTypeIn;
 
-        public static string CustomStructMarshallingNativeToManagedOnlyInParameter => BasicParameterWithByRefModifier("in", "S", DisableRuntimeMarshalling)  + @"
-[NativeMarshalling(typeof(Native))]
-struct S
-{
-    public bool b;
-}
+            public static string NativeToManagedOnlyOutParameter => BasicParameterWithByRefModifier("out", "S")
+                + NonBlittableUserDefinedType()
+                + NativeTypeOut;
 
-[StructLayout(LayoutKind.Sequential)]
-[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out)]
+            public static string ManagedToNativeOnlyReturnValue => BasicReturnType("S")
+                + NonBlittableUserDefinedType()
+                + NativeTypeIn;
+
+            public static string NativeToManagedOnlyReturnValue => BasicReturnType("S")
+                + NonBlittableUserDefinedType()
+                + NativeTypeOut;
+
+            public static string NativeToManagedOnlyInParameter => BasicParameterWithByRefModifier("in", "S")
+                + NonBlittableUserDefinedType()
+                + NativeTypeOut;
+
+            public static string ParametersAndModifiers = BasicParametersAndModifiers("S")
+                + NonBlittableUserDefinedType(defineNativeMarshalling: true)
+                + NativeTypeRef;
+
+            public static string MarshalUsingParametersAndModifiers = MarshalUsingParametersAndModifiers("S", "Native")
+                + NonBlittableUserDefinedType(defineNativeMarshalling: false)
+                + NativeTypeRef;
+
+            public static string StackallocParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S")
+                + NonBlittableUserDefinedType() + @"
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
 struct Native
 {
     private int i;
+    public Native(S s, System.Span<byte> b)
+    {
+        i = s.b ? 1 : 0;
+    }
+
     public S ToManaged() => new S { b = i != 0 };
 }
 ";
+            public static string StackallocOnlyRefParameter = BasicParameterWithByRefModifier("ref", "S")
+                + NonBlittableUserDefinedType() + @"
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.Out, Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
+struct Native
+{
+    private int i;
+    public Native(S s, System.Span<byte> b)
+    {
+        i = s.b ? 1 : 0;
+    }
+
+    public S ToManaged() => new S { b = i != 0 };
+}
+";
+            public static string OptionalStackallocParametersAndModifiers = BasicParametersAndModifiers("S")
+                + NonBlittableUserDefinedType() + @"
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer, BufferSize = 1)]
+struct Native
+{
+    private int i;
+    public Native(S s, System.Span<byte> b)
+    {
+        i = s.b ? 1 : 0;
+    }
+    public Native(S s)
+    {
+        i = s.b ? 1 : 0;
+    }
+
+    public S ToManaged() => new S { b = i != 0 };
+}
+";
+            public static string StackallocTwoStageParametersAndModifiersNoRef = BasicParametersAndModifiersNoRef("S")
+                + NonBlittableUserDefinedType() + @"
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 1)]
+struct Native
+{
+    public Native(S s, System.Span<byte> b) { }
+
+    public S ToManaged() => new S { b = true };
+
+    public int ToNativeValue() => throw null;
+    public void FromNativeValue(int value) { }
+}
+";
+            public static string TwoStageParametersAndModifiers = BasicParametersAndModifiers("S")
+                + NonBlittableUserDefinedType() + @"
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+struct Native
+{
+    public Native(S s) { }
+
+    public S ToManaged() => new S { b = true };
+
+    public int ToNativeValue() => throw null;
+    public void FromNativeValue(int value) { }
+}
+";
+            public static string TwoStageRefReturn = BasicParametersAndModifiers("S")
+                + NonBlittableUserDefinedType() + @"
+[CustomTypeMarshaller(typeof(S), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+unsafe struct Native
+{
+    public Native(S s) { }
+
+    public ref byte ToNativeValue() => throw null;
+}
+";
+            public static string PinnableParametersAndModifiers = BasicParametersAndModifiers("S") + @"
+[NativeMarshalling(typeof(Native))]
+class S
+{
+    public int i;
+
+    public ref int GetPinnableReference() => ref i;
+}
+
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.TwoStageMarshalling)]
+unsafe struct Native
+{
+    private int* ptr;
+    public Native(S s)
+    {
+        ptr = (int*)Marshal.AllocHGlobal(sizeof(int));
+        *ptr = s.i;
+    }
+
+    public S ToManaged() => new S { i = *ptr };
+
+    public nint ToNativeValue() => (nint)ptr;
+    public void FromNativeValue(nint value) => ptr = (int*)value;
+}
+";
+            public static string NativeTypePinnable = BasicParameterWithByRefModifier("in", "S")
+                + NonBlittableUserDefinedType() + @"
+[CustomTypeMarshaller(typeof(S), Features = CustomTypeMarshallerFeatures.CallerAllocatedBuffer | CustomTypeMarshallerFeatures.TwoStageMarshalling, BufferSize = 1)]
+unsafe ref struct Native
+{
+    public Native(S s) { }
+    public Native(S s, System.Span<byte> buffer) { }
+
+    public ref byte GetPinnableReference() => throw null;
+
+    public S ToManaged() => new S { b = true };
+
+    public byte* ToNativeValue() => throw null;
+    public void FromNativeValue(byte* value) { }
+
+    public void FreeNative() { }
+}
+";
+        }
 
         public static string ArrayMarshallingWithCustomStructElementWithValueProperty => MarshalAsArrayParametersAndModifiers("IntStructWrapper", DisableRuntimeMarshalling) + @"
 [NativeMarshalling(typeof(IntStructWrapperNative))]

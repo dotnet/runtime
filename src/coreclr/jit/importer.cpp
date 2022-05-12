@@ -7503,9 +7503,14 @@ int Compiler::impBoxPatternMatch(CORINFO_RESOLVED_TOKEN* pResolvedToken,
                     if (((treeToBox->gtFlags & GTF_SIDE_EFFECT) == GTF_EXCEPT) &&
                         treeToBox->OperIs(GT_OBJ, GT_BLK, GT_IND))
                     {
-                        // Yes, we just need to perform a null check if needed.
+                        // If the only side effect comes from the dereference itself, yes.
                         GenTree* const addr = treeToBox->AsOp()->gtGetOp1();
-                        if (fgAddrCouldBeNull(addr))
+
+                        if ((addr->gtFlags & GTF_SIDE_EFFECT) != 0)
+                        {
+                            canOptimize = false;
+                        }
+                        else if (fgAddrCouldBeNull(addr))
                         {
                             treeToNullcheck = addr;
                         }
