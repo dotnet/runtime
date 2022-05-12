@@ -16,8 +16,8 @@
 #include <evntprov.h>
 #include "CommonTypes.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include <winternl.h>
 #include "CommonMacros.h"
 #include "rhassert.h"

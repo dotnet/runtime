@@ -22,7 +22,7 @@
 #include "rwlock.h"
 #include "threadstore.h"
 #include "threadstore.inl"
-//#include "PalRedhawk.h"
+//#include "PalNativeAOT.h"
 
 #define Win32EventWrite PalEventWrite
 #else // !FEATURE_NATIVEAOT

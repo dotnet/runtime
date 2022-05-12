@@ -117,8 +117,8 @@ if(WIN32)
   include_directories(windows)
 
   list(APPEND COMMON_RUNTIME_SOURCES
-    windows/PalRedhawkCommon.cpp
-    windows/PalRedhawkMinWin.cpp
+    windows/PalNativeAOTCommon.cpp
+    windows/PalNativeAOTMinWin.cpp
     ${GC_DIR}/windows/gcenv.windows.cpp
     eventtrace.cpp
     rheventtrace.cpp
@@ -165,7 +165,7 @@ else()
   add_definitions(-D_LIBUNWIND_IS_NATIVE_ONLY)
 
   list(APPEND COMMON_RUNTIME_SOURCES
-    unix/PalRedhawkUnix.cpp
+    unix/PalNativeAOTUnix.cpp
     ${GC_DIR}/unix/gcenv.unix.cpp
     ${GC_DIR}/unix/events.cpp
     ${GC_DIR}/unix/cgroup.cpp

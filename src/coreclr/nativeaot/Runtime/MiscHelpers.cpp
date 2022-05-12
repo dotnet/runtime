@@ -9,8 +9,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "holder.h"
@@ -400,12 +400,12 @@ EXTERN_C NATIVEAOT_API int32_t __cdecl RhpGetCurrentThreadStackTrace(void* pOutp
 
 COOP_PINVOKE_HELPER(void*, RhpRegisterFrozenSegment, (void* pSegmentStart, size_t length))
 {
-    return RedhawkGCInterface::RegisterFrozenSegment(pSegmentStart, length);
+    return NativeAOTGCInterface::RegisterFrozenSegment(pSegmentStart, length);
 }
 
 COOP_PINVOKE_HELPER(void, RhpUnregisterFrozenSegment, (void* pSegmentHandle))
 {
-    RedhawkGCInterface::UnregisterFrozenSegment((GcSegmentHandle)pSegmentHandle);
+    NativeAOTGCInterface::UnregisterFrozenSegment((GcSegmentHandle)pSegmentHandle);
 }
 
 COOP_PINVOKE_HELPER(void*, RhpGetModuleSection, (TypeManagerHandle *pModule, int32_t headerId, int32_t* length))

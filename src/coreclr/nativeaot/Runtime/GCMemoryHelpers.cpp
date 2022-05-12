@@ -7,7 +7,7 @@
 
 #include "common.h"
 #include "gcenv.h"
-#include "PalRedhawkCommon.h"
+#include "PalNativeAOTCommon.h"
 #include "CommonMacros.inl"
 
 #include "GCMemoryHelpers.h"

@@ -4,8 +4,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "holder.h"
 #include "rhassert.h"
 #include "slist.h"
@@ -116,7 +116,7 @@ void TypeManager::EnumStaticGCRefsBlock(void * pfnCallback, void * pvCallbackDat
         PTR_RtuObjectRef    pRefLocation = dac_cast<PTR_RtuObjectRef>(dac_cast<PTR_UInt8>(&pSeries->m_startOffset) + (int32_t)pSeries->m_startOffset);
         uint32_t              numObjects = pSeries->m_size;
 
-        RedhawkGCInterface::BulkEnumGcObjRef(pRefLocation, numObjects, pfnCallback, pvCallbackData);
+        NativeAOTGCInterface::BulkEnumGcObjRef(pRefLocation, numObjects, pfnCallback, pvCallbackData);
     }
 }
 
@@ -135,7 +135,7 @@ void TypeManager::EnumThreadStaticGCRefsBlock(void * pfnCallback, void * pvCallb
         PTR_RtuObjectRef    pRefLocation = dac_cast<PTR_RtuObjectRef>(pTlsObject);
         uint32_t              numObjects = pSeries->m_size;
 
-        RedhawkGCInterface::BulkEnumGcObjRef(pRefLocation, numObjects, pfnCallback, pvCallbackData);
+        NativeAOTGCInterface::BulkEnumGcObjRef(pRefLocation, numObjects, pfnCallback, pvCallbackData);
     }
 }
 

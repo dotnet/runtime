@@ -209,7 +209,7 @@ NESTED_ENTRY RhpGcStressProbe, _TEXT
         PUSH_PROBE_FRAME rdx, rax, 0, rcx
         END_PROLOGUE
 
-        call        REDHAWKGCINTERFACE__STRESSGC
+        call        NATIVEAOTGCINTERFACE__STRESSGC
 
         POP_PROBE_FRAME 0
         ret
@@ -237,7 +237,7 @@ NESTED_ENTRY RhpGcProbe, _TEXT
         ret
 Abort:
         POP_PROBE_FRAME 0
-        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        mov         rcx, STATUS_NATIVEAOT_THREAD_ABORT
         pop         rdx         ;; return address as exception RIP
         jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 
@@ -513,7 +513,7 @@ ifdef FEATURE_GC_STRESS
 NESTED_ENTRY RhpGCStressProbeForEHJump, _TEXT
         EHJumpProbeProlog
 
-        call        REDHAWKGCINTERFACE__STRESSGC
+        call        NATIVEAOTGCINTERFACE__STRESSGC
 
         EHJumpProbeEpilog
 
@@ -714,7 +714,7 @@ ifdef FEATURE_GC_STRESS
         cmp         al, 0
         je          @F
 
-        call        REDHAWKGCINTERFACE__STRESSGC
+        call        NATIVEAOTGCINTERFACE__STRESSGC
 @@:
 endif ;; FEATURE_GC_STRESS
 
@@ -784,7 +784,7 @@ DontRestoreXmmAgain:
         lea         rsp, [rsp - 10h]
         jz          @f          ;; result of the test instruction before the pops above
         popfq                   ;; restore flags
-        mov         rcx, STATUS_REDHAWK_THREAD_ABORT
+        mov         rcx, STATUS_NATIVEAOT_THREAD_ABORT
         pop         rdx         ;; return address as exception RIP
         jmp         RhpThrowHwEx ;; Throw the ThreadAbortException as a special kind of hardware exception
 

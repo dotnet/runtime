@@ -968,7 +968,7 @@ NATIVEAOT_PALEXPORT uint32_t NATIVEAOT_PALAPI PalCompatibleWaitAny(UInt32_BOOL a
 
 #if !__has_builtin(_mm_pause)
 extern "C" void _mm_pause()
-// Defined for implementing PalYieldProcessor in PalRedhawk.h
+// Defined for implementing PalYieldProcessor in PalNativeAOT.h
 {
 #if defined(HOST_AMD64) || defined(HOST_X86)
   __asm__ volatile ("pause");

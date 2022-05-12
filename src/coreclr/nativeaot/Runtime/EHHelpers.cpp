@@ -12,8 +12,8 @@
 #include "RWLock.h"
 #include "TypeManager.h"
 #include "varint.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "holder.h"
 #include "Crst.h"
 #include "RuntimeInstance.h"
@@ -395,13 +395,13 @@ int32_t __stdcall RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t fau
     if (pCodeManager != NULL)
     {
         // Make sure that the OS does not use our internal fault codes
-        ASSERT(faultCode != STATUS_REDHAWK_NULL_REFERENCE && faultCode != STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE);
+        ASSERT(faultCode != STATUS_NATIVEAOT_NULL_REFERENCE && faultCode != STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE);
 
         if (faultCode == STATUS_ACCESS_VIOLATION)
         {
             if (faultAddress < NULL_AREA_SIZE)
             {
-                faultCode = STATUS_REDHAWK_NULL_REFERENCE;
+                faultCode = STATUS_NATIVEAOT_NULL_REFERENCE;
             }
         }
         else if (faultCode == STATUS_STACK_OVERFLOW)
@@ -425,7 +425,7 @@ int32_t __stdcall RhpHardwareExceptionHandler(uintptr_t faultCode, uintptr_t fau
         {
             if (faultAddress < NULL_AREA_SIZE)
             {
-                faultCode = STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE;
+                faultCode = STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE;
             }
 
             // we were AV-ing in a helper - unwind our way to our caller
@@ -476,13 +476,13 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
     if (pCodeManager != NULL)
     {
         // Make sure that the OS does not use our internal fault codes
-        ASSERT(faultCode != STATUS_REDHAWK_NULL_REFERENCE && faultCode != STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE);
+        ASSERT(faultCode != STATUS_NATIVEAOT_NULL_REFERENCE && faultCode != STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE);
 
         if (faultCode == STATUS_ACCESS_VIOLATION)
         {
             if (pExPtrs->ExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
             {
-                faultCode = STATUS_REDHAWK_NULL_REFERENCE;
+                faultCode = STATUS_NATIVEAOT_NULL_REFERENCE;
             }
         }
         else if (faultCode == STATUS_STACK_OVERFLOW)
@@ -511,7 +511,7 @@ int32_t __stdcall RhpVectoredExceptionHandler(PEXCEPTION_POINTERS pExPtrs)
         {
             if (pExPtrs->ExceptionRecord->ExceptionInformation[1] < NULL_AREA_SIZE)
             {
-                faultCode = STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE;
+                faultCode = STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE;
             }
 
             // we were AV-ing in a helper - unwind our way to our caller

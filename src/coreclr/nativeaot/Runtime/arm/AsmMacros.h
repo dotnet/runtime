@@ -44,8 +44,8 @@ TrapThreadsFlags_None            equ 0
 TrapThreadsFlags_AbortInProgress equ 1
 TrapThreadsFlags_TrapThreads     equ 2
 
-;; This must match HwExceptionCode.STATUS_REDHAWK_THREAD_ABORT
-STATUS_REDHAWK_THREAD_ABORT      equ 0x43
+;; This must match HwExceptionCode.STATUS_NATIVEAOT_THREAD_ABORT
+STATUS_NATIVEAOT_THREAD_ABORT      equ 0x43
 
 ;;
 ;; Rename fields of nested structs
@@ -255,7 +255,7 @@ $Name
         SETALIAS G_FREE_OBJECT_EETYPE, ?g_pFreeObjectEEType@@3PAVEEType@@A
 #ifdef FEATURE_GC_STRESS
         SETALIAS THREAD__HIJACKFORGCSTRESS, ?HijackForGcStress@Thread@@SAXPAUPAL_LIMITED_CONTEXT@@@Z
-        SETALIAS REDHAWKGCINTERFACE__STRESSGC, ?StressGc@RedhawkGCInterface@@SAXXZ
+        SETALIAS NATIVEAOTGCINTERFACE__STRESSGC, ?StressGc@NativeAOTGCInterface@@SAXXZ
 #endif ;; FEATURE_GC_STRESS
 ;;
 ;; IMPORTS
@@ -281,6 +281,6 @@ $Name
         EXTERN RhRethrow
 
 #ifdef FEATURE_GC_STRESS
-        EXTERN $REDHAWKGCINTERFACE__STRESSGC
+        EXTERN $NATIVEAOTGCINTERFACE__STRESSGC
         EXTERN $THREAD__HIJACKFORGCSTRESS
 #endif ;; FEATURE_GC_STRESS

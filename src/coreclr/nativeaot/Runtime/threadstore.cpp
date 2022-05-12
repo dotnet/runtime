@@ -6,8 +6,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "gcrhinterface.h"
@@ -128,7 +128,7 @@ void ThreadStore::AttachCurrentThread(bool fAcquireThreadStoreLock)
     // called with fAcquireThreadStoreLock==false, we are being called in a situation where the GC is trying to
     // init a GC thread, so we must honor the flag to mean "do not block on GC" or else we will deadlock.
     if (fAcquireThreadStoreLock && (RhpTrapThreads != (uint32_t)TrapThreadsFlags::None))
-        RedhawkGCInterface::WaitForGCCompletion();
+        NativeAOTGCInterface::WaitForGCCompletion();
 
     ThreadStore* pTS = GetThreadStore();
     ReaderWriterLock::WriteHolder write(&pTS->m_Lock, fAcquireThreadStoreLock);

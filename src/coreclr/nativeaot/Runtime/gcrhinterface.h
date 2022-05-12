@@ -99,7 +99,7 @@ typedef void * GcSegmentHandle;
 #error unexpected pointer size
 #endif
 
-class RedhawkGCInterface
+class NativeAOTGCInterface
 {
 public:
     // Perform any runtime-startup initialization needed by the GC, HandleTable or environmental code in

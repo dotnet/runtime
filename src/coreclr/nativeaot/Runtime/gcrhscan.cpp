@@ -8,7 +8,7 @@
 
 #include "gcenv.ee.h"
 
-#include "PalRedhawkCommon.h"
+#include "PalNativeAOTCommon.h"
 
 #include "gcrhinterface.h"
 

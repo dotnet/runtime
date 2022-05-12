@@ -20,8 +20,8 @@
 #include "gcenv.structs.h"
 #include "IntrinsicConstants.h"
 
-#ifndef PAL_REDHAWK_INCLUDED
-#define PAL_REDHAWK_INCLUDED
+#ifndef PAL_NATIVEAOT_INCLUDED
+#define PAL_NATIVEAOT_INCLUDED
 
 /* Adapted from intrin.h - For compatibility with <winnt.h>, some intrinsics are __cdecl except on x64 */
 #if defined (_M_X64)
@@ -453,8 +453,8 @@ typedef enum _EXCEPTION_DISPOSITION {
 #define STATUS_SINGLE_STEP                             ((uint32_t   )0x80000004L)
 #define STATUS_ACCESS_VIOLATION                        ((uint32_t   )0xC0000005L)
 #define STATUS_STACK_OVERFLOW                          ((uint32_t   )0xC00000FDL)
-#define STATUS_REDHAWK_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
-#define STATUS_REDHAWK_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
+#define STATUS_NATIVEAOT_NULL_REFERENCE                  ((uint32_t   )0x00000000L)
+#define STATUS_NATIVEAOT_UNMANAGED_HELPER_NULL_REFERENCE ((uint32_t   )0x00000042L)
 
 #ifdef TARGET_UNIX
 #define NULL_AREA_SIZE                   (4*1024)
@@ -579,7 +579,7 @@ extern uint32_t g_RhNumberOfProcessors;
 #ifndef _INC_WINDOWS
 // Include the list of external functions we wish to access. If we do our job 100% then it will be
 // possible to link without any direct reference to any Win32 library.
-#include "PalRedhawkFunctions.h"
+#include "PalNativeAOTFunctions.h"
 #endif // !_INC_WINDOWS
 #endif // !DACCESS_COMPILE
 
@@ -749,6 +749,6 @@ NATIVEAOT_PALIMPORT bool NATIVEAOT_PALAPI PalIsAvxEnabled();
 NATIVEAOT_PALIMPORT void NATIVEAOT_PALAPI PAL_GetCpuCapabilityFlags(int* flags);
 #endif //defined(HOST_ARM64)
 
-#include "PalRedhawkInline.h"
+#include "PalNativeAOTInline.h"
 
-#endif // !PAL_REDHAWK_INCLUDED
+#endif // !PAL_NATIVEAOT_INCLUDED

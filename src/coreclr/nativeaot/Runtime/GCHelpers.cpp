@@ -13,7 +13,7 @@
 
 #include "gcrhinterface.h"
 
-#include "PalRedhawkCommon.h"
+#include "PalNativeAOTCommon.h"
 #include "slist.h"
 #include "varint.h"
 #include "regdisplay.h"
@@ -269,7 +269,7 @@ COOP_PINVOKE_HELPER(void, RhGetMemoryInfo, (RH_GH_MEMORY_INFO* pData, int kind))
 
 COOP_PINVOKE_HELPER(int64_t, RhGetTotalAllocatedBytes, ())
 {
-    uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - RedhawkGCInterface::GetDeadThreadsNonAllocBytes();
+    uint64_t allocated_bytes = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - NativeAOTGCInterface::GetDeadThreadsNonAllocBytes();
 
     // highest reported allocated_bytes. We do not want to report a value less than that even if unused_bytes has increased.
     static uint64_t high_watermark;
@@ -296,7 +296,7 @@ EXTERN_C NATIVEAOT_API int64_t __cdecl RhGetTotalAllocatedBytesPrecise()
 
     GCToEEInterface::SuspendEE(SUSPEND_REASON::SUSPEND_FOR_GC);
 
-    allocated = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - RedhawkGCInterface::GetDeadThreadsNonAllocBytes();
+    allocated = GCHeapUtilities::GetGCHeap()->GetTotalAllocatedBytes() - NativeAOTGCInterface::GetDeadThreadsNonAllocBytes();
 
     FOREACH_THREAD(pThread)
     {

@@ -5,8 +5,8 @@
 #include "CommonTypes.h"
 #include "CommonMacros.h"
 #include "daccess.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "gcrhinterface.h"
@@ -85,7 +85,7 @@ void Thread::WaitForGC(void * pTransitionFrame)
         m_pTransitionFrame = pTransitionFrame;
 
         Unhijack();
-        RedhawkGCInterface::WaitForGCCompletion();
+        NativeAOTGCInterface::WaitForGCCompletion();
 
         m_pTransitionFrame = NULL;
 
@@ -356,7 +356,7 @@ void Thread::Detach()
     // point.
     SetDetached();
 
-    RedhawkGCInterface::ReleaseAllocContext(GetAllocContext());
+    NativeAOTGCInterface::ReleaseAllocContext(GetAllocContext());
 }
 
 void Thread::Destroy()
@@ -401,7 +401,7 @@ extern RtuObjectRef * t_pShadowStackBottom;
 void GcScanWasmShadowStack(void * pfnEnumCallback, void * pvCallbackData)
 {
     // Wasm does not permit iteration of stack frames so is uses a shadow stack instead
-    RedhawkGCInterface::EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
+    NativeAOTGCInterface::EnumGcRefsInRegionConservatively(t_pShadowStackBottom, t_pShadowStackTop, pfnEnumCallback, pvCallbackData);
 }
 #endif
 
@@ -466,14 +466,14 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
         // X0 and X1 are saved next to each other in this order
         if (reg0Kind != GCRK_Scalar)
         {
-            RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, reg0Kind, pfnEnumCallback, pvCallbackData);
+            NativeAOTGCInterface::EnumGcRef(pHijackedReturnValue, reg0Kind, pfnEnumCallback, pvCallbackData);
         }
         if (reg1Kind != GCRK_Scalar)
         {
-            RedhawkGCInterface::EnumGcRef(pHijackedReturnValue + 1, reg1Kind, pfnEnumCallback, pvCallbackData);
+            NativeAOTGCInterface::EnumGcRef(pHijackedReturnValue + 1, reg1Kind, pfnEnumCallback, pvCallbackData);
         }
 #else
-        RedhawkGCInterface::EnumGcRef(pHijackedReturnValue, returnValueKind, pfnEnumCallback, pvCallbackData);
+        NativeAOTGCInterface::EnumGcRef(pHijackedReturnValue, returnValueKind, pfnEnumCallback, pvCallbackData);
 #endif
     }
 
@@ -492,7 +492,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
             PTR_VOID pUpperBound = m_pStackHigh;
 
-            RedhawkGCInterface::EnumGcRefsInRegionConservatively(
+            NativeAOTGCInterface::EnumGcRefsInRegionConservatively(
                 dac_cast<PTR_RtuObjectRef>(pLowerBound),
                 dac_cast<PTR_RtuObjectRef>(pUpperBound),
                 pfnEnumCallback,
@@ -510,7 +510,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
 
             if (!frameIterator.ShouldSkipRegularGcReporting())
             {
-                RedhawkGCInterface::EnumGcRefs(frameIterator.GetCodeManager(),
+                NativeAOTGCInterface::EnumGcRefs(frameIterator.GetCodeManager(),
                                                frameIterator.GetMethodInfo(),
                                                frameIterator.GetEffectiveSafePointAddress(),
                                                frameIterator.GetRegisterSet(),
@@ -534,7 +534,7 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
                 PTR_RtuObjectRef pLowerBound;
                 PTR_RtuObjectRef pUpperBound;
                 frameIterator.GetStackRangeToReportConservatively(&pLowerBound, &pUpperBound);
-                RedhawkGCInterface::EnumGcRefsInRegionConservatively(pLowerBound,
+                NativeAOTGCInterface::EnumGcRefsInRegionConservatively(pLowerBound,
                                                                      pUpperBound,
                                                                      pfnEnumCallback,
                                                                      pvCallbackData);
@@ -553,12 +553,12 @@ void Thread::GcScanRootsWorker(void * pfnEnumCallback, void * pvCallbackData, St
     for (PTR_ExInfo curExInfo = GetCurExInfo(); curExInfo != NULL; curExInfo = curExInfo->m_pPrevExInfo)
     {
         PTR_RtuObjectRef pExceptionObj = dac_cast<PTR_RtuObjectRef>(&curExInfo->m_exception);
-        RedhawkGCInterface::EnumGcRef(pExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
+        NativeAOTGCInterface::EnumGcRef(pExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
     }
 
     // Keep alive the ThreadAbortException that's stored in the target thread during thread abort
     PTR_RtuObjectRef pThreadAbortExceptionObj = dac_cast<PTR_RtuObjectRef>(&m_threadAbortException);
-    RedhawkGCInterface::EnumGcRef(pThreadAbortExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
+    NativeAOTGCInterface::EnumGcRef(pThreadAbortExceptionObj, GCRK_Object, pfnEnumCallback, pvCallbackData);
 }
 
 #ifndef DACCESS_COMPILE

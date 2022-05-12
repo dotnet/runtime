@@ -29,8 +29,8 @@
 #include "MethodTable.h"
 #include "ObjectLayout.h"
 #include "rheventtrace.h"
-#include "PalRedhawkCommon.h"
-#include "PalRedhawk.h"
+#include "PalNativeAOTCommon.h"
+#include "PalNativeAOT.h"
 #include "gcrhinterface.h"
 #include "gcenv.interlocked.inl"
 
