@@ -9,7 +9,7 @@
 #include "CommonMacros.h"
 #include "daccess.h"
 #include "rhassert.h"
-#include "RedhawkWarnings.h"
+#include "NativeAOTWarnings.h"
 #include "PalNativeAOTCommon.h"
 #include "PalNativeAOT.h"
 #include "TargetPtrs.h"

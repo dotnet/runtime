@@ -6,7 +6,7 @@
 #include "daccess.h"
 #include "PalNativeAOTCommon.h"
 #include "PalNativeAOT.h"
-#include "RedhawkWarnings.h"
+#include "NativeAOTWarnings.h"
 #include "rhassert.h"
 #include "slist.h"
 #include "gcrhinterface.h"
