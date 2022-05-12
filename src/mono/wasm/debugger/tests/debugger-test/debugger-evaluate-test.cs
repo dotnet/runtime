@@ -1377,10 +1377,9 @@ namespace DebuggerTests
         static void Evaluate()
         {
             #nullable enable
-            List<int>? listNull = null; 
-            List<int>? listInitialized = new List<int>();
+            List<int>? listNull = null; // etype: null, no objId
             #nullable disable
-            List<int> list = new List<int>() {1};
+            List<int> list = new List<int>() {1}; // etype: Class
         }
     }
 }

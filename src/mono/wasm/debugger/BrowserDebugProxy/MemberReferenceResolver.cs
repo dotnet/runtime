@@ -258,7 +258,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                         return null;
 
-                    ValueOrError<GetMembersResult> valueOrError = await proxy.RuntimeGetObjectMembers(sessionId, objectId, null, token);
+                    var args = JObject.FromObject(new { forDebuggerDisplayAttribute = true });
+                    ValueOrError<GetMembersResult> valueOrError = await proxy.RuntimeGetObjectMembers(sessionId, objectId, args, token);
                     if (valueOrError.IsError)
                     {
                         logger.LogDebug($"ResolveAsInstanceMember failed with : {valueOrError.Error}");

@@ -1141,15 +1141,17 @@ namespace DebuggerTests
             });
 
         
-        [Fact]
-        public async Task EvaluateNullableProperties() => await CheckInspectLocalsAtBreakpointSite(
-            $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 3, "Evaluate",
+        [Theory]
+        [InlineData("list.Count")]
+        // [InlineData("listNull?.Count")]
+        public async Task EvaluateNullableProperties(string expression) => await CheckInspectLocalsAtBreakpointSite(
+            $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 5, "Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateNullableProperties:Evaluate'); 1 }})",
             wait_for_event_fn: async (pause_location) =>
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
-                var a = await EvaluateOnCallFrame(id, "list.Count");
-                Console.WriteLine(a);
+                await EvaluateOnCallFrameAndCheck(id,
+                   (expression, TNumber(1)));
             });
     }
 
