@@ -150,6 +150,11 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
                 bool                            matched         = false;
 
+                // If we find a unique path can we safely infer the predicate is true or false?
+                //
+                bool canInferFromTrue  = true;
+                bool canInferFromFalse = true;
+
                 for (auto vnRelation : vnRelations)
                 {
                     const ValueNum relatedVN = vnStore->GetRelatedRelop(domCmpNormVN, vnRelation);
@@ -158,6 +163,95 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         vnRelationMatch = vnRelation;
                         matched         = true;
                         break;
+                    }
+                }
+
+                // Look for cases where the user or optOptimizeBools has combined
+                // two distinct predicates with a boolean AND, OR, or has wrapped
+                // a predicate in NOT.
+                //
+                // This will be expressed as  {NE/EQ}({AND/OR/NOT}(...), 0).
+                //
+                // If the operator is EQ then a true {AND/OR} result implies
+                // a false taken branch, so we need to invert the sense of our
+                // inferences.
+                //
+                bool reverseSense = false;
+                if (!matched && vnStore->IsVNFunc(domCmpNormVN))
+                {
+                    VNFuncApp funcApp;
+                    if (vnStore->GetVNFunc(domCmpNormVN, &funcApp))
+                    {
+                        genTreeOps const oper = genTreeOps(funcApp.m_func);
+
+                        if ((oper == GT_EQ) || (oper == GT_NE))
+                        {
+                            ValueNum predVN     = funcApp.m_args[0];
+                            ValueNum constantVN = funcApp.m_args[1];
+
+                            if ((constantVN == vnStore->VNZeroForType(TYP_INT)) && vnStore->IsVNFunc(predVN))
+                            {
+                                VNFuncApp predFuncApp;
+
+                                if (vnStore->GetVNFunc(predVN, &predFuncApp))
+                                {
+                                    genTreeOps const predOper = genTreeOps(predFuncApp.m_func);
+
+                                    // Also perhaps GT_NOT?
+                                    //
+                                    if ((predOper == GT_AND) || (predOper == GT_OR) || (predOper == GT_NOT))
+                                    {
+                                        // If dominating compare is AND/OR(p1, p2) and one of
+                                        // the p's is related to our predicate....
+                                        //
+                                        for (unsigned int i = 0; (i < predFuncApp.m_arity) && !matched; i++)
+                                        {
+                                            ValueNum pVN = predFuncApp.m_args[i];
+
+                                            // Also consider perhaps handling N-Ary cases AND(AND(...), ...) and so on.
+                                            //
+                                            // Abstractly it would be nice if VN allowed n-ary commutative operators
+                                            // even though the IR does not support this.
+                                            //
+                                            for (auto vnRelation : vnRelations)
+                                            {
+                                                const ValueNum relatedVN = vnStore->GetRelatedRelop(pVN, vnRelation);
+
+                                                if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == treeNormVN))
+                                                {
+                                                    vnRelationMatch = vnRelation;
+                                                    matched         = true;
+
+                                                    // If dom predicate is wrapped in EQ(*,0) then a true dom
+                                                    // predicate implies a false branch outcome, and vice versa.
+                                                    //
+                                                    // And if the dom predicate is GT_NOT we reverse yet again.
+                                                    //
+                                                    reverseSense = (oper == GT_EQ) ^ (predOper == GT_NOT);
+
+                                                    // We only get partial knowledge in these cases.
+                                                    //
+                                                    //   AND(p1,p2) = true  ==> both p1 and p2 must be true
+                                                    //   AND(p1,p2) = false ==> don't know p1 or p2
+                                                    //    OR(p1,p2) = true  ==> don't know p1 or p2
+                                                    //    OR(p1,p2) = false ==> both p1 and p2 must be false
+                                                    //
+                                                    if (predOper != GT_NOT)
+                                                    {
+                                                        canInferFromFalse = reverseSense ^ (predOper == GT_OR);
+                                                        canInferFromTrue  = reverseSense ^ (predOper == GT_AND);
+                                                    }
+
+                                                    JITDUMP("Inferring predicate value from %s\n",
+                                                            GenTree::OpName(predOper));
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -194,8 +288,11 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
 
                     BasicBlock* const trueSuccessor  = domBlock->bbJumpDest;
                     BasicBlock* const falseSuccessor = domBlock->bbNext;
-                    const bool        trueReaches    = optReachable(trueSuccessor, block, domBlock);
-                    const bool        falseReaches   = optReachable(falseSuccessor, block, domBlock);
+
+                    // Only check reachability when we can also infer the value along that path.
+                    //
+                    const bool trueReaches  = canInferFromTrue && optReachable(trueSuccessor, block, domBlock);
+                    const bool falseReaches = canInferFromFalse && optReachable(falseSuccessor, block, domBlock);
 
                     if (trueReaches && falseReaches)
                     {
@@ -216,18 +313,20 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     {
                         // Taken jump in dominator reaches, fall through doesn't; relop must be true/false.
                         //
+                        const bool relopIsTrue = reverseSense ^ domIsSameRelop;
                         JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop must be %s\n",
-                                domBlock->bbJumpDest->bbNum, domBlock->bbNum, domIsSameRelop ? "true" : "false");
-                        relopValue = domIsSameRelop ? 1 : 0;
+                                domBlock->bbJumpDest->bbNum, domBlock->bbNum, relopIsTrue ? "true" : "false");
+                        relopValue = relopIsTrue ? 1 : 0;
                         break;
                     }
                     else if (falseReaches)
                     {
                         // Fall through from dominator reaches, taken jump doesn't; relop must be false/true.
                         //
+                        const bool relopIsFalse = reverseSense ^ domIsSameRelop;
                         JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop must be %s\n",
-                                domBlock->bbNext->bbNum, domBlock->bbNum, domIsSameRelop ? "false" : "true");
-                        relopValue = domIsSameRelop ? 0 : 1;
+                                domBlock->bbNext->bbNum, domBlock->bbNum, relopIsFalse ? "false" : "true");
+                        relopValue = relopIsFalse ? 0 : 1;
                         break;
                     }
                     else
@@ -822,7 +921,6 @@ bool Compiler::optRedundantRelop(BasicBlock* const block)
     //
     if (stmt == block->firstStmt())
     {
-        JITDUMP(" -- no, no prior stmt\n");
         return false;
     }
 
