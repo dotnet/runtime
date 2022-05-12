@@ -38,7 +38,8 @@ namespace System.IO
             }
             else
             {
-                Interop.CheckIo(error, path, asDirectory);
+                string? pathStr = path.Length > 0 ? path.ToString() : default;
+                Interop.CheckIo(error, pathStr, asDirectory);
             }
         }
 
@@ -55,7 +56,7 @@ namespace System.IO
 
             int result = handle is not null
                 ? Interop.libc.fsetattrlist(handle, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW))
-                : Interop.libc.setattrlist(path, &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW));
+                : Interop.libc.setattrlist(path.ToString(), &attrList, &timeSpec, sizeof(Interop.Sys.TimeSpec), new CULong(Interop.libc.FSOPT_NOFOLLOW));
 
             return result == 0 ?
                 Interop.Error.SUCCESS :
