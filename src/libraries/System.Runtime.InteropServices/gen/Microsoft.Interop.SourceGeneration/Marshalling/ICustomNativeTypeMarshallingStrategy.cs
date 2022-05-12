@@ -111,7 +111,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// A context that redefines the 'native' identifier for a TypePositionInfo to be the marshaller identifier.
     /// </summary>
-    internal sealed class CustomNativeTypeWithToFromNativeValueContext : StubCodeContext
+    internal sealed record CustomNativeTypeWithToFromNativeValueContext : StubCodeContext
     {
         public CustomNativeTypeWithToFromNativeValueContext(StubCodeContext parentContext)
         {

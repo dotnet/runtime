@@ -5142,7 +5142,6 @@ void Compiler::placeLoopAlignInstructions()
         return;
     }
 
-    int loopsToProcess = loopAlignCandidates;
     JITDUMP("Inside placeLoopAlignInstructions for %d loops.\n", loopAlignCandidates);
 
     // Add align only if there were any loops that needed alignment
@@ -5154,8 +5153,10 @@ void Compiler::placeLoopAlignInstructions()
     {
         // Adding align instruction in prolog is not supported
         // hence just remove that loop from our list.
-        loopsToProcess--;
+        fgFirstBB->unmarkLoopAlign(this DEBUG_ARG("prolog block"));
     }
+
+    int loopsToProcess = loopAlignCandidates;
 
     for (BasicBlock* const block : Blocks())
     {

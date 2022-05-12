@@ -111,3 +111,6 @@ extern bool CreateDump(const char* dumpPathTemplate, int pid, const char* dumpTy
 
 extern void printf_status(const char* format, ...);
 extern void printf_error(const char* format, ...);
+
+// Keep in sync with the definitions in dbgutil.cpp and daccess.h
+#define DACCESS_TABLE_SYMBOL "g_dacTable"
