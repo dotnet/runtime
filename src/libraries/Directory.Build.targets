@@ -154,8 +154,11 @@
     </ItemGroup>
   </Target>
 
-  <!-- Adds Nullable annotation attributes to non .NETCoreApp builds. -->
-  <ItemGroup Condition="'$(Nullable)' != '' and '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
+  <!-- Adds Nullable annotation attributes to C# non .NETCoreApp builds. -->
+  <ItemGroup Condition="'$(Nullable)' != '' and
+                        '$(Nullable)' != 'disable' and
+                        '$(MSBuildProjectExtension)' == '.csproj' and
+                        '$(TargetFrameworkIdentifier)' != '.NETCoreApp'">
     <Compile Include="$(CoreLibSharedDir)System\Diagnostics\CodeAnalysis\NullableAttributes.cs" Link="System\Diagnostics\CodeAnalysis\NullableAttributes.cs" />
   </ItemGroup>
 
