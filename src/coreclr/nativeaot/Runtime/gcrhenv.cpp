@@ -92,12 +92,12 @@ RhConfig * g_pRhConfig = &g_sRhConfig;
 
 uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
 {
-    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle),
+    GCHeapUtilities::RecordEventStateChange(!!(pContext->RegistrationHandle == Microsoft_Windows_NativeAOT_GC_PublicHandle),
                                             static_cast<GCEventKeyword>(pContext->MatchAnyKeyword),
                                             static_cast<GCEventLevel>(pContext->Level));
 
     if (IsEnabled &&
-        (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PrivateHandle) &&
+        (pContext->RegistrationHandle == Microsoft_Windows_NativeAOT_GC_PrivateHandle) &&
         GCHeapUtilities::IsGCHeapInitialized())
     {
         FireEtwGCSettings(GCHeapUtilities::GetGCHeap()->GetValidSegmentSize(FALSE),
@@ -109,7 +109,7 @@ uint32_t EtwCallback(uint32_t IsEnabled, RH_ETW_CONTEXT * pContext)
     // Special check for the runtime provider's GCHeapCollectKeyword.  Profilers
     // flick this to force a full GC.
     if (IsEnabled &&
-        (pContext->RegistrationHandle == Microsoft_Windows_Redhawk_GC_PublicHandle) &&
+        (pContext->RegistrationHandle == Microsoft_Windows_NativeAOT_GC_PublicHandle) &&
         GCHeapUtilities::IsGCHeapInitialized() &&
         ((pContext->MatchAnyKeyword & CLR_GCHEAPCOLLECT_KEYWORD) != 0))
     {
@@ -153,15 +153,15 @@ MethodTable g_FreeObjectEEType;
 bool RedhawkGCInterface::InitializeSubsystems()
 {
 #ifdef FEATURE_ETW
-    MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
-    MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.IsEnabled = FALSE;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.IsEnabled = FALSE;
 
     // Register the Redhawk event provider with the system.
-    RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Private();
-    RH_ETW_REGISTER_Microsoft_Windows_Redhawk_GC_Public();
+    RH_ETW_REGISTER_Microsoft_Windows_NativeAOT_GC_Private();
+    RH_ETW_REGISTER_Microsoft_Windows_NativeAOT_GC_Public();
 
-    MICROSOFT_WINDOWS_REDHAWK_GC_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PrivateHandle;
-    MICROSOFT_WINDOWS_REDHAWK_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_Redhawk_GC_PublicHandle;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PRIVATE_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_NativeAOT_GC_PrivateHandle;
+    MICROSOFT_WINDOWS_NATIVEAOT_GC_PUBLIC_PROVIDER_Context.RegistrationHandle = Microsoft_Windows_NativeAOT_GC_PublicHandle;
 #endif // FEATURE_ETW
 
     // Initialize the special MethodTable used to mark free list entries in the GC heap.

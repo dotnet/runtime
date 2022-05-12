@@ -5,7 +5,7 @@
 #ifndef __GCINFOTYPES_H__
 #define __GCINFOTYPES_H__
 
-#ifndef FEATURE_REDHAWK
+#ifndef FEATURE_NATIVEAOT
 #include "gcinfo.h"
 #endif
 

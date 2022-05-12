@@ -1351,7 +1351,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 16);
     _ASSERTE(regNum != 4);  // rsp
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     PTR_UIntNative* ppRax = &pRD->pRax;
     if (regNum > 4) regNum--; // rsp is skipped in Redhawk RegDisplay
 #else
@@ -1364,7 +1364,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     return (OBJECTREF*)*(ppRax + regNum);
 }
 
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
 OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     int             regNum,
     PREGDISPLAY     pRD
@@ -1380,7 +1380,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
 
     return (OBJECTREF*)(pRax + regNum);
 }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
 bool GcInfoDecoder::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
 {
@@ -1434,7 +1434,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1454,7 +1454,7 @@ void GcInfoDecoder::ReportRegisterToGC(  // AMD64
 
         gcFlags |= GC_CALL_PINNED;
     }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK && !SOS_TARGET_AMD64
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT && !SOS_TARGET_AMD64
 
 #ifdef _DEBUG
     if(IsScratchRegister(regNum, pRD))
@@ -1486,7 +1486,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 14);
     _ASSERTE(regNum != 13);  // sp
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     if(regNum < 14)
     {
         PTR_UIntNative* ppReg = &pRD->pR0;
@@ -1519,7 +1519,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
 #endif
 }
 
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
 OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     int             regNum,
     PREGDISPLAY     pRD
@@ -1535,7 +1535,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
 
     return (OBJECTREF*)(pR0 + regNum);
 }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
 
 bool GcInfoDecoder::IsScratchRegister(int regNum,  PREGDISPLAY pRD)
@@ -1609,7 +1609,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
     _ASSERTE(regNum >= 0 && regNum <= 30);
     _ASSERTE(regNum != 18); // TEB
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     PTR_UIntNative* ppReg = &pRD->pX0;
 
     return (OBJECTREF*)*(ppReg + regNum);
@@ -1675,7 +1675,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
     // pointers for some nonvolatile registers are NULL.
@@ -1717,7 +1717,7 @@ void GcInfoDecoder::ReportRegisterToGC( // ARM64
     pCallBack(hCallBack, pObjRef, gcFlags DAC_ARG(DacSlotLocation(regNum, 0, false)));
 }
 
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
 OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     int             regNum,
     PREGDISPLAY     pRD
@@ -1742,11 +1742,11 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
 
     return (OBJECTREF*)(pX0 + regNum);
 }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
 #elif defined(TARGET_LOONGARCH64)
 
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
 OBJECTREF* GcInfoDecoder::GetCapturedRegister(
     int             regNum,
     PREGDISPLAY     pRD
@@ -1761,7 +1761,7 @@ OBJECTREF* GcInfoDecoder::GetCapturedRegister(
 
     return (OBJECTREF*)(pR0 + regNum);
 }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
 OBJECTREF* GcInfoDecoder::GetRegisterSlot(
                         int             regNum,
@@ -1770,7 +1770,7 @@ OBJECTREF* GcInfoDecoder::GetRegisterSlot(
 {
     _ASSERTE((regNum == 1) || (regNum >= 4 && regNum <= 31));
 
-#ifdef FEATURE_REDHAWK
+#ifdef FEATURE_NATIVEAOT
     PTR_UIntNative* ppReg = &pRD->pR0;
 
     return (OBJECTREF*)*(ppReg + regNum);
@@ -1828,7 +1828,7 @@ void GcInfoDecoder::ReportRegisterToGC(
     LOG((LF_GCROOTS, LL_INFO1000, "Reporting " FMT_REG, regNum ));
 
     OBJECTREF* pObjRef = GetRegisterSlot( regNum, pRD );
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK) && !defined(SOS_TARGET_AMD64)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT) && !defined(SOS_TARGET_AMD64)
 
     // On PAL, we don't always have the context pointers available due to
     // a limitation of an unwinding library. In such case, the context
@@ -1931,7 +1931,7 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
 
         SIZE_T * pFrameReg = (SIZE_T*) GetRegisterSlot(m_StackBaseRegister, pRD);
 
-#if defined(TARGET_UNIX) && !defined(FEATURE_REDHAWK)
+#if defined(TARGET_UNIX) && !defined(FEATURE_NATIVEAOT)
         // On PAL, we don't always have the context pointers available due to
         // a limitation of an unwinding library. In such case, the context
         // pointers for some nonvolatile registers are NULL.
@@ -1939,7 +1939,7 @@ OBJECTREF* GcInfoDecoder::GetStackSlot(
         {
             pFrameReg = (SIZE_T*) GetCapturedRegister(m_StackBaseRegister, pRD);
         }
-#endif // TARGET_UNIX && !FEATURE_REDHAWK
+#endif // TARGET_UNIX && !FEATURE_NATIVEAOT
 
         pObjRef = (OBJECTREF*)(*pFrameReg + spOffset);
     }
