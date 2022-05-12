@@ -13369,18 +13369,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
     if (castOp->OperIs(GT_CAST) && varTypeIsLong(castOp->CastToType()) && castOp->AsCast()->CastOp()->TypeIs(TYP_INT) &&
         castOp->IsUnsigned() && !castOp->gtOverflow())
     {
-        bool knownPositiveFitsIntoU32 = false;
-        if (knownPositiveOp->IsIntegralConst() && FitsIn<UINT32>(knownPositiveOp->AsIntConCommon()->IntegralValue()))
-        {
-            // BTW, we can fold the whole condition if op2 doesn't fit into UINT_MAX.
-            knownPositiveFitsIntoU32 = true;
-        }
-        else if (knownPositiveOp->OperIs(GT_CAST) && varTypeIsLong(knownPositiveOp->CastToType()) &&
-                 knownPositiveOp->AsCast()->CastOp()->OperIs(GT_ARR_LENGTH))
-        {
-            knownPositiveFitsIntoU32 = true;
-            // TODO-Casts: recognize Span.Length here as well.
-        }
+        IntegralRange knownPositiveOpRange = IntegralRange::ForNode(knownPositiveOp, this);
+        bool knownPositiveFitsIntoU32 = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax).Contains(knownPositiveOpRange);
 
         if (!knownPositiveFitsIntoU32)
         {
