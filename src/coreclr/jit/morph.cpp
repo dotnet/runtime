@@ -6735,11 +6735,6 @@ GenTree* Compiler::fgMorphPotentialTailCall(GenTreeCall* call)
                     return nullptr;
                 }
             }
-            if (varDsc->lvPromoted && varDsc->lvIsParam && !lvaIsImplicitByRefLocal(varNum))
-            {
-                failTailCall("Has Struct Promoted Param", varNum);
-                return nullptr;
-            }
             if (varDsc->lvPinned)
             {
                 // A tail call removes the method from the stack, which means the pinning

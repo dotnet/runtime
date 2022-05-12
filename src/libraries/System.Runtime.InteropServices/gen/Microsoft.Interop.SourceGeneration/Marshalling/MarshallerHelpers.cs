@@ -86,6 +86,41 @@ namespace Microsoft.Interop
             return spanElementTypeSyntax;
         }
 
+
+        // Marshal.SetLastSystemError(<errorCode>);
+        public static StatementSyntax CreateClearLastSystemErrorStatement(int errorCode) =>
+            ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("SetLastSystemError")),
+                    ArgumentList(SingletonSeparatedList(
+                        Argument(LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(errorCode)))))));
+
+        // <lastError> = Marshal.GetLastSystemError();
+        public static StatementSyntax CreateGetLastSystemErrorStatement(string lastErrorIdentifier) =>
+            ExpressionStatement(
+                AssignmentExpression(
+                    SyntaxKind.SimpleAssignmentExpression,
+                    IdentifierName(lastErrorIdentifier),
+                    InvocationExpression(
+                        MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("GetLastSystemError")))));
+
+        // Marshal.SetLastPInvokeError(<lastError>);
+        public static StatementSyntax CreateSetLastPInvokeErrorStatement(string lastErrorIdentifier) =>
+            ExpressionStatement(
+                InvocationExpression(
+                    MemberAccessExpression(
+                        SyntaxKind.SimpleMemberAccessExpression,
+                        ParseName(TypeNames.System_Runtime_InteropServices_Marshal),
+                        IdentifierName("SetLastPInvokeError")),
+                    ArgumentList(SingletonSeparatedList(
+                        Argument(IdentifierName(lastErrorIdentifier))))));
+
         public static string GetMarshallerIdentifier(TypePositionInfo info, StubCodeContext context)
         {
             return context.GetAdditionalIdentifier(info, "marshaller");
