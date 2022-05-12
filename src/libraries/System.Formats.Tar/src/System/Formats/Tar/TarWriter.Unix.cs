@@ -10,8 +10,8 @@ namespace System.Formats.Tar
     // Unix specific methods for the TarWriter class.
     public sealed partial class TarWriter : IDisposable
     {
-        private Dictionary<uint, string>? _userIdentifiers;
-        private Dictionary<uint, string>? _groupIdentifiers;
+        private readonly Dictionary<uint, string> _userIdentifiers = new Dictionary<uint, string>();
+        private readonly Dictionary<uint, string> _groupIdentifiers = new Dictionary<uint, string>();
 
         // Unix specific implementation of the method that reads an entry from disk and writes it into the archive stream.
         partial void ReadFileFromDiskAndWriteToArchiveStreamAsEntry(string fullPath, string entryName)
@@ -66,29 +66,21 @@ namespace System.Formats.Tar
 
             // Uid and UName
             entry._header._uid = (int)status.Uid;
-            _userIdentifiers ??= new Dictionary<uint, string>();
-            if (!_userIdentifiers.ContainsKey(status.Uid))
+            if (!_userIdentifiers.TryGetValue(status.Uid, out string? uName))
             {
-                entry._header._uName = Interop.Sys.GetUName(status.Uid) ?? string.Empty;
-                _userIdentifiers.Add(status.Uid, entry._header._uName);
+                uName = Interop.Sys.GetUName(status.Uid);
+                _userIdentifiers.Add(status.Uid, uName);
             }
-            else
-            {
-                entry._header._uName = _userIdentifiers[status.Uid];
-            }
+            entry._header._uName = uName;
 
             // Gid and GName
             entry._header._gid = (int)status.Gid;
-            _groupIdentifiers ??= new Dictionary<uint, string>();
-            if (!_groupIdentifiers.ContainsKey(status.Gid))
+            if (!_groupIdentifiers.TryGetValue(status.Gid, out string? gName))
             {
-                entry._header._gName = Interop.Sys.GetGName(status.Gid) ?? string.Empty;
-                _groupIdentifiers.Add(status.Gid, entry._header._gName);
+                gName = Interop.Sys.GetGName(status.Gid);
+                _groupIdentifiers.Add(status.Gid, gName);
             }
-            else
-            {
-                entry._header._gName = _groupIdentifiers[status.Gid];
-            }
+            entry._header._gName = gName;
 
             if (entry.EntryType == TarEntryType.SymbolicLink)
             {
