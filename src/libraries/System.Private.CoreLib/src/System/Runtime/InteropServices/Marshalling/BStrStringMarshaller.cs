@@ -50,7 +50,8 @@ namespace System.Runtime.InteropServices.Marshalling
 
             // A caller provided buffer must be at least (lengthInBytes + 6) bytes
             // in order to be constructed manually. The 6 extra bytes are 4 for byte length and 2 for wide null.
-            if ((lengthInBytes + 6) > buffer.Length)
+            int manualBstrNeeds = checked(lengthInBytes + 6);
+            if (manualBstrNeeds > buffer.Length)
             {
                 // Use precise byte count when the provided stack-allocated buffer is not sufficient
                 _ptrToFirstChar = (byte*)Marshal.AllocBSTRByteLen((uint)lengthInBytes);
@@ -58,7 +59,7 @@ namespace System.Runtime.InteropServices.Marshalling
             }
             else
             {
-                // set length and update buffer target
+                // Set length and update buffer target
                 byte* pBuffer = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
                 *((uint*)pBuffer) = (uint)lengthInBytes;
                 _ptrToFirstChar = pBuffer + sizeof(uint);
