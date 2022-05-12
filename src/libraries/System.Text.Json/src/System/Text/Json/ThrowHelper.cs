@@ -631,7 +631,7 @@ namespace System.Text.Json
                     message = SR.CannotDecodeInvalidBase64;
                     break;
                 default:
-                    Debug.Fail($"The DateType enum value: {dataType} is not part of the switch. Add the appropriate case and exception message.");
+                    Debug.Fail($"The DataType enum value: {dataType} is not part of the switch. Add the appropriate case and exception message.");
                     break;
             }
 
