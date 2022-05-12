@@ -654,7 +654,7 @@ namespace System
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>
         {
             int i = span.Length;
-            while (--i >= 0)
+            while (--i >= 0 && (uint)i < (uint)span.Length)
             {
                 if (!EqualityComparer<T>.Default.Equals(span[i], value))
                 {
@@ -678,7 +678,7 @@ namespace System
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>
         {
             int i = span.Length;
-            while (--i > -1)
+            while (--i > -1 && (uint)i < (uint)span.Length)
             {
                 if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
                     !EqualityComparer<T>.Default.Equals(span[i], value1))
@@ -704,7 +704,7 @@ namespace System
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>
         {
             int i = span.Length;
-            while (--i > -1)
+            while (--i > -1 && (uint)i < (uint)span.Length)
             {
                 if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
                     !EqualityComparer<T>.Default.Equals(span[i], value1) &&
@@ -744,7 +744,7 @@ namespace System
 
                 default:
                     int i = span.Length;
-                    while (--i > -1)
+                    while (--i > -1 && (uint)i < (uint)span.Length)
                     {
                         if (!values.Contains(span[i]))
                         {
