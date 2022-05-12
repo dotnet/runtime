@@ -70,7 +70,7 @@ namespace System.Runtime.InteropServices.Marshalling
 
             // Copy characters from the managed string
             str.CopyTo(new Span<char>(_ptrToFirstChar, str.Length));
-            _ptrToFirstChar[str.Length] = '\0'; // null-terminate
+            ((char*)_ptrToFirstChar)[str.Length] = '\0'; // null-terminate
         }
 
         /// <summary>
