@@ -5,15 +5,15 @@ FROM $SDK_BASE_IMAGE
 # Pulling the msquic Debian package from packages.microsoft.com
 # Build latest msquic locally
 WORKDIR /msquic
-RUN apt-get update -y
-RUN apt-get upgrade -y
-RUN apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
+RUN apt-get update -y && \
+    apt-get upgrade -y && \
+    apt-get install -y cmake clang ruby-dev gem lttng-tools libssl-dev && \
     gem install fpm
 RUN git clone --recursive https://github.com/dotnet/msquic
 RUN cd msquic/src/msquic && \
     mkdir build && \
     options="-DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off" && \
-    cmake -B build -DCMAKE_BUILD_TYPE=Release -DQUIC_ENABLE_LOGGING=true -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off && \
+    cmake -B build -DCMAKE_BUILD_TYPE=Release -DQUIC_ENABLE_LOGGING=false -DQUIC_USE_SYSTEM_LIBCRYPTO=true -DQUIC_BUILD_TOOLS=off -DQUIC_BUILD_TEST=off -DQUIC_BUILD_PERF=off && \
     cd build && \
     cmake --build . --config Release
 RUN cd msquic/src/msquic/build/bin/Release && \
@@ -27,12 +27,7 @@ ARG VERSION=7.0
 ARG CONFIGURATION=Release
 
 WORKDIR /app
-COPY *.cs .
-COPY *.csproj .
-COPY *.props .
-COPY *.targets .
-COPY *.json .
-COPY *.sln .
+COPY . .
 
 RUN dotnet build -c $CONFIGURATION \
     -p:TargetingPacksTargetsLocation=/live-runtime-artifacts/targetingpacks.targets \
@@ -48,6 +43,6 @@ EXPOSE 5001
 
 ENV VERSION=$VERSION
 ENV CONFIGURATION=$CONFIGURATION
-# ENV LD_DEBUG=all
 ENV HTTPSTRESS_ARGS=''
-CMD /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/dotnet exec ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS
+CMD /live-runtime-artifacts/testhost/net$VERSION-Linux-$CONFIGURATION-x64/dotnet exec \
+    ./bin/$CONFIGURATION/net$VERSION/HttpStress.dll $HTTPSTRESS_ARGS
