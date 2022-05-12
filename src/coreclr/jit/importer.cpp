@@ -113,7 +113,7 @@ inline void Compiler::impPushNullObjRefOnStack()
 
 // This method gets called when we run into unverifiable code
 // (and we are verifying the method)
-
+//
 inline void Compiler::verRaiseVerifyExceptionIfNeeded(INDEBUG(const char* msg) DEBUGARG(const char* file)
                                                           DEBUGARG(unsigned line))
 {
