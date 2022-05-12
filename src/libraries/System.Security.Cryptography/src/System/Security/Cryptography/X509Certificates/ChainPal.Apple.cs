@@ -23,6 +23,7 @@ namespace System.Security.Cryptography.X509Certificates
         public X509ChainStatus[]? ChainStatus { get; private set; }
         private DateTime _verificationTime;
         private X509RevocationMode _revocationMode;
+        private X509Store? _certificateAuthorityStore;
 
         internal SecTrustChainPal()
         {
@@ -38,9 +39,16 @@ namespace System.Security.Cryptography.X509Certificates
             X509Certificate2Collection? customTrustStore,
             X509ChainTrustMode trustMode)
         {
+            _certificateAuthorityStore?.Dispose();
+            _certificateAuthorityStore = OpenCertificateAuthorityStore();
             _revocationMode = revocationMode;
             SafeCreateHandle policiesArray = PreparePoliciesArray(revocationMode != X509RevocationMode.NoCheck);
-            SafeCreateHandle certsArray = PrepareCertsArray(leafCert, extraStore, customTrustStore, trustMode);
+            SafeCreateHandle certsArray = PrepareCertsArray(
+                leafCert,
+                extraStore,
+                customTrustStore,
+                trustMode,
+                _certificateAuthorityStore);
 
             int osStatus;
 
@@ -95,17 +103,27 @@ namespace System.Security.Cryptography.X509Certificates
 
         public void Dispose()
         {
-            if (_extraHandles == null)
-                return;
-
-            Stack<SafeHandle> extraHandles = _extraHandles;
-            _extraHandles = null!;
-
-            _chainHandle?.Dispose();
-
-            while (extraHandles.Count > 0)
+            if (_certificateAuthorityStore is not null)
             {
-                extraHandles.Pop().Dispose();
+                foreach(X509Certificate2 cert in _certificateAuthorityStore.Certificates)
+                {
+                    cert.Dispose();
+                }
+
+                _certificateAuthorityStore.Dispose();
+            }
+
+            if (_extraHandles is not null)
+            {
+                Stack<SafeHandle> extraHandles = _extraHandles;
+                _extraHandles = null!;
+
+                _chainHandle?.Dispose();
+
+                while (extraHandles.Count > 0)
+                {
+                    extraHandles.Pop().Dispose();
+                }
             }
         }
 
@@ -149,7 +167,8 @@ namespace System.Security.Cryptography.X509Certificates
             ICertificatePal cert,
             X509Certificate2Collection? extraStore,
             X509Certificate2Collection? customTrustStore,
-            X509ChainTrustMode trustMode)
+            X509ChainTrustMode trustMode,
+            X509Store? certificateAuthorityStore)
         {
             List<SafeHandle> safeHandles = new List<SafeHandle> { ((AppleCertificatePal)cert).CertificateHandle };
 
@@ -158,6 +177,17 @@ namespace System.Security.Cryptography.X509Certificates
                 for (int i = 0; i < extraStore.Count; i++)
                 {
                     safeHandles.Add(((AppleCertificatePal)extraStore[i].Pal).CertificateHandle);
+                }
+            }
+
+            if (certificateAuthorityStore is not null)
+            {
+                Debug.Assert(certificateAuthorityStore.IsOpen);
+                X509Certificate2Collection certAuthStoreCollection = certificateAuthorityStore.Certificates;
+
+                for (int i = 0; i < certAuthStoreCollection.Count; i++)
+                {
+                    safeHandles.Add(((AppleCertificatePal)certAuthStoreCollection[i].Pal).CertificateHandle);
                 }
             }
 
@@ -543,6 +573,23 @@ namespace System.Security.Cryptography.X509Certificates
                 ChainStatusFlag = flag;
                 OSStatus = Interop.AppleCrypto.GetOSStatusForChainStatus(flag);
                 ErrorString = Interop.AppleCrypto.GetSecErrorString(OSStatus);
+            }
+        }
+
+        private static X509Store? OpenCertificateAuthorityStore()
+        {
+            X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser);
+
+            try
+            {
+                store.Open(OpenFlags.OpenExistingOnly | OpenFlags.ReadOnly);
+                return store;
+            }
+            catch (CryptographicException)
+            {
+                // The store could not be opened likely because it doesn't exist yet.
+                store.Dispose();
+                return null;
             }
         }
     }
