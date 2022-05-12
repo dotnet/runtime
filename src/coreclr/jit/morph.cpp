@@ -11427,17 +11427,13 @@ DONE_MORPHING_CHILDREN:
 #endif
             if (!varTypeIsFloating(tree->gtType))
             {
-                // Codegen for this instruction needs to be able to throw two exceptions:
                 fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_OVERFLOW);
-                fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             }
             break;
         case GT_UDIV:
 #ifdef TARGET_LOONGARCH64
         case GT_UMOD:
 #endif
-            // Codegen for this instruction needs to be able to throw one exception:
-            fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             break;
 
 #endif // defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
@@ -11541,7 +11537,7 @@ DONE_MORPHING_CHILDREN:
 #ifdef TARGET_ARM64
         case GT_CHK_DIV_BY_ZERO:
             assert(varTypeIsIntegralOrI(op1));
-            // TODO: Add fgAddCodeRef for div by zero
+            fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             break;
 #endif
 
