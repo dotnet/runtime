@@ -225,15 +225,15 @@ partial class Test
         SetLastError = IsFalse)]
     public static partial void Method1();
 
-    [LibraryImport(nameof(Test),
+    [LibraryImport(nameof(Test) + ""Suffix"",
         StringMarshalling = (StringMarshalling)Two,
-        EntryPoint = EntryPointName,
+        EntryPoint = EntryPointName + ""Suffix"",
         SetLastError = !IsTrue)]
     public static partial void Method2();
 
-    [LibraryImport(nameof(Test),
+    [LibraryImport($""{nameof(Test)}Suffix"",
         StringMarshalling = (StringMarshalling)2,
-        EntryPoint = EntryPointName,
+        EntryPoint = $""{EntryPointName}Suffix"",
         SetLastError = 0 != 1)]
     public static partial void Method3();
 }
