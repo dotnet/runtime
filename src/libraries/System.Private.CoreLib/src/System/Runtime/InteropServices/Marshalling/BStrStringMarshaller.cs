@@ -69,7 +69,8 @@ namespace System.Runtime.InteropServices.Marshalling
             Debug.Assert(lengthInBytes == Marshal.SysStringByteLen((IntPtr)_ptrToFirstChar));
 
             // Copy characters from the managed string
-            Buffer.Memmove(ref *(char*)_ptrToFirstChar, ref str.GetRawStringData(), (nuint)str.Length + 1);
+            str.CopyTo(new Span<char>(_ptrToFirstChar, str.Length));
+            _ptrToFirstChar[str.Length] = '\0'; // null-terminate
         }
 
         /// <summary>
