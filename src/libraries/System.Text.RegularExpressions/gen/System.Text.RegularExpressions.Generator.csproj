@@ -6,7 +6,6 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
-    <Nullable>enable</Nullable>
     <NoWarn>$(NoWarn);CS0436;CS0649</NoWarn>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);REGEXGENERATOR</DefineConstants>

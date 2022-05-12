@@ -2,7 +2,6 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <RunAnalyzers>true</RunAnalyzers>
     <DefineConstants>$(DefineConstants);MICROSOFT_INTEROP_SOURCEGENERATION</DefineConstants>
