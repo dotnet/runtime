@@ -1223,8 +1223,9 @@ namespace System
 
             if ((styles & NumberStyles.AllowHexSpecifier) != 0)
             {
-                result = 0;
-                return TryParseUInt128HexNumberStyle(value, styles, out Unsafe.As<Int128, UInt128>(ref result));
+                ParsingStatus status = TryParseUInt128HexNumberStyle(value, styles, out UInt128 unsignedResult);
+                result = new Int128(unsignedResult.Upper, unsignedResult.Lower);
+                return status;
             }
 
             return TryParseInt128Number(value, styles, info, out result);
