@@ -175,8 +175,6 @@ export type CoverageProfilerOptions = {
 
 /// Options to configure the event pipe session
 export interface EventPipeSessionOptions {
-    /// Location on the VFS where the session trace will be saved (default: "/trace.nettrace")
-    traceFilePath?: string | (() => string | null | undefined);
     /// Whether to collect additional details (such as method and type names) at EventPipeSession.stop() time (default: true)
     /// This is required for some use cases, and may allow some tools to better understand the events.
     collectRundownEvents?: boolean;

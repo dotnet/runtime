@@ -4,6 +4,7 @@
 
 #include <config.h>
 #include <mono/component/event_pipe.h>
+#include <mono/component/event_pipe-wasm.h>
 #include <mono/utils/mono-publib.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-threads-api.h>
@@ -12,32 +13,6 @@
 #include <eventpipe/ep-event-instance.h>
 #include <eventpipe/ep-session.h>
 
-#ifdef HOST_WASM
-#include <emscripten.h>
-
-G_BEGIN_DECLS
-
-EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
-			     uint32_t circular_buffer_size_in_mb,
-			     const ep_char8_t *providers,
-			     /* EventPipeSessionType session_type = EP_SESSION_TYPE_FILE, */
-			     /* EventPipieSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4, */
-			     /* bool */ gboolean rundown_requested,
-			     /* IpcStream stream = NULL, */
-			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
-			     /* void *callback_additional_data, */
-			     int64_t *out_session_id);
-
-EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_start_streaming (const int64_t *session_id);
-
-EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_disable (const int64_t *session_id);
-
-G_END_DECLS
-
-#endif /* HOST_WASM */
 
 extern void ep_rt_mono_component_init (void);
 static bool _event_pipe_component_inited = false;
@@ -359,6 +334,20 @@ mono_component_event_pipe_init (void)
 
 #ifdef HOST_WASM
 
+
+static MonoWasmEventPipeSessionID
+ep_to_wasm_session_id (EventPipeSessionID session_id)
+{
+	g_assert (0 == (uint64_t)session_id >> 32);
+	return (uint32_t)session_id;
+}
+
+static EventPipeSessionID
+wasm_to_ep_session_id (MonoWasmEventPipeSessionID session_id)
+{
+	return session_id;
+}
+
 EMSCRIPTEN_KEEPALIVE gboolean
 mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 			     uint32_t circular_buffer_size_in_mb,
@@ -369,7 +358,7 @@ mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 			     /* IpcStream stream = NULL, */
 			     /* EventPipeSessionSycnhronousCallback sync_callback = NULL, */
 			     /* void *callback_additional_data, */
-			     int64_t *out_session_id)
+			     MonoWasmEventPipeSessionID *out_session_id)
 {
 	MONO_ENTER_GC_UNSAFE;
 	EventPipeSerializationFormat format = EP_SERIALIZATION_FORMAT_NETTRACE_V4;
@@ -387,25 +376,25 @@ mono_wasm_event_pipe_enable (const ep_char8_t *output_path,
 			       /* callback_data*/ NULL);
   
 	if (out_session_id)
-		*out_session_id = session;
+		*out_session_id = ep_to_wasm_session_id (session);
 	MONO_EXIT_GC_UNSAFE;
 	return TRUE;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_start_streaming (const int64_t *session_id)
+mono_wasm_event_pipe_session_start_streaming (MonoWasmEventPipeSessionID session_id)
 {
 	MONO_ENTER_GC_UNSAFE;
-	ep_start_streaming ((EventPipeSessionID)*session_id);
+	ep_start_streaming (wasm_to_ep_session_id (session_id));
 	MONO_EXIT_GC_UNSAFE;
 	return TRUE;
 }
 
 EMSCRIPTEN_KEEPALIVE gboolean
-mono_wasm_event_pipe_session_disable (const int64_t *session_id)
+mono_wasm_event_pipe_session_disable (MonoWasmEventPipeSessionID session_id)
 {
 	MONO_ENTER_GC_UNSAFE;
-	ep_disable ((EventPipeSessionID)*session_id);
+	ep_disable (wasm_to_ep_session_id (session_id));
 	MONO_EXIT_GC_UNSAFE;
 	return TRUE;
 }

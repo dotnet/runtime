@@ -208,7 +208,6 @@ declare type CoverageProfilerOptions = {
     send_to?: string;
 };
 interface EventPipeSessionOptions {
-    traceFilePath?: string | (() => string | null | undefined);
     collectRundownEvents?: boolean;
 }
 declare type DotnetModuleConfig = {
@@ -242,12 +241,12 @@ declare type DotnetModuleConfigImports = {
     url?: any;
 };
 
+declare type EventPipeSessionID = bigint;
 interface EventPipeSession {
-    get sessionID(): bigint;
+    get sessionID(): EventPipeSessionID;
     start(): void;
     stop(): void;
     getTraceBlob(): Blob;
-    getTraceDataURI(): string;
 }
 interface Diagnostics {
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
