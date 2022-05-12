@@ -15,5 +15,11 @@ namespace System.Net.Http
         public const HttpKeepAlivePingPolicy DefaultKeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
 
         public static readonly int DefaultMaxConnectionsPerServer = GlobalHttpSettings.HttpHandlerDefaults.MaxConnectionsPerServer;
+
+        // This is the default value for SocketsHttpHandler.InitialHttp2StreamWindowSize,
+        // which defines the value we communicate in stream SETTINGS frames.
+        // Should not be confused with Http2Connection.DefaultInitialWindowSize, which defines the RFC default.
+        // Unlike that value, DefaultInitialHttp2StreamWindowSize might be changed in the future.
+        public const int DefaultInitialHttp2StreamWindowSize = 65535;
     }
 }
