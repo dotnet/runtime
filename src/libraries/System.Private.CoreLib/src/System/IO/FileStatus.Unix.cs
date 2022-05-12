@@ -181,12 +181,12 @@ namespace System.IO
         }
 
         internal FileAttributes GetAttributes(ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
-            => GetAttributes(handle: null, path!.ToString(), fileName, continueOnError);
+            => GetAttributes(handle: null, path, fileName, continueOnError);
 
         internal FileAttributes GetAttributes(SafeFileHandle handle, bool continueOnError = false)
-            => GetAttributes(handle, handle.Path!, Path.GetFileName(handle.Path!), continueOnError);
+            => GetAttributes(handle, handle.Path, Path.GetFileName(handle.Path), continueOnError);
 
-        private FileAttributes GetAttributes(SafeFileHandle? handle, string? path, ReadOnlySpan<char> fileName, bool continueOnError = false)
+        private FileAttributes GetAttributes(SafeFileHandle? handle, ReadOnlySpan<char> path, ReadOnlySpan<char> fileName, bool continueOnError = false)
         {
             EnsureCachesInitialized(handle, path, continueOnError);
 
@@ -236,7 +236,7 @@ namespace System.IO
             EnsureCachesInitialized(handle, path);
 
             if (!EntryExists)
-                FileSystemInfo.ThrowNotFound(path ?? "<<handle>>");
+                FileSystemInfo.ThrowNotFound(path);
 
             if (Interop.Sys.CanSetHiddenFlag)
             {
@@ -283,12 +283,12 @@ namespace System.IO
         }
 
         internal DateTimeOffset GetCreationTime(ReadOnlySpan<char> path, bool continueOnError = false)
-            => GetCreationTime(handle: null, path!.ToString(), continueOnError);
+            => GetCreationTime(handle: null, path, continueOnError);
 
         internal DateTimeOffset GetCreationTime(SafeFileHandle handle, bool continueOnError = false)
             => GetCreationTime(handle, handle.Path, continueOnError);
 
-        private DateTimeOffset GetCreationTime(SafeFileHandle? handle, string? path, bool continueOnError = false)
+        private DateTimeOffset GetCreationTime(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(handle, path, continueOnError);
 
@@ -307,12 +307,12 @@ namespace System.IO
         }
 
         internal DateTimeOffset GetLastAccessTime(ReadOnlySpan<char> path, bool continueOnError = false)
-            => GetLastAccessTime(handle: null, path!.ToString(), continueOnError);
+            => GetLastAccessTime(handle: null, path, continueOnError);
 
         internal DateTimeOffset GetLastAccessTime(SafeFileHandle handle, bool continueOnError = false)
             => GetLastAccessTime(handle, handle.Path, continueOnError);
 
-        private DateTimeOffset GetLastAccessTime(SafeFileHandle? handle, string? path, bool continueOnError = false)
+        private DateTimeOffset GetLastAccessTime(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(handle, path, continueOnError);
 
@@ -328,16 +328,16 @@ namespace System.IO
         internal void SetLastAccessTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
             => SetLastAccessTime(handle, handle.Path, time, asDirectory);
 
-        private void SetLastAccessTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool asDirectory)
+        private void SetLastAccessTime(SafeFileHandle? handle, ReadOnlySpan<char> path, DateTimeOffset time, bool asDirectory)
             => SetAccessOrWriteTime(handle, path, time, isAccessTime: true, asDirectory);
 
         internal DateTimeOffset GetLastWriteTime(ReadOnlySpan<char> path, bool continueOnError = false)
-            => GetLastWriteTime(handle: null, path!.ToString(), continueOnError);
+            => GetLastWriteTime(handle: null, path, continueOnError);
 
         internal DateTimeOffset GetLastWriteTime(SafeFileHandle handle, bool continueOnError = false)
             => GetLastWriteTime(handle, handle.Path, continueOnError);
 
-        private DateTimeOffset GetLastWriteTime(SafeFileHandle? handle, string? path, bool continueOnError = false)
+        private DateTimeOffset GetLastWriteTime(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
             EnsureCachesInitialized(handle, path, continueOnError);
 
@@ -353,7 +353,7 @@ namespace System.IO
         internal void SetLastWriteTime(SafeFileHandle handle, DateTimeOffset time, bool asDirectory)
             => SetLastWriteTime(handle, handle.Path, time, asDirectory);
 
-        internal void SetLastWriteTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool asDirectory)
+        internal void SetLastWriteTime(SafeFileHandle? handle, ReadOnlySpan<char> path, DateTimeOffset time, bool asDirectory)
             => SetAccessOrWriteTime(handle, path, time, isAccessTime: false, asDirectory);
 
         private static DateTimeOffset UnixTimeToDateTimeOffset(long seconds, long nanoseconds)
@@ -361,7 +361,7 @@ namespace System.IO
             return DateTimeOffset.FromUnixTimeSeconds(seconds).AddTicks(nanoseconds / NanosecondsPerTick);
         }
 
-        private unsafe void SetAccessOrWriteTimeCore(SafeFileHandle? handle, string? path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime, bool asDirectory)
+        private unsafe void SetAccessOrWriteTimeCore(SafeFileHandle? handle, ReadOnlySpan<char> path, DateTimeOffset time, bool isAccessTime, bool checkCreationTime, bool asDirectory)
         {
             // This api is used to set creation time on non OSX platforms, and as a fallback for OSX platforms.
             // The reason why we use it to set 'creation time' is the below comment:
@@ -380,7 +380,7 @@ namespace System.IO
             EnsureCachesInitialized(handle, path);
 
             if (!EntryExists)
-                FileSystemInfo.ThrowNotFound(path ?? "<<handle>>");
+                FileSystemInfo.ThrowNotFound(path);
 
             // we use utimes()/utimensat() to set the accessTime and writeTime
             Interop.Sys.TimeSpec* buf = stackalloc Interop.Sys.TimeSpec[2];
@@ -409,9 +409,10 @@ namespace System.IO
                 buf[1].TvNsec = nanoseconds;
             }
 #endif
+            string? pathStr = path.ToString();
             int rv = handle is not null ? Interop.Sys.FUTimens(handle, buf) :
-                                          Interop.Sys.UTimensat(path!, buf);
-            Interop.CheckIo(rv, path, asDirectory);
+                                          Interop.Sys.UTimensat(pathStr, buf);
+            Interop.CheckIo(rv, pathStr, asDirectory);
 
             // On OSX-like platforms, when the modification time is less than the creation time (including
             // when the modification time is already less than but access time is being set), the creation
@@ -431,7 +432,7 @@ namespace System.IO
                 Interop.Error error = SetCreationTimeCore(handle, path, _fileCache.BirthTime, _fileCache.BirthTimeNsec);
                 if (error != Interop.Error.SUCCESS && error != Interop.Error.ENOTSUP)
                 {
-                    Interop.CheckIo(error, path, asDirectory);
+                    Interop.CheckIo(error, pathStr, asDirectory);
                 }
             }
         }
@@ -500,7 +501,7 @@ namespace System.IO
 
         // Checks if the file cache is uninitialized and refreshes it's value.
         // If it failed, and continueOnError is set to true, this method will throw.
-        internal void EnsureCachesInitialized(SafeFileHandle? handle, string? path, bool continueOnError = false)
+        internal void EnsureCachesInitialized(SafeFileHandle? handle, ReadOnlySpan<char> path, bool continueOnError = false)
         {
             if (_state == Uninitialized)
             {
@@ -509,7 +510,7 @@ namespace System.IO
 
             if (!continueOnError)
             {
-                ThrowOnCacheInitializationError(path ?? "<<handle>>");
+                ThrowOnCacheInitializationError(path);
             }
         }
 
