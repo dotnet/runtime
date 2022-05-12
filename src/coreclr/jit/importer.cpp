@@ -2565,6 +2565,30 @@ inline void Compiler::impEvalSideEffects()
 
 /*****************************************************************************
  *
+ *  If the stack entry is a tree with side effects in it, assign that
+ *  tree to a temp and replace it on the stack with refs to its temp.
+ *  i is the stack entry which will be checked and spilled.
+ */
+
+inline void Compiler::impSpillSideEffect(bool spillGlobEffects, unsigned i DEBUGARG(const char* reason))
+{
+    assert(i <= verCurrentState.esStackDepth);
+
+    GenTreeFlags spillFlags = spillGlobEffects ? GTF_GLOB_EFFECT : GTF_SIDE_EFFECT;
+    GenTree*     tree       = verCurrentState.esStack[i].val;
+
+    if ((tree->gtFlags & spillFlags) != 0 ||
+        (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
+         !impIsAddressInLocal(tree) && // No need to spill the GT_ADDR node on a local.
+         gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
+                                       // lvAddrTaken flag.
+    {
+        impSpillStackEntry(i, BAD_VAR_NUM DEBUGARG(false) DEBUGARG(reason));
+    }
+}
+
+/*****************************************************************************
+ *
  *  If the stack contains any trees with side effects in them, assign those
  *  trees to temps and replace them on the stack with refs to their temps.
  *  [0..chkLevel) is the portion of the stack which will be checked and spilled.
@@ -2586,20 +2610,9 @@ inline void Compiler::impSpillSideEffects(bool spillGlobEffects, unsigned chkLev
 
     assert(chkLevel <= verCurrentState.esStackDepth);
 
-    GenTreeFlags spillFlags = spillGlobEffects ? GTF_GLOB_EFFECT : GTF_SIDE_EFFECT;
-
     for (unsigned i = 0; i < chkLevel; i++)
     {
-        GenTree* tree = verCurrentState.esStack[i].val;
-
-        if ((tree->gtFlags & spillFlags) != 0 ||
-            (spillGlobEffects &&           // Only consider the following when  spillGlobEffects == true
-             !impIsAddressInLocal(tree) && // No need to spill the GT_ADDR node on a local.
-             gtHasLocalsWithAddrOp(tree))) // Spill if we still see GT_LCL_VAR that contains lvHasLdAddrOp or
-                                           // lvAddrTaken flag.
-        {
-            impSpillStackEntry(i, BAD_VAR_NUM DEBUGARG(false) DEBUGARG(reason));
-        }
+        impSpillSideEffect(spillGlobEffects, i DEBUGARG(reason));
     }
 }
 
@@ -3776,6 +3789,12 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             return impUnsupportedNamedIntrinsic(CORINFO_HELP_THROW_PLATFORM_NOT_SUPPORTED, method, sig, mustExpand);
         }
 
+        if ((ni > NI_SRCS_UNSAFE_START) && (ni < NI_SRCS_UNSAFE_END))
+        {
+            assert(!mustExpand);
+            return impSRCSUnsafeIntrinsic(ni, clsHnd, method, sig);
+        }
+
 #ifdef FEATURE_HW_INTRINSICS
         if ((ni > NI_HW_INTRINSIC_START) && (ni < NI_HW_INTRINSIC_END))
         {
@@ -4816,6 +4835,402 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
     return retNode;
 }
 
+GenTree* Compiler::impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
+                                          CORINFO_CLASS_HANDLE  clsHnd,
+                                          CORINFO_METHOD_HANDLE method,
+                                          CORINFO_SIG_INFO*     sig)
+{
+    assert(sig->sigInst.classInstCount == 0);
+
+    switch (intrinsic)
+    {
+        case NI_SRCS_UNSAFE_Add:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // sizeof !!T
+            // conv.i
+            // mul
+            // add
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+            impBashVarAddrsToI(op1, op2);
+
+            op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
+
+            unsigned classSize = info.compCompHnd->getClassSize(sig->sigInst.methInst[0]);
+
+            if (classSize != 1)
+            {
+                GenTree* size = gtNewIconNode(classSize, TYP_I_IMPL);
+                op2           = gtNewOperNode(GT_MUL, TYP_I_IMPL, op2, size);
+            }
+
+            var_types type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &op2);
+            return gtNewOperNode(GT_ADD, type, op1, op2);
+        }
+
+        case NI_SRCS_UNSAFE_AddByteOffset:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // add
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+            impBashVarAddrsToI(op1, op2);
+
+            var_types type = impGetByRefResultType(GT_ADD, /* uns */ false, &op1, &op2);
+            return gtNewOperNode(GT_ADD, type, op1, op2);
+        }
+
+        case NI_SRCS_UNSAFE_AreSame:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // ceq
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_EQ, TYP_INT, op1, op2);
+            return gtFoldExpr(tmp);
+        }
+
+        case NI_SRCS_UNSAFE_As:
+        {
+            assert((sig->sigInst.methInstCount == 1) || (sig->sigInst.methInstCount == 2));
+
+            // ldarg.0
+            // ret
+
+            return impPopStack().val;
+        }
+
+        case NI_SRCS_UNSAFE_AsPointer:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // conv.u
+            // ret
+
+            GenTree* op1 = impPopStack().val;
+            impBashVarAddrsToI(op1);
+
+            return gtNewCastNode(TYP_I_IMPL, op1, /* uns */ false, TYP_I_IMPL);
+        }
+
+        case NI_SRCS_UNSAFE_AsRef:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ret
+
+            return impPopStack().val;
+        }
+
+        case NI_SRCS_UNSAFE_ByteOffset:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.1
+            // ldarg.0
+            // sub
+            // ret
+
+            impSpillSideEffect(true, verCurrentState.esStackDepth -
+                                         2 DEBUGARG("Spilling op1 side effects for Unsafe.ByteOffset"));
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+            impBashVarAddrsToI(op1, op2);
+
+            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op2, &op1);
+            return gtNewOperNode(GT_SUB, type, op2, op1);
+        }
+
+        case NI_SRCS_UNSAFE_Copy:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // ldobj !!T
+            // stobj !!T
+            // ret
+
+            return nullptr;
+        }
+
+        case NI_SRCS_UNSAFE_CopyBlock:
+        {
+            assert(sig->sigInst.methInstCount == 0);
+
+            // ldarg.0
+            // ldarg.1
+            // ldarg.2
+            // cpblk
+            // ret
+
+            return nullptr;
+        }
+
+        case NI_SRCS_UNSAFE_CopyBlockUnaligned:
+        {
+            assert(sig->sigInst.methInstCount == 0);
+
+            // ldarg.0
+            // ldarg.1
+            // ldarg.2
+            // unaligned. 0x1
+            // cpblk
+            // ret
+
+            return nullptr;
+        }
+
+        case NI_SRCS_UNSAFE_InitBlock:
+        {
+            assert(sig->sigInst.methInstCount == 0);
+
+            // ldarg.0
+            // ldarg.1
+            // ldarg.2
+            // initblk
+            // ret
+
+            return nullptr;
+        }
+
+        case NI_SRCS_UNSAFE_InitBlockUnaligned:
+        {
+            assert(sig->sigInst.methInstCount == 0);
+
+            // ldarg.0
+            // ldarg.1
+            // ldarg.2
+            // unaligned. 0x1
+            // initblk
+            // ret
+
+            return nullptr;
+        }
+
+        case NI_SRCS_UNSAFE_IsAddressGreaterThan:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // cgt.un
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_GT, TYP_INT, op1, op2);
+            tmp->gtFlags |= GTF_UNSIGNED;
+            return gtFoldExpr(tmp);
+        }
+
+        case NI_SRCS_UNSAFE_IsAddressLessThan:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // clt.un
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+
+            GenTree* tmp = gtNewOperNode(GT_LT, TYP_INT, op1, op2);
+            tmp->gtFlags |= GTF_UNSIGNED;
+            return gtFoldExpr(tmp);
+        }
+
+        case NI_SRCS_UNSAFE_IsNullRef:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldc.i4.0
+            // conv.u
+            // ceq
+            // ret
+
+            GenTree* op1 = impPopStack().val;
+            GenTree* cns = gtNewIconNode(0, TYP_BYREF);
+            GenTree* tmp = gtNewOperNode(GT_EQ, TYP_INT, op1, cns);
+            return gtFoldExpr(tmp);
+        }
+
+        case NI_SRCS_UNSAFE_NullRef:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldc.i4.0
+            // conv.u
+            // ret
+
+            return gtNewIconNode(0, TYP_BYREF);
+        }
+
+        case NI_SRCS_UNSAFE_Read:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldobj !!T
+            // ret
+
+            return nullptr;
+        }
+
+        case NI_SRCS_UNSAFE_ReadUnaligned:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // unaligned. 0x1
+            // ldobj !!T
+            // ret
+
+            return nullptr;
+        }
+
+        case NI_SRCS_UNSAFE_SizeOf:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // sizeof !!T
+            // ret
+
+            unsigned classSize = info.compCompHnd->getClassSize(sig->sigInst.methInst[0]);
+            return gtNewIconNode(classSize, TYP_INT);
+        }
+
+        case NI_SRCS_UNSAFE_SkipInit:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ret
+
+            GenTree* op1 = impPopStack().val;
+
+            if ((op1->gtFlags & GTF_SIDE_EFFECT) != 0)
+            {
+                return gtUnusedValNode(op1);
+            }
+            else
+            {
+                return gtNewNothingNode();
+            }
+        }
+
+        case NI_SRCS_UNSAFE_Subtract:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // sizeof !!T
+            // conv.i
+            // mul
+            // sub
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+            impBashVarAddrsToI(op1, op2);
+
+            op2 = impImplicitIorI4Cast(op2, TYP_I_IMPL);
+
+            unsigned classSize = info.compCompHnd->getClassSize(sig->sigInst.methInst[0]);
+
+            if (classSize != 1)
+            {
+                GenTree* size = gtNewIconNode(classSize, TYP_I_IMPL);
+                op2           = gtNewOperNode(GT_MUL, TYP_I_IMPL, op2, size);
+            }
+
+            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &op2);
+            return gtNewOperNode(GT_SUB, type, op1, op2);
+        }
+
+        case NI_SRCS_UNSAFE_SubtractByteOffset:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // sub
+            // ret
+
+            GenTree* op2 = impPopStack().val;
+            GenTree* op1 = impPopStack().val;
+            impBashVarAddrsToI(op1, op2);
+
+            var_types type = impGetByRefResultType(GT_SUB, /* uns */ false, &op1, &op2);
+            return gtNewOperNode(GT_SUB, type, op1, op2);
+        }
+
+        case NI_SRCS_UNSAFE_Unbox:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // unbox !!T
+            // ret
+
+            return nullptr;
+        }
+
+        case NI_SRCS_UNSAFE_Write:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // stobj !!T
+            // ret
+
+            return nullptr;
+        }
+
+        case NI_SRCS_UNSAFE_WriteUnaligned:
+        {
+            assert(sig->sigInst.methInstCount == 1);
+
+            // ldarg.0
+            // ldarg.1
+            // unaligned. 0x01
+            // stobj !!T
+            // ret
+
+            return nullptr;
+        }
+
+        default:
+        {
+            unreached();
+        }
+    }
+}
+
 GenTree* Compiler::impTypeIsAssignable(GenTree* typeTo, GenTree* typeFrom)
 {
     // Optimize patterns like:
@@ -5406,20 +5821,125 @@ NamedIntrinsic Compiler::lookupNamedIntrinsic(CORINFO_METHOD_HANDLE method)
         result = SimdAsHWIntrinsicInfo::lookupId(&sig, className, methodName, enclosingClassName, sizeOfVectorT);
     }
 #endif // FEATURE_HW_INTRINSICS
-    else if ((strcmp(namespaceName, "System.Runtime.CompilerServices") == 0) &&
-             (strcmp(className, "RuntimeHelpers") == 0))
+    else if (strcmp(namespaceName, "System.Runtime.CompilerServices") == 0)
     {
-        if (strcmp(methodName, "CreateSpan") == 0)
+        if (strcmp(className, "Unsafe") == 0)
         {
-            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan;
+            if (strcmp(methodName, "Add") == 0)
+            {
+                result = NI_SRCS_UNSAFE_Add;
+            }
+            else if (strcmp(methodName, "AddByteOffset") == 0)
+            {
+                result = NI_SRCS_UNSAFE_AddByteOffset;
+            }
+            else if (strcmp(methodName, "AreSame") == 0)
+            {
+                result = NI_SRCS_UNSAFE_AreSame;
+            }
+            else if (strcmp(methodName, "As") == 0)
+            {
+                result = NI_SRCS_UNSAFE_As;
+            }
+            else if (strcmp(methodName, "AsPointer") == 0)
+            {
+                result = NI_SRCS_UNSAFE_AsPointer;
+            }
+            else if (strcmp(methodName, "AsRef") == 0)
+            {
+                result = NI_SRCS_UNSAFE_AsRef;
+            }
+            else if (strcmp(methodName, "ByteOffset") == 0)
+            {
+                result = NI_SRCS_UNSAFE_ByteOffset;
+            }
+            else if (strcmp(methodName, "Copy") == 0)
+            {
+                result = NI_SRCS_UNSAFE_Copy;
+            }
+            else if (strcmp(methodName, "CopyBlock") == 0)
+            {
+                result = NI_SRCS_UNSAFE_CopyBlock;
+            }
+            else if (strcmp(methodName, "CopyBlockUnaligned") == 0)
+            {
+                result = NI_SRCS_UNSAFE_CopyBlockUnaligned;
+            }
+            else if (strcmp(methodName, "InitBlock") == 0)
+            {
+                result = NI_SRCS_UNSAFE_InitBlock;
+            }
+            else if (strcmp(methodName, "InitBlockUnaligned") == 0)
+            {
+                result = NI_SRCS_UNSAFE_InitBlockUnaligned;
+            }
+            else if (strcmp(methodName, "IsAddressGreaterThan") == 0)
+            {
+                result = NI_SRCS_UNSAFE_IsAddressGreaterThan;
+            }
+            else if (strcmp(methodName, "IsAddressLessThan") == 0)
+            {
+                result = NI_SRCS_UNSAFE_IsAddressLessThan;
+            }
+            else if (strcmp(methodName, "IsNullRef") == 0)
+            {
+                result = NI_SRCS_UNSAFE_IsNullRef;
+            }
+            else if (strcmp(methodName, "NullRef") == 0)
+            {
+                result = NI_SRCS_UNSAFE_NullRef;
+            }
+            else if (strcmp(methodName, "Read") == 0)
+            {
+                result = NI_SRCS_UNSAFE_Read;
+            }
+            else if (strcmp(methodName, "ReadUnaligned") == 0)
+            {
+                result = NI_SRCS_UNSAFE_ReadUnaligned;
+            }
+            else if (strcmp(methodName, "SizeOf") == 0)
+            {
+                result = NI_SRCS_UNSAFE_SizeOf;
+            }
+            else if (strcmp(methodName, "SkipInit") == 0)
+            {
+                result = NI_SRCS_UNSAFE_SkipInit;
+            }
+            else if (strcmp(methodName, "Subtract") == 0)
+            {
+                result = NI_SRCS_UNSAFE_Subtract;
+            }
+            else if (strcmp(methodName, "SubtractByteOffset") == 0)
+            {
+                result = NI_SRCS_UNSAFE_SubtractByteOffset;
+            }
+            else if (strcmp(methodName, "Unbox") == 0)
+            {
+                result = NI_SRCS_UNSAFE_Unbox;
+            }
+            else if (strcmp(methodName, "Write") == 0)
+            {
+                result = NI_SRCS_UNSAFE_Write;
+            }
+            else if (strcmp(methodName, "WriteUnaligned") == 0)
+            {
+                result = NI_SRCS_UNSAFE_WriteUnaligned;
+            }
         }
-        else if (strcmp(methodName, "InitializeArray") == 0)
+        else if (strcmp(className, "RuntimeHelpers") == 0)
         {
-            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
-        }
-        else if (strcmp(methodName, "IsKnownConstant") == 0)
-        {
-            result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+            if (strcmp(methodName, "CreateSpan") == 0)
+            {
+                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_CreateSpan;
+            }
+            else if (strcmp(methodName, "InitializeArray") == 0)
+            {
+                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_InitializeArray;
+            }
+            else if (strcmp(methodName, "IsKnownConstant") == 0)
+            {
+                result = NI_System_Runtime_CompilerServices_RuntimeHelpers_IsKnownConstant;
+            }
         }
     }
     else if (strncmp(namespaceName, "System.Runtime.Intrinsics", 25) == 0)

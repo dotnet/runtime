@@ -3685,6 +3685,11 @@ protected:
                                           CORINFO_SIG_INFO*     sig,
                                           bool                  mustExpand);
 
+    GenTree* impSRCSUnsafeIntrinsic(NamedIntrinsic        intrinsic,
+                                    CORINFO_CLASS_HANDLE  clsHnd,
+                                    CORINFO_METHOD_HANDLE method,
+                                    CORINFO_SIG_INFO*     sig);
+
 #ifdef FEATURE_HW_INTRINSICS
     GenTree* impHWIntrinsic(NamedIntrinsic        intrinsic,
                             CORINFO_CLASS_HANDLE  clsHnd,
@@ -3968,6 +3973,7 @@ private:
     void impSpillStackEnsure(bool spillLeaves = false);
     void impEvalSideEffects();
     void impSpillSpecialSideEff();
+    void impSpillSideEffect(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void impSpillSideEffects(bool spillGlobEffects, unsigned chkLevel DEBUGARG(const char* reason));
     void               impSpillValueClasses();
     void               impSpillEvalStack();
