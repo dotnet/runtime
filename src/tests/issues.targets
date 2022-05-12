@@ -250,9 +250,6 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/**">
             <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/NotSupported/**">
-            <Issue>https://github.com/dotnet/runtime/issues/69232</Issue>
-        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows all architecture excludes -->
