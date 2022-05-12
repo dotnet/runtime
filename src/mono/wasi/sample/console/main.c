@@ -11,10 +11,7 @@ int main(int argc, char *argv[]) {
     add_assembly(app_base_dir, "WasiConsoleApp.dll");
     mono_set_assemblies_path(assemblies_path);
 
-    if (argc > 1 && !strcmp(argv[1], "debug"))
-        mono_wasm_load_runtime("--debugger-agent=transport=wasi_socket,address=127.0.0.1:64000,loglevel=0", -1);
-    else
-        mono_wasm_load_runtime("", 0);
+    mono_wasm_load_runtime("", 0);
 
     MonoAssembly* assembly = mono_wasm_assembly_load ("WasiConsoleApp.dll");
     MonoMethod* entry_method = mono_wasm_assembly_get_entry_point (assembly);

@@ -42,18 +42,18 @@ wasi_transport_send (void *data, int len)
 }
 
 /*
- * socket_transport_connect:
+ * wasi_transport_connect:
  *
- *   Connect/Listen on HOST:PORT. If HOST is NULL, generate an address and listen on it.
+ *   listen on the socket that is already opened by wasm runtime
  */
 static void
-wasi_transport_connect (const char *address)
+wasi_transport_connect (const char *socket_fd)
 {
 	bool handshake_ok = FALSE;
 	
 	while (!handshake_ok)
 	{
-        sock_accept (4, 4, &conn_fd);
+        sock_accept (atoi(socket_fd), 4, &conn_fd);
         int res = write (conn_fd, (const char*)"", 0);
         if (conn_fd == -1 || res == -1)
         {

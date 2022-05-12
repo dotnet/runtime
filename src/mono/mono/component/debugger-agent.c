@@ -171,6 +171,7 @@ typedef struct {
 	int keepalive;
 	gboolean setpgid;
 	gboolean using_icordbg;
+	char *debugger_fd;
 } AgentConfig;
 
 struct _DebuggerTlsData {
@@ -659,6 +660,8 @@ debugger_agent_parse_options (char *options)
 			agent_config.keepalive = atoi (arg + 10);
 		} else if (strncmp (arg, "setpgid=", 8) == 0) {
 			agent_config.setpgid = parse_flag ("setpgid", arg + 8);
+		} else if (strncmp (arg, "debugger_fd=", 12) == 0) {
+			agent_config.debugger_fd = g_strdup (arg + 12);
 		} else {
 			print_usage ();
 			exit (1);
@@ -680,10 +683,12 @@ debugger_agent_parse_options (char *options)
 		exit (1);
 	}
 
+#ifndef HOST_WASI
 	if (agent_config.address == NULL && !agent_config.server) {
 		PRINT_ERROR_MSG ("debugger-agent: The 'address' option is mandatory.\n");
 		exit (1);
 	}
+#endif
 
 	// FIXME:
 	if (!strcmp (agent_config.transport, "dt_socket")) {
@@ -881,8 +886,11 @@ finish_agent_init (gboolean on_startup)
 		}
 #endif
 	}
-
+#ifndef HOST_WASI
 	transport_connect (agent_config.address);
+#else
+	transport_connect (agent_config.debugger_fd);
+#endif
 
 	if (!on_startup) {
 		/* Do some which is usually done after sending the VMStart () event */
