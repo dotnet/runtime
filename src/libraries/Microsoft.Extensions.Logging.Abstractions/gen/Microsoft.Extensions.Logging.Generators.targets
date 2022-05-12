@@ -11,7 +11,6 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
-    <IsPackable>false</IsPackable>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 
