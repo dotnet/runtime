@@ -38,6 +38,7 @@ using System.Linq;
 using System.Reflection.Runtime.TypeParsing;
 using System.Text.RegularExpressions;
 using ILLink.Shared;
+using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -1656,7 +1657,7 @@ namespace Mono.Linker.Steps
 			if (reason.Kind != DependencyKind.DynamicallyAccessedMemberOnType &&
 				Annotations.DoesFieldRequireUnreferencedCode (field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute) &&
 				!ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
-				ReportRequiresUnreferencedCode (field.GetDisplayName (), requiresUnreferencedCodeAttribute, origin);
+				ReportRequiresUnreferencedCode (field.GetDisplayName (), requiresUnreferencedCodeAttribute, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
 
 			switch (reason.Kind) {
 			case DependencyKind.AccessedViaReflection:
@@ -2887,7 +2888,7 @@ namespace Mono.Linker.Steps
 				return;
 			}
 
-			CheckAndReportRequiresUnreferencedCode (method, ScopeStack.CurrentScope.Origin);
+			CheckAndReportRequiresUnreferencedCode (method, new DiagnosticContext (ScopeStack.CurrentScope.Origin, diagnosticsEnabled: true, Context));
 
 			if (Context.Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method)) {
 				// If the current scope has analysis warnings suppressed, don't generate any
@@ -2936,24 +2937,24 @@ namespace Mono.Linker.Steps
 			return false;
 		}
 
-		internal void CheckAndReportRequiresUnreferencedCode (MethodDefinition method, in MessageOrigin origin)
+		internal void CheckAndReportRequiresUnreferencedCode (MethodDefinition method, in DiagnosticContext diagnosticContext)
 		{
 			// If the caller of a method is already marked with `RequiresUnreferencedCodeAttribute` a new warning should not
 			// be produced for the callee.
-			if (ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
+			if (ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (diagnosticContext.Origin.Provider))
 				return;
 
 			if (!Annotations.DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
 				return;
 
-			ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode, origin);
+			ReportRequiresUnreferencedCode (method.GetDisplayName (), requiresUnreferencedCode, diagnosticContext);
 		}
 
-		private void ReportRequiresUnreferencedCode (string displayName, RequiresUnreferencedCodeAttribute requiresUnreferencedCode, in MessageOrigin currentOrigin)
+		private static void ReportRequiresUnreferencedCode (string displayName, RequiresUnreferencedCodeAttribute requiresUnreferencedCode, in DiagnosticContext diagnosticContext)
 		{
 			string arg1 = MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCode.Message);
 			string arg2 = MessageFormat.FormatRequiresAttributeUrlArg (requiresUnreferencedCode.Url);
-			Context.LogWarning (currentOrigin, DiagnosticId.RequiresUnreferencedCode, displayName, arg1, arg2);
+			diagnosticContext.AddDiagnostic (DiagnosticId.RequiresUnreferencedCode, displayName, arg1, arg2);
 		}
 
 		protected (MethodReference, DependencyInfo) GetOriginalMethod (MethodReference method, DependencyInfo reason)

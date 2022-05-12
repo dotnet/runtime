@@ -29,7 +29,7 @@ namespace ILLink.Shared.TrimAnalysis
 			_diagnosticContext = diagnosticContext;
 			_callingMethodDefinition = callingMethodDefinition;
 			_annotations = context.Annotations.FlowAnnotations;
-			_requireDynamicallyAccessedMembersAction = new (context, reflectionMarker, diagnosticContext);
+			_requireDynamicallyAccessedMembersAction = new (reflectionMarker, diagnosticContext);
 		}
 
 		private partial bool MethodIsTypeConstructor (MethodProxy method)
