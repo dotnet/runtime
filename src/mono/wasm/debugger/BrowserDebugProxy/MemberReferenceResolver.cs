@@ -11,6 +11,7 @@ using System.IO;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
 using System.Collections.Generic;
 using System.Net.WebSockets;
+using BrowserDebugProxy;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
@@ -54,7 +55,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 if (DotnetObjectId.TryParse(objRet?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                 {
-                    var exceptionObject = await context.SdbAgent.GetObjectValues(objectId.Value, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
+                    GetMembersResult exceptionObject = await MemberObjectsExplorer.GetTypeMemberValues(context.SdbAgent, objectId, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
                     var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("_message"));
                     exceptionObjectMessage["value"]["value"] = objRet["value"]?["className"]?.Value<string>() + ": " + exceptionObjectMessage["value"]?["value"]?.Value<string>();
                     return exceptionObjectMessage["value"]?.Value<JObject>();
@@ -64,16 +65,12 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             if (objRet["value"]?.Value<JObject>() != null)
                 return objRet["value"]?.Value<JObject>();
-            if (objRet["get"]?.Value<JObject>() != null)
-            {
-                if (DotnetObjectId.TryParse(objRet?["get"]?["objectIdValue"]?.Value<string>(), out DotnetObjectId objectId))
-                {
-                    using var commandParamsWriter = new MonoBinaryWriter();
-                    commandParamsWriter.WriteObj(objectId, context.SdbAgent);
-                    var ret = await context.SdbAgent.InvokeMethod(commandParamsWriter.GetParameterBuffer(), objRet["get"]["methodId"].Value<int>(), objRet["name"].Value<string>(), token);
-                    return await GetValueFromObject(ret, token);
-                }
 
+            if (objRet["get"]?.Value<JObject>() != null &&
+                DotnetObjectId.TryParse(objRet?["get"]?["objectId"]?.Value<string>(), out DotnetObjectId getterObjectId))
+            {
+                var ret = await context.SdbAgent.InvokeMethod(getterObjectId, token);
+                return await GetValueFromObject(ret, token);
             }
             return null;
         }
@@ -150,7 +147,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 {
                     using var commandParamsObjWriter = new MonoBinaryWriter();
                     commandParamsObjWriter.Write(0); //param count
-                    var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
+                    var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
                     return await GetValueFromObject(retMethod, token);
                 }
                 return null;
@@ -234,7 +231,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (!DotnetObjectId.TryParse(objThis?["value"]?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                     return null;
 
-                ValueOrError<JToken> valueOrError = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
+                ValueOrError<GetMembersResult> valueOrError = await proxy.RuntimeGetObjectMembers(sessionId, objectId, null, token);
                 if (valueOrError.IsError)
                 {
                     logger.LogDebug($"ResolveAsLocalOrThisMember failed with : {valueOrError.Error}");
@@ -261,7 +258,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                         return null;
 
-                    ValueOrError<JToken> valueOrError = await proxy.RuntimeGetPropertiesInternal(sessionId, objectId, null, token);
+                    ValueOrError<GetMembersResult> valueOrError = await proxy.RuntimeGetObjectMembers(sessionId, objectId, null, token);
                     if (valueOrError.IsError)
                     {
                         logger.LogDebug($"ResolveAsInstanceMember failed with : {valueOrError.Error}");
@@ -358,9 +355,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 rootObject["value"] = await context.SdbAgent.GetArrayValues(objectId.Value, token);
                                 return (JObject)rootObject["value"][elementIdx]["value"];
                             case "object":
-                                var typeIds = await context.SdbAgent.GetTypeIdFromObject(objectId.Value, true, token);
+                                var typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
                                 int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], "ToArray", token);
-                                var toArrayRetMethod = await context.SdbAgent.InvokeMethodInObject(objectId, methodId, elementAccess.Expression.ToString(), token);
+                                var toArrayRetMethod = await context.SdbAgent.InvokeMethod(objectId.Value, methodId, isValueType: false, token);
                                 rootObject = await GetValueFromObject(toArrayRetMethod, token);
                                 DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId arrayObjectId);
                                 rootObject["value"] = await context.SdbAgent.GetArrayValues(arrayObjectId.Value, token);
@@ -409,7 +406,18 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (!DotnetObjectId.TryParse(rootObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                         throw new ExpressionEvaluationFailedException($"Cannot invoke method '{methodName}' on invalid object id: {rootObject}");
 
-                    var typeIds = await context.SdbAgent.GetTypeIdFromObject(objectId.Value, true, token);
+                    List<int> typeIds;
+                    if (objectId.IsValueType)
+                    {
+                        if (!context.SdbAgent.valueTypes.TryGetValue(objectId.Value, out ValueTypeClass valueType))
+                            throw new Exception($"Could not find valuetype {objectId}");
+
+                        typeIds = new List<int>(1) { valueType.TypeId };
+                    }
+                    else
+                    {
+                        typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
+                    }
                     int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], methodName, token);
                     var className = await context.SdbAgent.GetTypeNameOriginal(typeIds[0], token);
                     if (methodId == 0) //try to search on System.Linq.Enumerable
@@ -481,7 +489,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                             if (!await commandParamsObjWriter.WriteConst(methodParamsInfo[argIndex].TypeCode, methodParamsInfo[argIndex].Value, context.SdbAgent, token))
                                 throw new InternalErrorException($"Unable to write optional parameter {methodParamsInfo[argIndex].Name} value in method '{methodName}' to the mono buffer.");
                         }
-                        var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, "methodRet", token);
+                        var retMethod = await context.SdbAgent.InvokeMethod(commandParamsObjWriter.GetParameterBuffer(), methodId, token);
                         return await GetValueFromObject(retMethod, token);
                     }
                 }

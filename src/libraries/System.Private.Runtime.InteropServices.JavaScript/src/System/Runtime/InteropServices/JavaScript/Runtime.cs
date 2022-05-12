@@ -329,7 +329,7 @@ namespace System.Runtime.InteropServices.JavaScript
 
         public static void CancelPromise(IntPtr promiseJSHandle)
         {
-            var res = Interop.Runtime.CancelPromise(promiseJSHandle, out int exception);
+            Interop.Runtime.CancelPromiseRef(promiseJSHandle, out int exception, out string res);
             if (exception != 0)
                 throw new JSException(res);
         }

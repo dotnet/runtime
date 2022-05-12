@@ -3413,7 +3413,7 @@ mono_install_ftnptr_eh_callback (MonoFtnPtrEHCallback callback)
  */
 
 static void
-throw_exception (MonoObject *ex, gboolean rethrow)
+llvmonly_setup_exception (MonoObject *ex, gboolean rethrow)
 {
 	MONO_REQ_GC_UNSAFE_MODE;
 
@@ -3430,8 +3430,11 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 	else
 		mono_ex = (MonoException*)ex;
 
-	// Note: Not pinned
-	jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)mono_ex, FALSE);
+	if (jit_tls->thrown_exc)
+		/* Already set in mini_llvmonly_throw_corlib_exception () */
+		mono_gchandle_set_target (jit_tls->thrown_exc, (MonoObject*)mono_ex);
+	else
+		jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)mono_ex, TRUE);
 
 	if (!rethrow) {
 #ifdef MONO_ARCH_HAVE_UNWIND_BACKTRACE
@@ -3454,15 +3457,6 @@ throw_exception (MonoObject *ex, gboolean rethrow)
 		g_list_free (trace);
 #endif
 	}
-
-	if (rethrow) {
-		MonoContext ctx;
-		MonoJitInfo *out_ji;
-		memset (&ctx, 0, sizeof (MonoContext));
-
-		mono_handle_exception_internal (&ctx, ex, FALSE, &out_ji);
-		mono_llvm_cpp_throw_exception ();
-	}
 }
 
 void
@@ -3482,7 +3476,7 @@ mini_llvmonly_throw_exception (MonoObject *ex)
 
 	mono_handle_exception (&ctx, (MonoObject*)ex);
 
-	throw_exception (ex, FALSE);
+	llvmonly_setup_exception (ex, FALSE);
 
 	/* Unwind back to either an AOTed frame or to the interpreter */
 	mono_llvm_cpp_throw_exception ();
@@ -3491,16 +3485,26 @@ mini_llvmonly_throw_exception (MonoObject *ex)
 void
 mini_llvmonly_rethrow_exception (MonoObject *ex)
 {
-	throw_exception (ex, TRUE);
+	llvmonly_setup_exception (ex, TRUE);
+
+	MonoContext ctx;
+	MonoJitInfo *out_ji;
+	memset (&ctx, 0, sizeof (MonoContext));
+
+	mono_handle_exception_internal (&ctx, ex, FALSE, &out_ji);
+
+	mono_llvm_cpp_throw_exception ();
 }
 
 void
 mini_llvmonly_throw_corlib_exception (guint32 ex_token_index)
 {
 	guint32 ex_token = MONO_TOKEN_TYPE_DEF | ex_token_index;
+	MonoJitTlsData *jit_tls = mono_get_jit_tls ();
 	MonoException *ex;
 
 	ex = mono_exception_from_token (m_class_get_image (mono_defaults.exception_class), ex_token);
+	jit_tls->thrown_exc = mono_gchandle_new_internal ((MonoObject*)ex, FALSE);
 
 	mini_llvmonly_throw_exception ((MonoObject*)ex);
 }

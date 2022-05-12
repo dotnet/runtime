@@ -208,7 +208,7 @@ int hostfxr_get_runtime_properties(
 ```
 Get all runtime properties for the specified host context.
 * `host_context_handle` - initialized host context. If set to `nullptr` the function will operate on the first host context in the process.
-* `count` - in/out parameter which must not be `nullptr`. On input it specifies the size of the the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned.
+* `count` - in/out parameter which must not be `nullptr`. On input it specifies the size of the `keys` and `values` buffers. On output it contains the number of entries used from `keys` and `values` buffers - the number of properties returned.
 * `keys` - buffer which acts as an array of pointers to buffers with keys for the runtime properties.
 * `values` - buffer which acts as an array of pointer to buffers with values for the runtime properties.
 
@@ -259,7 +259,7 @@ int corehost_load(host_interface_t *init)
 Initialize `hostpolicy`. This stores information that will be required to do all the processing necessary to start CoreCLR, but it does not actually do any of that processing.
 * `init` - structure defining how the library should be initialized
 
-If already initalized, this function returns success without reinitializing (`init` is ignored).
+If already initialized, this function returns success without reinitializing (`init` is ignored).
 
 ``` C
 int corehost_main(const int argc, const char_t* argv[])

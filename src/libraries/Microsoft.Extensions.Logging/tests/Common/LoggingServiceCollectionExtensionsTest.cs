@@ -25,7 +25,8 @@ namespace Microsoft.Extensions.Logging.Test
             Assert.True(callbackCalled);
         }
 
-        [Fact]
+        // Moq heavily utilizes RefEmit, which does not work on most aot workloads
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         public void AddLogging_TestInjectedScopeProvider()
         {
             bool callbackCalled = false;

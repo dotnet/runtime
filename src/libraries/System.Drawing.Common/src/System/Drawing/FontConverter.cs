@@ -153,7 +153,7 @@ namespace System.Drawing
                 if (styleIndex != -1)
                 {
                     // style found.
-                    style = font.Substring(styleIndex, font.Length - styleIndex);
+                    style = font.Substring(styleIndex);
 
                     // Get the mid-substring containing the size information.
                     sizeStr = font.Substring(nameIndex + 1, styleIndex - nameIndex - 1);

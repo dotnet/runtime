@@ -463,7 +463,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [CLSCompliant(false)]
-        [Obsolete("IsolatedStorage.MaximumSize has been deprecated because it is not CLS Compliant. To get the maximum size use IsolatedStorage.Quota instead.")]
+        [Obsolete("IsolatedStorageFile.MaximumSize has been deprecated because it is not CLS Compliant. To get the maximum size use IsolatedStorageFile.Quota instead.")]
         public override ulong MaximumSize
         {
             get
@@ -489,7 +489,7 @@ namespace System.IO.IsolatedStorage
         }
 
         [CLSCompliant(false)]
-        [Obsolete("IsolatedStorage.CurrentSize has been deprecated because it is not CLS Compliant. To get the current size use IsolatedStorage.UsedSize instead.")]
+        [Obsolete("IsolatedStorageFile.CurrentSize has been deprecated because it is not CLS Compliant. To get the current size use IsolatedStorageFile.UsedSize instead.")]
         public override ulong CurrentSize
         {
             get

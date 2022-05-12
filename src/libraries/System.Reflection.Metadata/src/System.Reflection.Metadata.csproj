@@ -260,7 +260,7 @@ System.Reflection.PortableExecutable.ManagedPEBuilder</PackageDescription>
     <ProjectReference Include="$(LibrariesProjectRoot)System.Collections.Immutable\src\System.Collections.Immutable.csproj" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFrameworkVersion)' == 'v$(NetCoreAppCurrentVersion)'">
+  <ItemGroup Condition="'$(TargetFramework)' == '$(NetCoreAppCurrent)'">
     <Reference Include="System.Collections" />
     <Reference Include="System.IO.Compression" />
     <Reference Include="System.IO.MemoryMappedFiles" />

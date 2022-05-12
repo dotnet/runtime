@@ -55,7 +55,7 @@ namespace System.Runtime.InteropServices.JavaScript
         }
 
         // Note that we could not use SafeHandle.DangerousAddRef() and DangerousRelease()
-        // because we could get to zero InFlightCounter multiple times accross lifetime of the JSObject
+        // because we could get to zero InFlightCounter multiple times across lifetime of the JSObject
         // we only want JSObject to be disposed (from GC finalizer) once there is no in-flight reference and also no natural C# reference
         internal void ReleaseInFlight()
         {

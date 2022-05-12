@@ -71,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
         private readonly bool _isSingleFileCompilation;
 
         // Unix section containing LSDA data, like EH Info and GC Info
-        public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".corert_eh_table", SectionType.ReadOnly);
+        public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly);
 
         private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
 

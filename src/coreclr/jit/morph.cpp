@@ -126,13 +126,13 @@ GenTree* Compiler::fgMorphIntoHelperCall(GenTree* tree, int helper, bool morphAr
 
     if (arg2 != nullptr)
     {
-        call->gtArgs.PushFront(this, arg2);
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(arg2));
         call->gtFlags |= arg2->gtFlags & GTF_ALL_EFFECT;
     }
 
     if (arg1 != nullptr)
     {
-        call->gtArgs.PushFront(this, arg1);
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(arg1));
         call->gtFlags |= arg1->gtFlags & GTF_ALL_EFFECT;
     }
 
@@ -636,7 +636,7 @@ const char* getWellKnownArgName(WellKnownArg arg)
 void CallArg::Dump(Compiler* comp)
 {
     printf("CallArg[[%06u].%s", comp->dspTreeID(GetNode()), GenTree::OpName(GetNode()->OperGet()));
-    printf(" %s", varTypeName(AbiInfo.ArgType));
+    printf(" %s", varTypeName(m_signatureType));
     printf(" (%s)", AbiInfo.PassedByRef ? "By ref" : "By value");
     if (AbiInfo.GetRegNum() != REG_STK)
     {
@@ -963,7 +963,7 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
                             if (argObj->AsObj()->gtOp1->IsLocalAddrExpr() == nullptr) // Is the source not a LclVar?
                             {
                                 // If we don't have a LclVar we need to read exactly 3,5,6 or 7 bytes
-                                // For now we use a a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
+                                // For now we use a GT_CPBLK to copy the exact size into a GT_LCL_VAR temp.
                                 //
                                 SetNeedsTemp(&arg);
                             }
@@ -1581,9 +1581,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
             {
                 // Create a copy of the temp to go into the late argument list
                 defArg = MakeTmpArgNode(comp, &arg);
-
-                // mark the original node as a late argument
-                argx->gtFlags |= GTF_LATE_ARG;
             }
             else
             {
@@ -1711,9 +1708,6 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
 #endif // TARGET_ARM
                 }
 
-                /* mark the assignment as a late argument */
-                setupArg->gtFlags |= GTF_LATE_ARG;
-
 #ifdef DEBUG
                 if (comp->verbose)
                 {
@@ -1775,16 +1769,18 @@ void CallArgs::EvalArgsToTemps(Compiler* comp, GenTreeCall* call)
         if (setupArg != nullptr)
         {
             arg.SetEarlyNode(setupArg);
+
+            // Make sure we do not break recognition of retbuf-as-local
+            // optimization here. If this is hit it indicates that we are
+            // unnecessarily creating temps for some ret buf addresses, and
+            // gtCallGetDefinedRetBufLclAddr relies on this not to happen.
+            noway_assert((arg.GetWellKnownArg() != WellKnownArg::RetBuffer) || !call->IsOptimizingRetBufAsLocal());
         }
 
         arg.SetLateNode(defArg);
         *lateTail = &arg;
         lateTail  = &arg.LateNextRef();
     }
-
-    // Make sure we did not do anything here that stops us from being able to
-    // find the local ret buf if we are optimizing it.
-    noway_assert(!call->IsOptimizingRetBufAsLocal() || (comp->gtCallGetDefinedRetBufLclAddr(call) != nullptr));
 
 #ifdef DEBUG
     if (comp->verbose)
@@ -1816,8 +1812,10 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
 //    otherwise insert a comma form temp
 //
 // Arguments:
-//    ppTree  - a pointer to the child node we will be replacing with the comma expression that
-//              evaluates ppTree to a temp and returns the result
+//    ppTree     - a pointer to the child node we will be replacing with the comma expression that
+//                 evaluates ppTree to a temp and returns the result
+//
+//    structType - value type handle if the temp created is of TYP_STRUCT.
 //
 // Return Value:
 //    A fresh GT_LCL_VAR node referencing the temp which has not been used
@@ -1828,7 +1826,7 @@ void CallArgs::SetNeedsTemp(CallArg* arg)
 //
 //    Can be safely called in morph preorder, before GTF_GLOB_REF is reliable.
 //
-GenTree* Compiler::fgMakeMultiUse(GenTree** pOp)
+GenTree* Compiler::fgMakeMultiUse(GenTree** pOp, CORINFO_CLASS_HANDLE structType /*= nullptr*/)
 {
     GenTree* const tree = *pOp;
 
@@ -1846,7 +1844,7 @@ GenTree* Compiler::fgMakeMultiUse(GenTree** pOp)
         }
     }
 
-    return fgInsertCommaFormTemp(pOp);
+    return fgInsertCommaFormTemp(pOp, structType);
 }
 
 //------------------------------------------------------------------------------
@@ -1985,7 +1983,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             GenTreeAddrMode(TYP_BYREF, cloned, nullptr, 0, comp->eeGetEEInfo()->offsetOfWrapperDelegateIndirectCell);
 
         // Append newArg as the last arg
-        PushBack(comp, newArg, WellKnownArg::WrapperDelegateCell);
+        PushBack(comp, NewCallArg::Primitive(newArg).WellKnown(WellKnownArg::WrapperDelegateCell));
     }
 #endif // defined(TARGET_ARM)
 #ifndef TARGET_X86
@@ -2004,7 +2002,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         {
             GenTree* stubAddrArg = comp->fgGetStubAddrArg(call);
             // And push the stub address onto the list of arguments
-            InsertAfterThisOrFirst(comp, stubAddrArg, WellKnownArg::VirtualStubCell);
+            NewCallArg stubAddrNewArg = NewCallArg::Primitive(stubAddrArg).WellKnown(WellKnownArg::VirtualStubCell);
+            InsertAfterThisOrFirst(comp, stubAddrNewArg);
         }
         else
         {
@@ -2025,10 +2024,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         call->gtCallCookie = nullptr;
 
         // All architectures pass the cookie in a register.
-        InsertAfterThisOrFirst(comp, arg, WellKnownArg::PInvokeCookie);
+        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeCookie));
         // put destination into R10/EAX
         arg = comp->gtClone(call->gtCallAddr, true);
-        InsertAfterThisOrFirst(comp, arg, WellKnownArg::PInvokeTarget);
+        InsertAfterThisOrFirst(comp, NewCallArg::Primitive(arg).WellKnown(WellKnownArg::PInvokeTarget));
 
         // finally change this call to a helper call
         call->gtCallType    = CT_HELPER;
@@ -2067,7 +2066,8 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif // TARGET_ARM
 
         // Push the stub address onto the list of arguments.
-        InsertAfterThisOrFirst(comp, indirectCellAddress, WellKnownArg::R2RIndirectionCell);
+        InsertAfterThisOrFirst(comp,
+                               NewCallArg::Primitive(indirectCellAddress).WellKnown(WellKnownArg::R2RIndirectionCell));
     }
 #endif
 
@@ -2168,60 +2168,10 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
     SYSTEMV_AMD64_CORINFO_STRUCT_REG_PASSING_DESCRIPTOR structDesc;
 #endif // UNIX_AMD64_ABI
 
-#if defined(DEBUG)
-    // Check that we have valid information about call's argument types.
-    // For example:
-    // load byte; call(int) -> CALL(PUTARG_TYPE byte(IND byte));
-    // load int; call(byte) -> CALL(PUTARG_TYPE int (IND int));
-    // etc.
-    if (call->callSig != nullptr)
-    {
-        CORINFO_SIG_INFO* sig          = call->callSig;
-        const unsigned    sigArgsCount = sig->numArgs;
-
-        // It could include many arguments not included in `sig->numArgs`, for example, `this`, runtime lookup, cookie
-        // etc.
-        unsigned nodeArgsCount = call->gtArgs.CountArgs();
-        if (call->gtArgs.HasThisPointer())
-        {
-            // Handle the most common argument not in the `sig->numArgs`.
-            // so the following check works on more methods.
-            nodeArgsCount--;
-        }
-
-        assert(nodeArgsCount >= sigArgsCount);
-        if ((nodeArgsCount == sigArgsCount) &&
-            ((Target::g_tgtArgOrder == Target::ARG_ORDER_R2L) || (nodeArgsCount == 1)))
-        {
-            CORINFO_ARG_LIST_HANDLE sigArg = sig->args;
-            for (CallArg& arg : call->gtArgs.Args())
-            {
-                if (arg.GetWellKnownArg() == WellKnownArg::ThisPointer)
-                {
-                    continue;
-                }
-
-                CORINFO_CLASS_HANDLE argClass;
-                const CorInfoType    corType = strip(comp->info.compCompHnd->getArgType(sig, sigArg, &argClass));
-                const var_types      sigType = JITtype2varType(corType);
-
-                const GenTree* nodeArg = arg.GetNode();
-                assert(nodeArg != nullptr);
-                const var_types nodeType = nodeArg->TypeGet();
-
-                assert((nodeType == sigType) || varTypeIsStruct(sigType) ||
-                       genTypeSize(nodeType) == genTypeSize(sigType));
-
-                sigArg = comp->info.compCompHnd->getArgNext(sigArg);
-            }
-        }
-    }
-#endif // DEBUG
-
     for (CallArg& arg : Args())
     {
         assert(arg.GetEarlyNode() != nullptr);
-        GenTree* argx = arg.GetEarlyNode()->gtSkipPutArgType();
+        GenTree* argx = arg.GetEarlyNode();
 
         // Change the node to TYP_I_IMPL so we don't report GC info
         // NOTE: We deferred this from the importer because of the inliner.
@@ -2256,7 +2206,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 
             if (isHfaArg)
             {
-                isHfaArg = true;
                 hfaSlots = comp->GetHfaCount(argx);
 
                 // If we have a HFA struct it's possible we transition from a method that originally
@@ -2336,7 +2285,13 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         // TARGET_POINTER_SIZE stack slots, or the sum of these if the argument is split between the registers and
         // the stack.
         //
-        isStructArg                   = varTypeIsStruct(argx);
+        isStructArg = varTypeIsStruct(argx);
+        // Note that we internally in the JIT can change some struct args to
+        // primitive args (e.g. OBJ<struct>(x) -> IND<TYP_LONG>(x)). Similarly,
+        // the ABI type can also change from struct to primitive (e.g. a 8-byte
+        // struct passed in a register). So isStructArg may be false even if
+        // the signature type was (or is) a struct, however only in cases where
+        // it does not matter.
         CORINFO_CLASS_HANDLE objClass = NO_CLASS_HANDLE;
         if (isStructArg)
         {
@@ -2372,7 +2327,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         if (!isStructArg)
         {
             size     = 1; // On AMD64, all primitives fit in a single (64-bit) 'slot'
-            byteSize = genTypeSize(argx);
+            byteSize = genTypeSize(arg.GetSignatureType());
         }
         else
         {
@@ -2384,7 +2339,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         size = 1; // On AMD64 Windows, all args fit in a single (64-bit) 'slot'
         if (!isStructArg)
         {
-            byteSize = genTypeSize(argx);
+            byteSize = genTypeSize(arg.GetSignatureType());
         }
 
 #endif // UNIX_AMD64_ABI
@@ -2419,7 +2374,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         else
         {
             size     = 1; // Otherwise, all primitive types fit in a single (64-bit) 'slot'
-            byteSize = genTypeSize(argx);
+            byteSize = genTypeSize(arg.GetSignatureType());
         }
 #elif defined(TARGET_ARM) || defined(TARGET_X86)
         if (isStructArg)
@@ -2432,7 +2387,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // The typical case.
             // Long/double type argument(s) will be modified as needed in Lowering.
             size     = genTypeStSz(argx->gtType);
-            byteSize = genTypeSize(argx);
+            byteSize = genTypeSize(arg.GetSignatureType());
         }
 #else
 #error Unsupported or unset target architecture
@@ -2513,12 +2468,6 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
 #endif
         }
 
-        const var_types argType = arg.GetEarlyNode()->TypeGet();
-        if (arg.GetEarlyNode()->OperIs(GT_PUTARG_TYPE))
-        {
-            byteSize = genTypeSize(argType);
-        }
-
         // The 'size' value has now must have been set. (the original value of zero is an invalid value)
         assert(size != 0);
         assert(byteSize != 0);
@@ -2528,7 +2477,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
             // Arm64 Apple has a special ABI for passing small size arguments on stack,
             // bytes are aligned to 1-byte, shorts to 2-byte, int/float to 4-byte, etc.
             // It means passing 8 1-byte arguments on stack can take as small as 8 bytes.
-            argAlignBytes = comp->eeGetArgSizeAlignment(argType, isFloatHfa);
+            argAlignBytes = comp->eeGetArgSizeAlignment(arg.GetSignatureType(), isFloatHfa);
         }
 
 #ifdef TARGET_LOONGARCH64
@@ -2791,7 +2740,7 @@ void CallArgs::AddFinalArgsAndDetermineABIInfo(Compiler* comp, GenTreeCall* call
         }
 #endif // TARGET_ARM
 
-        arg.AbiInfo          = {};
+        arg.AbiInfo          = CallArgABIInformation();
         arg.AbiInfo.ArgType  = argx->TypeGet();
         arg.AbiInfo.IsStruct = isStructArg;
 
@@ -3471,9 +3420,11 @@ GenTreeCall* Compiler::fgMorphArgs(GenTreeCall* call)
             // (tmp.ptr=argx),(tmp.type=handle)
             GenTreeLclFld* destPtrSlot  = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__dataPtr);
             GenTreeLclFld* destTypeSlot = gtNewLclFldNode(tmp, TYP_I_IMPL, OFFSETOF__CORINFO_TypedReference__type);
-            destPtrSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyDataField()));
+            destPtrSlot->SetFieldSeq(
+                GetFieldSeqStore()->CreateSingleton(GetRefanyDataField(), OFFSETOF__CORINFO_TypedReference__dataPtr));
             destPtrSlot->gtFlags |= GTF_VAR_DEF;
-            destTypeSlot->SetFieldSeq(GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField()));
+            destTypeSlot->SetFieldSeq(
+                GetFieldSeqStore()->CreateSingleton(GetRefanyTypeField(), OFFSETOF__CORINFO_TypedReference__type));
             destTypeSlot->gtFlags |= GTF_VAR_DEF;
 
             GenTree* asgPtrSlot  = gtNewAssignNode(destPtrSlot, argx->AsOp()->gtOp1);
@@ -3641,8 +3592,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
 
     for (CallArg& arg : call->gtArgs.Args())
     {
-        bool     isLateArg = arg.GetLateNode() != nullptr;
-        GenTree* argx      = arg.GetNode();
+        GenTree*& argx = arg.GetLateNode() != nullptr ? arg.LateNodeRef() : arg.EarlyNodeRef();
 
         if (!arg.AbiInfo.IsStruct)
         {
@@ -3685,19 +3635,7 @@ void Compiler::fgMorphMultiregStructArgs(GenTreeCall* call)
                 }
 
                 GenTree* newArgx = fgMorphMultiregStructArg(&arg);
-
-                // Did we replace 'argx' with a new tree?
-                if (newArgx != argx)
-                {
-                    if (isLateArg)
-                    {
-                        arg.SetLateNode(newArgx);
-                    }
-                    else
-                    {
-                        arg.SetEarlyNode(newArgx);
-                    }
-                }
+                argx             = newArgx;
             }
         }
     }
@@ -5128,12 +5066,13 @@ GenTree* Compiler::fgMorphArrayIndex(GenTree* tree)
     JITDUMP("fgMorphArrayIndex (before remorph):\n")
     DISPTREE(tree)
 
-    tree = fgMorphTree(tree);
+    GenTree* morphedTree = fgMorphTree(tree);
+    DBEXEC(morphedTree != tree, morphedTree->gtDebugFlags &= ~GTF_DEBUG_NODE_MORPHED);
 
     JITDUMP("fgMorphArrayIndex (after remorph):\n")
-    DISPTREE(tree)
+    DISPTREE(morphedTree)
 
-    return tree;
+    return morphedTree;
 }
 
 #ifdef TARGET_X86
@@ -5309,24 +5248,12 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 {
     assert(tree->gtOper == GT_FIELD);
 
-    CORINFO_FIELD_HANDLE symHnd     = tree->AsField()->gtFldHnd;
-    unsigned             fldOffset  = tree->AsField()->gtFldOffset;
-    GenTree*             objRef     = tree->AsField()->GetFldObj();
-    bool                 objIsLocal = false;
-
-    FieldSeqNode* fieldSeq = FieldSeqStore::NotAField();
-    if (!tree->AsField()->gtFldMayOverlap)
-    {
-        if (objRef != nullptr)
-        {
-            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, FieldSeqNode::FieldKind::Instance);
-        }
-        else
-        {
-            // Only simple statics get importred as GT_FIELDs.
-            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, FieldSeqNode::FieldKind::SimpleStatic);
-        }
-    }
+    CORINFO_FIELD_HANDLE symHnd        = tree->AsField()->gtFldHnd;
+    unsigned             fldOffset     = tree->AsField()->gtFldOffset;
+    GenTree*             objRef        = tree->AsField()->GetFldObj();
+    bool                 objIsLocal    = false;
+    bool                 fldMayOverlap = tree->AsField()->gtFldMayOverlap;
+    FieldSeqNode*        fieldSeq      = FieldSeqStore::NotAField();
 
     // Reset the flag because we may reuse the node.
     tree->AsField()->gtFldMayOverlap = false;
@@ -5550,8 +5477,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             GenTree* lclVar = gtNewLclvNode(lclNum, objRefType);
             nullchk         = gtNewNullCheck(lclVar, compCurBB);
 
-            nullchk->gtFlags |= GTF_DONT_CSE; // Don't try to create a CSE for these TYP_BYTE indirections
-
             if (asg)
             {
                 // Create the "comma" node.
@@ -5594,6 +5519,12 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             addr              = gtNewOperNode(GT_ADD, addType, addr, offsetNode);
         }
 #endif
+
+        if (!fldMayOverlap)
+        {
+            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, fldOffset, FieldSeqNode::FieldKind::Instance);
+        }
+
         if (fldOffset != 0)
         {
             // Generate the "addr" node.
@@ -5606,8 +5537,6 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
 
         tree->SetOper(GT_IND);
         tree->AsOp()->gtOp1 = addr;
-
-        tree->SetIndirExceptionFlags(this);
 
         if (addExplicitNullCheck)
         {
@@ -5710,6 +5639,9 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             /* indirect to have tlsRef point at the base of the DLLs Thread Local Storage */
             tlsRef = gtNewOperNode(GT_IND, TYP_I_IMPL, tlsRef);
 
+            assert(!fldMayOverlap);
+            fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, fldOffset, FieldSeqNode::FieldKind::SimpleStatic);
+
             if (fldOffset != 0)
             {
                 GenTree* fldOffsetNode = new (this, GT_CNS_INT) GenTreeIntCon(TYP_INT, fldOffset, fieldSeq);
@@ -5744,9 +5676,11 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             // For boxed statics, this direct address will be for the box. We have already added
             // the indirection for the field itself and attached the sequence, in importation.
             bool isBoxedStatic = gtIsStaticFieldPtrToBoxedStruct(tree->TypeGet(), symHnd);
-            if (isBoxedStatic)
+            if (!isBoxedStatic)
             {
-                fieldSeq = FieldSeqStore::NotAField();
+                // Only simple statics get importred as GT_FIELDs.
+                fieldSeq = GetFieldSeqStore()->CreateSingleton(symHnd, reinterpret_cast<size_t>(fldAddr),
+                                                               FieldSeqNode::FieldKind::SimpleStatic);
             }
 
             // TODO-CQ: enable this optimization for 32 bit targets.
@@ -5762,72 +5696,46 @@ GenTree* Compiler::fgMorphField(GenTree* tree, MorphAddrContext* mac)
             }
 #endif // TARGET_64BIT
 
-            // TODO: choices made below have mostly historical reasons and
-            // should be unified to always use the IND(<address>) form.
-            CLANG_FORMAT_COMMENT_ANCHOR;
-
-#if defined(TARGET_64BIT) || defined(TARGET_X86)
-            bool preferIndir = true;
-#else  // !TARGET_64BIT
-            bool preferIndir = isBoxedStatic;
-#endif // !TARGET_64BIT
-
-            if (preferIndir)
+            GenTreeFlags handleKind = GTF_EMPTY;
+            if (isBoxedStatic)
             {
-                GenTreeFlags handleKind = GTF_EMPTY;
-                if (isBoxedStatic)
-                {
-                    handleKind = GTF_ICON_STATIC_BOX_PTR;
-                }
-                else if (isStaticReadOnlyInited)
-                {
-                    handleKind = GTF_ICON_CONST_PTR;
-                }
-                else
-                {
-                    handleKind = GTF_ICON_STATIC_HDL;
-                }
-                GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
-
-                // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
-                if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
-                {
-                    tree->gtFlags &= ~GTF_FLD_INITCLASS;
-                    addr->gtFlags |= GTF_ICON_INITCLASS;
-                }
-
-                tree->SetOper(GT_IND);
-                tree->AsOp()->gtOp1 = addr;
-
-                if (isBoxedStatic)
-                {
-                    // The box for the static cannot be null, and is logically invariant, since it
-                    // represents (a base for) the static's address.
-                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-                }
-                else if (isStaticReadOnlyInited)
-                {
-                    JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
-
-                    // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
-                    tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
-                }
-
-                return fgMorphSmpOp(tree);
+                handleKind = GTF_ICON_STATIC_BOX_PTR;
+            }
+            else if (isStaticReadOnlyInited)
+            {
+                handleKind = GTF_ICON_CONST_PTR;
             }
             else
             {
-                assert((tree->gtFlags & ~(GTF_FLD_VOLATILE | GTF_FLD_INITCLASS | GTF_FLD_TGT_HEAP | GTF_COMMON_MASK)) ==
-                       0);
-                static_assert_no_msg(GTF_FLD_VOLATILE == GTF_CLS_VAR_VOLATILE);
-                static_assert_no_msg(GTF_FLD_INITCLASS == GTF_CLS_VAR_INITCLASS);
-                static_assert_no_msg(GTF_FLD_TGT_HEAP == GTF_CLS_VAR_TGT_HEAP);
-                tree->SetOper(GT_CLS_VAR);
-                tree->AsClsVar()->gtClsVarHnd = symHnd;
-                tree->AsClsVar()->gtFieldSeq  = fieldSeq;
+                handleKind = GTF_ICON_STATIC_HDL;
+            }
+            GenTree* addr = gtNewIconHandleNode((size_t)fldAddr, handleKind, fieldSeq);
+
+            // Translate GTF_FLD_INITCLASS to GTF_ICON_INITCLASS, if we need to.
+            if (((tree->gtFlags & GTF_FLD_INITCLASS) != 0) && !isStaticReadOnlyInited)
+            {
+                tree->gtFlags &= ~GTF_FLD_INITCLASS;
+                addr->gtFlags |= GTF_ICON_INITCLASS;
             }
 
-            return tree;
+            tree->SetOper(GT_IND);
+            tree->AsOp()->gtOp1 = addr;
+
+            if (isBoxedStatic)
+            {
+                // The box for the static cannot be null, and is logically invariant, since it
+                // represents (a base for) the static's address.
+                tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+            }
+            else if (isStaticReadOnlyInited)
+            {
+                JITDUMP("Marking initialized static read-only field '%s' as invariant.\n", eeGetFieldName(symHnd));
+
+                // Static readonly field is not null at this point (see getStaticFieldCurrentClass impl).
+                tree->gtFlags |= (GTF_IND_INVARIANT | GTF_IND_NONFAULTING | GTF_IND_NONNULL);
+            }
+
+            return fgMorphSmpOp(tree);
         }
     }
     noway_assert(tree->gtOper == GT_IND);
@@ -7543,7 +7451,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
 
         // During rationalization tmp="this" and null check will be materialized
         // in the right execution order.
-        call->gtArgs.PushFront(this, thisPtr);
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr, thisArg->GetSignatureType()));
         call->gtArgs.Remove(thisArg);
     }
 
@@ -7595,7 +7503,7 @@ GenTree* Compiler::fgMorphTailCallViaHelpers(GenTreeCall* call, CORINFO_TAILCALL
             target = getVirtMethodPointerTree(thisPtrStubArg, call->tailCallInfo->GetToken(), &callInfo);
         }
 
-        call->gtArgs.PushBack(this, target);
+        call->gtArgs.PushBack(this, NewCallArg::Primitive(target));
     }
 
     // This is now a direct call to the store args stub and not a tailcall.
@@ -7750,7 +7658,10 @@ GenTree* Compiler::fgCreateCallDispatcherAndGetResult(GenTreeCall*          orig
 
     GenTree* retAddrSlot = gtNewOperNode(GT_ADDR, TYP_I_IMPL, gtNewLclvNode(lvaRetAddrVar, TYP_I_IMPL));
 
-    callDispatcherNode->gtArgs.PushFront(this, retAddrSlot, callTarget, retValArg);
+    NewCallArg retAddrSlotArg = NewCallArg::Primitive(retAddrSlot);
+    NewCallArg callTargetArg  = NewCallArg::Primitive(callTarget);
+    NewCallArg retValCallArg  = NewCallArg::Primitive(retValArg);
+    callDispatcherNode->gtArgs.PushFront(this, retAddrSlotArg, callTargetArg, retValCallArg);
 
     GenTree* finalTree = callDispatcherNode;
 
@@ -8114,26 +8025,26 @@ void Compiler::fgMorphTailCallViaJitHelper(GenTreeCall* call)
         // During rationalization tmp="this" and null check will
         // materialize as embedded stmts in right execution order.
         assert(thisPtr != nullptr);
-        call->gtArgs.PushFront(this, thisPtr);
+        call->gtArgs.PushFront(this, NewCallArg::Primitive(thisPtr, thisArg->GetSignatureType()));
         call->gtArgs.Remove(thisArg);
     }
 
     unsigned nOldStkArgsWords =
         (compArgSize - (codeGen->intRegState.rsCalleeRegArgCount * REGSIZE_BYTES)) / REGSIZE_BYTES;
     GenTree* arg3Node = gtNewIconNode((ssize_t)nOldStkArgsWords, TYP_I_IMPL);
-    CallArg* arg3     = call->gtArgs.PushBack(this, arg3Node);
+    CallArg* arg3     = call->gtArgs.PushBack(this, NewCallArg::Primitive(arg3Node));
     // Inject a placeholder for the count of outgoing stack arguments that the Lowering phase will generate.
     // The constant will be replaced.
     GenTree* arg2Node = gtNewIconNode(9, TYP_I_IMPL);
-    CallArg* arg2     = call->gtArgs.InsertAfter(this, arg3, arg2Node);
+    CallArg* arg2     = call->gtArgs.InsertAfter(this, arg3, NewCallArg::Primitive(arg2Node));
     // Inject a placeholder for the flags.
     // The constant will be replaced.
     GenTree* arg1Node = gtNewIconNode(8, TYP_I_IMPL);
-    CallArg* arg1     = call->gtArgs.InsertAfter(this, arg2, arg1Node);
+    CallArg* arg1     = call->gtArgs.InsertAfter(this, arg2, NewCallArg::Primitive(arg1Node));
     // Inject a placeholder for the real call target that the Lowering phase will generate.
     // The constant will be replaced.
     GenTree* arg0Node = gtNewIconNode(7, TYP_I_IMPL);
-    CallArg* arg0     = call->gtArgs.InsertAfter(this, arg1, arg0Node);
+    CallArg* arg0     = call->gtArgs.InsertAfter(this, arg1, NewCallArg::Primitive(arg0Node));
 
     // It is now a varargs tail call.
     call->gtArgs.SetIsVarArgs();
@@ -8282,7 +8193,7 @@ void Compiler::fgMorphRecursiveFastTailCallIntoLoop(BasicBlock* block, GenTreeCa
     for (CallArg& arg : recursiveTailCall->gtArgs.EarlyArgs())
     {
         GenTree* earlyArg = arg.GetEarlyNode();
-        if ((earlyArg->gtFlags & GTF_LATE_ARG) != 0)
+        if (arg.GetLateNode() != nullptr)
         {
             // This is a setup node so we need to hoist it.
             Statement* earlyArgStmt = gtNewStmt(earlyArg, callDI);
@@ -8705,8 +8616,6 @@ GenTree* Compiler::fgMorphCall(GenTreeCall* call)
 
                 assert(argNode != arr);
                 assert(argNode != index);
-
-                argNode->gtFlags &= ~GTF_LATE_ARG;
 
                 GenTree* op1 = argSetup;
                 if (op1 == nullptr)
@@ -9923,10 +9832,8 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
         }
         if (needsIndirection)
         {
-            if (indirTree != nullptr)
+            if ((indirTree != nullptr) && (indirTree->OperIsBlk() || !isBlkReqd))
             {
-                // If we have an indirection and a block is required, it should already be a block.
-                assert(indirTree->OperIsBlk() || !isBlkReqd);
                 effectiveVal->gtType = asgType;
             }
             else
@@ -9945,11 +9852,14 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
                         newTree = gtNewObjNode(clsHnd, addr);
                         gtSetObjGcInfo(newTree->AsObj());
                     }
+
+                    gtUpdateNodeSideEffects(newTree);
                 }
                 else
                 {
                     newTree = gtNewIndir(asgType, addr);
                 }
+
                 effectiveVal = newTree;
             }
         }
@@ -9971,8 +9881,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
 //    false otherwise.
 //
 // Notes:
-//   This check is needed to avoid accessing LCL_VARs with incorrect
-//   CORINFO_FIELD_HANDLE that would confuse VN optimizations.
+//   TODO-PhysicalVN: with the physical VN scheme, this method is no longer needed.
 //
 bool Compiler::fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2)
 {
@@ -10850,7 +10759,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
 
             if (!optValnumCSE_phase)
             {
-#ifdef TARGET_ARM64
                 if (tree->OperIs(GT_UMOD) && op2->IsIntegralConstUnsignedPow2())
                 {
                     // Transformation: a % b = a & (b - 1);
@@ -10858,6 +10766,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                     op1  = tree->AsOp()->gtOp1;
                     op2  = tree->AsOp()->gtOp2;
                 }
+#ifdef TARGET_ARM64
                 // ARM64 architecture manual suggests this transformation
                 // for the mod operator.
                 // However, we do skip this optimization for ARM64 if the second operand
@@ -10870,7 +10779,7 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
                 // when 'b' is not a power of 2 constant and mod operator is signed.
                 // Lowering for XARCH does this optimization already,
                 // but is also done here to take advantage of CSE.
-                if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
+                else if (tree->OperIs(GT_MOD) && op2->IsIntegralConst() && !op2->IsIntegralConstAbsPow2())
 #endif
                 {
                     // Transformation: a % b = a - (a / b) * b;
@@ -11052,9 +10961,6 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             break;
 #endif
 
-        case GT_PUTARG_TYPE:
-            return fgMorphTree(tree->AsUnOp()->gtGetOp1());
-
         case GT_NULLCHECK:
         {
             op1 = tree->AsUnOp()->gtGetOp1();
@@ -11220,10 +11126,10 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             }
         }
 
-        /* Morphing along with folding and inlining may have changed the
-         * side effect flags, so we have to reset them
-         *
-         * NOTE: Don't reset the exception flags on nodes that may throw */
+        // Morphing along with folding and inlining may have changed the
+        // side effect flags, so we have to reset them
+        //
+        // NOTE: Don't reset the exception flags on nodes that may throw
 
         assert(tree->gtOper != GT_CALL);
 
@@ -11232,12 +11138,14 @@ GenTree* Compiler::fgMorphSmpOp(GenTree* tree, MorphAddrContext* mac)
             tree->gtFlags &= ~GTF_CALL;
         }
 
-        /* Propagate the new flags */
+        // Propagate the new flags
         tree->gtFlags |= (op1->gtFlags & GTF_ALL_EFFECT);
 
-        // &aliasedVar doesn't need GTF_GLOB_REF, though alisasedVar does
-        // Similarly for clsVar
-        if (oper == GT_ADDR && (op1->gtOper == GT_LCL_VAR || op1->gtOper == GT_CLS_VAR))
+        // addresses of locals do not need GTF_GLOB_REF, even if the child has
+        // it (is address exposed). Note that general addressing may still need
+        // GTF_GLOB_REF, for example if the subtree has a comma that involves a
+        // global reference.
+        if (tree->OperIs(GT_ADDR) && ((tree->gtFlags & GTF_GLOB_REF) != 0) && tree->IsLocalAddrExpr())
         {
             tree->gtFlags &= ~GTF_GLOB_REF;
         }
@@ -11539,7 +11447,7 @@ DONE_MORPHING_CHILDREN:
             effectiveOp1 = op1->gtEffectiveVal();
 
             // If we are storing a small type, we might be able to omit a cast.
-            if ((effectiveOp1->OperIs(GT_IND, GT_CLS_VAR) ||
+            if ((effectiveOp1->OperIs(GT_IND) ||
                  (effectiveOp1->OperIs(GT_LCL_VAR) &&
                   lvaGetDesc(effectiveOp1->AsLclVarCommon()->GetLclNum())->lvNormalizeOnLoad())) &&
                 varTypeIsSmall(effectiveOp1))
@@ -11861,7 +11769,7 @@ DONE_MORPHING_CHILDREN:
         {
             // If we have IND(ADDR(X)) and X has GTF_GLOB_REF, we must set GTF_GLOB_REF on
             // the OBJ. Note that the GTF_GLOB_REF will have been cleared on ADDR(X) where X
-            // is a local or CLS_VAR, even if it has been address-exposed.
+            // is a local, even if it has been address-exposed.
             if (op1->OperIs(GT_ADDR))
             {
                 tree->gtFlags |= (op1->AsUnOp()->gtGetOp1()->gtFlags & GTF_GLOB_REF);
@@ -12381,7 +12289,7 @@ DONE_MORPHING_CHILDREN:
                 }
                 else
                 {
-                    op2->gtFlags |= (tree->gtFlags & (GTF_DONT_CSE | GTF_LATE_ARG));
+                    op2->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
                     DEBUG_DESTROY_NODE(tree);
                     DEBUG_DESTROY_NODE(op1);
                     return op2;
@@ -12391,7 +12299,7 @@ DONE_MORPHING_CHILDREN:
                 // comma throw, in which case we want the top-level morphing loop to recognize it.
                 if (op2->IsNothingNode() && op1->TypeIs(TYP_VOID) && !fgIsCommaThrow(tree))
                 {
-                    op1->gtFlags |= (tree->gtFlags & (GTF_DONT_CSE | GTF_LATE_ARG));
+                    op1->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
                     DEBUG_DESTROY_NODE(tree);
                     DEBUG_DESTROY_NODE(op2);
                     return op1;
@@ -12578,7 +12486,7 @@ GenTree* Compiler::fgOptimizeCast(GenTreeCast* cast)
 
         // For indir-like nodes, we may be able to change their type to satisfy (and discard) the cast.
         if (varTypeIsSmall(castToType) && (genTypeSize(castToType) == genTypeSize(src)) &&
-            src->OperIs(GT_IND, GT_CLS_VAR, GT_LCL_FLD))
+            src->OperIs(GT_IND, GT_LCL_FLD))
         {
             // We're changing the type here so we need to update the VN;
             // in other cases we discard the cast without modifying src
@@ -12967,7 +12875,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithConst(GenTreeOp* cmp)
 //    node - HWIntrinsic node to examine
 //
 // Returns:
-//    The original node if no optimization happened or if tree bashing occured.
+//    The original node if no optimization happened or if tree bashing occurred.
 //    An alternative tree if an optimization happened.
 //
 // Notes:
@@ -13166,9 +13074,8 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         DEBUG_DESTROY_NODE(constTwo);
     }
 
-    // Fold (x + 0) - given it won't change the tree type to TYP_REF.
-    // TODO-Bug: this code will lose the GC-ness of a tree like "native int + byref(0)".
-    if (op2->IsIntegralConst(0) && ((add->TypeGet() == op1->TypeGet()) || !op1->TypeIs(TYP_REF)))
+    // Fold (x + 0) - given it won't change the tree type.
+    if (op2->IsIntegralConst(0) && (genActualType(add) == genActualType(op1)))
     {
         if (op2->IsCnsIntOrI() && varTypeIsI(op1))
         {
@@ -14612,7 +14519,7 @@ GenTree* Compiler::fgMorphTree(GenTree* tree, MorphAddrContext* mac)
 
 #if defined(LATE_DISASM)
         // GT_CNS_INT is considered small, so ReplaceWith() won't copy all fields
-        if ((tree->gtOper == GT_CNS_INT) && tree->IsIconHandle())
+        if (tree->IsIconHandle())
         {
             copy->AsIntCon()->gtCompileTimeHandle = tree->AsIntCon()->gtCompileTimeHandle;
         }
@@ -16023,8 +15930,8 @@ GenTree* Compiler::fgInitThisClass()
     else
     {
 #ifdef FEATURE_READYTORUN
-        // Only CoreRT understands CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE. Don't do this on CoreCLR.
-        if (opts.IsReadyToRun() && IsTargetAbi(CORINFO_CORERT_ABI))
+        // Only NativeAOT understands CORINFO_HELP_READYTORUN_GENERIC_STATIC_BASE. Don't do this on CoreCLR.
+        if (opts.IsReadyToRun() && IsTargetAbi(CORINFO_NATIVEAOT_ABI))
         {
             CORINFO_RESOLVED_TOKEN resolvedToken;
             memset(&resolvedToken, 0, sizeof(resolvedToken));

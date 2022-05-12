@@ -11,10 +11,12 @@
     <ProjectReference Include="sfx-ref.proj">
       <OutputItemType Condition="'$(RefOnly)' == 'true'">SharedFrameworkAssembly</OutputItemType>
     </ProjectReference>
-    <!-- Support building only the reference assemblies. -->
-    <ProjectReference Include="sfx-src.proj"
-                      OutputItemType="SharedFrameworkAssembly"
-                      Condition="'$(RefOnly)' != 'true'" />
+  </ItemGroup>
+
+  <!-- Support building only the reference assemblies. -->
+  <ItemGroup Condition="'$(RefOnly)' != 'true'">
+    <ProjectReference Include="sfx-src.proj" OutputItemType="SharedFrameworkAssembly" />
+    <ProjectReference Include="sfx-gen.proj" />
   </ItemGroup>
 
   <!-- Generate the targeting pack's framework list so that out-of-band projects can leverage it. -->

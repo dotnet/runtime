@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 /*=====================================================================
-** 
+**
 ** Source:  test9.c (DuplicateHandle)
 **
 ** Purpose: Tests the PAL implementation of the DuplicateHandle function,
-**          with a handle from GetCurrentProcess. The test will create a 
+**          with a handle from GetCurrentProcess. The test will create a
 **          process, duplicate it, then using ReadProcessMemory will
 **          read from the memory location of the CreateProcess process
-**          memory and the DuplicateHandle process memory. If the 
+**          memory and the DuplicateHandle process memory. If the
 **          duplication is correct the memory will be the same for both.
 **
 **
@@ -27,18 +27,18 @@ PALTEST(threading_DuplicateHandle_test9_paltest_duplicatehandle_test9, "threadin
     SIZE_T  lpDupNumberOfBytesRead;
     char lpTestBuffer[] = "abcdefghijklmnopqrstuvwxyz";
 
-    /* Initalize the PAL.
+    /* Initialize the PAL.
     */
     if(0 != (PAL_Initialize(argc, argv)))
     {
         return FAIL;
     }
-    
-    /* Initalize the buffers.
+
+    /* Initialize the buffers.
     */
     ZeroMemory( &lpBuffer, sizeof(lpBuffer) );
     ZeroMemory( &lpDupBuffer, sizeof(lpDupBuffer) );
-    
+
     /* Get current proces, this will be duplicated.
     */
     hProcess = GetCurrentProcess();
@@ -67,18 +67,18 @@ PALTEST(threading_DuplicateHandle_test9_paltest_duplicatehandle_test9, "threadin
 
     /* Get memory read of the current process.
     */
-    if ((ReadProcessMemory(hDupProcess, &lpTestBuffer, 
+    if ((ReadProcessMemory(hDupProcess, &lpTestBuffer,
          lpDupBuffer, sizeof(lpDupBuffer), &lpDupNumberOfBytesRead)) == 0)
     {
         Trace("ERROR:%u: Unable to read the process memory of "
-             "hDupProcess=0x%lx.\n", 
-             GetLastError(), 
+             "hDupProcess=0x%lx.\n",
+             GetLastError(),
              hDupProcess);
         CloseHandle(hProcess);
         CloseHandle(hDupProcess);
         Fail("");
     }
-    
+
     /* Get read memory of the created process.
     */
     if ((ReadProcessMemory(hProcess, &lpTestBuffer,
@@ -86,7 +86,7 @@ PALTEST(threading_DuplicateHandle_test9_paltest_duplicatehandle_test9, "threadin
     {
         Trace("ERROR:%u: Unable to read the process memory of "
              "hProcess=0x%lx.\n",
-             GetLastError(), 
+             GetLastError(),
              hProcess);
         CloseHandle(hProcess);
         CloseHandle(hDupProcess);
@@ -117,7 +117,7 @@ PALTEST(threading_DuplicateHandle_test9_paltest_duplicatehandle_test9, "threadin
         CloseHandle(hDupProcess);
         Fail("");
     }
-    
+
     /* Clean-up thread and Terminate the PAL.*/
     CloseHandle(hProcess);
     CloseHandle(hDupProcess);
