@@ -2086,9 +2086,9 @@ namespace System.Runtime.InteropServices.Marshalling
     public unsafe ref struct BStrStringMarshaller
     {
         public BStrStringMarshaller(string? str) { }
-        public BStrStringMarshaller(string? str, System.Span<byte> buffer) { }
-        public byte* ToNativeValue() { throw null; }
-        public void FromNativeValue(byte* value) { }
+        public BStrStringMarshaller(string? str, System.Span<ushort> buffer) { }
+        public ushort* ToNativeValue() { throw null; }
+        public void FromNativeValue(ushort* value) { }
         public string? ToManaged() { throw null; }
         public void FreeNative() { }
     }
