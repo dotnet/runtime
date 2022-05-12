@@ -626,7 +626,7 @@ namespace System.Xml
             {
                 prefix = name.Substring(0, colonPos);
                 colonPos++; // move after colon
-                lname = name.Substring(colonPos, name.Length - colonPos);
+                lname = name.Substring(colonPos);
             }
         }
     }

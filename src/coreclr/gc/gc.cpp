@@ -29428,6 +29428,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
             for (i = 0; i < n_heaps; i++)
             {
+#ifdef USE_REGIONS
+                if (special_sweep_p)
+                {
+                    g_heaps[i]->gc_policy = policy_sweep;
+                }
+                else
+#endif //USE_REGIONS
                 if (pol_max > g_heaps[i]->gc_policy)
                     g_heaps[i]->gc_policy = pol_max;
 #ifndef USE_REGIONS
