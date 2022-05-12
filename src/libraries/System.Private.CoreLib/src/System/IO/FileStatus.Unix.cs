@@ -497,7 +497,7 @@ namespace System.IO
         }
 
         internal void EnsureCachesInitialized(ReadOnlySpan<char> path, bool continueOnError = false)
-            => EnsureCachesInitialized(handle: null, path!.ToString(), continueOnError);
+            => EnsureCachesInitialized(handle: null, path, continueOnError);
 
         // Checks if the file cache is uninitialized and refreshes it's value.
         // If it failed, and continueOnError is set to true, this method will throw.
