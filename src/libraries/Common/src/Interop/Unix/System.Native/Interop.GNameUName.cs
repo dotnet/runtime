@@ -5,6 +5,7 @@ using System.Runtime.InteropServices;
 using System.Buffers;
 using System.Text;
 using System;
+using System.Collections.Generic;
 
 internal static partial class Interop
 {
@@ -15,59 +16,79 @@ internal static partial class Interop
         /// </summary>
         /// <param name="gid">The group ID.</param>
         /// <returns>On success, return a string with the group name. On failure, returns a null string.</returns>
-        internal static string? GetGName(uint gid) => GetGNameOrUName(gid, isGName: true);
+        internal static string GetGName(uint gid) => GetGNameOrUName(gid, isGName: true);
 
         /// <summary>
         /// Gets the user name associated to the specified user ID.
         /// </summary>
         /// <param name="uid">The user ID.</param>
         /// <returns>On success, return a string with the user name. On failure, returns a null string.</returns>
-        internal static string? GetUName(uint uid) => GetGNameOrUName(uid, isGName: false);
+        internal static string GetUName(uint uid) => GetGNameOrUName(uid, isGName: false);
 
-        private static string? GetGNameOrUName(uint id, bool isGName)
+        private static string GetGNameOrUName(uint id, bool isGName)
         {
-            // Common max name length, like /etc/passwd, useradd, groupadd
-            int outputBufferSize = 32;
+            int bufferSize = 256; // Upper limit allowed for login name in kernel
+
+            Span<byte> buffer = stackalloc byte[bufferSize];
+
+            int resultLength = GetGNameOrUnameInternal(id, isGName, buffer);
+            if(resultLength > 0 && resultLength <= buffer.Length)
+            {
+                return Encoding.UTF8.GetString(buffer.Slice(0, resultLength));
+            }
 
             while (true)
             {
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(outputBufferSize);
+                bufferSize *= 2;
+                byte[] pooledBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
                 try
                 {
-                    int resultLength = isGName ?
-                        Interop.Sys.GetGName(id, buffer, buffer.Length) :
-                        Interop.Sys.GetUName(id, buffer, buffer.Length);
-
-                    if (resultLength < 0)
+                    resultLength = GetGNameOrUnameInternal(id, isGName, pooledBuffer);
+                    if(resultLength > 0 && resultLength <= pooledBuffer.Length)
                     {
-                        // error
-                        return null;
-                    }
-                    else if (resultLength < buffer.Length)
-                    {
-                        // success
-                        return Encoding.UTF8.GetString(buffer, 0, resultLength);
+                        return Encoding.UTF8.GetString(pooledBuffer.AsSpan(0, resultLength));
                     }
                 }
                 finally
                 {
-                    ArrayPool<byte>.Shared.Return(buffer);
+                    ArrayPool<byte>.Shared.Return(pooledBuffer);
                 }
 
-                // Output buffer was too small, loop around again and try with a larger buffer.
-                outputBufferSize = buffer.Length * 2;
-
-                if (outputBufferSize > 256) // Upper limit allowed for login name in kernel
+                if (bufferSize >= 1024)
                 {
-                    return null;
+                    return string.Empty;
+                }
+            }
+        }
+
+        private static int GetGNameOrUnameInternal(uint id, bool isGName, Span<byte> buffer)
+        {
+            unsafe
+            {
+                fixed (byte* pBuffer = &MemoryMarshal.GetReference(buffer))
+                {
+                    int result = isGName ?
+                        Interop.Sys.GetGName(id, pBuffer, buffer.Length) :
+                        Interop.Sys.GetUName(id, pBuffer, buffer.Length);
+
+                    if (result <= 0)
+                    {
+                        ErrorInfo errorInfo = Interop.Sys.GetLastErrorInfo();
+                        if (errorInfo.Error == Interop.Error.ERANGE) // Insufficient buffer space, try again
+                        {
+                            return -1;
+                        }
+                        throw Interop.GetExceptionForIoErrno(errorInfo);
+                    }
+                    return result;
                 }
             }
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetGName", SetLastError = true)]
-        private static partial int GetGName(uint uid, byte[] buffer, int bufferSize);
+        private static unsafe partial int GetGName(uint uid, byte* buffer, long bufferSize);
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUName", SetLastError = true)]
-        private static partial int GetUName(uint uid, byte[] buffer, int bufferSize);
+        private static unsafe partial int GetUName(uint uid, byte* buffer, long bufferSize);
     }
 }

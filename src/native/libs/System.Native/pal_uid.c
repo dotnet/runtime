@@ -238,53 +238,54 @@ int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
     return getgroups(ngroups, groups);
 }
 
-int32_t SystemNative_GetUName(uint32_t uid, char* buffer, int32_t bufferSize)
+int32_t SystemNative_GetUName(uint32_t uid, char* buffer, size_t bufferSize)
 {
-    assert(buffer != NULL || bufferSize == 0);
-    assert(bufferSize >= 0);
+    assert(buffer != NULL);
+    assert(bufferSize > 0);
 
-    if (bufferSize <= 0)
+    if (buffer == NULL || bufferSize <= 0)
     {
         errno = EINVAL;
         return -1;
     }
 
-    errno = 0;
-    struct passwd *pwd;
-    while ((pwd = getpwuid(uid)) == NULL && errno == EINTR);
+    struct passwd u;
+    struct passwd* pu; 
 
-    size_t unameLength = strlen(pwd->pw_name);
-    if (errno < 0 || unameLength == 0 || unameLength > (size_t)bufferSize)
+    errno = 0;
+    int e;
+    while ((e = getpwuid_r(uid, &u, buffer, bufferSize, &pu)) == EINTR);
+
+    if (e < 0)
     {
-        buffer = NULL;
+        errno = e;
         return -1;
     }
-    SafeStringCopy(buffer, Int32ToSizeT(bufferSize), pwd->pw_name);
-    return (int32_t)unameLength;
+    return (int32_t)strlen(buffer);
 }
 
-int32_t SystemNative_GetGName(uint32_t gid, char* buffer, int32_t bufferSize)
+int32_t SystemNative_GetGName(uint32_t gid, char* buffer, size_t bufferSize)
 {
-    assert(buffer != NULL || bufferSize == 0);
-    assert(bufferSize >= 0);
+    assert(buffer != NULL);
+    assert(bufferSize > 0);
 
-    if (bufferSize <= 0)
+    if (buffer == NULL || bufferSize <= 0)
     {
         errno = EINVAL;
         return -1;
     }
 
-    errno = 0;
-    struct group *grp;
-    while ((grp = getgrgid(gid)) == NULL && errno == EINTR);
+    struct group g;
+    struct group* pg; 
 
-    size_t gnameLength = strlen(grp->gr_name);
-    if (errno < 0 || gnameLength == 0 || gnameLength > (size_t)bufferSize)
+    errno = 0;
+    int e;
+    while ((e = getgrgid_r(gid, &g, buffer, bufferSize, &pg)) == EINTR);
+
+    if (e < 0)
     {
-        buffer = NULL;
+        errno = e;
         return -1;
     }
-
-    SafeStringCopy(buffer, Int32ToSizeT(bufferSize), grp->gr_name);
-    return (int32_t)gnameLength;
+    return (int32_t)strlen(buffer);
 }
