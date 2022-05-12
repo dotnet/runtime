@@ -55,7 +55,7 @@ namespace ILCompiler
             ReadyToRunCompilationModuleGroupBase group,
             IEnumerable<string> inputFiles,
             string compositeRootPath)
-            : base(context, group, new CoreRTNameMangler())
+            : base(context, group, new NativeAotNameMangler())
         {
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
@@ -84,7 +84,7 @@ namespace ILCompiler
                 builder.Add(new KeyValuePair<string, string>(name, value));
             }
 
-            if (_context.Target.Abi == TargetAbi.CoreRTArmel)
+            if (_context.Target.Abi == TargetAbi.NativeAotArmel)
             {
                 builder.Add(new KeyValuePair<string, string>("JitSoftFP", "1"));
             }

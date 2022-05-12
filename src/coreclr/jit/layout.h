@@ -23,7 +23,7 @@ class ClassLayout
 
     const unsigned m_isValueClass : 1;
     INDEBUG(unsigned m_gcPtrsInitialized : 1;)
-    // The number of GC pointers in this layout. Since the the maximum size is 2^32-1 the count
+    // The number of GC pointers in this layout. Since the maximum size is 2^32-1 the count
     // can fit in at most 30 bits.
     unsigned m_gcPtrCount : 30;
 

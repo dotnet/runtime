@@ -244,7 +244,7 @@ BasicBlock* CodeGen::genCallFinally(BasicBlock* block)
     // The jmp can be a NOP if we're going to the next block.
     // If we're generating code for the main function (not a funclet), and there is no localloc,
     // then RSP at this point is the same value as that stored in the PSPSym. So just copy RSP
-    // instead of loading the PSPSym in this case, or if PSPSym is not used (CoreRT ABI).
+    // instead of loading the PSPSym in this case, or if PSPSym is not used (NativeAOT ABI).
 
     if ((compiler->lvaPSPSym == BAD_VAR_NUM) ||
         (!compiler->compLocallocUsed && (compiler->funCurrentFunc()->funKind == FUNC_ROOT)))
@@ -553,35 +553,38 @@ void CodeGen::genCodeForNegNot(GenTree* tree)
 //
 void CodeGen::genCodeForBswap(GenTree* tree)
 {
-    // TODO: If we're swapping immediately after a read from memory or immediately before
-    // a write to memory, use the MOVBE instruction instead of the BSWAP instruction if
-    // the platform supports it.
-
     assert(tree->OperIs(GT_BSWAP, GT_BSWAP16));
 
     regNumber targetReg  = tree->GetRegNum();
     var_types targetType = tree->TypeGet();
 
     GenTree* operand = tree->gtGetOp1();
-    assert(operand->isUsedFromReg());
-    regNumber operandReg = genConsumeReg(operand);
 
-    inst_Mov(targetType, targetReg, operandReg, /* canSkip */ true);
+    genConsumeRegs(operand);
 
-    if (tree->OperIs(GT_BSWAP))
+    if (operand->isUsedFromReg())
     {
-        // 32-bit and 64-bit byte swaps use "bswap reg"
-        inst_RV(INS_bswap, targetReg, targetType);
+        inst_Mov(targetType, targetReg, operand->GetRegNum(), /* canSkip */ true);
+
+        if (tree->OperIs(GT_BSWAP))
+        {
+            // 32-bit and 64-bit byte swaps use "bswap reg"
+            inst_RV(INS_bswap, targetReg, targetType);
+        }
+        else
+        {
+            // 16-bit byte swaps use "ror reg.16, 8"
+            inst_RV_IV(INS_ror_N, targetReg, 8 /* val */, emitAttr::EA_2BYTE);
+        }
     }
     else
     {
-        // 16-bit byte swaps use "ror reg.16, 8"
-        inst_RV_IV(INS_ror_N, targetReg, 8 /* val */, emitAttr::EA_2BYTE);
+        GetEmitter()->emitInsBinary(INS_movbe, emitTypeSize(operand), tree, operand);
+    }
 
-        if (!genCanOmitNormalizationForBswap16(tree))
-        {
-            GetEmitter()->emitIns_Mov(INS_movzx, EA_2BYTE, targetReg, targetReg, /* canSkip */ false);
-        }
+    if (tree->OperIs(GT_BSWAP16) && !genCanOmitNormalizationForBswap16(tree))
+    {
+        GetEmitter()->emitIns_Mov(INS_movzx, EA_2BYTE, targetReg, targetReg, /* canSkip */ false);
     }
 
     genProduceReg(tree);
@@ -4976,7 +4979,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     emitter*  emit       = GetEmitter();
 
     GenTree* addr = tree->Addr();
-    if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_TLS_HDL))
+    if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
@@ -5140,7 +5143,10 @@ void CodeGen::genCodeForStoreInd(GenTreeStoreInd* tree)
         }
         else
         {
-            GetEmitter()->emitInsStoreInd(ins_Store(data->TypeGet()), emitTypeSize(tree), tree);
+            GetEmitter()->emitInsStoreInd(data->OperIs(GT_BSWAP, GT_BSWAP16) && data->isContained()
+                                              ? INS_movbe
+                                              : ins_Store(data->TypeGet()),
+                                          emitTypeSize(tree), tree);
         }
     }
 }
@@ -9924,7 +9930,7 @@ void CodeGen::genFnEpilog(BasicBlock* block)
  *      ~  possible 8 byte pad  ~
  *      ~     for alignment     ~
  *      |-----------------------|
- *      |        PSP slot       | // Omitted in CoreRT ABI
+ *      |        PSP slot       | // Omitted in NativeAOT ABI
  *      |-----------------------|
  *      |   Outgoing arg space  | // this only exists if the function makes a call
  *      |-----------------------| <---- Initial SP
@@ -9995,7 +10001,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // If there is no PSPSym (CoreRT ABI), we are done.
+    // If there is no PSPSym (NativeAOT ABI), we are done.
     if (compiler->lvaPSPSym == BAD_VAR_NUM)
     {
         return;

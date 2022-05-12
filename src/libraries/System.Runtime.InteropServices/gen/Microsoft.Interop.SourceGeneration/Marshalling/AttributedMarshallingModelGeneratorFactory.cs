@@ -50,22 +50,51 @@ namespace Microsoft.Interop
 
         public IMarshallingGenerator Create(TypePositionInfo info, StubCodeContext context)
         {
-            return info.MarshallingAttributeInfo switch
+            if (info.MarshallingAttributeInfo is NativeMarshallingAttributeInfo marshalInfo)
             {
-                NativeMarshallingAttributeInfo marshalInfo when Options.RuntimeMarshallingDisabled => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
-                NativeMarshallingAttributeInfo { NativeValueType: SpecialTypeInfo specialType } marshalInfo when specialType.SpecialType.IsAlwaysBlittable() => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
-                NativeMarshallingAttributeInfo { NativeValueType: PointerTypeInfo } marshalInfo => CreateCustomNativeTypeMarshaller(info, context, marshalInfo),
-                UnmanagedBlittableMarshallingInfo when Options.RuntimeMarshallingDisabled => s_blittable,
-                UnmanagedBlittableMarshallingInfo or NativeMarshallingAttributeInfo when !Options.RuntimeMarshallingDisabled =>
-                    throw new MarshallingNotSupportedException(info, context)
-                    {
-                        NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
-                        DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
-                    },
-                GeneratedNativeMarshallingAttributeInfo => s_forwarder,
-                MissingSupportMarshallingInfo => s_forwarder,
-                _ => _innerMarshallingGenerator.Create(info, context)
-            };
+                if (Options.RuntimeMarshallingDisabled || marshalInfo.IsStrictlyBlittable)
+                {
+                    return CreateCustomNativeTypeMarshaller(info, context, marshalInfo);
+                }
+
+                if (marshalInfo.NativeValueType is SpecialTypeInfo specialType
+                        && specialType.SpecialType.IsAlwaysBlittable())
+                {
+                    return CreateCustomNativeTypeMarshaller(info, context, marshalInfo);
+                }
+
+                if (marshalInfo.NativeValueType is PointerTypeInfo)
+                {
+                    return CreateCustomNativeTypeMarshaller(info, context, marshalInfo);
+                }
+
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
+                    DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
+                };
+            }
+
+            if (info.MarshallingAttributeInfo is UnmanagedBlittableMarshallingInfo blittableInfo)
+            {
+                if (Options.RuntimeMarshallingDisabled || blittableInfo.IsStrictlyBlittable)
+                {
+                    return s_blittable;
+                }
+
+                throw new MarshallingNotSupportedException(info, context)
+                {
+                    NotSupportedDetails = SR.RuntimeMarshallingMustBeDisabled,
+                    DiagnosticProperties = AddDisableRuntimeMarshallingAttributeProperties
+                };
+            }
+
+            if (info.MarshallingAttributeInfo is MissingSupportMarshallingInfo)
+            {
+                return s_forwarder;
+            }
+
+            return _innerMarshallingGenerator.Create(info, context);
         }
 
         private static ExpressionSyntax GetNumElementsExpressionFromMarshallingInfo(TypePositionInfo info, CountInfo count, StubCodeContext context)
@@ -211,9 +240,11 @@ namespace Microsoft.Interop
                     NotSupportedDetails = string.Format(SR.CustomTypeMarshallingNativeToManagedUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
+
             // The marshalling method for this type doesn't support marshalling from managed to native by value,
             // but our scenario requires marshalling from managed to native by value.
-            else if (!info.IsByRef
+            if (!info.IsByRef
+                && !info.IsManagedReturnPosition
                 && context.SingleFrameSpansNativeContext
                 && !(marshalInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.ManagedType)
                     || marshalInfo.MarshallingFeatures.HasFlag(CustomTypeMarshallerFeatures.CallerAllocatedBuffer)
@@ -224,10 +255,11 @@ namespace Microsoft.Interop
                     NotSupportedDetails = string.Format(SR.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
+
             // The marshalling method for this type doesn't support marshalling from managed to native by reference,
             // but our scenario requires marshalling from managed to native by reference.
             // "in" byref supports stack marshalling.
-            else if (info.RefKind == RefKind.In
+            if (info.RefKind == RefKind.In
                 && !(context.SingleFrameSpansNativeContext && marshalInfo.MarshallingFeatures.HasFlag(CustomTypeMarshallerFeatures.CallerAllocatedBuffer))
                 && !marshalInfo.Direction.HasFlag(CustomTypeMarshallerDirection.In))
             {
@@ -236,11 +268,12 @@ namespace Microsoft.Interop
                     NotSupportedDetails = string.Format(SR.CustomTypeMarshallingManagedToNativeUnsupported, marshalInfo.NativeMarshallingType.FullTypeName)
                 };
             }
+
             // The marshalling method for this type doesn't support marshalling from managed to native by reference,
             // but our scenario requires marshalling from managed to native by reference.
             // "ref" byref marshalling doesn't support stack marshalling
             // The "Out" direction for "ref" was checked above
-            else if (info.RefKind == RefKind.Ref
+            if (info.RefKind == RefKind.Ref
                 && !marshalInfo.Direction.HasFlag(CustomTypeMarshallerDirection.In))
             {
                 throw new MarshallingNotSupportedException(info, context)
@@ -252,14 +285,14 @@ namespace Microsoft.Interop
 
         private static ICustomNativeTypeMarshallingStrategy DecorateWithTwoStageMarshallingStrategy(NativeMarshallingAttributeInfo marshalInfo, ICustomNativeTypeMarshallingStrategy nativeTypeMarshaller)
         {
-            TypeSyntax valuePropertyTypeSyntax = marshalInfo.NativeValueType!.Syntax;
+            TypeSyntax nativeValueTypeSyntax = marshalInfo.NativeValueType!.Syntax;
 
             if (marshalInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.NativeType) && marshalInfo.MarshallingFeatures.HasFlag(CustomTypeMarshallerFeatures.TwoStageMarshalling))
             {
-                return new PinnableMarshallerTypeMarshalling(nativeTypeMarshaller, valuePropertyTypeSyntax);
+                return new PinnableMarshallerTypeMarshalling(nativeTypeMarshaller, nativeValueTypeSyntax);
             }
 
-            return new CustomNativeTypeWithToFromNativeValueMarshalling(nativeTypeMarshaller, valuePropertyTypeSyntax);
+            return new CustomNativeTypeWithToFromNativeValueMarshalling(nativeTypeMarshaller, nativeValueTypeSyntax);
         }
 
         private IMarshallingGenerator CreateNativeCollectionMarshaller(

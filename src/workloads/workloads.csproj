@@ -137,9 +137,10 @@
     <MSBuild Projects="$(MSBuildProjectFile)" Properties="_WixObjDir=%(Msis.WixObj);_Msi=%(Msis.Identity)" Targets="CreateWixPack" />
 
     <!-- Build the Visual Studio manifest project. -->
-    <ItemGroup>
+    <!-- This is currently a manual endeavor. Building it in CI brings .NET Framework dependencies that make machine servicing harder. -->
+    <!-- <ItemGroup>
       <VisualStudioManifestProjects Include="mono_wasm_mobile.vsmanproj" />
-    </ItemGroup>
+    </ItemGroup> -->
 
     <MSBuild Projects="@(VisualStudioManifestProjects)" Properties="SwixBuildTargets=$(SwixBuildTargets);ManifestOutputPath=$(VersionedVisualStudioSetupInsertionPath);OutputPath=$(VersionedVisualStudioSetupInsertionPath)" />
 

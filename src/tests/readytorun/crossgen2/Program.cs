@@ -43,7 +43,7 @@ internal class Program
 
     private static bool WriteLine()
     {
-        Console.WriteLine("Hello CoreRT R2R running on CoreCLR!");
+        Console.WriteLine("Hello R2R running on CoreCLR!");
         return true;
     }
     

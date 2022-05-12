@@ -95,7 +95,7 @@ namespace System.Formats.Tar
         /// <param name="entryName">The name of the file as it should be represented in the archive. It should include the optional relative path and the filename.</param>
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
         /// <exception cref="ArgumentException"><paramref name="fileName"/> or <paramref name="entryName"/> is <see langword="null"/> or empty.</exception>
-        /// <exception cref="IOException">An I/O problem ocurred.</exception>
+        /// <exception cref="IOException">An I/O problem occurred.</exception>
         public void WriteEntry(string fileName, string? entryName)
         {
             ThrowIfDisposed();
@@ -160,7 +160,7 @@ namespace System.Formats.Tar
         /// </remarks>
         /// <exception cref="ObjectDisposedException">The archive stream is disposed.</exception>
         /// <exception cref="InvalidOperationException">The entry type of the <paramref name="entry"/> is not supported for writing.</exception>
-        /// <exception cref="IOException">An I/O problem ocurred.</exception>
+        /// <exception cref="IOException">An I/O problem occurred.</exception>
         public void WriteEntry(TarEntry entry)
         {
             ThrowIfDisposed();
