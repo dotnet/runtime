@@ -218,7 +218,7 @@ namespace System.Net.Http
                 bool goAway;
                 lock (SyncObj)
                 {
-                    goAway = _firstRejectedStreamId != -1 && requestStream.StreamId > _firstRejectedStreamId;
+                    goAway = _firstRejectedStreamId != -1 && requestStream.StreamId >= _firstRejectedStreamId;
                 }
 
                 if (goAway)

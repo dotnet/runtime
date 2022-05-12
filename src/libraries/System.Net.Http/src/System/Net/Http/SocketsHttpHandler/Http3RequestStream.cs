@@ -262,7 +262,7 @@ namespace System.Net.Http
                 }
                 else
                 {
-                    Debug.Assert(_requestBodyCancellationSource.IsCancellationRequested == true);
+                    Debug.Assert(_requestBodyCancellationSource.IsCancellationRequested);
                     throw new HttpRequestException(SR.net_http_request_aborted, ex, RequestRetryType.RetryOnConnectionFailure);
                 }
             }
