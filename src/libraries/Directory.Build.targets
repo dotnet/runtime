@@ -47,6 +47,8 @@
     <IsNETCoreAppRef Condition="('$(IsReferenceAssemblyProject)' == 'true' or '$(IsRuntimeAndReferenceAssembly)' == 'true') and
                                 $(NetCoreAppLibrary.Contains('$(AssemblyName);')) and
                                 !$(NetCoreAppLibraryNoReference.Contains('$(AssemblyName);'))">true</IsNETCoreAppRef>
+    <IsNETCoreAppAnalyzer Condition="'$(IsGeneratorProject)' == 'true' and
+                                     $(NetCoreAppLibraryGenerator.Contains('$(MSBuildProjectName);'))">true</IsNETCoreAppAnalyzer>
     <!-- By default, disable implicit framework references for NetCoreAppCurrent libraries. -->
     <DisableImplicitFrameworkReferences Condition="'$(TargetFrameworkIdentifier)' == '.NETCoreApp' and
                                                    $([MSBuild]::VersionGreaterThanOrEquals($(TargetFrameworkVersion), '$(NETCoreAppCurrentVersion)')) and
@@ -201,25 +203,6 @@
     </When>
   </Choose>
 
-  <PropertyGroup>
-    <BuildAnalyzerReferences>$(BuildProjectReferences)</BuildAnalyzerReferences>
-    <BuildAnalyzerReferences Condition="'$(BuildingInsideVisualStudio)' == 'true'">false</BuildAnalyzerReferences>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <!-- Ensure AnalyzerReference items are restored and built
-         The target framework of Analyzers has no relationship to that of the refrencing project,
-         so we don't apply TargetFramework filters nor do we pass in TargetFramework.
-         When BuildProjectReferences=false we make sure to set BuildReference=false to make
-         sure not to try to call GetTargetPath in the outerbuild of the analyzer project. -->
-    <ProjectReference Include="@(AnalyzerReference)"
-                      SkipGetTargetFrameworkProperties="true"
-                      UndefineProperties="TargetFramework"
-                      ReferenceOutputAssembly="false"
-                      PrivateAssets="all"
-                      BuildReference="$(BuildAnalyzerReferences)" />
-  </ItemGroup>
-
   <Target Name="GetAnalyzerPackFiles"
           DependsOnTargets="$(GenerateNuspecDependsOn)"
           Returns="@(_AnalyzerPackFile)">
@@ -228,11 +211,13 @@
       <_analyzerPath Condition="'$(AnalyzerRoslynVersion)' != ''">$(_analyzerPath)/roslyn$(AnalyzerRoslynVersion)</_analyzerPath>
       <_analyzerPath Condition="'$(AnalyzerLanguage)' != ''">$(_analyzerPath)/$(AnalyzerLanguage)</_analyzerPath>
     </PropertyGroup>
+
     <ItemGroup>
       <_AnalyzerPackFile Include="@(_BuildOutputInPackage)" IsSymbol="false" />
       <_AnalyzerPackFile Include="@(_TargetPathsToSymbols)" IsSymbol="true" />
       <_AnalyzerPackFile PackagePath="$(_analyzerPath)/%(TargetPath)" />
     </ItemGroup>
+
     <Error Condition="'%(_AnalyzerPackFile.TargetFramework)' != 'netstandard2.0'"
            Text="Analyzers must only target netstandard2.0 since they run in the compiler which targets netstandard2.0. The following files were found to target '%(_AnalyzerPackFile.TargetFramework)': @(_AnalyzerPackFile)" />
   </Target>
