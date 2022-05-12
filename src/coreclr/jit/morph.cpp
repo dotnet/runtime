@@ -13370,7 +13370,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
         castOp->IsUnsigned() && !castOp->gtOverflow())
     {
         IntegralRange knownPositiveOpRange = IntegralRange::ForNode(knownPositiveOp, this);
-        bool knownPositiveFitsIntoU32 = IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax).Contains(knownPositiveOpRange);
+        bool          knownPositiveFitsIntoU32 =
+            IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax).Contains(knownPositiveOpRange);
 
         if (!knownPositiveFitsIntoU32)
         {
