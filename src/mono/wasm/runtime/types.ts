@@ -183,6 +183,10 @@ export interface EventPipeSessionOptions {
     /// Whether to collect additional details (such as method and type names) at EventPipeSession.stop() time (default: true)
     /// This is required for some use cases, and may allow some tools to better understand the events.
     collectRundownEvents?: boolean;
+    /// [FIXME] use a structure, not a string
+    /// can be set to MONO.diagnostics.defaultProviderString + ",<provider name>:<keyword>:<level>"
+    /// see https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
+    providers: string;
 }
 
 // how we extended emscripten Module

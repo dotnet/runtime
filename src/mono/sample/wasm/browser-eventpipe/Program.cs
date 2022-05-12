@@ -5,10 +5,40 @@ using System;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Diagnostics.Tracing;
 
 
 namespace Sample
 {
+
+    [EventSource(Name = "WasmHello")]
+    public class WasmHelloEventSource  : EventSource
+    {
+        public static readonly WasmHelloEventSource Instance = new ();
+
+        private IncrementingEventCounter _calls;
+
+        private WasmHelloEventSource ()
+        {
+            _calls = new ("fib-calls", this)
+            {
+                DisplayName = "Recursive Fib calls",
+            };
+        }
+
+        public void CountCall() {
+            _calls?.Increment(1.0);
+        }
+
+        protected override void Dispose (bool disposing)
+        {
+            _calls?.Dispose();
+            _calls = null;
+
+            base.Dispose(disposing);
+        }
+    }
+
     public class Test
     {
         public static void Main(string[] args)
@@ -34,6 +64,7 @@ namespace Sample
                 return 0;
             if (n == 1)
                 return 1;
+            WasmHelloEventSource.Instance.CountCall();
             return recursiveFib (n - 1) + recursiveFib (n - 2);
         }
 

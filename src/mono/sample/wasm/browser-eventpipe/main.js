@@ -61,7 +61,10 @@ async function main() {
     const startWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
     const stopWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StopWork");
     const getIterationsDone = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:GetIterationsDone");
-    const eventSession = MONO.diagnostics.createEventPipeSession();
+    const options = {
+	providers: MONO.diagnostics.defaultProviderString + ",WasmHello:0:5",
+    }
+    const eventSession = MONO.diagnostics.createEventPipeSession(options);
     eventSession.start();
     const workPromise = startWork();
 

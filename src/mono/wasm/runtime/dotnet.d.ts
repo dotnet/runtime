@@ -210,6 +210,7 @@ declare type CoverageProfilerOptions = {
 };
 interface EventPipeSessionOptions {
     collectRundownEvents?: boolean;
+    providers: string;
 }
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
@@ -250,6 +251,7 @@ interface EventPipeSession {
     getTraceBlob(): Blob;
 }
 interface Diagnostics {
+    defaultProviderString(): string;
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
 }
 

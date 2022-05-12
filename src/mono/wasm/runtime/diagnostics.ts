@@ -91,9 +91,10 @@ function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSess
     const defaultBufferSizeInMB = 1;
 
     const rundown = options?.collectRundownEvents ?? defaultRundownRequested;
+    const providers = options?.providers ?? defaultProviders;
 
     memory.setI32(sessionIdOutPtr, 0);
-    if (!cwraps.mono_wasm_event_pipe_enable(tracePath, defaultBufferSizeInMB, defaultProviders, rundown, sessionIdOutPtr)) {
+    if (!cwraps.mono_wasm_event_pipe_enable(tracePath, defaultBufferSizeInMB, providers, rundown, sessionIdOutPtr)) {
         return false;
     } else {
         return memory.getI32(sessionIdOutPtr);
@@ -101,11 +102,15 @@ function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSess
 }
 
 export interface Diagnostics {
+    defaultProviderString(): string;
+
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
 }
 
+
 /// APIs for working with .NET diagnostics from JavaScript.
 export const diagnostics: Diagnostics = {
+    defaultProviderString: () => "Microsoft-Windows-DotNETRuntime:4c14fccbd:5,Microsoft-Windows-DotNETRuntimePrivate:4002000b:5,Microsoft-DotNETCore-SampleProfiler:0:5",
     /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
     /// Use the options to control the kinds of events to be collected.
     /// Multiple sessions may be created and started at the same time.
