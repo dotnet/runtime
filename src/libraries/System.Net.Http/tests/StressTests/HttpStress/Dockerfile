@@ -1,8 +1,6 @@
 ARG SDK_BASE_IMAGE=mcr.microsoft.com/dotnet/nightly/sdk:6.0-bullseye-slim
 FROM $SDK_BASE_IMAGE
 
-
-# Pulling the msquic Debian package from packages.microsoft.com
 # Build latest msquic locally
 WORKDIR /msquic
 RUN apt-get update -y && \
@@ -25,6 +23,7 @@ RUN cd msquic/src/msquic/build/bin/Release && \
 ARG VERSION=7.0
 ARG CONFIGURATION=Release
 
+# Build the stress server
 WORKDIR /app
 COPY . .
 

@@ -19,7 +19,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
         internal static unsafe QuicAddr ToQuicAddr(this IPEndPoint iPEndPoint)
         {
-            // TODO: is the layout same for SocketAddress.Buffer and QuicAddr?
+            // TODO: is the layout same for SocketAddress.Buffer and QuicAddr on all platforms?
             QuicAddr result = default;
             Span<byte> rawAddress = MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref result, 1));
 
