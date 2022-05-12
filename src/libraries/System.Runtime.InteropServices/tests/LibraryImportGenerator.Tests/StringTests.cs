@@ -216,7 +216,7 @@ namespace LibraryImportGenerator.IntegrationTests
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReverseInplace)]
             public static partial void Reverse_In([MarshalAs(UnmanagedType.BStr)] in string s);
 
-            [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReverseInplace)]
+            [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReverseReplace)]
             public static partial void Reverse_Replace_Ref([MarshalAs(UnmanagedType.BStr)] ref string s);
         }
 
