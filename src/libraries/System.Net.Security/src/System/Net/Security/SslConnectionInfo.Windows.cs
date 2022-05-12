@@ -17,15 +17,15 @@ namespace System.Net.Security
                 alpnContext.ProtoNegoExt == Interop.ApplicationProtocolNegotiationExt.ALPN &&
                 alpnContext.ProtoNegoStatus == Interop.ApplicationProtocolNegotiationStatus.Success)
             {
-                if (alpnContext.ProtocolIdSize == s_http1.Length && alpnContext.Protocol.SequenceEqual(s_http1))
+                if (alpnContext.Protocol.SequenceEqual(s_http1))
                 {
                     return s_http1;
                 }
-                else if (alpnContext.ProtocolIdSize == s_http2.Length && alpnContext.Protocol.SequenceEqual(s_http2))
+                else if (alpnContext.Protocol.SequenceEqual(s_http2))
                 {
                     return s_http2;
                 }
-                else if (alpnContext.ProtocolIdSize == s_http3.Length && alpnContext.Protocol.SequenceEqual(s_http3))
+                else if (alpnContext.Protocol.SequenceEqual(s_http3))
                 {
                     return s_http3;
                 }
