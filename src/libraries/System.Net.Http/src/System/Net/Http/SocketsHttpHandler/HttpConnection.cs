@@ -1461,8 +1461,8 @@ namespace System.Net.Http
             int maxByteLength = readingHeader ? _allowedReadLineBytes : MaxChunkBytesAllowed;
             var buffer = new ReadOnlySpan<byte>(_readBuffer, _readOffset, _readLength - _readOffset);
 
-            int lfIdx = buffer.IndexOf((byte)'\n');
-            if (lfIdx < 0)
+            int lineFeedIndex = buffer.IndexOf((byte)'\n');
+            if (lineFeedIndex < 0)
             {
                 if (buffer.Length < maxByteLength)
                 {
@@ -1472,7 +1472,7 @@ namespace System.Net.Http
             }
             else
             {
-                int bytesConsumed = lfIdx + 1;
+                int bytesConsumed = lineFeedIndex + 1;
                 int maxBytesRemaining = maxByteLength - bytesConsumed;
                 if (maxBytesRemaining >= 0)
                 {
@@ -1483,13 +1483,13 @@ namespace System.Net.Http
                         _allowedReadLineBytes = maxBytesRemaining;
                     }
 
-                    int crOrLfIdx = lfIdx - 1;
-                    if (crOrLfIdx < 0 || buffer[crOrLfIdx] != '\r')
-                    {
-                        crOrLfIdx = lfIdx;
-                    }
+                    int carriageReturnIndex = lineFeedIndex - 1;
 
-                    line = buffer.Slice(0, crOrLfIdx);
+                    int length = (uint)carriageReturnIndex < (uint)buffer.Length && buffer[carriageReturnIndex] == '\r'
+                        ? carriageReturnIndex
+                        : lineFeedIndex;
+
+                    line = buffer.Slice(0, length);
                     return true;
                 }
             }
