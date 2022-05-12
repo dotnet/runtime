@@ -1210,6 +1210,8 @@ namespace System.Net.Http.Functional.Tests
                 cts.Cancel();
                 await Task.Delay(250);
 
+                // Http3WriteStream is disposed after cancellation fired
+                await Assert.ThrowsAsync<ObjectDisposedException>(() => requestStream.WriteAsync(message).AsTask());
                 // client is properly canceled
                 await Assert.ThrowsAsync<TaskCanceledException>(() => responseTask);
             });

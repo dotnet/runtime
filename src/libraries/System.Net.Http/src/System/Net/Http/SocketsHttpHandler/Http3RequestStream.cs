@@ -119,12 +119,8 @@ namespace System.Net.Http
             bool duplex = _request.Content != null && _request.Content.AllowDuplex;
             CancellationTokenRegistration linkedTokenRegistration = default;
 
-            // If we have duplex content, then don't propagate the cancellation to the request body task.
-            if (!duplex)
-            {
-                // Link the input token with _requestBodyCancellationSource, so cancellation will trigger on GoAway() or Abort().
-                linkedTokenRegistration = cancellationToken.UnsafeRegister(cts => ((CancellationTokenSource)cts!).Cancel(), _requestBodyCancellationSource);
-            }
+            // Link the input token with _requestBodyCancellationSource, so cancellation will trigger on GoAway() or Abort().
+            linkedTokenRegistration = cancellationToken.UnsafeRegister(cts => ((CancellationTokenSource)cts!).Cancel(), _requestBodyCancellationSource);
 
             // upon failure, we should cancel the _requestBodyCancellationSource
             bool shouldCancelBody = true;
@@ -146,7 +142,7 @@ namespace System.Net.Http
 
                     // End the stream writing if there's no content to send, do it as part of the write so that the FIN flag isn't send in an empty QUIC frame.
                     // Note that there's no need to call Shutdown separately since the FIN flag in the last write is the same thing.
-                    await FlushSendBufferAsync(endStream: _request.Content == null, cancellationToken).ConfigureAwait(false);
+                    await FlushSendBufferAsync(endStream: _request.Content == null, _requestBodyCancellationSource.Token).ConfigureAwait(false);
                 }
 
                 Task sendContentTask;
@@ -161,7 +157,7 @@ namespace System.Net.Http
 
                 // In parallel, send content and read response.
                 // Depending on Expect 100 Continue usage, one will depend on the other making progress.
-                Task readResponseTask = ReadResponseAsync(cancellationToken);
+                Task readResponseTask = ReadResponseAsync(_requestBodyCancellationSource.Token);
                 bool sendContentObserved = false;
 
                 // If we're not doing duplex, wait for content to finish sending here.
@@ -230,6 +226,7 @@ namespace System.Net.Http
                 // If we're 100% done with the stream, dispose.
                 disposeSelf = useEmptyResponseContent;
 
+                // Success, don't cancel the body.
                 shouldCancelBody = false;
                 return response;
             }
@@ -261,9 +258,6 @@ namespace System.Net.Http
                 // We're either observing GOAWAY, or the cancellationToken parameter has been canceled.
                 if (cancellationToken.IsCancellationRequested)
                 {
-                    // in case the HttpContent was duplex, don't cancel _requestBodyCancellationSource
-                    shouldCancelBody = false;
-
                     _stream.AbortWrite((long)Http3ErrorCode.RequestCancelled);
                     throw new TaskCanceledException(ex.Message, ex, cancellationToken);
                 }
