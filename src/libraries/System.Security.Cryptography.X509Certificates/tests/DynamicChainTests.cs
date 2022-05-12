@@ -13,6 +13,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
     [ActiveIssue("https://github.com/dotnet/runtime/issues/57506", typeof(PlatformDetection), nameof(PlatformDetection.IsMonoRuntime), nameof(PlatformDetection.IsMariner))]
     public static class DynamicChainTests
     {
+        private const string CAStoreMarkerExtensionOid = "2.25.277653695686307439044277057813987742445";
         private static X509Extension BasicConstraintsCA => new X509BasicConstraintsExtension(
             certificateAuthority: true,
             hasPathLengthConstraint: false,
@@ -832,6 +833,56 @@ namespace System.Security.Cryptography.X509Certificates.Tests
             }
         }
 
+        [Fact]
+        [OuterLoop("Modifies a shared trust store.")]
+        public static void UsesCertificateAuthorityStoreForExtraCerts()
+        {
+            X509Extension markerExtension = GetMarkerExtension(nameof(UsesCertificateAuthorityStoreForExtraCerts));
+
+            X509Extension[] intermediateExtensions = new []
+            {
+                BasicConstraintsCA,
+                markerExtension,
+            };
+            X509Extension[] endEntityExtensions = new []
+            {
+                BasicConstraintsEndEntity,
+            };
+
+            TestDataGenerator.MakeTestChain3(
+                out X509Certificate2 endEntityCert,
+                out X509Certificate2 intermediateCert,
+                out X509Certificate2 rootCert,
+                intermediateExtensions: intermediateExtensions,
+                endEntityExtensions: endEntityExtensions);
+
+            using (endEntityCert)
+            using (intermediateCert)
+            using (rootCert)
+            using (X509Store caStore = OpenAndPrepareCertificateAuthorityStore(markerExtension))
+            using (ChainHolder chainHolder = new ChainHolder())
+            {
+                try
+                {
+                    caStore.Add(intermediateCert);
+
+                    X509Chain chain = chainHolder.Chain;
+                    chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
+                    chain.ChainPolicy.VerificationTime = endEntityCert.NotBefore.AddSeconds(1);
+                    chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
+                    chain.ChainPolicy.CustomTrustStore.Add(rootCert);
+
+                    bool result = chain.Build(endEntityCert);
+                    X509ChainStatusFlags actualFlags = chain.AllStatusFlags();
+                    Assert.True(result, $"chain.Build ({actualFlags})");
+                }
+                finally
+                {
+                    CleanupStore(markerExtension, caStore);
+                }
+            }
+        }
+
         private static X509ChainStatusFlags PlatformBasicConstraints(X509ChainStatusFlags flags)
         {
             if (OperatingSystem.IsAndroid())
@@ -1065,5 +1116,34 @@ namespace System.Security.Cryptography.X509Certificates.Tests
                     $"Expected Flags: \"{expectedFlags}\"; Actual Flags: \"{actualFlags}\"");
             }
         }
+
+        private static X509Store OpenAndPrepareCertificateAuthorityStore(X509Extension markerExtension)
+        {
+            X509Store store = new X509Store(StoreName.CertificateAuthority, StoreLocation.CurrentUser);
+            store.Open(OpenFlags.ReadWrite);
+            CleanupStore(markerExtension, store);
+            return store;
+        }
+
+        private static void CleanupStore(X509Extension markerExtension, X509Store store)
+        {
+            foreach (X509Certificate2 cert in store.Certificates)
+            {
+                X509Extension? ext = cert.Extensions[CAStoreMarkerExtensionOid];
+
+                if (ext is not null && ext.RawData.AsSpan().SequenceEqual(markerExtension.RawData))
+                {
+                    store.Remove(cert);
+                }
+            }
+        }
+
+        private static X509Extension GetMarkerExtension(string testName)
+        {
+            byte[] testNameBytes = System.Text.Encoding.UTF8.GetBytes(testName);
+            byte[] testNameHash = SHA256.HashData(testNameBytes);
+            return new X509Extension(CAStoreMarkerExtensionOid, testNameHash, critical: false);
+        }
+
     }
 }
