@@ -76,10 +76,6 @@
              Link="Common\System\NotImplemented.cs" />
     <Compile Include="$(CommonPath)System\Threading\Tasks\TaskToApm.cs"
              Link="Common\System\Threading\Tasks\TaskToApm.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Net.Http\src\System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs"
-             Link="System\Net\Http\SocketsHttpHandler\RuntimeSettingParser.cs" />
-    <Compile Include="$(LibrariesProjectRoot)System.Net.Http\src\System\Net\Http\GlobalHttpSettings.cs"
-             Link="System\Net\Http\GlobalHttpSettings.cs" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetPlatformIdentifier)' == 'windows'">
     <Compile Include="$(CommonPath)Interop\Windows\WinInet\Interop.wininet_errors.cs"
