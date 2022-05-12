@@ -243,9 +243,10 @@ private:
 
     uintptr_t     m_fieldHandleAndKind;
     FieldSeqNode* m_next;
+    size_t        m_offset;
 
 public:
-    FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, FieldKind fieldKind);
+    FieldSeqNode(CORINFO_FIELD_HANDLE fieldHnd, FieldSeqNode* next, size_t offset, FieldKind fieldKind);
 
     FieldKind GetKind() const
     {
@@ -266,6 +267,18 @@ public:
     FieldSeqNode* GetNext() const
     {
         return m_next;
+    }
+
+    //------------------------------------------------------------------------
+    // GetOffset: Retrieve "the offset" for the field this node represents.
+    //
+    // For statics with a known (constant) address it will be the value of that address.
+    // For boxed statics, it will be TARGET_POINTER_SIZE (the method table pointer size).
+    // For other fields, it will be equal to the value "getFieldOffset" would return.
+    //
+    size_t GetOffset() const
+    {
+        return m_offset;
     }
 
     bool IsStaticField() const
@@ -290,7 +303,8 @@ public:
 
     // Make sure this provides methods that allow it to be used as a KeyFuncs type in JitHashTable.
     // Note that there is a one-to-one relationship between the field handle and the field kind, so
-    // we do not need to mask away the latter for comparison purposes.
+    // we do not need to mask away the latter for comparison purposes. Likewise, we do not need to
+    // include the offset.
     static int GetHashCode(FieldSeqNode fsn)
     {
         return static_cast<int>(fsn.m_fieldHandleAndKind) ^ static_cast<int>(reinterpret_cast<intptr_t>(fsn.m_next));
@@ -317,6 +331,7 @@ public:
 
     // Returns the (canonical in the store) singleton field sequence for the given handle.
     FieldSeqNode* CreateSingleton(CORINFO_FIELD_HANDLE    fieldHnd,
+                                  size_t                  offset,
                                   FieldSeqNode::FieldKind fieldKind = FieldSeqNode::FieldKind::Instance);
 
     // This is a special distinguished FieldSeqNode indicating that a constant does *not*
@@ -1750,8 +1765,6 @@ public:
     // Tunnel through any GT_RET_EXPRs
     GenTree* gtRetExprVal(BasicBlockFlags* pbbFlags = nullptr);
 
-    inline GenTree* gtSkipPutArgType();
-
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
 
@@ -1904,7 +1917,10 @@ public:
     // tree for the local that is defined, and, if "pIsEntire" is non-null, sets "*pIsEntire" to
     // true or false, depending on whether the assignment writes to the entirety of the local
     // variable, or just a portion of it.
-    bool DefinesLocal(Compiler* comp, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire = nullptr);
+    bool DefinesLocal(Compiler*             comp,
+                      GenTreeLclVarCommon** pLclVarTree,
+                      bool*                 pIsEntire = nullptr,
+                      ssize_t*              pOffset   = nullptr);
 
     bool IsLocalAddrExpr(Compiler*             comp,
                          GenTreeLclVarCommon** pLclVarTree,
@@ -1934,7 +1950,7 @@ public:
     // Determine whether this tree is a basic block profile count update.
     bool IsBlockProfileUpdate();
 
-    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq);
+    bool IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pFldSeq, ssize_t* pOffset);
 
     bool IsArrayAddr(GenTreeArrAddr** pArrAddr);
 
@@ -1943,7 +1959,8 @@ public:
     // operation.  Returns "true" if "this" is an address of (or within)
     // a local variable; sets "*pLclVarTree" to that local variable instance; and, if "pIsEntire" is non-null,
     // sets "*pIsEntire" to true if this assignment writes the full width of the local.
-    bool DefinesLocalAddr(Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire);
+    bool DefinesLocalAddr(
+        Compiler* comp, unsigned width, GenTreeLclVarCommon** pLclVarTree, bool* pIsEntire, ssize_t* pOffset = nullptr);
 
     // These are only used for dumping.
     // The GetRegNum() is only valid in LIR, but the dumping methods are not easily
@@ -3524,6 +3541,8 @@ public:
         m_fieldSeq = fieldSeq;
     }
 
+    unsigned GetSize() const;
+
 #ifdef TARGET_ARM
     bool IsOffsetMisaligned() const;
 #endif // TARGET_ARM
@@ -3724,10 +3743,10 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_R2R_REL_INDIRECT        = 0x00002000, // ready to run call is indirected through a relative address
     GTF_CALL_M_DOES_NOT_RETURN         = 0x00004000, // call does not return
     GTF_CALL_M_WRAPPER_DELEGATE_INV    = 0x00008000, // call is in wrapper delegate
-    GTF_CALL_M_FAT_POINTER_CHECK       = 0x00010000, // CoreRT managed calli needs transformation, that checks
+    GTF_CALL_M_FAT_POINTER_CHECK       = 0x00010000, // NativeAOT managed calli needs transformation, that checks
                                                      // special bit in calli address. If it is set, then it is necessary
                                                      // to restore real function address and load hidden argument
-                                                     // as the first argument for calli. It is CoreRT replacement for instantiating
+                                                     // as the first argument for calli. It is NativeAOT replacement for instantiating
                                                      // stubs, because executable code cannot be generated at runtime.
     GTF_CALL_M_HELPER_SPECIAL_DCE      = 0x00020000, // this helper call can be removed if it is part of a comma and
                                                      // the comma result is unused.
@@ -4077,6 +4096,8 @@ public:
     // argument type, but when a struct is passed as a scalar type, this is
     // that type. Note that if a struct is passed by reference, this will still
     // be the struct type.
+    // TODO-ARGS: Reconsider whether we need this, it does not make much sense
+    // to have this instead of using just the type of the arg node.
     var_types ArgType : 5;
     // True when the argument fills a register slot skipped due to alignment
     // requirements of previous arguments.
@@ -4198,43 +4219,106 @@ public:
     }
 };
 
+struct NewCallArg
+{
+    // The node being passed.
+    GenTree* Node = nullptr;
+    // The signature type of the node.
+    var_types SignatureType = TYP_UNDEF;
+    // The class handle if SignatureType == TYP_STRUCT.
+    CORINFO_CLASS_HANDLE SignatureClsHnd = NO_CLASS_HANDLE;
+    // The type of well known arg
+    WellKnownArg WellKnownArg = WellKnownArg::None;
+
+    NewCallArg WellKnown(::WellKnownArg type) const
+    {
+        NewCallArg copy   = *this;
+        copy.WellKnownArg = type;
+        return copy;
+    }
+
+    static NewCallArg Struct(GenTree* node, var_types type, CORINFO_CLASS_HANDLE clsHnd)
+    {
+        assert(varTypeIsStruct(node) && varTypeIsStruct(type));
+        NewCallArg arg;
+        arg.Node            = node;
+        arg.SignatureType   = type;
+        arg.SignatureClsHnd = clsHnd;
+        arg.ValidateTypes();
+        return arg;
+    }
+
+    static NewCallArg Primitive(GenTree* node, var_types type = TYP_UNDEF)
+    {
+        assert(!varTypeIsStruct(node) && !varTypeIsStruct(type));
+        NewCallArg arg;
+        arg.Node          = node;
+        arg.SignatureType = type == TYP_UNDEF ? node->TypeGet() : type;
+        arg.ValidateTypes();
+        return arg;
+    }
+
+#ifdef DEBUG
+    void ValidateTypes();
+#else
+    void ValidateTypes()
+    {
+    }
+#endif
+};
+
 class CallArg
 {
     friend class CallArgs;
 
-    GenTree*     m_earlyNode;
-    GenTree*     m_lateNode;
-    CallArg*     m_next;
-    CallArg*     m_lateNext;
-    WellKnownArg m_wellKnownArg : 5;
+    GenTree* m_earlyNode;
+    GenTree* m_lateNode;
+    CallArg* m_next;
+    CallArg* m_lateNext;
 
+    // The class handle for the signature type (when varTypeIsStruct(SignatureType)).
+    CORINFO_CLASS_HANDLE m_signatureClsHnd;
+    // The LclVar number if we had to force evaluation of this arg.
+    unsigned m_tmpNum;
+    // The type of the argument in the signature.
+    var_types m_signatureType : 5;
+    // The type of well-known argument this is.
+    WellKnownArg m_wellKnownArg : 5;
     // True when we force this argument's evaluation into a temp LclVar.
     bool m_needTmp : 1;
     // True when we must replace this argument with a placeholder node.
     bool m_needPlace : 1;
-    // True when we setup a temp LclVar for this argument due to size issues
-    // with the struct.
+    // True when we setup a temp LclVar for this argument.
     bool m_isTmp : 1;
     // True when we have decided the evaluation order for this argument in LateArgs
     bool m_processed : 1;
-    // The LclVar number if we had to force evaluation of this arg
-    unsigned m_tmpNum;
 
-public:
-    CallArgABIInformation AbiInfo;
-
-    CallArg(WellKnownArg specialArgKind)
+private:
+    CallArg()
         : m_earlyNode(nullptr)
         , m_lateNode(nullptr)
         , m_next(nullptr)
         , m_lateNext(nullptr)
-        , m_wellKnownArg(specialArgKind)
+        , m_signatureClsHnd(NO_CLASS_HANDLE)
+        , m_tmpNum(BAD_VAR_NUM)
+        , m_signatureType(TYP_UNDEF)
+        , m_wellKnownArg(WellKnownArg::None)
         , m_needTmp(false)
         , m_needPlace(false)
         , m_isTmp(false)
         , m_processed(false)
-        , m_tmpNum(BAD_VAR_NUM)
     {
+    }
+
+public:
+    CallArgABIInformation AbiInfo;
+
+    CallArg(const NewCallArg& arg) : CallArg()
+    {
+        m_earlyNode       = arg.Node;
+        m_wellKnownArg    = arg.WellKnownArg;
+        m_signatureType   = arg.SignatureType;
+        m_signatureClsHnd = arg.SignatureClsHnd;
     }
 
     CallArg(const CallArg&) = delete;
@@ -4253,6 +4337,8 @@ public:
     CallArg*& LateNextRef() { return m_lateNext; }
     CallArg* GetLateNext() { return m_lateNext; }
     void SetLateNext(CallArg* lateNext) { m_lateNext = lateNext; }
+    CORINFO_CLASS_HANDLE GetSignatureClassHandle() { return m_signatureClsHnd; }
+    var_types GetSignatureType() { return m_signatureType; }
     WellKnownArg GetWellKnownArg() { return m_wellKnownArg; }
     bool IsTemp() { return m_isTmp; }
     // clang-format on
@@ -4336,22 +4422,23 @@ public:
     // Reverse the args from [index..index + count) in place.
     void Reverse(unsigned index, unsigned count);
 
-    CallArg* PushFront(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
-    CallArg* PushBack(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
-    CallArg* InsertAfter(Compiler* comp, CallArg* after, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    CallArg* PushFront(Compiler* comp, const NewCallArg& arg);
+    CallArg* PushBack(Compiler* comp, const NewCallArg& arg);
+    CallArg* InsertAfter(Compiler* comp, CallArg* after, const NewCallArg& arg);
+    CallArg* InsertAfterUnchecked(Compiler* comp, CallArg* after, const NewCallArg& arg);
     CallArg* InsertInstParam(Compiler* comp, GenTree* node);
-    CallArg* InsertAfterThisOrFirst(Compiler* comp, GenTree* node, WellKnownArg wellKnownArg = WellKnownArg::None);
+    CallArg* InsertAfterThisOrFirst(Compiler* comp, const NewCallArg& arg);
     void PushLateBack(CallArg* arg);
     void Remove(CallArg* arg);
 
     template <typename CopyNodeFunc>
     void InternalCopyFrom(Compiler* comp, CallArgs* other, CopyNodeFunc copyFunc);
 
-    template <typename... T>
-    void PushFront(Compiler* comp, GenTree* node, T... rest)
+    template <typename... Args>
+    void PushFront(Compiler* comp, const NewCallArg& arg, Args&&... rest)
     {
-        PushFront(comp, rest...);
-        PushFront(comp, node);
+        PushFront(comp, std::forward<Args>(rest)...);
+        PushFront(comp, arg);
     }
 
     void ResetFinalArgsAndABIInfo();
@@ -6526,6 +6613,8 @@ struct GenTreeIndir : public GenTreeOp
     unsigned Scale();
     ssize_t  Offset();
 
+    unsigned Size() const;
+
     GenTreeIndir(genTreeOps oper, var_types type, GenTree* addr, GenTree* data) : GenTreeOp(oper, type, addr, data)
     {
     }
@@ -8019,7 +8108,7 @@ inline bool GenTree::IsIntegralConst(ssize_t constVal) const
 }
 
 //-------------------------------------------------------------------
-// IsIntegralConstVector: returns true if this this is a SIMD vector
+// IsIntegralConstVector: returns true if this is an SIMD vector
 // with all its elements equal to an integral constant.
 //
 // Arguments:
@@ -8078,8 +8167,8 @@ inline bool GenTree::IsIntegralConstVector(ssize_t constVal) const
 }
 
 //-------------------------------------------------------------------
-// IsSIMDZero: returns true if this this is a SIMD vector
-// with all its elements equal to zero.
+// IsSIMDZero: returns true if this is an SIMD vector with all its
+// elements equal to zero.
 //
 // Returns:
 //     True if this represents an integral const SIMD vector.
@@ -8421,7 +8510,6 @@ inline GenTree* GenTree::gtEffectiveVal(bool commaOnly /* = false */)
     GenTree* effectiveVal = this;
     for (;;)
     {
-        assert(!effectiveVal->OperIs(GT_PUTARG_TYPE));
         if (effectiveVal->gtOper == GT_COMMA)
         {
             effectiveVal = effectiveVal->AsOp()->gtGetOp2();
@@ -8468,27 +8556,6 @@ inline GenTree* GenTree::gtCommaAssignVal()
     }
 
     return result;
-}
-
-//-------------------------------------------------------------------------
-// gtSkipPutArgType - skip PUTARG_TYPE if it is presented.
-//
-// Returns:
-//    the original tree or its child if it was a PUTARG_TYPE.
-//
-// Notes:
-//   PUTARG_TYPE should be skipped when we are doing transformations
-//   that are not affected by ABI, for example: inlining, implicit byref morphing.
-//
-inline GenTree* GenTree::gtSkipPutArgType()
-{
-    if (OperIs(GT_PUTARG_TYPE))
-    {
-        GenTree* res = AsUnOp()->gtGetOp1();
-        assert(!res->OperIs(GT_PUTARG_TYPE));
-        return res;
-    }
-    return this;
 }
 
 inline GenTree* GenTree::gtSkipReloadOrCopy()

@@ -94,7 +94,6 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.BasicParametersAndModifiersWithStringMarshalling<string>(StringMarshalling.Utf8) };
 
             // StringMarshallingCustomType
-            yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<char>() };
             yield return new[] { CodeSnippets.CustomStringMarshallingParametersAndModifiers<string>() };
 
             // MarshalAs
@@ -115,8 +114,8 @@ namespace LibraryImportGenerator.UnitTests
 
             // [In, Out] attributes
             // By value non-blittable array
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out", CodeSnippets.DisableRuntimeMarshalling + CodeSnippets.BasicNonBlittableUserDefinedType) };
-            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out", CodeSnippets.DisableRuntimeMarshalling + CodeSnippets.BasicNonBlittableUserDefinedType) };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "Out", CodeSnippets.UseCustomTypeMarshaller + CodeSnippets.BasicNonBlittableUserDefinedType) };
+            yield return new[] { CodeSnippets.ByValueParameterWithModifier("S[]", "In, Out", CodeSnippets.UseCustomTypeMarshaller + CodeSnippets.BasicNonBlittableUserDefinedType) };
 
             // Enums
             yield return new[] { CodeSnippets.EnumParameters };

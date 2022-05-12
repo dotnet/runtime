@@ -1486,7 +1486,7 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
 //
 // Arguments:
 //    opcode     - the opcode being handled (needed to identify the CEE_NEWOBJ case)
-//    newobjThis - For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitalized object.
+//    newobjThis - For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitialized object.
 //    clsHnd    - The handle of the class of the method.
 //
 // Return Value:
@@ -1870,7 +1870,7 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
 //
 // Arguments:
 //    opcode     - the opcode being handled (needed to identify the CEE_NEWOBJ case)
-//    newobjThis - For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitalized object.
+//    newobjThis - For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitialized object.
 //    clsHnd     - The handle of the class of the method.
 //    method     - The handle of the method.
 //    sig        - The call signature for the method.

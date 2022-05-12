@@ -92,7 +92,7 @@ bool ReadCompressedInts(const uint8_t *pByte, size_t cbDataMax, IntHandler intPr
         {
             if (cbDataMax < 2)
                 return false;
-            
+
             int shiftedInt = ((*pByte & 0x3f) << 8) | *(pByte + 1);
             signedInt = shiftedInt >> 1;
             if (shiftedInt & 1)
@@ -206,7 +206,7 @@ bool ReadInstrumentationSchema(const uint8_t *pByte, size_t cbDataMax, SchemaHan
 {
     ProcessSchemaUpdateFunctor schemaHandlerUpdate;
     bool done = false;
-    
+
     ReadCompressedInts(pByte, cbDataMax, [&handler, &schemaHandlerUpdate, &done](int64_t curValue)
     {
         if (schemaHandlerUpdate.ProcessInteger((int32_t)curValue))
@@ -237,7 +237,7 @@ bool ReadInstrumentationData(const uint8_t *pByte, size_t cbDataMax, SchemaAndDa
     int64_t lastTypeDataValue = 0;
     int64_t lastMethodDataValue = 0;
     int32_t dataCountToRead = 0;
-    
+
     ReadCompressedInts(pByte, cbDataMax, [&](int64_t curValue)
     {
         if (dataCountToRead > 0)
@@ -311,11 +311,11 @@ inline bool CountInstrumentationDataSize(const uint8_t *pByte, size_t cbDataMax,
 inline bool ComparePgoSchemaEquals(const uint8_t *pByte, size_t cbDataMax, const ICorJitInfo::PgoInstrumentationSchema* schemaTable, size_t cSchemas)
 {
     size_t iSchema = 0;
-    return ReadInstrumentationSchema(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const ICorJitInfo::PgoInstrumentationSchema& schema) 
+    return ReadInstrumentationSchema(pByte, cbDataMax, [schemaTable, cSchemas, &iSchema](const ICorJitInfo::PgoInstrumentationSchema& schema)
     {
         if (iSchema >= cSchemas)
             return false;
-        
+
         if (schema.InstrumentationKind != schemaTable[iSchema].InstrumentationKind)
             return false;
 
@@ -571,7 +571,7 @@ public:
                     logicalDataToWrite = *(volatile intptr_t*)pData;
 
                     // As there could be tearing otherwise, inform the caller of exactly what value was written.
-                    thProcessor(logicalDataToWrite);
+                    thProcessor((intptr_t)logicalDataToWrite);
 
                     bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastTypeDataWritten, byteWriter);
                     lastTypeDataWritten = logicalDataToWrite;
@@ -585,7 +585,7 @@ public:
                     logicalDataToWrite = *(volatile intptr_t*)pData;
 
                     // As there could be tearing otherwise, inform the caller of exactly what value was written.
-                    mhProcessor(logicalDataToWrite);
+                    mhProcessor((intptr_t)logicalDataToWrite);
 
                     bool returnValue = WriteCompressedIntToBytes(logicalDataToWrite - lastMethodDataWritten, byteWriter);
                     lastMethodDataWritten = logicalDataToWrite;

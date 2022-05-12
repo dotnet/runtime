@@ -194,8 +194,8 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
-        private bool _isConfigured;
-        private object _configureLock = new object();
+        private volatile bool _isConfigured;
+        private readonly object _configureLock = new object();
 
         internal void EnsureConfigured()
         {

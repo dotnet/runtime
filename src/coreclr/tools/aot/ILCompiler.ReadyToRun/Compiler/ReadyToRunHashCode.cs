@@ -30,7 +30,7 @@ namespace ILCompiler
             int hash1 = 0x6DA3B944;
             int hash2 = 0;
 
-            // DIFFERENT FROM CORERT: We hash UTF-8 bytes here, while CoreRT hashes UTF-16 characters.
+            // DIFFERENT FROM NATIVEAOT: We hash UTF-8 bytes here, while NativeAOT hashes UTF-16 characters.
             byte[] src = Encoding.UTF8.GetBytes(name);
             for (int i = 0; i < src.Length; i += 2)
             {
@@ -54,7 +54,7 @@ namespace ILCompiler
         /// <summary>
         /// Calculate hash code for a namespace - name combination.
         /// CoreCLR 2-parameter <a href="https://github.com/dotnet/coreclr/blob/030e0af89bb897554acef575075c69aaf5176268/src/vm/typehashingalgorithms.h#L42">ComputeNameHashCode</a>
-        /// DIFFERENT FROM CORERT: CoreRT hashes the full name as one string ("namespace.name"),
+        /// DIFFERENT FROM NATIVEAOT: NativeAOT hashes the full name as one string ("namespace.name"),
         /// as the full name is already available. In CoreCLR we normally only have separate
         /// strings for namespace and name, thus we hash them separately.
         /// </summary>
@@ -140,8 +140,8 @@ namespace ILCompiler
         /// <param name="rank">Array rank</param>
         private static int ArrayTypeHashCode(int elementTypeHashcode, int rank)
         {
-            // DIFFERENT FROM CORERT: This is much simplified compared to CoreRT, to avoid converting rank to string.
-            // For single-dimensinal array, the result is identical to CoreRT.
+            // DIFFERENT FROM NATIVEAOT: This is much simplified compared to NativeAOT, to avoid converting rank to string.
+            // For single-dimensinal array, the result is identical to NativeAOT.
             int hashCode = unchecked((int)0xd5313556 + rank);
             if (rank == 1)
             {

@@ -1,7 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-#pragma warning disable IDE0060 // implementations provided by the JIT
+#pragma warning disable IDE0060 // implementations provided as intrinsics
 using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.Versioning;
@@ -9,7 +9,7 @@ using System.Runtime.Versioning;
 //
 // The implementations of most the methods in this file are provided as intrinsics.
 // In CoreCLR, the body of the functions are replaced by the EE with unsafe code. See see getILIntrinsicImplementationForUnsafe for details.
-// In CoreRT, see Internal.IL.Stubs.UnsafeIntrinsics for details.
+// In AOT compilers, see Internal.IL.Stubs.UnsafeIntrinsics for details.
 //
 
 namespace System.Runtime.CompilerServices
@@ -24,7 +24,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__AS_POINTER
-        // CG2:AsPointer
+        // AOT:AsPointer
         // Mono:AsPointer
         [NonVersionable]
         [CLSCompliant(false)]
@@ -43,7 +43,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__SIZEOF
-        // CG2:SizeOf
+        // AOT:SizeOf
         // Mono:SizeOf
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -63,7 +63,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__OBJECT_AS
-        // CG2:As
+        // AOT:As
         // Mono:As
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -81,7 +81,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_AS
-        // CG2:As
+        // AOT:As
         // Mono:As
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -98,7 +98,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ADD
-        // CG2:Add
+        // AOT:Add
         // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -124,7 +124,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INTPTR_ADD
-        // CG2:Add
+        // AOT:Add
         // Mono:Add
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -150,7 +150,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_ADD
-        // CG2:Add
+        // AOT:Add
         // Mono:Add
         [NonVersionable]
         [CLSCompliant(false)]
@@ -203,7 +203,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET_UINTPTR
-        // CG2:AddByteOffset
+        // AOT:AddByteOffset
         // Mono:AddByteOffset
         [NonVersionable]
         [CLSCompliant(false)]
@@ -228,7 +228,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ARE_SAME
-        // CG2:AreSame
+        // AOT:AreSame
         // Mono:AreSame
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -367,7 +367,7 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         [Intrinsic]
         // CoreCLR:CoreCLR:METHOD__UNSAFE__BYREF_IS_ADDRESS_GREATER_THAN
-        // CG2:IsAddressGreaterThan
+        // AOT:IsAddressGreaterThan
         // Mono:IsAddressGreaterThan
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -390,7 +390,7 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_IS_ADDRESS_LESS_THAN
-        // CG2:IsAddressLessThan
+        // AOT:IsAddressLessThan
         // Mono:IsAddressLessThan
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -469,7 +469,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_INIT_BLOCK_UNALIGNED
-        // CG2:InitBlockUnaligned
+        // AOT:InitBlockUnaligned
         // Mono:InitBlockUnaligned
         [NonVersionable]
         [CLSCompliant(false)]
@@ -494,7 +494,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_READ_UNALIGNED
-        // CG2:ReadUnaligned
+        // AOT:ReadUnaligned
         // Mono:ReadUnaligned
         [NonVersionable]
         [CLSCompliant(false)]
@@ -519,7 +519,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_READ_UNALIGNED
-        // CG2:ReadUnaligned
+        // AOT:ReadUnaligned
         // Mono:ReadUnaligned
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -543,7 +543,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__PTR_WRITE_UNALIGNED
-        // CG2:WriteUnaligned
+        // AOT:WriteUnaligned
         // Mono:WriteUnaligned
         [NonVersionable]
         [CLSCompliant(false)]
@@ -569,7 +569,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_WRITE_UNALIGNED
-        // CG2:WriteUnaligned
+        // AOT:WriteUnaligned
         // Mono:WriteUnaligned
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -594,7 +594,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_ADD_BYTE_OFFSET_INTPTR
-        // CG2:AddByteOffset
+        // AOT:AddByteOffset
         // Mono:AddByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -613,7 +613,7 @@ namespace System.Runtime.CompilerServices
         /// Reads a value of type <typeparamref name="T"/> from the given location.
         /// </summary>
         //[Intrinsic]
-        // CG2:Read
+        // AOT:Read
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -630,7 +630,7 @@ namespace System.Runtime.CompilerServices
         /// Writes a value of type <typeparamref name="T"/> to the given location.
         /// </summary>
         //[Intrinsic]
-        // CG2:Write
+        // AOT:Write
         [NonVersionable]
         [CLSCompliant(false)]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -649,7 +649,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__AS_REF_POINTER
-        // CG2:AsRef
+        // AOT:AsRef
         // Mono:AsRef
         [NonVersionable]
         [CLSCompliant(false)]
@@ -667,7 +667,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__AS_REF_IN
-        // CG2:AsRef
+        // AOT:AsRef
         // Mono:AsRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -684,7 +684,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_BYTE_OFFSET
-        // CG2:ByteOffset
+        // AOT:ByteOffset
         // Mono:ByteOffset
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -703,7 +703,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_NULLREF
-        // CG2:NullRef
+        // AOT:NullRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T NullRef<T>()
@@ -723,7 +723,7 @@ namespace System.Runtime.CompilerServices
         /// </remarks>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__BYREF_IS_NULL
-        // CG2: IsNullRef
+        // AOT: IsNullRef
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool IsNullRef<T>(ref T source)
@@ -742,7 +742,7 @@ namespace System.Runtime.CompilerServices
         /// </summary>
         [Intrinsic]
         // CoreCLR:METHOD__UNSAFE__SKIPINIT
-        // CG2:SkipInit
+        // AOT:SkipInit
         // Mono:SkipInit
         [NonVersionable]
         [MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -4390,7 +4390,7 @@ ves_icall_System_Reflection_Assembly_InternalGetType (MonoReflectionAssemblyHand
 
 		/* need to report exceptions ? */
 		if (throwOnError && mono_class_has_failure (klass)) {
-			/* report SecurityException (or others) that occured when loading the assembly */
+			/* report SecurityException (or others) that occurred when loading the assembly */
 			mono_error_set_for_class_failure (error, klass);
 			goto fail;
 		}
