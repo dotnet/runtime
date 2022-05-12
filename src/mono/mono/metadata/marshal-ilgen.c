@@ -2804,7 +2804,7 @@ mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 }
 
-
+#ifdef ENABLE_ILGEN
 void
 mono_marshal_ilgen_init (void)
 {
@@ -2828,4 +2828,5 @@ mono_marshal_ilgen_init (void)
 #endif
 	mono_install_marshal_callbacks_ilgen (&cb);
 }
+#endif // ENABLE_ILGEN
 
