@@ -18,7 +18,6 @@ namespace System.Text.RegularExpressions
     /// Represents an immutable regular expression. Also contains static methods that
     /// allow use of regular expressions without instantiating a Regex explicitly.
     /// </summary>
-    ///
     public partial class Regex : ISerializable
     {
         [StringSyntax(StringSyntaxAttribute.Regex)]

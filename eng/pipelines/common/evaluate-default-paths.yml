@@ -27,8 +27,6 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
-      - eng/pipelines/runtime.yml
-      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: mono
       include:
       - src/libraries/System.Private.CoreLib/*
@@ -50,8 +48,6 @@ jobs:
       - eng/pipelines/installer/*
       - eng/pipelines/coreclr/*
       - eng/pipelines/libraries/*
-      - eng/pipelines/runtime.yml
-      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: libraries
       exclude:
       - eng/Version.Details.xml
@@ -68,8 +64,6 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/installer/*
-      - eng/pipelines/runtime.yml
-      - eng/pipelines/common/evaluate-default-paths.yml
     - subset: runtimetests
       include:
       - src/tests/*
@@ -91,8 +85,6 @@ jobs:
       - eng/pipelines/coreclr/*
       - eng/pipelines/mono/*
       - eng/pipelines/libraries/*
-      - eng/pipelines/runtime.yml
-      - eng/pipelines/common/evaluate-default-paths.yml
     # We have limited Apple Silicon testing capacity
     # We want PR testing on a narrower set of changes
     # Specifically runtime directories which are higher risk of
