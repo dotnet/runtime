@@ -311,7 +311,7 @@ namespace BrowserDebugProxy
             var nProperties = retDebuggerCmdReader.ReadInt32();
             var typeInfo = await sdbHelper.GetTypeInfo(typeId, token);
             var typePropertiesBrowsableInfo = typeInfo?.Info?.DebuggerBrowsableProperties;
-            var parentSuffix = containerTypeName.Split('.').LastOrDefault();
+            var parentSuffix = containerTypeName.Split('.')[^1];
 
             GetMembersResult ret = new();
             for (int i = 0; i < nProperties; i++)
@@ -335,10 +335,18 @@ namespace BrowserDebugProxy
                 // handle parents' members:
                 var propNameWithSufix = propName;
                 JObject backingField;
-                if (allMembers.TryGetValue(propName, out backingField)
-                    && !isOwn
-                    && backingField["__isBackingField"]?.Value<bool>() != true)
+                if (allMembers.TryGetValue(propName, out backingField) && !isOwn)
                 {
+                    // virtual properties and overriding members have the same attributes;
+                    // we want to skip only the latter. Virtuals are never fields.
+                    // backingField != true, checks if member is a property,
+                    // so that we don't skip virtuals
+                    if (backingField["__isBackingField"]?.Value<bool>() != true)
+                    {
+                        bool isOverriding = (getterInfo?.Info.Attributes & MethodAttributes.VtableLayoutMask) == MethodAttributes.NewSlot;
+                        if (isOverriding)
+                            continue;
+                    }
                     propNameWithSufix = $"{propName} ({parentSuffix})";
                     backingField = allMembers.GetValueOrDefault(propNameWithSufix);
                 }
