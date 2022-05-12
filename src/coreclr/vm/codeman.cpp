@@ -49,15 +49,9 @@ SPTR_IMPL(EEJitManager, ExecutionManager, m_pEEJitManager);
 SPTR_IMPL(ReadyToRunJitManager, ExecutionManager, m_pReadyToRunJitManager);
 #endif
 
-#ifndef DACCESS_COMPILE
-Volatile<RangeSection *> ExecutionManager::m_CodeRangeList = NULL;
-Volatile<LONG> ExecutionManager::m_dwReaderCount = 0;
-Volatile<LONG> ExecutionManager::m_dwWriterLock = 0;
-#else
-SPTR_IMPL(RangeSection, ExecutionManager, m_CodeRangeList);
-SVAL_IMPL(LONG, ExecutionManager, m_dwReaderCount);
-SVAL_IMPL(LONG, ExecutionManager, m_dwWriterLock);
-#endif
+VOLATILE_SPTR_IMPL_INIT(RangeSection, ExecutionManager, m_CodeRangeList, NULL);
+VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwReaderCount, 0);
+VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
 
 #ifndef DACCESS_COMPILE
 
