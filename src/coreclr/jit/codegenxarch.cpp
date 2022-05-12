@@ -4425,7 +4425,6 @@ void CodeGen::genCodeForShift(GenTree* tree)
                 unreached();
         }
 
-        // It handles all register forms, but it does not handle contained form for memory operand.
         regNumber shiftByReg = shiftBy->GetRegNum();
         emitAttr  size       = emitTypeSize(tree);
         // The order of operandReg and shiftByReg are swapped to follow shlx, sarx and shrx encoding spec.

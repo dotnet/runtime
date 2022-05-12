@@ -1485,7 +1485,7 @@
             <Issue>https://github.com/dotnet/runtime/issues/46174</Issue>
         </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/JIT/SIMD/ShiftOperations/*">
-          <Issue>There is a known undefined behavior with shifts and 0x0FFFFFFFF overflows, so skip the test for mono.</Issue>
+          <Issue>There is a known undefined behavior with shifts and 0xFFFFFFFF overflows, so skip the test for mono.</Issue>
         </ExcludeList>
       
         <ExcludeList Include="$(XunitTestBinBase)/baseservices/TieredCompilation/BasicTestWithMcj/*">

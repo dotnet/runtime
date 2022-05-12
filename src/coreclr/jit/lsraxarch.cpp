@@ -929,6 +929,7 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     else if (tree->OperIsShift() && !tree->isContained() &&
              compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
     {
+        // It handles all register forms, but it does not handle contained form for memory operand.
         srcCount += BuildOperandUses(source, srcCandidates);
         srcCount += BuildOperandUses(shiftBy, srcCandidates);
         BuildDef(tree, dstCandidates);

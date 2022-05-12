@@ -9550,7 +9550,6 @@ void emitter::emitDispIns(
             {
                 // BMI bextr,bzhi, shrx, shlx and sarx encode the reg2 in VEX.vvvv and reg3 in modRM,
                 // which is different from most of other instructions
-                // The order of operandReg and shiftByReg are swapped to follow shlx, sarx and shrx encoding spec.
                 regNumber tmp = reg2;
                 reg2          = reg3;
                 reg3          = tmp;
