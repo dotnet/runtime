@@ -204,7 +204,7 @@ namespace LibraryImportGenerator.IntegrationTests
             public static partial int ReturnLength_IgnoreStringMarshalling([MarshalAs(UnmanagedType.BStr)] string s);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReverseReturn)]
-            [return: MarshalAs(UnmanagedType.LPStr)]
+            [return: MarshalAs(UnmanagedType.BStr)]
             public static partial string Reverse_Return([MarshalAs(UnmanagedType.BStr)] string s);
 
             [LibraryImport(NativeExportsNE_Binary, EntryPoint = EntryPoints.BStr.ReverseOut)]
