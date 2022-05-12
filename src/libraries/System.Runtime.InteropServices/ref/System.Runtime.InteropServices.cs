@@ -2079,7 +2079,7 @@ namespace System.Runtime.InteropServices.Marshalling
         public void FreeNative() { }
     }
     [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x200,
+    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
         Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
             | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
             | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
@@ -2087,8 +2087,8 @@ namespace System.Runtime.InteropServices.Marshalling
     {
         public BStrStringMarshaller(string? str) { }
         public BStrStringMarshaller(string? str, System.Span<ushort> buffer) { }
-        public ushort* ToNativeValue() { throw null; }
-        public void FromNativeValue(ushort* value) { }
+        public void* ToNativeValue() { throw null; }
+        public void FromNativeValue(void* value) { }
         public string? ToManaged() { throw null; }
         public void FreeNative() { }
     }
@@ -2207,8 +2207,8 @@ namespace System.Runtime.InteropServices.Marshalling
     public unsafe ref struct Utf16StringMarshaller
     {
         public Utf16StringMarshaller(string? str) { }
-        public ushort* ToNativeValue() { throw null; }
-        public void FromNativeValue(ushort* value) { }
+        public void* ToNativeValue() { throw null; }
+        public void FromNativeValue(void* value) { }
         public string? ToManaged() { throw null; }
         public void FreeNative() { }
     }

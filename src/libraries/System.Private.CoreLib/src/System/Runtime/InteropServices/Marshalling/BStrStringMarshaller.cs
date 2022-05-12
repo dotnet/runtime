@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.Marshalling
         Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer)]
     public unsafe ref struct BStrStringMarshaller
     {
-        private ushort* _ptrToFirstChar;
+        private void* _ptrToFirstChar;
         private bool _allocated;
 
         /// <summary>
@@ -46,6 +46,7 @@ namespace System.Runtime.InteropServices.Marshalling
                 return;
             }
 
+            ushort* ptrToFirstChar;
             int lengthInBytes = checked(sizeof(char) * str.Length);
 
             // A caller provided buffer must be at least (lengthInBytes + 6) bytes
@@ -54,7 +55,7 @@ namespace System.Runtime.InteropServices.Marshalling
             if (manualBstrNeeds > buffer.Length)
             {
                 // Use precise byte count when the provided stack-allocated buffer is not sufficient
-                _ptrToFirstChar = (ushort*)Marshal.AllocBSTRByteLen((uint)lengthInBytes);
+                ptrToFirstChar = (ushort*)Marshal.AllocBSTRByteLen((uint)lengthInBytes);
                 _allocated = true;
             }
             else
@@ -62,15 +63,16 @@ namespace System.Runtime.InteropServices.Marshalling
                 // Set length and update buffer target
                 byte* pBuffer = (byte*)Unsafe.AsPointer(ref MemoryMarshal.GetReference(buffer));
                 *((uint*)pBuffer) = (uint)lengthInBytes;
-                _ptrToFirstChar = (ushort*)(pBuffer + sizeof(uint));
+                ptrToFirstChar = (ushort*)(pBuffer + sizeof(uint));
             }
 
             // Confirm the size is properly set for the allocated BSTR.
-            Debug.Assert(lengthInBytes == Marshal.SysStringByteLen((IntPtr)_ptrToFirstChar));
+            Debug.Assert(lengthInBytes == Marshal.SysStringByteLen((IntPtr)ptrToFirstChar));
 
             // Copy characters from the managed string
-            str.CopyTo(new Span<char>(_ptrToFirstChar, str.Length));
-            _ptrToFirstChar[str.Length] = '\0'; // null-terminate
+            str.CopyTo(new Span<char>(ptrToFirstChar, str.Length));
+            ptrToFirstChar[str.Length] = '\0'; // null-terminate
+            _ptrToFirstChar = ptrToFirstChar;
         }
 
         /// <summary>
@@ -79,7 +81,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public ushort* ToNativeValue() => _ptrToFirstChar;
+        public void* ToNativeValue() => _ptrToFirstChar;
 
         /// <summary>
         /// Sets the native value representing the string.
@@ -88,7 +90,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <remarks>
         /// <seealso cref="CustomTypeMarshallerFeatures.TwoStageMarshalling"/>
         /// </remarks>
-        public void FromNativeValue(ushort* value)
+        public void FromNativeValue(void* value)
         {
             _ptrToFirstChar = value;
             _allocated = true;
