@@ -25,9 +25,6 @@ var ChannelWorker = {
 
         async await_request(async_call) {
             for (;;) {
-                // eslint-disable-next-line no-debugger
-                debugger;
-
                 // Wait for signal to perform operation
                 Atomics.wait(this.comm, this.STATE_IDX, this.STATE_IDLE);
 
