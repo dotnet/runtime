@@ -17,7 +17,7 @@ namespace System.Reflection.Metadata
             // compat: normalize Nil culture name to "" to match original behavior of AssemblyName.GetAssemblyName()
             string cultureName = (!cultureHandle.IsNil) ? GetString(cultureHandle) : "";
             var hashAlgorithm = (Configuration.Assemblies.AssemblyHashAlgorithm)assemblyHashAlgorithm;
-            // compat: normalize Nil token to empty array to match original behavior of AssemblyName.GetAssemblyName()
+            // compat: native BaseAssemblySpec::Init guarantees that publicKeyOrToken is never null.
             byte[]? publicKeyOrToken = !publicKeyOrTokenHandle.IsNil ? GetBlobBytes(publicKeyOrTokenHandle) : Array.Empty<byte>();
 
             var assemblyName = new AssemblyName()
