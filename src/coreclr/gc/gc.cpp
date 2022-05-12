@@ -92,6 +92,7 @@ BOOL bgc_heap_walk_for_etw_p = FALSE;
 #define UOH_ALLOCATION_RETRY_MAX_COUNT 2
 
 uint32_t yp_spin_count_unit = 0;
+uint32_t original_spin_count_unit = 0;
 size_t loh_size_threshold = LARGE_OBJECT_SIZE;
 
 #ifdef GC_CONFIG_DRIVEN
@@ -13218,6 +13219,8 @@ HRESULT gc_heap::initialize_gc (size_t soh_segment_size,
     yp_spin_count_unit = 32 * g_num_processors;
 #endif //MULTIPLE_HEAPS
 
+    original_spin_count_unit = yp_spin_count_unit;
+
 #if defined(__linux__)
     GCToEEInterface::UpdateGCEventStatus(static_cast<int>(GCEventStatus::GetEnabledLevel(GCEventProvider_Default)),
                                          static_cast<int>(GCEventStatus::GetEnabledKeywords(GCEventProvider_Default)),
@@ -15038,7 +15041,7 @@ void allocator::copy_from_alloc_list (alloc_list* fromalist)
 
         if (repair_list)
         {
-            //repair the the list
+            //repair the list
             //new items may have been added during the plan phase
             //items may have been unlinked.
             uint8_t* free_item = alloc_list_head_of (i);
@@ -20725,7 +20728,7 @@ void gc_heap::gc1()
 #endif //BACKGROUND_GC
     {
 #ifndef FEATURE_REDHAWK
-        // GCToEEInterface::IsGCThread() always returns false on CoreRT, but this assert is useful in CoreCLR.
+        // GCToEEInterface::IsGCThread() always returns false on NativeAOT, but this assert is useful in CoreCLR.
         assert(GCToEEInterface::IsGCThread());
 #endif // FEATURE_REDHAWK
         adjust_ephemeral_limits();
@@ -29425,6 +29428,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
             for (i = 0; i < n_heaps; i++)
             {
+#ifdef USE_REGIONS
+                if (special_sweep_p)
+                {
+                    g_heaps[i]->gc_policy = policy_sweep;
+                }
+                else
+#endif //USE_REGIONS
                 if (pol_max > g_heaps[i]->gc_policy)
                     g_heaps[i]->gc_policy = pol_max;
 #ifndef USE_REGIONS
@@ -34645,6 +34655,11 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
 
                         if (!reset_only_p)
                         {
+                            // refetch the high address in case it has changed while we fetched dirty pages
+                            // this is only an issue for the page high_address is on - we may have new
+                            // objects after high_address.
+                            high_address = high_page (seg, concurrent_p);
+
                             for (unsigned i = 0; i < bcount; i++)
                             {
                                 uint8_t* page = (uint8_t*)background_written_addresses[i];
@@ -44300,11 +44315,11 @@ size_t GCHeap::GetPromotedBytes(int heap_index)
 void GCHeap::SetYieldProcessorScalingFactor (float scalingFactor)
 {
     assert (yp_spin_count_unit != 0);
-    int saved_yp_spin_count_unit = yp_spin_count_unit;
-    yp_spin_count_unit = (int)((float)yp_spin_count_unit * scalingFactor / (float)9);
+    uint32_t saved_yp_spin_count_unit = yp_spin_count_unit;
+    yp_spin_count_unit = (uint32_t)((float)original_spin_count_unit * scalingFactor / (float)9);
 
-    // It's very suspicious if it becomes 0
-    if (yp_spin_count_unit == 0)
+    // It's very suspicious if it becomes 0 and also, we don't want to spin too much.
+    if ((yp_spin_count_unit == 0) || (yp_spin_count_unit > 32768))
     {
         yp_spin_count_unit = saved_yp_spin_count_unit;
     }

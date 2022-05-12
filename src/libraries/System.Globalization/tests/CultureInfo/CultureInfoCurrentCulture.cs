@@ -34,6 +34,17 @@ namespace System.Globalization.Tests
         }
 
         [Fact]
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS)]
+        public void CurrentCulture_Default_Not_Invariant()
+        {
+            // On OSX-like platforms, it should default to what the default system culture is 
+            // set to.  Since we shouldn't assume en-US, we just test if it's not the invariant
+            // culture.
+            Assert.NotEqual(CultureInfo.CurrentCulture, CultureInfo.InvariantCulture);
+            Assert.NotEqual(CultureInfo.CurrentUICulture, CultureInfo.InvariantCulture);
+        }
+
+        [Fact]
         public void CurrentCulture_Set_Null_ThrowsArgumentNullException()
         {
             AssertExtensions.Throws<ArgumentNullException>("value", () => CultureInfo.CurrentCulture = null);
@@ -125,7 +136,7 @@ namespace System.Globalization.Tests
             }, expectedCultureName, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 
-        [PlatformSpecific(TestPlatforms.AnyUnix)]  // When LANG is empty or unset, should default to the invariant culture on Unix.
+        [PlatformSpecific(TestPlatforms.AnyUnix)]
         [ConditionalTheory(typeof(RemoteExecutor), nameof(RemoteExecutor.IsSupported))]
         [InlineData("")]
         [InlineData(null)]
@@ -141,13 +152,28 @@ namespace System.Globalization.Tests
                psi.Environment["LANG"] = langEnvVar;
             }
 
+            // When LANG is empty or unset, on Unix it should default to the invariant culture.
+            // On OSX-like platforms, it should default to what the default system culture is 
+            // set to.  Since we shouldn't assume en-US, we just test if it's not the invariant
+            // culture.
             RemoteExecutor.Invoke(() =>
             {
                 Assert.NotNull(CultureInfo.CurrentCulture);
                 Assert.NotNull(CultureInfo.CurrentUICulture);
 
-                Assert.Equal("", CultureInfo.CurrentCulture.Name);
-                Assert.Equal("", CultureInfo.CurrentUICulture.Name);
+                if (PlatformDetection.IsOSXLike)
+                {
+                    Assert.NotEqual("", CultureInfo.CurrentCulture.Name);
+                    Assert.NotEqual("", CultureInfo.CurrentUICulture.Name);
+
+                    Assert.NotEqual(CultureInfo.CurrentCulture, CultureInfo.InvariantCulture);
+                    Assert.NotEqual(CultureInfo.CurrentUICulture, CultureInfo.InvariantCulture);
+                }
+                else
+                {
+                    Assert.Equal("", CultureInfo.CurrentCulture.Name);
+                    Assert.Equal("", CultureInfo.CurrentUICulture.Name);
+                }
             }, new RemoteInvokeOptions { StartInfo = psi }).Dispose();
         }
 

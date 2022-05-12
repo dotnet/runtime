@@ -243,7 +243,7 @@ typedef ucontext_t unw_tdep_context_t;
      "stp x8, x9, [%[base], #64]\n" \
      "stp x10, x11, [%[base], #80]\n" \
      "stp x12, x13, [%[base], #96]\n" \
-     "stp x14, x13, [%[base], #112]\n" \
+     "stp x14, x15, [%[base], #112]\n" \
      "stp x16, x17, [%[base], #128]\n" \
      "stp x18, x19, [%[base], #144]\n" \
      "stp x20, x21, [%[base], #160]\n" \

@@ -332,7 +332,7 @@ namespace System.IO
             }
         }
 
-#if CORERT // TODO: https://github.com/dotnet/corert/issues/3251
+#if NATIVEAOT // TODO: https://github.com/dotnet/corert/issues/3251
         private static bool HasOverriddenBeginEndRead() => true;
 
         private static bool HasOverriddenBeginEndWrite() => true;
@@ -994,7 +994,7 @@ namespace System.IO
 
             public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
-#if CORERT
+#if NATIVEAOT
                 throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3251
 #else
                 bool overridesBeginRead = _stream.HasOverriddenBeginEndRead();
@@ -1069,7 +1069,7 @@ namespace System.IO
 
             public override IAsyncResult BeginWrite(byte[] buffer, int offset, int count, AsyncCallback? callback, object? state)
             {
-#if CORERT
+#if NATIVEAOT
                 throw new NotImplementedException(); // TODO: https://github.com/dotnet/corert/issues/3251
 #else
                 bool overridesBeginWrite = _stream.HasOverriddenBeginEndWrite();

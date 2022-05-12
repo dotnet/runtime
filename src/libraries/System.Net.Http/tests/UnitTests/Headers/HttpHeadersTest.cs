@@ -7,7 +7,8 @@ using System.Globalization;
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Tests;
-
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 namespace System.Net.Http.Tests
@@ -2372,6 +2373,99 @@ namespace System.Net.Http.Tests
             Assert.True(headers.TryAddWithoutValidation("3", "newValue"));
             Assert.True(headers.TryGetValues("3", out valuesFor3));
             Assert.Equal(new[] { "newValue" }, valuesFor3);
+        }
+
+        [Fact]
+        public async Task ConcurrentReads_AreThreadSafe()
+        {
+            if (Environment.ProcessorCount < 3) return;
+
+            const int TestRunTimeMs = 100;
+
+            bool running = true;
+            HttpRequestHeaders headers = CreateHeaders();
+
+            Task readerTask1 = Task.Run(ReaderWorker);
+            Task readerTask2 = Task.Run(ReaderWorker);
+            Task writerTask = Task.Run(() =>
+            {
+                while (Volatile.Read(ref running)) Volatile.Write(ref headers, CreateHeaders());
+            });
+
+            await Task.Delay(TimeSpan.FromMilliseconds(TestRunTimeMs));
+
+            Volatile.Write(ref running, false);
+
+            await writerTask;
+            await readerTask1;
+            await readerTask2;
+
+            void ReaderWorker()
+            {
+                var tests = new Action<HttpRequestHeaders>[0];
+                tests = new Action<HttpRequestHeaders>[]
+                {
+                    static headers => Assert.Equal(6, headers.NonValidated.Count),
+                    static headers => Assert.True(headers.Contains("a")),
+                    static headers => Assert.False(headers.Contains("b")),
+                    static headers => Assert.True(headers.NonValidated.Contains("a")),
+                    static headers => Assert.False(headers.NonValidated.Contains("b")),
+                    static headers => Assert.True(headers.Contains("c")),
+                    static headers => Assert.True(headers.Contains("f")),
+                    static headers => Assert.True(headers.Contains("h")),
+                    static headers => Assert.True(headers.Contains("H")),
+                    static headers => Assert.True(headers.Contains("Accept")),
+                    static headers => Assert.True(headers.Contains("Cache-Control")),
+                    static headers => Assert.True(headers.TryGetValues("a", out var values) && values.Single() == "b"),
+                    static headers => Assert.False(headers.TryGetValues("b", out _)),
+                    static headers => Assert.True(headers.NonValidated.TryGetValues("a", out var values) && values.Single() == "b"),
+                    static headers => Assert.False(headers.NonValidated.TryGetValues("b", out _)),
+                    static headers => Assert.True(headers.TryGetValues("f", out var values) && values.Single() == "g"),
+                    static headers => Assert.True(headers.NonValidated.TryGetValues("f", out var values) && values.Single() == "g"),
+                    static headers => Assert.True(headers.TryGetValues("c", out var values) && values.Count() == 2 && values.First() == "d" && values.Last() == "e"),
+                    static headers => Assert.True(headers.NonValidated.TryGetValues("c", out var values) && values.Count() == 2 && values.First() == "d" && values.Last() == "e"),
+                    static headers => Assert.True(headers.TryGetValues("h", out var values) && values.Count() == 2 && values.First() == "i" && values.Last() == "j"),
+                    static headers => Assert.True(headers.NonValidated.TryGetValues("h", out var values) && values.Count() == 2 && values.First() == "i" && values.Last() == "j"),
+                    static headers => Assert.Equal("only-if-cached, private", headers.NonValidated["Cache-Control"].ToString()),
+                    static headers => Assert.Equal("text/json", headers.Accept.Single().MediaType),
+                    headers =>
+                    {
+                        var newHeaders = new HttpRequestMessage().Headers;
+                        newHeaders.AddHeaders(headers);
+                        for (int i = 0; i < tests.Length - 1; i++)
+                        {
+                            tests[i](newHeaders);
+                        }
+                    },
+                };
+
+                while (Volatile.Read(ref running))
+                {
+                    tests[Random.Shared.Next(tests.Length)](Volatile.Read(ref headers));
+                }
+            }
+
+            static HttpRequestHeaders CreateHeaders()
+            {
+                HttpRequestHeaders headers = new HttpRequestMessage().Headers;
+
+                var actions = new Action<HttpRequestHeaders>[]
+                {
+                    static headers => headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/json")),
+                    static headers => headers.CacheControl = new CacheControlHeaderValue { Private = true, OnlyIfCached = true },
+                    static headers => headers.Add("a", "b"),
+                    static headers => headers.Add("c", new[] { "d", "e" }),
+                    static headers => headers.TryAddWithoutValidation("f", "g"),
+                    static headers => headers.TryAddWithoutValidation("h", new[] { "i", "j" }),
+                };
+
+                foreach (Action<HttpRequestHeaders> action in actions.OrderBy(_ => Random.Shared.Next()))
+                {
+                    action(headers);
+                }
+
+                return headers;
+            }
         }
 
         [Fact]

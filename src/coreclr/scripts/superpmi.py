@@ -2102,6 +2102,21 @@ def determine_jit_name(coreclr_args):
         return coreclr_args.jit_name
 
     jit_base_name = "clrjit"
+
+    if coreclr_args.arch != coreclr_args.target_arch or coreclr_args.host_os != coreclr_args.target_os:
+        # If `-target_arch` or `-target_os` was specified, then figure out the name of the cross-compiler JIT to use.
+
+        if coreclr_args.target_arch.startswith("arm"):
+            os_name = "universal"
+        elif coreclr_args.target_os == "OSX" or coreclr_args.target_os == "Linux":
+            os_name = "unix"
+        elif coreclr_args.target_os == "windows":
+            os_name = "win"
+        else:
+            raise RuntimeError("Unknown OS.")
+
+        jit_base_name = 'clrjit_{}_{}_{}'.format(os_name, coreclr_args.target_arch, coreclr_args.arch)
+
     if coreclr_args.host_os == "OSX":
         return "lib" + jit_base_name + ".dylib"
     elif coreclr_args.host_os == "Linux":

@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using Xunit.Abstractions;
 
 #nullable enable
 
@@ -13,6 +14,7 @@ namespace Wasm.Build.Tests
     public class ToolCommand
     {
         private string _label;
+        protected ITestOutputHelper _testOutput;
 
         protected string _command;
 
@@ -26,9 +28,10 @@ namespace Wasm.Build.Tests
 
         public string? WorkingDirectory { get; set; }
 
-        public ToolCommand(string command, string label="")
+        public ToolCommand(string command, ITestOutputHelper testOutput, string label="")
         {
             _command = command;
+            _testOutput = testOutput;
             _label = label;
         }
 
@@ -64,7 +67,7 @@ namespace Wasm.Build.Tests
         {
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
-            Console.WriteLine($"[{_label}] Executing - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
+            _testOutput.WriteLine($"[{_label}] Executing - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
             return await ExecuteAsyncInternal(resolvedCommand, fullArgs);
         }
 
@@ -72,7 +75,7 @@ namespace Wasm.Build.Tests
         {
             var resolvedCommand = _command;
             string fullArgs = GetFullArgs(args);
-            Console.WriteLine($"[{_label}] Executing (Captured Output) - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
+            _testOutput.WriteLine($"[{_label}] Executing (Captured Output) - {resolvedCommand} {fullArgs} - {WorkingDirectoryInfo()}");
             return Task.Run(async () => await ExecuteAsyncInternal(resolvedCommand, fullArgs)).Result;
         }
 
@@ -88,7 +91,7 @@ namespace Wasm.Build.Tests
                     return;
 
                 output.Add($"[{_label}] {e.Data}");
-                Console.WriteLine($"[{_label}] {e.Data}");
+                _testOutput.WriteLine($"[{_label}] {e.Data}");
                 ErrorDataReceived?.Invoke(s, e);
             };
 
@@ -98,7 +101,7 @@ namespace Wasm.Build.Tests
                     return;
 
                 output.Add($"[{_label}] {e.Data}");
-                Console.WriteLine($"[{_label}] {e.Data}");
+                _testOutput.WriteLine($"[{_label}] {e.Data}");
                 OutputDataReceived?.Invoke(s, e);
             };
 

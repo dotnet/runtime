@@ -14,7 +14,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasMalformedReference">
         <source>Conditional alternation is missing a closing parenthesis after the group number {0}.</source>
-        <target state="needs-review-translation">(?({0}) ) malformado.</target>
+        <target state="new">Conditional alternation is missing a closing parenthesis after the group number {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasNamedCapture">
@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReference">
         <source>Conditional alternation refers to an undefined group number {0}.</source>
-        <target state="needs-review-translation">Referência (?({0}) ) a um grupo indefinido.</target>
+        <target state="new">Conditional alternation refers to an undefined group number {0}.</target>
         <note />
       </trans-unit>
       <trans-unit id="Arg_ArrayPlusOffTooSmall">
@@ -199,7 +199,7 @@
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="needs-review-translation">Os números de grupo de captura devem ser menores que ou iguais a Int32.MaxValue.</target>
+        <target state="new">Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</target>
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">

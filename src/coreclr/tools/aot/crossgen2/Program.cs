@@ -262,7 +262,7 @@ namespace ILCompiler
                 Dictionary<string, bool> instructionSetSpecification = new Dictionary<string, bool>();
                 foreach (string instructionSetSpecifier in instructionSetParams)
                 {
-                    string instructionSet = instructionSetSpecifier.Substring(1, instructionSetSpecifier.Length - 1);
+                    string instructionSet = instructionSetSpecifier.Substring(1);
 
                     bool enabled = instructionSetSpecifier[0] == '+' ? true : false;
                     if (enabled)
@@ -347,7 +347,7 @@ namespace ILCompiler
 
             SharedGenericsMode genericsMode = SharedGenericsMode.CanonicalReferenceTypes;
 
-            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.CoreRTArmel : TargetAbi.CoreRT, instructionSetSupport.GetVectorTSimdVector());
+            var targetDetails = new TargetDetails(_targetArchitecture, _targetOS, _armelAbi ? TargetAbi.NativeAotArmel : TargetAbi.NativeAot, instructionSetSupport.GetVectorTSimdVector());
 
             ConfigureImageBase(targetDetails);
 
@@ -402,7 +402,7 @@ namespace ILCompiler
                 //
                 // See: https://github.com/dotnet/corert/issues/2785
                 //
-                // When we undo this this hack, replace this foreach with
+                // When we undo this hack, replace the foreach with
                 //  typeSystemContext.InputFilePaths = inFilePaths;
                 //
 

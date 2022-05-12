@@ -73,7 +73,7 @@ extern "C" void QCALLTYPE EventPipeInternal_DeleteProvider(
     INT_PTR provHandle);
 
 extern "C" int QCALLTYPE EventPipeInternal_EventActivityIdControl(
-    uint32_t controlCode,
+    UINT32 controlCode,
     GUID *pActivityId);
 
 extern "C" void QCALLTYPE EventPipeInternal_WriteEventData(
@@ -86,8 +86,12 @@ extern "C" bool QCALLTYPE EventPipeInternal_GetNextEvent(
     UINT64 sessionID,
     EventPipeEventInstanceData *pInstance);
 
-extern "C" HANDLE QCALLTYPE EventPipeInternal_GetWaitHandle(
+extern "C" bool QCALLTYPE EventPipeInternal_SignalSession(
     UINT64 sessionID);
+
+extern "C" bool QCALLTYPE EventPipeInternal_WaitForSessionSignal(
+    UINT64 sessionID,
+    INT32 timeoutMs);
 
 #endif // FEATURE_PERFTRACING
 

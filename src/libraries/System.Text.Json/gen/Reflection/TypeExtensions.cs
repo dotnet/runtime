@@ -133,6 +133,9 @@ namespace System.Text.Json.Reflection
             return false;
         }
 
+        public static bool CanUseDefaultConstructorForDeserialization(this Type type)
+            => (type.GetConstructor(Type.EmptyTypes) != null || type.IsValueType) && !type.IsAbstract && !type.IsInterface;
+
         public static bool IsObjectType(this Type type) => type.FullName == "System.Object";
 
         public static bool IsStringType(this Type type) => type.FullName == "System.String";

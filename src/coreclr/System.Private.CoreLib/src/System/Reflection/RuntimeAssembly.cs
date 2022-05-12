@@ -356,7 +356,7 @@ namespace System.Reflection
             byte[]? publicKeyOrToken;
             if ((publicKeyOrToken = assemblyName.RawPublicKeyToken) != null)
             {
-                flags |= ~AssemblyNameFlags.PublicKey;
+                flags &= ~AssemblyNameFlags.PublicKey;
             }
             else if ((publicKeyOrToken = assemblyName.RawPublicKey) != null)
             {

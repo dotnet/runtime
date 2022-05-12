@@ -22,6 +22,7 @@ namespace System.Text.Json
         /// for <typeparamref name="TValue"/> or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static JsonElement SerializeToElement<TValue>(TValue value, JsonSerializerOptions? options = null)
         {
             Type runtimeType = GetRuntimeType(value);
@@ -47,6 +48,7 @@ namespace System.Text.Json
         /// for <paramref name="inputType"/>  or its serializable members.
         /// </exception>
         [RequiresUnreferencedCode(SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static JsonElement SerializeToElement(object? value, Type inputType, JsonSerializerOptions? options = null)
         {
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);

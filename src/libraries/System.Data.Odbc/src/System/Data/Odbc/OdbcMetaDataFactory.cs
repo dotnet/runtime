@@ -521,7 +521,7 @@ namespace System.Data.Odbc
                 }
             }
 
-            // initalize the rest to no restrictions
+            // initialize the rest to no restrictions
             for (; i < restrictionsCount; i++)
             {
                 allRestrictions[i] = null;
