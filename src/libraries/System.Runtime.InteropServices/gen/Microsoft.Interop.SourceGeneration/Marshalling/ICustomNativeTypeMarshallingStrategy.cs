@@ -481,6 +481,7 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context)
         {
+            // The type of the ignored identifier isn't relevant, so we use void* for all.
             // fixed (void* <ignoredIdentifier> = &<marshalerIdentifier>)
             //  <assignment to Value property>
             var subContext = new CustomNativeTypeWithToFromNativeValueContext(context);
