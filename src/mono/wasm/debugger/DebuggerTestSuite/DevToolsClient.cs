@@ -69,7 +69,7 @@ namespace DebuggerTests
             WasmDebuggerConnection conn = await SetupConnection(uri, cts.Token);
             conn.OnReadAsync = receive;
             _runLoop = new(new[] { new DevToolsQueue(conn) }, logger);
-            _runLoop.RunLoopStopped += RunLoopStopped;
+            _runLoop.RunLoopStopped += (sender, args) => RunLoopStopped?.Invoke(sender, args);
             _ = _runLoop.RunAsync(cts);
         }
     }

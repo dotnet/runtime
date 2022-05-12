@@ -114,7 +114,7 @@ internal sealed class RunLoop : IDisposable
             if (completedTask.IsFaulted)
             {
                 return (completedIdx < numQueues && !_queues[completedIdx].Connection.IsConnected)
-                            ? new(RunLoopStopReason.HostConnectionClosed, completedTask.Exception)
+                            ? new(RunLoopStopReason.ConnectionClosed, new Exception($"Connection id: {_queues[completedIdx].Id}", completedTask.Exception))
                             : new(RunLoopStopReason.Exception, completedTask.Exception);
             }
 
