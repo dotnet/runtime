@@ -78,8 +78,8 @@ namespace System.IO
             // worst case in such a race condition (which could occur if the file system is
             // being manipulated concurrently with these checks) is that we throw a
             // FileNotFoundException instead of DirectoryNotFoundException.
-            string pathStr = path.ToString();
-            bool directoryError = path.Length > 0 && !Directory.Exists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(pathStr)));
+            string? pathStr = path.Length > 0 ? path.ToString() : default;
+            bool directoryError = path.Length > 0 && !Directory.Exists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(pathStr!)));
             throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), pathStr, directoryError);
         }
 
