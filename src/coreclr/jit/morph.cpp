@@ -13074,9 +13074,8 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         DEBUG_DESTROY_NODE(constTwo);
     }
 
-    // Fold (x + 0) - given it won't change the tree type to TYP_REF.
-    // TODO-Bug: this code will lose the GC-ness of a tree like "native int + byref(0)".
-    if (op2->IsIntegralConst(0) && ((add->TypeGet() == op1->TypeGet()) || !op1->TypeIs(TYP_REF)))
+    // Fold (x + 0) - given it won't change the tree type.
+    if (op2->IsIntegralConst(0) && (genActualType(add) == genActualType(op1)))
     {
         if (op2->IsCnsIntOrI() && varTypeIsI(op1))
         {

@@ -6189,8 +6189,7 @@ public:
         , m_elemType(elemType)
         , m_firstElemOffset(firstElemOffset)
     {
-        // Temporarily disable this assert. Tracking: https://github.com/dotnet/runtime/issues/67600
-        // assert(addr->TypeIs(TYP_BYREF) || addr->IsIntegralConst(0));
+        assert(addr->TypeIs(TYP_BYREF));
         assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
                (elemClassHandle == NO_CLASS_HANDLE));
 
