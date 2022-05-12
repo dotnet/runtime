@@ -1371,6 +1371,18 @@ namespace DebuggerTests
             var test = new TestClass();
         }
     }
+
+    public static class EvaluateNullableProperties
+    {
+        static void Evaluate()
+        {
+            #nullable enable
+            List<int>? listNull = null; 
+            List<int>? listInitialized = new List<int>();
+            #nullable disable
+            List<int> list = new List<int>() {1};
+        }
+    }
 }
 
 namespace DebuggerTestsV2
