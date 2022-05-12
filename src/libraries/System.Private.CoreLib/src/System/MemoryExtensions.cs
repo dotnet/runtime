@@ -653,15 +653,17 @@ namespace System
         /// </returns>
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value) where T : IEquatable<T>
         {
-            for (int i = span.Length - 1; i >= 0; i--)
+            int i = span.Length;
+            while (--i >= 0)
             {
                 if (!EqualityComparer<T>.Default.Equals(span[i], value))
                 {
-                    return i;
+                    break;
                 }
             }
 
-            return -1;
+            // If we reached the end of the loop, then i is -1.
+            return i;
         }
 
         /// <summary>Searches for the last index of any value other than the specified <paramref name="value0"/> or <paramref name="value1"/>.</summary>
@@ -675,16 +677,18 @@ namespace System
         /// </returns>
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1) where T : IEquatable<T>
         {
-            for (int i = span.Length - 1; i >= 0; i--)
+            int i = span.Length;
+            while (--i > -1)
             {
                 if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
                     !EqualityComparer<T>.Default.Equals(span[i], value1))
                 {
-                    return i;
+                    break;
                 }
             }
 
-            return -1;
+            // If we reached the end of the loop, then i is -1.
+            return i;
         }
 
         /// <summary>Searches for the last index of any value other than the specified <paramref name="value0"/>, <paramref name="value1"/>, or <paramref name="value2"/>.</summary>
@@ -699,17 +703,19 @@ namespace System
         /// </returns>
         public static int LastIndexOfAnyExcept<T>(this ReadOnlySpan<T> span, T value0, T value1, T value2) where T : IEquatable<T>
         {
-            for (int i = span.Length - 1; i >= 0; i--)
+            int i = span.Length;
+            while (--i > -1)
             {
                 if (!EqualityComparer<T>.Default.Equals(span[i], value0) &&
                     !EqualityComparer<T>.Default.Equals(span[i], value1) &&
                     !EqualityComparer<T>.Default.Equals(span[i], value2))
                 {
-                    return i;
+                    break;
                 }
             }
 
-            return -1;
+            // If we reached the end of the loop, then i is -1.
+            return i;
         }
 
         /// <summary>Searches for the last index of any value other than the specified <paramref name="values"/>.</summary>
@@ -737,15 +743,17 @@ namespace System
                     return LastIndexOfAnyExcept(span, values[0], values[1], values[2]);
 
                 default:
-                    for (int i = span.Length - 1; i >= 0; i--)
+                    int i = span.Length;
+                    while (--i > -1)
                     {
                         if (!values.Contains(span[i]))
                         {
-                            return i;
+                            break;
                         }
                     }
 
-                    return -1;
+                    // If we reached the end of the loop, then i is -1.
+                    return i;
             }
         }
 
