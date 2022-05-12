@@ -346,7 +346,7 @@ namespace System.IO
         {
             ValidateReadAtLeastArguments(buffer.Length, minimumBytes);
 
-            return ReadAtLeastAsyncCore(buffer, minimumBytes, throwOnEndOfStream: true, cancellationToken);
+            return ReadAtLeastAsyncCore(buffer, minimumBytes, throwOnEndOfStream, cancellationToken);
         }
 
         // No argument checking is done here. It is up to the caller.

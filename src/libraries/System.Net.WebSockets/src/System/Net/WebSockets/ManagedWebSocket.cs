@@ -791,7 +791,6 @@ namespace System.Net.WebSockets
                                 if (numBytesRead < bytesToRead)
                                 {
                                     ThrowEOFUnexpected();
-                                    break;
                                 }
                                 totalBytesReceived += numBytesRead;
                             }
