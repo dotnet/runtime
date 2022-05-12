@@ -3048,8 +3048,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
             <Issue>https://github.com/dotnet/runtime/issues/52977</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/ JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
-            <Issue>https://github.com/dotnet/runtime/issues/52977</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
+            <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
         </ExcludeList>
     </ItemGroup>
 
