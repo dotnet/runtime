@@ -13,7 +13,7 @@ using Mono.Linker.Dataflow;
 
 namespace ILLink.Shared.TrimAnalysis
 {
-	readonly partial struct FlowAnnotations
+	partial class FlowAnnotations
 	{
 		readonly LinkContext _context;
 		readonly Dictionary<TypeDefinition, TypeAnnotations> _annotations = new Dictionary<TypeDefinition, TypeAnnotations> ();
@@ -670,16 +670,16 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method)
-			=> _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (method.Method);
+			=> RequiresDataFlowAnalysis (method.Method);
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 			=> new MethodReturnValue (method.Method.ReturnType.ResolveToTypeDefinition (_context), method.Method, dynamicallyAccessedMemberTypes);
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method)
-			=> GetMethodReturnValue (method, _context.Annotations.FlowAnnotations.GetReturnParameterAnnotation (method.Method));
+			=> GetMethodReturnValue (method, GetReturnParameterAnnotation (method.Method));
 
 		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter)
-			=> new GenericParameterValue (genericParameter.GenericParameter, _context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter.GenericParameter));
+			=> new GenericParameterValue (genericParameter.GenericParameter, GetGenericParameterAnnotation (genericParameter.GenericParameter));
 
 #pragma warning disable CA1822 // Mark members as static - keep this an instance method for consistency with the others
 		internal partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
@@ -687,12 +687,12 @@ namespace ILLink.Shared.TrimAnalysis
 #pragma warning restore CA1822
 
 		internal partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method)
-			=> GetMethodThisParameterValue (method, _context.Annotations.FlowAnnotations.GetParameterAnnotation (method.Method, 0));
+			=> GetMethodThisParameterValue (method, GetParameterAnnotation (method.Method, 0));
 
 		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 			=> new (method.Method.Parameters[parameterIndex].ParameterType.ResolveToTypeDefinition (_context), method.Method, parameterIndex, dynamicallyAccessedMemberTypes);
 
 		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex)
-			=> GetMethodParameterValue (method, parameterIndex, _context.Annotations.FlowAnnotations.GetParameterAnnotation (method.Method, parameterIndex + (method.IsStatic () ? 0 : 1)));
+			=> GetMethodParameterValue (method, parameterIndex, GetParameterAnnotation (method.Method, parameterIndex + (method.IsStatic () ? 0 : 1)));
 	}
 }

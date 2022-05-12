@@ -1,5 +1,5 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
-// The .NET Foundation licenses this file to you under the MIT license.
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
 using System.Collections.Generic;
@@ -9,17 +9,20 @@ using System.Reflection.Metadata;
 using Internal.IL;
 using Internal.TypeSystem;
 using Internal.TypeSystem.Ecma;
-
+using ILCompiler;
+using ILCompiler.Dataflow;
 using ILLink.Shared;
+using ILLink.Shared.TypeSystemProxy;
 
 using Debug = System.Diagnostics.Debug;
+using WellKnownType = Internal.TypeSystem.WellKnownType;
 
-namespace ILCompiler.Dataflow
+namespace ILLink.Shared.TrimAnalysis
 {
     /// <summary>
     /// Caches dataflow annotations for type members.
     /// </summary>
-    public class FlowAnnotations
+    public partial class FlowAnnotations
     {
         private readonly TypeAnnotationsHashtable _hashtable;
         private readonly Logger _logger;
@@ -860,5 +863,31 @@ namespace ILCompiler.Dataflow
             public FieldAnnotation(FieldDesc field, DynamicallyAccessedMemberTypes annotation)
                 => (Field, Annotation) = (field, annotation);
         }
+
+        internal partial bool MethodRequiresDataFlowAnalysis(MethodProxy method)
+            => RequiresDataflowAnalysis(method.Method);
+
+        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+            => new MethodReturnValue(method.Method, dynamicallyAccessedMemberTypes);
+
+        internal partial MethodReturnValue GetMethodReturnValue(MethodProxy method)
+            => GetMethodReturnValue(method, GetReturnParameterAnnotation(method.Method));
+
+        internal partial GenericParameterValue GetGenericParameterValue(GenericParameterProxy genericParameter)
+            => new GenericParameterValue(genericParameter.GenericParameter, GetGenericParameterAnnotation(genericParameter.GenericParameter));
+
+#pragma warning disable CA1822 // Mark members as static - keep this an instance method for consistency with the others
+        internal partial MethodThisParameterValue GetMethodThisParameterValue(MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+            => new MethodThisParameterValue(method.Method, dynamicallyAccessedMemberTypes);
+#pragma warning restore CA1822
+
+        internal partial MethodThisParameterValue GetMethodThisParameterValue(MethodProxy method)
+            => GetMethodThisParameterValue(method, GetParameterAnnotation(method.Method, 0));
+
+        internal partial MethodParameterValue GetMethodParameterValue(MethodProxy method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
+            => new(method.Method, parameterIndex, dynamicallyAccessedMemberTypes);
+
+        internal partial MethodParameterValue GetMethodParameterValue(MethodProxy method, int parameterIndex)
+            => GetMethodParameterValue(method, parameterIndex, GetParameterAnnotation(method.Method, parameterIndex + (method.IsStatic() ? 0 : 1)));
     }
 }

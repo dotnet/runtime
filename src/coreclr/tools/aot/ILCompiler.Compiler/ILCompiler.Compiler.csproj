@@ -315,6 +315,7 @@
     <Compile Include="Compiler\CompilerTypeSystemContext.ValueTypeMethods.cs" />
     <Compile Include="Compiler\CompilerGeneratedInteropStubManager.cs" />
     <Compile Include="Compiler\Dataflow\ArrayValue.cs" />
+    <Compile Include="Compiler\Dataflow\DiagnosticContext.cs" />
     <Compile Include="Compiler\Dataflow\DynamicallyAccessedMembersBinder.cs" />
     <Compile Include="Compiler\Dataflow\EcmaExtensions.cs" />
     <Compile Include="Compiler\Dataflow\FieldValue.cs" />

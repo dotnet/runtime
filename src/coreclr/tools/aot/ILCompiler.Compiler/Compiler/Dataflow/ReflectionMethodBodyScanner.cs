@@ -9,6 +9,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection.Metadata;
 using ILLink.Shared;
+using ILLink.Shared.TrimAnalysis;
 
 using ILCompiler.Logging;
 

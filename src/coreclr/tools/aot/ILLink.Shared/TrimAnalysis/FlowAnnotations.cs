@@ -10,7 +10,7 @@ using ILLink.Shared.TypeSystemProxy;
 namespace ILLink.Shared.TrimAnalysis
 {
 	// Shared helpers to go from MethodProxy to dataflow values.
-	readonly partial struct FlowAnnotations
+	partial class FlowAnnotations
 	{
 		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method);
 
