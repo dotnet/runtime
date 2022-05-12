@@ -3566,7 +3566,7 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
         }
         else
         {
-            assert(src->OperIs(GT_INIT_VAL));
+            assert(src->OperIsInitVal());
             convertToStoreObj = true;
         }
 
