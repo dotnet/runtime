@@ -1097,7 +1097,7 @@ namespace System
             // of 32-bit unsigned integers described
             // in Hacker's Delight by Henry S. Warren, Jr. (ISBN 0-201-91465-4), Chapter 8
             // Basically, it's an optimized version of FOIL method applied to
-            // low and high dwords of each operand
+            // low and high qwords of each operand
 
             UInt128 al = left._lower;
             UInt128 ah = left._upper;

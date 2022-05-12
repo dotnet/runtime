@@ -1873,7 +1873,7 @@ namespace System.Numerics
         [CLSCompliant(false)]
         public static implicit operator BigInteger(UInt128 value)
         {
-            int sign = 0;
+            int sign = +1;
             uint[]? bits;
 
             if (value <= (uint)int.MaxValue)
