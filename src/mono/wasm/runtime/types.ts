@@ -60,7 +60,10 @@ export const CharPtrNull: CharPtr = <CharPtr><any>0;
 export const NativePointerNull: NativePointer = <NativePointer><any>0;
 
 export function coerceNull<T extends ManagedPointer | NativePointer>(ptr: T | null | undefined): T {
-    return (<any>ptr | <any>0) as any;
+    if ((ptr === null) || (ptr === undefined))
+        return (0 as any) as T;
+    else
+        return ptr as T;
 }
 
 export type MonoConfig = {
@@ -262,4 +265,11 @@ export const enum MarshalError {
     NULL_TYPE_POINTER = 514,
     UNSUPPORTED_TYPE = 515,
     FIRST = BUFFER_TOO_SMALL
+}
+
+// Evaluates whether a value is nullish (same definition used as the ?? operator,
+//  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+export function is_nullish (value: any): boolean {
+    return (value === undefined) || (value === null);
 }

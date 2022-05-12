@@ -30,7 +30,7 @@ import {
     mono_wasm_debugger_attached,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
-import { DotnetModuleConfigImports, DotnetModule } from "./types";
+import { DotnetModuleConfigImports, DotnetModule, is_nullish } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
@@ -259,7 +259,7 @@ function initializeImportsAndExports(
             let value: any = undefined;
             Object.defineProperty(globalThis, name, {
                 get: () => {
-                    if (!value) {
+                    if (!is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
                         console.warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
