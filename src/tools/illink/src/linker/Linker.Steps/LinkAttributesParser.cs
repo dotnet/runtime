@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Xml.XPath;
 using ILLink.Shared;
+using ILLink.Shared.TrimAnalysis;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 
@@ -291,7 +292,8 @@ namespace Mono.Linker.Steps
 				if (!typeref.IsTypeOf (WellKnownType.System_Type))
 					goto default;
 
-				if (!_context.TypeNameResolver.TryResolveTypeName (svalue, memberWithAttribute, out TypeReference? type, out _)) {
+				var diagnosticContext = new DiagnosticContext (new MessageOrigin (memberWithAttribute), diagnosticsEnabled: true, _context);
+				if (!_context.TypeNameResolver.TryResolveTypeName (svalue, diagnosticContext, out TypeReference? type, out _)) {
 					_context.LogError (GetMessageOriginForPosition (nav), DiagnosticId.CouldNotResolveCustomAttributeTypeValue, svalue);
 					return null;
 				}
@@ -339,7 +341,8 @@ namespace Mono.Linker.Steps
 				if (string.IsNullOrEmpty (typeName))
 					typeName = "System.String";
 
-				if (!_context.TypeNameResolver.TryResolveTypeName (typeName, memberWithAttribute, out TypeReference? typeref, out _)) {
+				var diagnosticContext = new DiagnosticContext (new MessageOrigin (memberWithAttribute), diagnosticsEnabled: true, _context);
+				if (!_context.TypeNameResolver.TryResolveTypeName (typeName, diagnosticContext, out TypeReference? typeref, out _)) {
 					_context.LogError (GetMessageOriginForPosition (nav), DiagnosticId.TypeUsedWithAttributeValueCouldNotBeFound, typeName, nav.Value);
 					return null;
 				}

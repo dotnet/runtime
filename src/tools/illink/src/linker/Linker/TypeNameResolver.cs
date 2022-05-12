@@ -6,6 +6,7 @@ using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection.Runtime.TypeParsing;
 using ILLink.Shared;
+using ILLink.Shared.TrimAnalysis;
 using Mono.Cecil;
 
 namespace Mono.Linker
@@ -19,7 +20,12 @@ namespace Mono.Linker
 			_context = context;
 		}
 
-		public bool TryResolveTypeName (string typeNameString, ICustomAttributeProvider? origin, [NotNullWhen (true)] out TypeReference? typeReference, [NotNullWhen (true)] out AssemblyDefinition? typeAssembly, bool needsAssemblyName = true)
+		public bool TryResolveTypeName (
+			string typeNameString,
+			in DiagnosticContext diagnosticContext,
+			[NotNullWhen (true)] out TypeReference? typeReference,
+			[NotNullWhen (true)] out AssemblyDefinition? typeAssembly,
+			bool needsAssemblyName = true)
 		{
 			typeReference = null;
 			typeAssembly = null;
@@ -47,7 +53,8 @@ namespace Mono.Linker
 			// If parsedTypeName doesn't have an assembly name in it but it does have a namespace,
 			// search for the type in the calling object's assembly. If not found, look in the core
 			// assembly.
-			typeAssembly = origin switch {
+			ICustomAttributeProvider? provider = diagnosticContext.Origin.Provider;
+			typeAssembly = provider switch {
 				AssemblyDefinition asm => asm,
 				TypeDefinition type => type.Module?.Assembly,
 				IMemberDefinition member => member.DeclaringType.Module.Assembly,
@@ -65,9 +72,8 @@ namespace Mono.Linker
 
 			// It is common to use Type.GetType for looking if a type is available.
 			// If no type was found only warn and return null.
-			if (needsAssemblyName && origin != null) {
-				_context.LogWarning (new MessageOrigin (origin), DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeNameString);
-			}
+			if (needsAssemblyName && provider != null)
+				diagnosticContext.AddDiagnostic (DiagnosticId.TypeWasNotFoundInAssemblyNorBaseLibrary, typeNameString);
 
 			typeAssembly = null;
 			return false;
