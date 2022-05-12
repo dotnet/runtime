@@ -337,15 +337,15 @@ namespace ILCompiler.Dataflow
             return new MethodParameterValue(method, parameterIndex, memberTypes);
         }
 
-        protected override ValueNode GetFieldValue(MethodIL method, FieldDesc field)
+        protected override MultiValue GetFieldValue(FieldDesc field)
         {
             switch (field.Name)
             {
-                case "EmptyTypes" when field.OwningType.IsTypeOf("System", "Type"):
+                case "EmptyTypes" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_Type):
                     {
-                        return new ArrayValue(new ConstIntValue(0), field.OwningType);
+                        return new ArrayValue.Create(0, field.OwningType);
                     }
-                case "Empty" when field.OwningType.IsTypeOf("System", "String"):
+                case "Empty" when field.OwningType.IsTypeOf(ILLink.Shared.TypeSystemProxy.WellKnownType.System_String):
                     {
                         return new KnownStringValue(string.Empty);
                     }
@@ -353,7 +353,7 @@ namespace ILCompiler.Dataflow
                 default:
                     {
                         DynamicallyAccessedMemberTypes memberTypes = _flowAnnotations.GetFieldAnnotation(field);
-                        return new LoadFieldValue(field, memberTypes);
+                        return new FieldValue(field, memberTypes);
                     }
             }
         }
