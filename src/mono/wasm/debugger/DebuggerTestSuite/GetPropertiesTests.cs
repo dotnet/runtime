@@ -491,7 +491,7 @@ namespace DebuggerTests
                 // from BaseBase:
                 {"_baseBase_BackingFieldForAutoProperty",           TString("BaseBase#BaseBase_BackingFieldForAutoProperty")}
             };
-            data.Add(public_props, internal_protected_props, private_props, "DerivedClass");
+            data.Add(public_props, internal_protected_props, private_props, "DerivedClass2");
 
             // structure CloneableStruct:
             public_props = new Dictionary<string, JObject>()
