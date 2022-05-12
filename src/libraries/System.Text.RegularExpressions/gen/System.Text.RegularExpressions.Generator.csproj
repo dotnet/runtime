@@ -11,8 +11,6 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <DefineConstants>$(DefineConstants);REGEXGENERATOR</DefineConstants>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
-    <IsPackable>false</IsPackable>
-    <LangVersion>Preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
