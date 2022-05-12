@@ -11,7 +11,7 @@ namespace System.Runtime.InteropServices.Marshalling
     /// Marshaller for BSTR strings
     /// </summary>
     [CLSCompliant(false)]
-    [CustomTypeMarshaller(typeof(string), BufferSize = 0x200,
+    [CustomTypeMarshaller(typeof(string), BufferSize = 0x100,
         Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling | CustomTypeMarshallerFeatures.CallerAllocatedBuffer)]
     public unsafe ref struct BStrStringMarshaller
     {
