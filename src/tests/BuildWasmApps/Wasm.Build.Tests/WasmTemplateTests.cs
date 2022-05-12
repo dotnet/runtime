@@ -47,7 +47,7 @@ namespace Wasm.Build.Tests
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
-            Console.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
+            _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             BuildProject(buildArgs,
                         id: id,
@@ -90,7 +90,7 @@ namespace Wasm.Build.Tests
             File.Move(product!.LogFile, Path.ChangeExtension(product.LogFile!, ".first.binlog"));
 
             _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
-            Console.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
+            _testOutput.WriteLine($"{Environment.NewLine}Publishing with no changes ..{Environment.NewLine}");
 
             bool expectRelinking = config == "Release";
             BuildProject(buildArgs,

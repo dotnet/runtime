@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Xml;
 using Xunit;
 using Xunit.Abstractions;
@@ -40,6 +41,8 @@ namespace Wasm.Build.Tests
         protected static BuildEnvironment s_buildEnv;
         private const string s_runtimePackPathPattern = "\\*\\* MicrosoftNetCoreAppRuntimePackDir : ([^ ]*)";
         private static Regex s_runtimePackPathRegex;
+        private static int s_testCounter;
+        private readonly int _testIdx;
 
         public static bool IsUsingWorkloads => s_buildEnv.IsWorkload;
         public static bool IsNotUsingWorkloads => !s_buildEnv.IsWorkload;
@@ -80,7 +83,8 @@ namespace Wasm.Build.Tests
 
         public BuildTestBase(ITestOutputHelper output, SharedBuildPerTestClassFixture buildContext)
         {
-            Console.WriteLine($"{Environment.NewLine}-------- New test --------{Environment.NewLine}");
+            _testIdx = Interlocked.Increment(ref s_testCounter);
+            Console.WriteLine($"-------- New test #{_testIdx} --------");
             _buildContext = buildContext;
             _testOutput = output;
             _logPath = s_buildEnv.LogRootPath; // FIXME:
@@ -190,7 +194,7 @@ namespace Wasm.Build.Tests
                                         ITestOutputHelper _testOutput, IDictionary<string, string>? envVars=null,
                                         int expectedAppExitCode=0, int xharnessExitCode=0, string? extraXHarnessArgs=null, string? appArgs=null, string? extraXHarnessMonoArgs = null)
         {
-            Console.WriteLine($"============== {testCommand} =============");
+            _testOutput.WriteLine($"============== {testCommand} =============");
             Directory.CreateDirectory(testLogPath);
 
             StringBuilder args = new();
@@ -294,7 +298,7 @@ namespace Wasm.Build.Tests
             string msgPrefix = options.Label != null ? $"[{options.Label}] " : string.Empty;
             if (options.UseCache && _buildContext.TryGetBuildFor(buildArgs, out BuildProduct? product))
             {
-                Console.WriteLine ($"Using existing build found at {product.ProjectDir}, with build log at {product.LogFile}");
+                _testOutput.WriteLine ($"Using existing build found at {product.ProjectDir}, with build log at {product.LogFile}");
 
                 Assert.True(product.Result, $"Found existing build at {product.ProjectDir}, but it had failed. Check build log at {product.LogFile}");
                 _projectDir = product.ProjectDir;
@@ -330,13 +334,13 @@ namespace Wasm.Build.Tests
             string logFilePath = Path.Combine(_logPath, $"{buildArgs.ProjectName}{logFileSuffix}.binlog");
             _testOutput.WriteLine($"-------- Building ---------");
             _testOutput.WriteLine($"Binlog path: {logFilePath}");
-            Console.WriteLine($"Binlog path: {logFilePath}");
+            _testOutput.WriteLine($"Binlog path: {logFilePath}");
             sb.Append($" /bl:\"{logFilePath}\" /nologo");
             sb.Append($" /fl /flp:\"v:diag,LogFile={logFilePath}.log\" /v:{options.Verbosity ?? "minimal"}");
             if (buildArgs.ExtraBuildArgs != null)
                 sb.Append($" {buildArgs.ExtraBuildArgs} ");
 
-            Console.WriteLine($"Building {buildArgs.ProjectName} in {_projectDir}");
+            _testOutput.WriteLine($"Building {buildArgs.ProjectName} in {_projectDir}");
 
             (int exitCode, string buildOutput) result;
             try
@@ -383,7 +387,7 @@ namespace Wasm.Build.Tests
         {
             InitPaths(id);
             InitProjectDir(id);
-            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+            new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
                     .ExecuteWithCapturedOutput($"new {template}")
                     .EnsureSuccessful();
@@ -394,7 +398,7 @@ namespace Wasm.Build.Tests
         public string CreateBlazorWasmTemplateProject(string id)
         {
             InitBlazorWasmProjectDir(id);
-            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+            new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(_projectDir!)
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
@@ -432,7 +436,7 @@ namespace Wasm.Build.Tests
         protected (CommandResult, string) BuildInternal(string id, string config, bool publish=false, bool setWasmDevel=true, params string[] extraArgs)
         {
             string label = publish ? "publish" : "build";
-            Console.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
+            _testOutput.WriteLine($"{Environment.NewLine}** {label} **{Environment.NewLine}");
 
             string logPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}-{label}.binlog");
             string[] combinedArgs = new[]
@@ -444,7 +448,7 @@ namespace Wasm.Build.Tests
                 setWasmDevel ? "-p:_WasmDevel=true" : string.Empty
             }.Concat(extraArgs).ToArray();
 
-            CommandResult res = new DotNetCommand(s_buildEnv)
+            CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!)
                                         .ExecuteWithCapturedOutput(combinedArgs)
                                         .EnsureSuccessful();
@@ -683,8 +687,6 @@ namespace Wasm.Build.Tests
                                          int? timeoutMs = null)
         {
             _testOutput.WriteLine($"Running {path} {args}");
-            Console.WriteLine($"Running: {path}: {args}");
-            Console.WriteLine($"WorkingDirectory: {workingDir}");
             _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
             StringBuilder outputBuilder = new ();
             object syncObj = new();
@@ -722,7 +724,7 @@ namespace Wasm.Build.Tests
             process.EnableRaisingEvents = true;
 
             // AutoResetEvent resetEvent = new (false);
-            // process.Exited += (_, _) => { Console.WriteLine ($"- exited called"); resetEvent.Set(); };
+            // process.Exited += (_, _) => { _testOutput.WriteLine ($"- exited called"); resetEvent.Set(); };
 
             if (!process.Start())
                 throw new ArgumentException("No process was started: process.Start() return false.");
@@ -770,7 +772,7 @@ namespace Wasm.Build.Tests
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"-- exception -- {ex}");
+                _testOutput.WriteLine($"-- exception -- {ex}");
                 throw;
             }
 
@@ -781,7 +783,6 @@ namespace Wasm.Build.Tests
                     if (logToXUnit && message != null)
                     {
                         _testOutput.WriteLine($"{label} {message}");
-                        Console.WriteLine($"{label} {message}");
                     }
                     outputBuilder.AppendLine($"{label} {message}");
                 }
@@ -825,6 +826,7 @@ namespace Wasm.Build.Tests
 
         public void Dispose()
         {
+            Console.WriteLine($"-------- test done #{_testIdx} --------");
             if (_projectDir != null && _enablePerTestCleanup)
                 _buildContext.RemoveFromCache(_projectDir, keepDir: s_skipProjectCleanup);
         }
