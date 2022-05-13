@@ -237,6 +237,8 @@ HRESULT EEConfig::Init()
     bDiagnosticSuspend = false;
 #endif
 
+    fDisableDefaultCodeVersioning = false;
+
 #if defined(FEATURE_TIERED_COMPILATION)
     fTieredCompilation = false;
     fTieredCompilation_QuickJit = false;
