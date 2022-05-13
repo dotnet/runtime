@@ -15,9 +15,9 @@ int sock_accept(int fd, int fdflags, int* result_ptr);
 
 static long long timeInMilliseconds()
 {
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return (((long long)tv.tv_sec)*1000)+(tv.tv_usec/1000);
+	struct timeval tv;
+	gettimeofday(&tv,NULL);
+	return (((long long)tv.tv_sec)*1000)+(tv.tv_usec/1000);
 }
 
 static int
@@ -36,8 +36,8 @@ wasi_transport_recv (void *buf, int len)
 		if ((res > 0 && total < len) || (res == -1 && again < retry_receive_message))
 		{
 			// Wasmtime on Windows doesn't seem to be able to sleep for short periods like 1ms so we'll have to spinlock
-            long long start = timeInMilliseconds();
-            while (timeInMilliseconds() < start + (connection_wait/1000));
+			long long start = timeInMilliseconds();
+			while (timeInMilliseconds() < start + (connection_wait/1000));
 		}
 		else
 			break;
@@ -77,7 +77,7 @@ wasi_transport_connect (const char *socket_fd)
         }
         handshake_ok = mono_component_debugger ()->transport_handshake ();
 	}
-    PRINT_DEBUG_MSG (1, "Accepted connection from client, socket fd=%d.\n", conn_fd);
+	PRINT_DEBUG_MSG (1, "Accepted connection from client, socket fd=%d.\n", conn_fd);
 }
 
 static void
@@ -98,9 +98,9 @@ wasi_transport_close2 (void)
 static void 
 mono_wasi_start_debugger_thread (MonoError *error)
 {
-    mono_debugger_agent_receive_and_process_command (FALSE);
+    	mono_debugger_agent_receive_and_process_command (FALSE);
 	connection_wait = 250;
-    return;
+	return;
 }
 
 static void
@@ -131,21 +131,21 @@ static void
 mono_wasi_receive_and_process_command_from_debugger_agent (void)
 {
 	retry_receive_message = 2;
-    mono_debugger_agent_receive_and_process_command (FALSE);
-    retry_receive_message = 50;
+	mono_debugger_agent_receive_and_process_command (FALSE);
+	retry_receive_message = 50;
 }
 
 static void
 mono_wasi_single_step_hit (void)
 {
-    mono_wasm_save_thread_context ();
+	mono_wasm_save_thread_context ();
 	mono_de_process_single_step (mono_wasm_get_tls (), FALSE);
 }
 
 static void
 mono_wasi_breakpoint_hit (void)
 {
-    mono_wasm_save_thread_context ();
+	mono_wasm_save_thread_context ();
 	mono_de_process_breakpoint (mono_wasm_get_tls (), FALSE);
 }
 
@@ -153,8 +153,8 @@ void
 mini_wasi_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
 {
 	fn_table->init = mono_wasi_debugger_init;
-    fn_table->receive_and_process_command_from_debugger_agent = mono_wasi_receive_and_process_command_from_debugger_agent;
-    fn_table->mono_wasm_breakpoint_hit = mono_wasi_breakpoint_hit;
+	fn_table->receive_and_process_command_from_debugger_agent = mono_wasi_receive_and_process_command_from_debugger_agent;
+	fn_table->mono_wasm_breakpoint_hit = mono_wasi_breakpoint_hit;
 	fn_table->mono_wasm_single_step_hit = mono_wasi_single_step_hit;
 }
 
