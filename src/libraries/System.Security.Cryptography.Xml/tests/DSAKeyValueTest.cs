@@ -53,15 +53,8 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void GetXml()
         {
-            using (DSA dsaKey = DSA.Create())
+            using (DSA dsaKey = TestHelpers.GetWorkingDSA())
             {
-#if NETCOREAPP
-                if (OperatingSystem.IsMacOS())
-                {
-                    // macOS cannot generate DSA keys, so for this platform we will use a fixed key.
-                    dsaKey.ImportParameters(TestHelpers.DsaKey);
-                }
-#endif
                 DSAKeyValue dsa = new DSAKeyValue(dsaKey);
                 XmlElement xmlkey = dsa.GetXml();
 
@@ -90,9 +83,8 @@ namespace System.Security.Cryptography.Xml.Tests
         [Fact]
         public void GetXml_SameDsa()
         {
-            using (DSA dsa = DSA.Create())
+            using (DSA dsa = TestHelpers.GetWorkingDSA())
             {
-                dsa.ImportParameters(TestHelpers.DsaKey);
                 DSAKeyValue dsaKeyValue1 = new DSAKeyValue(dsa);
                 DSAKeyValue dsaKeyValue2 = new DSAKeyValue(dsa);
                 Assert.Equal(dsaKeyValue1.GetXml(), dsaKeyValue2.GetXml());

@@ -293,8 +293,7 @@ namespace System.Security.Cryptography.Xml.Tests
         {
             SignedXml signedXml = MSDNSample();
 
-            DSA key = DSA.Create();
-            key.ImportParameters(TestHelpers.DsaKey);
+            DSA key = TestHelpers.GetWorkingDSA();
             signedXml.SigningKey = key;
 
             // Add a KeyInfo.
