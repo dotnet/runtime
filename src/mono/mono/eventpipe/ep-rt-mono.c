@@ -2917,7 +2917,7 @@ static
 int
 write_event_buffer (
 	const uint8_t *val,
-	size_t size,
+	int size,
 	char *buf_start,
 	char **buf_next);
 
@@ -3034,7 +3034,7 @@ static
 int
 write_event_buffer (
 	const uint8_t *val,
-	size_t size,
+	int size,
 	char *buf_start,
 	char **buf_next)
 {
