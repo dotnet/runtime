@@ -265,9 +265,9 @@ namespace System.Text.Json.SourceGeneration
 
                 List<ContextGenerationSpec>? contextGenSpecList = null;
 
-                foreach (var group in classDeclarationSyntaxList.GroupBy(c => c.SyntaxTree))
+                foreach (IGrouping<SyntaxTree, ClassDeclarationSyntax> group in classDeclarationSyntaxList.GroupBy(c => c.SyntaxTree))
                 {
-                    var syntaxTree = group.Key;
+                    SyntaxTree syntaxTree = group.Key;
                     SemanticModel compilationSemanticModel = compilation.GetSemanticModel(syntaxTree);
                     CompilationUnitSyntax compilationUnitSyntax = (CompilationUnitSyntax)syntaxTree.GetRoot(cancellationToken);
 
