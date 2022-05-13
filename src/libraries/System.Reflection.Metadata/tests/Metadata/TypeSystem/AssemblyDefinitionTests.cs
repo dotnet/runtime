@@ -27,7 +27,7 @@ namespace System.Reflection.Metadata.Tests
                 Assert.Equal(assembly.Culture, assemblyName.CultureName);
                 Assert.Equal(Configuration.Assemblies.AssemblyHashAlgorithm.SHA1, assemblyName.HashAlgorithm);
                 Assert.Null(assemblyName.GetPublicKey());
-                Assert.Null(assemblyName.GetPublicKeyToken());
+                Assert.Empty(assemblyName.GetPublicKeyToken());
                 Assert.Equal(AssemblyNameFlags.None, assemblyName.Flags);
 
                 // Validate against AssemblyDefinition
@@ -97,7 +97,7 @@ namespace System.Reflection.Metadata.Tests
                     Assert.Equal("", assemblyName.CultureName);
                     Assert.Equal(Configuration.Assemblies.AssemblyHashAlgorithm.SHA1, assemblyName.HashAlgorithm);
                     Assert.Null(assemblyName.GetPublicKey());
-                    Assert.Null(assemblyName.GetPublicKeyToken());
+                    Assert.Empty(assemblyName.GetPublicKeyToken());
                     Assert.Equal(AssemblyNameFlags.None, assemblyName.Flags);
 
                     // Validate against AssemblyDefinition
