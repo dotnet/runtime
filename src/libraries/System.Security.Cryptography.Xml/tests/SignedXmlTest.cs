@@ -288,13 +288,13 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/20575", TestPlatforms.OSX)]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public void AsymmetricDSASignature()
         {
             SignedXml signedXml = MSDNSample();
 
             DSA key = DSA.Create();
+            key.ImportPkcs8PrivateKey(TestHelpers.DsaPkcs8Key, out _);
             signedXml.SigningKey = key;
 
             // Add a KeyInfo.

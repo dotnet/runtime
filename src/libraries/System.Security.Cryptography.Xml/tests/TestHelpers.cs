@@ -225,6 +225,15 @@ namespace System.Security.Cryptography.Xml.Tests
             "v02cMSUwIwYJKoZIhvcNAQkVMRYEFDdYxa4ZJsCeAQZDzHLZ+cdpC2z5MDEwITAJ" +
             "BgUrDgMCGgUABBS0CMJuJYzpHkxOFI+r0PA67eJbzQQI4yGr4jgshqECAggA");
 
+        internal static readonly byte[] DsaPkcs8Key = Convert.FromBase64String(@"
+            MIIBSgIBADCCASsGByqGSM44BAEwggEeAoGBAJxMe6y5lIPhS6tt1wf/K1RVN08Z
+            LXeDWFaaRqyTHUSotBZLRI9/YO7zN96wNIPF3wbq0LvR5HG5UkduROW3mKzG1PKS
+            Q9Wapq5bW555Qfjx1+T4G7vdQQq9neVIwCH4gKiJZ8kjLldF0qm29QN6slhiMdwE
+            1wWlzfZpvqWhdorRAhUAvV0TbUwrTOkOoiyTJDxsaKWqWjECgYBdkRLOuyBQVpLr
+            3uyB5AScUquGHdLoL6B9UbbAv0kG/rfpCwSra7Gk4yX/VVDGOrELKzfH1gU6R1jX
+            Fh2ThrKFyjothWvzVf+VFS3HRhnGlpO3XReByeUvDHvvalgJw4dSXLIbGrcZgIDV
+            yCVe1LzSA8chiJ46qZSG8EdcxgEICAQWAhQNCtBkcG4jHIuUuq02o5Qun+2UfQ==");
+
         public static X509Certificate2 GetSampleX509Certificate()
         {
             return new X509Certificate2(SamplePfx, "mono");
