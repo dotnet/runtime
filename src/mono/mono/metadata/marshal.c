@@ -6180,10 +6180,12 @@ mono_install_marshal_callbacks (MonoMarshalLightweightCallbacks *cb)
 	mono_wasm_print_stack_trace ();
 	#endif
 	
-	g_assert (!lightweight_cb_inited);
-	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
-	memcpy (&marshal_lightweight_cb, cb, sizeof (MonoMarshalLightweightCallbacks));
-	lightweight_cb_inited = TRUE;
+	if(!lightweight_cb_inited) {
+		g_assert (!lightweight_cb_inited);
+		g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
+		memcpy (&marshal_lightweight_cb, cb, sizeof (MonoMarshalLightweightCallbacks));
+		lightweight_cb_inited = TRUE;
+	}
 }
 
 gboolean 
