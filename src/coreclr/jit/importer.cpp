@@ -17203,7 +17203,7 @@ void Compiler::impImportBlockCode(BasicBlock* block)
 
                 if (eeIsValueClass(resolvedToken.hClass))
                 {
-                    op1 = gtNewStructVal(resolvedToken.hClass, op1);
+                    op1 = gtNewStructVal(typGetObjLayout(resolvedToken.hClass), op1);
                     if (op1->OperIs(GT_OBJ))
                     {
                         gtSetObjGcInfo(op1->AsObj());

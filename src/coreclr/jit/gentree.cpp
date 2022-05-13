@@ -7196,21 +7196,20 @@ GenTreeOp* Compiler::gtNewAssignNode(GenTree* dst, GenTree* src)
 }
 
 //------------------------------------------------------------------------
-// gtNewObjNode: Creates a new Obj node.
+// gtNewObjNode: Creates a new Obj node with the given layout.
 //
 // Arguments:
-//    structHnd - The class handle of the struct type.
-//    addr      - The address of the struct.
+//    layout - The struct layout
+//    addr   - The address of the struct
 //
 // Return Value:
 //    Returns a node representing the struct value at the given address.
 //
-GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
+GenTreeObj* Compiler::gtNewObjNode(ClassLayout* layout, GenTree* addr)
 {
-    var_types nodeType = impNormStructType(structHnd);
-    assert(varTypeIsStruct(nodeType));
+    assert(layout != nullptr);
 
-    GenTreeObj* objNode = new (this, GT_OBJ) GenTreeObj(nodeType, addr, typGetObjLayout(structHnd));
+    GenTreeObj* objNode = new (this, GT_OBJ) GenTreeObj(layout->GetType(), addr, layout);
 
     // An Obj is not a global reference, if it is known to be a local struct.
     if ((addr->gtFlags & GTF_GLOB_REF) == 0)
@@ -7225,6 +7224,25 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
             }
         }
     }
+
+    return objNode;
+}
+
+//------------------------------------------------------------------------
+// gtNewObjNode: Creates a new Obj node with the layout for the given handle.
+//
+// Arguments:
+//    structHnd - The class handle of the struct type
+//    addr      - The address of the struct
+//
+// Return Value:
+//    Returns a node representing the struct value at the given address.
+//
+GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
+{
+    ClassLayout* layout  = typGetObjLayout(structHnd);
+    GenTreeObj*  objNode = gtNewObjNode(layout, addr);
+
     return objNode;
 }
 
@@ -7233,7 +7251,7 @@ GenTreeObj* Compiler::gtNewObjNode(CORINFO_CLASS_HANDLE structHnd, GenTree* addr
 //
 // Arguments:
 //    objNode - The object node of interest
-
+//
 void Compiler::gtSetObjGcInfo(GenTreeObj* objNode)
 {
     assert(varTypeIsStruct(objNode->TypeGet()));
@@ -7249,28 +7267,31 @@ void Compiler::gtSetObjGcInfo(GenTreeObj* objNode)
 // gtNewStructVal: Return a node that represents a struct value
 //
 // Arguments:
-//    structHnd - The class for the struct
-//    addr      - The address of the struct
+//    layout - The struct's layout
+//    addr   - The address of the struct
 //
 // Return Value:
-//    A block, object or local node that represents the struct value pointed to by 'addr'.
-
-GenTree* Compiler::gtNewStructVal(CORINFO_CLASS_HANDLE structHnd, GenTree* addr)
+//    An "OBJ" node, or "LCL_VAR" node if "addr" points to a local with
+//    a layout compatible with "layout".
+//
+GenTree* Compiler::gtNewStructVal(ClassLayout* layout, GenTree* addr)
 {
-    if (addr->gtOper == GT_ADDR)
+    if (addr->OperIs(GT_ADDR))
     {
-        GenTree* val = addr->gtGetOp1();
-        if (val->OperGet() == GT_LCL_VAR)
+        GenTree* location = addr->gtGetOp1();
+        if (location->OperIs(GT_LCL_VAR))
         {
-            unsigned   lclNum = addr->gtGetOp1()->AsLclVarCommon()->GetLclNum();
-            LclVarDsc* varDsc = &(lvaTable[lclNum]);
-            if (varTypeIsStruct(varDsc) && (varDsc->GetStructHnd() == structHnd) && !lvaIsImplicitByRefLocal(lclNum))
+            unsigned   lclNum = location->AsLclVar()->GetLclNum();
+            LclVarDsc* varDsc = lvaGetDesc(lclNum);
+            if (!lvaIsImplicitByRefLocal(lclNum) && varTypeIsStruct(varDsc) &&
+                ClassLayout::AreCompatible(layout, varDsc->GetLayout()))
             {
-                return addr->gtGetOp1();
+                return location;
             }
         }
     }
-    return gtNewObjNode(structHnd, addr);
+
+    return gtNewObjNode(layout, addr);
 }
 
 //------------------------------------------------------------------------
@@ -7320,8 +7341,9 @@ GenTree* Compiler::gtNewBlockVal(GenTree* addr, unsigned size)
 
 GenTree* Compiler::gtNewCpObjNode(GenTree* dstAddr, GenTree* srcAddr, CORINFO_CLASS_HANDLE structHnd, bool isVolatile)
 {
-    GenTree* lhs = gtNewStructVal(structHnd, dstAddr);
-    GenTree* src = gtNewStructVal(structHnd, srcAddr);
+    ClassLayout* layout = typGetObjLayout(structHnd);
+    GenTree*     lhs    = gtNewStructVal(layout, dstAddr);
+    GenTree*     src    = gtNewStructVal(layout, srcAddr);
 
     if (lhs->OperIs(GT_OBJ))
     {
