@@ -306,10 +306,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             return values;
         }
 
-        private static async Task<JObject> ResolveMemberAccessExpression(MemberAccessExpressionSyntax member_access,
+        private static async Task<JObject> ResolveMemberAccessExpression(MemberAccessExpressionSyntax memberAccess,
                                 MemberReferenceResolver resolver, CancellationToken token)
         {
-            string memberAccessString = member_access.ToString();
+            string memberAccessString = memberAccess.ToString();
             JObject value = await resolver.Resolve(memberAccessString, token);
             return value ?? throw new ReturnAsErrorException($"Failed to resolve member access for {memberAccessString}", "ReferenceError");
         }
@@ -323,10 +323,10 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         private static async Task<(IList<JObject>, IList<JObject>, IList<JObject>)> ResolveMethodCalls(ExpressionSyntaxReplacer replacer, MemberReferenceResolver resolver, CancellationToken token)
         {
-            var methodCallValues = new List<JObject>();
+            var methodCallValues = new List<JObject>(capacity: replacer.methodCalls.Count);
             // used for replacing method call on primitive:
-            var maesValues = new List<JObject>();
-            var identifierValues = new List<JObject>();
+            var maesValues = new List<JObject>(capacity: replacer.methodCalls.Count);
+            var identifierValues = new List<JObject>(capacity: replacer.methodCalls.Count);
             InvocationExpressionSyntax[] methodCallsCopy = replacer.methodCalls.ToArray();
             foreach (InvocationExpressionSyntax methodCall in methodCallsCopy)
             {
@@ -344,7 +344,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 /*
                     Instead of invoking the method on the primitive type in the runtime,
-                    we emit a local for the primitive, and emit the the method
+                    we emit a local for the primitive, and emit the the method call
                     itself in the script. For example:
                     double test_propUlong_2c64c = 12;
                     return (test_propUlong_2c64c.ToString());

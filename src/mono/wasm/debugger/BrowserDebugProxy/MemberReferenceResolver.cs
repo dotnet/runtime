@@ -392,9 +392,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (rootObject.IsNullValuedObject())
                         throw new ExpressionEvaluationFailedException($"Expression '{memberAccessExpressionSyntax}' evaluated to null");
                 }
-                else if (expr is IdentifierNameSyntax && scopeCache.ObjectFields.TryGetValue("this", out JObject valueRet))
+                else if (expr is IdentifierNameSyntax && scopeCache.ObjectFields.TryGetValue("this", out JObject thisValue))
                 {
-                    rootObject = await GetValueFromObject(valueRet, token);
+                    rootObject = await GetValueFromObject(thisValue, token);
                     methodName = expr.ToString();
                 }
                 return (rootObject, methodName);
@@ -446,7 +446,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 int methodParamsCnt = passedArgsCnt;
                 ParameterInfo[] methodParamsInfo = null;
                 var methodInfo = await context.SdbAgent.GetMethodInfo(methodId, token);
-                if (methodInfo != null) //FIXME: #65670
+                if (methodInfo != null)
                 {
                     methodParamsInfo = methodInfo.Info.GetParametersInfo();
                     methodParamsCnt = methodParamsInfo.Length;

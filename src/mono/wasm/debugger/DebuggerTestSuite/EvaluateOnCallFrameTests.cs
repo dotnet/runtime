@@ -508,12 +508,12 @@ namespace DebuggerTests
                var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
                Assert.Equal(
                     $"Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'", 
-                    res.Error["exceptionDetails"]["exception"]["description"]?.Value<string>());
+                    res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false);
                 Assert.Equal(
                     "Unable to evaluate method 'MyMethod'. Too many arguments passed.", 
-                    res.Error["exceptionDetails"]["exception"]["description"]?.Value<string>());
+                    res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
                Assert.Contains("Unable to evaluate method 'this.CallMethodWithParm(\"1\")'", res.Error["message"]?.Value<string>());
@@ -524,7 +524,7 @@ namespace DebuggerTests
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
                Assert.Contains(
                     "Cannot evaluate '(this.ParmToTestObjException.MyMethod()\n)'", 
-                    res.Error["exceptionDetails"]["exception"]["description"]?.Value<string>());
+                    res.Error["result"]?["description"]?.Value<string>());
            });
 
         [Fact]
