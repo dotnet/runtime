@@ -10797,6 +10797,7 @@ void Compiler::fgValueNumberAddExceptionSet(GenTree* tree)
 
 #ifdef TARGET_ARM64
             case GT_CHK_DIV_BY_ZERO:
+                // TODO: Add impl
                 break;
 #endif
 

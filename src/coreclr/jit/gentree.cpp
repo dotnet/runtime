@@ -5101,8 +5101,8 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
 
 #ifdef TARGET_ARM64
             case GT_CHK_DIV_BY_ZERO:
-                costEx = 4; // cmp reg,reg and jae throw (not taken)
-                costSz = 7; // jump to cold section
+                costEx = 4;
+                costSz = 7;
                 break;
 #endif
 

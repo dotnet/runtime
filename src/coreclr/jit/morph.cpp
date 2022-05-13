@@ -11536,7 +11536,7 @@ DONE_MORPHING_CHILDREN:
 
 #ifdef TARGET_ARM64
         case GT_CHK_DIV_BY_ZERO:
-            assert(varTypeIsIntegralOrI(op1));
+            assert(!varTypeIsFloating(op1));
             fgAddCodeRef(compCurBB, bbThrowIndex(compCurBB), SCK_DIV_BY_ZERO);
             break;
 #endif
