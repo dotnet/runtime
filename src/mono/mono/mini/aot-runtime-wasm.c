@@ -103,6 +103,18 @@ mono_wasm_interp_method_args_get_larg (InterpMethodArguments *margs, int i)
 	return get_long_arg (margs, i);
 }
 
+MONO_API float
+mono_wasm_interp_method_args_get_farg (InterpMethodArguments *margs, int i)
+{
+	return *(float*)&margs->fargs [FIDX (i)];
+}
+
+MONO_API double
+mono_wasm_interp_method_args_get_darg (InterpMethodArguments *margs, int i)
+{
+	return margs->fargs [FIDX (i)];
+}
+
 MONO_API gpointer*
 mono_wasm_interp_method_args_get_retval (InterpMethodArguments *margs)
 {

@@ -42,6 +42,12 @@ mono_wasm_interp_method_args_get_iarg (InterpMethodArguments *margs, int i);
 int64_t
 mono_wasm_interp_method_args_get_larg (InterpMethodArguments *margs, int i);
 
+float
+mono_wasm_interp_method_args_get_farg (InterpMethodArguments *margs, int i);
+
+double
+mono_wasm_interp_method_args_get_darg (InterpMethodArguments *margs, int i);
+
 void*
 mono_wasm_interp_method_args_get_retval  (InterpMethodArguments *margs);
 
