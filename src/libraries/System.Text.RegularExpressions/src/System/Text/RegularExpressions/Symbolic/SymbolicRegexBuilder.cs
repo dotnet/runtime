@@ -375,6 +375,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <returns></returns>
         internal SymbolicRegexNode<TSet> Not(SymbolicRegexNode<TSet> node) => SymbolicRegexNode<TSet>.Not(this, node);
 
+        internal SymbolicRegexNode<TSet> CreateEffect(SymbolicRegexNode<TSet> node, SymbolicRegexNode<TSet> effectNode) => SymbolicRegexNode<TSet>.CreateEffect(this, node, effectNode);
+
         internal SymbolicRegexNode<TSet> CreateCapture(SymbolicRegexNode<TSet> child, int captureNum) => CreateConcat(CreateCaptureStart(captureNum), CreateConcat(child, CreateCaptureEnd(captureNum)));
 
         internal SymbolicRegexNode<TSet> CreateCaptureStart(int captureNum) => SymbolicRegexNode<TSet>.CreateCaptureStart(this, captureNum);
@@ -552,8 +554,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </summary>
         public int CreateNfaState(SymbolicRegexNode<TSet> node, uint prevCharKind)
         {
-            // TBD: OrderedOr
-            Debug.Assert(node.Kind != SymbolicRegexNodeKind.Or);
+            Debug.Assert(node.Kind != SymbolicRegexNodeKind.OrderedOr);
 
             // First make the underlying core state
             DfaMatchingState<TSet> coreState = CreateState(node, prevCharKind);
@@ -649,20 +650,22 @@ namespace System.Text.RegularExpressions.Symbolic
                     int coreOffset = (coreState.Id << _mintermsLog) | mintermId;
                     DfaMatchingState<TSet>? coreTarget = _delta[coreOffset] ?? CreateNewTransition(coreState, mintermId, coreOffset);
 
-                    // TBD: OrderedOr
-                    if (coreTarget.Node.Kind == SymbolicRegexNodeKind.Or)
+                    SymbolicRegexNode<TSet> node = coreTarget.Node.Kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation ?
+                        coreTarget.Node._left! : coreTarget.Node;
+                    if (node.Kind == SymbolicRegexNodeKind.OrderedOr)
                     {
                         // Create separate NFA states for all members of a disjunction
                         // Here duplicate NFA states cannot arise because there are no duplicate nodes in the disjunction
-                        SymbolicRegexSet<TSet>? alts = coreTarget.Node._alts;
-                        Debug.Assert(alts is not null);
-
+                        List<SymbolicRegexNode<TSet>> alts = node.ToList(listKind: SymbolicRegexNodeKind.OrderedOr);
                         targets = new int[alts.Count];
                         int targetIndex = 0;
                         foreach (SymbolicRegexNode<TSet> q in alts)
                         {
                             Debug.Assert(!q.IsNothing);
-                            targets[targetIndex++] = CreateNfaState(q, coreTarget.PrevCharKind);
+                            // Re-wrap the element nodes in DisableBacktrackingSimulation if the top level node was too
+                            SymbolicRegexNode<TSet> targetNode = coreTarget.Node.Kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation ?
+                                CreateDisableBacktrackingSimulation(q) : q;
+                            targets[targetIndex++] = CreateNfaState(targetNode, coreTarget.PrevCharKind);
                         }
                         Debug.Assert(targetIndex == targets.Length);
                     }

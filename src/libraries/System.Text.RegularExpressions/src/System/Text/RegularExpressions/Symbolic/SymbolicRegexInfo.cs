@@ -13,6 +13,7 @@ namespace System.Text.RegularExpressions.Symbolic
         private const uint ContainsSomeAnchorMask = 16;
         private const uint StartsWithSomeAnchorMask = 32;
         private const uint IsHighPriorityNullableMask = 64;
+        private const uint ContainsEffectMask = 128;
 
         private readonly uint _info;
 
@@ -20,7 +21,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal static SymbolicRegexInfo Create(bool isAlwaysNullable = false, bool canBeNullable = false,
             bool startsWithLineAnchor = false, bool startsWithSomeAnchor = false, bool containsSomeAnchor = false,
-            bool isLazyLoop = false, bool isHighPriorityNullable = false)
+            bool isLazyLoop = false, bool isHighPriorityNullable = false, bool containsEffect = false)
         {
             uint i = 0;
 
@@ -59,6 +60,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 i |= IsHighPriorityNullableMask;
             }
 
+            if (containsEffect)
+            {
+                i |= ContainsEffectMask;
+            }
+
             return new SymbolicRegexInfo(i);
         }
 
@@ -75,6 +81,8 @@ namespace System.Text.RegularExpressions.Symbolic
         public bool IsLazyLoop => (_info & IsLazyLoopMask) != 0;
 
         public bool IsHighPriorityNullable => (_info & IsHighPriorityNullableMask) != 0;
+
+        public bool ContainsEffect => (_info & ContainsEffectMask) != 0;
 
         /// <summary>
         /// Depricated
@@ -107,7 +115,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 startsWithLineAnchor: left_info.StartsWithLineAnchor || right_info.StartsWithLineAnchor,
                 startsWithSomeAnchor: left_info.StartsWithSomeAnchor || right_info.StartsWithSomeAnchor,
                 containsSomeAnchor: left_info.ContainsSomeAnchor || right_info.ContainsSomeAnchor,
-                isHighPriorityNullable: left_info.IsHighPriorityNullable);
+                isHighPriorityNullable: left_info.IsHighPriorityNullable,
+                containsEffect: left_info.ContainsEffect || right_info.ContainsEffect);
 
         /// <summary>
         /// Depricated
@@ -143,7 +152,8 @@ namespace System.Text.RegularExpressions.Symbolic
                 startsWithLineAnchor: left_info.StartsWithLineAnchor || (left_info.CanBeNullable && right_info.StartsWithLineAnchor),
                 startsWithSomeAnchor: left_info.StartsWithSomeAnchor || (left_info.CanBeNullable && right_info.StartsWithSomeAnchor),
                 containsSomeAnchor: left_info.ContainsSomeAnchor || right_info.ContainsSomeAnchor,
-                isHighPriorityNullable: left_info.IsHighPriorityNullable && right_info.IsHighPriorityNullable);
+                isHighPriorityNullable: left_info.IsHighPriorityNullable && right_info.IsHighPriorityNullable,
+                containsEffect: left_info.ContainsEffect || right_info.ContainsEffect);
 
         /// <summary>
         /// Inherits anchor visibility from the loop body.
@@ -178,6 +188,7 @@ namespace System.Text.RegularExpressions.Symbolic
             return new SymbolicRegexInfo(i);
         }
 
+        public static SymbolicRegexInfo Effect(SymbolicRegexInfo childInfo) => new SymbolicRegexInfo(childInfo._info | ContainsEffectMask);
 
         /// <summary>
         /// depricated

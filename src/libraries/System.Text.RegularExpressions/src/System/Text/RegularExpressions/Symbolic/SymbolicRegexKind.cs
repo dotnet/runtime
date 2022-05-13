@@ -54,6 +54,11 @@ namespace System.Text.RegularExpressions.Symbolic
         /// </remarks>
         FixedLengthMarker,
 
+        /// <summary>Effects to be applied when taking a transition.</summary>
+        /// <remarks>
+        /// Left child is the pattern itself and the right child is a concatenation of nodes whose effects should be applied.
+        /// </remarks>
+        Effect,
         /// <summary>Indicates the start of a subcapture.</summary>
         /// <remarks><see cref="SymbolicRegexNode{S}._lower"/> stores the associated capture number.</remarks>
         CaptureStart,
