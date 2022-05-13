@@ -54,11 +54,14 @@ namespace System.Net
 
             buffer = new byte[_curReadHeader.PayloadSize];
 
-            bytesRead = await TAdapter.ReadAtLeastAsync(
-                stream, buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
-            if (bytesRead < buffer.Length)
+            if (buffer.Length > 0)
             {
-                throw new IOException(SR.Format(SR.net_io_readfailure, SR.net_io_connectionclosed));
+                bytesRead = await TAdapter.ReadAtLeastAsync(
+                    stream, buffer, buffer.Length, throwOnEndOfStream: false, cancellationToken).ConfigureAwait(false);
+                if (bytesRead < buffer.Length)
+                {
+                    throw new IOException(SR.Format(SR.net_io_readfailure, SR.net_io_connectionclosed));
+                }
             }
             return buffer;
         }
