@@ -72,7 +72,7 @@ void Assert(const char * expr, const char * file, uint32_t line_num, const char 
     int32_t (* pfn)(HANDLE, char *, const char *, uint32_t) =
         (int32_t (*)(HANDLE, char *, const char *, uint32_t))PalGetProcAddress(hMod, "MessageBoxA");
 
-    int32_t result = pfn(NULL, buffer, "Redhawk Assert", MB_ABORTRETRYIGNORE);
+    int32_t result = pfn(NULL, buffer, "NativeAOT Assert", MB_ABORTRETRYIGNORE);
 
     switch (result)
     {
