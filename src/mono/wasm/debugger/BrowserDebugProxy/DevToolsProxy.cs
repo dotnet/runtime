@@ -33,10 +33,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         {
             _loggerId = loggerId;
             this.logger = logger;
-
-            var channel = Channel.CreateUnbounded<Task>(new UnboundedChannelOptions { SingleReader = true });
-            _channelWriter = channel.Writer;
-            _channelReader = channel.Reader;
         }
 
         protected int GetNewCmdId() => Interlocked.Increment(ref next_cmd_id);
