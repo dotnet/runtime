@@ -6179,7 +6179,7 @@ mono_install_marshal_callbacks (MonoMarshalLightweightCallbacks *cb)
 	#ifdef HOST_WASM
 	mono_wasm_print_stack_trace ();
 	#endif
-	
+
 	if(!lightweight_cb_inited) {
 		g_assert (!lightweight_cb_inited);
 		g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
@@ -6188,8 +6188,8 @@ mono_install_marshal_callbacks (MonoMarshalLightweightCallbacks *cb)
 	}
 }
 
-gboolean 
-mono_marshal_lightweight_cb_is_inited(void)
+gboolean
+mono_marshal_lightweight_cb_is_inited (void)
 {
 	return lightweight_cb_inited;
 }
