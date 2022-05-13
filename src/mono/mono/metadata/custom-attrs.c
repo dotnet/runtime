@@ -752,9 +752,7 @@ MONO_RESTORE_WARNING
 		if (!bcheck_blob (p, 0, boundp, error))
 			return NULL;
 		char subt = *p++;
-		MonoObject *obj;
 		MonoClass *subc = NULL;
-		void *val;
 
 		if (subt == CATTR_TYPE_SYSTEM_TYPE) {
 			return load_cattr_type (image, t, FALSE, p, boundp, end, error, &slen);
@@ -804,22 +802,7 @@ MONO_RESTORE_WARNING
 		} else {
 			g_error ("Unknown type 0x%02x for object type encoding in custom attr", subt);
 		}
-		val = load_cattr_value_noalloc (image, m_class_get_byval_arg (subc), p, boundp, end, error);
-		
-		// TODO: check this below, for now just assert
-		g_assert(FALSE);
-
-		// if (is_ok (error)) {
-		// 	obj = mono_object_new_checked (subc, error);
-		// 	g_assert (!m_class_has_references (subc));
-		// 	if (is_ok (error))
-		// 		mono_gc_memmove_atomic (mono_object_get_data (obj), val, mono_class_value_size (subc, NULL));
-		// 	g_assert (out_obj);
-		// 	*out_obj = obj;
-		// }
-
-		// g_free (val);
-		return NULL;
+		return load_cattr_value_noalloc (image, m_class_get_byval_arg (subc), p, boundp, end, error);
 	}
 	case MONO_TYPE_SZARRAY: {
 		guint32 i, alen, basetype;
