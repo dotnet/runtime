@@ -107,15 +107,26 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     // Walk up the dom tree and see if any dominating block has branched on
     // exactly this tree's VN...
     //
-    BasicBlock*    prevBlock   = block;
-    BasicBlock*    domBlock    = block->bbIDom;
-    int            relopValue  = -1;
-    ValueNum       treeExcVN   = ValueNumStore::NoVN;
-    ValueNum       domCmpExcVN = ValueNumStore::NoVN;
-    unsigned       matchCount  = 0;
-    const unsigned matchLimit  = 4;
+    BasicBlock*    prevBlock  = block;
+    BasicBlock*    domBlock   = block->bbIDom;
+    int            relopValue = -1;
+    unsigned       matchCount = 0;
+    const unsigned matchLimit = 4;
 
     if (domBlock == nullptr)
+    {
+        return false;
+    }
+
+    // Unpack the tree's VN
+    //
+    ValueNum treeNormVN;
+    ValueNum treeExcVN;
+    vnStore->VNUnpackExc(tree->GetVN(VNK_Liberal), &treeNormVN, &treeExcVN);
+
+    // If the treeVN is a constant, defer to const prop
+    //
+    if (vnStore->IsVNCOnstant(treeNormVN))
     {
         return false;
     }
@@ -143,10 +154,9 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 //
                 // Look for an exact match and also try the various swapped/reversed forms.
                 //
-                ValueNum treeNormVN;
-                vnStore->VNUnpackExc(tree->GetVN(VNK_Liberal), &treeNormVN, &treeExcVN);
                 ValueNum domCmpNormVN;
-                vnStore->VNUnpackExc(domCmpTree->GetVN(VNK_Liberal), &domCmpNormVN, &domCmpExcVN);
+                ValueNum domCmpExcVN;
+                vnStore->VNUnpackExc(domCmpTree->GetVN(VNK_Liberal), &domCmpNormVN, &domCmpExcVN;
                 ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
                 bool                            matched         = false;
 
@@ -289,12 +299,12 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                     BasicBlock* const trueSuccessor  = domBlock->bbJumpDest;
                     BasicBlock* const falseSuccessor = domBlock->bbNext;
 
-                    // Only check reachability when we can also infer the value along that path.
+                    // If we can trace the flow from the dominating relop, we can infer its value.
                     //
-                    const bool trueReaches  = canInferFromTrue && optReachable(trueSuccessor, block, domBlock);
-                    const bool falseReaches = canInferFromFalse && optReachable(falseSuccessor, block, domBlock);
+                    const bool trueReaches  = optReachable(trueSuccessor, block, domBlock);
+                    const bool falseReaches = optReachable(falseSuccessor, block, domBlock);
 
-                    if (trueReaches && falseReaches)
+                    if (trueReaches && falseReaches && canInferFromTrue && canInferFromFalse)
                     {
                         // Both dominating compare outcomes reach the current block so we can't infer the
                         // value of the relop.
@@ -309,7 +319,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                             return true;
                         }
                     }
-                    else if (trueReaches)
+                    else if (trueReaches && !falseReaches && canInferFromTrue)
                     {
                         // Taken jump in dominator reaches, fall through doesn't; relop must be true/false.
                         //
@@ -319,7 +329,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         relopValue = relopIsTrue ? 1 : 0;
                         break;
                     }
-                    else if (falseReaches)
+                    else if (falseReaches && !trueReaches && canInferFromFalse)
                     {
                         // Fall through from dominator reaches, taken jump doesn't; relop must be false/true.
                         //
