@@ -120,11 +120,6 @@ namespace System.StubHelpers
                 return new string((sbyte*)cstr);
         }
 
-        internal static void ClearNative(IntPtr pNative)
-        {
-            Marshal.FreeCoTaskMem(pNative);
-        }
-
         internal static unsafe void ConvertFixedToNative(int flags, string strManaged, IntPtr pNativeBuffer, int length)
         {
             if (strManaged == null)
@@ -190,60 +185,6 @@ namespace System.StubHelpers
             return new string((sbyte*)cstr, 0, length);
         }
     }  // class CSTRMarshaler
-
-    internal static class UTF8Marshaler
-    {
-        private const int MAX_UTF8_CHAR_SIZE = 3;
-        internal static unsafe IntPtr ConvertToNative(int flags, string strManaged, IntPtr pNativeBuffer)
-        {
-            if (null == strManaged)
-            {
-                return IntPtr.Zero;
-            }
-
-            int nb;
-            byte* pbNativeBuffer = (byte*)pNativeBuffer;
-
-            // If we are marshaling into a stack buffer allocated by the ILStub
-            // we will use a "1-pass" mode where we convert the string directly into the unmanaged buffer.
-            // else we will allocate the precise native heap memory.
-            if (pbNativeBuffer != null)
-            {
-                // this is the number of bytes allocated by the ILStub.
-                nb = (strManaged.Length + 1) * MAX_UTF8_CHAR_SIZE;
-
-                // nb is the actual number of bytes written by Encoding.GetBytes.
-                // use nb to de-limit the string since we are allocating more than
-                // required on stack
-                nb = strManaged.GetBytesFromEncoding(pbNativeBuffer, nb, Encoding.UTF8);
-            }
-            // required bytes > 260 , allocate required bytes on heap
-            else
-            {
-                nb = Encoding.UTF8.GetByteCount(strManaged);
-                // + 1 for the null character.
-                pbNativeBuffer = (byte*)Marshal.AllocCoTaskMem(nb + 1);
-                strManaged.GetBytesFromEncoding(pbNativeBuffer, nb, Encoding.UTF8);
-            }
-            pbNativeBuffer[nb] = 0x0;
-            return (IntPtr)pbNativeBuffer;
-        }
-
-        internal static unsafe string? ConvertToManaged(IntPtr cstr)
-        {
-            if (IntPtr.Zero == cstr)
-                return null;
-
-            byte* pBytes = (byte*)cstr;
-            int nbBytes = string.strlen(pBytes);
-            return string.CreateStringFromEncoding(pBytes, nbBytes, Encoding.UTF8);
-        }
-
-        internal static void ClearNative(IntPtr pNative)
-        {
-            Marshal.FreeCoTaskMem(pNative);
-        }
-    }
 
     internal static class UTF8BufferMarshaler
     {
