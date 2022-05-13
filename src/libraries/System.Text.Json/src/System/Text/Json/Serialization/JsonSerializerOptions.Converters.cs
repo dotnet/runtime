@@ -42,7 +42,7 @@ namespace System.Text.Json
                 // We also need to ensure that all threads use same instance of s_defaultTypeInfoResolver or
                 // otherwise EqualityComparer for CachingContext may fail even though
                 // two options might assign _typeInfoResolver to s_defaultTypeInfoResolver
-                Interlocked.CompareExchange(ref s_defaultTypeInfoResolver, new DefaultJsonTypeInfoResolver(), null);
+                Interlocked.CompareExchange(ref s_defaultTypeInfoResolver, new DefaultJsonTypeInfoResolver(mutable: false), null);
             }
 
             // This isn't strictly needed but we will get nullability warning because `Volatile.Read(ref s_defaultTypeInfoResolver) is null`

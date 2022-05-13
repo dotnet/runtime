@@ -18,7 +18,7 @@ namespace System.Text.Json.Serialization.Metadata
         /// </summary>
         /// <param name="type">Type to be resolved.</param>
         /// <param name="options">JsonSerializerOptions instance defining resolution parameters.</param>
-        /// <returns>Returns resolved JsonTypeInfo instance or null if Type cannot be resolved by this resolver.</returns>
+        /// <returns>Returns JsonTypeInfo instance or null if the resolver cannot produce metadata for this type.</returns>
         JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options);
     }
 }

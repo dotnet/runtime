@@ -14,16 +14,23 @@ namespace System.Text.Json.Serialization.Metadata
     /// </summary>
     internal sealed class DefaultJsonTypeInfoResolver : IJsonTypeInfoResolver
     {
-        private bool _mutable = true;
+        private bool _mutable;
 
         /// <summary>
         /// Constructs DefaultJsonTypeInfoResolver.
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        public DefaultJsonTypeInfoResolver()
+        public DefaultJsonTypeInfoResolver() : this(mutable: true)
+        {
+        }
+
+        [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        internal DefaultJsonTypeInfoResolver(bool mutable)
         {
             Modifiers = new ConfigurationList<Action<JsonTypeInfo>>() { VerifyMutable = VerifyMutable };
+            _mutable = mutable;
         }
 
         /// <inheritdoc/>

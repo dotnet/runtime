@@ -116,6 +116,11 @@ namespace System.Text.Json
             _propertyNameCaseInsensitive = options._propertyNameCaseInsensitive;
             _writeIndented = options._writeIndented;
 
+            if (_serializerContext == null && _typeInfoResolver != s_defaultTypeInfoResolver)
+            {
+                _typeInfoResolver = options._typeInfoResolver;
+            }
+
             EffectiveMaxDepth = options.EffectiveMaxDepth;
             ReferenceHandlingStrategy = options.ReferenceHandlingStrategy;
 
@@ -168,6 +173,7 @@ namespace System.Text.Json
             VerifyMutable();
             TContext context = new();
             _serializerContext = context;
+            _typeInfoResolver = context;
             context._options = this;
         }
 
@@ -567,6 +573,7 @@ namespace System.Text.Json
             {
                 VerifyMutable();
                 _serializerContext = value;
+                _typeInfoResolver = value;
             }
         }
 
@@ -609,25 +616,30 @@ namespace System.Text.Json
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal void EnsureInitializedForReflectionSerializer()
         {
-            if (_typeInfoResolver != null)
+            if (_typeInfoResolver != null && (_serializerContext == null || _serializerContext.FallbackResolver != null))
+            {
                 return;
+            }
 
             RootReflectionSerializerDependencies();
-            _typeInfoResolver = s_defaultTypeInfoResolver;
+            _typeInfoResolver ??= s_defaultTypeInfoResolver;
+
+            if (_serializerContext != null)
+            {
+                _serializerContext.FallbackResolver ??= s_defaultTypeInfoResolver;
+            }
+
             if (_cachingContext != null)
             {
                 // This only applies if resolver wasn't previously initialized
+                Debug.Assert(_cachingContext.Options._typeInfoResolver != null || _typeInfoResolver == s_defaultTypeInfoResolver);
                 _cachingContext.Options._typeInfoResolver ??= s_defaultTypeInfoResolver;
             }
         }
 
         private JsonTypeInfo GetJsonTypeInfoFromContextOrCreate(Type type)
         {
-            JsonTypeInfo? info = _serializerContext?.GetTypeInfo(type);
-            if (info == null && _typeInfoResolver != null)
-            {
-                info = _typeInfoResolver.GetTypeInfo(type, this);
-            }
+            JsonTypeInfo? info = _typeInfoResolver?.GetTypeInfo(type, this);
 
             if (info == null)
             {

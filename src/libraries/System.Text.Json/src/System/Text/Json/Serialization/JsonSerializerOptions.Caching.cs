@@ -76,7 +76,8 @@ namespace System.Text.Json
             _cachingContext = TrackedCachingContexts.GetOrCreate(this);
             if (_typeInfoResolver != null)
             {
-                Debug.Assert(_typeInfoResolver == s_defaultTypeInfoResolver, "Equality should guarantee that null is equivalent to s_defaultTypeInfoResolver");
+                Debug.Assert(_cachingContext.Options._typeInfoResolver != null || _typeInfoResolver == s_defaultTypeInfoResolver,
+                    "EqualityComparer should guarantee that null is equivalent to s_defaultTypeInfoResolver");
                 _cachingContext.Options._typeInfoResolver ??= s_defaultTypeInfoResolver;
             }
         }
@@ -272,6 +273,25 @@ namespace System.Text.Json
             {
                 Debug.Assert(left != null && right != null);
 
+                // We cache these values in this specific order enforcing default resolver to be read last
+                // this is done in case _typeInfoResolver or s_defaultTypeInfoResolver is not initialized yet
+                // the behavior will still be correct
+                IJsonTypeInfoResolver? leftResolver = left._typeInfoResolver;
+                IJsonTypeInfoResolver? rightResolver = right._typeInfoResolver;
+                IJsonTypeInfoResolver? defaultResolver = Volatile.Read(ref s_defaultTypeInfoResolver);
+
+                // we ensure null and s_defaultTypeInfoResolver mean the same thing
+                // we normalize to null so that calculating hash code is consistent
+                if (leftResolver == defaultResolver)
+                {
+                    leftResolver = null;
+                }
+
+                if (rightResolver == defaultResolver)
+                {
+                    rightResolver = null;
+                }
+
                 return
                     left._dictionaryKeyPolicy == right._dictionaryKeyPolicy &&
                     left._jsonPropertyNamingPolicy == right._jsonPropertyNamingPolicy &&
@@ -290,6 +310,7 @@ namespace System.Text.Json
                     left._includeFields == right._includeFields &&
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
+                    leftResolver == rightResolver &&
                     left._serializerContext == right._serializerContext &&
                     CompareLists(left._converters, right._converters) &&
 #pragma warning disable CA2252 // This API requires opting into preview features
@@ -318,6 +339,16 @@ namespace System.Text.Json
 
             public int GetHashCode(JsonSerializerOptions options)
             {
+                IJsonTypeInfoResolver? typeInfoResolver = options._typeInfoResolver;
+                IJsonTypeInfoResolver? defaultResolver = Volatile.Read(ref s_defaultTypeInfoResolver);
+
+                // we normalize s_defaultTypeInfoResolver to null so that hash code is the same in case s_defaultTypeInfoResolver
+                // is not initialized yet
+                if (typeInfoResolver == defaultResolver)
+                {
+                    typeInfoResolver = null;
+                }
+
                 HashCode hc = default;
 
                 hc.Add(options._dictionaryKeyPolicy);
@@ -337,6 +368,7 @@ namespace System.Text.Json
                 hc.Add(options._includeFields);
                 hc.Add(options._propertyNameCaseInsensitive);
                 hc.Add(options._writeIndented);
+                hc.Add(typeInfoResolver);
                 hc.Add(options._serializerContext);
                 GetHashCode(ref hc, options._converters);
 #pragma warning disable CA2252 // This API requires opting into preview features

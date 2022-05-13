@@ -140,6 +140,12 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
+        public static void ThrowInvalidOperationException_SerializerContextOptionsImmutable()
+        {
+            throw new InvalidOperationException(SR.SerializerContextOptionsImmutable);
+        }
+
+        [DoesNotReturn]
         public static void ThrowInvalidOperationException_TypeInfoResolverImmutable()
         {
             throw new InvalidOperationException(SR.TypeInfoResolverImmutable);
