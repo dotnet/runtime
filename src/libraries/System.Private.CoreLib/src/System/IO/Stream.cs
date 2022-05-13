@@ -336,16 +336,9 @@ namespace System.IO
         public ValueTask ReadExactlyAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ValueTask<int> vt = ReadAtLeastAsyncCore(buffer, buffer.Length, throwOnEndOfStream: true, cancellationToken);
-            if (vt.IsCompletedSuccessfully)
-                return default;
 
-            // use the ValueTask<int>'s backing object to create a ValueTask without allocating here.
-            object? obj = vt._obj;
-            Debug.Assert(obj is Task || obj is IValueTaskSource);
-
-            return obj is Task task ?
-                new ValueTask(task) :
-                new ValueTask((IValueTaskSource)obj, vt._token);
+            // transfer the ValueTask<int> to a ValueTask without allocating here.
+            return ValueTask.DangerousCreateFromTypedValueTask(vt);
         }
 
         public ValueTask ReadExactlyAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
@@ -353,16 +346,9 @@ namespace System.IO
             ValidateBufferArguments(buffer, offset, count);
 
             ValueTask<int> vt = ReadAtLeastAsyncCore(buffer.AsMemory(offset, count), count, throwOnEndOfStream: true, cancellationToken);
-            if (vt.IsCompletedSuccessfully)
-                return default;
 
-            // use the ValueTask<int>'s backing object to create a ValueTask without allocating here.
-            object? obj = vt._obj;
-            Debug.Assert(obj is Task || obj is IValueTaskSource);
-
-            return obj is Task task ?
-                new ValueTask(task) :
-                new ValueTask((IValueTaskSource)obj, vt._token);
+            // transfer the ValueTask<int> to a ValueTask without allocating here.
+            return ValueTask.DangerousCreateFromTypedValueTask(vt);
         }
 
         public ValueTask<int> ReadAtLeastAsync(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true, CancellationToken cancellationToken = default)
