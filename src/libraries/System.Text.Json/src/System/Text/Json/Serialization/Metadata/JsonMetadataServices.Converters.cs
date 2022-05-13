@@ -50,7 +50,7 @@ namespace System.Text.Json.Serialization.Metadata
         public static JsonConverter<DateTimeOffset> DateTimeOffsetConverter => s_dateTimeOffsetConverter ??= new DateTimeOffsetConverter();
         private static JsonConverter<DateTimeOffset>? s_dateTimeOffsetConverter;
 
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
         /// <summary>
         /// Returns a <see cref="JsonConverter{T}"/> instance that converts <see cref="DateOnly"/> values.
         /// </summary>

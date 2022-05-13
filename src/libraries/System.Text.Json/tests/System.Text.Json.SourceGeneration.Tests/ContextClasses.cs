@@ -38,7 +38,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<JsonElement> JsonElement { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithNullableProperties> ClassWithNullableProperties { get; }
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
         public JsonTypeInfo<RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues> ClassWithDateOnlyAndTimeOnlyValues { get; }
 #endif
         public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }

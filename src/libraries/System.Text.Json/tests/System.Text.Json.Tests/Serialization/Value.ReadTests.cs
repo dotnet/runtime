@@ -560,7 +560,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Throws<JsonException>(() => JsonSerializer.Deserialize<TimeSpan>(json));
         }
 
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
         [Theory]
         [InlineData("1970-01-01")]
         [InlineData("2002-02-13")]

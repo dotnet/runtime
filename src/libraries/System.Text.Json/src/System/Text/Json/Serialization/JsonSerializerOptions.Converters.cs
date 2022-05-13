@@ -109,7 +109,7 @@ namespace System.Text.Json
             Add(JsonMetadataServices.CharConverter);
             Add(JsonMetadataServices.DateTimeConverter);
             Add(JsonMetadataServices.DateTimeOffsetConverter);
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
             Add(JsonMetadataServices.DateOnlyConverter);
             Add(JsonMetadataServices.TimeOnlyConverter);
 #endif
