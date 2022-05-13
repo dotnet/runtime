@@ -22,6 +22,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk"
+                      Version="$(MonoLLVMSDKVersion)"
+                      Condition="'$(MonoLLVMTargetArchitecture)' != 'x86' and '$(MonoLLVMTargetArchitecture)' != '$(BuildArchitecture)'" />
+    <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(MonoLLVMTargetArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools"
+                      Version="$(MonoLLVMToolsVersion)"
+                      Condition="'$(MonoLLVMTargetArchitecture)' != 'x86' and '$(MonoLLVMTargetArchitecture)' != '$(BuildArchitecture)'" />
+
     <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Sdk" Version="$(MonoLLVMSDKVersion)"/>
     <PackageReference Include="runtime.$(MonoLLVMHostOS)-$(BuildArchitecture).Microsoft.NETCore.Runtime.Mono.LLVM.Tools" Version="$(MonoLLVMToolsVersion)"/>
   </ItemGroup>
