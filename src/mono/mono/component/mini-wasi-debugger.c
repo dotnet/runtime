@@ -6,7 +6,8 @@
 
 static int conn_fd;
 static int log_level = 1;
-static int retry_receive_message = 5000;
+static int retry_receive_message = 100;
+static int connection_wait = 1000;
 
 __attribute__((import_module("wasi_snapshot_preview1")))
 __attribute__((import_name("sock_accept")))
@@ -26,7 +27,11 @@ wasi_transport_recv (void *buf, int len)
 		if (res > 0)
 			total += res;
 		again++;
-	} while ((res > 0 && total < len) || (res == -1 && again < retry_receive_message));
+		if ((res > 0 && total < len) || (res == -1 && again < retry_receive_message))
+			usleep(connection_wait);
+		else
+			break;
+	} while (true);
 	return total;
 }
 
@@ -84,6 +89,7 @@ static void
 mono_wasi_start_debugger_thread (MonoError *error)
 {
     mono_debugger_agent_receive_and_process_command (FALSE);
+	connection_wait = 250;
     return;
 }
 
@@ -114,9 +120,9 @@ mono_wasi_debugger_init (void)
 static void 
 mono_wasi_receive_and_process_command_from_debugger_agent (void)
 {
-	retry_receive_message = 500;
+	retry_receive_message = 2;
     mono_debugger_agent_receive_and_process_command (FALSE);
-    retry_receive_message = 5000;
+    retry_receive_message = 50;
 }
 
 static void

@@ -417,7 +417,7 @@ mono_wasm_load_runtime (const char *argv, int debug_level)
 	char* debugger_fd = monoeg_g_getenv ("DEBUGGER_FD");
 	if (debugger_fd != 0)
 	{
-		const char *debugger_str = "--debugger-agent=transport=wasi_socket,debugger_fd=%s,loglevel=10";
+		const char *debugger_str = "--debugger-agent=transport=wasi_socket,debugger_fd=%s,loglevel=0";
 		char *debugger_str_with_fd = (char *)malloc (sizeof (char) * (strlen(debugger_str) + strlen(debugger_fd) + 1));
 		snprintf (debugger_str_with_fd,  strlen(debugger_str) + strlen(debugger_fd) + 1, debugger_str, debugger_fd);
 		mono_jit_parse_options (1, &debugger_str_with_fd);
