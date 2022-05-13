@@ -252,7 +252,7 @@ partial interface INativeAPI
 // LibraryImport-generated code omitted for brevity
 ```
 
-As this generator is primarily designed to provide building blocks for future work, it has a larger requirement on user-written code. In particular, this generator does not provide any support for authoring a runtime wrapper object that stores the native pointers for the underlying object or the virtual method table. However, this lack of support also provides significant flexibility for developers. The only requirement for the runtime wrapper object type is that it implements `IUnmanagedVirtualMethodTableProvider<T>` with a `T` matching the `TypeKey` type of the native interface. 
+As this generator is primarily designed to provide building blocks for future work, it has a larger requirement on user-written code. In particular, this generator does not provide any support for authoring a runtime wrapper object that stores the native pointers for the underlying object or the virtual method table. However, this lack of support also provides significant flexibility for developers. The only requirement for the runtime wrapper object type is that it implements `IUnmanagedVirtualMethodTableProvider<T>` with a `T` matching the `TypeKey` type of the native interface.
 
 The emitted interface implementation can be used in two ways:
 
