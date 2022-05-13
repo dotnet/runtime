@@ -1455,7 +1455,7 @@ namespace System
         public static bool TryToBase64Chars(System.ReadOnlySpan<byte> bytes, System.Span<char> chars, out int charsWritten, System.Base64FormattingOptions options = System.Base64FormattingOptions.None) { throw null; }
     }
     public delegate TOutput Converter<in TInput, out TOutput>(TInput input);
-    public readonly partial struct DateOnly : System.IComparable, System.IComparable<System.DateOnly>, System.IEquatable<System.DateOnly>, System.IFormattable, System.IParsable<System.DateOnly>, System.ISpanFormattable, System.ISpanParsable<System.DateOnly>, System.Numerics.IComparisonOperators<System.DateOnly, System.DateOnly>, System.Numerics.IEqualityOperators<System.DateOnly, System.DateOnly>, System.Numerics.IMinMaxValue<System.DateOnly>
+    public readonly partial struct DateOnly : System.IComparable, System.IComparable<System.DateOnly>, System.IEquatable<System.DateOnly>, System.IFormattable, System.IParsable<System.DateOnly>, System.ISpanFormattable, System.ISpanParsable<System.DateOnly>
     {
         private readonly int _dummyPrimitive;
         public DateOnly(int year, int month, int day) { throw null; }
@@ -1520,7 +1520,7 @@ namespace System
         public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true), System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateOnlyFormat")] string?[]? formats, out System.DateOnly result) { throw null; }
         public static bool TryParseExact([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, [System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true), System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("DateOnlyFormat")] string?[]? formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style, out System.DateOnly result) { throw null; }
     }
-    public readonly partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable, System.IParsable<System.DateTime>, System.ISpanFormattable, System.ISpanParsable<System.DateTime>, System.Numerics.IAdditionOperators<System.DateTime, System.TimeSpan, System.DateTime>, System.Numerics.IAdditiveIdentity<System.DateTime, System.TimeSpan>, System.Numerics.IComparisonOperators<System.DateTime, System.DateTime>, System.Numerics.IEqualityOperators<System.DateTime, System.DateTime>, System.Numerics.IMinMaxValue<System.DateTime>, System.Numerics.ISubtractionOperators<System.DateTime, System.DateTime, System.TimeSpan>, System.Numerics.ISubtractionOperators<System.DateTime, System.TimeSpan, System.DateTime>, System.Runtime.Serialization.ISerializable
+    public readonly partial struct DateTime : System.IComparable, System.IComparable<System.DateTime>, System.IConvertible, System.IEquatable<System.DateTime>, System.IFormattable, System.IParsable<System.DateTime>, System.ISpanFormattable, System.ISpanParsable<System.DateTime>, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.DateTime MaxValue;
@@ -1554,9 +1554,6 @@ namespace System
         public int Nanosecond { get { throw null; } }
         public static System.DateTime Now { get { throw null; } }
         public int Second { get { throw null; } }
-        static System.TimeSpan System.Numerics.IAdditiveIdentity<System.DateTime,System.TimeSpan>.AdditiveIdentity { get { throw null; } }
-        static System.DateTime System.Numerics.IMinMaxValue<System.DateTime>.MaxValue { get { throw null; } }
-        static System.DateTime System.Numerics.IMinMaxValue<System.DateTime>.MinValue { get { throw null; } }
         public long Ticks { get { throw null; } }
         public System.TimeSpan TimeOfDay { get { throw null; } }
         public static System.DateTime Today { get { throw null; } }
@@ -1628,9 +1625,6 @@ namespace System
         ushort System.IConvertible.ToUInt16(System.IFormatProvider? provider) { throw null; }
         uint System.IConvertible.ToUInt32(System.IFormatProvider? provider) { throw null; }
         ulong System.IConvertible.ToUInt64(System.IFormatProvider? provider) { throw null; }
-        static System.DateTime System.Numerics.IAdditionOperators<System.DateTime, System.TimeSpan, System.DateTime>.operator checked +(System.DateTime left, System.TimeSpan right) { throw null; }
-        static System.TimeSpan System.Numerics.ISubtractionOperators<System.DateTime, System.DateTime, System.TimeSpan>.operator checked -(System.DateTime left, System.DateTime right) { throw null; }
-        static System.DateTime System.Numerics.ISubtractionOperators<System.DateTime, System.TimeSpan, System.DateTime>.operator checked -(System.DateTime left, System.TimeSpan right) { throw null; }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public long ToBinary() { throw null; }
         public long ToFileTime() { throw null; }
@@ -1664,7 +1658,7 @@ namespace System
         Utc = 1,
         Local = 2,
     }
-    public readonly partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.IFormattable, System.IParsable<System.DateTimeOffset>, System.ISpanFormattable, System.ISpanParsable<System.DateTimeOffset>, System.Numerics.IAdditionOperators<System.DateTimeOffset, System.TimeSpan, System.DateTimeOffset>, System.Numerics.IAdditiveIdentity<System.DateTimeOffset, System.TimeSpan>, System.Numerics.IComparisonOperators<System.DateTimeOffset, System.DateTimeOffset>, System.Numerics.IEqualityOperators<System.DateTimeOffset, System.DateTimeOffset>, System.Numerics.IMinMaxValue<System.DateTimeOffset>, System.Numerics.ISubtractionOperators<System.DateTimeOffset, System.DateTimeOffset, System.TimeSpan>, System.Numerics.ISubtractionOperators<System.DateTimeOffset, System.TimeSpan, System.DateTimeOffset>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
+    public readonly partial struct DateTimeOffset : System.IComparable, System.IComparable<System.DateTimeOffset>, System.IEquatable<System.DateTimeOffset>, System.IFormattable, System.IParsable<System.DateTimeOffset>, System.ISpanFormattable, System.ISpanParsable<System.DateTimeOffset>, System.Runtime.Serialization.IDeserializationCallback, System.Runtime.Serialization.ISerializable
     {
         private readonly int _dummyPrimitive;
         public static readonly System.DateTimeOffset MaxValue;
@@ -1693,9 +1687,6 @@ namespace System
         public static System.DateTimeOffset Now { get { throw null; } }
         public System.TimeSpan Offset { get { throw null; } }
         public int Second { get { throw null; } }
-        static System.TimeSpan System.Numerics.IAdditiveIdentity<System.DateTimeOffset,System.TimeSpan>.AdditiveIdentity { get { throw null; } }
-        static System.DateTimeOffset System.Numerics.IMinMaxValue<System.DateTimeOffset>.MaxValue { get { throw null; } }
-        static System.DateTimeOffset System.Numerics.IMinMaxValue<System.DateTimeOffset>.MinValue { get { throw null; } }
         public long Ticks { get { throw null; } }
         public System.TimeSpan TimeOfDay { get { throw null; } }
         public System.DateTime UtcDateTime { get { throw null; } }
@@ -1745,9 +1736,6 @@ namespace System
         public System.TimeSpan Subtract(System.DateTimeOffset value) { throw null; }
         public System.DateTimeOffset Subtract(System.TimeSpan value) { throw null; }
         int System.IComparable.CompareTo(object? obj) { throw null; }
-        static System.DateTimeOffset System.Numerics.IAdditionOperators<System.DateTimeOffset, System.TimeSpan, System.DateTimeOffset>.operator checked +(System.DateTimeOffset left, System.TimeSpan right) { throw null; }
-        static System.TimeSpan System.Numerics.ISubtractionOperators<System.DateTimeOffset, System.DateTimeOffset, System.TimeSpan>.operator checked -(System.DateTimeOffset left, System.DateTimeOffset right) { throw null; }
-        static System.DateTimeOffset System.Numerics.ISubtractionOperators<System.DateTimeOffset, System.TimeSpan, System.DateTimeOffset>.operator checked -(System.DateTimeOffset left, System.TimeSpan right) { throw null; }
         void System.Runtime.Serialization.IDeserializationCallback.OnDeserialization(object? sender) { }
         void System.Runtime.Serialization.ISerializable.GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public long ToFileTime() { throw null; }
@@ -2594,7 +2582,7 @@ namespace System
     {
         public GopherStyleUriParser() { }
     }
-    public readonly partial struct Guid : System.IComparable, System.IComparable<System.Guid>, System.IEquatable<System.Guid>, System.IFormattable, System.IParsable<System.Guid>, System.ISpanFormattable, System.ISpanParsable<System.Guid>, System.Numerics.IComparisonOperators<System.Guid, System.Guid>, System.Numerics.IEqualityOperators<System.Guid, System.Guid>
+    public readonly partial struct Guid : System.IComparable, System.IComparable<System.Guid>, System.IEquatable<System.Guid>, System.IFormattable, System.IParsable<System.Guid>, System.ISpanFormattable, System.ISpanParsable<System.Guid>
     {
         private readonly int _dummyPrimitive;
         public static readonly System.Guid Empty;
@@ -4716,7 +4704,7 @@ namespace System
     {
         public ThreadStaticAttribute() { }
     }
-    public readonly partial struct TimeOnly : System.IComparable, System.IComparable<System.TimeOnly>, System.IEquatable<System.TimeOnly>, System.IFormattable, System.IParsable<System.TimeOnly>, System.ISpanFormattable, System.ISpanParsable<System.TimeOnly>, System.Numerics.IComparisonOperators<System.TimeOnly, System.TimeOnly>, System.Numerics.IEqualityOperators<System.TimeOnly, System.TimeOnly>, System.Numerics.IMinMaxValue<System.TimeOnly>, System.Numerics.ISubtractionOperators<System.TimeOnly, System.TimeOnly, System.TimeSpan>
+    public readonly partial struct TimeOnly : System.IComparable, System.IComparable<System.TimeOnly>, System.IEquatable<System.TimeOnly>, System.IFormattable, System.IParsable<System.TimeOnly>, System.ISpanFormattable, System.ISpanParsable<System.TimeOnly>
     {
         private readonly int _dummyPrimitive;
         public TimeOnly(int hour, int minute) { throw null; }
@@ -4766,7 +4754,6 @@ namespace System
         public static System.TimeOnly ParseExact(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] string format, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
         public static System.TimeOnly ParseExact(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] string[] formats) { throw null; }
         public static System.TimeOnly ParseExact(string s, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeOnlyFormat")] string[] formats, System.IFormatProvider? provider, System.Globalization.DateTimeStyles style = System.Globalization.DateTimeStyles.None) { throw null; }
-        static System.TimeSpan System.Numerics.ISubtractionOperators<System.TimeOnly, System.TimeOnly, System.TimeSpan>.operator checked -(System.TimeOnly left, System.TimeOnly right) { throw null; }
         public string ToLongTimeString() { throw null; }
         public string ToShortTimeString() { throw null; }
         public override string ToString() { throw null; }
@@ -4797,7 +4784,7 @@ namespace System
         public TimeoutException(string? message) { }
         public TimeoutException(string? message, System.Exception? innerException) { }
     }
-    public readonly partial struct TimeSpan : System.IComparable, System.IComparable<System.TimeSpan>, System.IEquatable<System.TimeSpan>, System.IFormattable, System.IParsable<System.TimeSpan>, System.ISpanFormattable, System.ISpanParsable<System.TimeSpan>, System.Numerics.IAdditionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>, System.Numerics.IAdditiveIdentity<System.TimeSpan, System.TimeSpan>, System.Numerics.IComparisonOperators<System.TimeSpan, System.TimeSpan>, System.Numerics.IDivisionOperators<System.TimeSpan, double, System.TimeSpan>, System.Numerics.IDivisionOperators<System.TimeSpan, System.TimeSpan, double>, System.Numerics.IEqualityOperators<System.TimeSpan, System.TimeSpan>, System.Numerics.IMinMaxValue<System.TimeSpan>, System.Numerics.IMultiplicativeIdentity<System.TimeSpan, double>, System.Numerics.IMultiplyOperators<System.TimeSpan, double, System.TimeSpan>, System.Numerics.ISubtractionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>, System.Numerics.IUnaryNegationOperators<System.TimeSpan, System.TimeSpan>, System.Numerics.IUnaryPlusOperators<System.TimeSpan, System.TimeSpan>
+    public readonly partial struct TimeSpan : System.IComparable, System.IComparable<System.TimeSpan>, System.IEquatable<System.TimeSpan>, System.IFormattable, System.IParsable<System.TimeSpan>, System.ISpanFormattable, System.ISpanParsable<System.TimeSpan>
     {
         private readonly int _dummyPrimitive;
         public static readonly System.TimeSpan MaxValue;
@@ -4822,10 +4809,6 @@ namespace System
         public int Minutes { get { throw null; } }
         public int Nanoseconds { get { throw null; } }
         public int Seconds { get { throw null; } }
-        static System.TimeSpan System.Numerics.IAdditiveIdentity<System.TimeSpan,System.TimeSpan>.AdditiveIdentity { get { throw null; } }
-        static System.TimeSpan System.Numerics.IMinMaxValue<System.TimeSpan>.MaxValue { get { throw null; } }
-        static System.TimeSpan System.Numerics.IMinMaxValue<System.TimeSpan>.MinValue { get { throw null; } }
-        static double System.Numerics.IMultiplicativeIdentity<System.TimeSpan,System.Double>.MultiplicativeIdentity { get { throw null; } }
         public long Ticks { get { throw null; } }
         public double TotalDays { get { throw null; } }
         public double TotalHours { get { throw null; } }
@@ -4878,12 +4861,6 @@ namespace System
         public static System.TimeSpan ParseExact(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeSpanFormat")] string[] formats, System.IFormatProvider? formatProvider) { throw null; }
         public static System.TimeSpan ParseExact(string input, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeSpanFormat")] string[] formats, System.IFormatProvider? formatProvider, System.Globalization.TimeSpanStyles styles) { throw null; }
         public System.TimeSpan Subtract(System.TimeSpan ts) { throw null; }
-        static System.TimeSpan System.Numerics.IAdditionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>.operator checked +(System.TimeSpan left, System.TimeSpan right) { throw null; }
-        static System.TimeSpan System.Numerics.IDivisionOperators<System.TimeSpan, double, System.TimeSpan>.operator checked /(System.TimeSpan left, double right) { throw null; }
-        static double System.Numerics.IDivisionOperators<System.TimeSpan, System.TimeSpan, double>.operator checked /(System.TimeSpan left, System.TimeSpan right) { throw null; }
-        static System.TimeSpan System.Numerics.IMultiplyOperators<System.TimeSpan, double, System.TimeSpan>.operator checked *(System.TimeSpan left, double right) { throw null; }
-        static System.TimeSpan System.Numerics.ISubtractionOperators<System.TimeSpan, System.TimeSpan, System.TimeSpan>.operator checked -(System.TimeSpan left, System.TimeSpan right) { throw null; }
-        static System.TimeSpan System.Numerics.IUnaryNegationOperators<System.TimeSpan, System.TimeSpan>.operator checked -(System.TimeSpan value) { throw null; }
         public override string ToString() { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeSpanFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("TimeSpanFormat")] string? format, System.IFormatProvider? formatProvider) { throw null; }
