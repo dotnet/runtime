@@ -8,6 +8,7 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace System.IO
 {
@@ -332,14 +333,36 @@ namespace System.IO
             }
         }
 
-        public async ValueTask ReadExactlyAsync(Memory<byte> buffer, CancellationToken cancellationToken = default) =>
-            _ = await ReadAtLeastAsyncCore(buffer, buffer.Length, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
+        public ValueTask ReadExactlyAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
+        {
+            ValueTask<int> vt = ReadAtLeastAsyncCore(buffer, buffer.Length, throwOnEndOfStream: true, cancellationToken);
+            if (vt.IsCompletedSuccessfully)
+                return default;
 
-        public async ValueTask ReadExactlyAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
+            // use the ValueTask<int>'s backing object to create a ValueTask without allocating here.
+            object? obj = vt._obj;
+            Debug.Assert(obj is Task || obj is IValueTaskSource);
+
+            return obj is Task task ?
+                new ValueTask(task) :
+                new ValueTask((IValueTaskSource)obj, vt._token);
+        }
+
+        public ValueTask ReadExactlyAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             ValidateBufferArguments(buffer, offset, count);
 
-            _ = await ReadAtLeastAsyncCore(buffer.AsMemory(offset, count), count, throwOnEndOfStream: true, cancellationToken).ConfigureAwait(false);
+            ValueTask<int> vt = ReadAtLeastAsyncCore(buffer.AsMemory(offset, count), count, throwOnEndOfStream: true, cancellationToken);
+            if (vt.IsCompletedSuccessfully)
+                return default;
+
+            // use the ValueTask<int>'s backing object to create a ValueTask without allocating here.
+            object? obj = vt._obj;
+            Debug.Assert(obj is Task || obj is IValueTaskSource);
+
+            return obj is Task task ?
+                new ValueTask(task) :
+                new ValueTask((IValueTaskSource)obj, vt._token);
         }
 
         public ValueTask<int> ReadAtLeastAsync(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true, CancellationToken cancellationToken = default)
@@ -350,6 +373,7 @@ namespace System.IO
         }
 
         // No argument checking is done here. It is up to the caller.
+        [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadAtLeastAsyncCore(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken)
         {
             int totalRead = 0;
