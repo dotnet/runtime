@@ -31,6 +31,18 @@ namespace ComInterfaceGenerator.Unit.Tests
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<double>() };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<IntPtr>() };
             yield return new[] { CodeSnippets.BasicParametersAndModifiers<UIntPtr>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<byte>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<sbyte>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<short>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<ushort>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<int>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<uint>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<long>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<ulong>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<float>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<double>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<IntPtr>() };
+            yield return new[] { CodeSnippets.BasicParametersAndModifiersNoImplicitThis<UIntPtr>() };
 
             // Attributed marshalling model validation
             yield return new[] { CodeSnippets.BasicParametersAndModifiers(CodeSnippets.CustomTypeMarshallingTestsTypeName) + CodeSnippets.SimpleCustomTypeMarshallingDeclaration };

@@ -106,8 +106,30 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativ
     public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => throw null;
 }}
 ";
-
         public static string BasicParametersAndModifiers<T>() => BasicParametersAndModifiers(typeof(T).FullName!);
+        public static string BasicParametersAndModifiersNoImplicitThis(string typeName) => $@"
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+
+[assembly:DisableRuntimeMarshalling]
+
+readonly record struct NoCasting {{}}
+partial interface INativeAPI
+{{
+    public static readonly NoCasting TypeKey = default;
+    [VirtualMethodIndex(0, ImplicitThisParameter = false)]
+    {typeName} Method({typeName} value, in {typeName} inValue, ref {typeName} refValue, out {typeName} outValue);
+}}
+
+// Try using the generated native interface
+sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativeAPI.Native
+{{
+    public VirtualMethodTableInfo GetVirtualMethodTableInfoForKey(NoCasting typeKey) => throw null;
+}}
+";
+
+        public static string BasicParametersAndModifiersNoImplicitThis<T>() => BasicParametersAndModifiersNoImplicitThis(typeof(T).FullName!);
 
         public const string CustomTypeMarshallingTestsTypeName = "S";
 
