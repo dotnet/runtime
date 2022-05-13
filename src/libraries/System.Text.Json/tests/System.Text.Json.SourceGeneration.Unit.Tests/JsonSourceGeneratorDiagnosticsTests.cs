@@ -248,7 +248,20 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
             CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
         }
-        
+
+        [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
+        public void DoNotWarnOnClassesWithIgnoredInitOnlyProperties()
+        {
+            Compilation compilation = CompilationHelper.CreateCompilationWithIgnoredInitOnlyProperties();
+            JsonSourceGenerator generator = new JsonSourceGenerator();
+            CompilationHelper.RunGenerators(compilation, out var generatorDiags, generator);
+
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Info, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Warning, generatorDiags, Array.Empty<(Location, string)>());
+            CompilationHelper.CheckDiagnosticMessages(DiagnosticSeverity.Error, generatorDiags, Array.Empty<(Location, string)>());
+        }
+
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/58770", TestPlatforms.Browser)]
         public void WarnOnClassesWithMixedInitOnlyProperties()

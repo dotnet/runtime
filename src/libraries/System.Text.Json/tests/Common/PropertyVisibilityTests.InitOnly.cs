@@ -49,6 +49,18 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal(@"{""MyInt"":1}", await Serializer.SerializeWrapper(obj));
         }
 
+        [Theory]
+        [InlineData(typeof(ClassWithPublic_InitOnlyProperty_WithJsonIgnoreProperty))]
+        public async Task PublicInitOnlySetter_With_JsonIgnore(Type type)
+        {
+            // Public and ignored init-only property setter ignored.
+            object obj = await Serializer.DeserializeWrapper(@"{""MyInt"":1}", type);
+            Assert.Equal(0, (int)type.GetProperty("MyInt").GetValue(obj));
+
+            // Public getter also ignored for serialization.
+            Assert.Equal(@"{}", await Serializer.SerializeWrapper(obj, type));
+        }
+
         public class ClassWithInitOnlyProperty
         {
             public int MyInt { get; init; }
@@ -91,5 +103,12 @@ namespace System.Text.Json.Serialization.Tests
             [JsonInclude]
             public int MyInt { get; protected init; }
         }
+
+        public class ClassWithPublic_InitOnlyProperty_WithJsonIgnoreProperty
+        {
+            [JsonIgnore]
+            public int MyInt { get; init; }
+        }
+
     }
 }

@@ -1067,7 +1067,8 @@ namespace System.Text.Json.SourceGeneration
                                     _implicitlyRegisteredTypes.Add(dataExtensionPropGenSpec);
                                 }
 
-                                if (!hasInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter && !PropertyIsConstructorParameter(spec, paramGenSpecArray))
+                                if (!hasInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter &&
+                                    !(ignoredMembers?.ContainsKey(spec.ClrName) ?? false) && !PropertyIsConstructorParameter(spec, paramGenSpecArray))
                                 {
                                     _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InitOnlyPropertyDeserializationNotSupported, memberLocation, new string[] { type.Name }));
                                     hasInitOnlyProperties = true;

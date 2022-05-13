@@ -335,7 +335,34 @@ namespace System.Text.Json.SourceGeneration.UnitTests
 
             return CreateCompilation(source);
         }
-        
+
+        public static Compilation CreateCompilationWithIgnoredInitOnlyProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {
+                public class MyClass
+                {
+                    public MyClass()
+                    {
+                    }
+
+                    public int Value { get; set; }
+                    [JsonIgnore] public string Ignored { get; init; }
+                }
+
+                [JsonSerializable(typeof(MyClass))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
         public static Compilation CreateCompilationWithMixedInitOnlyProperties()
         {
             string source = @"
@@ -352,6 +379,7 @@ namespace System.Text.Json.SourceGeneration.UnitTests
                     }
 
                     public int Value { get; init; }
+                    [JsonIgnore] public string Ignored { get; init; }
                     public string Orphaned { get; init; }
                 }
 
