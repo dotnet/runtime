@@ -74,9 +74,10 @@ namespace System.Text.Json
         private void InitializeCachingContext()
         {
             _cachingContext = TrackedCachingContexts.GetOrCreate(this);
-            if (IsInitializedForReflectionSerializer)
+            if (_typeInfoResolver != null)
             {
-                _cachingContext.Options.IsInitializedForReflectionSerializer = true;
+                Debug.Assert(_typeInfoResolver == s_defaultTypeInfoResolver, "Equality should guarantee that null is equivalent to s_defaultTypeInfoResolver");
+                _cachingContext.Options._typeInfoResolver ??= s_defaultTypeInfoResolver;
             }
         }
 
@@ -168,6 +169,7 @@ namespace System.Text.Json
                         // Copy fields ignored by the copy constructor
                         // but are necessary to determine equivalence.
                         _serializerContext = options._serializerContext,
+                        _typeInfoResolver = options._typeInfoResolver,
                     };
                     Debug.Assert(key._cachingContext == null);
 
@@ -269,6 +271,7 @@ namespace System.Text.Json
             public bool Equals(JsonSerializerOptions? left, JsonSerializerOptions? right)
             {
                 Debug.Assert(left != null && right != null);
+
                 return
                     left._dictionaryKeyPolicy == right._dictionaryKeyPolicy &&
                     left._jsonPropertyNamingPolicy == right._jsonPropertyNamingPolicy &&

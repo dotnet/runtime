@@ -48,7 +48,7 @@ namespace System.Text.Json.SourceGeneration.Tests
                     AssertFieldNull("s_defaultFactoryConverters", optionsInstance: null);
 
                     // Confirm type info dynamic creator not set.
-                    AssertFieldNull("s_typeInfoCreationFunc", optionsInstance: null);
+                    AssertFieldNull("s_defaultTypeInfoResolver", optionsInstance: null);
 
                     static void AssertFieldNull(string fieldName, JsonSerializerOptions? optionsInstance)
                     {

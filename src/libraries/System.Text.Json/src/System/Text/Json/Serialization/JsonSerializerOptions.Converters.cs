@@ -29,6 +29,7 @@ namespace System.Text.Json
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        [MemberNotNull(nameof(s_defaultTypeInfoResolver))]
         private static void RootReflectionSerializerDependencies()
         {
             // s_typeInfoCreationFunc is the last field assigned.
@@ -38,8 +39,15 @@ namespace System.Text.Json
                 s_defaultSimpleConverters = GetDefaultSimpleConverters();
                 s_defaultFactoryConverters = GetDefaultFactoryConverters();
                 // Explicitly ensure that the previous fields are initialized along with this one.
-                Volatile.Write(ref s_defaultTypeInfoResolver, new DefaultJsonTypeInfoResolver());
+                // We also need to ensure that all threads use same instance of s_defaultTypeInfoResolver or
+                // otherwise EqualityComparer for CachingContext may fail even though
+                // two options might assign _typeInfoResolver to s_defaultTypeInfoResolver
+                Interlocked.CompareExchange(ref s_defaultTypeInfoResolver, new DefaultJsonTypeInfoResolver(), null);
             }
+
+            // This isn't strictly needed but we will get nullability warning because `Volatile.Read(ref s_defaultTypeInfoResolver) is null`
+            // is not recognized by compiler as a null check
+            Debug.Assert(s_defaultTypeInfoResolver != null);
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]

@@ -597,35 +597,35 @@ namespace System.Text.Json
         }
 
         /// <summary>
-        /// Whether the options instance has been primed for reflection-based serialization.
+        /// JsonTypeInfo resolver used for serialization.
         /// </summary>
-        internal bool IsInitializedForReflectionSerializer;
+        internal IJsonTypeInfoResolver? _typeInfoResolver;
 
         /// <summary>
         /// Initializes the converters for the reflection-based serializer.
-        /// <seealso cref="InitializeForReflectionSerializer"/> must be checked before calling.
         /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        internal void InitializeForReflectionSerializer()
+        internal void EnsureInitializedForReflectionSerializer()
         {
+            if (_typeInfoResolver != null)
+                return;
+
             RootReflectionSerializerDependencies();
-            Volatile.Write(ref IsInitializedForReflectionSerializer, true);
+            _typeInfoResolver = s_defaultTypeInfoResolver;
             if (_cachingContext != null)
             {
-                _cachingContext.Options.IsInitializedForReflectionSerializer = true;
+                // This only applies if resolver wasn't previously initialized
+                _cachingContext.Options._typeInfoResolver ??= s_defaultTypeInfoResolver;
             }
         }
 
         private JsonTypeInfo GetJsonTypeInfoFromContextOrCreate(Type type)
         {
             JsonTypeInfo? info = _serializerContext?.GetTypeInfo(type);
-            if (info == null && IsInitializedForReflectionSerializer)
+            if (info == null && _typeInfoResolver != null)
             {
-                Debug.Assert(
-                    s_defaultTypeInfoResolver != null,
-                    "Reflection-based JsonTypeInfo creator should be initialized if IsInitializedForReflectionSerializer is true.");
-                info = s_defaultTypeInfoResolver.GetTypeInfo(type, this);
+                info = _typeInfoResolver.GetTypeInfo(type, this);
             }
 
             if (info == null)
