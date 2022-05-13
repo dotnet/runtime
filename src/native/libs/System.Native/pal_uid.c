@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "pal_config.h"
+#include "pal_safecrt.h"
 #include "pal_uid.h"
 #include "pal_utilities.h"
 
@@ -238,54 +239,76 @@ int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
     return getgroups(ngroups, groups);
 }
 
-int32_t SystemNative_GetUName(uint32_t uid, char* buffer, size_t bufferSize)
+char* SystemNative_GetUName(uint32_t uid)
 {
-    assert(buffer != NULL);
-    assert(bufferSize > 0);
-
-    if (buffer == NULL || bufferSize <= 0)
+    size_t bufferLength = 512;
+    while (1)
     {
-        errno = EINVAL;
-        return -1;
+        char *buffer = (char*)malloc(bufferLength);
+        if (buffer == NULL)
+            return NULL;
+
+        struct passwd pw;
+        struct passwd* result;
+        if (getpwuid_r(uid, &pw, buffer, bufferLength, &result) == 0)
+        {
+            if (result == NULL)
+            {
+                errno = ENOENT;
+                free(buffer);
+                return NULL;
+            }
+            else
+            {
+                char* name = strdup(pw.pw_name);
+                free(buffer);
+                return name;
+            }
+        }
+
+        free(buffer);
+        size_t tmpBufferLength;
+        if (errno != ERANGE || !multiply_s(bufferLength, (size_t)2, &tmpBufferLength))
+        {
+            return NULL;
+        }
+        bufferLength = tmpBufferLength;
     }
-
-    struct passwd u;
-    struct passwd* pu; 
-
-    errno = 0;
-    int e;
-    while ((e = getpwuid_r(uid, &u, buffer, bufferSize, &pu)) == EINTR);
-
-    if (e < 0)
-    {
-        errno = e;
-        return -1;
-    }
-    return (int32_t)strlen(buffer);
 }
 
-int32_t SystemNative_GetGName(uint32_t gid, char* buffer, size_t bufferSize)
+char* SystemNative_GetGName(uint32_t gid)
 {
-    assert(buffer != NULL);
-    assert(bufferSize > 0);
-
-    if (buffer == NULL || bufferSize <= 0)
+    size_t bufferLength = 512;
+    while (1)
     {
-        errno = EINVAL;
-        return -1;
+        char *buffer = (char*)malloc(bufferLength);
+        if (buffer == NULL)
+            return NULL;
+
+        struct group gr;
+        struct group* result;
+        if (getgrgid_r(gid, &gr, buffer, bufferLength, &result) == 0)
+        {
+            if (result == NULL)
+            {
+                errno = ENOENT;
+                free(buffer);
+                return NULL;
+            }
+            else
+            {
+                char* name = strdup(gr.gr_name);
+                free(buffer);
+                return name;
+            }
+        }
+
+        free(buffer);
+        size_t tmpBufferLength;
+        if (errno != ERANGE || !multiply_s(bufferLength, (size_t)2, &tmpBufferLength))
+        {
+            return NULL;
+        }
+        bufferLength = tmpBufferLength;
     }
-
-    struct group g;
-    struct group* pg; 
-
-    errno = 0;
-    int e;
-    while ((e = getgrgid_r(gid, &g, buffer, bufferSize, &pg)) == EINTR);
-
-    if (e < 0)
-    {
-        errno = e;
-        return -1;
-    }
-    return (int32_t)strlen(buffer);
 }
