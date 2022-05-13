@@ -9,7 +9,6 @@ namespace System.Formats.Tar.Tests
 {
     public partial class TarWriter_WriteEntry_File_Tests : TarTestsBase
     {
-        private static bool IsRemoteExecutorSupportedAndOnUnixAndSuperUser => RemoteExecutor.IsSupported && PlatformDetection.IsUnixAndSuperUser;
 
         [ConditionalTheory(nameof(IsRemoteExecutorSupportedAndOnUnixAndSuperUser))]
         [InlineData(TarFormat.Ustar)]
@@ -157,10 +156,8 @@ namespace System.Formats.Tar.Tests
 
             if (entry is PosixTarEntry posix)
             {
-                string gname = Interop.Sys.GetGName(status.Gid);
-                Assert.NotNull(gname);
-                string uname = Interop.Sys.GetUName(status.Uid);
-                Assert.NotNull(uname);
+                string gname = Interop.Sys.GetGroupName(status.Gid);
+                string uname = Interop.Sys.GetUserName(status.Uid);
 
                 Assert.Equal(gname, posix.GroupName);
                 Assert.Equal(uname, posix.UserName);

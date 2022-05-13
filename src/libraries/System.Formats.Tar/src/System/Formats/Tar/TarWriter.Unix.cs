@@ -68,7 +68,7 @@ namespace System.Formats.Tar
             entry._header._uid = (int)status.Uid;
             if (!_userIdentifiers.TryGetValue(status.Uid, out string? uName))
             {
-                uName = Interop.Sys.GetUName(status.Uid);
+                uName = Interop.Sys.GetUserName(status.Uid);
                 _userIdentifiers.Add(status.Uid, uName);
             }
             entry._header._uName = uName;
@@ -77,7 +77,7 @@ namespace System.Formats.Tar
             entry._header._gid = (int)status.Gid;
             if (!_groupIdentifiers.TryGetValue(status.Gid, out string? gName))
             {
-                gName = Interop.Sys.GetGName(status.Gid);
+                gName = Interop.Sys.GetGroupName(status.Gid);
                 _groupIdentifiers.Add(status.Gid, gName);
             }
             entry._header._gName = gName;

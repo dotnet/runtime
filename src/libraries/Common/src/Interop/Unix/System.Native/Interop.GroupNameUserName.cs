@@ -17,27 +17,19 @@ internal static partial class Interop
         /// </summary>
         /// <param name="gid">The group ID.</param>
         /// <returns>On success, return a string with the group name. On failure, throws an IOException.</returns>
-        internal static string GetGName(uint gid)
-        {
-            string result = GetGNameInternal(gid);
-            return (result == null) ? throw GetIOException(GetLastErrorInfo()) : result;
-        }
+        internal static string GetGroupName(uint gid) => GetGroupNameInternal(gid) ?? throw GetIOException(GetLastErrorInfo());
 
         /// <summary>
         /// Gets the user name associated to the specified user ID.
         /// </summary>
         /// <param name="uid">The user ID.</param>
         /// <returns>On success, return a string with the user name. On failure, throws an IOException.</returns>
-        internal static string GetUName(uint uid)
-        {
-            string result = GetUNameInternal(uid);
-            return (result == null) ? throw GetIOException(GetLastErrorInfo()) : result;
-        }
+        internal static string GetUserName(uint uid) => GetUserNameInternal(uid) ?? throw GetIOException(GetLastErrorInfo());
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetGName", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        private static unsafe partial string GetGNameInternal(uint uid);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetGroupName", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        private static unsafe partial string? GetGroupNameInternal(uint uid);
 
-        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUName", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        private static unsafe partial string GetUNameInternal(uint uid);
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetUserName", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
+        private static unsafe partial string? GetUserNameInternal(uint uid);
     }
 }

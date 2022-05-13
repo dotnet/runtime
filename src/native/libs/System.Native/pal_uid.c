@@ -239,44 +239,7 @@ int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
     return getgroups(ngroups, groups);
 }
 
-char* SystemNative_GetUName(uint32_t uid)
-{
-    size_t bufferLength = 512;
-    while (1)
-    {
-        char *buffer = (char*)malloc(bufferLength);
-        if (buffer == NULL)
-            return NULL;
-
-        struct passwd pw;
-        struct passwd* result;
-        if (getpwuid_r(uid, &pw, buffer, bufferLength, &result) == 0)
-        {
-            if (result == NULL)
-            {
-                errno = ENOENT;
-                free(buffer);
-                return NULL;
-            }
-            else
-            {
-                char* name = strdup(pw.pw_name);
-                free(buffer);
-                return name;
-            }
-        }
-
-        free(buffer);
-        size_t tmpBufferLength;
-        if (errno != ERANGE || !multiply_s(bufferLength, (size_t)2, &tmpBufferLength))
-        {
-            return NULL;
-        }
-        bufferLength = tmpBufferLength;
-    }
-}
-
-char* SystemNative_GetGName(uint32_t gid)
+char* SystemNative_GetGroupName(uint32_t gid)
 {
     size_t bufferLength = 512;
     while (1)
@@ -298,6 +261,43 @@ char* SystemNative_GetGName(uint32_t gid)
             else
             {
                 char* name = strdup(gr.gr_name);
+                free(buffer);
+                return name;
+            }
+        }
+
+        free(buffer);
+        size_t tmpBufferLength;
+        if (errno != ERANGE || !multiply_s(bufferLength, (size_t)2, &tmpBufferLength))
+        {
+            return NULL;
+        }
+        bufferLength = tmpBufferLength;
+    }
+}
+
+char* SystemNative_GetUserName(uint32_t uid)
+{
+    size_t bufferLength = 512;
+    while (1)
+    {
+        char *buffer = (char*)malloc(bufferLength);
+        if (buffer == NULL)
+            return NULL;
+
+        struct passwd pw;
+        struct passwd* result;
+        if (getpwuid_r(uid, &pw, buffer, bufferLength, &result) == 0)
+        {
+            if (result == NULL)
+            {
+                errno = ENOENT;
+                free(buffer);
+                return NULL;
+            }
+            else
+            {
+                char* name = strdup(pw.pw_name);
                 free(buffer);
                 return name;
             }

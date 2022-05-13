@@ -3031,7 +3031,7 @@ char* SystemNative_GetPeerUserName(intptr_t socket)
 {
     uid_t euid;
     return SystemNative_GetPeerID(socket, &euid) == 0 ?
-        SystemNative_GetUName(euid) :
+        SystemNative_GetUserName(euid) :
         NULL;
 }
 
