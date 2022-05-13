@@ -292,7 +292,8 @@ namespace System.IO.Compression
                 compressedData = compressed.ToArray();
             }
 
-            // corrupting these bytes goes undetected by gzip, skip them
+            // the last 7 bytes of the 10-byte gzip header can be changed with no decompression error
+            // this is by design, so we skip them for the test
             int[] byteToSkip = { 3, 4, 5, 6, 7, 8, 9 };
 
             for (int byteToCorrupt = 0; byteToCorrupt < compressedData.Length; byteToCorrupt++)
