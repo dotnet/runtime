@@ -9,16 +9,28 @@ using System.Runtime.ExceptionServices;
 
 namespace System.Text.Json.Serialization.Metadata
 {
+    /// <summary>
+    /// Default JsonTypeInfo resolver.
+    /// </summary>
     internal sealed class DefaultJsonTypeInfoResolver : IJsonTypeInfoResolver
     {
+        private bool _mutable = true;
+
+        /// <summary>
+        /// Constructs DefaultJsonTypeInfoResolver.
+        /// </summary>
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         public DefaultJsonTypeInfoResolver()
         {
+            Modifiers = new ConfigurationList<Action<JsonTypeInfo>>() { VerifyMutable = VerifyMutable };
         }
 
+        /// <inheritdoc/>
         public JsonTypeInfo GetTypeInfo(Type type, JsonSerializerOptions options)
         {
+            _mutable = false;
+
             JsonTypeInfo.ValidateType(type, null, null, options);
             JsonTypeInfo typeInfo = CreateJsonTypeInfo(type, options);
 
@@ -54,6 +66,18 @@ namespace System.Text.Json.Serialization.Metadata
 #endif
         }
 
-        public IList<Action<JsonTypeInfo>> Modifiers { get; } = new List<Action<JsonTypeInfo>>(); // TODO
+        /// <summary>
+        /// List of JsonTypeInfo modifiers. Modifying callbacks are called consecutively after initial resolution
+        /// and cannot be changed after GetTypeInfo is called.
+        /// </summary>
+        public IList<Action<JsonTypeInfo>> Modifiers { get; }
+
+        private void VerifyMutable()
+        {
+            if (!_mutable)
+            {
+                ThrowHelper.ThrowInvalidOperationException_TypeInfoResolverImmutable();
+            }
+        }
     }
 }

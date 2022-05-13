@@ -65,11 +65,12 @@ namespace System.Text.Json
         /// </summary>
         public JsonSerializerOptions()
         {
-            _converters = new ConfigurationList<JsonConverter>(this);
+            _converters = new ConfigurationList<JsonConverter>() { VerifyMutable = VerifyMutable };
 
 #pragma warning disable CA2252 // This API requires opting into preview features
-            _polymorphicTypeConfigurations = new ConfigurationList<JsonPolymorphicTypeConfiguration>(this)
+            _polymorphicTypeConfigurations = new ConfigurationList<JsonPolymorphicTypeConfiguration>()
             {
+                VerifyMutable = VerifyMutable,
                 OnElementAdded = static config => { config.IsAssignedToOptionsInstance = true; }
             };
 #pragma warning restore CA2252 // This API requires opting into preview features
@@ -96,9 +97,9 @@ namespace System.Text.Json
             _jsonPropertyNamingPolicy = options._jsonPropertyNamingPolicy;
             _readCommentHandling = options._readCommentHandling;
             _referenceHandler = options._referenceHandler;
-            _converters = new ConfigurationList<JsonConverter>(this, options._converters);
+            _converters = new ConfigurationList<JsonConverter>(options._converters) { VerifyMutable = VerifyMutable };
 #pragma warning disable CA2252 // This API requires opting into preview features
-            _polymorphicTypeConfigurations = new ConfigurationList<JsonPolymorphicTypeConfiguration>(this, options._polymorphicTypeConfigurations);
+            _polymorphicTypeConfigurations = new ConfigurationList<JsonPolymorphicTypeConfiguration>(options._polymorphicTypeConfigurations) { VerifyMutable = VerifyMutable };
 #pragma warning restore CA2252 // This API requires opting into preview features
             _encoder = options._encoder;
             _defaultIgnoreCondition = options._defaultIgnoreCondition;

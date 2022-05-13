@@ -13,19 +13,17 @@ namespace System.Text.Json.Serialization
     internal sealed class ConfigurationList<TItem> : IList<TItem>
     {
         private readonly List<TItem> _list;
-        private readonly JsonSerializerOptions _options;
 
         public Action<TItem>? OnElementAdded { get; set; }
+        public Action? VerifyMutable { get; set; }
 
-        public ConfigurationList(JsonSerializerOptions options)
+        public ConfigurationList()
         {
-            _options = options;
             _list = new List<TItem>();
         }
 
-        public ConfigurationList(JsonSerializerOptions options, IList<TItem> source)
+        public ConfigurationList(IList<TItem> source)
         {
-            _options = options;
             _list = new List<TItem>(source is ConfigurationList<TItem> cl ? cl._list : source);
         }
 
@@ -42,7 +40,7 @@ namespace System.Text.Json.Serialization
                     throw new ArgumentNullException(nameof(value));
                 }
 
-                _options.VerifyMutable();
+                VerifyMutable?.Invoke();
                 _list[index] = value;
                 OnElementAdded?.Invoke(value);
             }
@@ -59,14 +57,14 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowArgumentNullException(nameof(item));
             }
 
-            _options.VerifyMutable();
+            VerifyMutable?.Invoke();
             _list.Add(item);
             OnElementAdded?.Invoke(item);
         }
 
         public void Clear()
         {
-            _options.VerifyMutable();
+            VerifyMutable?.Invoke();
             _list.Clear();
         }
 
@@ -97,20 +95,20 @@ namespace System.Text.Json.Serialization
                 ThrowHelper.ThrowArgumentNullException(nameof(item));
             }
 
-            _options.VerifyMutable();
+            VerifyMutable?.Invoke();
             _list.Insert(index, item);
             OnElementAdded?.Invoke(item);
         }
 
         public bool Remove(TItem item)
         {
-            _options.VerifyMutable();
+            VerifyMutable?.Invoke();
             return _list.Remove(item);
         }
 
         public void RemoveAt(int index)
         {
-            _options.VerifyMutable();
+            VerifyMutable?.Invoke();
             _list.RemoveAt(index);
         }
 

@@ -8,8 +8,17 @@ using System.Threading.Tasks;
 
 namespace System.Text.Json.Serialization.Metadata
 {
+    /// <summary>
+    /// Exposes method for resolving Type into JsonTypeInfo for given options.
+    /// </summary>
     internal interface IJsonTypeInfoResolver
     {
+        /// <summary>
+        /// Resolves Type into JsonTypeInfo which defines serialization and deserialization logic.
+        /// </summary>
+        /// <param name="type">Type to be resolved.</param>
+        /// <param name="options">JsonSerializerOptions instance defining resolution parameters.</param>
+        /// <returns>Returns resolved JsonTypeInfo instance or null if Type cannot be resolved by this resolver.</returns>
         JsonTypeInfo? GetTypeInfo(Type type, JsonSerializerOptions options);
     }
 }
