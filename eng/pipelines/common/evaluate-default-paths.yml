@@ -109,6 +109,7 @@ jobs:
       - src/tests/BuildWasmApps/*
       - src/mono/wasm/build/*
       - src/mono/wasm/runtime/*
+      - src/mono/wasm/templates/*
       - src/mono/nuget/Microsoft.NET.Workload.Mono.Toolchain.Manifest/*
       - src/mono/nuget/Microsoft.NET.Runtime.WebAssembly.Sdk/*
       - src/mono/nuget/Microsoft.NET.Runtime.wasm.Sample.Mono/*
@@ -125,7 +126,9 @@ jobs:
       include:
       - src/mono/wasm/debugger/*
       - src/mono/wasm/runtime/*
-      - src/mono/wasm/BrowsersForTesting.props
+      - src/tests/BuildWasmApps/*
+      - eng/testing/ProvisioningVersions.props
+      - eng/testing/scenarios/WasmDebuggerTestsJobsList.txt
       - src/mono/mono/*
     - subset: allwasm
       include:

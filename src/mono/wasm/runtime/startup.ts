@@ -324,6 +324,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
             mono_wasm_globalization_init(config.globalization_mode!, config.diagnostic_tracing!);
             cwraps.mono_wasm_load_runtime("unused", config.debug_level || 0);
+            runtimeHelpers.wait_for_debugger = config.wait_for_debugger;
         } catch (err: any) {
             Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + err);
             Module.printErr("MONO_WASM: Stacktrace: \n");

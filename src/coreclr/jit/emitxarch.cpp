@@ -2952,7 +2952,7 @@ void emitter::emitIns(instruction ins)
              ins == INS_sahf || ins == INS_stosb || ins == INS_stosd || ins == INS_stosp
              // These instructions take zero operands
              || ins == INS_vzeroupper || ins == INS_lfence || ins == INS_mfence || ins == INS_sfence ||
-             ins == INS_pause);
+             ins == INS_pause || ins == INS_serialize);
 
         assert(assertCond);
     }
@@ -16316,6 +16316,12 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
                 result.insLatency += opSize == EA_8BYTE ? PERFSCORE_LATENCY_2C : PERFSCORE_LATENCY_1C;
             }
             break;
+
+        case INS_serialize:
+        {
+            result.insThroughput = PERFSCORE_THROUGHPUT_50C;
+            break;
+        }
 
         default:
             // unhandled instruction insFmt combination

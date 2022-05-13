@@ -1390,8 +1390,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         public async Task<string> GetValueFromDebuggerDisplayAttribute(DotnetObjectId dotnetObjectId, int typeId, CancellationToken token)
         {
             string expr = "";
-            try
-            {
+            try {
                 var getCAttrsRetReader = await GetCAttrsFromType(typeId, "System.Diagnostics.DebuggerDisplayAttribute", token);
                 if (getCAttrsRetReader == null)
                     return null;
@@ -1429,7 +1428,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 expr = "$\"" + dispAttrStr + "\"";
                 JObject retValue = await resolver.Resolve(expr, token);
                 if (retValue == null)
-                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expr, resolver, token);
+                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expr, resolver, logger, token);
 
                 return retValue?["value"]?.Value<string>();
             }
@@ -1524,7 +1523,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 commandParentsParamsWriter.Write(type_id);
                 using var parentsCmdReader = await SendDebuggerAgentCommand(CmdType.GetParents, commandParentsParamsWriter, token);
                 var parentsCount = parentsCmdReader.ReadInt32();
-                for (int i = 0; i < parentsCount; i++)
+                for (int i = 0 ; i < parentsCount; i++)
                 {
                     ret.Add(parentsCmdReader.ReadInt32());
                 }
@@ -1643,7 +1642,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public async Task<int> GetPropertyMethodIdByName(int typeId, string propertyName, CancellationToken token)
         {
-            using var retDebuggerCmdReader = await GetTypePropertiesReader(typeId, token);
+            using var retDebuggerCmdReader =  await GetTypePropertiesReader(typeId, token);
             if (retDebuggerCmdReader == null)
                 return -1;
 
