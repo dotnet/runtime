@@ -3011,6 +3011,7 @@ struct _BulkTypeEventLogger {
 	uint8_t *bulk_type_event_buffer;
 	uint32_t bulk_type_value_count;
 	uint32_t bulk_type_value_byte_count;
+	MonoMemPool *mem_pool;
 };
 
 static
@@ -3019,6 +3020,7 @@ ep_rt_bulk_type_event_logger_alloc ()
 {
 	BulkTypeEventLogger *type_logger = g_malloc0 (sizeof (BulkTypeEventLogger));
 	type_logger->bulk_type_event_buffer = g_malloc0 (sizeof (uint8_t) * MAX_SIZE_OF_EVENT_BUFFER);
+	type_logger->mem_pool = mono_mempool_new ();
 	return type_logger;
 }
 
@@ -3026,6 +3028,7 @@ static
 void
 ep_rt_bulk_type_event_logger_free (BulkTypeEventLogger *type_logger)
 {
+	mono_mempool_destroy (type_logger->mem_pool);
 	g_free (type_logger->bulk_type_event_buffer);
 	g_free (type_logger);
 }
@@ -3189,7 +3192,6 @@ get_typeid_for_class (MonoClass *c)
 int
 ep_rt_mono_log_single_type (
 	BulkTypeEventLogger *type_logger,
-	MonoMemPool *mem_pool,
 	MonoType *mono_type)
 {
 	// If there's no room for another type, flush what we've got
@@ -3236,7 +3238,7 @@ ep_rt_mono_log_single_type (
 		}
 
 		// mono arrays are always arrays of by value types
-		val->mono_type_parameters = mono_mempool_alloc0 (mem_pool, 1 * sizeof (MonoType*));
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, 1 * sizeof (MonoType*));
 		*val->mono_type_parameters = m_class_get_byval_arg (mono_array_type->eklass);
 		val->type_parameters_count++;
 		break;
@@ -3245,7 +3247,7 @@ ep_rt_mono_log_single_type (
 	{
 		MonoGenericInst *class_inst = mono_type->data.generic_class->context.class_inst;
 		val->type_parameters_count = class_inst->type_argc;
-		val->mono_type_parameters = mono_mempool_alloc0 (mem_pool, val->type_parameters_count * sizeof (MonoType*));
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, val->type_parameters_count * sizeof (MonoType*));
 		memcpy (val->mono_type_parameters, class_inst->type_argv, val->type_parameters_count * sizeof (MonoType*));
 		break;
 	}
@@ -3256,7 +3258,7 @@ ep_rt_mono_log_single_type (
 	{
 		if (mono_underlying_type == mono_type)
 			break;
-		val->mono_type_parameters = mono_mempool_alloc0 (mem_pool, 1 * sizeof (MonoType*));
+		val->mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, 1 * sizeof (MonoType*));
 		*val->mono_type_parameters = mono_underlying_type;
 		val->type_parameters_count++;
 		break;
@@ -3285,7 +3287,7 @@ ep_rt_mono_log_single_type (
 		// call itself again.
 		g_assert (type_logger->bulk_type_value_byte_count + val_byte_count > MAX_TYPE_VALUES_BYTES);
 		ep_rt_mono_fire_bulk_type_event (type_logger);
-		return ep_rt_mono_log_single_type (type_logger, mem_pool, mono_type);
+		return ep_rt_mono_log_single_type (type_logger, mono_type);
 	}
 
 	// The type fits into the batch, so update our state
@@ -3308,12 +3310,11 @@ ep_rt_mono_log_single_type (
 void
 ep_rt_mono_log_type_and_parameters (
 	BulkTypeEventLogger *type_logger,
-	MonoMemPool *mem_pool,
 	MonoType *mono_type)
 {
 	// Batch up this type.  This grabs useful info about the type, including any
 	// type parameters it may have, and sticks it in bulk_type_values
-	int bulk_type_value_index = ep_rt_mono_log_single_type (type_logger, mem_pool, mono_type);
+	int bulk_type_value_index = ep_rt_mono_log_single_type (type_logger, mono_type);
 	if (bulk_type_value_index == -1) {
 		// There was a failure trying to log the type, so don't bother with its type
 		// parameters
@@ -3330,11 +3331,11 @@ ep_rt_mono_log_type_and_parameters (
 	if (param_count == 0)
 		return;
 
-	MonoType **mono_type_parameters = mono_mempool_alloc0 (mem_pool, param_count * sizeof (MonoType*));
+	MonoType **mono_type_parameters = mono_mempool_alloc0 (type_logger->mem_pool, param_count * sizeof (MonoType*));
 	memcpy (mono_type_parameters, val->mono_type_parameters, sizeof (MonoType*) * param_count);
 
 	for (uint32_t i = 0; i < param_count; i++)
-		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, mem_pool, mono_type_parameters [i]);
+		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, mono_type_parameters [i]);
 }
 
 //---------------------------------------------------------------------------------------
@@ -3351,12 +3352,11 @@ ep_rt_mono_log_type_and_parameters (
 void
 ep_rt_mono_log_type_and_parameters_if_necessary (
 	BulkTypeEventLogger *type_logger,
-	MonoMemPool *mem_pool,
 	MonoType *mono_type)
 {
 	// TODO Log the type if necessary
 
-	ep_rt_mono_log_type_and_parameters (type_logger, mem_pool, mono_type);
+	ep_rt_mono_log_type_and_parameters (type_logger, mono_type);
 }
 
 // ETW has a limit for maximum event size. Do not log overly large method type argument sets
@@ -3393,7 +3393,6 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 		return;
 
 	BulkTypeEventLogger *type_logger = ep_rt_bulk_type_event_logger_alloc ();
-	MonoMemPool *mem_pool = mono_mempool_new ();
 
 	uint64_t method_type_id = 0;
 	g_assert (mono_metadata_token_index (method->token) != 0);
@@ -3404,7 +3403,7 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 		MonoType *method_mono_type = m_class_get_byval_arg (klass);
 		method_type_id = get_typeid_for_class (klass);
 
-		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, mem_pool, method_mono_type);
+		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, method_mono_type);
 
 		loader_module_id = (uint64_t)mono_class_get_image (klass);
 	}
@@ -3413,11 +3412,11 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 	if (method_inst)
 		method_inst_parameter_types_count = method_inst->type_argc;
 
-	uint64_t *method_inst_parameters_type_ids = mono_mempool_alloc0 (mem_pool, method_inst_parameter_types_count * sizeof (uint64_t));
+	uint64_t *method_inst_parameters_type_ids = mono_mempool_alloc0 (type_logger->mem_pool, method_inst_parameter_types_count * sizeof (uint64_t));
 	for (int i = 0; i < method_inst_parameter_types_count; i++) {
 		method_inst_parameters_type_ids [i] = get_typeid_for_type (method_inst->type_argv [i]);
 
-		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, mem_pool, method_inst->type_argv [i]);
+		ep_rt_mono_log_type_and_parameters_if_necessary (type_logger, method_inst->type_argv [i]);
 	}
 
 	ep_rt_mono_fire_bulk_type_event (type_logger);
@@ -3432,7 +3431,6 @@ ep_rt_mono_send_method_details_event (MonoMethod *method)
 		NULL,
 		NULL);
 
-	mono_mempool_destroy (mem_pool);
 	ep_rt_bulk_type_event_logger_free (type_logger);
 }
 
