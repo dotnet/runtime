@@ -23,8 +23,14 @@ extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE GetInt128(uint64_t upper, uint64_
 {
     Int128 result;
 
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = upper;
+    result = result << 64;
+    result = result | lower;
+#else
     result.lower = lower;
     result.upper = upper;
+#endif
 
     return result;
 }
@@ -45,10 +51,14 @@ extern "C" DLL_EXPORT Int128 STDMETHODCALLTYPE AddInt128(Int128 lhs, Int128 rhs)
 {
     Int128 result;
 
+#if (INT128_WIDTH == 128) || defined(__SIZEOF_INT128__)
+    result = lhs + rhs;
+#else
     result.lower = lhs.lower + rhs.lower;
     uint64_t carry = (result.lower < lhs.lower) ? 1 : 0;
-
     result.upper = lhs.upper + rhs.upper + carry;
+#endif
+
     return result;
 }
 
