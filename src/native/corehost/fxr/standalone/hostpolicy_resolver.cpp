@@ -251,12 +251,12 @@ bool hostpolicy_resolver::try_get_dir(
             trace::warning(_X("Dependency manifest %s does not contain an entry for %s"),
                 resolved_deps.c_str(), _STRINGIFY(HOST_POLICY_PKG_NAME));
         }
-    }
 
-    // Check if the given version of the hostpolicy exists in servicing.
-    if (hostpolicy_exists_in_svc(version, impl_dir))
-    {
-        return true;
+        // Check if the given version of the hostpolicy exists in servicing.
+        if (hostpolicy_exists_in_svc(version, impl_dir))
+        {
+            return true;
+        }
     }
 
     // Get the expected directory that would contain hostpolicy.
