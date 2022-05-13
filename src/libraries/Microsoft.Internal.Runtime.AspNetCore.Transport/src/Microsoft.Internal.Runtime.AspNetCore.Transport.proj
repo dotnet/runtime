@@ -6,8 +6,6 @@
     <NoTargetsDoNotReferenceOutputAssemblies>false</NoTargetsDoNotReferenceOutputAssemblies>
     <IsPackable>true</IsPackable>
     <IncludeBuildOutput>true</IncludeBuildOutput>
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>none</DebugType>
     <!-- Enable when the package shipped with NET6. -->
     <DisablePackageBaselineValidation>true</DisablePackageBaselineValidation>
     <PackageDescription>Internal transport package to provide aspnetcore with the assemblies from dotnet/runtime that make up the Microsoft.AspNetCore.App shared framework.</PackageDescription>
@@ -18,9 +16,14 @@
   <ItemGroup>
     <!-- Requires Private=true to calculate ReferenceCopyLocalPaths items. Also share System.Net.Quic which isn't part of aspnetcore's shared framework but which is needed by them. -->
     <ProjectReference Include="@(AspNetCoreAppLibrary->'$(LibrariesProjectRoot)%(Identity)\src\%(Identity).csproj');
-                               $(LibrariesProjectRoot)System.Net.Quic\src\System.Net.Quic.csproj" PrivateAssets="all" Pack="true" Private="true" IncludeReferenceAssemblyInPackage="true" />
-    <!-- TODO: Find a better way to include source generators without hardcoding them. -->
+                               $(LibrariesProjectRoot)System.Net.Quic\src\System.Net.Quic.csproj"
+                      Pack="true"
+                      PrivateAssets="all"
+                      Private="true"
+                      IncludeReferenceAssemblyInPackage="true" />
     <!-- Only include the 4.0 version in the ref pack, since targeting net6.0 requires Roslyn 4.0 -->
-    <AnalyzerReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj" />
+    <AnalyzerReference Include="$(LibrariesProjectRoot)Microsoft.Extensions.Logging.Abstractions\gen\Microsoft.Extensions.Logging.Generators.Roslyn4.0.csproj"
+                       Pack="true"
+                       ReferenceAnalyzer="false" />
   </ItemGroup>
 </Project>

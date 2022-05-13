@@ -146,7 +146,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67301", TestPlatforms.Linux)]
         public async Task CertificateCallbackThrowPropagates()
         {
             using CancellationTokenSource cts = new CancellationTokenSource(PassingTestTimeout);
@@ -188,7 +187,6 @@ namespace System.Net.Quic.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/67301", TestPlatforms.Linux)]
         public async Task ConnectWithCertificateCallback()
         {
             X509Certificate2 c1 = System.Net.Test.Common.Configuration.Certificates.GetServerCertificate();
@@ -239,7 +237,7 @@ namespace System.Net.Quic.Tests
             clientConnection = new QuicConnection(QuicImplementationProviders.MsQuic, clientOptions);
             Task clientTask = clientConnection.ConnectAsync(cts.Token).AsTask();
 
-            await Assert.ThrowsAsync<QuicException>(() => clientTask);
+            await Assert.ThrowsAnyAsync<QuicException>(() => clientTask);
             Assert.Equal(clientOptions.ClientAuthenticationOptions.TargetHost, receivedHostName);
             clientConnection.Dispose();
 
@@ -318,12 +316,6 @@ namespace System.Net.Quic.Tests
         public async Task ConnectWithCertificateForLoopbackIP_IndicatesExpectedError(string ipString, bool expectsError)
         {
             var ipAddress = IPAddress.Parse(ipString);
-
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux) && ipAddress.AddressFamily == AddressFamily.InterNetworkV6)
-            {
-                // [ActiveIssue("https://github.com/dotnet/runtime/issues/67301")]
-                throw new SkipTestException("IPv6 on Linux is temporarily broken");
-            }
 
             (X509Certificate2 certificate, _) = System.Net.Security.Tests.TestHelper.GenerateCertificates(expectsError ? "badhost" : "localhost");
 

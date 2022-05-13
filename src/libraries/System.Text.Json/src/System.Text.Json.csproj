@@ -381,7 +381,12 @@ System.Text.Json.Nodes.JsonValue</PackageDescription>
   </ItemGroup>
 
   <ItemGroup>
-    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj" Condition="'$(DotNetBuildFromSource)' != 'true'" />
-    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn3.11.csproj"
+                       Pack="true"
+                       ReferenceAnalyzer="false"
+                       Condition="'$(DotNetBuildFromSource)' != 'true'" />
+    <AnalyzerReference Include="..\gen\System.Text.Json.SourceGeneration.Roslyn4.0.csproj"
+                       Pack="true"
+                       ReferenceAnalyzer="false" />
   </ItemGroup>
 </Project>
