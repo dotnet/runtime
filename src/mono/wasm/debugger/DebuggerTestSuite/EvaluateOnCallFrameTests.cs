@@ -1145,7 +1145,7 @@ namespace DebuggerTests
                 await EvaluateOnCallFrameAndCheck(id,
                    ("test.listToLinq.ToList()", TObject("System.Collections.Generic.List<int>", description: "Count = 11"))
                    );
-             });
+            });
 
         [Fact]
         public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitives() =>  await CheckInspectLocalsAtBreakpointSite(

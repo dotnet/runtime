@@ -120,7 +120,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     return SyntaxFactory.IdentifierName(id_name);
                 });
 
-                // 1.1 Replace all this.a() occurrences with this_a_ABDE
+                 // 1.1 Replace all this.a() occurrences with this_a_ABDE
                 root = root.ReplaceNodes(methodCalls, (m, _) =>
                 {
                     string iesStr = m.ToString();
