@@ -1052,6 +1052,8 @@ namespace System
                     return SR.CancellationTokenSource_Disposed;
                 case ExceptionResource.Argument_AlignmentMustBePow2:
                     return SR.Argument_AlignmentMustBePow2;
+                case ExceptionResource.ArgumentOutOfRange_NotGreaterThanBufferLength:
+                    return SR.ArgumentOutOfRange_NotGreaterThanBufferLength;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1183,6 +1185,7 @@ namespace System
         ArgumentOutOfRange_GetCharCountOverflow,
         ArgumentOutOfRange_ListInsert,
         ArgumentOutOfRange_NeedNonNegNum,
+        ArgumentOutOfRange_NotGreaterThanBufferLength,
         ArgumentOutOfRange_SmallCapacity,
         Argument_InvalidOffLen,
         Argument_CannotExtractScalar,

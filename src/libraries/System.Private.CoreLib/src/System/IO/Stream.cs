@@ -962,8 +962,7 @@ namespace System.IO
 
             if (bufferLength < minimumBytes)
             {
-                // TODO: pick the right exception message here
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumBytes);
+                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumBytes, ExceptionResource.ArgumentOutOfRange_NotGreaterThanBufferLength);
             }
         }
 
