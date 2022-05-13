@@ -538,7 +538,7 @@ namespace ILCompiler.Logging
                 if (indexOfLastDot > 0 && indexOfLastDot < name.Length - 1)
                 {
                     namespacepart = name.Substring(indexOfLastDot - 1);
-                    namepart = name.Substring(indexOfLastDot + 1, name.Length - indexOfLastDot - 1);
+                    namepart = name.Substring(indexOfLastDot + 1);
                 }
                 else
                 {

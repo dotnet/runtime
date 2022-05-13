@@ -4,7 +4,7 @@
 using System.Net.Sockets;
 using System.Net.Test.Common;
 using System.Threading.Tasks;
-
+using Microsoft.DotNet.XUnitExtensions;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -161,8 +161,8 @@ namespace System.Net.NetworkInformation.Tests
             _log.WriteLine("Loopback IPv4 index: " + NetworkInterface.LoopbackInterfaceIndex);
         }
 
-        [Fact]
         [Trait("IPv6", "true")]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
         public void BasicTest_StaticIPv6LoopbackIndex_MatchesLoopbackNetworkInterface()
         {
             Assert.True(Capability.IPv6Support());
@@ -185,8 +185,8 @@ namespace System.Net.NetworkInformation.Tests
             }
         }
 
-        [Fact]
         [Trait("IPv6", "true")]
+        [ConditionalFact(typeof(Socket), nameof(Socket.OSSupportsIPv6))]
         public void BasicTest_StaticIPv6LoopbackIndex_ExceptionIfV6NotSupported()
         {
             Assert.True(Capability.IPv6Support());
@@ -272,7 +272,7 @@ namespace System.Net.NetworkInformation.Tests
             Assert.True(NetworkInterface.GetIsNetworkAvailable());
         }
 
-        [Theory]
+        [ConditionalTheory]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/34690", TestPlatforms.Windows, TargetFrameworkMonikers.Netcoreapp, TestRuntimes.Mono)]
         [SkipOnPlatform(TestPlatforms.OSX | TestPlatforms.FreeBSD, "Expected behavior is different on OSX or FreeBSD")]
         [SkipOnPlatform(TestPlatforms.iOS | TestPlatforms.MacCatalyst | TestPlatforms.tvOS, "Not supported on Browser, iOS, MacCatalyst, or tvOS.")]
@@ -280,6 +280,11 @@ namespace System.Net.NetworkInformation.Tests
         [InlineData(true)]
         public async Task NetworkInterface_LoopbackInterfaceIndex_MatchesReceivedPackets(bool ipv6)
         {
+            if (ipv6 && !Socket.OSSupportsIPv6)
+            {
+                throw new SkipTestException("IPv6 is not supported");
+            }
+
             using (var client = new Socket(SocketType.Dgram, ProtocolType.Udp))
             using (var server = new Socket(SocketType.Dgram, ProtocolType.Udp))
             {

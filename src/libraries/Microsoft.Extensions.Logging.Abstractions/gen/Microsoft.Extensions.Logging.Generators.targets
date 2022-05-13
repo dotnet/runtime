@@ -6,12 +6,10 @@
     <RootNamespace>$(MSBuildThisFileName)</RootNamespace>
     <StringResourcesClassName>SR</StringResourcesClassName>
     <StringResourcesName>FxResources.$(RootNamespace).$(StringResourcesClassName)</StringResourcesName>
-    <Nullable>enable</Nullable>
     <EnableDefaultItems>true</EnableDefaultItems>
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
-    <IsPackable>false</IsPackable>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
   </PropertyGroup>
 

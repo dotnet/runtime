@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
 using BrowserDebugProxy;
@@ -16,7 +17,7 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 internal sealed class FirefoxMonoProxy : MonoProxy
 {
-    public FirefoxMonoProxy(ILoggerFactory loggerFactory, string loggerId = null) : base(loggerFactory, null, loggerId: loggerId)
+    public FirefoxMonoProxy(ILogger logger, string loggerId = null) : base(logger, null, loggerId: loggerId)
     {
     }
 
@@ -42,7 +43,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
 
             await StartRunLoop(ideConn, browserConn, cts);
             if (Stopped?.reason == RunLoopStopReason.Exception)
-                throw Stopped.exception;
+                ExceptionDispatchInfo.Capture(Stopped.exception).Throw();
         }
         finally
         {

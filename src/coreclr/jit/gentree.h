@@ -1762,9 +1762,6 @@ public:
 
     inline GenTree* gtCommaAssignVal();
 
-    // Tunnel through any GT_RET_EXPRs
-    GenTree* gtRetExprVal(BasicBlockFlags* pbbFlags = nullptr);
-
     // Return the child of this node if it is a GT_RELOAD or GT_COPY; otherwise simply return the node itself
     inline GenTree* gtSkipReloadOrCopy();
 
@@ -2112,25 +2109,22 @@ public:
 
     bool IsIconHandle() const
     {
-        assert(gtOper == GT_CNS_INT);
-        return (gtFlags & GTF_ICON_HDL_MASK) ? true : false;
+        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) != 0);
     }
 
     bool IsIconHandle(GenTreeFlags handleType) const
     {
-        assert(gtOper == GT_CNS_INT);
-        assert((handleType & GTF_ICON_HDL_MASK) != 0); // check that handleType is one of the valid GTF_ICON_* values
+        // check that handleType is one of the valid GTF_ICON_* values
+        assert((handleType & GTF_ICON_HDL_MASK) != 0);
         assert((handleType & ~GTF_ICON_HDL_MASK) == 0);
-        return (gtFlags & GTF_ICON_HDL_MASK) == handleType;
+        return (gtOper == GT_CNS_INT) && ((gtFlags & GTF_ICON_HDL_MASK) == handleType);
     }
 
-    // Return just the part of the flags corresponding to the GTF_ICON_*_HDL flag. For example,
-    // GTF_ICON_SCOPE_HDL. The tree node must be a const int, but it might not be a handle, in which
-    // case we'll return zero.
+    // Return just the part of the flags corresponding to the GTF_ICON_*_HDL flag.
+    // For non-icon handle trees, returns GTF_EMPTY.
     GenTreeFlags GetIconHandleFlag() const
     {
-        assert(gtOper == GT_CNS_INT);
-        return (gtFlags & GTF_ICON_HDL_MASK);
+        return (gtOper == GT_CNS_INT) ? (gtFlags & GTF_ICON_HDL_MASK) : GTF_EMPTY;
     }
 
     // Mark this node as no longer being a handle; clear its GTF_ICON_*_HDL bits.
@@ -2138,12 +2132,6 @@ public:
     {
         assert(gtOper == GT_CNS_INT);
         gtFlags &= ~GTF_ICON_HDL_MASK;
-    }
-
-    // Return true if the two GT_CNS_INT trees have the same handle flag (GTF_ICON_*_HDL).
-    static bool SameIconHandleFlag(GenTree* t1, GenTree* t2)
-    {
-        return t1->GetIconHandleFlag() == t2->GetIconHandleFlag();
     }
 
     bool IsCall() const
@@ -3760,7 +3748,7 @@ enum GenTreeCallFlags : unsigned int
     GTF_CALL_M_EXP_RUNTIME_LOOKUP      = 0x02000000, // this call needs to be tranformed into CFG for the dynamic dictionary expansion feature.
     GTF_CALL_M_STRESS_TAILCALL         = 0x04000000, // the call is NOT "tail" prefixed but GTF_CALL_M_EXPLICIT_TAILCALL was added because of tail call stress mode
     GTF_CALL_M_EXPANDED_EARLY          = 0x08000000, // the Virtual Call target address is expanded and placed in gtControlExpr in Morph rather than in Lower
-    GTF_CALL_M_LATE_DEVIRT             = 0x10000000, // this call has late devirtualzation info
+    GTF_CALL_M_HAS_LATE_DEVIRT_INFO    = 0x10000000, // this call has late devirtualzation info
 };
 
 inline constexpr GenTreeCallFlags operator ~(GenTreeCallFlags a)
@@ -6178,6 +6166,16 @@ struct GenTreeIndexAddr : public GenTreeOp
     {
     }
 #endif
+
+    bool IsBoundsChecked() const
+    {
+        return (gtFlags & GTF_INX_RNGCHK) != 0;
+    }
+
+    bool IsNotNull() const
+    {
+        return IsBoundsChecked();
+    }
 };
 
 // GenTreeArrAddr - GT_ARR_ADDR, carries information about the array type from morph to VN.
@@ -6198,8 +6196,7 @@ public:
         , m_elemType(elemType)
         , m_firstElemOffset(firstElemOffset)
     {
-        // Temporarily disable this assert. Tracking: https://github.com/dotnet/runtime/issues/67600
-        // assert(addr->TypeIs(TYP_BYREF) || addr->IsIntegralConst(0));
+        assert(addr->TypeIs(TYP_BYREF));
         assert(((elemType == TYP_STRUCT) && (elemClassHandle != NO_CLASS_HANDLE)) ||
                (elemClassHandle == NO_CLASS_HANDLE));
 

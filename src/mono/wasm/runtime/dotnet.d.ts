@@ -153,6 +153,7 @@ declare type MonoConfig = {
     aot_profiler_options?: AOTProfilerOptions;
     coverage_profiler_options?: CoverageProfilerOptions;
     ignore_pdb_load_errors?: boolean;
+    wait_for_debugger?: number;
 };
 declare type MonoConfigError = {
     isError: true;
