@@ -892,14 +892,15 @@ namespace System.Text.RegularExpressions.Tests
         public async Task AllEnginesProduceTheSameCaptures()
         {
             // Some of the match test cases have captures.  For those that do, validate the captures are the same across engines.
-
             (string Pattern, string Input, RegexOptions Options, int Beginning, int Length, bool ExpectedSuccess, string ExpectedValue)[] interpreterTests =
                 Match_MemberData_Cases(RegexEngine.Interpreter)
                 .Where(i => i.ExpectedSuccess)
                 .ToArray();
 
             (RegexEngine e, HashSet<(string Pattern, string Input, RegexOptions Options, int Beginning, int Length, bool ExpectedSuccess, string ExpectedValue)>)[] otherTests =
-                RegexHelpers.AvailableEngines.Select(e => (e, Match_MemberData_Cases(e).ToHashSet())).ToArray();
+                RegexHelpers.AvailableEngines
+                .Where(e => e != RegexEngine.Interpreter)
+                .Select(e => (e, Match_MemberData_Cases(e).ToHashSet())).ToArray();
 
             foreach ((string Pattern, string Input, RegexOptions Options, int Beginning, int Length, bool ExpectedSuccess, string ExpectedValue) test in interpreterTests)
             {
@@ -923,7 +924,7 @@ namespace System.Text.RegularExpressions.Tests
 
                                 // NonBacktracking currently only stores the last capture in a group.
                                 if (!RegexHelpers.IsNonBacktracking(other.Item1) ||
-                                    expectedMatch.Groups[i].Captures.Count == 1)                                    
+                                    expectedMatch.Groups[i].Captures.Count == 1)
                                 {
                                     for (int j = 0; j < expectedMatch.Groups[i].Captures.Count; j++)
                                     {
