@@ -698,9 +698,9 @@ bool WriteBarrierManager::NeedDifferentWriteBarrier(bool bReqUpperBoundsCheck, b
         case WRITE_BARRIER_UNINITIALIZED:
 #ifdef _DEBUG
             // Use the default slow write barrier some of the time in debug builds because of of contains some good asserts
-            //if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DbgRandomOnExe(0.5)) {
-            //    break;
-            //}
+            if ((g_pConfig->GetHeapVerifyLevel() & EEConfig::HEAPVERIFY_BARRIERCHECK) || DbgRandomOnExe(0.5)) {
+                break;
+            }
 #endif
             if (g_region_shr != 0)
             {

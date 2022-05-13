@@ -11412,7 +11412,7 @@ void gc_heap::set_region_plan_gen_num (heap_segment* region, int plan_gen_num)
     for (size_t region_index = region_index_start; region_index < region_index_end; region_index++)
     {
         assert (plan_gen_num <= max_generation);
-        map_region_to_generation[region_index] = (plan_gen_num << 4) | (map_region_to_generation[region_index] & 0x0f);
+        map_region_to_generation[region_index] = (uint8_t)((plan_gen_num << 4) | (map_region_to_generation[region_index] & 0x0f));
     }
 }
 
