@@ -6508,7 +6508,7 @@ namespace System.Data
                     {
                         CurrentTableNamespace = CurrentTableFullName.Substring(0, nsSeperator);
                     }
-                    string CurrentTableName = CurrentTableFullName.Substring(nsSeperator + 1, CurrentTableFullName.Length - nsSeperator - 1);
+                    string CurrentTableName = CurrentTableFullName.Substring(nsSeperator + 1);
 
                     currentTable = ds.Tables[CurrentTableName, CurrentTableNamespace];
                 }

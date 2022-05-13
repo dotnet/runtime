@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Microsoft.WebAssembly.Diagnostics;
 using Newtonsoft.Json.Linq;
+using System.Runtime.ExceptionServices;
 
 #nullable enable
 
@@ -235,10 +236,10 @@ namespace DebuggerTests
             string uriStr = $"ws://{TestHarnessProxy.Endpoint.Authority}/launch-host-and-connect/?test_id={Id}";
             if (!DebuggerTestBase.RunningOnChrome)
             {
-                uriStr += "&host=firefox&firefox-proxy-port=6002";
+                uriStr += $"&host=firefox&firefox-proxy-port={DebuggerTestBase.FirefoxProxyPort}";
                 // Ensure the listener is running early, so trying to
                 // connect to that does not race with the starting of it
-                FirefoxDebuggerProxy.StartListener(6002, _logger);
+                FirefoxDebuggerProxy.StartListener(DebuggerTestBase.FirefoxProxyPort, _logger);
             }
 
             await Client.Connect(new Uri(uriStr), OnMessage, _cancellationTokenSource);
@@ -330,7 +331,7 @@ namespace DebuggerTests
                 {
                     Console.WriteLine ($"OpenSession crashing. proxy state: {state}");
                     if (state.reason == RunLoopStopReason.Exception && state.exception is not null)
-                        throw state.exception;
+                        ExceptionDispatchInfo.Capture(state.exception).Throw();
                 }
 
                 throw;

@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
@@ -90,13 +91,12 @@ namespace LibraryImportGenerator.UnitTests
             yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<double>(isByRef: false), 1, 0 };
             yield return new object[] { CodeSnippets.MarshalUsingArrayParameterWithSizeParam<bool>(isByRef: false), 2, 0 };
 
-
             // Custom type marshalling with invalid members
-            yield return new object[] { CodeSnippets.CustomStructMarshallingByRefValueProperty, 3, 0 };
-            yield return new object[] { CodeSnippets.CustomStructMarshallingManagedToNativeOnlyOutParameter, 1, 0 };
-            yield return new object[] { CodeSnippets.CustomStructMarshallingManagedToNativeOnlyReturnValue, 1, 0 };
-            yield return new object[] { CodeSnippets.CustomStructMarshallingNativeToManagedOnlyInParameter, 1, 0 };
-            yield return new object[] { CodeSnippets.CustomStructMarshallingStackallocOnlyRefParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.TwoStageRefReturn, 3, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.ManagedToNativeOnlyOutParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.ManagedToNativeOnlyReturnValue, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyInParameter, 1, 0 };
+            yield return new object[] { CodeSnippets.CustomStructMarshalling.StackallocOnlyRefParameter, 1, 0 };
 
             // Abstract SafeHandle type by reference
             yield return new object[] { CodeSnippets.BasicParameterWithByRefModifier("ref", "System.Runtime.InteropServices.SafeHandle"), 1, 0 };
@@ -169,6 +169,33 @@ namespace LibraryImportGenerator.UnitTests
 
             int compilerErrors = newComp.GetDiagnostics().Count(d => d.Severity == DiagnosticSeverity.Error);
             Assert.Equal(expectedCompilerErrors, compilerErrors);
+        }
+
+        [Fact]
+        public async Task ValidateDisableRuntimeMarshallingForBlittabilityCheckFromAssemblyReference()
+        {
+            string assemblySource = $@"
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
+{CodeSnippets.ValidateDisableRuntimeMarshalling.NonBlittableUserDefinedTypeWithNativeType}
+";
+            Compilation assemblyComp = await TestUtils.CreateCompilation(assemblySource);
+            TestUtils.AssertPreSourceGeneratorCompilation(assemblyComp);
+
+            var ms = new MemoryStream();
+            Assert.True(assemblyComp.Emit(ms).Success);
+
+            string testSource = CodeSnippets.ValidateDisableRuntimeMarshalling.TypeUsage(string.Empty);
+
+            Compilation testComp = await TestUtils.CreateCompilation(testSource, refs: new[] { MetadataReference.CreateFromImage(ms.ToArray()) });
+            TestUtils.AssertPreSourceGeneratorCompilation(testComp);
+
+            var newComp = TestUtils.RunGenerators(testComp, out var generatorDiags, new Microsoft.Interop.LibraryImportGenerator());
+
+            // The errors should indicate the DisableRuntimeMarshalling is required.
+            Assert.True(generatorDiags.All(d => d.Id == "SYSLIB1051"));
+
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
         }
     }
 }
