@@ -953,9 +953,9 @@ namespace System.Xml
 
             // make sure we have at least 4 bytes to detect the encoding (no preamble of System.Text supported encoding is longer than 4 bytes)
             _ps.bytePos = 0;
-            const int bytesToRead = 4;
-            if (_ps.bytesUsed < bytesToRead && _ps.bytes.Length - _ps.bytesUsed > 0)
+            if (_ps.bytesUsed < 4 && _ps.bytes.Length - _ps.bytesUsed > 0)
             {
+                int bytesToRead = Math.Min(4, _ps.bytes.Length - _ps.bytesUsed);
                 int read = await stream.ReadAtLeastAsync(_ps.bytes.AsMemory(_ps.bytesUsed), bytesToRead, throwOnEndOfStream: false).ConfigureAwait(false);
                 if (read < bytesToRead)
                 {
