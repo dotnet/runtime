@@ -5,7 +5,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
-using System.Runtime.ExceptionServices;
 using System.Text.Json.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Converters;
@@ -26,7 +25,7 @@ namespace System.Text.Json
         private static JsonConverter[]? s_defaultFactoryConverters;
 
         // Stores the JsonTypeInfo factory, which requires unreferenced code and must be rooted by the reflection-based serializer.
-        private static Func<Type, JsonSerializerOptions, JsonTypeInfo>? s_typeInfoCreationFunc;
+        private static IJsonTypeInfoResolver? s_defaultTypeInfoResolver;
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
@@ -34,42 +33,18 @@ namespace System.Text.Json
         {
             // s_typeInfoCreationFunc is the last field assigned.
             // Use it as the sentinel to ensure that all dependencies are initialized.
-            if (Volatile.Read(ref s_typeInfoCreationFunc) is null)
+            if (Volatile.Read(ref s_defaultTypeInfoResolver) is null)
             {
                 s_defaultSimpleConverters = GetDefaultSimpleConverters();
                 s_defaultFactoryConverters = GetDefaultFactoryConverters();
                 // Explicitly ensure that the previous fields are initialized along with this one.
-                Volatile.Write(ref s_typeInfoCreationFunc, CreateJsonTypeInfo);
-            }
-
-            [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
-            [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-            static JsonTypeInfo CreateJsonTypeInfo(Type type, JsonSerializerOptions options)
-            {
-                JsonTypeInfo.ValidateType(type, null, null, options);
-
-                MethodInfo methodInfo = typeof(JsonSerializerOptions).GetMethod(nameof(CreateReflectionJsonTypeInfo), BindingFlags.NonPublic | BindingFlags.Instance)!;
-#if NETCOREAPP
-                return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(options, BindingFlags.NonPublic | BindingFlags.DoNotWrapExceptions, null, null, null)!;
-#else
-                try
-                {
-                    return (JsonTypeInfo)methodInfo.MakeGenericMethod(type).Invoke(options, null)!;
-                }
-                catch (TargetInvocationException ex)
-                {
-                    // Some of the validation is done during construction (i.e. validity of JsonConverter, inner types etc.)
-                    // therefore we need to unwrap TargetInvocationException for better user experience
-                    ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
-                    throw null!;
-                }
-#endif
+                Volatile.Write(ref s_defaultTypeInfoResolver, new DefaultJsonTypeInfoResolver());
             }
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
-        private JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>()
+        internal JsonTypeInfo<T> CreateReflectionJsonTypeInfo<T>()
         {
             return new ReflectionJsonTypeInfo<T>(this);
         }

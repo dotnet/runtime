@@ -623,9 +623,9 @@ namespace System.Text.Json
             if (info == null && IsInitializedForReflectionSerializer)
             {
                 Debug.Assert(
-                    s_typeInfoCreationFunc != null,
+                    s_defaultTypeInfoResolver != null,
                     "Reflection-based JsonTypeInfo creator should be initialized if IsInitializedForReflectionSerializer is true.");
-                info = s_typeInfoCreationFunc(type, this);
+                info = s_defaultTypeInfoResolver.GetTypeInfo(type, this);
             }
 
             if (info == null)
