@@ -37,6 +37,7 @@ MONO_PRAGMA_WARNING_POP()
 #include "metadata/method-builder.h"
 #include "metadata/method-builder-internals.h"
 #include "metadata/tabledefs.h"
+#include "mono/mini/mini-arch.h"
 #include <mono/metadata/exception.h>
 #include <mono/metadata/appdomain.h>
 #include "mono/metadata/abi-details.h"
@@ -6175,15 +6176,26 @@ static gboolean lightweight_cb_inited = FALSE;
 void
 mono_install_marshal_callbacks (MonoMarshalLightweightCallbacks *cb)
 {
+	#ifdef HOST_WASM
+	mono_wasm_print_stack_trace ();
+	#endif
+	
 	g_assert (!lightweight_cb_inited);
 	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
 	memcpy (&marshal_lightweight_cb, cb, sizeof (MonoMarshalLightweightCallbacks));
 	lightweight_cb_inited = TRUE;
 }
 
+gboolean 
+mono_marshal_lightweight_cb_is_inited(void)
+{
+	return lightweight_cb_inited;
+}
+
 static MonoMarshalLightweightCallbacks *
 get_marshal_cb (void)
 {
+
 	if (G_UNLIKELY (!lightweight_cb_inited)) {
 #ifdef ENABLE_ILGEN
 		mono_marshal_lightweight_init ();
@@ -6191,8 +6203,11 @@ get_marshal_cb (void)
 		mono_marshal_noilgen_init ();
 #endif
 	}
+	
 	return &marshal_lightweight_cb;
 }
+
+
 
 /**
  * mono_method_has_unmanaged_callers_only_attribute:
