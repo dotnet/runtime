@@ -30,6 +30,10 @@
 
 #include "wasm-config.h"
 #include "pinvoke.h"
+
+#ifdef GEN_PINVOKE
+#include "wasm_m2n_invoke2.g.h"
+#endif
 #include "gc-common.h"
 
 #ifdef CORE_BINDINGS
@@ -514,6 +518,10 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 
 	mono_dl_fallback_register (wasm_dl_load, wasm_dl_symbol, NULL, NULL);
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
+	
+#ifdef GEN_PINVOKE
+	mono_wasm_initialize_interp_to_native_invokes ();
+#endif
 
 #ifdef ENABLE_AOT
 	monoeg_g_setenv ("MONO_AOT_MODE", "aot", 1);
