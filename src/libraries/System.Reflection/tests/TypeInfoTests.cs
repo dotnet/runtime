@@ -1613,7 +1613,9 @@ namespace System.Reflection.Tests
         [Theory, MemberData(nameof(SZArrayOrNotTypes))]
         public void IsSZArray(Type type, bool expected)
         {
-            if (PlatformDetection.IsNativeAot) throw new ArgumentException("Temp validation to ensure nativeaot run is on the PR checks");
+            // @TODO - remvove, checking native aot testing works by deliberately failing
+            if (PlatformDetection.IsNativeAot) 
+                Assert.Equal(!expected, type.GetTypeInfo().IsSZArray);
             Assert.Equal(expected, type.GetTypeInfo().IsSZArray);
         }
 
@@ -1657,7 +1659,7 @@ namespace System.Reflection.Tests
         }
 
         [Theory, MemberData(nameof(GetMemberWithSameMetadataDefinitionAsData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69244", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
+        //[ActiveIssue("https://github.com/dotnet/runtime/issues/69244", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void GetMemberWithSameMetadataDefinitionAs(Type openGenericType, Type closedGenericType, bool checkDeclaringType)
         {
             BindingFlags all = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly;
