@@ -533,7 +533,7 @@ def generateClrEventPipeWriteEvents(eventNodes, allTemplates, extern, target_cpp
                 countw      = getPalDataTypeMapping(runtimeFlavor)[winCount]
 
                 if params in template.structs:
-                    fnptypeline.append("%ssize_t %s_ElementSize,\n" % (lindent, params))
+                    fnptypeline.append("%sint %s_ElementSize,\n" % (lindent, params))
 
                 fnptypeline.append(lindent)
                 fnptypeline.append(typewName)
