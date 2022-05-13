@@ -247,12 +247,8 @@ namespace System.Text.Json.SourceGeneration
                 PopulateKnownTypes();
             }
 
-            private CancellationToken CancellationToken => _sourceGenerationContext.CancellationToken;
-
-            public SourceGenerationSpec? GetGenerationSpec(IEnumerable<ClassDeclarationSyntax> classDeclarationSyntaxList)
+            public SourceGenerationSpec? GetGenerationSpec(IEnumerable<ClassDeclarationSyntax> classDeclarationSyntaxList, CancellationToken cancellationToken)
             {
-                var cancellationToken = this.CancellationToken;
-
                 Compilation compilation = _compilation;
                 INamedTypeSymbol jsonSerializerContextSymbol = compilation.GetBestTypeByMetadataName(JsonSerializerContextFullName);
                 INamedTypeSymbol jsonSerializableAttributeSymbol = compilation.GetBestTypeByMetadataName(JsonSerializableAttributeFullName);

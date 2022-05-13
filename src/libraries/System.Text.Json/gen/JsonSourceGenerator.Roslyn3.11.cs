@@ -51,7 +51,7 @@ namespace System.Text.Json.SourceGeneration
 
             JsonSourceGenerationContext context = new JsonSourceGenerationContext(executionContext);
             Parser parser = new(executionContext.Compilation, context);
-            SourceGenerationSpec? spec = parser.GetGenerationSpec(receiver.ClassDeclarationSyntaxList);
+            SourceGenerationSpec? spec = parser.GetGenerationSpec(receiver.ClassDeclarationSyntaxList, executionContext.CancellationToken);
             if (spec != null)
             {
                 _rootTypes = spec.ContextGenerationSpecList[0].RootSerializableTypes;
@@ -100,9 +100,6 @@ namespace System.Text.Json.SourceGeneration
         {
             _context = context;
         }
-
-        public CancellationToken CancellationToken
-            => _context.CancellationToken;
 
         public void ReportDiagnostic(Diagnostic diagnostic)
         {
