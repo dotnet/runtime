@@ -64,7 +64,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("$.$values", @"{ ""Number"" : 42, ""$values"" : [] }")]
         [InlineData("$.$type", @"{ ""Number"" : 42, ""$type"" : ""derivedClass"" }")]
         [InlineData("$", @"{ ""$type"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : 0, ""Number"" : 42 }")]
+        [InlineData("$", @"{ ""$type"" : 0, ""Number"" : 42 }")]
         [InlineData("$.$type", @"{ ""$type"" : false, ""Number"" : 42 }")]
         [InlineData("$.$type", @"{ ""$type"" : {}, ""Number"" : 42 }")]
         [InlineData("$.$type", @"{ ""$type"" : [], ""Number"" : 42 }")]
@@ -140,7 +140,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("$.$values", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$values"" : [] }")]
         [InlineData("$._case", @"{ ""Number"" : 42, ""_case"" : ""derivedClass1"" }")]
         [InlineData("$", @"{ ""_case"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : 0, ""Number"" : 42 }")]
+        [InlineData("$", @"{ ""_case"" : 0, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : false, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : {}, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : [], ""Number"" : 42 }")]
@@ -216,7 +216,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("$.$values", @"{ ""_case"" : ""derivedClass1"", ""Number"" : 42, ""$values"" : [] }")]
         [InlineData("$._case", @"{ ""Number"" : 42, ""_case"" : ""derivedClass1"" }")]
         [InlineData("$", @"{ ""_case"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
-        [InlineData("$._case", @"{ ""_case"" : 0, ""Number"" : 42 }")]
+        [InlineData("$", @"{ ""_case"" : 0, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : false, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : {}, ""Number"" : 42 }")]
         [InlineData("$._case", @"{ ""_case"" : [], ""Number"" : 42 }")]
@@ -252,6 +252,7 @@ namespace System.Text.Json.Serialization.Tests
         [JsonDerivedType(typeof(DerivedClass1_TypeDiscriminator.DerivedClass), "derivedClassOfDerivedClass1")]
         [JsonDerivedType(typeof(DerivedClass2_NoTypeDiscriminator))]
         [JsonDerivedType(typeof(DerivedClass2_TypeDiscriminator), "derivedClass2")]
+        [JsonDerivedType(typeof(DerivedClass_IntegerTypeDiscriminator), typeDiscriminatorId: -1)]
         [JsonDerivedType(typeof(DerivedCollection_NoTypeDiscriminator))]
         [JsonDerivedType(typeof(DerivedCollection_TypeDiscriminator), "derivedCollection")]
         [JsonDerivedType(typeof(DerivedCollection_TypeDiscriminator.DerivedClass), "derivedCollectionOfDerivedCollection")]
@@ -310,6 +311,11 @@ namespace System.Text.Json.Serialization.Tests
                 {
                     public string ExtraProperty { get; set; }
                 }
+            }
+
+            public class DerivedClass_IntegerTypeDiscriminator : PolymorphicClass
+            {
+                public string String { get; set; }
             }
 
             public abstract class DerivedAbstractClass : PolymorphicClass
@@ -517,6 +523,11 @@ namespace System.Text.Json.Serialization.Tests
                     Value: new DerivedClass2_TypeDiscriminator { Number = 42, Boolean = true },
                     ExpectedJson: @"{ ""$type"" : ""derivedClass2"", ""Number"" : 42, ""Boolean"" : true }",
                     ExpectedRoundtripValue: new DerivedClass2_TypeDiscriminator { Number = 42, Boolean = true });
+
+                yield return new TestData(
+                    Value: new DerivedClass_IntegerTypeDiscriminator { Number = 42, String = "str" },
+                    ExpectedJson: @"{ ""$type"" : -1, ""Number"" : 42, ""String"" : ""str"" }",
+                    ExpectedRoundtripValue: new DerivedClass_IntegerTypeDiscriminator { Number = 42, String = "str" });
 
                 yield return new TestData(
                     Value: new DerivedCollection_NoTypeDiscriminator { Number = 42 },
@@ -1134,7 +1145,7 @@ namespace System.Text.Json.Serialization.Tests
         [InlineData("$.$id", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$id"" : ""referenceId""}")]
         [InlineData("$.$values", @"{ ""$type"" : ""derivedClass"", ""Number"" : 42, ""$values"" : [] }")]
         [InlineData("$", @"{ ""$type"" : ""invalidDiscriminator"", ""Number"" : 42 }")]
-        [InlineData("$.$type", @"{ ""$type"" : 0, ""Number"" : 42 }")]
+        [InlineData("$", @"{ ""$type"" : 0, ""Number"" : 42 }")]
         [InlineData("$.$type", @"{ ""$type"" : false, ""Number"" : 42 }")]
         [InlineData("$.$type", @"{ ""$type"" : {}, ""Number"" : 42 }")]
         [InlineData("$.$type", @"{ ""$type"" : [], ""Number"" : 42 }")]

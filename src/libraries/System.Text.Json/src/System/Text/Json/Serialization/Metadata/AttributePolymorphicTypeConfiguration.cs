@@ -49,7 +49,7 @@ namespace System.Text.Json.Serialization.Metadata
 
         public bool IgnoreUnrecognizedTypeDiscriminators => _polymorphicTypeAttribute?.IgnoreUnrecognizedTypeDiscriminators ?? false;
 
-        public IEnumerable<(Type DerivedType, string? TypeDiscriminatorId)> GetSupportedDerivedTypes()
+        public IEnumerable<(Type DerivedType, object? TypeDiscriminatorId)> GetSupportedDerivedTypes()
         {
             foreach (JsonDerivedTypeAttribute attribute in _derivedTypeAttributes)
             {

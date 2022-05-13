@@ -30,6 +30,17 @@ namespace System.Text.Json.Serialization
         }
 
         /// <summary>
+        /// Initializes a new attribute with specified parameters.
+        /// </summary>
+        /// <param name="derivedType">A derived type that should be supported in polymorphic serialization of the declared base type.</param>
+        /// <param name="typeDiscriminatorId">The type discriminator identifier to be used for the serialization of the subtype.</param>
+        public JsonDerivedTypeAttribute(Type derivedType, int typeDiscriminatorId)
+        {
+            DerivedType = derivedType;
+            TypeDiscriminatorId = typeDiscriminatorId;
+        }
+
+        /// <summary>
         /// A derived type that should be supported in polymorphic serialization of the declared base type.
         /// </summary>
         public Type DerivedType { get; }
@@ -37,6 +48,6 @@ namespace System.Text.Json.Serialization
         /// <summary>
         /// The type discriminator identifier to be used for the serialization of the subtype.
         /// </summary>
-        public string? TypeDiscriminatorId { get; }
+        public object? TypeDiscriminatorId { get; }
     }
 }

@@ -86,7 +86,7 @@ namespace System.Text.Json.Serialization
                     {
                         Debug.Assert(CanHaveMetadata);
 
-                        if (resolver.TryGetDerivedJsonTypeInfo(runtimeType, out JsonTypeInfo? derivedJsonTypeInfo, out string? typeDiscriminatorId))
+                        if (resolver.TryGetDerivedJsonTypeInfo(runtimeType, out JsonTypeInfo? derivedJsonTypeInfo, out object? typeDiscriminatorId))
                         {
                             polymorphicConverter = state.Current.InitializePolymorphicReEntry(derivedJsonTypeInfo);
 
