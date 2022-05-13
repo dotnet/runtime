@@ -28,7 +28,7 @@ inline BOOL ReJitManager::IsReJITEnabled()
     static bool profilerStartupRejit = CORProfilerEnableRejit() != FALSE;
     static ConfigDWORD rejitOnAttachEnabled;
 
-    return  profilerStartupRejit || (rejitOnAttachEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0);
+    return  profilerStartupRejit || ((rejitOnAttachEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0) && !g_pConfig->DefaultCodeVersioningDisabled());
 }
 
 inline BOOL ReJitManager::IsReJITInlineTrackingEnabled()
@@ -36,7 +36,7 @@ inline BOOL ReJitManager::IsReJITInlineTrackingEnabled()
     LIMITED_METHOD_CONTRACT;
 
     static ConfigDWORD rejitInliningEnabled;
-    return rejitInliningEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0;
+    return rejitInliningEnabled.val(CLRConfig::EXTERNAL_ProfAPI_RejitOnAttach) != 0 && !g_pConfig->DefaultCodeVersioningDisabled();
 }
 
 #ifndef DACCESS_COMPILE
