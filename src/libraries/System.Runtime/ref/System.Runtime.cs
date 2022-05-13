@@ -2647,9 +2647,12 @@ namespace System
         public static System.Half MultiplicativeIdentity { get { throw null; } }
         public static System.Half NaN { get { throw null; } }
         public static System.Half NegativeInfinity { get { throw null; } }
+        public static System.Half NegativeOne { get { throw null; } }
         public static System.Half NegativeZero { get { throw null; } }
+        public static System.Half One { get { throw null; } }
         public static System.Half Pi { get { throw null; } }
         public static System.Half PositiveInfinity { get { throw null; } }
+        public static System.Half Zero { get { throw null; } }
         static System.Half System.Numerics.IAdditiveIdentity<System.Half,System.Half>.AdditiveIdentity { get { throw null; } }
         static System.Half System.Numerics.INumberBase<System.Half>.One { get { throw null; } }
         static System.Half System.Numerics.INumberBase<System.Half>.Zero { get { throw null; } }
@@ -2947,6 +2950,9 @@ namespace System
         public static System.Int128 operator checked +(System.Int128 left, System.Int128 right) { throw null; }
         public static System.Int128 operator checked --(System.Int128 value) { throw null; }
         public static System.Int128 operator checked /(System.Int128 left, System.Int128 right) { throw null; }
+        public static explicit operator checked System.Int128 (double value) { throw null; }
+        public static explicit operator checked System.Int128 (System.Half value) { throw null; }
+        public static explicit operator checked System.Int128 (float value) { throw null; }
         public static explicit operator checked byte (System.Int128 value) { throw null; }
         public static explicit operator checked char (System.Int128 value) { throw null; }
         public static explicit operator checked short (System.Int128 value) { throw null; }
@@ -5768,12 +5774,15 @@ namespace System
         public static System.UInt128 operator checked +(System.UInt128 left, System.UInt128 right) { throw null; }
         public static System.UInt128 operator checked --(System.UInt128 value) { throw null; }
         public static System.UInt128 operator checked /(System.UInt128 left, System.UInt128 right) { throw null; }
+        public static explicit operator checked System.UInt128 (double value) { throw null; }
+        public static explicit operator checked System.UInt128 (System.Half value) { throw null; }
         public static explicit operator checked System.UInt128 (short value) { throw null; }
         public static explicit operator checked System.UInt128 (int value) { throw null; }
         public static explicit operator checked System.UInt128 (long value) { throw null; }
         public static explicit operator checked System.UInt128 (nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator checked System.UInt128 (sbyte value) { throw null; }
+        public static explicit operator checked System.UInt128 (float value) { throw null; }
         public static explicit operator checked byte (System.UInt128 value) { throw null; }
         public static explicit operator checked char (System.UInt128 value) { throw null; }
         public static explicit operator checked short (System.UInt128 value) { throw null; }

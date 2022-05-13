@@ -1296,6 +1296,10 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (decimal)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1319,6 +1323,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (decimal)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1364,6 +1372,12 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                var actualValue = (Int128)(object)value;
+                return (actualValue > new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? MaxValue :
+                       (actualValue < new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)) ? MinValue : (decimal)actualValue;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1387,6 +1401,11 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                var actualValue = (UInt128)(object)value;
+                return (actualValue > new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? MaxValue : (decimal)actualValue;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1432,6 +1451,21 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                var actualValue = (Int128)(object)value;
+
+                if (Int128.IsNegative(actualValue))
+                {
+                    actualValue = (-actualValue) & new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+                    return -(decimal)actualValue;
+                }
+                else
+                {
+                    actualValue &= new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+                    return (decimal)actualValue;
+                }
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1455,6 +1489,12 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                var actualValue = (UInt128)(object)value;
+                actualValue &= new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+                return (decimal)actualValue;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1531,6 +1571,19 @@ namespace System
                 result = (long)(object)value;
                 return true;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                var actualValue = (Int128)(object)value;
+
+                if ((actualValue > new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) || (actualValue < new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (decimal)actualValue;
+                return true;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 result = (nint)(object)value;
@@ -1559,6 +1612,19 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 result = (ulong)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                var actualValue = (UInt128)(object)value;
+
+                if (actualValue > new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (decimal)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))

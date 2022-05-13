@@ -1016,6 +1016,10 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (double)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1039,6 +1043,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (double)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1084,6 +1092,10 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (double)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1107,6 +1119,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (double)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1152,6 +1168,10 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (double)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1175,6 +1195,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (double)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1242,6 +1266,11 @@ namespace System
                 result = (long)(object)value;
                 return true;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                result = (double)(Int128)(object)value;
+                return true;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 result = (nint)(object)value;
@@ -1270,6 +1299,11 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 result = (ulong)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (double)(UInt128)(object)value;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))

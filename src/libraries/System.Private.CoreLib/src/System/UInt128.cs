@@ -55,7 +55,7 @@ namespace System
             }
             else
             {
-                throw new ArgumentException(SR.Arg_MustBeInt64);
+                throw new ArgumentException(SR.Arg_MustBeUInt128);
             }
         }
 
@@ -231,17 +231,75 @@ namespace System
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="decimal" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="decimal" />.</returns>
-        public static explicit operator decimal(UInt128 value) => throw new NotImplementedException();
+        public static explicit operator decimal(UInt128 value)
+        {
+            ulong lo64 = value._lower;
+
+            if (value._upper > uint.MaxValue)
+            {
+                // The default behavior of decimal conversions is to always throw on overflow
+                Number.ThrowOverflowException(TypeCode.Decimal);
+            }
+
+            uint hi32 = (uint)(value._upper);
+
+            return new decimal((int)(lo64), (int)(lo64 >> 32), (int)(hi32), isNegative: false, scale: 0);
+        }
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="double" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="double" />.</returns>
-        public static explicit operator double(UInt128 value) => throw new NotImplementedException();
+        public static explicit operator double(UInt128 value)
+        {
+            // This code is based on `u128_to_f64_round` from m-ou-se/floatconv
+            // Copyright (c) 2020 Mara Bos <m-ou.se@m-ou.se>. All rights reserved.
+            //
+            // Licensed under the BSD 2 - Clause "Simplified" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            const double TwoPow52 = 4503599627370496.0;
+            const double TwoPow76 = 75557863725914323419136.0;
+            const double TwoPow104 = 20282409603651670423947251286016.0;
+            const double TwoPow128 = 340282366920938463463374607431768211456.0;
+
+            const ulong TwoPow52Bits = 0x4330000000000000;
+            const ulong TwoPow76Bits = 0x44B0000000000000;
+            const ulong TwoPow104Bits = 0x4670000000000000;
+            const ulong TwoPow128Bits = 0x47F0000000000000;
+
+            if (value._upper == 0)
+            {
+                // For values between 0 and ulong.MaxValue, we just use the existing conversion
+                return (double)(value._lower);
+            }
+            else if ((value._upper >> 24) == 0) // value < (2^104)
+            {
+                // For values greater than ulong.MaxValue but less than 2^104 this takes advantage
+                // that we can represent both "halves" of the uint128 within the 52-bit mantissa of
+                // a pair of doubles.
+
+                double lower = BitConverter.UInt64BitsToDouble(TwoPow52Bits | ((value._lower << 12) >> 12)) - TwoPow52;
+                double upper = BitConverter.UInt64BitsToDouble(TwoPow104Bits | (ulong)(value >> 52)) - TwoPow104;
+
+                return lower + upper;
+            }
+            else
+            {
+                // For values greater than than 2^104 we basically do the same as before but we need to account
+                // for the precision loss that double will have. As such, the lower value effectively drops the
+                // lowest 24 bits and then or's them back to ensure rounding stays correct.
+
+                double lower = BitConverter.UInt64BitsToDouble(TwoPow76Bits | ((ulong)(value >> 12) >> 12) | (value._lower & 0xFFFFFF)) - TwoPow76;
+                double upper = BitConverter.UInt64BitsToDouble(TwoPow128Bits | (ulong)(value >> 76)) - TwoPow128;
+
+                return lower + upper;
+            }
+        }
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="Half" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="Half" />.</returns>
-        public static explicit operator Half(UInt128 value) => throw new NotImplementedException();
+        public static explicit operator Half(UInt128 value) => (Half)(double)(value);
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="short" /> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -358,7 +416,7 @@ namespace System
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="float" /> value.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a <see cref="float" />.</returns>
-        public static explicit operator float(UInt128 value) => throw new NotImplementedException();
+        public static explicit operator float(UInt128 value) => (float)(double)(value);
 
         /// <summary>Explicitly converts a 128-bit unsigned integer to a <see cref="ushort" /> value.</summary>
         /// <param name="value">The value to convert.</param>
@@ -447,17 +505,95 @@ namespace System
         /// <summary>Explicitly converts a <see cref="decimal" /> value to a 128-bit signed integer.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
-        public static explicit operator UInt128(decimal value) => throw new NotImplementedException();
+        public static explicit operator UInt128(decimal value)
+        {
+            value = decimal.Truncate(value);
+
+            if (value < 0.0m)
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
+            return new UInt128(value.High, value.Low64);
+        }
 
         /// <summary>Explicitly converts a <see cref="double" /> value to a 128-bit signed integer.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
-        public static explicit operator UInt128(double value) => throw new NotImplementedException();
+        public static explicit operator UInt128(double value)
+        {
+            const double TwoPow128 = 340282366920938463463374607431768211456.0;
+
+            if (double.IsNegative(value) || double.IsNaN(value))
+            {
+                return MinValue;
+            }
+            else if (value >= TwoPow128)
+            {
+                return MaxValue;
+            }
+
+            return ToUInt128(value);
+        }
+
+        /// <summary>Explicitly converts a <see cref="double" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
+        public static explicit operator checked UInt128(double value)
+        {
+            const double TwoPow128 = 340282366920938463463374607431768211456.0;
+
+            if ((value < 0.0) || double.IsNaN(value) || (value >= TwoPow128))
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
+
+            return ToUInt128(value);
+        }
+
+        internal static UInt128 ToUInt128(double value)
+        {
+            const double TwoPow128 = 340282366920938463463374607431768211456.0;
+
+            Debug.Assert(value >= 0);
+            Debug.Assert(double.IsFinite(value));
+            Debug.Assert(value < TwoPow128);
+
+            // This code is based on `f64_to_u128` from m-ou-se/floatconv
+            // Copyright (c) 2020 Mara Bos <m-ou.se@m-ou.se>. All rights reserved.
+            //
+            // Licensed under the BSD 2 - Clause "Simplified" License
+            // See THIRD-PARTY-NOTICES.TXT for the full license text
+
+            if (value >= 1.0)
+            {
+                // In order to convert from double to uint128 we first need to extract the signficand,
+                // including the implicit leading bit, as a full 128-bit significand. We can then adjust
+                // this down to the represented integer by right shifting by the unbiased exponent, taking
+                // into account the significand is now represented as 128-bits.
+
+                ulong bits = BitConverter.DoubleToUInt64Bits(value);
+                UInt128 result = new UInt128((bits << 12) >> 1 | 0x8000_0000_0000_0000, 0x0000_0000_0000_0000);
+
+                result >>= (1023 + 128 - 1 - (int)(bits >> 52));
+                return result;
+            }
+            else
+            {
+                return MinValue;
+            }
+        }
 
         /// <summary>Explicitly converts a <see cref="Half" /> value to a 128-bit signed integer.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
-        public static explicit operator UInt128(Half value) => throw new NotImplementedException();
+        public static explicit operator UInt128(Half value) => (UInt128)(double)(value);
+
+        /// <summary>Explicitly converts a <see cref="Half" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
+        public static explicit operator checked UInt128(Half value) => checked((UInt128)(double)(value));
 
         /// <summary>Explicitly converts a <see cref="short" /> value to a 128-bit signed integer.</summary>
         /// <param name="value">The value to convert.</param>
@@ -574,7 +710,13 @@ namespace System
         /// <summary>Explicitly converts a <see cref="float" /> value to a 128-bit signed integer.</summary>
         /// <param name="value">The value to convert.</param>
         /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
-        public static explicit operator UInt128(float value) => throw new NotImplementedException();
+        public static explicit operator UInt128(float value) => (UInt128)(double)(value);
+
+        /// <summary>Explicitly converts a <see cref="float" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <param name="value">The value to convert.</param>
+        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
+        public static explicit operator checked UInt128(float value) => checked((UInt128)(double)(value));
 
         //
         // Implicit Conversions To UInt128
@@ -1164,6 +1306,10 @@ namespace System
             {
                 return checked((UInt128)(double)(object)value);
             }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                return checked((UInt128)(Half)(object)value);
+            }
             else if (typeof(TOther) == typeof(short))
             {
                 return checked((UInt128)(short)(object)value);
@@ -1226,13 +1372,16 @@ namespace System
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                return (UInt128)(decimal)(object)value;
+                var actualValue = (decimal)(object)value;
+                return (actualValue < 0) ? MinValue : (UInt128)actualValue;
             }
             else if (typeof(TOther) == typeof(double))
             {
-                var actualValue = (double)(object)value;
-                return (actualValue > +340282366920938463463374607431768211455.0) ? MaxValue :
-                       (actualValue < 0.0) ? MinValue : (UInt128)actualValue;
+                return (UInt128)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                return (UInt128)(Half)(object)value;
             }
             else if (typeof(TOther) == typeof(short))
             {
@@ -1261,9 +1410,7 @@ namespace System
             }
             else if (typeof(TOther) == typeof(float))
             {
-                var actualValue = (float)(object)value;
-                return (actualValue > float.MaxValue) ? MaxValue :
-                       (actualValue < -0.0f) ? MinValue : (UInt128)actualValue;
+                return (UInt128)(float)(object)value;
             }
             else if (typeof(TOther) == typeof(ushort))
             {
@@ -1303,11 +1450,16 @@ namespace System
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                return (UInt128)(decimal)(object)value;
+                var actualValue = (decimal)(object)value;
+                return (actualValue < 0) ? MinValue : (UInt128)actualValue;
             }
             else if (typeof(TOther) == typeof(double))
             {
                 return (UInt128)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                return (UInt128)(Half)(object)value;
             }
             else if (typeof(TOther) == typeof(short))
             {
@@ -1391,14 +1543,35 @@ namespace System
             }
             else if (typeof(TOther) == typeof(decimal))
             {
-                result = (UInt128)(decimal)(object)value;
+                var actualValue = (decimal)(object)value;
+
+                if (actualValue < 0.0m)
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (UInt128)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(double))
             {
                 var actualValue = (double)(object)value;
 
-                if ((actualValue < 0.0) || (actualValue > +340282366920938463463374607431768211455.0))
+                if ((actualValue < 0.0) || (actualValue >= +340282366920938463463374607431768211456.0) || double.IsNaN(actualValue))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (UInt128)actualValue;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(Half))
+            {
+                var actualValue = (Half)(object)value;
+
+                if ((actualValue < Half.Zero) || (actualValue > Half.MaxValue) || Half.IsNaN(actualValue))
                 {
                     result = default;
                     return false;
@@ -1476,7 +1649,7 @@ namespace System
             {
                 var actualValue = (float)(object)value;
 
-                if ((actualValue < 0.0f) || (actualValue > float.MaxValue))
+                if ((actualValue < 0.0f) || (actualValue > float.MaxValue) || float.IsNaN(actualValue))
                 {
                     result = default;
                     return false;
@@ -1550,7 +1723,7 @@ namespace System
                 ulong upper = value._lower << shiftAmount;
                 return new UInt128(upper, 0);
             }
-            else
+            else if (shiftAmount != 0)
             {
                 // Otherwise we need to shift both upper and lower halves by the masked
                 // amount and then or that with whatever bits were shifted "out" of lower
@@ -1559,6 +1732,10 @@ namespace System
                 ulong upper = (value._upper << shiftAmount) | (value._lower >> (64 - shiftAmount));
 
                 return new UInt128(upper, lower);
+            }
+            else
+            {
+                return value;
             }
         }
 
@@ -1582,7 +1759,7 @@ namespace System
                 ulong lower = value._upper >> shiftAmount;
                 return new UInt128(0, lower);
             }
-            else
+            else if (shiftAmount != 0)
             {
                 // Otherwise we need to shift both upper and lower halves by the masked
                 // amount and then or that with whatever bits were shifted "out" of upper
@@ -1591,6 +1768,10 @@ namespace System
                 ulong upper = value._upper >> shiftAmount;
 
                 return new UInt128(upper, lower);
+            }
+            else
+            {
+                return value;
             }
         }
 
