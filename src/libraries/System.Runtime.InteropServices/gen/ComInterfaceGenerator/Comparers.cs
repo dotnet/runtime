@@ -16,18 +16,13 @@ namespace Microsoft.Interop
         /// Comparer for an individual generated stub source as a syntax tree and the generated diagnostics for the stub.
         /// </summary>
         public static readonly IEqualityComparer<(MemberDeclarationSyntax Syntax, ImmutableArray<Diagnostic> Diagnostics)> GeneratedSyntax = new CustomValueTupleElementComparer<MemberDeclarationSyntax, ImmutableArray<Diagnostic>>(SyntaxEquivalentComparer.Instance, new ImmutableArraySequenceEqualComparer<Diagnostic>(EqualityComparer<Diagnostic>.Default));
-
-        /// <summary>
-        /// Comparer for the context used to generate a stub and the original user-provided syntax that triggered stub creation.
-        /// </summary>
-        public static readonly IEqualityComparer<(MethodDeclarationSyntax Syntax, VtableIndexStubGenerator.IncrementalStubGenerationContext StubContext)> CalculatedContextWithSyntax = new CustomValueTupleElementComparer<MethodDeclarationSyntax, VtableIndexStubGenerator.IncrementalStubGenerationContext>(SyntaxEquivalentComparer.Instance, EqualityComparer<VtableIndexStubGenerator.IncrementalStubGenerationContext>.Default);
     }
 
     /// <summary>
     /// Generic comparer to compare two <see cref="ImmutableArray{T}"/> instances element by element.
     /// </summary>
     /// <typeparam name="T">The type of immutable array element.</typeparam>
-    internal class ImmutableArraySequenceEqualComparer<T> : IEqualityComparer<ImmutableArray<T>>
+    internal sealed class ImmutableArraySequenceEqualComparer<T> : IEqualityComparer<ImmutableArray<T>>
     {
         private readonly IEqualityComparer<T> _elementComparer;
 
@@ -51,7 +46,7 @@ namespace Microsoft.Interop
         }
     }
 
-    internal class CustomValueTupleElementComparer<T, U> : IEqualityComparer<(T, U)>
+    internal sealed class CustomValueTupleElementComparer<T, U> : IEqualityComparer<(T, U)>
     {
         private readonly IEqualityComparer<T> _item1Comparer;
         private readonly IEqualityComparer<U> _item2Comparer;

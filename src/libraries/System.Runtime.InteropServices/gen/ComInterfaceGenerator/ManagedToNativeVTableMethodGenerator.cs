@@ -117,7 +117,7 @@ namespace Microsoft.Interop
         {
             var setupStatements = new List<StatementSyntax>
             {
-                // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider<<typeKeyType>>)this).GetFunctionPointerForIndex(<containingTypeName>.TypeKey)
+                // var (<thisParameter>, <virtualMethodTable>) = ((IUnmanagedVirtualMethodTableProvider<<typeKeyType>>)this).GetVirtualMethodTableInfoForKey(<containingTypeName>.TypeKey)
                 ExpressionStatement(
                     AssignmentExpression(
                         SyntaxKind.SimpleAssignmentExpression,
@@ -141,7 +141,7 @@ namespace Microsoft.Interop
                                             TypeArgumentList(
                                                 SingletonSeparatedList(typeKeyType.Syntax))),
                                         ThisExpression())),
-                                IdentifierName("GetFunctionPointerForIndex")))
+                                IdentifierName("GetVirtualMethodTableInfoForKey")))
                         .WithArgumentList(
                             ArgumentList(
                                 SingletonSeparatedList(
@@ -152,7 +152,7 @@ namespace Microsoft.Interop
                                             IdentifierName("TypeKey"))))))))
             };
 
-            GeneratedStatements statements = GeneratedStatements.GenerateStatements(
+            GeneratedStatements statements = GeneratedStatements.Create(
                 _marshallers,
                 _context,
                 CreateFunctionPointerExpression(

@@ -88,6 +88,7 @@ sealed class NativeAPI : IUnmanagedVirtualMethodTableProvider<NoCasting>, INativ
         public static string BasicParametersAndModifiers(string typeName) => $@"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 [assembly:DisableRuntimeMarshalling]
 

@@ -53,8 +53,7 @@ namespace ComInterfaceGenerator.Unit.Tests
             var newComp = TestUtils.RunGenerators(comp, out var generatorDiags, new Microsoft.Interop.VtableIndexStubGenerator());
             Assert.Empty(generatorDiags);
 
-            var newCompDiags = newComp.GetDiagnostics();
-            Assert.Empty(newCompDiags);
+            TestUtils.AssertPostSourceGeneratorCompilation(newComp);
         }
     }
 }
