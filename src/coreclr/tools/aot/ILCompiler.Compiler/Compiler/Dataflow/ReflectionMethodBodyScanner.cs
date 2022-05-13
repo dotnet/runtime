@@ -7,7 +7,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection.Metadata;
 using ILLink.Shared;
+
+using ILCompiler.Logging;
 
 using Internal.IL;
 using Internal.TypeSystem;
@@ -28,14 +31,17 @@ namespace ILCompiler.Dataflow
         private readonly Logger _logger;
         private readonly NodeFactory _factory;
         private DependencyList _dependencies = new DependencyList();
+        private const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
+        private const string RequiresDynamicCodeAttribute = nameof(RequiresDynamicCodeAttribute);
+        private const string RequiresAssemblyFilesAttribute = nameof(RequiresAssemblyFilesAttribute);
 
         public static bool RequiresReflectionMethodBodyScannerForCallSite(FlowAnnotations flowAnnotations, MethodDesc methodDefinition)
         {
             return
                 GetIntrinsicIdForMethod(methodDefinition) > IntrinsicId.RequiresReflectionBodyScanner_Sentinel ||
                 flowAnnotations.RequiresDataflowAnalysis(methodDefinition) ||
-                methodDefinition.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute") ||
-                methodDefinition.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute") ||
+                methodDefinition.DoesMethodRequire(RequiresUnreferencedCodeAttribute, out _) ||
+                methodDefinition.DoesMethodRequire(RequiresDynamicCodeAttribute, out _) ||
                 methodDefinition.IsPInvoke;
         }
 
@@ -48,30 +54,61 @@ namespace ILCompiler.Dataflow
 
         public static bool RequiresReflectionMethodBodyScannerForAccess(FlowAnnotations flowAnnotations, FieldDesc fieldDefinition)
         {
-            return flowAnnotations.RequiresDataflowAnalysis(fieldDefinition);
+            return flowAnnotations.RequiresDataflowAnalysis(fieldDefinition) ||
+                fieldDefinition.DoesFieldRequire(RequiresUnreferencedCodeAttribute, out _) ||
+                fieldDefinition.DoesFieldRequire(RequiresDynamicCodeAttribute, out _);
         }
 
-        private bool ShouldEnablePatternReporting(MethodDesc method, string attributeName)
+        void CheckAndReportRequires(TypeSystemEntity calledMember, in MessageOrigin origin, string requiresAttributeName)
         {
-            if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", attributeName))
+            // If the caller of a method is already marked with `Requires` a new warning should not
+            // be produced for the callee.
+            if (ShouldSuppressAnalysisWarningsForRequires(origin.MemberDefinition, requiresAttributeName))
+                return;
+
+            if (!calledMember.DoesMemberRequire(requiresAttributeName, out var requiresAttribute))
+                return;
+
+            DiagnosticId diagnosticId = requiresAttributeName switch
+            {
+                RequiresUnreferencedCodeAttribute => DiagnosticId.RequiresUnreferencedCode,
+                RequiresDynamicCodeAttribute => DiagnosticId.RequiresDynamicCode,
+                RequiresAssemblyFilesAttribute => DiagnosticId.RequiresAssemblyFiles,
+                _ => throw new NotImplementedException($"{requiresAttributeName} is not a valid supported Requires attribute"),
+            };
+
+            ReportRequires(calledMember.GetDisplayName(), origin, diagnosticId, requiresAttribute);
+        }
+
+        static bool ShouldSuppressAnalysisWarningsForRequires(TypeSystemEntity originMember, string requiresAttribute)
+        {
+            // Check if the current scope method has Requires on it
+            // since that attribute automatically suppresses all trim analysis warnings.
+            // Check both the immediate origin method as well as suppression context method
+            // since that will be different for compiler generated code.
+            if (originMember == null)
                 return false;
+
+            if (originMember is not MethodDesc method)
+                return false;
+
+            if (method.IsInRequiresScope(requiresAttribute))
+                return true;
 
             MethodDesc userMethod = ILCompiler.Logging.CompilerGeneratedState.GetUserDefinedMethodForCompilerGeneratedMember(method);
             if (userMethod != null &&
-                userMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", attributeName))
-                return false;
+                userMethod.IsInRequiresScope(requiresAttribute))
+                return true;
 
-            return true;
+            return false;
         }
 
-        bool ShouldEnableReflectionPatternReporting(MethodDesc method)
+        void ReportRequires(string displayName, in MessageOrigin currentOrigin, DiagnosticId diagnosticId, CustomAttributeValue<TypeDesc>? requiresAttribute)
         {
-            return ShouldEnablePatternReporting(method, "RequiresUnreferencedCodeAttribute");
-        }
+            string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage((CustomAttributeValue<TypeDesc>)requiresAttribute));
+            string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl((CustomAttributeValue<TypeDesc>)requiresAttribute));
 
-        bool ShouldEnableAotPatternReporting(MethodDesc method)
-        {
-            return ShouldEnablePatternReporting(method, "RequiresDynamicCodeAttribute");
+            _logger.LogWarning(currentOrigin, diagnosticId, displayName, arg1, arg2);
         }
 
         private enum ScanningPurpose
@@ -123,7 +160,11 @@ namespace ILCompiler.Dataflow
                 if (requiredMemberTypes != 0)
                 {
                     var targetContext = new MethodReturnOrigin(method);
-                    var reflectionContext = new ReflectionPatternContext(scanner._logger, scanner.ShouldEnableReflectionPatternReporting(method), method, targetContext);
+                    bool shouldEnableReflectionWarnings = !ShouldSuppressAnalysisWarningsForRequires(method, RequiresUnreferencedCodeAttribute);
+                    var reflectionContext = new ReflectionPatternContext(scanner._logger,
+                        shouldEnableReflectionWarnings,
+                        method,
+                        targetContext);
                     reflectionContext.AnalyzingPattern();
                     scanner.RequireDynamicallyAccessedMembers(ref reflectionContext, requiredMemberTypes, scanner.MethodReturnValue, targetContext);
                     reflectionContext.Dispose();
@@ -322,11 +363,14 @@ namespace ILCompiler.Dataflow
             if (requiredMemberTypes != 0)
             {
                 var origin = new FieldOrigin(field);
-                var reflectionContext = new ReflectionPatternContext(_logger, ShouldEnableReflectionPatternReporting(methodBody.OwningMethod), methodBody, offset, origin);
+                bool shouldEnableReflectionWarnings = !ShouldSuppressAnalysisWarningsForRequires(methodBody.OwningMethod, RequiresUnreferencedCodeAttribute);
+                var reflectionContext = new ReflectionPatternContext(_logger, shouldEnableReflectionWarnings, methodBody, offset, origin);
                 reflectionContext.AnalyzingPattern();
                 RequireDynamicallyAccessedMembers(ref reflectionContext, requiredMemberTypes, valueToStore, origin);
                 reflectionContext.Dispose();
             }
+            CheckAndReportRequires(field, new MessageOrigin(methodBody.OwningMethod), RequiresUnreferencedCodeAttribute);
+            CheckAndReportRequires(field, new MessageOrigin(methodBody.OwningMethod), RequiresDynamicCodeAttribute);
         }
 
         protected override void HandleStoreParameter(MethodIL method, int offset, int index, ValueNode valueToStore)
@@ -335,7 +379,8 @@ namespace ILCompiler.Dataflow
             if (requiredMemberTypes != 0)
             {
                 Origin parameter = DiagnosticUtilities.GetMethodParameterFromIndex(method.OwningMethod, index);
-                var reflectionContext = new ReflectionPatternContext(_logger, ShouldEnableReflectionPatternReporting(method.OwningMethod), method, offset, parameter);
+                bool shouldEnableReflectionWarnings = !ShouldSuppressAnalysisWarningsForRequires(method.OwningMethod, RequiresUnreferencedCodeAttribute);
+                var reflectionContext = new ReflectionPatternContext(_logger, shouldEnableReflectionWarnings, method, offset, parameter);
                 reflectionContext.AnalyzingPattern();
                 RequireDynamicallyAccessedMembers(ref reflectionContext, requiredMemberTypes, valueToStore, parameter);
                 reflectionContext.Dispose();
@@ -775,8 +820,7 @@ namespace ILCompiler.Dataflow
             methodReturnValue = null;
 
             var callingMethodDefinition = callingMethodBody.OwningMethod;
-            bool shouldEnableReflectionWarnings = ShouldEnableReflectionPatternReporting(callingMethodDefinition);
-            bool shouldEnableAotWarnings = ShouldEnableAotPatternReporting(callingMethodDefinition);
+            bool shouldEnableReflectionWarnings = !ShouldSuppressAnalysisWarningsForRequires(callingMethodDefinition, RequiresUnreferencedCodeAttribute);
             var reflectionContext = new ReflectionPatternContext(_logger, shouldEnableReflectionWarnings, callingMethodBody, offset, new MethodOrigin(calledMethod));
 
             DynamicallyAccessedMemberTypes returnValueDynamicallyAccessedMemberTypes = 0;
@@ -917,8 +961,7 @@ namespace ILCompiler.Dataflow
                                 }
                             }
 
-                            if (shouldEnableAotWarnings)
-                                LogDynamicCodeWarning(_logger, callingMethodBody, offset, calledMethod);
+                            CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
 
                             // We don't want to lose track of the type
                             // in case this is e.g. Activator.CreateInstance(typeof(Foo<>).MakeGenericType(...));
@@ -1194,10 +1237,8 @@ namespace ILCompiler.Dataflow
                                         _dependencies.Add(_factory.ConstructedTypeSymbol(systemTypeValue.TypeRepresented.MakeArrayType()), "Enum.GetValues");
                                     }
                                 }
-                                else if (shouldEnableAotWarnings)
-                                {
-                                    LogDynamicCodeWarning(_logger, callingMethodBody, offset, calledMethod);
-                                }
+                                else
+                                    CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset),RequiresDynamicCodeAttribute);
                             }
                         }
                         break;
@@ -1231,10 +1272,8 @@ namespace ILCompiler.Dataflow
                                         _dependencies.Add(_factory.StructMarshallingData((DefType)systemTypeValue.TypeRepresented), "Marshal API");
                                     }
                                 }
-                                else if (shouldEnableAotWarnings)
-                                {
-                                    LogDynamicCodeWarning(_logger, callingMethodBody, offset, calledMethod);
-                                }
+                                else
+                                    CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
                             }
                         }
                         break;
@@ -1258,10 +1297,8 @@ namespace ILCompiler.Dataflow
                                         _dependencies.Add(_factory.DelegateMarshallingData((DefType)systemTypeValue.TypeRepresented), "Marshal API");
                                     }
                                 }
-                                else if (shouldEnableAotWarnings)
-                                {
-                                    LogDynamicCodeWarning(_logger, callingMethodBody, offset, calledMethod);
-                                }
+                                else
+                                    CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
                             }
                         }
                         break;
@@ -2170,8 +2207,7 @@ namespace ILCompiler.Dataflow
                             // MakeGenericMethod doesn't change the identity of the MethodBase we're tracking so propagate to the return value
                             methodReturnValue = methodParams[0];
 
-                            if (shouldEnableAotWarnings)
-                                LogDynamicCodeWarning(_logger, callingMethodBody, offset, calledMethod);
+                            CheckAndReportRequires(calledMethod, new MessageOrigin(callingMethodBody, offset), RequiresDynamicCodeAttribute);
                         }
                         break;
 
@@ -2221,28 +2257,10 @@ namespace ILCompiler.Dataflow
                             reflectionContext.RecordHandledPattern();
                         }
 
-                        if (shouldEnableReflectionWarnings &&
-                            calledMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute"))
-                        {
-                            string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(calledMethod, "RequiresUnreferencedCodeAttribute"));
-                            string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(calledMethod, "RequiresUnreferencedCodeAttribute"));
-
-                            _logger.LogWarning(callingMethodBody, offset, DiagnosticId.RequiresUnreferencedCode, calledMethod.GetDisplayName(), arg1, arg2);
-                        }
-
-                        if (shouldEnableAotWarnings &&
-                            calledMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute"))
-                        {
-                            LogDynamicCodeWarning(_logger, callingMethodBody, offset, calledMethod);
-                        }
-
-                        static void LogDynamicCodeWarning(Logger logger, MethodIL callingMethodBody, int offset, MethodDesc calledMethod)
-                        {
-                            string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(calledMethod, "RequiresDynamicCodeAttribute"));
-                            string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(calledMethod, "RequiresDynamicCodeAttribute"));
-
-                            logger.LogWarning(callingMethodBody, offset, DiagnosticId.RequiresDynamicCode, calledMethod.GetDisplayName(), arg1, arg2);
-                        }
+                        var origin = new MessageOrigin(callingMethodBody, offset);
+                        CheckAndReportRequires(calledMethod, origin, RequiresUnreferencedCodeAttribute);
+                        CheckAndReportRequires(calledMethod, origin, RequiresDynamicCodeAttribute);
+                        CheckAndReportRequires(calledMethod, origin, RequiresAssemblyFilesAttribute);
 
                         // To get good reporting of errors we need to track the origin of the value for all method calls
                         // but except Newobj as those are special.
@@ -2951,7 +2969,7 @@ namespace ILCompiler.Dataflow
 
         void MarkMethod(ref ReflectionPatternContext reflectionContext, MethodDesc method)
         {
-            if (method.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute"))
+            if(method.DoesMethodRequire(RequiresUnreferencedCodeAttribute, out _))
             {
                 if (_purpose == ScanningPurpose.GetTypeDataflow)
                 {
@@ -2960,7 +2978,7 @@ namespace ILCompiler.Dataflow
                 }
             }
 
-            if (_flowAnnotations.ShouldWarnWhenAccessedForReflection(method))
+            if (_flowAnnotations.ShouldWarnWhenAccessedForReflection(method) && !ShouldSuppressAnalysisWarningsForRequires(method, RequiresUnreferencedCodeAttribute))
             {
                 WarnOnReflectionAccess(ref reflectionContext, method);
             }
@@ -2971,7 +2989,7 @@ namespace ILCompiler.Dataflow
 
         void MarkField(ref ReflectionPatternContext reflectionContext, FieldDesc field)
         {
-            if (_flowAnnotations.ShouldWarnWhenAccessedForReflection(field))
+            if (_flowAnnotations.ShouldWarnWhenAccessedForReflection(field) && !ShouldSuppressAnalysisWarningsForRequires(reflectionContext.Source, RequiresUnreferencedCodeAttribute))
             {
                 WarnOnReflectionAccess(ref reflectionContext, field);
             }
