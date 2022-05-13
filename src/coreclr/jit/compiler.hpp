@@ -101,39 +101,12 @@ inline T genFindLowestBit(T value)
 /*****************************************************************************
  *
  *  Return the highest bit that is set (that is, a mask that includes just the highest bit).
- *  TODO-ARM64-Throughput: we should convert these to use the _BitScanReverse() / _BitScanReverse64()
- *  compiler intrinsics, but our CRT header file intrin.h doesn't define these for ARM64 yet.
  */
-
-inline unsigned int genFindHighestBit(unsigned int mask)
-{
-    assert(mask != 0);
-    unsigned int bit = 1U << ((sizeof(unsigned int) * 8) - 1); // start looking at the top
-    while ((bit & mask) == 0)
-    {
-        bit >>= 1;
-    }
-    return bit;
-}
-
-inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
-{
-    assert(mask != 0);
-    unsigned __int64 bit = 1ULL << ((sizeof(unsigned __int64) * 8) - 1); // start looking at the top
-    while ((bit & mask) == 0)
-    {
-        bit >>= 1;
-    }
-    return bit;
-}
-
-#if 0
-// TODO-ARM64-Cleanup: These should probably be the implementation, when intrin.h is updated for ARM64
 inline
 unsigned int genFindHighestBit(unsigned int mask)
 {
     assert(mask != 0);
-    unsigned int index;
+    unsigned long index;
     _BitScanReverse(&index, mask);
     return 1L << index;
 }
@@ -142,11 +115,10 @@ inline
 unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 {
     assert(mask != 0);
-    unsigned int index;
+    unsigned long index;
     _BitScanReverse64(&index, mask);
     return 1LL << index;
 }
-#endif // 0
 
 /*****************************************************************************
 *
@@ -222,18 +194,7 @@ inline unsigned uhi32(unsigned __int64 value)
 
 inline unsigned genLog2(unsigned __int64 value)
 {
-    unsigned lo32 = ulo32(value);
-    unsigned hi32 = uhi32(value);
-
-    if (lo32 != 0)
-    {
-        assert(hi32 == 0);
-        return genLog2(lo32);
-    }
-    else
-    {
-        return genLog2(hi32) + 32;
-    }
+    return BitPosition(value);
 }
 
 /*****************************************************************************
