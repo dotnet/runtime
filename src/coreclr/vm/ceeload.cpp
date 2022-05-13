@@ -928,6 +928,10 @@ void Module::Destruct()
 
     m_pPEAssembly->Release();
 
+#if defined(PROFILING_SUPPORTED)
+    delete m_pJitInlinerTrackingMap;
+#endif
+
     // If this module was loaded as domain-specific, then
     // we must free its ModuleIndex so that it can be reused
     FreeModuleIndex();

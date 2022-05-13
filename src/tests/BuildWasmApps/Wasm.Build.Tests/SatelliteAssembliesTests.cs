@@ -47,7 +47,10 @@ namespace Wasm.Build.Tests
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs,
                                         projectTemplate: s_resourcesProjectTemplate,
-                                        extraProperties: nativeRelink ? $"<WasmBuildNative>true</WasmBuildNative>" : string.Empty);
+                                        extraProperties: (nativeRelink ? $"<WasmBuildNative>true</WasmBuildNative>" : string.Empty)
+                                        // make ASSERTIONS=1 so that we test with it
+                                        + $"<EmccCompileOptimizationFlag>{ (buildArgs.Config == "Debug" ? "-O0 -sASSERTIONS=1" : "-O0 -sASSERTIONS=1")}</EmccCompileOptimizationFlag>"
+                                        );
 
             BuildProject(buildArgs,
                             id: id,
@@ -62,7 +65,9 @@ namespace Wasm.Build.Tests
             string output = RunAndTestWasmApp(
                                 buildArgs, expectedExitCode: 42,
                                 args: argCulture,
-                                host: host, id: id);
+                                host: host, id: id,
+                                // check that downloading assets doesn't have timing race conditions
+                                extraXHarnessMonoArgs: "--fetch-random-delay=200");
 
             Assert.Contains(expectedOutput, output);
         }

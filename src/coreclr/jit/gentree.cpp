@@ -8136,7 +8136,7 @@ GenTree* Compiler::gtCloneExpr(
                         new (this, GT_LCL_FLD) GenTreeLclFld(GT_LCL_FLD, tree->TypeGet(), tree->AsLclFld()->GetLclNum(),
                                                              tree->AsLclFld()->GetLclOffs());
                     copy->AsLclFld()->SetFieldSeq(tree->AsLclFld()->GetFieldSeq());
-                    copy->gtFlags = tree->gtFlags;
+                    copy->AsLclFld()->SetSsaNum(tree->AsLclFld()->GetSsaNum());
                 }
                 goto DONE;
 
@@ -9726,7 +9726,7 @@ void Compiler::gtDispNodeName(GenTree* tree)
     char  buf[32];
     char* bufp = &buf[0];
 
-    if ((tree->gtOper == GT_CNS_INT) && tree->IsIconHandle())
+    if (tree->IsIconHandle())
     {
         sprintf_s(bufp, sizeof(buf), " %s(h)%c", name, 0);
     }
@@ -13902,13 +13902,6 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
         return tree;
     }
 
-    // This condition exists to preserve previous behavior.
-    // TODO-CQ: enable folding for bounds checks nodes.
-    if (tree->OperIs(GT_BOUNDS_CHECK))
-    {
-        return tree;
-    }
-
 #ifdef FEATURE_SIMD
     if (tree->OperIs(GT_SIMD))
     {
@@ -14249,6 +14242,25 @@ GenTree* Compiler::gtFoldExprConst(GenTree* tree)
     if (tree->OperIs(GT_COMMA))
     {
         return op2;
+    }
+
+    if (tree->OperIs(GT_BOUNDS_CHECK))
+    {
+        ssize_t index  = op1->AsIntCon()->IconValue();
+        ssize_t length = op2->AsIntCon()->IconValue();
+
+        if ((0 <= index) && (index < length))
+        {
+            JITDUMP("\nFolding an in-range bounds check:\n");
+            DISPTREE(tree);
+
+            tree->gtBashToNOP();
+
+            JITDUMP("Bashed to NOP:\n");
+            DISPTREE(tree);
+        }
+
+        return tree;
     }
 
     switchType = op1->TypeGet();
@@ -16674,7 +16686,7 @@ unsigned GenTreeIndir::Size() const
 
 bool GenTreeIntConCommon::ImmedValNeedsReloc(Compiler* comp)
 {
-    return comp->opts.compReloc && (gtOper == GT_CNS_INT) && IsIconHandle();
+    return comp->opts.compReloc && IsIconHandle();
 }
 
 //------------------------------------------------------------------------
@@ -16817,7 +16829,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
     {
         // If one operand has a field sequence, the other operand must not have one
         // as the order of fields in that case would not be well-defined.
-        if (AsOp()->gtOp1->IsCnsIntOrI() && AsOp()->gtOp1->IsIconHandle())
+        if (AsOp()->gtOp1->IsIconHandle())
         {
             assert(!AsOp()->gtOp2->IsCnsIntOrI() || !AsOp()->gtOp2->IsIconHandle());
             baseAddr = AsOp()->gtOp2;
@@ -16838,7 +16850,7 @@ bool GenTree::IsFieldAddr(Compiler* comp, GenTree** pBaseAddr, FieldSeqNode** pF
 
         assert(!baseAddr->TypeIs(TYP_REF) || !comp->GetZeroOffsetFieldMap()->Lookup(baseAddr));
     }
-    else if (IsCnsIntOrI() && IsIconHandle(GTF_ICON_STATIC_HDL))
+    else if (IsIconHandle(GTF_ICON_STATIC_HDL))
     {
         assert(!comp->GetZeroOffsetFieldMap()->Lookup(this) && (AsIntCon()->gtFieldSeq != nullptr));
         baseAddr = this;
