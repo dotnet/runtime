@@ -31,7 +31,7 @@ jobs:
     DUMPS_SHARE_MOUNT_ROOT: "/dumps-share"
   pool:
     name: NetCore1ESPool-Public
-    demands: ImageOverride -equals Build.Ubuntu.1804.Amd64.Open
+    demands: ImageOverride -equals 1es-ubuntu-1804-open
 
   steps:
   - checkout: self
