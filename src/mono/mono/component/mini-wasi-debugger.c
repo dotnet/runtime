@@ -13,6 +13,12 @@ __attribute__((import_module("wasi_snapshot_preview1")))
 __attribute__((import_name("sock_accept")))
 int sock_accept(int fd, int fdflags, int* result_ptr);
 
+static long long timeInMilliseconds()
+{
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return (((long long)tv.tv_sec)*1000)+(tv.tv_usec/1000);
+}
 
 static int
 wasi_transport_recv (void *buf, int len)
@@ -28,7 +34,11 @@ wasi_transport_recv (void *buf, int len)
 			total += res;
 		again++;
 		if ((res > 0 && total < len) || (res == -1 && again < retry_receive_message))
-			usleep(connection_wait);
+		{
+			// Wasmtime on Windows doesn't seem to be able to sleep for short periods like 1ms so we'll have to spinlock
+            long long start = timeInMilliseconds();
+            while (timeInMilliseconds() < start + (connection_wait/1000));
+		}
 		else
 			break;
 	} while (true);
