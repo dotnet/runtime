@@ -102,21 +102,19 @@ inline T genFindLowestBit(T value)
  *
  *  Return the highest bit that is set (that is, a mask that includes just the highest bit).
  */
-inline
-unsigned int genFindHighestBit(unsigned int mask)
+inline unsigned int genFindHighestBit(unsigned int mask)
 {
     assert(mask != 0);
     unsigned long index;
-    _BitScanReverse(&index, mask);
+    BitScanReverse(&index, mask);
     return 1L << index;
 }
 
-inline
-unsigned __int64 genFindHighestBit(unsigned __int64 mask)
+inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 {
     assert(mask != 0);
     unsigned long index;
-    _BitScanReverse64(&index, mask);
+    BitScanReverse64(&index, mask);
     return 1LL << index;
 }
 
