@@ -1613,6 +1613,7 @@ namespace System.Reflection.Tests
         [Theory, MemberData(nameof(SZArrayOrNotTypes))]
         public void IsSZArray(Type type, bool expected)
         {
+            if (PlatformDetection.IsNativeAot) throw new ArgumentException("Temp validation to ensure nativeaot run is on the PR checks");
             Assert.Equal(expected, type.GetTypeInfo().IsSZArray);
         }
 
