@@ -61,9 +61,10 @@ async function main() {
     const startWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StartAsyncWork");
     const stopWork = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:StopWork");
     const getIterationsDone = BINDING.bind_static_method("[Wasm.Browser.EventPipe.Sample] Sample.Test:GetIterationsDone");
-    const options = {
-	providers: MONO.diagnostics.defaultProviderString + ",WasmHello:0:5",
-    }
+    // TODO: figure out why Default builder config and an EventSource don't play nice
+    const providers = MONO.diagnostics.ProvidersConfigBuilder.Empty.addProvider({name: 'WasmHello', level: MONO.diagnostics.EventLevel.Verbose, args: 'EventCounterIntervalSec=1'}).build();
+    const options = { providers: providers };
+    console.log ('starting providers', options.providers);
     const eventSession = MONO.diagnostics.createEventPipeSession(options);
     eventSession.start();
     const workPromise = startWork();

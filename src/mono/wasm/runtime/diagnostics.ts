@@ -82,6 +82,87 @@ class EventPipeFileSession implements EventPipeSession {
     }
 }
 
+const eventLevel = {
+    LogAlways: 0,
+    Critical: 1,
+    Error: 2,
+    Warning: 3,
+    Informational: 4,
+    Verbose: 5,
+} as const;
+
+type EventLevel = typeof eventLevel;
+
+type UnnamedProviderConfiguration = Partial<{
+    keyword_mask: string | 0 ;
+    level: number;
+    args: string;
+}>
+
+export interface ProviderConfiguration extends UnnamedProviderConfiguration {
+    name: string;
+}
+
+const runtimeProviderName = "Microsoft-Windows-DotNETRuntime";
+const runtimePrivateProviderName = "Microsoft-Windows-DotNETRuntimePrivate";
+const sampleProfilerProviderName = "Microsoft-DotNETCore-SampleProfiler";
+
+const runtimeProviderDefault : ProviderConfiguration = {
+    name: runtimeProviderName,
+    keyword_mask: "4c14fccbd",
+    level: eventLevel.Verbose,
+};
+
+const runtimePrivateProviderDefault : ProviderConfiguration = {
+    name: runtimePrivateProviderName,
+    keyword_mask: "4002000b",
+    level: eventLevel.Verbose,
+};
+
+const sampleProfilerProviderDefault : ProviderConfiguration = {
+    name: sampleProfilerProviderName,
+    level: eventLevel.Verbose,
+};
+
+export class ProvidersConfigBuilder {
+    private _providers: ProviderConfiguration[];
+    constructor () { this._providers = []; }
+    static get Empty ():ProvidersConfigBuilder { return new ProvidersConfigBuilder(); }
+    static get Default ():ProvidersConfigBuilder {
+        return this.Empty.addRuntimeProvider().addRuntimePrivateProvider().addSampleProfilerProvider();
+    }
+    addProvider (provider: ProviderConfiguration): ProvidersConfigBuilder {
+        this._providers.push(provider);
+        return this;
+    }
+    addRuntimeProvider (overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder {
+        const options = { ...runtimeProviderDefault, ...overrideOptions };
+        this._providers.push (options);
+        return this;
+    }
+    addRuntimePrivateProvider (overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder {
+        const options = { ...runtimePrivateProviderDefault, ...overrideOptions };
+        this._providers.push (options);
+        return this;
+    }
+    addSampleProfilerProvider (overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder {
+        const options = { ...sampleProfilerProviderDefault, ...overrideOptions };
+        this._providers.push (options);
+        return this;
+    }
+    build(): string {
+        const providers = this._providers.map (p => {
+            const name = p.name;
+            const keyword_mask = "" + (p?.keyword_mask ?? "");
+            const level = p?.level ?? eventLevel.Verbose;
+            const args = p?.args ?? "";
+            const maybeArgs = args != "" ? `:${args}` : "";
+            return `${name}:${keyword_mask}:${level}${maybeArgs}`;
+        });
+        return providers.join (",");
+    }
+}
+
 // a conter for the number of sessions created
 let totalSessions = 0;
 
@@ -102,7 +183,8 @@ function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSess
 }
 
 export interface Diagnostics {
-    defaultProviderString(): string;
+    EventLevel: EventLevel;
+    ProvidersConfigBuilder: typeof ProvidersConfigBuilder;
 
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
 }
@@ -110,7 +192,8 @@ export interface Diagnostics {
 
 /// APIs for working with .NET diagnostics from JavaScript.
 export const diagnostics: Diagnostics = {
-    defaultProviderString: () => "Microsoft-Windows-DotNETRuntime:4c14fccbd:5,Microsoft-Windows-DotNETRuntimePrivate:4002000b:5,Microsoft-DotNETCore-SampleProfiler:0:5",
+    EventLevel: eventLevel,
+    ProvidersConfigBuilder: ProvidersConfigBuilder,
     /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
     /// Use the options to control the kinds of events to be collected.
     /// Multiple sessions may be created and started at the same time.

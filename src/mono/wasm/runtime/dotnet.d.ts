@@ -250,8 +250,37 @@ interface EventPipeSession {
     stop(): void;
     getTraceBlob(): Blob;
 }
+declare const eventLevel: {
+    readonly LogAlways: 0;
+    readonly Critical: 1;
+    readonly Error: 2;
+    readonly Warning: 3;
+    readonly Informational: 4;
+    readonly Verbose: 5;
+};
+declare type EventLevel = typeof eventLevel;
+declare type UnnamedProviderConfiguration = Partial<{
+    keyword_mask: string | 0;
+    level: number;
+    args: string;
+}>;
+interface ProviderConfiguration extends UnnamedProviderConfiguration {
+    name: string;
+}
+declare class ProvidersConfigBuilder {
+    private _providers;
+    constructor();
+    static get Empty(): ProvidersConfigBuilder;
+    static get Default(): ProvidersConfigBuilder;
+    addProvider(provider: ProviderConfiguration): ProvidersConfigBuilder;
+    addRuntimeProvider(overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder;
+    addRuntimePrivateProvider(overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder;
+    addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder;
+    build(): string;
+}
 interface Diagnostics {
-    defaultProviderString(): string;
+    EventLevel: EventLevel;
+    ProvidersConfigBuilder: typeof ProvidersConfigBuilder;
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
 }
 
