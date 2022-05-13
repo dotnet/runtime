@@ -28,6 +28,7 @@ set(CORDBEE_SOURCES_WKS
   canary.cpp
   shared.cpp
   frameinfo.cpp
+  dactable.cpp
   ${ARCH_SOURCES_DIR}/primitives.cpp
 )
 
@@ -44,12 +45,6 @@ set(CORDBEE_SOURCES_DAC
 set(CORDBEE_HEADERS_DAC
   ${CORDBEE_HEADERS_DAC_AND_WKS}
 )
-
-if(CLR_CMAKE_HOST_UNIX)
-  list(APPEND CORDBEE_SOURCES_WKS
-    dactable.cpp
-  )
-endif(CLR_CMAKE_HOST_UNIX)
 
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
   list(APPEND CORDBEE_SOURCES_WKS

@@ -250,6 +250,9 @@
         <ExcludeList Include = "$(XunitTestBinBase)/JIT/HardwareIntrinsics/X86/**">
             <Issue>https://github.com/dotnet/runtime/issues/60154</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/HardwareIntrinsics/General/NotSupported/**">
+            <Issue>https://github.com/dotnet/runtime/issues/69232</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- Windows all architecture excludes -->
@@ -3048,8 +3051,8 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/CheckProjects/CheckProjects/**">
             <Issue>https://github.com/dotnet/runtime/issues/52977</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/ JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
-            <Issue>https://github.com/dotnet/runtime/issues/52977</Issue>
+        <ExcludeList Include="$(XunitTestBinBase)/JIT/Performance/CodeQuality/BenchmarksGame/k-nucleotide/k-nucleotide-9/**">
+            <Issue>https://github.com/dotnet/runtime/issues/67675</Issue>
         </ExcludeList>
     </ItemGroup>
 
