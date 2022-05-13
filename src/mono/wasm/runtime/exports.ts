@@ -59,10 +59,10 @@ import { mono_wasm_release_cs_owned_object } from "./gc-handles";
 import { mono_wasm_web_socket_open_ref, mono_wasm_web_socket_send, mono_wasm_web_socket_receive, mono_wasm_web_socket_close_ref, mono_wasm_web_socket_abort } from "./web-socket";
 import cwraps from "./cwraps";
 import {
-    setI8, setI16, setI32, setI64,
+    setI8, setI16, setI32, setI52,
     setU8, setU16, setU32, setF32, setF64,
-    getI8, getI16, getI32, getI64,
-    getU8, getU16, getU32, getF32, getF64,
+    getI8, getI16, getI32, getI52,
+    getU8, getU16, getU32, getF32, getF64, afterUpdateGlobalBufferAndViews, getI64Big, setI64Big,
 } from "./memory";
 import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
@@ -96,7 +96,8 @@ const MONO = {
     setI8,
     setI16,
     setI32,
-    setI64,
+    setI52,
+    setI64Big,
     setU8,
     setU16,
     setU32,
@@ -105,7 +106,8 @@ const MONO = {
     getI8,
     getI16,
     getI32,
-    getI64,
+    getI52,
+    getI64Big,
     getU8,
     getU16,
     getU32,
@@ -176,7 +178,7 @@ let exportedAPI: DotnetPublicAPI;
 function initializeImportsAndExports(
     imports: { isESM: boolean, isGlobal: boolean, isNode: boolean, isShell: boolean, isWeb: boolean, locateFile: Function, quit_: Function, ExitStatus: ExitStatusError, requirePromise: Promise<Function> },
     exports: { mono: any, binding: any, internal: any, module: any },
-    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean },
+    replacements: { fetch: any, readAsync: any, require: any, requireOut: any, noExitRuntime: boolean, updateGlobalBufferAndViews: Function },
 ): DotnetPublicAPI {
     const module = exports.module as DotnetModule;
     const globalThisAny = globalThis as any;
@@ -233,6 +235,11 @@ function initializeImportsAndExports(
     replacements.fetch = runtimeHelpers.fetch;
     replacements.readAsync = readAsync_like;
     replacements.requireOut = module.imports.require;
+    const originalUpdateGlobalBufferAndViews = replacements.updateGlobalBufferAndViews;
+    replacements.updateGlobalBufferAndViews = (buffer: Buffer) => {
+        originalUpdateGlobalBufferAndViews(buffer);
+        afterUpdateGlobalBufferAndViews(buffer);
+    };
 
     replacements.noExitRuntime = ENVIRONMENT_IS_WEB;
 

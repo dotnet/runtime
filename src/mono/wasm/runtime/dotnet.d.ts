@@ -292,7 +292,11 @@ declare function setU32(offset: _MemOffset, value: _NumberOrPointer): void;
 declare function setI8(offset: _MemOffset, value: number): void;
 declare function setI16(offset: _MemOffset, value: number): void;
 declare function setI32(offset: _MemOffset, value: _NumberOrPointer): void;
-declare function setI64(offset: _MemOffset, value: number): void;
+/**
+ * Throws for values which are not integer. See Number.isInteger()
+ */
+declare function setI52(offset: _MemOffset, value: number): void;
+declare function setI64Big(offset: _MemOffset, value: bigint): void;
 declare function setF32(offset: _MemOffset, value: number): void;
 declare function setF64(offset: _MemOffset, value: number): void;
 declare function getU8(offset: _MemOffset): number;
@@ -301,7 +305,11 @@ declare function getU32(offset: _MemOffset): number;
 declare function getI8(offset: _MemOffset): number;
 declare function getI16(offset: _MemOffset): number;
 declare function getI32(offset: _MemOffset): number;
-declare function getI64(offset: _MemOffset): number;
+/**
+ * Throws for  Number.MIN_SAFE_INTEGER < value < Number.MAX_SAFE_INTEGER
+ */
+declare function getI52(offset: _MemOffset): number;
+declare function getI64Big(offset: _MemOffset): bigint;
 declare function getF32(offset: _MemOffset): number;
 declare function getF64(offset: _MemOffset): number;
 
@@ -329,7 +337,8 @@ declare const MONO: {
     setI8: typeof setI8;
     setI16: typeof setI16;
     setI32: typeof setI32;
-    setI64: typeof setI64;
+    setI52: typeof setI52;
+    setI64Big: typeof setI64Big;
     setU8: typeof setU8;
     setU16: typeof setU16;
     setU32: typeof setU32;
@@ -338,7 +347,8 @@ declare const MONO: {
     getI8: typeof getI8;
     getI16: typeof getI16;
     getI32: typeof getI32;
-    getI64: typeof getI64;
+    getI52: typeof getI52;
+    getI64Big: typeof getI64Big;
     getU8: typeof getU8;
     getU16: typeof getU16;
     getU32: typeof getU32;
