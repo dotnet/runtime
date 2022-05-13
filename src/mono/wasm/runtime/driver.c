@@ -520,7 +520,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 	mono_wasm_install_get_native_to_interp_tramp (get_native_to_interp);
 	
 #ifdef GEN_PINVOKE
-	mono_wasm_initialize_interp_to_native_invokes ();
+	mono_wasm_install_interp_to_native_callback (mono_wasm_interp_to_native_callback);
 #endif
 
 #ifdef ENABLE_AOT

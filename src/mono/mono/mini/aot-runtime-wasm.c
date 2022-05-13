@@ -83,16 +83,12 @@ get_long_arg (InterpMethodArguments *margs, int idx)
 	return p.l;
 }
 
-static void** interp_to_native_invokes;
-static const char** interp_to_native_signatures;
-static unsigned int interp_to_native_signatures_count;
+static MonoWasmNativeToInterpCallback mono_wasm_interp_to_native_callback;
 
 MONO_API void
-mono_wasm_install_interp_to_native_invokes (void **invokes, const char **sigs, unsigned int count)
+mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb)
 {
-	interp_to_native_invokes = invokes;
-	interp_to_native_signatures = sigs;
-	interp_to_native_signatures_count = count;
+	mono_wasm_interp_to_native_callback = cb;
 }
 
 MONO_API gpointer*
@@ -130,11 +126,10 @@ mono_wasm_get_interp_to_native_trampoline (MonoMethodSignature *sig)
 	}
 	cookie [c_count] = 0;
 
-	void *p = bsearch (cookie, interp_to_native_signatures, interp_to_native_signatures_count, sizeof (gpointer), compare_icall_tramp);
+	void *p = mono_wasm_interp_to_native_callback (cookie);
 	if (!p)
 		g_error ("CANNOT HANDLE INTERP ICALL SIG %s\n", cookie);
-	int idx = (const char**)p - (const char**)interp_to_native_signatures;
-	return interp_to_native_invokes [idx];
+	return p;
 }
 
 static MonoWasmGetNativeToInterpTramp get_native_to_interp_tramp_cb;
@@ -163,7 +158,7 @@ mono_wasm_install_get_native_to_interp_tramp (MonoWasmGetNativeToInterpTramp cb)
 }
 
 void
-mono_wasm_install_interp_to_native_invokes (void **invokes, const char **sigs, unsigned int count) {
+mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb) {
 {
 	g_assert_not_reached ();
 }

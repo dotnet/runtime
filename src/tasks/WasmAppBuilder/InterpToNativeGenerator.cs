@@ -42,21 +42,21 @@ public class InterpToNativeGenerator : Task
         "VIIIIIIIIIIIII",
         "VIIIIIIIIIIIIII",
         "VIIIIIIIIIIIIIII",
-        // "I",
-        // "II",
+        "I",
+        "II",
         "III",
-        // "IIII",
-        // "IIIII",
+        "IIII",
+        "IIIII",
         // "IIIIIDII",
-        // "IIIIII",
-        // "IIIIIII",
-        // "IIIIIIII",
-        // "IIIIIIIII",
-        // "IIIIIIIIII",
-        // "IIIIIIIIIII",
-        // "IIIIIIIIIIII",
-        // "IIIIIIIIIIIII",
-        // "IIIIIIIIIIIIII",
+        "IIIIII",
+        "IIIIIII",
+        "IIIIIIII",
+        "IIIIIIIII",
+        "IIIIIIIIII",
+        "IIIIIIIIIII",
+        "IIIIIIIIIIII",
+        "IIIIIIIIIIIII",
+        "IIIIIIIIIIIIII",
         // "IILIIII",
         // "IIIL",
         // "IF",
@@ -253,6 +253,7 @@ public class InterpToNativeGenerator : Task
         w.WriteLine("*/");
         w.WriteLine("");
         w.WriteLine(@"#include ""pinvoke.h""");
+        w.WriteLine(@"#include <stdlib.h>");
         w.WriteLine("");
         // w.WriteLine("void mono_wasm_install_interp_to_native_invokes (void **invokes, const char **sigs, unsigned int count);");
 
@@ -316,24 +317,31 @@ public class InterpToNativeGenerator : Task
         Array.Sort(signatures);
 
 
-        w.WriteLine("static void ");
-        w.WriteLine("mono_wasm_initialize_interp_to_native_invokes ()");
-        w.WriteLine("{");
-        w.WriteLine("\tvoid* invokes[] = {");
+        w.WriteLine("static void* interp_to_native_invokes[] = {");
         foreach (var sig in signatures)
         {
             var lsig = sig.ToLower(CultureInfo.InvariantCulture);
-            w.WriteLine($"\t\twasm_invoke_{lsig},");
+            w.WriteLine($"\twasm_invoke_{lsig},");
         }
-        w.WriteLine("\t};");
+        w.WriteLine("};");
 
-        w.WriteLine("\tchar* sigs[] = {");
+        w.WriteLine("static const char* interp_to_native_signatures[] = {");
         foreach (var sig in signatures)
-            w.WriteLine($"\t\t\"{sig}\",");
-        w.WriteLine("\t};");
+            w.WriteLine($"\"{sig}\",");
+        w.WriteLine("};");
 
-        w.WriteLine($"\tunsigned int count = {signatures.Length};");
-        w.WriteLine("\tmono_wasm_install_interp_to_native_invokes ((void**) invokes, (const char**) sigs, count);");
+        w.WriteLine($"unsigned int interp_to_native_signatures_count = {signatures.Length};");
+
+        w.WriteLine("static int compare_icall_tramp (const void *key, const void *elem) { return strcmp (key, *(void**)elem); }");
+        w.WriteLine("");
+        w.WriteLine("static void* ");
+        w.WriteLine("mono_wasm_interp_to_native_callback (char* cookie)");
+        w.WriteLine("{");
+        w.WriteLine("\tvoid* p = bsearch (cookie, interp_to_native_signatures, interp_to_native_signatures_count, sizeof (void*), compare_icall_tramp);");
+        w.WriteLine("\tif (!p)");
+        w.WriteLine("\t\treturn NULL;");
+        w.WriteLine("\tint idx = (const char**)p - (const char**)interp_to_native_signatures;");
+        w.WriteLine("\treturn interp_to_native_invokes [idx];");
         w.WriteLine("};");
     }
 
