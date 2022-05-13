@@ -191,9 +191,16 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return null;
 
             JObject retObject = await ResolveAsLocalOrThisMember(parts[0]);
-            bool isRootNullSafe = parts[0].Last() == '?';
+            bool isRootNullSafe = parts[0].LastOrDefault() == '?';
             if (retObject != null && parts.Length > 1)
+            {
+                // cannot resolve instance member on a primitive type,
+                // try compiling to check if it's not a method on primitive
+                var typeName = retObject["className"]?.Value<string>();
+                if (MonoSDBHelper.IsPrimitiveType(typeName))
+                    return null;
                 retObject = await ResolveAsInstanceMember(string.Join('.', parts[1..]), retObject, isRootNullSafe);
+            }
 
             if (retObject == null)
             {
