@@ -77,7 +77,7 @@ namespace System.Security.Cryptography.Xml.Tests
                 Assert.True(elements.All(element => !string.IsNullOrEmpty(element.InnerText)));
 
                 //Existing elements MUST be convertible from BASE64
-                elements.Select(element => Convert.FromBase64String(element.InnerText));
+                Assert.True(elements.All(element => Convert.FromBase64String(element.InnerText).Length > 0));
             }
         }
 
