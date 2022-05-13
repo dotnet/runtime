@@ -252,7 +252,7 @@ int DwGetAppDescription(                // Number of characters written.
     WCHAR buf[64];
     wcscpy_s(buf, ARRAY_SIZE(buf), W("\\StringFileInfo\\"));
 
-    WCHAR buf2[ARRAY_SIZE("ffff") + ARRAY_SIZE("ffff") - 1];
+    WCHAR buf2[Max16BitHexString + Max16BitHexString + 1];
     WCHAR* nxt = FormatInteger(buf2, ARRAY_SIZE(buf2), "%04x", translation->language);
     FormatInteger(nxt, ARRAY_SIZE(buf2) - 4, "%04x", translation->codePage);
 
@@ -389,7 +389,7 @@ int DwGetAssemblyVersion(               // Number of characters written.
     WCHAR buf[64];
     wcscpy_s(buf, ARRAY_SIZE(buf), W("\\StringFileInfo\\"));
 
-    WCHAR buf2[ARRAY_SIZE("ffff") + ARRAY_SIZE("ffff") - 1];
+    WCHAR buf2[Max16BitHexString + Max16BitHexString + 1];
     WCHAR* nxt = FormatInteger(buf2, ARRAY_SIZE(buf2), "%04x", translation->language);
     FormatInteger(nxt, ARRAY_SIZE(buf2) - 4, "%04x", translation->codePage);
 

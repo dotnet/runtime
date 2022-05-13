@@ -1737,8 +1737,10 @@ CLR_ENGINE_METRICS g_CLREngineMetrics = {
 
 HANDLE OpenStartupNotificationEvent()
 {
+    // "Telesto" is the legacy name for the start up event. Changing this name
+    // would impact multiple repos and not worth the effort at present.
     WCHAR prefix[] = W("TelestoStartupEvent_");
-    WCHAR eventName[ARRAY_SIZE(prefix) + ARRAY_SIZE("ffffffff")] = { W('\0') };
+    WCHAR eventName[ARRAY_SIZE(prefix) + Max32BitHexString] = { W('\0') };
     wcscat_s(eventName, ARRAY_SIZE(eventName), prefix);
 
     DWORD debuggeePID = GetCurrentProcessId();
@@ -6865,8 +6867,6 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
 
     StackSString strDbgCommand;
     const WCHAR * wszDbgCommand = NULL;
-    SString strCurrentDir;
-    const WCHAR * wszCurrentDir = NULL;
 
     EX_TRY
     {
@@ -6879,13 +6879,6 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
             _ASSERTE(wszDbgCommand != NULL); // would have thrown on oom.
 
             LOG((LF_CORDB, LL_INFO10000, "D::EDA: launching with command [%S]\n", wszDbgCommand));
-
-            // Get size needed
-            DWORD len = WszGetCurrentDirectory(strCurrentDir);
-            if (len == 0)
-                ThrowLastError();
-
-            wszCurrentDir = strCurrentDir.GetUnicode();
         }
     }
     EX_CATCH
@@ -6907,7 +6900,8 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
                                NULL, NULL,
                                TRUE,
                                CREATE_NEW_CONSOLE,
-                               NULL, wszCurrentDir,
+                               NULL,
+                               NULL,
                                &startupInfo,
                                pProcessInfo);
         errCreate = GetLastError();

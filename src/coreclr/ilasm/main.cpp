@@ -751,7 +751,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                                         wcscpy_s(wzNewOutputFilename,MAX_FILENAME_LENGTH+16,wzOutputFilename);
                                         size_t len = wcslen(wzNewOutputFilename);
                                         wzNewOutputFilename[len] = W('.');
-                                        FormatInteger(&wzNewOutputFilename[len + 1], ARRAY_SIZE("-2147483648"), "%d", iFile+1);
+                                        FormatInteger(&wzNewOutputFilename[len + 1], MaxSigned32BitDecString + 1, "%d", iFile+1);
                                         MakeProperSourceFileName(pwzDeltaFiles[iFile], uCodePage, wzInputFilename, szInputFilename);
                                         if(pAsm->m_fReportProgress)
                                         {

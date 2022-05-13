@@ -17,15 +17,8 @@
 
 #define BASE_OLEAUT_DISPID 0x60020000
 
-// Constants.
-static LPCSTR                   szInitName =                COR_CTOR_METHOD_NAME; // not unicode
-static LPCWSTR                  szInitNameUse =             W("Init");
-static LPCWSTR                  szDefaultToString =         W("ToString");
-static LPCWSTR                  szDuplicateDecoration =     W("_%d");
-static const int                cchDuplicateDecoration =    ARRAY_SIZE("_16777215") - 1; // max is 2^24-1
-static const int                cbDuplicateDecoration =     sizeof("_16777215") - 1; // max is 2^24-1
-static LPCWSTR                  szDefaultValue =            W("Value");
-static LPCWSTR                  szGetEnumerator =           W("GetEnumerator");
+static LPCWSTR szDefaultValue           = W("Value");
+static LPCWSTR szGetEnumerator          = W("GetEnumerator");
 
 // ============================================================================
 // This structure and class definition are used to implement the hash table
@@ -913,8 +906,7 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
                 for (iSuffix=2; ; ++iSuffix)
                 {
                     // Form a new name.
-                    wcsncpy_s(pSuffix, cchDuplicateDecoration, W("_"), 1);
-                    FormatInteger(pSuffix + 1, cchDuplicateDecoration - 1, "%d", iSuffix);
+                    _snwprintf_s(pSuffix, cchDuplicateDecoration, _TRUNCATE, szDuplicateDecoration, iSuffix);
 
                     // Compare against ALL names.
                     for (iTry=0; iTry<nSlots; ++iTry)
@@ -1009,8 +1001,7 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
             // We know this is a duplicate, so immediately decorate name.
             do
             {
-                wcsncpy_s(pSuffix, cchDuplicateDecoration, W("_"), 1);
-                FormatInteger(pSuffix + 1, cchDuplicateDecoration - 1, "%d", iSuffix);
+                _snwprintf_s(pSuffix, cchDuplicateDecoration, _TRUNCATE, szDuplicateDecoration, iSuffix);
                 iSuffix++;
                 // keep going while we find this name in the hashtable
             } while (htNames.Find(rcName) != NULL);

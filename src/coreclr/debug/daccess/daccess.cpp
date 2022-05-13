@@ -5745,10 +5745,9 @@ static int FormatCLRStubName(
     const WCHAR formatName_OpenBracket[] = W("[");
     const WCHAR formatName_CloseBracket[] = W("]");
     const WCHAR formatName_PrefixEnd[] = W("@");
-    const size_t formatName_AddrMaxLen = ARRAY_SIZE("ffffffffffffffff") - 1; // 64-bit
 
     // Compute the address as a string safely.
-    WCHAR addrString[formatName_AddrMaxLen + 1];
+    WCHAR addrString[Max64BitHexString + 1];
     FormatInteger(addrString, ARRAY_SIZE(addrString), "%p", stubAddr);
     size_t addStringLen = wcslen(addrString);
 

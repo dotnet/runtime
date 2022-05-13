@@ -348,7 +348,7 @@ HRESULT TypeNameBuilder::AddArray(DWORD rank)
     {
         // Only taken in an error path, runtime will not load arrays of more than 32 dimensions
         const UTF8 fmt[] = "[%d]";
-        UTF8 strTmp[ARRAY_SIZE(fmt) + ARRAY_SIZE("4294967295")];
+        UTF8 strTmp[ARRAY_SIZE(fmt) + MaxUnsigned32BitDecString];
         _snprintf_s(strTmp, ARRAY_SIZE(strTmp), _TRUNCATE, fmt, rank);
         Append(strTmp);
     }

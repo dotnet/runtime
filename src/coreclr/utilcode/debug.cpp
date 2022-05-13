@@ -345,11 +345,9 @@ bool _DbgBreakCheck(
 
     CONTRACT_VIOLATION(FaultNotFatal | GCViolation | TakesLockViolation);
 
-    SString debugOutput;
-    SString dialogOutput;
+    char formatBuffer[4096];
+
     SString modulePath;
-    SString dialogTitle;
-    SString dialogIgnoreMessage;
     BOOL formattedMessages = FALSE;
 
     // If we are low on memory we cannot even format a message. If this happens we want to
@@ -359,24 +357,14 @@ bool _DbgBreakCheck(
         EX_TRY
         {
             GetExecutableFileNameUtf8(modulePath);
-            debugOutput.Printf(
+
+            sprintf_s(formatBuffer, sizeof(formatBuffer),
                 "\nAssert failure(PID %d [0x%08x], Thread: %d [0x%04x]): %s\n"
                 "    File: %s Line: %d\n"
                 "    Image: %s\n\n",
                 GetCurrentProcessId(), GetCurrentProcessId(),
                 GetCurrentThreadId(), GetCurrentThreadId(),
                 szExpr, szFile, iLine, modulePath.GetUTF8NoConvert());
-
-            // Change format for message box.  The extra spaces in the title
-            // are there to get around format truncation.
-            dialogOutput.Printf(
-                "%s\n\n%s, Line: %d\n\nAbort - Kill program\nRetry - Debug\nIgnore - Keep running\n"
-                "\n\nImage:\n%s\n", szExpr, szFile, iLine, modulePath.GetUTF8NoConvert());
-            dialogTitle.Printf("Assert Failure (PID %d, Thread %d/0x%04x)",
-                GetCurrentProcessId(), GetCurrentThreadId(), GetCurrentThreadId());
-
-            dialogIgnoreMessage.Printf("Ignore the assert for the rest of this run?\nYes - Assert will never fire again.\nNo - Assert will continue to fire.\n\n%s\nLine: %d\n",
-                szFile, iLine);
 
             formattedMessages = TRUE;
         }
@@ -389,8 +377,8 @@ bool _DbgBreakCheck(
     // Emit assert in debug output and console for easy access.
     if (formattedMessages)
     {
-        OutputDebugStringUtf8(debugOutput.GetUTF8NoConvert());
-        fprintf(stderr, debugOutput.GetUTF8NoConvert());
+        OutputDebugStringUtf8(formatBuffer);
+        fprintf(stderr, formatBuffer);
     }
     else
     {
