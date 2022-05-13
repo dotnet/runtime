@@ -8,7 +8,6 @@ using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Sources;
 
 namespace System.IO
 {
@@ -333,6 +332,16 @@ namespace System.IO
             }
         }
 
+        /// <summary>
+        /// Asynchronously reads bytes from the current stream, advances the position within the stream until the <paramref name="buffer"/> is filled,
+        /// and monitors cancellation requests.
+        /// </summary>
+        /// <param name="buffer">The buffer to write the data into.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation.</returns>
+        /// <exception cref="EndOfStreamException">
+        /// Thrown when the end of the stream is reached before filling the <paramref name="buffer"/>.
+        /// </exception>
         public ValueTask ReadExactlyAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             ValueTask<int> vt = ReadAtLeastAsyncCore(buffer, buffer.Length, throwOnEndOfStream: true, cancellationToken);
@@ -341,6 +350,24 @@ namespace System.IO
             return ValueTask.DangerousCreateFromTypedValueTask(vt);
         }
 
+        /// <summary>
+        /// Asynchronously reads <paramref name="count"/> number of bytes from the current stream, advances the position within the stream,
+        /// and monitors cancellation requests.
+        /// </summary>
+        /// <param name="buffer">The buffer to write the data into.</param>
+        /// <param name="offset">The byte offset in <paramref name="buffer"/> at which to begin writing data from the stream.</param>
+        /// <param name="count">The number of bytes to be read from the current stream.</param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>A task that represents the asynchronous read operation.</returns>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="offset"/> was outside the bounds of <paramref name="buffer"/>, or
+        /// <paramref name="count"/> was negative, or the range specified by the combination of
+        /// <paramref name="offset"/> and <paramref name="count"/> exceed the length of <paramref name="buffer"/>.
+        /// </exception>
+        /// <exception cref="EndOfStreamException">
+        /// Thrown when the end of the stream is reached before reading <paramref name="count"/> number of bytes.
+        /// </exception>
         public ValueTask ReadExactlyAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -351,6 +378,32 @@ namespace System.IO
             return ValueTask.DangerousCreateFromTypedValueTask(vt);
         }
 
+        /// <summary>
+        /// Asynchronously reads at least a minimum number of bytes from the current stream, advances the position within the stream by the
+        /// number of bytes read, and monitors cancellation requests.
+        /// </summary>
+        /// <param name="buffer">The region of memory to write the data into.</param>
+        /// <param name="minimumBytes">The minimum number of bytes to read into the buffer.</param>
+        /// <param name="throwOnEndOfStream">
+        /// <see langword="true"/> to throw an exception if the end of the stream is reached before reading <paramref name="minimumBytes"/> of bytes;
+        /// <see langword="false"/> to return less than <paramref name="minimumBytes"/> when the end of the stream is reached.
+        /// The default is <see langword="true"/>.
+        /// </param>
+        /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
+        /// <returns>
+        /// A task that represents the asynchronous read operation. The value of its Result property contains the total number of bytes read into
+        /// the buffer. This is guaranteed to be greater than or equal to <paramref name="minimumBytes"/> when <paramref name="throwOnEndOfStream"/>
+        /// is <see langword="true"/>. This will be less than <paramref name="minimumBytes"/> when the end of the stream is reached and
+        /// <paramref name="throwOnEndOfStream"/> is <see langword="false"/>. This can be less than the number of bytes allocated in the buffer if
+        /// that many bytes are not currently available.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="minimumBytes"/> is negative, or greater than the length of <paramref name="buffer"/>.
+        /// </exception>
+        /// <exception cref="EndOfStreamException">
+        /// Thrown when <paramref name="throwOnEndOfStream"/> is <see langword="true"/> and the end of the stream is reached before reading
+        /// <paramref name="minimumBytes"/> of data.
+        /// </exception>
         public ValueTask<int> ReadAtLeastAsync(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true, CancellationToken cancellationToken = default)
         {
             ValidateReadAtLeastArguments(buffer.Length, minimumBytes);
@@ -362,6 +415,8 @@ namespace System.IO
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadAtLeastAsyncCore(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken)
         {
+            Debug.Assert(minimumBytes <= buffer.Length);
+
             int totalRead = 0;
             do
             {
@@ -753,9 +808,31 @@ namespace System.IO
             return r == 0 ? -1 : oneByteArray[0];
         }
 
+        /// <summary>
+        /// Reads bytes from the current stream and advances the position within the stream until the <paramref name="buffer"/> is filled.
+        /// </summary>
+        /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current stream.</param>
+        /// <exception cref="EndOfStreamException">
+        /// Thrown when the end of the stream is reached before filling the <paramref name="buffer"/>.
+        /// </exception>
         public void ReadExactly(Span<byte> buffer) =>
             _ = ReadAtLeastCore(buffer, buffer.Length, throwOnEndOfStream: true);
 
+        /// <summary>
+        /// Reads <paramref name="count"/> number of bytes from the current stream and advances the position within the stream.
+        /// </summary>
+        /// <param name="buffer">An array of bytes. When this method returns, the buffer contains the specified byte array with the values between offset and (offset + count - 1) replaced by the bytes read from the current stream.</param>
+        /// <param name="offset">The byte offset in <paramref name="buffer"/> at which to begin storing the data read from the current stream.</param>
+        /// <param name="count">The number of bytes to be read from the current stream.</param>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="offset"/> was outside the bounds of <paramref name="buffer"/>, or
+        /// <paramref name="count"/> was negative, or the range specified by the combination of
+        /// <paramref name="offset"/> and <paramref name="count"/> exceed the length of <paramref name="buffer"/>.
+        /// </exception>
+        /// <exception cref="EndOfStreamException">
+        /// Thrown when the end of the stream is reached before reading <paramref name="count"/> number of bytes.
+        /// </exception>
         public void ReadExactly(byte[] buffer, int offset, int count)
         {
             ValidateBufferArguments(buffer, offset, count);
@@ -763,6 +840,29 @@ namespace System.IO
             _ = ReadAtLeastCore(buffer.AsSpan(offset, count), count, throwOnEndOfStream: true);
         }
 
+        /// <summary>
+        /// Reads at least a minimum number of bytes from the current stream and advances the position within the stream by the number of bytes read.
+        /// </summary>
+        /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current stream.</param>
+        /// <param name="minimumBytes">The minimum number of bytes to read into the buffer.</param>
+        /// <param name="throwOnEndOfStream">
+        /// <see langword="true"/> to throw an exception if the end of the stream is reached before reading <paramref name="minimumBytes"/> of bytes;
+        /// <see langword="false"/> to return less than <paramref name="minimumBytes"/> when the end of the stream is reached.
+        /// The default is <see langword="true"/>.
+        /// </param>
+        /// <returns>
+        /// The total number of bytes read into the buffer. This is guaranteed to be greater than or equal to <paramref name="minimumBytes"/>
+        /// when <paramref name="throwOnEndOfStream"/> is <see langword="true"/>. This will be less than <paramref name="minimumBytes"/> when the
+        /// end of the stream is reached and <paramref name="throwOnEndOfStream"/> is <see langword="false"/>. This can be less than the number
+        /// of bytes allocated in the buffer if that many bytes are not currently available.
+        /// </returns>
+        /// <exception cref="ArgumentOutOfRangeException">
+        /// <paramref name="minimumBytes"/> is negative, or greater than the length of <paramref name="buffer"/>.
+        /// </exception>
+        /// <exception cref="EndOfStreamException">
+        /// Thrown when <paramref name="throwOnEndOfStream"/> is <see langword="true"/> and the end of the stream is reached before reading
+        /// <paramref name="minimumBytes"/> of data.
+        /// </exception>
         public int ReadAtLeast(Span<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true)
         {
             ValidateReadAtLeastArguments(buffer.Length, minimumBytes);
@@ -773,6 +873,8 @@ namespace System.IO
         // No argument checking is done here. It is up to the caller.
         private int ReadAtLeastCore(Span<byte> buffer, int minimumBytes, bool throwOnEndOfStream)
         {
+            Debug.Assert(minimumBytes <= buffer.Length);
+
             int totalRead = 0;
             do
             {
