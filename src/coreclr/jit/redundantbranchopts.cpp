@@ -107,11 +107,13 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     // Walk up the dom tree and see if any dominating block has branched on
     // exactly this tree's VN...
     //
-    BasicBlock*    prevBlock  = block;
-    BasicBlock*    domBlock   = block->bbIDom;
-    int            relopValue = -1;
-    unsigned       matchCount = 0;
-    const unsigned matchLimit = 4;
+    BasicBlock*    prevBlock   = block;
+    BasicBlock*    domBlock    = block->bbIDom;
+    int            relopValue  = -1;
+    ValueNum       treeExcVN   = ValueNumStore::NoVN;
+    ValueNum       domCmpExcVN = ValueNumStore::NoVN;
+    unsigned       matchCount  = 0;
+    const unsigned matchLimit  = 4;
 
     if (domBlock == nullptr)
     {
@@ -121,14 +123,13 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     // Unpack the tree's VN
     //
     ValueNum treeNormVN;
-    ValueNum treeExcVN;
     vnStore->VNUnpackExc(tree->GetVN(VNK_Liberal), &treeNormVN, &treeExcVN);
 
-    // If the treeVN is a constant, defer to const prop
+    // If the treeVN is a constant, we can optimize directly.
     //
-    if (vnStore->IsVNCOnstant(treeNormVN))
+    if (vnStore->IsVNConstant(treeNormVN))
     {
-        return false;
+        relopValue = vnStore->VNZeroForType(TYP_INT) ? 0 : 1;
     }
 
     const ValueNumStore::VN_RELATION_KIND vnRelations[] = {ValueNumStore::VN_RELATION_KIND::VRK_Same,
@@ -136,7 +137,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                                                            ValueNumStore::VN_RELATION_KIND::VRK_Swap,
                                                            ValueNumStore::VN_RELATION_KIND::VRK_SwapReverse};
 
-    while (domBlock != nullptr)
+    while ((relopValue == -1) && (domBlock != nullptr))
     {
         // Check the current dominator
         //
@@ -155,8 +156,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                 // Look for an exact match and also try the various swapped/reversed forms.
                 //
                 ValueNum domCmpNormVN;
-                ValueNum domCmpExcVN;
-                vnStore->VNUnpackExc(domCmpTree->GetVN(VNK_Liberal), &domCmpNormVN, &domCmpExcVN;
+                vnStore->VNUnpackExc(domCmpTree->GetVN(VNK_Liberal), &domCmpNormVN, &domCmpExcVN);
                 ValueNumStore::VN_RELATION_KIND vnRelationMatch = ValueNumStore::VN_RELATION_KIND::VRK_Same;
                 bool                            matched         = false;
 
