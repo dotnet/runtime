@@ -75,10 +75,9 @@ namespace Microsoft.WebAssembly.Diagnostics
             return null;
         }
 
-        public async Task<(JObject containerObject, string remaining)> ResolveStaticMembersInStaticTypes(string varName, CancellationToken token)
+        public async Task<(JObject containerObject, string remaining)> ResolveStaticMembersInStaticTypes(string[] parts, CancellationToken token)
         {
             string classNameToFind = "";
-            string[] parts = varName.Split(".", StringSplitOptions.TrimEntries);
             var store = await proxy.LoadStore(sessionId, token);
             var methodInfo = context.CallStack.FirstOrDefault(s => s.Id == scopeId)?.Method?.Info;
 
@@ -173,6 +172,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         // Checks Locals, followed by `this`
         public async Task<JObject> Resolve(string varName, CancellationToken token)
         {
+            // question mark at the end of expression is invalid
+            if (varName.LastOrDefault() == '?')
+                throw new ReturnAsErrorException($"Expected expression.", "ReferenceError");
+
             //has method calls
             if (varName.Contains('('))
                 return null;
@@ -183,17 +186,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (scopeCache.ObjectFields.TryGetValue(varName, out JObject valueRet))
                 return await GetValueFromObject(valueRet, token);
 
-            string[] parts = varName.Split(".");
+            string[] parts = varName.Split(".", StringSplitOptions.TrimEntries);
             if (parts.Length == 0)
                 return null;
 
             JObject retObject = await ResolveAsLocalOrThisMember(parts[0]);
+            bool isRootNullSafe = parts[0].Last() == '?';
             if (retObject != null && parts.Length > 1)
-                retObject = await ResolveAsInstanceMember(string.Join('.', parts[1..]), retObject);
+                retObject = await ResolveAsInstanceMember(string.Join('.', parts[1..]), retObject, isRootNullSafe);
 
             if (retObject == null)
             {
-                (retObject, string remaining) = await ResolveStaticMembersInStaticTypes(varName, token);
+                (retObject, string remaining) = await ResolveStaticMembersInStaticTypes(parts, token);
                 if (!string.IsNullOrEmpty(remaining))
                 {
                     if (retObject.IsNullValuedObject())
@@ -203,7 +207,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else
                     {
-                        retObject = await ResolveAsInstanceMember(remaining, retObject);
+                        retObject = await ResolveAsInstanceMember(remaining, retObject, isRootNullSafe);
                     }
                 }
             }
@@ -213,7 +217,6 @@ namespace Microsoft.WebAssembly.Diagnostics
 
             async Task<JObject> ResolveAsLocalOrThisMember(string name)
             {
-                var nameTrimmed = name.Trim();
                 if (scopeCache.Locals.Count == 0 && !localsFetched)
                 {
                     Result scope_res = await proxy.GetScopeProperties(sessionId, scopeId, token);
@@ -221,6 +224,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                         throw new ExpressionEvaluationFailedException($"BUG: Unable to get properties for scope: {scopeId}. {scope_res}");
                     localsFetched = true;
                 }
+
+                var nameTrimmed = name.Trim();
+                // remove null-safety, otherwise TryGet by name fails
+                if (nameTrimmed.LastOrDefault() == '?')
+                    nameTrimmed = nameTrimmed.Remove(nameTrimmed.Length - 1);
 
                 if (scopeCache.Locals.TryGetValue(nameTrimmed, out JObject obj))
                     return obj["value"]?.Value<JObject>();
@@ -245,8 +253,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return null;
             }
 
-            async Task<JObject> ResolveAsInstanceMember(string expr, JObject baseObject)
+            async Task<JObject> ResolveAsInstanceMember(string expr, JObject baseObject, bool isRootNullSafe)
             {
+                // if the prevPart has "?" at the end: true
+                bool isResolvedObjNullSafe = isRootNullSafe;
+                bool isPrevPartNull = false;
                 JObject resolvedObject = baseObject;
                 string[] parts = expr.Split('.');
                 for (int i = 0; i < parts.Length; i++)
@@ -255,8 +266,31 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (partTrimmed.Length == 0)
                         return null;
 
+                    // current value of resolvedObject is on parts[i - 1]
+                    if (isPrevPartNull || resolvedObject.IsNullValuedObject())
+                    {
+                        // trying null.$member
+                        if (!isResolvedObjNullSafe)
+                            throw new ReturnAsErrorException($"Cannot access member \"{partTrimmed}\" of a null-valued object.", "ReferenceError");
+
+                        if (i == parts.Length - 1)
+                        {
+                            // this is not ideal, it returns the last object
+                            // that had objectId and was null-valued,
+                            // so the class/description of object are not of the last part
+                            return resolvedObject;
+                        }
+                        // else: trying null?.$member... - allowed operation
+                        isPrevPartNull = true;
+                    }
+
+                    bool isCurrentPartNullSafe = partTrimmed.Last() == '?';
+                    isResolvedObjNullSafe = isCurrentPartNullSafe;
+
+                    // cannot resolve the members but can check if nullSafety is
+                    // correctly applied and if we should throw or return null-object
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
-                        return null;
+                        continue;
 
                     var args = JObject.FromObject(new { forDebuggerDisplayAttribute = true });
                     ValueOrError<GetMembersResult> valueOrError = await proxy.RuntimeGetObjectMembers(sessionId, objectId, args, token);
@@ -266,6 +300,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return null;
                     }
 
+                    if (isCurrentPartNullSafe)
+                        partTrimmed = partTrimmed.Remove(partTrimmed.Length - 1);
                     JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == partTrimmed);
                     if (objRet == null)
                         return null;
@@ -274,19 +310,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (resolvedObject == null)
                         return null;
 
-                    if (resolvedObject.IsNullValuedObject())
-                    {
-                        if (i < parts.Length - 1)
-                        {
-                            // there is some parts remaining, and can't
-                            // do null.$remaining
-                            return null;
-                        }
-
-                        return resolvedObject;
-                    }
                 }
-
                 return resolvedObject;
             }
         }

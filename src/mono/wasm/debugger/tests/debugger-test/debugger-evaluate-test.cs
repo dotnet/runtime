@@ -1374,12 +1374,19 @@ namespace DebuggerTests
 
     public static class EvaluateNullableProperties
     {
+        class TestClass
+        {
+            public List<int> memberListNull = null;
+            List<int> memberList = new List<int>() {1, 2};
+        }
         static void Evaluate()
         {
             #nullable enable
-            List<int>? listNull = null; // etype: null, no objId
+            List<int>? listNull = null;
             #nullable disable
-            List<int> list = new List<int>() {1}; // etype: Class
+            List<int> list = new List<int>() {1};
+            TestClass tc = new TestClass();
+            TestClass tcNull = null;
         }
     }
 }
