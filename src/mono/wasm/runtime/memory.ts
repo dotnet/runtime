@@ -71,7 +71,7 @@ export function setI32(offset: _MemOffset, value: _NumberOrPointer): void {
 }
 
 /**
- * Throws for values which are not integer. See Number.isInteger()
+ * Throws for values which are not 52 bit integer. See Number.isSafeInteger()
  */
 export function setI52(offset: _MemOffset, value: number): void {
     // 52 bits = 0x1F_FFFF_FFFF_FFFF

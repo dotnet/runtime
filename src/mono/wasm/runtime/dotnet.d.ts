@@ -293,7 +293,7 @@ declare function setI8(offset: _MemOffset, value: number): void;
 declare function setI16(offset: _MemOffset, value: number): void;
 declare function setI32(offset: _MemOffset, value: _NumberOrPointer): void;
 /**
- * Throws for values which are not integer. See Number.isInteger()
+ * Throws for values which are not 52 bit integer. See Number.isSafeInteger()
  */
 declare function setI52(offset: _MemOffset, value: number): void;
 declare function setI64Big(offset: _MemOffset, value: bigint): void;
