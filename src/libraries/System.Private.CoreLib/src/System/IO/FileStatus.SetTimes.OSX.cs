@@ -63,7 +63,7 @@ namespace System.IO
                 Interop.Sys.GetLastErrorInfo().Error;
         }
 
-        private void SetAccessOrWriteTime(SafeFileHandle? handle, string? path, DateTimeOffset time, bool isAccessTime, bool asDirectory) =>
+        private void SetAccessOrWriteTime(SafeFileHandle? handle, ReadOnlySpan<char> path, DateTimeOffset time, bool isAccessTime, bool asDirectory) =>
             SetAccessOrWriteTimeCore(handle, path, time, isAccessTime, checkCreationTime: true, asDirectory);
     }
 }
