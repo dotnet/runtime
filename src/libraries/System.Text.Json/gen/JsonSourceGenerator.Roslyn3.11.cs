@@ -8,6 +8,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text.Json.Reflection;
+using System.Threading;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -27,7 +28,7 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="context"></param>
         public void Initialize(GeneratorInitializationContext context)
         {
-            context.RegisterForSyntaxNotifications(() => new SyntaxContextReceiver());
+            context.RegisterForSyntaxNotifications(() => new SyntaxContextReceiver(context.CancellationToken));
         }
 
         /// <summary>
@@ -62,13 +63,20 @@ namespace System.Text.Json.SourceGeneration
 
         private sealed class SyntaxContextReceiver : ISyntaxContextReceiver
         {
+            private readonly CancellationToken _cancellationToken;
+
+            public SyntaxContextReceiver(CancellationToken cancellationToken)
+            {
+                _cancellationToken = cancellationToken;
+            }
+
             public List<ClassDeclarationSyntax>? ClassDeclarationSyntaxList { get; private set; }
 
             public void OnVisitSyntaxNode(GeneratorSyntaxContext context)
             {
                 if (Parser.IsSyntaxTargetForGeneration(context.Node))
                 {
-                    ClassDeclarationSyntax classSyntax = Parser.GetSemanticTargetForGeneration(context);
+                    ClassDeclarationSyntax classSyntax = Parser.GetSemanticTargetForGeneration(context, _cancellationToken);
                     if (classSyntax != null)
                     {
                         (ClassDeclarationSyntaxList ??= new List<ClassDeclarationSyntax>()).Add(classSyntax);
@@ -92,6 +100,9 @@ namespace System.Text.Json.SourceGeneration
         {
             _context = context;
         }
+
+        public CancellationToken CancellationToken
+            => _context.CancellationToken;
 
         public void ReportDiagnostic(Diagnostic diagnostic)
         {
