@@ -225,14 +225,23 @@ namespace System.Security.Cryptography.Xml.Tests
             "v02cMSUwIwYJKoZIhvcNAQkVMRYEFDdYxa4ZJsCeAQZDzHLZ+cdpC2z5MDEwITAJ" +
             "BgUrDgMCGgUABBS0CMJuJYzpHkxOFI+r0PA67eJbzQQI4yGr4jgshqECAggA");
 
-        internal static readonly byte[] DsaPkcs8Key = Convert.FromBase64String(@"
-            MIIBSgIBADCCASsGByqGSM44BAEwggEeAoGBAJxMe6y5lIPhS6tt1wf/K1RVN08Z
-            LXeDWFaaRqyTHUSotBZLRI9/YO7zN96wNIPF3wbq0LvR5HG5UkduROW3mKzG1PKS
-            Q9Wapq5bW555Qfjx1+T4G7vdQQq9neVIwCH4gKiJZ8kjLldF0qm29QN6slhiMdwE
-            1wWlzfZpvqWhdorRAhUAvV0TbUwrTOkOoiyTJDxsaKWqWjECgYBdkRLOuyBQVpLr
-            3uyB5AScUquGHdLoL6B9UbbAv0kG/rfpCwSra7Gk4yX/VVDGOrELKzfH1gU6R1jX
-            Fh2ThrKFyjothWvzVf+VFS3HRhnGlpO3XReByeUvDHvvalgJw4dSXLIbGrcZgIDV
-            yCVe1LzSA8chiJ46qZSG8EdcxgEICAQWAhQNCtBkcG4jHIuUuq02o5Qun+2UfQ==");
+        internal static readonly DSAParameters DsaKey = new DSAParameters
+            {
+                P = Convert.FromBase64String(@"
+                    nEx7rLmUg+FLq23XB/8rVFU3Txktd4NYVppGrJMdRKi0FktEj39g7vM33rA0g8Xf
+                    BurQu9HkcblSR25E5beYrMbU8pJD1ZqmrltbnnlB+PHX5Pgbu91BCr2d5UjAIfiA
+                    qIlnySMuV0XSqbb1A3qyWGIx3ATXBaXN9mm+paF2itE="),
+                Q = Convert.FromBase64String("vV0TbUwrTOkOoiyTJDxsaKWqWjE="),
+                G = Convert.FromBase64String(@"
+                    XZESzrsgUFaS697sgeQEnFKrhh3S6C+gfVG2wL9JBv636QsEq2uxpOMl/1VQxjqx
+                    Cys3x9YFOkdY1xYdk4ayhco6LYVr81X/lRUtx0YZxpaTt10XgcnlLwx772pYCcOH
+                    UlyyGxq3GYCA1cglXtS80gPHIYieOqmUhvBHXMYBCAg="),
+                Y = Convert.FromBase64String(@"
+                    e7NMNCxX/44GS2gUH+JyReWzdCUXcp6ax0PcF/XvIZ1mak74P8o8yqWseGa/10hR
+                    CT92or4YBROsGtKqD/wqN0yJvVMkpPHHsWU9zs1Zt4CsQaZgUTw+vyjkw674OuyN
+                    933pL+qQNvPuJcb/HK9ME2vSN/3Ki1lAqqKWuzcvggY="),
+                X = Convert.FromBase64String(@"DQrQZHBuIxyLlLqtNqOULp/tlH0="),
+            };
 
         public static X509Certificate2 GetSampleX509Certificate()
         {

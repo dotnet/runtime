@@ -294,7 +294,7 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml signedXml = MSDNSample();
 
             DSA key = DSA.Create();
-            key.ImportPkcs8PrivateKey(TestHelpers.DsaPkcs8Key, out _);
+            key.ImportParameters(TestHelpers.DsaKey);
             signedXml.SigningKey = key;
 
             // Add a KeyInfo.
