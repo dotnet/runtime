@@ -288,7 +288,7 @@ namespace System.IO.Compression
                         // In such case, we are dealing with a truncated input stream.
                         if (!buffer.IsEmpty && !_inflater.Finished() && _inflater.NonEmptyInput())
                         {
-                            ThrowGenericInvalidData();
+                            ThrowTruncatedInvalidData();
                         }
                         break;
                     }
@@ -357,6 +357,9 @@ namespace System.IO.Compression
             // The stream is either malicious or poorly implemented and returned a number of
             // bytes < 0 || > than the buffer supplied to it.
             throw new InvalidDataException(SR.GenericInvalidData);
+
+        private static void ThrowTruncatedInvalidData() =>
+            throw new InvalidDataException(SR.TruncatedData);
 
         public override IAsyncResult BeginRead(byte[] buffer, int offset, int count, AsyncCallback? asyncCallback, object? asyncState) =>
             TaskToApm.Begin(ReadAsync(buffer, offset, count, CancellationToken.None), asyncCallback, asyncState);
@@ -434,7 +437,7 @@ namespace System.IO.Compression
                                 // In such case, we are dealing with a truncated input stream.
                                 if (!_inflater.Finished() && _inflater.NonEmptyInput() && !buffer.IsEmpty)
                                 {
-                                    ThrowGenericInvalidData();
+                                    ThrowTruncatedInvalidData();
                                 }
                                 break;
                             }
@@ -903,7 +906,7 @@ namespace System.IO.Compression
                     await _deflateStream._stream.CopyToAsync(this, _arrayPoolBuffer.Length, _cancellationToken).ConfigureAwait(false);
                     if (!_deflateStream._inflater.Finished())
                     {
-                        ThrowGenericInvalidData();
+                        ThrowTruncatedInvalidData();
                     }
                 }
                 finally
@@ -939,7 +942,7 @@ namespace System.IO.Compression
                     _deflateStream._stream.CopyTo(this, _arrayPoolBuffer.Length);
                     if (!_deflateStream._inflater.Finished())
                     {
-                        ThrowGenericInvalidData();
+                        ThrowTruncatedInvalidData();
                     }
                 }
                 finally

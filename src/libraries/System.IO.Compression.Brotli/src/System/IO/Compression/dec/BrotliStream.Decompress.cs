@@ -67,7 +67,7 @@ namespace System.IO.Compression
                 if (bytesRead <= 0)
                 {
                     if (_nonEmptyInput && !buffer.IsEmpty)
-                        throw new InvalidDataException(SR.@BrotliStream_Decompress_InvalidData);
+                        ThrowTruncatedInvalidData();
                     break;
                 }
 
@@ -155,7 +155,7 @@ namespace System.IO.Compression
                         if (bytesRead <= 0)
                         {
                             if (_nonEmptyInput && !buffer.IsEmpty)
-                                throw new InvalidDataException(SR.@BrotliStream_Decompress_InvalidData);
+                                ThrowTruncatedInvalidData();
                             break;
                         }
 
@@ -238,5 +238,8 @@ namespace System.IO.Compression
             // The stream is either malicious or poorly implemented and returned a number of
             // bytes larger than the buffer supplied to it.
             throw new InvalidDataException(SR.BrotliStream_Decompress_InvalidStream);
+
+        private static void ThrowTruncatedInvalidData() =>
+            throw new InvalidDataException(SR.BrotliStream_Decompress_TruncatedData);
     }
 }
