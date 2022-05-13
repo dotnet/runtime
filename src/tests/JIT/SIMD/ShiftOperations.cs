@@ -43,22 +43,23 @@ public class Test
 
         try
         {
-            uint valUInt = 0;
-            int valInt = 0;
             ulong valULong = 0;
             long valLong = 0;
             int shiftBy = 0;
-            uint resUInt = 0;
-            int resInt = 0;
             ulong resULong = 0;
             long resLong = 0;
-            uint expectedUInt = 0;
-            int expectedInt = 0;
             ulong expectedULong = 0;
             long expectedLong = 0;
-            int MOD32 = 32;
             int MOD64 = 64;
 
+/* TODO: Enable 32bit test when x86 shift is enabled.
+            uint valUInt = 0;
+            int valInt = 0;
+            uint resUInt = 0;
+            int resInt = 0;
+            uint expectedUInt = 0;
+            int expectedInt = 0;
+            int MOD32 = 32;
             //
             // Shlx32bit tests
             //
@@ -128,20 +129,7 @@ public class Test
                     returnCode = FAIL;
                 }
             }
-
-            //
-            // Ror tests
-            //
-
-            Console.WriteLine("### UnitTest: Ror ###############");
-            valUInt = 0xFF;
-            shiftBy = 2;
-            resUInt = Ror(valUInt);
-            expectedUInt = 0xC000003F;
-            if (!Validate<uint>(valUInt, shiftBy, resUInt, expectedUInt))
-            {
-                returnCode = FAIL;
-            }
+*/ // End of x86 shift unit tests
 
             //
             // Shlx64bit tests
