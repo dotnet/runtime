@@ -14026,8 +14026,8 @@ void Compiler::impImportBlockCode(BasicBlock* block)
                 }
 
 #if defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
-                if ((oper == GT_DIV || oper == GT_UDIV || oper == GT_MOD || oper == GT_UMOD) && varTypeIsIntOrI(type) &&
-                    (!op2->IsIntegralConst() || op2->IsIntegralConst(0)))
+                if ((oper == GT_DIV || oper == GT_UDIV || oper == GT_MOD || oper == GT_UMOD) &&
+                    !varTypeIsFloating(type) && (!op2->IsIntegralConst() || op2->IsIntegralConst(0)))
                 {
                     unsigned tmpNum       = lvaGrabTemp(true DEBUGARG("divisor expr"));
                     GenTree* divisorAsg   = gtNewTempAssign(tmpNum, op2);
