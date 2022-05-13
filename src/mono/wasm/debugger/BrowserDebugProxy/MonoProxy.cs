@@ -19,16 +19,19 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal class MonoProxy : DevToolsProxy
     {
         private IList<string> urlSymbolServerList;
-        private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
         private const string sPauseOnUncaught = "pause_on_uncaught";
         private const string sPauseOnCaught = "pause_on_caught";
+
+        public static HttpClient HttpClient => new HttpClient();
+
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
+        public bool AutoSetBreakpointOnEntryPoint { get; set; }
 
-        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "") : base(loggerFactory, loggerId)
+        public MonoProxy(ILogger logger, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "") : base(logger, loggerId)
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             RuntimeId = runtimeId;
@@ -1153,7 +1156,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 try
                 {
-                    using HttpResponseMessage response = await client.GetAsync(downloadURL, token);
+                    using HttpResponseMessage response = await HttpClient.GetAsync(downloadURL, token);
                     if (!response.IsSuccessStatusCode)
                     {
                         Log("info", $"Unable to download symbols on demand url:{downloadURL} assembly: {asm.Name}");
@@ -1436,10 +1439,36 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         await OnSourceFileAdded(sessionId, source, context, token);
                     }
+
+                    if (AutoSetBreakpointOnEntryPoint)
+                    {
+                        var entryPoint = context.store.FindEntryPoint();
+                        if (entryPoint is not null)
+                        {
+                            var sourceFile = entryPoint.Assembly.Sources.Single(sf => sf.SourceId == entryPoint.SourceId);
+                            string bpId = $"auto:{entryPoint.StartLocation.Line}:{entryPoint.StartLocation.Column}:{sourceFile.DotNetUrl}";
+                            BreakpointRequest request = new(bpId, JObject.FromObject(new
+                            {
+                                lineNumber = entryPoint.StartLocation.Line,
+                                columnNumber = entryPoint.StartLocation.Column,
+                                url = sourceFile.Url
+                            }));
+                            logger.LogDebug($"Adding bp req {request}");
+                            context.BreakpointRequests[bpId] = request;
+                            request.TryResolve(sourceFile);
+                            if (request.TryResolve(sourceFile))
+                                await SetBreakpoint(sessionId, context.store, request, true, true, token);
+                        }
+                        else
+                        {
+                            logger.LogDebug($"No entrypoint found, for setting automatic breakpoint");
+                        }
+                    }
                 }
             }
             catch (Exception e)
             {
+                logger.LogError($"failed: {e}");
                 context.Source.SetException(e);
             }
 
@@ -1485,6 +1514,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             DebugStore store = await LoadStore(sessionId, token);
             context.ready.SetResult(store);
             await SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
+            await SendMonoCommand(sessionId, MonoCommands.SetDebuggerAttached(RuntimeId), token);
             context.SdbAgent.ResetStore(store);
             return store;
         }

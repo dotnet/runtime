@@ -12,6 +12,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using System.Threading;
 using System.Xml;
 using Xunit;
@@ -553,25 +554,16 @@ namespace Wasm.Build.Tests
 
         protected static void AssertFilesExist(string dir, string[] filenames, string? label = null, bool expectToExist=true)
         {
+            string prefix = label != null ? $"{label}: " : string.Empty;
             Assert.True(Directory.Exists(dir), $"[{label}] {dir} not found");
             foreach (string filename in filenames)
             {
                 string path = Path.Combine(dir, filename);
+                if (expectToExist && !File.Exists(path))
+                    throw new XunitException($"{prefix}Expected the file to exist: {path}");
 
-                if (expectToExist)
-                {
-                    Assert.True(File.Exists(path),
-                            label != null
-                                ? $"{label}: File exists: {path}"
-                                : $"File exists: {path}");
-                }
-                else
-                {
-                    Assert.False(File.Exists(path),
-                            label != null
-                                ? $"{label}: {path} should not exist"
-                                : $"{path} should not exist");
-                }
+                if (!expectToExist && File.Exists(path))
+                    throw new XunitException($"{prefix}Expected the file to *not* exist: {path}");
             }
         }
 
@@ -586,10 +578,11 @@ namespace Wasm.Build.Tests
             FileInfo finfo0 = new(file0);
             FileInfo finfo1 = new(file1);
 
-            if (same)
-                Assert.True(finfo0.Length == finfo1.Length, $"{label}:{Environment.NewLine}  File sizes don't match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
-            else
-                Assert.True(finfo0.Length != finfo1.Length, $"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
+            if (same && finfo0.Length != finfo1.Length)
+                throw new XunitException($"{label}:{Environment.NewLine}  File sizes don't match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
+
+            if (!same && finfo0.Length == finfo1.Length)
+                throw new XunitException($"{label}:{Environment.NewLine}  File sizes should not match for {file0} ({finfo0.Length}), and {file1} ({finfo1.Length})");
         }
 
         protected (int exitCode, string buildOutput) AssertBuild(string args, string label="build", bool expectSuccess=true, IDictionary<string, string>? envVars=null, int? timeoutMs=null)
@@ -686,6 +679,20 @@ namespace Wasm.Build.Tests
                                          bool logToXUnit = true,
                                          int? timeoutMs = null)
         {
+            var t = RunProcessAsync(path, _testOutput, args, envVars, workingDir, label, logToXUnit, timeoutMs);
+            t.Wait();
+            return t.Result;
+        }
+
+        public static async Task<(int exitCode, string buildOutput)> RunProcessAsync(string path,
+                                         ITestOutputHelper _testOutput,
+                                         string args = "",
+                                         IDictionary<string, string>? envVars = null,
+                                         string? workingDir = null,
+                                         string? label = null,
+                                         bool logToXUnit = true,
+                                         int? timeoutMs = null)
+        {
             _testOutput.WriteLine($"Running {path} {args}");
             _testOutput.WriteLine($"WorkingDirectory: {workingDir}");
             StringBuilder outputBuilder = new ();
@@ -756,7 +763,7 @@ namespace Wasm.Build.Tests
                     // this will ensure that all the async event handling
                     // has completed
                     // https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.process.waitforexit?view=net-5.0#System_Diagnostics_Process_WaitForExit_System_Int32_
-                    process.WaitForExit();
+                    await process.WaitForExitAsync();
                 }
 
                 process.ErrorDataReceived -= logStdErr;
