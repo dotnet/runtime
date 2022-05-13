@@ -57,8 +57,8 @@ public class InterpToNativeGenerator : Task
         "IIIIIIIIIIII",
         "IIIIIIIIIIIII",
         "IIIIIIIIIIIIII",
-        // "IILIIII",
-        // "IIIL",
+        "IILIIII",
+        "IIIL",
         // "IF",
         // "ID",
         // "IIF",
@@ -95,14 +95,14 @@ public class InterpToNativeGenerator : Task
         // "IIIIIFFFFIIII",
         // "IFFFFFFI",
         // "IIFFIII",
-        // "ILI",
-        // "IILLI",
-        // "L",
-        // "LL",
-        // "LI",
-        // "LIL",
-        // "LILI",
-        // "LILII",
+        "ILI",
+        "IILLI",
+        "L",
+        "LL",
+        "LI",
+        "LIL",
+        "LILI",
+        "LILII",
         // "DD",
         // "DDI",
         // "DDD",
@@ -132,22 +132,22 @@ public class InterpToNativeGenerator : Task
         // "FFFF",
         // "DI",
         // "FI",
-        // "IIL",
-        // "IILI",
-        // "IILIIIL",
-        // "IILLLI",
+        "IIL",
+        "IILI",
+        "IILIIIL",
+        "IILLLI",
         // "IDIII",
-        // "LII",
+        "LII",
         // "VID",
-        // "VILLI",
+        "VILLI",
         // "DID",
         // "DIDD",
         // "FIF",
         // "FIFF",
-        // "LILL",
-        // "VL",
-        // "VIL",
-        // "VIIL",
+        "LILL",
+        "VL",
+        "VIL",
+        "VIIL",
         // "FIFFF",
         // "FII",
         // "FIII",
@@ -191,17 +191,17 @@ public class InterpToNativeGenerator : Task
         // "IFFFFIII",
         // "IFFIII",
         // "VIIIIFFII",
-        // "IIILIIII",
-        // "IIILLI",
-        // "IL",
+        "IIILIIII",
+        "IIILLI",
+        "IL",
         // "IFF",
         // "IFFF",
         // "IFFFF",
-        // "VLII",
-        // "IIIIL",
-        // "LIIII",
-        // "LIIIL",
-        // "IILL",
+        "VLII",
+        "IIIIL",
+        "LIIII",
+        "LIIIL",
+        "IILL",
     };
 
     private static string TypeToSigType(char c)
@@ -210,7 +210,7 @@ public class InterpToNativeGenerator : Task
         {
             case 'V': return "void";
             case 'I': return "int";
-            case 'L': return "gint64";
+            case 'L': return "int64_t";
             case 'F': return "float";
             case 'D': return "double";
             default:
@@ -287,7 +287,7 @@ public class InterpToNativeGenerator : Task
             w.WriteLine(");\n\tT func = (T)target_func;");
 
             // TODO: Only if any int is used.
-            w.WriteLine("\tvoid* iargs = mono_wasm_interp_method_args_get_iargs (margs);");
+            // w.WriteLine("\tvoid* iargs = mono_wasm_interp_method_args_get_iargs (margs);");
 
             var ctx = new EmitCtx();
 
@@ -355,13 +355,13 @@ public class InterpToNativeGenerator : Task
             {
                 case 'I':
                     iarg += 1;
-                    return $"((int*)iargs) [{iarg - 1}]";
+                    return $"mono_wasm_interp_method_args_get_iarg (margs, {iarg - 1})";
                 case 'F':
                     farg += 1;
                     return $"*(float*)&margs->fargs [FIDX ({farg - 1})]";
                 case 'L':
                     iarg += 2;
-                    return $"get_long_arg (margs, {iarg - 2})";
+                    return $"mono_wasm_interp_method_args_get_larg (margs, {iarg - 2})";
                 case 'D':
                     farg += 1;
                     return $"margs->fargs [FIDX ({farg - 1})]";

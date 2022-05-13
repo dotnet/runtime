@@ -1,6 +1,7 @@
 #ifndef __PINVOKE_H__
 #define __PINVOKE_H__
 
+#include <stdint.h>
 
 typedef struct {
 	const char *name;
@@ -35,8 +36,11 @@ typedef struct {
 	
 } InterpMethodArguments;
 
-void*
-mono_wasm_interp_method_args_get_iargs (InterpMethodArguments *margs);
+int 
+mono_wasm_interp_method_args_get_iarg (InterpMethodArguments *margs, int i);
+
+int64_t
+mono_wasm_interp_method_args_get_larg (InterpMethodArguments *margs, int i);
 
 void*
 mono_wasm_interp_method_args_get_retval  (InterpMethodArguments *margs);

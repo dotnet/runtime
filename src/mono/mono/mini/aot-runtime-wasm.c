@@ -91,10 +91,16 @@ mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb)
 	mono_wasm_interp_to_native_callback = cb;
 }
 
-MONO_API gpointer*
-mono_wasm_interp_method_args_get_iargs (InterpMethodArguments *margs)
+MONO_API int
+mono_wasm_interp_method_args_get_iarg (InterpMethodArguments *margs, int i)
 {
-	return margs->iargs;
+	return (int)(gssize)margs->iargs[i];
+}
+
+MONO_API gint64
+mono_wasm_interp_method_args_get_larg (InterpMethodArguments *margs, int i)
+{
+	return get_long_arg (margs, i);
 }
 
 MONO_API gpointer*
