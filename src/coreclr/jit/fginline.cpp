@@ -1525,7 +1525,9 @@ Statement* Compiler::fgInlinePrependStatements(InlineInfo* inlineInfo)
             const bool        argIsSingleDef = !argInfo.argHasLdargaOp && !argInfo.argHasStargOp;
             CallArg*          arg            = argInfo.arg;
             GenTree*          argNode        = arg->GetNode();
-            BasicBlockFlags   bbFlags        = argInfo.bbFlags;
+
+            BasicBlockFlags bbFlags = BBF_EMPTY;
+            argNode                 = argNode->gtRetExprVal(&bbFlags);
 
             if (argInfo.argHasTmp)
             {

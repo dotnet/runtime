@@ -19553,7 +19553,6 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //   pInlineInfo - inline info for the inline candidate
 //   arg - the caller argument
 //   argNum - logical index of this argument
-//   bbFlags - to propagate due to the arg node coming from inlinees
 //   inlineResult - result of ongoing inline evaluation
 //
 // Notes:
@@ -19563,14 +19562,17 @@ void Compiler::impCheckCanInline(GenTreeCall*           call,
 //   properties are used later by impInlineFetchArg to determine how best to
 //   pass the argument into the inlinee.
 
-void Compiler::impInlineRecordArgInfo(
-    InlineInfo* pInlineInfo, CallArg* arg, unsigned argNum, BasicBlockFlags bbFlags, InlineResult* inlineResult)
+void Compiler::impInlineRecordArgInfo(InlineInfo*   pInlineInfo,
+                                      CallArg*      arg,
+                                      unsigned      argNum,
+                                      InlineResult* inlineResult)
 {
     InlArgInfo* inlCurArgInfo = &pInlineInfo->inlArgInfo[argNum];
 
-    inlCurArgInfo->arg     = arg;
-    inlCurArgInfo->bbFlags = bbFlags;
-    GenTree* curArgVal     = arg->GetNode();
+    inlCurArgInfo->arg = arg;
+    GenTree* curArgVal = arg->GetNode();
+
+    curArgVal = curArgVal->gtRetExprVal();
 
     if (curArgVal->gtOper == GT_MKREFANY)
     {
@@ -19747,10 +19749,8 @@ void Compiler::impInlineInitVars(InlineInfo* pInlineInfo)
                 break;
         }
 
-        BasicBlockFlags bbFlags    = BBF_EMPTY;
-        GenTree*        newArgNode = arg.GetEarlyNode()->gtRetExprVal(&bbFlags);
-        arg.SetEarlyNode(gtFoldExpr(newArgNode));
-        impInlineRecordArgInfo(pInlineInfo, &arg, ilArgCnt, bbFlags, inlineResult);
+        arg.SetEarlyNode(gtFoldExpr(arg.GetEarlyNode()));
+        impInlineRecordArgInfo(pInlineInfo, &arg, ilArgCnt, inlineResult);
 
         if (inlineResult->IsFailure())
         {
@@ -20168,7 +20168,7 @@ GenTree* Compiler::impInlineFetchArg(unsigned lclNum, InlArgInfo* inlArgInfo, In
     const var_types      lclTyp           = lclInfo.lclTypeInfo;
     GenTree*             op1              = nullptr;
 
-    GenTree* argNode = argInfo.arg->GetNode();
+    GenTree* argNode = argInfo.arg->GetNode()->gtRetExprVal();
 
     if (argInfo.argIsInvariant && !argCanBeModified)
     {
