@@ -105,7 +105,11 @@ inline T genFindLowestBit(T value)
 inline unsigned int genFindHighestBit(unsigned int mask)
 {
     assert(mask != 0);
+#if defined(_MSC_VER)
     unsigned long index;
+#else
+    unsigned int index;
+#endif
     BitScanReverse(&index, mask);
     return 1L << index;
 }
@@ -113,7 +117,11 @@ inline unsigned int genFindHighestBit(unsigned int mask)
 inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 {
     assert(mask != 0);
+#if defined(_MSC_VER)
     unsigned long index;
+#else
+    unsigned int index;
+#endif
     BitScanReverse64(&index, mask);
     return 1LL << index;
 }
