@@ -319,6 +319,7 @@ void GenTree::InitNodeSize()
     static_assert_no_msg(sizeof(GenTreeIndex)        <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeIndexAddr)    <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeArrLen)       <= TREE_NODE_SZ_LARGE); // *** large node
+    static_assert_no_msg(sizeof(GenTreeMDArrLen)     <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeBoundsChk)    <= TREE_NODE_SZ_SMALL);
     static_assert_no_msg(sizeof(GenTreeArrElem)      <= TREE_NODE_SZ_LARGE); // *** large node
     static_assert_no_msg(sizeof(GenTreeArrIndex)     <= TREE_NODE_SZ_LARGE); // *** large node
@@ -2431,6 +2432,14 @@ AGAIN:
                         return false;
                     }
                     break;
+                case GT_MDARR_LENGTH:
+                    if ((op1->AsMDArrLen()->ArrLenOffset() != op2->AsMDArrLen()->ArrLenOffset()) ||
+                        (op1->AsMDArrLen()->Dim() != op2->AsMDArrLen()->Dim()) ||
+                        (op1->AsMDArrLen()->Rank() != op2->AsMDArrLen()->Rank()))
+                    {
+                        return false;
+                    }
+                    break;
                 case GT_CAST:
                     if (op1->AsCast()->gtCastType != op2->AsCast()->gtCastType)
                     {
@@ -2917,6 +2926,11 @@ AGAIN:
             {
                 case GT_ARR_LENGTH:
                     hash += tree->AsArrLen()->ArrLenOffset();
+                    break;
+                case GT_MDARR_LENGTH:
+                    hash += tree->AsMDArrLen()->ArrLenOffset();
+                    hash += tree->AsMDArrLen()->Dim();
+                    hash += tree->AsMDArrLen()->Rank();
                     break;
                 case GT_CAST:
                     hash ^= tree->AsCast()->gtCastType;
@@ -4917,6 +4931,7 @@ unsigned Compiler::gtSetEvalOrder(GenTree* tree)
                     break;
 
                 case GT_ARR_LENGTH:
+                case GT_MDARR_LENGTH:
                     level++;
 
                     /* Array Len should be the same as an indirections, which have a costEx of IND_COST_EX */
@@ -5929,6 +5944,7 @@ bool GenTree::TryGetUse(GenTree* operand, GenTree*** pUse)
         case GT_COPY:
         case GT_RELOAD:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
         case GT_CAST:
         case GT_BITCAST:
         case GT_CKFINITE:
@@ -6401,8 +6417,9 @@ bool GenTree::OperMayThrow(Compiler* comp)
             return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) && comp->fgAddrCouldBeNull(this->AsIndir()->Addr()));
 
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
             return (((this->gtFlags & GTF_IND_NONFAULTING) == 0) &&
-                    comp->fgAddrCouldBeNull(this->AsArrLen()->ArrRef()));
+                    comp->fgAddrCouldBeNull(this->GetArrLengthArrRef()));
 
         case GT_ARR_ELEM:
             return comp->fgAddrCouldBeNull(this->AsArrElem()->gtArrObj);
@@ -8363,7 +8380,13 @@ GenTree* Compiler::gtCloneExpr(
                 break;
 
             case GT_ARR_LENGTH:
-                copy = gtNewArrLen(tree->TypeGet(), tree->AsOp()->gtOp1, tree->AsArrLen()->ArrLenOffset(), nullptr);
+                copy =
+                    gtNewArrLen(tree->TypeGet(), tree->AsArrLen()->ArrRef(), tree->AsArrLen()->ArrLenOffset(), nullptr);
+                break;
+
+            case GT_MDARR_LENGTH:
+                copy = gtNewMDArrLen(tree->TypeGet(), tree->AsMDArrLen()->ArrRef(), tree->AsMDArrLen()->Dim(),
+                                     tree->AsMDArrLen()->Rank(), tree->AsMDArrLen()->ArrLenOffset(), nullptr);
                 break;
 
             case GT_ARR_INDEX:
@@ -9089,6 +9112,7 @@ bool GenTree::gtRequestSetFlags()
     {
         case GT_IND:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
             // These will turn into simple load from memory instructions
             // and we can't force the setting of the flags on load from memory
             break;
@@ -9173,6 +9197,7 @@ GenTreeUseEdgeIterator::GenTreeUseEdgeIterator(GenTree* node)
         case GT_COPY:
         case GT_RELOAD:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
         case GT_CAST:
         case GT_BITCAST:
         case GT_CKFINITE:
@@ -9716,16 +9741,7 @@ void GenTree::SetIndirExceptionFlags(Compiler* comp)
         return;
     }
 
-    GenTree* addr = nullptr;
-    if (OperIsIndir())
-    {
-        addr = AsIndir()->Addr();
-    }
-    else
-    {
-        assert(gtOper == GT_ARR_LENGTH);
-        addr = AsArrLen()->ArrRef();
-    }
+    GenTree* addr = GetIndirOrArrLengthAddr();
 
     gtFlags |= GTF_IND_NONFAULTING;
     gtFlags &= ~GTF_EXCEPT;
