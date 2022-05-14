@@ -34,11 +34,12 @@ export function dotnet_browser_simple_digest_hash(ver: number, input_buffer: num
 }
 
 export function init_crypto(): void {
-    console.debug("MONO_WASM: Initialize Crypto WebWorker");
     if (typeof globalThis.crypto !== "undefined" && typeof globalThis.crypto.subtle !== "undefined"
         && typeof SharedArrayBuffer !== "undefined"
         && typeof Worker !== "undefined"
     ) {
+        console.debug("MONO_WASM: Initialize Crypto WebWorker");
+
         const chan = LibraryChannel.create(1024); // 1024 is the buffer size in char units.
         const worker = new Worker("dotnet-crypto-worker.js");
         mono_wasm_crypto = {

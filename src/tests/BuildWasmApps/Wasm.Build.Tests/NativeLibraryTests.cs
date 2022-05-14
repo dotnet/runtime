@@ -93,5 +93,50 @@ public class Test
 
             Assert.Contains("Size: 26462 Height: 599, Width: 499", output);
         }
+
+        [ConditionalTheory(typeof(BuildTestBase), nameof(IsUsingWorkloads))]
+        [BuildAndRun(aot: false)]
+        [BuildAndRun(aot: true)]
+        public void ProjectUsingBrowserNativeCrypto(BuildArgs buildArgs, RunHost host, string id)
+        {
+            string projectName = $"AppUsingBrowserNativeCrypto";
+            buildArgs = buildArgs with { ProjectName = projectName };
+            buildArgs = ExpandBuildArgs(buildArgs);
+
+            string programText = @"
+using System.Security.Cryptography;
+
+public class Test
+{
+    public static void Main()
+    {
+        using (SHA256 mySHA256 = SHA256.Create())
+        {
+            byte[] data = { (byte)'H', (byte)'e', (byte)'l', (byte)'l', (byte)'o' };
+            mySHA256.ComputeHash(data);
+        }
+    }
+}";
+
+            BuildProject(buildArgs,
+                            id: id,
+                            new BuildProjectOptions(
+                                InitProject: () => File.WriteAllText(Path.Combine(_projectDir!, "Program.cs"), programText),
+                                DotnetWasmFromRuntimePack: !buildArgs.AOT && buildArgs.Config != "Release"));
+
+            string output = RunAndTestWasmApp(buildArgs, buildDir: _projectDir, expectedExitCode: 0,
+                                test: output => {},
+                                host: host, id: id);
+
+            string cryptoInitializeSentinel = "MONO_WASM: Initialize Crypto WebWorker";
+            if (host == RunHost.V8 || host == RunHost.NodeJS)
+            {
+                Assert.DoesNotContain(cryptoInitializeSentinel, output);
+            }
+            else
+            {
+                Assert.Contains(cryptoInitializeSentinel, output);
+            }
+        }
     }
 }
