@@ -200,7 +200,22 @@ inline unsigned uhi32(unsigned __int64 value)
 
 inline unsigned genLog2(unsigned __int64 value)
 {
+#ifdef TARGET_64BIT
     return BitPosition(value);
+#else // TARGET_32BIT
+    unsigned     lo32 = ulo32(value);
+    unsigned     hi32 = uhi32(value);
+
+    if (lo32 != 0)
+    {
+        assert(hi32 == 0);
+        return genLog2(lo32);
+    }
+    else
+    {
+        return genLog2(hi32) + 32;
+    }
+#endif
 }
 
 /*****************************************************************************
