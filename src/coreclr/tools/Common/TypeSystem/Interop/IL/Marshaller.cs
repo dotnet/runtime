@@ -1491,12 +1491,8 @@ namespace Internal.TypeSystem.Interop
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
-#if READYTORUN
-            throw new NotSupportedException();
-#else
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
-#endif
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
         }
 
         protected override void TransformManagedToNative(ILCodeStream codeStream)
@@ -1613,12 +1609,8 @@ namespace Internal.TypeSystem.Interop
 
         internal override void EmitElementCleanup(ILCodeStream codeStream, ILEmitter emitter)
         {
-#if READYTORUN
-            throw new NotSupportedException();
-#else
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
-#endif
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
         }
 
         protected override void TransformManagedToNative(ILCodeStream codeStream)
@@ -1765,7 +1757,7 @@ namespace Internal.TypeSystem.Interop
 
             LoadNativeValue(codeStream);
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Context.GetHelperEntryPoint("InteropHelpers", "CoTaskMemFree")));
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
 
             codeStream.EmitLabel(lNullCheck);
 #endif
@@ -1787,7 +1779,7 @@ namespace Internal.TypeSystem.Interop
             Debug.Assert(_marshallerInstance is null);
 
             codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                InteropTypes.GetMarshal(Context).GetKnownMethod("CoTaskMemFree", null)));
+                                InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
         }
 
         protected override void TransformManagedToNative(ILCodeStream codeStream)
@@ -1872,7 +1864,7 @@ namespace Internal.TypeSystem.Interop
                 // Free  the native value directly.
                 LoadNativeValue(codeStream);
                 codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                    InteropTypes.GetMarshal(Context).GetKnownMethod("CoTaskMemFree", null)));
+                                    InteropTypes.GetMarshal(Context).GetKnownMethod("FreeCoTaskMem", null)));
             }
         }
     }

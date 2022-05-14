@@ -410,11 +410,6 @@ namespace Internal.Runtime.CompilerHelpers
             return ptr;
         }
 
-        internal static unsafe void CoTaskMemFree(void* p)
-        {
-            Marshal.FreeCoTaskMem((IntPtr)p);
-        }
-
         /// <summary>
         /// Retrieves the function pointer for the current open static delegate that is being called
         /// </summary>
