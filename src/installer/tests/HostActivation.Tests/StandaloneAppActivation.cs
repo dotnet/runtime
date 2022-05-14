@@ -25,6 +25,20 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void HangingTest()
+        {
+            var fixture = sharedTestState.StandaloneAppFixture_Built;
+            var appExe = fixture.TestProject.AppExe;
+            Command.Create(appExe, "hang")
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                .And.HaveStdOutContaining("Hello World")
+                .And.HaveStdOutContaining(sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion);
+        }
+
+        [Fact]
         public void Running_Build_Output_Standalone_EXE_with_DepsJson_and_RuntimeConfig_Local_Succeeds()
         {
             var fixture = sharedTestState.StandaloneAppFixture_Built

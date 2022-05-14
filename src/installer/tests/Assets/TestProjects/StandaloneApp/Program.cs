@@ -16,6 +16,11 @@ namespace StandaloneApp
 
             // A small operation involving NewtonSoft.Json to ensure the assembly is loaded properly
             var t = typeof(Newtonsoft.Json.JsonReader);
+
+            if (args.Length == 1 && args[0] == "hang")
+            {
+                while (true) { }
+            }
         }
     }
 }
