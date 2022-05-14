@@ -354,26 +354,15 @@ HRESULT TypeNameBuilder::AddArray(DWORD rank)
     }
     else
     {
-        WCHAR* wzDim = new (nothrow) WCHAR[rank+3];
+        WCHAR* wzDim = (WCHAR*)_alloca(sizeof(WCHAR) * (rank+3));
 
-        if(wzDim == NULL) // allocation failed, do it the long way (each Append -> memory realloc)
-        {
-            Append(W('['));
-            for(COUNT_T i = 1; i < rank; i ++)
-                Append(W(','));
-            Append(W(']'));
-        }
-        else             // allocation OK, do it the fast way
-        {
-            WCHAR* pwz = wzDim+1;
-            *wzDim = W('[');
-            for(COUNT_T i = 1; i < rank; i++, pwz++)
-                *pwz=',';
-            *pwz = W(']');
-            *(++pwz) = W('\0');
-            Append(wzDim);
-            delete [] wzDim;
-        }
+        WCHAR* pwz = wzDim+1;
+        *wzDim = W('[');
+        for(COUNT_T i = 1; i < rank; i++, pwz++)
+            *pwz=',';
+        *pwz = W(']');
+        *(++pwz) = W('\0');
+        Append(wzDim);
     }
 
     return S_OK;

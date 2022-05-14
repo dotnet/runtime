@@ -1739,6 +1739,7 @@ HANDLE OpenStartupNotificationEvent()
 {
     // "Telesto" is the legacy name for the start up event. Changing this name
     // would impact multiple repos and not worth the effort at present.
+    // This event is used by https://github.com/dotnet/diagnostics/blob/main/src/dbgshim/dbgshim.cpp
     WCHAR prefix[] = W("TelestoStartupEvent_");
     WCHAR eventName[ARRAY_SIZE(prefix) + Max32BitHexString] = { W('\0') };
     wcscat_s(eventName, ARRAY_SIZE(eventName), prefix);
