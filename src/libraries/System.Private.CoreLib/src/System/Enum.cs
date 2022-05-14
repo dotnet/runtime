@@ -1086,6 +1086,25 @@ namespace System
 
             throw new FormatException(SR.Format_InvalidEnumFormatSpecification);
         }
+
+        public static bool TryFormat<TEnum>(TEnum value, Span<char> destination, out int charsWritten) where TEnum : struct, Enum
+        {
+            if (!destination.IsEmpty)
+            {
+                string? enumName = InternalFormat((RuntimeType)typeof(TEnum), ToUInt64(value));
+
+                if (enumName != null
+                    && destination.Length >= enumName.Length)
+                {
+                    enumName.CopyTo(destination);
+                    charsWritten = enumName.Length;
+                    return true;
+                }
+            }
+
+            charsWritten = 0;
+            return false;
+        }
         #endregion
 
         #region Private Methods

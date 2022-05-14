@@ -1927,6 +1927,77 @@ namespace System.Tests
 #pragma warning restore 618
 
         [Fact]
+        public static void ToString_TryFormat()
+        {
+            // SByte, No [Flags] attribute
+            TryFormat(SByteEnum.Min, "Min");
+            TryFormat(SByteEnum.One, "One");
+            TryFormat(SByteEnum.Two, "Two");
+            TryFormat(SByteEnum.Max, "Max");
+            TryFormat(SByteEnum.One | SByteEnum.Two, "", false);
+
+            // Byte, No [Flags] attribute
+            TryFormat(ByteEnum.Min, "Min");
+            TryFormat(ByteEnum.One, "One");
+            TryFormat(ByteEnum.Two, "Two");
+            TryFormat(ByteEnum.Max, "Max");
+            TryFormat(ByteEnum.One | ByteEnum.Two, "", false);
+
+            // Int16, No [Flags] attribute
+            TryFormat(Int16Enum.Min, "Min");
+            TryFormat(Int16Enum.One, "One");
+            TryFormat(Int16Enum.Two, "Two");
+            TryFormat(Int16Enum.Max, "Max");
+            TryFormat(Int16Enum.One | Int16Enum.Two, "", false);
+
+            // UInt16, No [Flags] attribute
+            TryFormat(UInt16Enum.Min, "Min");
+            TryFormat(UInt16Enum.One, "One");
+            TryFormat(UInt16Enum.Two, "Two");
+            TryFormat(UInt16Enum.Max, "Max");
+            TryFormat(UInt16Enum.One | UInt16Enum.Two, "", false);
+
+            // Int32, No [Flags] attribute
+            TryFormat(Int32Enum.Min, "Min");
+            TryFormat(Int32Enum.One, "One");
+            TryFormat(Int32Enum.Two, "Two");
+            TryFormat(Int32Enum.Max, "Max");
+            TryFormat(Int32Enum.One | Int32Enum.Two, "", false);
+
+            // UInt32, No [Flags] attribute
+            TryFormat(UInt32Enum.Min, "Min");
+            TryFormat(UInt32Enum.One, "One");
+            TryFormat(UInt32Enum.Two, "Two");
+            TryFormat(UInt32Enum.Max, "Max");
+            TryFormat(UInt32Enum.One | UInt32Enum.Two, "", false);
+
+            // Int64, No [Flags] attribute
+            TryFormat(Int64Enum.Min, "Min");
+            TryFormat(Int64Enum.One, "One");
+            TryFormat(Int64Enum.Two, "Two");
+            TryFormat(Int64Enum.Max, "Max");
+            TryFormat(Int64Enum.One | Int64Enum.Two, "", false);
+
+            // UInt64, No [Flags] attribute
+            TryFormat(UInt64Enum.Min, "Min");
+            TryFormat(UInt64Enum.One, "One");
+            TryFormat(UInt64Enum.Two, "Two");
+            TryFormat(UInt64Enum.Max, "Max");
+            TryFormat(UInt64Enum.One | UInt64Enum.Two, "", false);
+
+            // SimpleEnum, No [Flags] attribute
+            TryFormat(SimpleEnum.Red, "Red");
+            TryFormat(SimpleEnum.Blue, "Blue");
+            TryFormat(SimpleEnum.Green, "Green");
+            TryFormat(SimpleEnum.Green_a, "Green");
+            TryFormat(SimpleEnum.Green_b, "Green");
+            TryFormat(SimpleEnum.B, "B");
+
+            // Flags Attribute
+            TryFormat(AttributeTargets.Class | AttributeTargets.Delegate, "Class, Delegate");
+        }
+
+        [Fact]
         public static void ToString_Format_MultipleMatches()
         {
             string s = ((SimpleEnum)3).ToString("F");
@@ -1968,6 +2039,66 @@ namespace System.Tests
             // Format string is case insensitive
             Assert.Equal(expected, Enum.Format(enumType, value, format.ToUpperInvariant()));
             Assert.Equal(expected, Enum.Format(enumType, value, format.ToLowerInvariant()));
+        }
+
+        private static void TryFormat<TEnum>(TEnum value, string expected, bool expectedSuccessfulFormat = true) where TEnum : struct, Enum
+        {
+            Span<char> destination = new char[expected.Length];
+            Assert.Equal(expectedSuccessfulFormat, Enum.TryFormat(value, destination, out int charsWritten));
+            Assert.Equal(expected, destination.ToString());
+            Assert.Equal(expected.Length, charsWritten);
+        }
+
+        [Fact]
+        private static void TryFormat_WithLargerDestinationSpanThanRequired_FillsDestinationSpanLeavingExtraSpaceEmpty()
+        {
+            var anEnum = SimpleEnum.Green;
+            var anEnumString = nameof(SimpleEnum.Green);
+            // Destination has 1 extra space
+            Span<char> destination = new char[anEnumString.Length + 1];
+
+            Assert.True(Enum.TryFormat(anEnum, destination, out int charsWritten));
+            Assert.Equal('\0', destination[5]);
+            Assert.Equal("Green\0", destination.ToString());
+            Assert.Equal(anEnumString.Length, charsWritten);
+        }
+
+        [Fact]
+        private static void TryFormat_WithDestinationAlreadyWithValues_FillsDestinationSpanOverwritingPreviousValues()
+        {
+            var anEnum = SimpleEnum.Green;
+            var anEnumString = nameof(SimpleEnum.Green);
+            Span<char> destination = new char[anEnumString.Length];
+            // Fill the first space in the destination
+            destination[0] = 'a';
+
+            Assert.True(Enum.TryFormat(anEnum, destination, out int charsWritten));
+            Assert.Equal("Green", destination.ToString());
+            Assert.Equal(anEnumString.Length, charsWritten);
+        }
+
+        [Fact]
+        private static void TryFormat_WithEmptySpan_DoesNothing()
+        {
+            var anEnum = SimpleEnum.Green;
+            Span<char> destination = new char[0];
+
+            Assert.False(Enum.TryFormat(anEnum, destination, out int charsWritten));
+            Assert.Equal("", destination.ToString());
+            Assert.Equal(0, charsWritten);
+        }
+
+        [Fact]
+        private static void TryFormat_WithSmallerDestinationSpanThanRequired_DoesNothing()
+        {
+            var anEnum = SimpleEnum.Green;
+            var anEnumString = nameof(SimpleEnum.Green);
+            // Destination has 1 less space
+            Span<char> destination = new char[anEnumString.Length - 1];
+
+            Assert.False(Enum.TryFormat(anEnum, destination, out int charsWritten));
+            Assert.Equal("\0\0\0\0", destination.ToString());
+            Assert.Equal(0, charsWritten);
         }
 
         [Fact]
