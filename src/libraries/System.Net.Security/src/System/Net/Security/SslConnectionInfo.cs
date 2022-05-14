@@ -3,9 +3,9 @@
 
 namespace System.Net.Security
 {
-    internal sealed partial class SslConnectionInfo
+    internal partial struct SslConnectionInfo
     {
-        public int Protocol { get; }
+        public int Protocol { get; private set; }
         public TlsCipherSuite TlsCipherSuite { get; private set; }
         public int DataCipherAlg { get; private set; }
         public int DataKeySize { get; private set; }
@@ -13,5 +13,7 @@ namespace System.Net.Security
         public int DataHashKeySize { get; private set; }
         public int KeyExchangeAlg { get; private set; }
         public int KeyExchKeySize { get; private set; }
+
+        public byte[]? ApplicationProtocol { get; internal set; }
     }
 }

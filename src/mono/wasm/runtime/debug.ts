@@ -105,7 +105,7 @@ export function mono_wasm_send_dbg_command(id: number, command_set: number, comm
 }
 
 export function mono_wasm_get_dbg_command_info(): CommandResponseResult {
-    const { res_ok, res } = commands_received.get(0);
+    const { res_ok, res } = commands_received.remove(0);
 
     if (!res_ok)
         throw new Error("Failed on mono_wasm_get_dbg_command_info");
@@ -142,8 +142,24 @@ export function mono_wasm_raise_debug_event(event: WasmEvent, args = {}): void {
 
 // Used by the debugger to enumerate loaded dlls and pdbs
 export function mono_wasm_get_loaded_files(): string[] {
-    cwraps.mono_wasm_set_is_debugger_attached(true);
     return MONO.loaded_files;
+}
+
+export function mono_wasm_wait_for_debugger(): Promise<void> {
+    return new Promise<void>((resolve) => {
+        const interval = setInterval(() => {
+            if (runtimeHelpers.wait_for_debugger != 1) {
+                return;
+            }
+            clearInterval(interval);
+            resolve();
+        }, 100);
+    });
+}
+
+export function mono_wasm_debugger_attached(): void {
+    runtimeHelpers.wait_for_debugger = 1;
+    cwraps.mono_wasm_set_is_debugger_attached(true);
 }
 
 function _create_proxy_from_object_id(objectId: string, details: any) {

@@ -210,7 +210,7 @@ TiggerStorage::WriteHeader(
     SAVETRACE(printf("PSS:  Header:\n"));
 
     // Save the count and set flags.
-    m_StgHdr.SetiStreams(pList->Count());
+    m_StgHdr.SetiStreams((USHORT)pList->Count());
     if (cbExtraData != 0)
         m_StgHdr.AddFlags(STGHDR_EXTRADATA);
 

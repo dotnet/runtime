@@ -221,7 +221,7 @@ namespace System.Tests
             Assert.True(typeof(ExampleWithAttribute).GetCustomAttributes(typeof(INameable), inherit: false)[0] is NameableAttribute);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsReflectionEmitSupported))]
         [SkipOnMono("Mono does not support getting DynamicMethod attributes via Attribute.GetCustomAttributes()")]
         public static void GetCustomAttributes_DynamicMethod()
         {

@@ -662,7 +662,7 @@ inline bool IsInCantStopRegion()
 }
 #endif // _DEBUG
 
-BOOL IsValidMethodCodeNotification(USHORT Notification);
+BOOL IsValidMethodCodeNotification(ULONG32 Notification);
 
 typedef DPTR(struct JITNotification) PTR_JITNotification;
 struct JITNotification
@@ -870,7 +870,7 @@ public:
     static BOOL ParseExceptionCatcherEnterNotification(TADDR Args[], TADDR& MethodDescPtr, DWORD& nativeOffset);
 };
 
-void DACNotifyCompilationFinished(MethodDesc *pMethodDesc);
+void DACNotifyCompilationFinished(MethodDesc *pMethodDesc, PCODE pCode);
 
 // These wrap the SString:L:CompareCaseInsenstive function in a way that makes it
 // easy to fix code that uses _stricmp. _stricmp should be avoided as it uses the current

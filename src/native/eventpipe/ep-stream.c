@@ -262,7 +262,7 @@ ep_fast_serializer_write_tag (
 	const uint8_t *payload,
 	uint32_t payload_len)
 {
-	uint8_t tag_as_byte = tag;
+	uint8_t tag_as_byte = (uint8_t)tag;
 	ep_fast_serializer_write_buffer (fast_serializer, &tag_as_byte, sizeof (tag_as_byte));
 	if (payload != NULL) {
 		EP_ASSERT (payload_len > 0);

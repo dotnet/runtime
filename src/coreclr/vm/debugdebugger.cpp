@@ -803,7 +803,7 @@ typedef Wrapper<OBJECTHANDLE, DoNothing<OBJECTHANDLE>, HolderDestroyStrongHandle
 
 // receives a custom notification object from the target and sends it to the RS via
 // code:Debugger::SendCustomDebuggerNotification
-// Argument: dataUNSAFE - a pointer the the custom notification object being sent
+// Argument: dataUNSAFE - a pointer the custom notification object being sent
 FCIMPL1(void, DebugDebugger::CustomNotification, Object * dataUNSAFE)
 {
     CONTRACTL

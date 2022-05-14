@@ -6,8 +6,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
+using System.Runtime.ExceptionServices;
 using System.Threading;
 using System.Threading.Tasks;
+using BrowserDebugProxy;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 
@@ -15,7 +17,7 @@ namespace Microsoft.WebAssembly.Diagnostics;
 
 internal sealed class FirefoxMonoProxy : MonoProxy
 {
-    public FirefoxMonoProxy(ILoggerFactory loggerFactory, string loggerId = null) : base(loggerFactory, null, loggerId: loggerId)
+    public FirefoxMonoProxy(ILogger logger, string loggerId = null) : base(logger, null, loggerId: loggerId)
     {
     }
 
@@ -41,7 +43,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
 
             await StartRunLoop(ideConn, browserConn, cts);
             if (Stopped?.reason == RunLoopStopReason.Exception)
-                throw Stopped.exception;
+                ExceptionDispatchInfo.Capture(Stopped.exception).Throw();
         }
         finally
         {
@@ -154,8 +156,6 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     return SendCommandInternal(msgId, "", res, token);
                 return null;
             }
-            //{"type":"evaluationResult","resultID":"1634575904746-0","hasException":false,"input":"ret = 10","result":10,"startTime":1634575904746,"timestamp":1634575904748,"from":"server1.conn21.child10/consoleActor2"}
-
             return null;
         }
         catch (Exception ex)
@@ -472,7 +472,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     var to = args?["to"].Value<string>().Replace("propertyIterator", "");
                     if (!DotnetObjectId.TryParse(to, out DotnetObjectId objectId))
                         return false;
-                    var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
+                    var res = await RuntimeGetObjectMembers(sessionId, objectId, args, token);
                     var variables = ConvertToFirefoxContent(res);
                     var o = JObject.FromObject(new
                     {
@@ -521,7 +521,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     //{"iterator":{"type":"propertyIterator","actor":"server1.conn19.child63/propertyIterator73","count":3},"from":"server1.conn19.child63/obj71"}
                     if (!DotnetObjectId.TryParse(args?["to"], out DotnetObjectId objectId))
                         return false;
-                    var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
+                    var res = await RuntimeGetObjectMembers(sessionId, objectId, args, token);
                     var variables = ConvertToFirefoxContent(res);
                     var o = JObject.FromObject(new
                     {
@@ -547,7 +547,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     if (ctx.CallStack == null)
                         return false;
                     Frame scope = ctx.CallStack.FirstOrDefault(s => s.Id == objectId.Value);
-                    var res = await RuntimeGetPropertiesInternal(sessionId, objectId, args, token);
+                    var res = await RuntimeGetObjectMembers(sessionId, objectId, args, token);
                     var variables = ConvertToFirefoxContent(res);
                     var o = JObject.FromObject(new
                     {
@@ -607,7 +607,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                         var resolver = new MemberReferenceResolver(this, context, sessionId, scope.Id, logger);
                         JObject retValue = await resolver.Resolve(args?["text"]?.Value<string>(), token);
                         if (retValue == null)
-                            retValue = await EvaluateExpression.CompileAndRunTheExpression(args?["text"]?.Value<string>(), resolver, token);
+                            retValue = await ExpressionEvaluator.CompileAndRunTheExpression(args?["text"]?.Value<string>(), resolver, logger, token);
                         var osend = JObject.FromObject(new
                         {
                             type = "evaluationResult",
@@ -660,13 +660,19 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return false;
     }
 
+    internal override void SaveLastDebuggerAgentBufferReceivedToContext(SessionId sessionId, Result res)
+    {
+        var context = GetContextFixefox(sessionId);
+        context.LastDebuggerAgentBufferReceived = res;
+    }
+
     private async Task<bool> SendPauseToBrowser(SessionId sessionId, JObject args, CancellationToken token)
     {
-        Result res = await SendMonoCommand(sessionId, MonoCommands.GetDebuggerAgentBufferReceived(RuntimeId), token);
+        var context = GetContextFixefox(sessionId);
+        Result res = context.LastDebuggerAgentBufferReceived;
         if (!res.IsOk)
             return false;
 
-        var context = GetContextFixefox(sessionId);
         byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
         using var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
         retDebuggerCmdReader.ReadBytes(11);
@@ -695,11 +701,12 @@ internal sealed class FirefoxMonoProxy : MonoProxy
         return o;
     }
 
-    private static JObject ConvertToFirefoxContent(ValueOrError<JToken> res)
+    private static JObject ConvertToFirefoxContent(ValueOrError<GetMembersResult> res)
     {
         JObject variables = new JObject();
         //TODO check if res.Error and do something
-        foreach (var variable in res.Value)
+        var resVars = res.Value.Flatten();
+        foreach (var variable in resVars)
         {
             JObject variableDesc;
             if (variable["get"] != null)
@@ -979,7 +986,7 @@ internal sealed class FirefoxMonoProxy : MonoProxy
                     return false;
 
                 using (var reader = new StreamReader(data))
-                    source = await reader.ReadToEndAsync();
+                    source = await reader.ReadToEndAsync(token);
             }
             await SendEvent(msg_id, "", JObject.FromObject(new { source, from = script_id }), token);
         }

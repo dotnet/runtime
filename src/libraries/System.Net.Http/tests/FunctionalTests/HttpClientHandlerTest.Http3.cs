@@ -86,7 +86,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendMoreThanStreamLimitRequests_Succeeds(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options(){ MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
             {
@@ -125,7 +125,7 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(1000)]
         public async Task SendStreamLimitRequestsConcurrently_Succeeds(int streamLimit)
         {
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options(){ MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
 
             Task serverTask = Task.Run(async () =>
             {
@@ -169,7 +169,6 @@ namespace System.Net.Http.Functional.Tests
         [InlineData(10)]
         [InlineData(100)]
         [InlineData(1000)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/55901")]
         public async Task SendMoreThanStreamLimitRequestsConcurrently_LastWaits(int streamLimit)
         {
             // This combination leads to a hang manifesting in CI only. Disabling it until there's more time to investigate.
@@ -179,7 +178,7 @@ namespace System.Net.Http.Functional.Tests
                 return;
             }
 
-            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options(){ MaxBidirectionalStreams = streamLimit });
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer(new Http3Options() { MaxBidirectionalStreams = streamLimit });
             var lastRequestContentStarted = new TaskCompletionSource();
 
             Task serverTask = Task.Run(async () =>
@@ -195,7 +194,8 @@ namespace System.Net.Http.Functional.Tests
                 }
 
                 // Make the last request running independently.
-                var lastRequest = Task.Run(async () => {
+                var lastRequest = Task.Run(async () =>
+                {
                     using Http3LoopbackStream stream = await connection.AcceptRequestStreamAsync();
                     await stream.HandleRequestAsync();
                 });
@@ -416,7 +416,7 @@ namespace System.Net.Http.Functional.Tests
                     RequestUri = server.Address,
                     Version = HttpVersion30,
                     VersionPolicy = HttpVersionPolicy.RequestVersionExact,
-                    Content = new ByteAtATimeContent(60*4, Task.CompletedTask, new TaskCompletionSource<bool>(), 250)
+                    Content = new ByteAtATimeContent(60 * 4, Task.CompletedTask, new TaskCompletionSource<bool>(), 250)
                 };
 
                 var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
@@ -723,12 +723,12 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient();
 
                 using HttpRequestMessage request = new()
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = server.Address,
-                        Version = HttpVersion30,
-                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                    };
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
                 HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
 
                 Stream stream = await response.Content.ReadAsStreamAsync();
@@ -785,7 +785,7 @@ namespace System.Net.Http.Functional.Tests
 
                 HttpRequestData request = await stream.ReadRequestDataAsync().ConfigureAwait(false);
 
-                int contentLength = 2*1024*1024;
+                int contentLength = 2 * 1024 * 1024;
                 var headers = new List<HttpHeaderData>();
                 headers.Append(new HttpHeaderData("Content-Length", contentLength.ToString(CultureInfo.InvariantCulture)));
 
@@ -810,12 +810,12 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient();
 
                 using HttpRequestMessage request = new()
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = server.Address,
-                        Version = HttpVersion30,
-                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                    };
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
                 HttpResponseMessage response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(20));
 
                 Stream stream = await response.Content.ReadAsStreamAsync();
@@ -917,12 +917,12 @@ namespace System.Net.Http.Functional.Tests
                 using HttpClient client = CreateHttpClient();
 
                 using HttpRequestMessage request = new()
-                    {
-                        Method = HttpMethod.Get,
-                        RequestUri = server.Address,
-                        Version = HttpVersion30,
-                        VersionPolicy = HttpVersionPolicy.RequestVersionExact
-                    };
+                {
+                    Method = HttpMethod.Get,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact
+                };
 
                 HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.SendAsync(request).WaitAsync(TimeSpan.FromSeconds(10)));
                 Assert.Contains("ALPN_NEG_FAILURE", ex.Message);
@@ -1057,7 +1057,8 @@ namespace System.Net.Http.Functional.Tests
 
             var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead).WaitAsync(TimeSpan.FromSeconds(10));
 
-            Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10));;
+            Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10));
+
             // Send headers
             await requestStream.FlushAsync();
 
@@ -1313,6 +1314,97 @@ namespace System.Net.Http.Functional.Tests
             connection.Dispose();
         }
 
+        [ConditionalTheory(nameof(IsMsQuicSupported))]
+        [InlineData(true)]
+        [InlineData(false)]
+        public async Task DuplexStreaming_AbortByServer_StreamingCancelled(bool graceful)
+        {
+            if (UseQuicImplementationProvider == QuicImplementationProviders.Mock)
+            {
+                return;
+            }
+
+            var message = new byte[1024];
+            var random = new Random(0);
+            random.NextBytes(message);
+
+            using Http3LoopbackServer server = CreateHttp3LoopbackServer();
+            Http3LoopbackConnection connection = null;
+            Http3LoopbackStream serverStream = null;
+
+            Task serverTask = Task.Run(async () =>
+            {
+                connection = (Http3LoopbackConnection)await server.EstablishGenericConnectionAsync();
+                serverStream = await connection.AcceptRequestStreamAsync();
+
+                HttpRequestData requestData = await serverStream.ReadRequestDataAsync(readBody: false).WaitAsync(TimeSpan.FromSeconds(30));
+
+                // abort the connection, including the just-received connection
+                if (graceful)
+                {
+                    await connection.ShutdownAsync(true);
+                }
+                else
+                {
+                    await connection.CloseAsync(Http3LoopbackConnection.H3_INTERNAL_ERROR);
+                }
+            });
+
+            Task clientTask = Task.Run(async () =>
+            {
+                StreamingHttpContent requestContent = new StreamingHttpContent();
+
+                using HttpClient client = CreateHttpClient();
+                using HttpRequestMessage request = new()
+                {
+                    Method = HttpMethod.Post,
+                    RequestUri = server.Address,
+                    Version = HttpVersion30,
+                    VersionPolicy = HttpVersionPolicy.RequestVersionExact,
+                    Content = requestContent
+                };
+
+                var cts = new CancellationTokenSource();
+
+                var responseTask = client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead, cts.Token);
+
+                // wait for the content to start transferring
+                Stream requestStream = await requestContent.GetStreamAsync().WaitAsync(TimeSpan.FromSeconds(10)); // the stream is Http3WriteStream
+
+                CancellationToken serializeToken = requestContent.SerializeCancellationToken;
+                Assert.False(serializeToken.IsCancellationRequested);
+
+                // Send headers
+                await requestStream.FlushAsync();
+
+                // wait for the server to abort the request, which should cancel the token provided to the HttpContent
+                TaskCompletionSource waitTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+                {
+                    using CancellationTokenRegistration registration = serializeToken.UnsafeRegister(static tcs => ((TaskCompletionSource)tcs!).TrySetResult(), waitTcs);
+                    await waitTcs.Task.WaitAsync(TimeSpan.FromSeconds(10));
+                }
+
+                if (graceful)
+                {
+                    // HttpClient will retry to send the request, so we cancel the sending itself
+                    cts.Cancel();
+                    await Assert.ThrowsAnyAsync<OperationCanceledException>(() => responseTask);
+                }
+                else
+                {
+                    await Assert.ThrowsAnyAsync<HttpRequestException>(() => responseTask);
+                }
+            });
+
+            await clientTask.WaitAsync(TimeSpan.FromSeconds(120));
+            await serverTask.WaitAsync(TimeSpan.FromSeconds(120));
+
+            Assert.NotNull(serverStream);
+            serverStream.Dispose();
+            Assert.NotNull(connection);
+            connection.Dispose();
+        }
+
         public static TheoryData<HttpStatusCode, bool> StatusCodesTestData()
         {
             var statuses = Enum.GetValues(typeof(HttpStatusCode)).Cast<HttpStatusCode>().Where(s => s >= HttpStatusCode.OK); // exclude informational
@@ -1357,6 +1449,8 @@ namespace System.Net.Http.Functional.Tests
         private readonly TaskCompletionSource _completeTcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
         private readonly TaskCompletionSource<Stream> _getStreamTcs = new TaskCompletionSource<Stream>(TaskCreationOptions.RunContinuationsAsynchronously);
 
+        public CancellationToken SerializeCancellationToken { get; private set; }
+
         protected override Task SerializeToStreamAsync(Stream stream, TransportContext context)
         {
             throw new NotSupportedException();
@@ -1364,6 +1458,7 @@ namespace System.Net.Http.Functional.Tests
 
         protected override async Task SerializeToStreamAsync(Stream stream, TransportContext context, CancellationToken cancellationToken)
         {
+            SerializeCancellationToken = cancellationToken;
             _getStreamTcs.TrySetResult(stream);
             await _completeTcs.Task.WaitAsync(cancellationToken);
         }
