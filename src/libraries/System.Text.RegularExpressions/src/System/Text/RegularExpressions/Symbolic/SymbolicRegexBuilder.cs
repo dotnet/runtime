@@ -315,6 +315,52 @@ namespace System.Text.RegularExpressions.Symbolic
             return length;
         }
 
+        private Dictionary<(SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>), bool> _subsumptionCache = new();
+        internal bool Subsumes(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right)
+        {
+            if (left == right)
+                return true;
+            if (right == _nothing)
+                return true;
+
+            if (_subsumptionCache.TryGetValue((left, right), out bool cached))
+            {
+                return cached;
+            }
+
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(Subsumes, left, right);
+            }
+
+            bool? subsumes = null;
+
+            if (!(subsumes ?? false) && left._kind == SymbolicRegexNodeKind.Concat)
+            {
+                Debug.Assert(left._left is not null && left._right is not null);
+                if (left._left.IsNullable)
+                {
+                    subsumes = Subsumes(left._right, right);
+                }
+            }
+
+            if (!(subsumes ?? false) && left._kind == SymbolicRegexNodeKind.Effect)
+            {
+                Debug.Assert(left._left is not null && left._right is not null);
+                subsumes = Subsumes(left._left, right);
+            }
+
+            if (!(subsumes ?? false) && right._kind == SymbolicRegexNodeKind.Effect)
+            {
+                Debug.Assert(right._left is not null && right._right is not null);
+                subsumes = Subsumes(left, right._left);
+            }
+
+            if (subsumes.HasValue)
+                _subsumptionCache[(left, right)] = subsumes.Value;
+            return subsumes ?? false;
+        }
+
         /// <summary>
         /// Make loop regex
         /// </summary>

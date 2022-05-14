@@ -702,6 +702,9 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexNode<TSet> rl = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._left! : right;
             SymbolicRegexNode<TSet> rr = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._right! : builder._nothing;
 
+            if (builder.Subsumes(left, rl))
+                return OrderedOr(builder, left, rr);
+
             //try to simplify left|(rl|rr) by attempting to detect left as a suffix of rl
             //this subsumption simplies a common case of taking derivatives of concatenations by keeping them more compact
             if (TryToSimplifyAlternation(left, rl, out SymbolicRegexNode<TSet>? left_or_rl))
