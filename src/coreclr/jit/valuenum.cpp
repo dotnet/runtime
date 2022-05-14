@@ -3440,34 +3440,39 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
     var_types srcType = TypeOfVN(arg0VN);
     assert((genTypeSize(srcType) == genTypeSize(dstType)) || (varTypeIsSmall(dstType) && (srcType == TYP_INT)));
 
-    union {
-        int           Int;
-        int64_t       Long;
-        target_size_t IntPtr;
-        float         Float;
-        double        Double;
-    } srcValue{};
+    int           int32    = 0;
+    int64_t       int64    = 0;
+    target_size_t nuint    = 0;
+    float         float32  = 0;
+    double        float64  = 0;
+    unsigned char bytes[8] = {};
 
     switch (srcType)
     {
         case TYP_INT:
-            srcValue.Int = ConstantValue<int>(arg0VN);
+            int32 = ConstantValue<int>(arg0VN);
+            memcpy(bytes, &int32, sizeof(int32));
             break;
         case TYP_LONG:
-            srcValue.Long = ConstantValue<int64_t>(arg0VN);
+            int64 = ConstantValue<int64_t>(arg0VN);
+            memcpy(bytes, &int64, sizeof(int64));
             break;
         case TYP_BYREF:
-            srcValue.IntPtr = ConstantValue<target_size_t>(arg0VN);
+            nuint = ConstantValue<target_size_t>(arg0VN);
+            memcpy(bytes, &nuint, sizeof(nuint));
             break;
         case TYP_REF:
             noway_assert(arg0VN == VNForNull());
-            srcValue.IntPtr = 0;
+            nuint = 0;
+            memcpy(bytes, &nuint, sizeof(nuint));
             break;
         case TYP_FLOAT:
-            srcValue.Float = ConstantValue<float>(arg0VN);
+            float32 = ConstantValue<float>(arg0VN);
+            memcpy(bytes, &float32, sizeof(float32));
             break;
         case TYP_DOUBLE:
-            srcValue.Double = ConstantValue<double>(arg0VN);
+            float64 = ConstantValue<double>(arg0VN);
+            memcpy(bytes, &float64, sizeof(float64));
             break;
         default:
             unreached();
@@ -3476,30 +3481,39 @@ ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum a
     // "BitCast<small type>" has the semantic of only changing the upper bits (without truncation).
     if (varTypeIsSmall(dstType))
     {
-        assert(FitsIn(varTypeToSigned(dstType), srcValue.Int) || FitsIn(varTypeToUnsigned(dstType), srcValue.Int));
+        assert(FitsIn(varTypeToSigned(dstType), int32) || FitsIn(varTypeToUnsigned(dstType), int32));
     }
 
     switch (dstType)
     {
         case TYP_BOOL:
         case TYP_UBYTE:
-            return VNForIntCon(static_cast<uint8_t>(srcValue.Int));
+            memcpy(&int32, bytes, sizeof(int32));
+            return VNForIntCon(static_cast<uint8_t>(int32));
         case TYP_BYTE:
-            return VNForIntCon(static_cast<int8_t>(srcValue.Int));
+            memcpy(&int32, bytes, sizeof(int32));
+            return VNForIntCon(static_cast<int8_t>(int32));
         case TYP_USHORT:
-            return VNForIntCon(static_cast<uint16_t>(srcValue.Int));
+            memcpy(&int32, bytes, sizeof(int32));
+            return VNForIntCon(static_cast<uint16_t>(int32));
         case TYP_SHORT:
-            return VNForIntCon(static_cast<int16_t>(srcValue.Int));
+            memcpy(&int32, bytes, sizeof(int32));
+            return VNForIntCon(static_cast<int16_t>(int32));
         case TYP_INT:
-            return VNForIntCon(srcValue.Int);
+            memcpy(&int32, bytes, sizeof(int32));
+            return VNForIntCon(int32);
         case TYP_LONG:
-            return VNForLongCon(srcValue.Long);
+            memcpy(&int64, bytes, sizeof(int64));
+            return VNForLongCon(int64);
         case TYP_BYREF:
-            return VNForByrefCon(srcValue.IntPtr);
+            memcpy(&nuint, bytes, sizeof(nuint));
+            return VNForByrefCon(nuint);
         case TYP_FLOAT:
-            return VNForFloatCon(srcValue.Float);
+            memcpy(&float32, bytes, sizeof(float32));
+            return VNForFloatCon(float32);
         case TYP_DOUBLE:
-            return VNForDoubleCon(srcValue.Double);
+            memcpy(&float64, bytes, sizeof(float64));
+            return VNForDoubleCon(float64);
         default:
             unreached();
     }
