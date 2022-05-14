@@ -640,6 +640,8 @@ enum GenTreeFlags : unsigned int
 
     GTF_ARRLEN_NONFAULTING      = 0x20000000, // GT_ARR_LENGTH  -- An array length operation that cannot fault. Same as GT_IND_NONFAULTING.
 
+    GTF_MDARRLEN_NONFAULTING    = 0x20000000, // GT_MDARR_LENGTH -- An MD array length operation that cannot fault. Same as GT_IND_NONFAULTING.
+
     GTF_SIMDASHW_OP             = 0x80000000, // GT_HWINTRINSIC -- Indicates that the structHandle should be gotten from gtGetStructHandleForSIMD
                                               //                   rather than from gtGetStructHandleForHWSIMD.
 };
@@ -1582,9 +1584,14 @@ public:
         return gtOper == GT_IND || gtOper == GT_STOREIND || gtOper == GT_NULLCHECK || OperIsBlk(gtOper);
     }
 
+    static bool OperIsArrLength(genTreeOps gtOper)
+    {
+        return (gtOper == GT_ARR_LENGTH) || (gtOper == GT_MDARR_LENGTH);
+    }
+
     static bool OperIsIndirOrArrLength(genTreeOps gtOper)
     {
-        return OperIsIndir(gtOper) || (gtOper == GT_ARR_LENGTH);
+        return OperIsIndir(gtOper) || OperIsArrLength(gtOper);
     }
 
     bool OperIsIndir() const
@@ -1592,10 +1599,21 @@ public:
         return OperIsIndir(gtOper);
     }
 
+    bool OperIsArrLength() const
+    {
+        return OperIsArrLength(gtOper);
+    }
+
     bool OperIsIndirOrArrLength() const
     {
         return OperIsIndirOrArrLength(gtOper);
     }
+
+    // Helper function to return the array reference of an array length node.
+    GenTree* GetArrLengthArrRef();
+
+    // Helper function to return the address of an indir or array length node.
+    GenTree* GetIndirOrArrLengthAddr();
 
     bool OperIsImplicitIndir() const;
 
@@ -6422,9 +6440,9 @@ private:
                                       target_ssize_t* pOffset);
 };
 
-/* gtArrLen -- array length (GT_ARR_LENGTH)
-   GT_ARR_LENGTH is used for "arr.length" */
-
+// GenTreeArrLen (GT_ARR_LENGTH) -- single-dimension (SZ) array length. Used for `array.Length`.
+// This class is used as a parent class for GenTreeMDArrLen (GT_MDARR_LENGTH).
+//
 struct GenTreeArrLen : public GenTreeUnOp
 {
     GenTree*& ArrRef() // the array address node
@@ -6441,6 +6459,12 @@ public:
         return gtArrLenOffset;
     }
 
+    // This constructor needed for GenTreeMDArrLen constructor.
+    GenTreeArrLen(genTreeOps oper, var_types type, GenTree* arrRef, int lenOffset)
+        : GenTreeUnOp(oper, type, arrRef), gtArrLenOffset(lenOffset)
+    {
+    }
+
     GenTreeArrLen(var_types type, GenTree* arrRef, int lenOffset)
         : GenTreeUnOp(GT_ARR_LENGTH, type, arrRef), gtArrLenOffset(lenOffset)
     {
@@ -6448,6 +6472,37 @@ public:
 
 #if DEBUGGABLE_GENTREE
     GenTreeArrLen() : GenTreeUnOp()
+    {
+    }
+#endif
+};
+
+// GenTreeMDArrLen (GT_MDARR_LENGTH) -- multi-dimension (MD) array length. Used for `array.GetLength(n)`.
+//
+struct GenTreeMDArrLen : public GenTreeArrLen
+{
+private:
+    int gtDim;  // array dimension of this array length
+    int gtRank; // array rank of the array
+
+public:
+    int Dim() const
+    {
+        return gtDim;
+    }
+
+    int Rank() const
+    {
+        return gtRank;
+    }
+
+    GenTreeMDArrLen(var_types type, GenTree* arrRef, int dim, int rank, int lenOffset)
+        : GenTreeArrLen(GT_MDARR_LENGTH, type, arrRef, lenOffset), gtDim(dim), gtRank(rank)
+    {
+    }
+
+#if DEBUGGABLE_GENTREE
+    GenTreeMDArrLen() : GenTreeArrLen()
     {
     }
 #endif
@@ -6484,10 +6539,17 @@ struct GenTreeBoundsChk : public GenTreeOp
     }
 #endif
 
-    // If this check is against GT_ARR_LENGTH, returns array reference, else "NULL".
+    // If this check is against GT_ARR_LENGTH or GT_MDARR_LENGTH, returns array reference, else nullptr.
     GenTree* GetArray() const
     {
-        return GetArrayLength()->OperIs(GT_ARR_LENGTH) ? GetArrayLength()->AsArrLen()->ArrRef() : nullptr;
+        if (GetArrayLength()->OperIsArrLength())
+        {
+            return GetArrayLength()->GetArrLengthArrRef();
+        }
+        else
+        {
+            return nullptr;
+        }
     }
 
     // The index expression.
@@ -9171,6 +9233,28 @@ inline bool GenTree::isUsedFromSpillTemp() const
     }
 
     return false;
+}
+
+// Helper function to return the array reference of an array length node.
+inline GenTree* GenTree::GetArrLengthArrRef()
+{
+    assert(OperIsArrLength());
+    return AsArrLen()->ArrRef();
+}
+
+// Helper function to return the address of an indir or array length node.
+inline GenTree* GenTree::GetIndirOrArrLengthAddr()
+{
+    assert(OperIsIndirOrArrLength());
+
+    if (OperIsIndir())
+    {
+        return AsIndir()->Addr();
+    }
+    else
+    {
+        return GetArrLengthArrRef();
+    }
 }
 
 /*****************************************************************************/

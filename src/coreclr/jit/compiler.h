@@ -2606,7 +2606,12 @@ public:
 
     GenTreeIndir* gtNewIndexIndir(GenTreeIndexAddr* indexAddr);
 
+    void gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block);
+
     GenTreeArrLen* gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block);
+
+    GenTreeMDArrLen* gtNewMDArrLen(
+        var_types typ, GenTree* arrayOp, int dim, int rank, int lenOffset, BasicBlock* block);
 
     GenTreeIndir* gtNewIndir(var_types typ, GenTree* addr);
 
@@ -10724,6 +10729,7 @@ public:
             case GT_COPY:
             case GT_RELOAD:
             case GT_ARR_LENGTH:
+            case GT_MDARR_LENGTH:
             case GT_CAST:
             case GT_BITCAST:
             case GT_CKFINITE:

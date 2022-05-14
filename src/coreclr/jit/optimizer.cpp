@@ -4671,7 +4671,7 @@ Compiler::fgWalkResult Compiler::optInvertCountTreeInfo(GenTree** pTree, fgWalkD
         o->sharedStaticHelperCount += 1;
     }
 
-    if ((*pTree)->OperGet() == GT_ARR_LENGTH)
+    if ((*pTree)->OperIsArrLength())
     {
         o->arrayLengthCount += 1;
     }

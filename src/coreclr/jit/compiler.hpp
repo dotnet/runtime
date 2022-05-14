@@ -1187,28 +1187,63 @@ inline GenTreeIndir* Compiler::gtNewIndexIndir(GenTreeIndexAddr* indexAddr)
 }
 
 //------------------------------------------------------------------------------
-// gtNewArrLen : Helper to create an array length node.
-//
+// gtAnnotateNewArrLen : Helper to add flags for new array length nodes.
 //
 // Arguments:
-//    typ      -  Type of the node
-//    arrayOp  -  Array node
-//    lenOffset - Offset of the length field
-//    block     - Basic block that will contain the result
+//    arrLen    - The new GT_ARR_LENGTH or GT_MDARR_LENGTH node
+//    block     - Basic block that will contain the new length node
 //
-// Return Value:
-//    New GT_ARR_LENGTH node
-
-inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block)
+inline void Compiler::gtAnnotateNewArrLen(GenTree* arrLen, BasicBlock* block)
 {
-    GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
+    assert(arrLen->OperIs(GT_ARR_LENGTH, GT_MDARR_LENGTH));
     static_assert_no_msg(GTF_ARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
+    static_assert_no_msg(GTF_MDARRLEN_NONFAULTING == GTF_IND_NONFAULTING);
     arrLen->SetIndirExceptionFlags(this);
     if (block != nullptr)
     {
         block->bbFlags |= BBF_HAS_IDX_LEN;
     }
     optMethodFlags |= OMF_HAS_ARRAYREF;
+}
+
+//------------------------------------------------------------------------------
+// gtNewArrLen : Helper to create an array length node.
+//
+// Arguments:
+//    typ       - Type of the node
+//    arrayOp   - Array node
+//    lenOffset - Offset of the length field
+//    block     - Basic block that will contain the result
+//
+// Return Value:
+//    New GT_ARR_LENGTH node
+//
+inline GenTreeArrLen* Compiler::gtNewArrLen(var_types typ, GenTree* arrayOp, int lenOffset, BasicBlock* block)
+{
+    GenTreeArrLen* arrLen = new (this, GT_ARR_LENGTH) GenTreeArrLen(typ, arrayOp, lenOffset);
+    gtAnnotateNewArrLen(arrLen, block);
+    return arrLen;
+}
+
+//------------------------------------------------------------------------------
+// gtNewMDArrLen : Helper to create an MD array length node.
+//
+// Arguments:
+//    typ       - Type of the node
+//    arrayOp   - Array node
+//    dim       - Offset of the length field
+//    rank      - Offset of the length field
+//    lenOffset - Offset of the length field
+//    block     - Basic block that will contain the result
+//
+// Return Value:
+//    New GT_MDARR_LENGTH node
+//
+inline GenTreeMDArrLen* Compiler::gtNewMDArrLen(
+    var_types typ, GenTree* arrayOp, int dim, int rank, int lenOffset, BasicBlock* block)
+{
+    GenTreeMDArrLen* arrLen = new (this, GT_MDARR_LENGTH) GenTreeMDArrLen(typ, arrayOp, dim, rank, lenOffset);
+    gtAnnotateNewArrLen(arrLen, block);
     return arrLen;
 }
 
@@ -4165,6 +4200,7 @@ void GenTree::VisitOperands(TVisitor visitor)
         case GT_COPY:
         case GT_RELOAD:
         case GT_ARR_LENGTH:
+        case GT_MDARR_LENGTH:
         case GT_CAST:
         case GT_BITCAST:
         case GT_CKFINITE:
