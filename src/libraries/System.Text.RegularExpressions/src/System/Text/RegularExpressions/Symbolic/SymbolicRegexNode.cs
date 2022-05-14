@@ -527,6 +527,8 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             if (effectNode == builder.Epsilon)
                 return node;
+            if (node == builder._nothing)
+                return builder._nothing;
             if (node._kind == SymbolicRegexNodeKind.Effect)
             {
                 Debug.Assert(node._left is not null && node._right is not null);
