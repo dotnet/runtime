@@ -15,13 +15,34 @@ steps:
 - task: PublishTestResults@2
   displayName: Publish Test Results
   inputs:
-    testResultsFormat: 'xUnit'
-    testResultsFiles: '*.xml'
+    testResultsFormat: 'VSTest'
+    testResultsFiles: '*.trx'
     searchFolder: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
     mergeTestResults: true
     testRunTitle: Installer-${{ parameters.runtimeFlavor }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
   condition: eq(variables.SkipTests, false)
+
+# Upload test result files (including any dumps) on failure
+- ${{ if eq(parameters.skipTests, false) }}:
+  - task: ArchiveFiles@2
+    displayName: 'Zip TestResults folder'
+    inputs:
+      rootFolderOrFile: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
+      archiveFile: '$(Build.StagingDirectory)/TestResults$(archiveExtension)'
+      archiveType: $(archiveType)
+      tarCompression: $(tarCompression)
+      includeRootFolder: false
+    continueOnError: true
+    condition: failed()
+
+  - task: PublishBuildArtifacts@1
+    displayName: 'Publish TestResults folder'
+    inputs:
+      pathtoPublish: '$(Build.StagingDirectory)/TestResults$(archiveExtension)'
+      artifactName: Installer-TestResults-${{parameters.pgoType }}${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
+    continueOnError: true
+    condition: failed()
 
 - task: CopyFiles@2
   displayName: Prepare BuildLogs staging directory
