@@ -107,7 +107,7 @@ namespace
         GCPROTECT_END();
     }
 
-    void GetAssemblyLoadContextNameFromBinder(AssemblyBinder *binder, AppDomain *domain, /*out*/ SString &alcName)
+    void GetAssemblyLoadContextNameFromBinder(AssemblyBinder *binder, /*out*/ SString &alcName)
     {
         _ASSERTE(binder != nullptr);
 
@@ -130,7 +130,7 @@ namespace
         if (binder == nullptr)
             binder = spec->GetBinderFromParentAssembly(domain);
 
-        GetAssemblyLoadContextNameFromBinder(binder, domain, alcName);
+        GetAssemblyLoadContextNameFromBinder(binder, alcName);
     }
 
     void PopulateBindRequest(/*inout*/ BinderTracing::AssemblyBindOperation::BindRequest &request)
@@ -148,16 +148,20 @@ namespace
             _ASSERTE(pPEAssembly != nullptr);
             pPEAssembly->GetDisplayName(request.RequestingAssembly);
 
-            AppDomain *domain = parentAssembly->GetAppDomain();
             AssemblyBinder *binder = pPEAssembly->GetAssemblyBinder();
 
-            GetAssemblyLoadContextNameFromBinder(binder, domain, request.RequestingAssemblyLoadContext);
+            GetAssemblyLoadContextNameFromBinder(binder, request.RequestingAssemblyLoadContext);
         }
 
         GetAssemblyLoadContextNameFromSpec(spec, request.AssemblyLoadContext);
     }
 
     const WCHAR *s_assemblyNotFoundMessage = W("Could not locate assembly");
+}
+
+void GetAssemblyLoadContextNameFromBinderForExceptionHandling(AssemblyBinder* binder, /*out*/ SString& alcName)
+{
+    GetAssemblyLoadContextNameFromBinder(binder, alcName);
 }
 
 bool BinderTracing::IsEnabled()
@@ -257,7 +261,7 @@ namespace BinderTracing
         }
         else
         {
-            GetAssemblyLoadContextNameFromBinder(binder, GetAppDomain(), m_assemblyLoadContextName);
+            GetAssemblyLoadContextNameFromBinder(binder, m_assemblyLoadContextName);
         }
     }
 
