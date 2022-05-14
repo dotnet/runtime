@@ -1296,18 +1296,12 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         if (varNode != nullptr)
         {
             assert(varNode->isContained());
-            srcVarNum = varNode->GetLclNum();
-
-            // handle promote situation
+            srcVarNum         = varNode->GetLclNum();
             LclVarDsc* varDsc = compiler->lvaGetDesc(srcVarNum);
 
-            // This struct also must live in the stack frame
-            // And it can't live in a register (SIMD)
-            assert(varDsc->lvType == TYP_STRUCT);
+            // This struct also must live in the stack frame.
+            // And it can't live in a register.
             assert(varDsc->lvOnFrame && !varDsc->lvRegister);
-
-            // We don't split HFA struct
-            assert(!varDsc->lvIsHfa());
         }
         else // addrNode is used
         {
