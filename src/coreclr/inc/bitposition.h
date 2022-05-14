@@ -23,6 +23,7 @@ unsigned            BitPosition(unsigned value)
 }
 
 
+#ifdef TARGET_64BIT
 //------------------------------------------------------------------------
 // BitPosition: Return the position of the single bit that is set in 'value'.
 //
@@ -40,5 +41,6 @@ unsigned            BitPosition(unsigned __int64 value)
     BitScanForward64(&index, value);
     return index;
 }
+#endif // TARGET_64BIT
 
 #endif
