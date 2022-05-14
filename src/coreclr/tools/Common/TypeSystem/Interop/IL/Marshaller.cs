@@ -1858,11 +1858,22 @@ namespace Internal.TypeSystem.Interop
         {
             ILEmitter emitter = _ilCodeStreams.Emitter;
 
-            Debug.Assert(_marshallerInstance != null);
+            if (In && !Out && !IsManagedByRef)
+            {
+                Debug.Assert(_marshallerInstance != null);
 
-            codeStream.EmitLdLoca(_marshallerInstance.Value);
-            codeStream.Emit(ILOpcode.call, emitter.NewToken(
-                                Marshaller.GetKnownMethod("FreeNative", null)));
+                codeStream.EmitLdLoca(_marshallerInstance.Value);
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                    Marshaller.GetKnownMethod("FreeNative", null)));
+            }
+            else
+            {
+                // The marshaller instance is not guaranteed to be initialized with the latest native value.
+                // Free  the native value directly.
+                LoadNativeValue(codeStream);
+                codeStream.Emit(ILOpcode.call, emitter.NewToken(
+                                    InteropTypes.GetMarshal(Context).GetKnownMethod("CoTaskMemFree", null)));
+            }
         }
     }
 
