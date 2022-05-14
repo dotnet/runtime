@@ -2722,7 +2722,7 @@ get_marshal_cb (void)
 #ifdef ENABLE_ILGEN
 		mono_marshal_ilgen_init ();
 #else
-		mono_marshal_noilgen_init ();
+		mono_marshal_noilgen_init_heavyweight ();
 #endif
 	}
 	return &ilgen_marshal_cb;

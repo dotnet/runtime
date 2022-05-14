@@ -54,7 +54,6 @@ void mono_wasm_deregister_root (char *addr);
 
 void mono_ee_interp_init (const char *opts);
 void mono_marshal_lightweight_init (void);
-mono_bool mono_marshal_lightweight_cb_is_inited (void);
 void mono_method_builder_ilgen_init (void);
 void mono_sgen_mono_ilgen_init (void);
 void mono_icall_table_init (void);
@@ -569,10 +568,7 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #ifdef NEED_INTERP
 	mono_ee_interp_init (interp_opts);
 
-	if(!mono_marshal_lightweight_cb_is_inited())
-	{
-		mono_marshal_lightweight_init ();
-	}
+	mono_marshal_lightweight_init ();
 
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();

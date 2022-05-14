@@ -29,7 +29,10 @@ void
 mono_marshal_ilgen_init (void);
 #else
 void
-mono_marshal_noilgen_init (void);
+mono_marshal_noilgen_init_heavyweight (void);
+
+void
+mono_marshal_noilgen_init_lightweight (void);
 #endif 
 
 int

@@ -365,10 +365,9 @@ emit_native_wrapper_noilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethod
 }
 
 void
-mono_marshal_noilgen_init (void)
+mono_marshal_noilgen_init_lightweight (void)
 {
 	MonoMarshalLightweightCallbacks lightweight_cb;
-	MonoMarshalIlgenCallbacks ilgen_cb;
 
 	lightweight_cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
 	lightweight_cb.emit_marshal_scalar = emit_marshal_scalar_noilgen;
@@ -402,7 +401,16 @@ mono_marshal_noilgen_init (void)
 	lightweight_cb.mb_emit_exception_for_error = mb_emit_exception_for_error_noilgen;
 	lightweight_cb.emit_marshal_directive_exception = emit_marshal_directive_exception_noilgen;
 	lightweight_cb.mb_emit_byte = mb_emit_byte_noilgen;
+
+	printf("!!!naricc_debug!!! mono_marshal_noilgen_init\n");
 	mono_install_marshal_callbacks (&lightweight_cb);
+
+}
+
+void
+mono_marshal_noilgen_init_heavyweight (void)
+{
+	MonoMarshalIlgenCallbacks ilgen_cb;
 
 	ilgen_cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
 	ilgen_cb.emit_marshal_array = emit_marshal_array_noilgen;
@@ -420,9 +428,15 @@ mono_marshal_noilgen_init (void)
 	ilgen_cb.emit_marshal_char = emit_marshal_char_noilgen;
 	mono_install_marshal_callbacks_ilgen(&ilgen_cb);
 }
+
 #else
 void
-mono_marshal_noilgen_init (void)
+mono_marshal_noilgen_init_lightweight (void)
+{
+}
+
+void
+mono_marshal_noilgen_init_heavyweight (void)
 {
 }
 #endif
