@@ -201,16 +201,12 @@
 #define WszGetFileAttributes   GetFileAttributesWrapper
 #define WszGetFileAttributesEx GetFileAttributesExWrapper
 #define WszDeleteFile          DeleteFileWrapper
-#define WszFindFirstFileEx     FindFirstFileExWrapper
-#define WszFindNextFile        FindNextFileW
-#define WszMoveFileEx          MoveFileExWrapper
 
 //Can not use extended syntax
 #define WszGetFullPathName     GetFullPathNameW
 
 //Long Files will not work on these till redstone
 #define WszGetCurrentDirectory GetCurrentDirectoryWrapper
-#define WszGetTempFileName     GetTempFileNameWrapper
 #define WszGetTempPath         GetTempPathWrapper
 
 //APIS which have a buffer as an out parameter
@@ -223,11 +219,6 @@
 //
 //#define WszGetBinaryType       GetBinaryTypeWrapper     //Coresys does not seem to have this API
 
-#if HOST_UNIX
-#define WszFindFirstFile     FindFirstFileW
-#else
-#define WszFindFirstFile(_lpFileName_, _lpFindData_)       FindFirstFileExWrapper(_lpFileName_, FindExInfoStandard, _lpFindData_, FindExSearchNameMatch, NULL, 0)
-#endif // HOST_UNIX
 //*****************************************************************************
 // Prototypes for API's.
 //*****************************************************************************
