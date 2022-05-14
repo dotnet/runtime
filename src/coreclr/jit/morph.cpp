@@ -11764,6 +11764,7 @@ DONE_MORPHING_CHILDREN:
                 // 'temp' because a GT_ADDR always marks it for its operand.
                 temp->gtFlags &= ~GTF_DONT_CSE;
                 temp->gtFlags |= (tree->gtFlags & GTF_DONT_CSE);
+                temp->SetVNsFromNode(tree);
 
                 if (op1->OperGet() == GT_ADD)
                 {
