@@ -1734,7 +1734,10 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
-                    return _builder.OrderedOr(_left.StripEffects(), _right.StripEffects());
+                    List<SymbolicRegexNode<TSet>> elems = ToList(listKind: SymbolicRegexNodeKind.OrderedOr);
+                    for (int i = 0; i < elems.Count; i++)
+                        elems[i] = elems[i].StripEffects();
+                    return _builder.OrderedOr(elems);
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
                     Debug.Assert(_left is not null);
@@ -1978,7 +1981,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     return disjunction;
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
-                    return _builder.OrderedOr(_left.ExtractNullabilityTest(), _right.ExtractNullabilityTest());
+                    return OrderedOr(_builder, _left.ExtractNullabilityTest(), _right.ExtractNullabilityTest());
                 case SymbolicRegexNodeKind.And:
                     Debug.Assert(_alts is not null);
                     SymbolicRegexNode<TSet> conjunction = _builder._anyStar;
@@ -2449,7 +2452,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
-                    return _builder.OrderedOr(_left.Reverse(), _right.Reverse());
+                    return OrderedOr(_builder, _left.Reverse(), _right.Reverse());
 
                 case SymbolicRegexNodeKind.And:
                     Debug.Assert(_alts is not null);

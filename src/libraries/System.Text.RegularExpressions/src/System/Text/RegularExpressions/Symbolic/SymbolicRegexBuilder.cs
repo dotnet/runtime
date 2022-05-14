@@ -200,28 +200,31 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Make an ordered disjunction of given nodes, simplify by eliminating any regex that accepts no inputs
         /// </summary>
-        internal SymbolicRegexNode<TSet> OrderedOr(params SymbolicRegexNode<TSet>[] nodes)
+        internal SymbolicRegexNode<TSet> OrderedOr(List<SymbolicRegexNode<TSet>> nodes)
         {
-            SymbolicRegexNode<TSet>? or = null;
+            HashSet<SymbolicRegexNode<TSet>> seenElems = new();
+            // Keep track of if any elements from the right side need to be eliminated
+            for (int i = 0; i < nodes.Count; i++)
+            {
+                if (!seenElems.Contains(nodes[i]))
+                {
+                    seenElems.Add(nodes[i]);
+                }
+                else
+                {
+                    // Nothing will be eliminated in the next step
+                    nodes[i] = _nothing;
+                }
+            }
+            SymbolicRegexNode<TSet> or = _nothing;
             // Iterate backwards to avoid quadratic rebuilding of the Or nodes, which are always simplified to
             // right associative form. Concretely:
             // In (a|(b|c)) | d -> (a|(b|(c|d)) the first argument is not a subtree of the result.
             // In a | (b|(c|d)) -> (a|(b|(c|d)) the second argument is a subtree of the result.
             // The first case performs linear work for each element, leading to a quadratic blowup.
-            for (int i = nodes.Length - 1; i >= 0; --i)
-            {
-                SymbolicRegexNode<TSet> elem = nodes[i];
-
-                if (elem.IsNothing)
-                    continue;
-
-                or = or is null ? elem : SymbolicRegexNode<TSet>.OrderedOr(this, elem, or);
-
-                if (elem.IsAnyStar)
-                    or = elem; // .* is the absorbing element
-            }
-
-            return or ?? _nothing;
+            for (int i = nodes.Count - 1; i >= 0; --i)
+                or = SymbolicRegexNode<TSet>.OrderedOr(this, nodes[i], or, true);
+            return or;
         }
 
         /// <summary>
@@ -442,7 +445,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(node._left is not null && node._right is not null);
-                    return builder.OrderedOr(Transform(node._left, builder, setTransformer), Transform(node._right, builder, setTransformer));
+                    return SymbolicRegexNode<TNewSet>.OrderedOr(builder, Transform(node._left, builder, setTransformer), Transform(node._right, builder, setTransformer), deduplicated: true);
 
                 case SymbolicRegexNodeKind.And:
                     Debug.Assert(node._alts is not null);
