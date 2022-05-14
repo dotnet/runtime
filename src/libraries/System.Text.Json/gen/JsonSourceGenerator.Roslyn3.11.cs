@@ -28,7 +28,7 @@ namespace System.Text.Json.SourceGeneration
         /// <param name="context"></param>
         public void Initialize(GeneratorInitializationContext context)
         {
-            context.RegisterForSyntaxNotifications(() => new SyntaxContextReceiver(context.CancellationToken));
+            context.RegisterForSyntaxNotifications(() => new SyntaxContextReceiver(CancellationToken.None));
         }
 
         /// <summary>
