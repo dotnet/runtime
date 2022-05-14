@@ -1082,6 +1082,37 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void TryWriteBigEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[2];
+            int bytesWritten = 0;
+
+            Assert.True(BinaryIntegerHelper<ushort>.TryWriteBigEndian((ushort)0x0000, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<ushort>.TryWriteBigEndian((ushort)0x0001, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x01 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<ushort>.TryWriteBigEndian((ushort)0x7FFF, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x7F, 0xFF }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<ushort>.TryWriteBigEndian((ushort)0x8000, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x80, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<ushort>.TryWriteBigEndian((ushort)0xFFFF, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
+
+            Assert.False(BinaryIntegerHelper<ushort>.TryWriteBigEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
+        }
+
+        [Fact]
         public static void TryWriteLittleEndianTest()
         {
             Span<byte> destination = stackalloc byte[2];

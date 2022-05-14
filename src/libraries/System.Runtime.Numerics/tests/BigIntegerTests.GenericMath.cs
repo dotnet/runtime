@@ -1400,6 +1400,45 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void TryWriteBigEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[8];
+            int bytesWritten = 0;
+
+            Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Zero, destination, out bytesWritten));
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00 }, destination.Slice(0, 4).ToArray());
+
+            Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(One, destination, out bytesWritten));
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x01 }, destination.Slice(0, 4).ToArray());
+
+            Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Int64MaxValue, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x7F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, 8).ToArray());
+
+            Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Int64MinValue, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.Slice(0, 8).ToArray());
+
+            Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(NegativeOne, destination, out bytesWritten));
+            Assert.Equal(4, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, 4).ToArray());
+
+            Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(Int64MaxValuePlusOne, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.Slice(0, 8).ToArray());
+
+            Assert.True(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(UInt64MaxValue, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.Slice(0, 8).ToArray());
+
+            Assert.False(BinaryIntegerHelper<BigInteger>.TryWriteBigEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+        }
+
+        [Fact]
         public static void TryWriteLittleEndianTest()
         {
             Span<byte> destination = stackalloc byte[8];

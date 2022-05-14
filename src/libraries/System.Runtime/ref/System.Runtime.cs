@@ -768,7 +768,8 @@ namespace System
         static byte System.Numerics.IAdditionOperators<byte, byte, byte>.operator +(byte left, byte right) { throw null; }
         static byte System.Numerics.IAdditionOperators<byte, byte, byte>.operator checked +(byte left, byte right) { throw null; }
         int System.Numerics.IBinaryInteger<byte>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<byte>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<byte>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<byte>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<byte>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static byte System.Numerics.IBitwiseOperators<byte, byte, byte>.operator &(byte left, byte right) { throw null; }
         static byte System.Numerics.IBitwiseOperators<byte, byte, byte>.operator |(byte left, byte right) { throw null; }
@@ -917,7 +918,8 @@ namespace System
         static char System.Numerics.IAdditionOperators<char, char, char>.operator +(char left, char right) { throw null; }
         static char System.Numerics.IAdditionOperators<char, char, char>.operator checked +(char left, char right) { throw null; }
         int System.Numerics.IBinaryInteger<char>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<char>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<char>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<char>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<char>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static char System.Numerics.IBitwiseOperators<char, char, char>.operator &(char left, char right) { throw null; }
         static char System.Numerics.IBitwiseOperators<char, char, char>.operator |(char left, char right) { throw null; }
@@ -2958,7 +2960,8 @@ namespace System
         static short System.Numerics.IAdditionOperators<short, short, short>.operator +(short left, short right) { throw null; }
         static short System.Numerics.IAdditionOperators<short, short, short>.operator checked +(short left, short right) { throw null; }
         int System.Numerics.IBinaryInteger<short>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<short>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<short>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<short>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<short>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static short System.Numerics.IBitwiseOperators<short, short, short>.operator &(short left, short right) { throw null; }
         static short System.Numerics.IBitwiseOperators<short, short, short>.operator |(short left, short right) { throw null; }
@@ -3062,7 +3065,8 @@ namespace System
         static int System.Numerics.IAdditionOperators<int, int, int>.operator +(int left, int right) { throw null; }
         static int System.Numerics.IAdditionOperators<int, int, int>.operator checked +(int left, int right) { throw null; }
         int System.Numerics.IBinaryInteger<int>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<int>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<int>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<int>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<int>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static int System.Numerics.IBitwiseOperators<int, int, int>.operator &(int left, int right) { throw null; }
         static int System.Numerics.IBitwiseOperators<int, int, int>.operator |(int left, int right) { throw null; }
@@ -3166,7 +3170,8 @@ namespace System
         static long System.Numerics.IAdditionOperators<long, long, long>.operator +(long left, long right) { throw null; }
         static long System.Numerics.IAdditionOperators<long, long, long>.operator checked +(long left, long right) { throw null; }
         int System.Numerics.IBinaryInteger<long>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<long>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<long>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<long>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<long>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static long System.Numerics.IBitwiseOperators<long, long, long>.operator &(long left, long right) { throw null; }
         static long System.Numerics.IBitwiseOperators<long, long, long>.operator |(long left, long right) { throw null; }
@@ -3274,7 +3279,8 @@ namespace System
         static nint System.Numerics.IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right) { throw null; }
         static nint System.Numerics.IAdditionOperators<nint, nint, nint>.operator checked +(nint left, nint right) { throw null; }
         int System.Numerics.IBinaryInteger<nint>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<nint>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<nint>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<nint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<nint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static nint System.Numerics.IBitwiseOperators<nint, nint, nint>.operator &(nint left, nint right) { throw null; }
         static nint System.Numerics.IBitwiseOperators<nint, nint, nint>.operator |(nint left, nint right) { throw null; }
@@ -4180,7 +4186,8 @@ namespace System
         static sbyte System.Numerics.IAdditionOperators<sbyte, sbyte, sbyte>.operator +(sbyte left, sbyte right) { throw null; }
         static sbyte System.Numerics.IAdditionOperators<sbyte, sbyte, sbyte>.operator checked +(sbyte left, sbyte right) { throw null; }
         int System.Numerics.IBinaryInteger<sbyte>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<sbyte>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<sbyte>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<sbyte>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<sbyte>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static sbyte System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>.operator &(sbyte left, sbyte right) { throw null; }
         static sbyte System.Numerics.IBitwiseOperators<sbyte, sbyte, sbyte>.operator |(sbyte left, sbyte right) { throw null; }
@@ -5620,7 +5627,8 @@ namespace System
         static ushort System.Numerics.IAdditionOperators<ushort, ushort, ushort>.operator +(ushort left, ushort right) { throw null; }
         static ushort System.Numerics.IAdditionOperators<ushort, ushort, ushort>.operator checked +(ushort left, ushort right) { throw null; }
         int System.Numerics.IBinaryInteger<ushort>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<ushort>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<ushort>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<ushort>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<ushort>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static ushort System.Numerics.IBitwiseOperators<ushort, ushort, ushort>.operator &(ushort left, ushort right) { throw null; }
         static ushort System.Numerics.IBitwiseOperators<ushort, ushort, ushort>.operator |(ushort left, ushort right) { throw null; }
@@ -5724,7 +5732,8 @@ namespace System
         static uint System.Numerics.IAdditionOperators<uint, uint, uint>.operator +(uint left, uint right) { throw null; }
         static uint System.Numerics.IAdditionOperators<uint, uint, uint>.operator checked +(uint left, uint right) { throw null; }
         int System.Numerics.IBinaryInteger<uint>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<uint>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<uint>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<uint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<uint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static uint System.Numerics.IBitwiseOperators<uint, uint, uint>.operator &(uint left, uint right) { throw null; }
         static uint System.Numerics.IBitwiseOperators<uint, uint, uint>.operator |(uint left, uint right) { throw null; }
@@ -5828,7 +5837,8 @@ namespace System
         static ulong System.Numerics.IAdditionOperators<ulong, ulong, ulong>.operator +(ulong left, ulong right) { throw null; }
         static ulong System.Numerics.IAdditionOperators<ulong, ulong, ulong>.operator checked +(ulong left, ulong right) { throw null; }
         int System.Numerics.IBinaryInteger<ulong>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<ulong>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<ulong>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<ulong>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<ulong>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static ulong System.Numerics.IBitwiseOperators<ulong, ulong, ulong>.operator &(ulong left, ulong right) { throw null; }
         static ulong System.Numerics.IBitwiseOperators<ulong, ulong, ulong>.operator |(ulong left, ulong right) { throw null; }
@@ -5935,7 +5945,8 @@ namespace System
         static nuint System.Numerics.IAdditionOperators<nuint, nuint, nuint>.operator +(nuint left, nuint right) { throw null; }
         static nuint System.Numerics.IAdditionOperators<nuint, nuint, nuint>.operator checked +(nuint left, nuint right) { throw null; }
         int System.Numerics.IBinaryInteger<nuint>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<nuint>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<nuint>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<nuint>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<nuint>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static nuint System.Numerics.IBitwiseOperators<nuint, nuint, nuint>.operator &(nuint left, nuint right) { throw null; }
         static nuint System.Numerics.IBitwiseOperators<nuint, nuint, nuint>.operator |(nuint left, nuint right) { throw null; }
@@ -9579,13 +9590,17 @@ namespace System.Numerics
     {
         static abstract (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right);
         int GetByteCount();
-        long GetShortestBitLength();
+        int GetShortestBitLength();
         static abstract TSelf LeadingZeroCount(TSelf value);
         static abstract TSelf PopCount(TSelf value);
         static abstract TSelf RotateLeft(TSelf value, int rotateAmount);
         static abstract TSelf RotateRight(TSelf value, int rotateAmount);
         static abstract TSelf TrailingZeroCount(TSelf value);
+        bool TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten);
         bool TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten);
+        int WriteBigEndian(byte[] destination) { throw null; }
+        int WriteBigEndian(byte[] destination, int startIndex) { throw null; }
+        int WriteBigEndian(System.Span<byte> destination) { throw null; }
         int WriteLittleEndian(byte[] destination) { throw null; }
         int WriteLittleEndian(byte[] destination, int startIndex) { throw null; }
         int WriteLittleEndian(System.Span<byte> destination) { throw null; }

@@ -3275,7 +3275,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        long IBinaryInteger<BigInteger>.GetShortestBitLength()
+        int IBinaryInteger<BigInteger>.GetShortestBitLength()
         {
             AssertValid();
             uint[]? bits = _bits;
@@ -3286,23 +3286,23 @@ namespace System.Numerics
 
                 if (value >= 0)
                 {
-                    return (sizeof(int) * 8) - int.LeadingZeroCount(value);
+                    return (sizeof(int) * 8) - BitOperations.LeadingZeroCount((uint)(value));
                 }
                 else
                 {
-                    return (sizeof(int) * 8) + 1 - int.LeadingZeroCount(~value);
+                    return (sizeof(int) * 8) + 1 - BitOperations.LeadingZeroCount((uint)(~value));
                 }
             }
 
-            long result = (bits.Length - 1) * 32;
+            int result = (bits.Length - 1) * 32;
 
             if (_sign >= 0)
             {
-                result += (sizeof(uint) * 8) - uint.LeadingZeroCount(bits[^1]);
+                result += (sizeof(uint) * 8) - BitOperations.LeadingZeroCount(bits[^1]);
             }
             else
             {
-                result += (sizeof(uint) * 8) + 1 - uint.LeadingZeroCount(~bits[^1]);
+                result += (sizeof(uint) * 8) + 1 - BitOperations.LeadingZeroCount(~bits[^1]);
             }
 
             return result;
@@ -3319,6 +3319,94 @@ namespace System.Numerics
                 return sizeof(int);
             }
             return bits.Length * 4;
+        }
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<BigInteger>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            AssertValid();
+            uint[]? bits = _bits;
+
+            int byteCount = (bits is null) ? sizeof(int) : bits.Length * 4;
+
+            if (destination.Length >= byteCount)
+            {
+                if (bits is null)
+                {
+                    int value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(_sign) : _sign;
+                    Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+                }
+                else if (_sign >= 0)
+                {
+                    // When the value is positive, we simply need to copy all bits as little endian
+
+                    ref byte address = ref MemoryMarshal.GetReference(destination);
+                    address = ref Unsafe.Add(ref address, bits.Length - 1);
+
+                    for (int i = 0; i < bits.Length; i++)
+                    {
+                        uint part = bits[i];
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
+
+                        Unsafe.WriteUnaligned(ref address, part);
+                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
+                    }
+                }
+                else
+                {
+                    // When the value is negative, we need to copy the two's complement representation
+                    // We'll do this "inline" to avoid needing to unnecessarily allocate.
+
+                    ref byte address = ref MemoryMarshal.GetReference(destination);
+                    address = ref Unsafe.Add(ref address, bits.Length - 1);
+
+                    int i = 0;
+                    uint part;
+
+                    do
+                    {
+                        part = ~bits[i] + 1;
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
+
+                        Unsafe.WriteUnaligned(ref address, part);
+                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
+
+                        i++;
+                    }
+                    while ((part == 0) && (i < bits.Length));
+
+                    while (i < bits.Length)
+                    {
+                        part = ~bits[i];
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
+
+                        Unsafe.WriteUnaligned(ref address, part);
+                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
+
+                        i++;
+                    }
+                }
+
+                bytesWritten = byteCount;
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
@@ -3369,6 +3457,11 @@ namespace System.Numerics
                     {
                         part = ~bits[i] + 1;
 
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
+
                         Unsafe.WriteUnaligned(ref address, part);
                         address = ref Unsafe.Add(ref address, sizeof(uint));
 
@@ -3379,6 +3472,11 @@ namespace System.Numerics
                     while (i < bits.Length)
                     {
                         part = ~bits[i];
+
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
 
                         Unsafe.WriteUnaligned(ref address, part);
                         address = ref Unsafe.Add(ref address, sizeof(uint));
