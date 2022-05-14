@@ -1090,7 +1090,7 @@ namespace System.Tests
             Assert.Equal(2, bytesWritten);
             Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray());
 
-            Assert.True(BinaryIntegerHelper<char>.TryWriteLittleEndian((char)0x0001, destination, out bytesWritten));
+            Assert.True(BinaryIntegerHelper<char>.TryWriteBigEndian((char)0x0001, destination, out bytesWritten));
             Assert.Equal(2, bytesWritten);
             Assert.Equal(new byte[] { 0x00, 0x01 }, destination.ToArray());
 

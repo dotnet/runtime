@@ -105,13 +105,17 @@ namespace System
     {
         public static int GetExponentByteCount(TSelf value) => value.GetExponentByteCount();
 
-        public static long GetExponentShortestBitLength(TSelf value) => value.GetExponentShortestBitLength();
+        public static int GetExponentShortestBitLength(TSelf value) => value.GetExponentShortestBitLength();
 
         public static int GetSignificandByteCount(TSelf value) => value.GetSignificandByteCount();
 
-        public static long GetSignificandBitLength(TSelf value) => value.GetSignificandBitLength();
+        public static int GetSignificandBitLength(TSelf value) => value.GetSignificandBitLength();
+
+        public static bool TryWriteExponentBigEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteExponentBigEndian(destination, out bytesWritten);
 
         public static bool TryWriteExponentLittleEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteExponentLittleEndian(destination, out bytesWritten);
+
+        public static bool TryWriteSignificandBigEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteSignificandBigEndian(destination, out bytesWritten);
 
         public static bool TryWriteSignificandLittleEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteSignificandLittleEndian(destination, out bytesWritten);
     }
