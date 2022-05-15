@@ -6175,7 +6175,6 @@ static gboolean lightweight_cb_inited = FALSE;
 void
 mono_install_marshal_callbacks (MonoMarshalLightweightCallbacks *cb)
 {
-	printf("!!!naricc_debug!!!: mono_install_marshal_callbacks\n");
 	g_assert (!lightweight_cb_inited);
 	g_assert (cb->version == MONO_MARSHAL_CALLBACKS_VERSION);
 	memcpy (&marshal_lightweight_cb, cb, sizeof (MonoMarshalLightweightCallbacks));

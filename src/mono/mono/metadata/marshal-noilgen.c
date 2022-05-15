@@ -402,7 +402,6 @@ mono_marshal_noilgen_init_lightweight (void)
 	lightweight_cb.emit_marshal_directive_exception = emit_marshal_directive_exception_noilgen;
 	lightweight_cb.mb_emit_byte = mb_emit_byte_noilgen;
 
-	printf("!!!naricc_debug!!! mono_marshal_noilgen_init\n");
 	mono_install_marshal_callbacks (&lightweight_cb);
 
 }

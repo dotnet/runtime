@@ -3119,6 +3119,5 @@ mono_marshal_lightweight_init (void)
 #ifdef DISABLE_NONBLITTABLE
 	mono_marshal_noilgen_init_blittable (&cb);
 #endif
-	printf("!!!naricc_debug!!!: mono_marshal_lightweight_init\n");
 	mono_install_marshal_callbacks (&cb);
 }
