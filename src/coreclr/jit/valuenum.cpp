@@ -3871,7 +3871,8 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     auto identityForAddition = [=]() -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
-            if (IsVNConstant(arg1VN) && (arg1VN == VNZeroForType(TypeOfVN(arg1VN))))
+            ValueNum ZeroVN = VNZeroForType(typ);
+            if (arg1VN == ZeroVN)
             {
                 return arg0VN;
             }
@@ -3886,13 +3887,14 @@ ValueNum ValueNumStore::EvalUsingMathIdentity(var_types typ, VNFunc func, ValueN
     auto identityForSubtraction = [=]() -> ValueNum {
         if (!varTypeIsFloating(typ))
         {
-            if (IsVNConstant(arg1VN) && (arg1VN == VNZeroForType(TypeOfVN(arg1VN))))
+            ValueNum ZeroVN = VNZeroForType(typ);
+            if (arg1VN == ZeroVN)
             {
                 return arg0VN;
             }
             else if (arg0VN == arg1VN)
             {
-                return VNZeroForType(typ);
+                return ZeroVN;
             }
         }
 
