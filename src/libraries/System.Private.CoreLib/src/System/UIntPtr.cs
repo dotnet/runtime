@@ -449,19 +449,44 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        static nuint INumber<nuint>.Abs(nuint value) => value;
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static nuint Clamp(nuint value, nuint min, nuint max) => Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         static nuint INumber<nuint>.CopySign(nuint value, nuint sign) => value;
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static nuint Max(nuint x, nuint y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static nuint INumber<nuint>.MaxNumber(nuint x, nuint y) => Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static nuint Min(nuint x, nuint y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static nuint INumber<nuint>.MinNumber(nuint x, nuint y) => Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(nuint value) => (value == 0) ? 0 : 1;
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static nuint INumberBase<nuint>.One => 1;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static nuint INumberBase<nuint>.Zero => 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        static nuint INumberBase<nuint>.Abs(nuint value) => value;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nuint CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -526,10 +551,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nuint CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -608,10 +633,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nuint CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -676,28 +701,46 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
-        static bool INumber<nuint>.IsNegative(nuint value) => false;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<nuint>.IsFinite(nuint value) => true;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static nuint Max(nuint x, nuint y) => Math.Max(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<nuint>.IsInfinity(nuint value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static nuint MaxMagnitude(nuint x, nuint y) => Max(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<nuint>.IsNaN(nuint value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static nuint Min(nuint x, nuint y) => Math.Min(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
+        static bool INumberBase<nuint>.IsNegative(nuint value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static nuint MinMagnitude(nuint x, nuint y) => Min(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<nuint>.IsNegativeInfinity(nuint value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(nuint value) => (value == 0) ? 0 : 1;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<nuint>.IsNormal(nuint value) => value != 0;
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<nuint>.IsPositiveInfinity(nuint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<nuint>.IsSubnormal(nuint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static nuint INumberBase<nuint>.MaxMagnitude(nuint x, nuint y) => Max(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static nuint INumberBase<nuint>.MaxMagnitudeNumber(nuint x, nuint y) => Max(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static nuint INumberBase<nuint>.MinMagnitude(nuint x, nuint y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static nuint INumberBase<nuint>.MinMagnitudeNumber(nuint x, nuint y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out nuint result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -848,16 +891,6 @@ namespace System
                 return false;
             }
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static nuint INumberBase<nuint>.One => 1;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static nuint INumberBase<nuint>.Zero => 0;
 
         //
         // IShiftOperators

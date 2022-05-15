@@ -1290,9 +1290,6 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        static UInt128 INumber<UInt128>.Abs(UInt128 value) => value;
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static UInt128 Clamp(UInt128 value, UInt128 min, UInt128 max)
         {
@@ -1316,10 +1313,38 @@ namespace System
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         static UInt128 INumber<UInt128>.CopySign(UInt128 value, UInt128 sign) => value;
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static UInt128 Max(UInt128 x, UInt128 y) => (x >= y) ? x : y;
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static UInt128 INumber<UInt128>.MaxNumber(UInt128 x, UInt128 y) => Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static UInt128 Min(UInt128 x, UInt128 y) => (x <= y) ? x : y;
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static UInt128 INumber<UInt128>.MinNumber(UInt128 x, UInt128 y) => Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(UInt128 value) => (value == 0U) ? 0 : 1;
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        public static UInt128 One => new UInt128(0, 1);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        public static UInt128 Zero => default;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        static UInt128 INumberBase<UInt128>.Abs(UInt128 value) => value;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UInt128 CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1388,10 +1413,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UInt128 CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1466,10 +1491,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static UInt128 CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1539,28 +1564,46 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
-        static bool INumber<UInt128>.IsNegative(UInt128 value) => false;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<UInt128>.IsFinite(UInt128 value) => true;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static UInt128 Max(UInt128 x, UInt128 y) => (x >= y) ? x : y;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<UInt128>.IsInfinity(UInt128 value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        static UInt128 INumber<UInt128>.MaxMagnitude(UInt128 x, UInt128 y) => Max(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<UInt128>.IsNaN(UInt128 value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static UInt128 Min(UInt128 x, UInt128 y) => (x <= y) ? x : y;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
+        static bool INumberBase<UInt128>.IsNegative(UInt128 value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        static UInt128 INumber<UInt128>.MinMagnitude(UInt128 x, UInt128 y) => Min(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<UInt128>.IsNegativeInfinity(UInt128 value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(UInt128 value) => (value == 0U) ? 0 : 1;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<UInt128>.IsNormal(UInt128 value) => value != 0U;
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<UInt128>.IsPositiveInfinity(UInt128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<UInt128>.IsSubnormal(UInt128 value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static UInt128 INumberBase<UInt128>.MaxMagnitude(UInt128 x, UInt128 y) => Max(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static UInt128 INumberBase<UInt128>.MaxMagnitudeNumber(UInt128 x, UInt128 y) => Max(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static UInt128 INumberBase<UInt128>.MinMagnitude(UInt128 x, UInt128 y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static UInt128 INumberBase<UInt128>.MinMagnitudeNumber(UInt128 x, UInt128 y) => Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out UInt128 result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1716,16 +1759,6 @@ namespace System
                 return false;
             }
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        public static UInt128 One => new UInt128(0, 1);
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        public static UInt128 Zero => default;
 
         //
         // IParsable

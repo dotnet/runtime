@@ -1021,100 +1021,6 @@ namespace System
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(Half x) => MathF.ILogB((float)x);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
-        public static Half MaxMagnitudeNumber(Half x, Half y)
-        {
-            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
-            //
-            // It does not propagate NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
-
-            Half ax = Abs(x);
-            Half ay = Abs(y);
-
-            if ((ax > ay) || IsNaN(ay))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? y : x;
-            }
-
-            return y;
-        }
-
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
-        public static Half MaxNumber(Half x, Half y)
-        {
-            // This matches the IEEE 754:2019 `maximumNumber` function
-            //
-            // It does not propagate NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
-
-            if (x != y)
-            {
-                if (!IsNaN(y))
-                {
-                    return y < x ? x : y;
-                }
-
-                return x;
-            }
-
-            return IsNegative(y) ? x : y;
-        }
-
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
-        public static Half MinMagnitudeNumber(Half x, Half y)
-        {
-            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
-            //
-            // It does not propagate NaN inputs back to the caller and
-            // otherwise returns the input with a larger magnitude.
-            // It treats +0 as larger than -0 as per the specification.
-
-            Half ax = Abs(x);
-            Half ay = Abs(y);
-
-            if ((ax < ay) || IsNaN(ay))
-            {
-                return x;
-            }
-
-            if (ax == ay)
-            {
-                return IsNegative(x) ? x : y;
-            }
-
-            return y;
-        }
-
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
-        public static Half MinNumber(Half x, Half y)
-        {
-            // This matches the IEEE 754:2019 `minimumNumber` function
-            //
-            // It does not propagate NaN inputs back to the caller and
-            // otherwise returns the larger of the inputs. It
-            // treats +0 as larger than -0 as per the specification.
-
-            if (x != y)
-            {
-                if (!IsNaN(y))
-                {
-                    return x < y ? x : y;
-                }
-
-                return x;
-            }
-
-            return IsNegative(x) ? x : y;
-        }
-
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static Half ReciprocalEstimate(Half x) => (Half)MathF.ReciprocalEstimate((float)x);
 
@@ -1214,350 +1120,64 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static Half Clamp(Half value, Half min, Half max) => (Half)Math.Clamp((float)value, (float)min, (float)max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static Half CopySign(Half x, Half y) => (Half)MathF.CopySign((float)x, (float)y);
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Half CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (Half)(byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (Half)(char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (Half)(float)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (Half)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (Half)(short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (Half)(int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (Half)(long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(Int128))
-            {
-                return (Half)(Int128)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (Half)(long)(nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (Half)(sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (Half)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (Half)(ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (Half)(uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (Half)(ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(UInt128))
-            {
-                return (Half)(UInt128)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (Half)(ulong)(nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Half CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (Half)(byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (Half)(char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (Half)(float)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (Half)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (Half)(short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (Half)(int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (Half)(long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(Int128))
-            {
-                return (Half)(Int128)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (Half)(long)(nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (Half)(sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (Half)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (Half)(ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (Half)(uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (Half)(ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(UInt128))
-            {
-                return (Half)(UInt128)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (Half)(ulong)(nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static Half CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                return (Half)(byte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                return (Half)(char)(object)value;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                return (Half)(float)(decimal)(object)value;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                return (Half)(double)(object)value;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                return (Half)(short)(object)value;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                return (Half)(int)(object)value;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                return (Half)(long)(object)value;
-            }
-            else if (typeof(TOther) == typeof(Int128))
-            {
-                return (Half)(Int128)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                return (Half)(long)(nint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                return (Half)(sbyte)(object)value;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                return (Half)(float)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                return (Half)(ushort)(object)value;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                return (Half)(uint)(object)value;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                return (Half)(ulong)(object)value;
-            }
-            else if (typeof(TOther) == typeof(UInt128))
-            {
-                return (Half)(UInt128)(object)value;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                return (Half)(ulong)(nuint)(object)value;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                return default;
-            }
-        }
-
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
         public static Half Max(Half x, Half y) => (Half)MathF.Max((float)x, (float)y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        public static Half MaxNumber(Half x, Half y)
+        {
+            // This matches the IEEE 754:2019 `maximumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return y < x ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(y) ? x : y;
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
         public static Half Min(Half x, Half y) => (Half)MathF.Min((float)x, (float)y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        public static Half MinMagnitude(Half x, Half y) => (Half)MathF.MinMagnitude((float)x, (float)y);
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        public static Half MinNumber(Half x, Half y)
+        {
+            // This matches the IEEE 754:2019 `minimumNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the larger of the inputs. It
+            // treats +0 as larger than -0 as per the specification.
+
+            if (x != y)
+            {
+                if (!IsNaN(y))
+                {
+                    return x < y ? x : y;
+                }
+
+                return x;
+            }
+
+            return IsNegative(x) ? x : y;
+        }
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
         public static int Sign(Half value) => MathF.Sign((float)value);
-
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out Half result)
-            where TOther : INumber<TOther>
-        {
-            if (typeof(TOther) == typeof(byte))
-            {
-                result = (Half)(byte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                result = (Half)(char)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                result = (Half)(float)(decimal)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                result = (Half)(double)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                result = (Half)(short)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                result = (Half)(int)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                result = (Half)(long)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(Int128))
-            {
-                result = (Half)(Int128)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                result = (Half)(long)(nint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                result = (Half)(sbyte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                result = (Half)(float)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                result = (Half)(ushort)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                result = (Half)(uint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                result = (Half)(ulong)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(UInt128))
-            {
-                result = (Half)(UInt128)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                result = (Half)(ulong)(nuint)(object)value;
-                return true;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                result = default;
-                return false;
-            }
-        }
 
         //
         // INumberBase
@@ -1568,6 +1188,166 @@ namespace System
 
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         public static Half Zero => new Half(PositiveZeroBits);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static Half Abs(Half value) => (Half)MathF.Abs((float)value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            return CreateSaturating(value);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (Half)(byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (Half)(char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (Half)(float)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (Half)(double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (Half)(short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (Half)(int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (Half)(long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (Half)(Int128)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (Half)(long)(nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (Half)(sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (Half)(float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (Half)(ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (Half)(uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (Half)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (Half)(UInt128)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (Half)(ulong)(nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Half CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            return CreateSaturating(value);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static Half MaxMagnitude(Half x, Half y) => (Half)MathF.MaxMagnitude((float)x, (float)y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        public static Half MaxMagnitudeNumber(Half x, Half y)
+        {
+            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            Half ax = Abs(x);
+            Half ay = Abs(y);
+
+            if ((ax > ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static Half MinMagnitude(Half x, Half y) => (Half)MathF.MinMagnitude((float)x, (float)y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        public static Half MinMagnitudeNumber(Half x, Half y)
+        {
+            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            Half ax = Abs(x);
+            Half ay = Abs(y);
+
+            if ((ax < ay) || IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryCreate<TOther>(TOther value, out Half result)
+            where TOther : INumberBase<TOther>
+        {
+            result = CreateSaturating(value);
+            return true;
+        }
 
         //
         // IParsable

@@ -472,9 +472,6 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static nint Abs(nint value) => Math.Abs(value);
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static nint Clamp(nint value, nint min, nint max) => Math.Clamp(value, min, max);
 
@@ -501,10 +498,38 @@ namespace System
             return -absValue;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static nint Max(nint x, nint y) => Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static nint INumber<nint>.MaxNumber(nint x, nint y) => Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static nint Min(nint x, nint y) => Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static nint INumber<nint>.MinNumber(nint x, nint y) => Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(nint value) => Math.Sign(value);
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static nint INumberBase<nint>.One => 1;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static nint INumberBase<nint>.Zero => 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static nint Abs(nint value) => Math.Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -514,9 +539,9 @@ namespace System
             {
                 return (char)(object)value;
             }
-            else if (typeof(TOther) == typeof(decimal))
+            else if (typeof(TOther) == typeof(nint))
             {
-                return checked((nint)(decimal)(object)value);
+                return checked((nint)(nint)(object)value);
             }
             else if (typeof(TOther) == typeof(double))
             {
@@ -569,10 +594,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -582,9 +607,9 @@ namespace System
             {
                 return (char)(object)value;
             }
-            else if (typeof(TOther) == typeof(decimal))
+            else if (typeof(TOther) == typeof(nint))
             {
-                var actualValue = (decimal)(object)value;
+                var actualValue = (nint)(object)value;
                 return (actualValue > nint.MaxValue) ? MaxValue :
                        (actualValue < nint.MinValue) ? MinValue : (nint)actualValue;
             }
@@ -648,10 +673,10 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static nint CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -661,9 +686,9 @@ namespace System
             {
                 return (char)(object)value;
             }
-            else if (typeof(TOther) == typeof(decimal))
+            else if (typeof(TOther) == typeof(nint))
             {
-                return (nint)(decimal)(object)value;
+                return (nint)(nint)(object)value;
             }
             else if (typeof(TOther) == typeof(double))
             {
@@ -716,13 +741,31 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<nint>.IsFinite(nint value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<nint>.IsInfinity(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<nint>.IsNaN(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
         public static bool IsNegative(nint value) => value < 0;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static nint Max(nint x, nint y) => Math.Max(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<nint>.IsNegativeInfinity(nint value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<nint>.IsNormal(nint value) => value != 0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<nint>.IsPositiveInfinity(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<nint>.IsSubnormal(nint value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static nint MaxMagnitude(nint x, nint y)
         {
             nint absX = x;
@@ -749,13 +792,23 @@ namespace System
                 }
             }
 
-            return (absX >= absY) ? x : y;
+            if (absX > absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? y : x;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static nint Min(nint x, nint y) => Math.Min(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static nint INumberBase<nint>.MaxMagnitudeNumber(nint x, nint y) => MaxMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
         public static nint MinMagnitude(nint x, nint y)
         {
             nint absX = x;
@@ -782,16 +835,26 @@ namespace System
                 }
             }
 
-            return (absX <= absY) ? x : y;
+            if (absX < absY)
+            {
+                return x;
+            }
+
+            if (absX == absY)
+            {
+                return IsNegative(x) ? x : y;
+            }
+
+            return y;
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(nint value) => Math.Sign(value);
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static nint INumberBase<nint>.MinMagnitudeNumber(nint x, nint y) => MinMagnitude(x, y);
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out nint result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -803,9 +866,9 @@ namespace System
                 result = (char)(object)value;
                 return true;
             }
-            else if (typeof(TOther) == typeof(decimal))
+            else if (typeof(TOther) == typeof(nint))
             {
-                var actualValue = (decimal)(object)value;
+                var actualValue = (nint)(object)value;
 
                 if ((actualValue < nint.MinValue) || (actualValue > nint.MaxValue))
                 {
@@ -926,16 +989,6 @@ namespace System
                 return false;
             }
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static nint INumberBase<nint>.One => 1;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static nint INumberBase<nint>.Zero => 0;
 
         //
         // IShiftOperators
