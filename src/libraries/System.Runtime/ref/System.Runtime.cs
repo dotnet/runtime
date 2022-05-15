@@ -835,16 +835,11 @@ namespace System
         static char System.Numerics.IMultiplicativeIdentity<System.Char,System.Char>.MultiplicativeIdentity { get { throw null; } }
         static char System.Numerics.INumberBase<System.Char>.One { get { throw null; } }
         static char System.Numerics.INumberBase<System.Char>.Zero { get { throw null; } }
-        public static char Clamp(char value, char min, char max) { throw null; }
         public int CompareTo(char value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static string ConvertFromUtf32(int utf32) { throw null; }
         public static int ConvertToUtf32(char highSurrogate, char lowSurrogate) { throw null; }
         public static int ConvertToUtf32(string s, int index) { throw null; }
-        public static char CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static char CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static char CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static (char Quotient, char Remainder) DivRem(char left, char right) { throw null; }
         public bool Equals(char obj) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
@@ -870,7 +865,6 @@ namespace System
         public static bool IsLowSurrogate(string s, int index) { throw null; }
         public static bool IsNumber(char c) { throw null; }
         public static bool IsNumber(string s, int index) { throw null; }
-        public static bool IsPow2(char value) { throw null; }
         public static bool IsPunctuation(char c) { throw null; }
         public static bool IsPunctuation(string s, int index) { throw null; }
         public static bool IsSeparator(char c) { throw null; }
@@ -885,15 +879,7 @@ namespace System
         public static bool IsUpper(string s, int index) { throw null; }
         public static bool IsWhiteSpace(char c) { throw null; }
         public static bool IsWhiteSpace(string s, int index) { throw null; }
-        public static char LeadingZeroCount(char value) { throw null; }
-        public static char Log2(char value) { throw null; }
-        public static char Max(char x, char y) { throw null; }
-        public static char Min(char x, char y) { throw null; }
         public static char Parse(string s) { throw null; }
-        public static char PopCount(char value) { throw null; }
-        public static char RotateLeft(char value, int rotateAmount) { throw null; }
-        public static char RotateRight(char value, int rotateAmount) { throw null; }
-        public static int Sign(char value) { throw null; }
         bool System.IConvertible.ToBoolean(System.IFormatProvider? provider) { throw null; }
         byte System.IConvertible.ToByte(System.IFormatProvider? provider) { throw null; }
         char System.IConvertible.ToChar(System.IFormatProvider? provider) { throw null; }
@@ -917,10 +903,18 @@ namespace System
         static bool System.ISpanParsable<char>.TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out char result) { throw null; }
         static char System.Numerics.IAdditionOperators<char, char, char>.operator +(char left, char right) { throw null; }
         static char System.Numerics.IAdditionOperators<char, char, char>.operator checked +(char left, char right) { throw null; }
+        static (char Quotient, char Remainder) System.Numerics.IBinaryInteger<char>.DivRem(char left, char right) { throw null; }
         int System.Numerics.IBinaryInteger<char>.GetByteCount() { throw null; }
         int System.Numerics.IBinaryInteger<char>.GetShortestBitLength() { throw null; }
+        static char System.Numerics.IBinaryInteger<char>.LeadingZeroCount(char value) { throw null; }
+        static char System.Numerics.IBinaryInteger<char>.PopCount(char value) { throw null; }
+        static char System.Numerics.IBinaryInteger<char>.RotateLeft(char value, int rotateAmount) { throw null; }
+        static char System.Numerics.IBinaryInteger<char>.RotateRight(char value, int rotateAmount) { throw null; }
+        static char System.Numerics.IBinaryInteger<char>.TrailingZeroCount(char value) { throw null; }
         bool System.Numerics.IBinaryInteger<char>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<char>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
+        static bool System.Numerics.IBinaryNumber<char>.IsPow2(char value) { throw null; }
+        static char System.Numerics.IBinaryNumber<char>.Log2(char value) { throw null; }
         static char System.Numerics.IBitwiseOperators<char, char, char>.operator &(char left, char right) { throw null; }
         static char System.Numerics.IBitwiseOperators<char, char, char>.operator |(char left, char right) { throw null; }
         static char System.Numerics.IBitwiseOperators<char, char, char>.operator ^(char left, char right) { throw null; }
@@ -941,12 +935,20 @@ namespace System
         static char System.Numerics.IMultiplyOperators<char, char, char>.operator checked *(char left, char right) { throw null; }
         static char System.Numerics.IMultiplyOperators<char, char, char>.operator *(char left, char right) { throw null; }
         static char System.Numerics.INumber<char>.Abs(char value) { throw null; }
+        static char System.Numerics.INumber<char>.Clamp(char value, char min, char max) { throw null; }
         static char System.Numerics.INumber<char>.CopySign(char value, char sign) { throw null; }
+        static char System.Numerics.INumber<char>.CreateChecked<TOther>(TOther value) { throw null; }
+        static char System.Numerics.INumber<char>.CreateSaturating<TOther>(TOther value) { throw null; }
+        static char System.Numerics.INumber<char>.CreateTruncating<TOther>(TOther value) { throw null; }
         static bool System.Numerics.INumber<char>.IsNegative(char value) { throw null; }
+        static char System.Numerics.INumber<char>.Max(char x, char y) { throw null; }
         static char System.Numerics.INumber<char>.MaxMagnitude(char x, char y) { throw null; }
+        static char System.Numerics.INumber<char>.Min(char x, char y) { throw null; }
         static char System.Numerics.INumber<char>.MinMagnitude(char x, char y) { throw null; }
         static char System.Numerics.INumber<char>.Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
         static char System.Numerics.INumber<char>.Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        static int System.Numerics.INumber<char>.Sign(char value) { throw null; }
+        static bool System.Numerics.INumber<char>.TryCreate<TOther>(TOther value, out char result) { throw null; }
         static bool System.Numerics.INumber<char>.TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out char result) { throw null; }
         static bool System.Numerics.INumber<char>.TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out char result) { throw null; }
         static char System.Numerics.IShiftOperators<char, char>.operator <<(char value, int shiftAmount) { throw null; }
@@ -966,8 +968,6 @@ namespace System
         public static char ToUpper(char c) { throw null; }
         public static char ToUpper(char c, System.Globalization.CultureInfo culture) { throw null; }
         public static char ToUpperInvariant(char c) { throw null; }
-        public static char TrailingZeroCount(char value) { throw null; }
-        public static bool TryCreate<TOther>(TOther value, out char result) where TOther : System.Numerics.INumber<TOther> { throw null; }
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out char result) { throw null; }
     }
     public sealed partial class CharEnumerator : System.Collections.Generic.IEnumerator<char>, System.Collections.IEnumerator, System.ICloneable, System.IDisposable
