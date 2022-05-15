@@ -36,26 +36,23 @@ namespace ILCompiler.Logging
             SourceColumn = sourceColumn;
         }
 
-        public MessageOrigin(MethodIL origin, int ilOffset)
+        public MessageOrigin(MethodIL methodIL, int ilOffset)
         {
-            string document = null;
-            int? lineNumber = null;
+            MemberDefinition = methodIL.OwningMethod;
 
-            IEnumerable<ILSequencePoint> sequencePoints = origin.GetDebugInfo()?.GetSequencePoints();
+            IEnumerable < ILSequencePoint > sequencePoints = methodIL.GetDebugInfo()?.GetSequencePoints();
             if (sequencePoints != null)
             {
                 foreach (var sequencePoint in sequencePoints)
                 {
                     if (sequencePoint.Offset <= ilOffset)
                     {
-                        document = sequencePoint.Document;
-                        lineNumber = sequencePoint.LineNumber;
+                        FileName = sequencePoint.Document;
+                        SourceLine = sequencePoint.LineNumber;
                     }
                 }
             }
-            FileName = document;
-            MemberDefinition = origin.OwningMethod;
-            SourceLine = lineNumber;
+
             SourceColumn = null;
         }
 

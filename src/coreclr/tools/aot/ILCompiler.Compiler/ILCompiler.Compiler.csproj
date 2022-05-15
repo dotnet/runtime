@@ -332,6 +332,7 @@
     <Compile Include="Compiler\Dataflow\Origin.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMethodBodyScanner.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionPatternContext.cs" />
+    <Compile Include="Compiler\Dataflow\ReflectionMarker.cs" />
     <Compile Include="Compiler\Dataflow\ScannerExtensions.cs" />
     <Compile Include="Compiler\Dataflow\TypeExtensions.cs" />
     <Compile Include="Compiler\Dataflow\TypeProxy.cs" />
