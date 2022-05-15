@@ -3,7 +3,7 @@
 
   <PropertyGroup>
     <RunAnalyzers>false</RunAnalyzers>
-    <TargetFramework>$(NetCoreAppToolCurrent)</TargetFramework>
+    <TargetFramework>$(NetCoreAppTestsCurrent)</TargetFramework>
     <Nullable>disable</Nullable>
   </PropertyGroup>
 </Project>

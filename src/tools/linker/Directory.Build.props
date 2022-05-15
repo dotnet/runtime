@@ -2,7 +2,11 @@
   <PropertyGroup>
     <IsReferenceAssembly Condition="'$(IsReferenceAssembly)' == '' and '$([System.IO.Path]::GetFileName($(MSBuildProjectDirectory)))' == 'ref'">true</IsReferenceAssembly>
     <DisableImplicitNamespaceImports_DotNet>true</DisableImplicitNamespaceImports_DotNet>
-    <NetCoreAppToolCurrent>net7.0</NetCoreAppToolCurrent>
+    <!-- The TFM for the product (linker, task,.. not analyzer, which is netstandard) -->
+    <NetCoreAppToolCurrent>net6.0</NetCoreAppToolCurrent>
+    <!-- The TFM for all the tests - intentionally different since tests may depend on new framework APIs in order to validate
+         linker interaction with them, linker itself doesn't need the new framework typically. -->
+    <NetCoreAppTestsCurrent>net7.0</NetCoreAppTestsCurrent>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(IsReferenceAssembly)' == 'true' ">
     <!-- Since .NET 5 reference assemblies are always produced -->
