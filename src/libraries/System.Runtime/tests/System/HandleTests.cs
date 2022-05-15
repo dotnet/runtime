@@ -69,6 +69,9 @@ public static class HandleTests
         RuntimeMethodHandle hNew = RuntimeMethodHandle.FromIntPtr(hPtr);
         Assert.True(h.Equals(hNew));
         Assert.True(hNew.Equals(h));
+
+        // Confirm the created handle is valid
+        Assert.Equal(mi, MethodBase.GetMethodFromHandle(hNew));
     }
 
     [Fact]

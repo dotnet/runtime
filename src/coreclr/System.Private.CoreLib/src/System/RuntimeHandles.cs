@@ -837,15 +837,6 @@ namespace System
         {
             get;
         }
-
-        internal static IRuntimeMethodInfo Create(IntPtr ptr) => new IRuntimeMethodInfoImp(ptr);
-
-        private sealed class IRuntimeMethodInfoImp : IRuntimeMethodInfo
-        {
-            public IRuntimeMethodInfoImp(IntPtr ptr) => Value = new RuntimeMethodHandleInternal(ptr);
-
-            public RuntimeMethodHandleInternal Value { get; }
-        }
     }
 
     [NonVersionable]
@@ -901,11 +892,16 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a new <see cref="RuntimeMethodHandle"/> object created from a handle to a RuntimeMethod.
+        /// Returns a new <see cref="RuntimeMethodHandle"/> object created from a handle to a RuntimeMethodInfo.
         /// </summary>
-        /// <param name="value">An IntPtr handle to a RuntimeMethod to create a <see cref="RuntimeMethodHandle"/> object from.</param>
+        /// <param name="value">An IntPtr handle to a RuntimeMethodInfo to create a <see cref="RuntimeMethodHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeMethodHandle"/> object that corresponds to the value parameter.</returns>
-        public static RuntimeMethodHandle FromIntPtr(IntPtr value) => new RuntimeMethodHandle(IRuntimeMethodInfo.Create(value));
+        public static RuntimeMethodHandle FromIntPtr(IntPtr value)
+        {
+            var handle = new RuntimeMethodHandleInternal(value);
+            var methodInfo = new RuntimeMethodInfoStub(handle, RuntimeMethodHandle.GetLoaderAllocator(handle));
+            return new RuntimeMethodHandle(methodInfo);
+        }
 
         /// <summary>
         /// Returns the internal pointer representation of a <see cref="RuntimeMethodHandle"/> object.
@@ -1175,20 +1171,14 @@ namespace System
         {
             get;
         }
-
-        internal static IRuntimeFieldInfo Create(IntPtr ptr) => new IRuntimeFieldInfoImp(ptr);
-
-        private sealed class IRuntimeFieldInfoImp : IRuntimeFieldInfo
-        {
-            public IRuntimeFieldInfoImp(IntPtr ptr) => Value = new RuntimeFieldHandleInternal(ptr);
-
-            public RuntimeFieldHandleInternal Value { get; }
-        }
     }
 
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class RuntimeFieldInfoStub : IRuntimeFieldInfo
     {
+        public RuntimeFieldInfoStub(IntPtr ptr)
+            => m_fieldHandle = new RuntimeFieldHandleInternal(ptr);
+
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
 #pragma warning disable 414, 169
         private object? m_keepalive;
@@ -1256,11 +1246,11 @@ namespace System
         }
 
         /// <summary>
-        /// Returns a new <see cref="RuntimeFieldHandle"/> object created from a handle to a RuntimeField.
+        /// Returns a new <see cref="RuntimeFieldHandle"/> object created from a handle to a RuntimeFieldInfo.
         /// </summary>
-        /// <param name="value">An IntPtr handle to a RuntimeField to create a <see cref="RuntimeFieldHandle"/> object from.</param>
+        /// <param name="value">An IntPtr handle to a RuntimeFieldInfo to create a <see cref="RuntimeFieldHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeFieldHandle"/> object that corresponds to the value parameter.</returns>
-        public static RuntimeFieldHandle FromIntPtr(IntPtr value) => new RuntimeFieldHandle(IRuntimeFieldInfo.Create(value));
+        public static RuntimeFieldHandle FromIntPtr(IntPtr value) => new RuntimeFieldHandle(new RuntimeFieldInfoStub(value));
 
         /// <summary>
         /// Returns the internal pointer representation of a <see cref="RuntimeFieldHandle"/> object.
