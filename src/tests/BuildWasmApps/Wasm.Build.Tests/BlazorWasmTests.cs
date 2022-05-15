@@ -68,7 +68,7 @@ namespace Wasm.Build.Tests
                                         extraItems: extraItems);
 
             string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
-            return new DotNetCommand(s_buildEnv)
+            return new DotNetCommand(s_buildEnv, _testOutput)
                             .WithWorkingDirectory(_projectDir!)
                             .ExecuteWithCapturedOutput("publish",
                                                         $"-bl:{publishLogPath}",
@@ -116,7 +116,7 @@ namespace Wasm.Build.Tests
             AddItemsPropertiesToProject(projectFile, extraItems: extraItems);
 
             string publishLogPath = Path.Combine(logPath, $"{id}.binlog");
-            CommandResult result = new DotNetCommand(s_buildEnv)
+            CommandResult result = new DotNetCommand(s_buildEnv, _testOutput)
                                             .WithWorkingDirectory(_projectDir!)
                                             .ExecuteWithCapturedOutput("publish",
                                                                        $"-bl:{publishLogPath}",

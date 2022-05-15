@@ -14,7 +14,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasMalformedReference">
         <source>Conditional alternation is missing a closing parenthesis after the group number {0}.</source>
-        <target state="new">Conditional alternation is missing a closing parenthesis after the group number {0}.</target>
+        <target state="translated">条件付き代替には、グループ番号 {0} の後に終わりかっこがありません。</target>
         <note />
       </trans-unit>
       <trans-unit id="AlternationHasNamedCapture">
@@ -29,7 +29,7 @@
       </trans-unit>
       <trans-unit id="AlternationHasUndefinedReference">
         <source>Conditional alternation refers to an undefined group number {0}.</source>
-        <target state="new">Conditional alternation refers to an undefined group number {0}.</target>
+        <target state="translated">条件付き代替は、未定義のグループ番号 {0} を参照しています。</target>
         <note />
       </trans-unit>
       <trans-unit id="Arg_ArrayPlusOffTooSmall">
@@ -134,7 +134,7 @@
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationMessage">
         <source>The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</source>
-        <target state="new">The RegexGenerator couldn't generate a complete source implementation for the specified regular expression due to an internal limitation.</target>
+        <target state="translated">内部制限により、RegexGenerator は指定された正規表現の完全なソース実装を生成できませんでした。</target>
         <note />
       </trans-unit>
       <trans-unit id="LimitedSourceGenerationTitle">
@@ -194,12 +194,12 @@
       </trans-unit>
       <trans-unit id="QuantifierAfterNothing">
         <source>Quantifier '{0}' following nothing.</source>
-        <target state="new">Quantifier '{0}' following nothing.</target>
+        <target state="translated">量指定子 '{0}' の前に何もありません。</target>
         <note />
       </trans-unit>
       <trans-unit id="QuantifierOrCaptureGroupOutOfRange">
         <source>Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</source>
-        <target state="new">Quantifier and capture group numbers must be less than or equal to Int32.MaxValue.</target>
+        <target state="translated">量指定子およびキャプチャ グループ番号は Int32.MaxValue 以下でなければなりません。</target>
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">

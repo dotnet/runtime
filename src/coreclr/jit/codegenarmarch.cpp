@@ -302,14 +302,6 @@ void CodeGen::genCodeForTreeNode(GenTree* treeNode)
             break;
 
 #ifdef TARGET_ARM64
-        case GT_MADD:
-            genCodeForMadd(treeNode->AsOp());
-            break;
-
-        case GT_MSUB:
-            genCodeForMsub(treeNode->AsOp());
-            break;
-
         case GT_INC_SATURATE:
             genCodeForIncSaturate(treeNode);
             break;
@@ -1304,18 +1296,12 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         if (varNode != nullptr)
         {
             assert(varNode->isContained());
-            srcVarNum = varNode->GetLclNum();
-
-            // handle promote situation
+            srcVarNum         = varNode->GetLclNum();
             LclVarDsc* varDsc = compiler->lvaGetDesc(srcVarNum);
 
-            // This struct also must live in the stack frame
-            // And it can't live in a register (SIMD)
-            assert(varDsc->lvType == TYP_STRUCT);
+            // This struct also must live in the stack frame.
+            // And it can't live in a register.
             assert(varDsc->lvOnFrame && !varDsc->lvRegister);
-
-            // We don't split HFA struct
-            assert(!varDsc->lvIsHfa());
         }
         else // addrNode is used
         {
@@ -1804,7 +1790,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     const regNumber tmpReg = node->GetSingleTempReg();
 
     // Generate the bounds check if necessary.
-    if ((node->gtFlags & GTF_INX_RNGCHK) != 0)
+    if (node->IsBoundsChecked())
     {
         GetEmitter()->emitIns_R_R_I(INS_ldr, EA_4BYTE, tmpReg, base->GetRegNum(), node->gtLenOffset);
         GetEmitter()->emitIns_R_R(INS_cmp, emitActualTypeSize(index->TypeGet()), index->GetRegNum(), tmpReg);

@@ -307,8 +307,9 @@ private:
     // Returns "true" iff "vnf" is a comparison (and thus binary) operator.
     static bool VNFuncIsComparison(VNFunc vnf);
 
-    // Returns "true" iff "vnf" can be evaluated for constant arguments.
-    static bool CanEvalForConstantArgs(VNFunc vnf);
+    bool VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
+
+    bool VNEvalCanFoldUnaryFunc(var_types type, VNFunc func, ValueNum arg0VN);
 
     // Returns "true" iff "vnf" should be folded by evaluating the func with constant arguments.
     bool VNEvalShouldFold(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN);
@@ -354,6 +355,7 @@ private:
     ValueNum EvalFuncForConstantArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
     ValueNum EvalFuncForConstantFPArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
     ValueNum EvalCastForConstantArgs(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
+    ValueNum EvalBitCastForConstantArgs(var_types dstType, ValueNum arg0VN);
 
     ValueNum EvalUsingMathIdentity(var_types typ, VNFunc vnf, ValueNum vn0, ValueNum vn1);
 

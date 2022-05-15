@@ -301,6 +301,8 @@ namespace Microsoft.WebAssembly.Diagnostics
 
         public static MonoCommands GetLoadedFiles(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_get_loaded_files()");
 
+        public static MonoCommands SetDebuggerAttached(int runtimeId) => new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_debugger_attached()");
+
         public static MonoCommands SendDebuggerAgentCommand(int runtimeId, int id, int command_set, int command, string command_parameters)
         {
             return new MonoCommands($"getDotnetRuntime({runtimeId}).INTERNAL.mono_wasm_send_dbg_command ({id}, {command_set}, {command},'{command_parameters}')");
@@ -435,6 +437,7 @@ namespace Microsoft.WebAssembly.Diagnostics
         private Dictionary<int, PerScopeCache> perScopeCaches { get; } = new Dictionary<int, PerScopeCache>();
 
         internal int TempBreakpointForSetNextIP { get; set; }
+        internal bool FirstBreakpoint { get; set; }
 
         public DebugStore Store
         {

@@ -76,46 +76,36 @@ namespace System.Xml
         public static string? DecodeName(string? name)
         {
             if (string.IsNullOrEmpty(name))
+            {
                 return name;
-
-            StringBuilder? bufBld = null;
-
-            int length = name.Length;
-            int copyPosition = 0;
+            }
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc;
-            IEnumerator? en;
-            if (underscorePos >= 0)
-            {
-                mc = DecodeCharRegex().Matches(name, underscorePos);
-                en = mc.GetEnumerator();
-            }
-            else
+            if (underscorePos < 0)
             {
                 return name;
             }
+
+            Regex.ValueMatchEnumerator en = DecodeCharRegex().EnumerateMatches(name.AsSpan(underscorePos));
             int matchPos = -1;
-            if (en != null && en.MoveNext())
+            if (en.MoveNext())
             {
-                Match m = (Match)en.Current!;
-                matchPos = m.Index;
+                matchPos = underscorePos + en.Current.Index;
             }
 
+            StringBuilder? bufBld = null;
+            int length = name.Length;
+            int copyPosition = 0;
             for (int position = 0; position < length - EncodedCharLength + 1; position++)
             {
                 if (position == matchPos)
                 {
-                    if (en!.MoveNext())
+                    if (en.MoveNext())
                     {
-                        Match m = (Match)en.Current!;
-                        matchPos = m.Index;
+                        matchPos = underscorePos + en.Current.Index;
                     }
 
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
                     bufBld.Append(name, copyPosition, position - copyPosition);
 
                     if (name[position + 6] != '_')
