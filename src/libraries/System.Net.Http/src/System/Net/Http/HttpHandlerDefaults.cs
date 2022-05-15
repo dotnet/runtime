@@ -14,7 +14,7 @@ namespace System.Net.Http
         public static readonly TimeSpan DefaultKeepAlivePingDelay = Timeout.InfiniteTimeSpan;
         public const HttpKeepAlivePingPolicy DefaultKeepAlivePingPolicy = HttpKeepAlivePingPolicy.Always;
 
-        public static readonly int DefaultMaxConnectionsPerServer = GlobalHttpSettings.HttpHandlerDefaults.MaxConnectionsPerServer;
+        public static readonly int DefaultMaxConnectionsPerServer = GlobalHttpSettings.SocketsHttpHandler.MaxConnectionsPerServer;
 
         // This is the default value for SocketsHttpHandler.InitialHttp2StreamWindowSize,
         // which defines the value we communicate in stream SETTINGS frames.

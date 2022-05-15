@@ -16,9 +16,9 @@ namespace System.Net.Http
                 true);
         }
 
-#if !BROWSER
         internal static class SocketsHttpHandler
         {
+#if !BROWSER
             // Default to allowing HTTP/2, but enable that to be overridden by an
             // AppContext switch, or by an environment variable being set to false/0.
             public static bool AllowHttp2 { get; } = RuntimeSettingParser.QueryRuntimeSettingSwitch(
@@ -55,9 +55,9 @@ namespace System.Net.Http
                     DefaultHttp2MaxStreamWindowSize);
 
                 // Disallow small values:
-                if (value < Http.HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize)
+                if (value < HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize)
                 {
-                    value = Http.HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
+                    value = HttpHandlerDefaults.DefaultInitialHttp2StreamWindowSize;
                 }
                 return value;
             }
@@ -75,11 +75,8 @@ namespace System.Net.Http
                 }
                 return value;
             }
-        }
 #endif
 
-        internal static class HttpHandlerDefaults
-        {
             public static int MaxConnectionsPerServer { get; } = GetMaxConnectionsPerServer();
 
             private static int GetMaxConnectionsPerServer()
