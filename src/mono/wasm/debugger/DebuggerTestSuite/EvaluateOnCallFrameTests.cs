@@ -506,19 +506,25 @@ namespace DebuggerTests
                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
 
                var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
-               Assert.Contains($"Method 'MyMethodWrong' not found", res.Error["message"]?.Value<string>());
+               Assert.Equal(
+                    $"Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'", 
+                    res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false);
-               Assert.Contains("Cannot invoke method 'this.objToTest.MyMethod(1)' - too many arguments passed", res.Error["message"]?.Value<string>());
+                Assert.Equal(
+                    "Unable to evaluate method 'MyMethod'. Too many arguments passed.", 
+                    res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
                Assert.Contains("Unable to evaluate method 'this.CallMethodWithParm(\"1\")'", res.Error["message"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjNull.MyMethod()", expect_ok: false );
-               Assert.Contains("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
+               Assert.Equal("Expression 'this.ParmToTestObjNull.MyMethod' evaluated to null", res.Error["message"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
-               Assert.Contains("Cannot invoke method 'MyMethod'", res.Error["message"]?.Value<string>());
+               Assert.Contains(
+                    "Cannot evaluate '(this.ParmToTestObjException.MyMethod()\n)'", 
+                    res.Error["result"]?["description"]?.Value<string>());
            });
 
         [Fact]
@@ -1105,7 +1111,7 @@ namespace DebuggerTests
 
                    ("test.GetString()", TString("1.23")),
                    ("test.GetUnicodeString()", TString("żółć")),
-                   ("test.GetString(null)", TObject("string", is_null: true)),
+                   ("test.GetString(null)", TString(null)),
                    ("test.GetStringNullable()", TString("1.23")),
 
                    ("test.GetSingle()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
@@ -1113,9 +1119,9 @@ namespace DebuggerTests
                    ("test.GetSingleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
                    ("test.GetDoubleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
 
-                   ("test.GetBool()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
-                   ("test.GetBoolNullable()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
-                   ("test.GetNull()", JObject.FromObject( new { type = "object", value = true, description = "True", className = "System.Boolean" })),
+                   ("test.GetBool()", TBool(true)),
+                   ("test.GetBoolNullable()", TBool(true)),
+                   ("test.GetNull()", TBool(true)),
 
                    ("test.GetDefaultAndRequiredParam(2)", TNumber(5)),
                    ("test.GetDefaultAndRequiredParam(3, 2)", TNumber(5)),
@@ -1125,7 +1131,9 @@ namespace DebuggerTests
                    );
 
                 var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false);
-                Assert.Contains("method 'test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)' - too many arguments passed", res.Error["message"]?.Value<string>());
+               Assert.Equal(
+                    "Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.", 
+                    res.Error["exceptionDetails"]["exception"]["description"]?.Value<string>());
             });
 
         [Fact]
@@ -1139,6 +1147,41 @@ namespace DebuggerTests
                    ("test.listToLinq.ToList()", TObject("System.Collections.Generic.List<int>", description: "Count = 11"))
                    );
             });
-    }
 
+        [Fact]
+        public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitives() =>  await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.PrimitiveTypeMethods:Evaluate'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("test.propInt.ToString()", TString("12")),
+                    ("test.propUint.ToString()", TString("12")),
+                    ("test.propLong.ToString()", TString("12")),
+                    ("test.propUlong.ToString()", TString("12")),
+                //    ("test.propFloat.ToString()", TString("1.2345678")), // is comma, should be dot, fixed in PR #66979
+                //    ("test.propDouble.ToString()", TString("1.2345678910111213")), // is comma, should be dot
+                    ("test.propBool.ToString()", TString("True")),
+                    ("test.propChar.ToString()", TString("X")),
+                    ("test.propString.ToString()", TString("s_t_r")),
+                    ("test.propString.Split('*', 3, System.StringSplitOptions.RemoveEmptyEntries)", TObject("System.String[]")),
+                    ("test.propString.EndsWith('r')", TBool(true)),
+                    ("test.propString.StartsWith('S')", TBool(false)),
+                    ("localInt.ToString()", TString("2")),
+                    ("localUint.ToString()", TString("2")),
+                    ("localLong.ToString()", TString("2")),
+                    ("localUlong.ToString()", TString("2")),
+                //    ("localFloat.ToString()", TString("0.2345678")), // is comma, should be dot
+                //    ("localDouble.ToString()", TString("0.2345678910111213")), // is comma, should be dot
+                    ("localBool.ToString()", TString("False")),
+                    ("localBool.GetHashCode()", TNumber(0)),
+                    ("localBool.GetTypeCode()", TObject("System.TypeCode", "Boolean")),
+                    ("localChar.ToString()", TString("Y")),
+                    ("localString.ToString()", TString("S*T*R")),
+                    ("localString.Split('*', 3, System.StringSplitOptions.TrimEntries)", TObject("System.String[]")),
+                    ("localString.EndsWith('r')", TBool(false)),
+                    ("localString.StartsWith('S')", TBool(true)));
+             });
+    }
 }

@@ -556,7 +556,7 @@ namespace System.Net.Http.Functional.Tests
                 });
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotNodeJS))]
         public async Task SendAsync_ContentLengthAndTransferEncodingHeaders_IgnoreContentLength()
         {
             await LoopbackServer.CreateServerAsync(async (server, uri) =>
