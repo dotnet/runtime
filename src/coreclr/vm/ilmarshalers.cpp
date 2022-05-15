@@ -2016,10 +2016,21 @@ void ILCUTF8Marshaler::EmitClearNative(ILCodeStream* pslILEmit)
 {
     STANDARD_VM_CONTRACT;
 
-    _ASSERTE(m_dwInstance != LOCAL_NUM_UNUSED);
+    bool bPassByValueInOnly = IsIn(m_dwMarshalFlags) && !IsOut(m_dwMarshalFlags) && !IsByref(m_dwMarshalFlags);
+    if (bPassByValueInOnly)
+    {
+        _ASSERTE(m_dwInstance != LOCAL_NUM_UNUSED);
 
-    pslILEmit->EmitLDLOCA(m_dwInstance);
-    pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER__FREE_NATIVE, 1, 0);
+        pslILEmit->EmitLDLOCA(m_dwInstance);
+        pslILEmit->EmitCALL(METHOD__UTF8STRINGMARSHALLER__FREE_NATIVE, 1, 0);
+    }
+    else
+    {
+        // The marshaller instance is not guaranteed to be initialized with the latest native value.
+        // Free the native value directly.
+        EmitLoadNativeValue(pslILEmit);
+        pslILEmit->EmitCALL(METHOD__MARSHAL__FREE_CO_TASK_MEM, 1, 0);
+    }
 }
 
 LocalDesc ILCSTRMarshaler::GetManagedType()
