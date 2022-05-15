@@ -56,6 +56,14 @@ namespace System
             return value.GetHashCode();
         }
 
+        public static RuntimeMethodHandle FromIntPtr(IntPtr value) => new RuntimeMethodHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeMethodHandle value) => value.Value;
+
+        public static explicit operator RuntimeMethodHandle (IntPtr value) => FromIntPtr(value);
+
+        public static explicit operator IntPtr (RuntimeMethodHandle value) => ToIntPtr(value);
+
         public static bool operator ==(RuntimeMethodHandle left, RuntimeMethodHandle right)
         {
             return left.Equals(right);
