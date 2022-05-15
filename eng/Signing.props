@@ -21,7 +21,8 @@
     <FileSignInfo Include="apphost.exe;singlefilehost.exe;comhost.dll" CertificateName="None" />
 
     <!-- We don't need to code sign .js files because they are not used in Windows Script Host. -->
-    <FileExtensionSignInfo Include=".js" CertificateName="None" />
+    <!-- WARNING: Needs to happed outside of any target -->
+    <FileExtensionSignInfo Update=".js" CertificateName="None" />
 
     <!-- Third-party components which should be signed.  -->
     <FileSignInfo Include="Newtonsoft.Json.dll" CertificateName="3PartySHA2" />
