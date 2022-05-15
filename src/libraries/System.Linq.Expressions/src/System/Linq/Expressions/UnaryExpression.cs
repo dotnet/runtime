@@ -746,7 +746,7 @@ namespace System.Linq.Expressions
         {
             ExpressionUtils.RequiresCanRead(expression, nameof(expression));
             ArgumentNullException.ThrowIfNull(type);
-            TypeUtils.ValidateType(type, nameof(type));
+            TypeUtils.ValidateType(type, nameof(type), allowPointer: expression.Type.IsPointer && type.IsPointer);
             if (method == null)
             {
                 if (expression.Type.HasIdentityPrimitiveOrNullableConversionTo(type) ||
