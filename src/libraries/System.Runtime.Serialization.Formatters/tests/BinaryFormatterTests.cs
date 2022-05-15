@@ -566,23 +566,10 @@ namespace System.Runtime.Serialization.Formatters.Tests
         private static void SanityCheckBlob(object obj, TypeSerializableValue[] blobs)
         {
             // These types are unstable during serialization and produce different blobs.
-            string name = obj.GetType().FullName;
             if (obj is WeakReference<Point> ||
                 obj is Collections.Specialized.HybridDictionary ||
                 obj is Color ||
-                name  == "System.Collections.SortedList+SyncSortedList" ||
-                // Due to non-deterministic field ordering the types below will fail when using IL Emit-based Invoke.
-                // The types above may also be failing for the same reason.
-                // Remove these cases once https://github.com/dotnet/runtime/issues/46272 is fixed.
-                name == "System.Collections.Comparer" ||
-                name == "System.Collections.Hashtable" ||
-                name == "System.Collections.SortedList" ||
-                name == "System.Collections.Specialized.ListDictionary" ||
-                name == "System.CultureAwareComparer" ||
-                name == "System.Globalization.CompareInfo" ||
-                name == "System.Net.Cookie" ||
-                name == "System.Net.CookieCollection" ||
-                name == "System.Net.CookieContainer")
+                obj.GetType().FullName == "System.Collections.SortedList+SyncSortedList")
             {
                 return;
             }

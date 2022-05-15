@@ -709,68 +709,6 @@ namespace System.Reflection.Tests
                 name, BindingFlags.Public | BindingFlags.Static)!;
         }
 
-        [Fact]
-        public void ValueTypeMembers_WithOverrides()
-        {
-            ValueTypeWithOverrides obj = new() { Id = 1 };
-
-            // ToString is overridden.
-            Assert.Equal("Hello", (string)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.ToString)).
-                Invoke(obj, null));
-
-            // Ensure a normal method works.
-            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithOverrides), nameof(ValueTypeWithOverrides.GetId)).
-                Invoke(obj, null));
-        }
-
-        [Fact]
-        public void ValueTypeMembers_WithoutOverrides()
-        {
-            ValueTypeWithoutOverrides obj = new() { Id = 1 };
-
-            // ToString is not overridden.
-            Assert.Equal(typeof(ValueTypeWithoutOverrides).ToString(), (string)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.ToString)).
-                Invoke(obj, null));
-
-            // Ensure a normal method works.
-            Assert.Equal(1, (int)GetMethod(typeof(ValueTypeWithoutOverrides), nameof(ValueTypeWithoutOverrides.GetId)).
-                Invoke(obj, null));
-        }
-
-        [Fact]
-        public void NullableOfTMembers()
-        {
-            // Ensure calling a method on Nullable<T> works.
-            MethodInfo mi = GetMethod(typeof(int?), nameof(Nullable<int>.GetValueOrDefault));
-            Assert.Equal(42, mi.Invoke(42, null));
-        }
-
-        [Fact]
-        public void CopyBackWithByRefArgs()
-        {
-            object i = 42;
-            object[] args = new object[] { i };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByRef)).Invoke(null, args);
-            Assert.Equal(43, (int)args[0]);
-            Assert.NotSame(i, args[0]); // A copy should be made; a boxed instance should never be directly updated.
-
-            i = 42;
-            args = new object[] { i };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.IncrementByNullableRef)).Invoke(null, args);
-            Assert.Equal(43, (int)args[0]);
-            Assert.NotSame(i, args[0]);
-
-            object o = null;
-            args = new object[] { o };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNonNullByRef)).Invoke(null, args);
-            Assert.NotNull(args[0]);
-
-            o = new object();
-            args = new object[] { o };
-            GetMethod(typeof(CopyBackMethods), nameof(CopyBackMethods.SetToNullByRef)).Invoke(null, args);
-            Assert.Null(args[0]);
-        }
-
         //Methods for Reflection Metadata
         private void DummyMethod1(string str, int iValue, long lValue)
         {
@@ -1063,29 +1001,6 @@ namespace System.Reflection.Tests
         }
     }
 
-    public static class CopyBackMethods
-    {
-        public static void IncrementByRef(ref int i)
-        {
-            i++;
-        }
-
-        public static void IncrementByNullableRef(ref int? i)
-        {
-            i++;
-        }
-
-        public static void SetToNullByRef(ref object o)
-        {
-            o = null;
-        }
-
-        public static void SetToNonNullByRef(ref object o)
-        {
-            o = new object();
-        }
-    }
-
     public enum ColorsInt : int
     {
         Red = 1
@@ -1099,19 +1014,6 @@ namespace System.Reflection.Tests
     public enum OtherColorsInt : int
     {
         Red = 1
-    }
-
-    public struct ValueTypeWithOverrides
-    {
-        public int Id;
-        public override string ToString() => "Hello";
-        public int GetId() => Id;
-    }
-
-    public struct ValueTypeWithoutOverrides
-    {
-        public int Id;
-        public int GetId() => Id;
     }
 
     public static class EnumMethods

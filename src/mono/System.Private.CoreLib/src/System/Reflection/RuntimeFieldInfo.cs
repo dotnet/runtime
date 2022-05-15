@@ -278,7 +278,7 @@ namespace System.Reflection
             if (val != null)
             {
                 RuntimeType fieldType = (RuntimeType)FieldType;
-                ParameterCopyBackAction _ = default;
+                bool _ = false;
 
                 if (!ReferenceEquals(val.GetType(), fieldType))
                 {

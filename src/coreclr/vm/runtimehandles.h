@@ -224,9 +224,6 @@ public:
 
     static FCDECL4(Object*, InvokeMethod, Object *target, PVOID* args, SignatureNative* pSig, CLR_BOOL fConstructor);
 
-    static FCDECL2(Object*, ReboxToNullable, Object *pBoxedValUNSAFE, ReflectClassBaseObject *pDestUNSAFE);
-    static FCDECL1(Object*, ReboxFromNullable, Object *pBoxedValUNSAFE);
-
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a
         INT32 contextStates;         // constructor in this struct. GCC doesn't allow structs with constructors to be
