@@ -97,11 +97,11 @@ void Exception::Delete(Exception* pvMemory)
     }
 
 #ifdef DACCESS_COMPILE
-    pvMemory->~Exception();
-    DeleteDbiMemory(pvMemory);
+    delete pvMemory;
 #else
-    ::delete((Exception *) pvMemory);
+    ::delete pvMemory;
 #endif
+
 }
 
 void Exception::GetMessage(SString &result)
