@@ -1176,12 +1176,16 @@ namespace System
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class RuntimeFieldInfoStub : IRuntimeFieldInfo
     {
-        public RuntimeFieldInfoStub(IntPtr ptr)
-            => m_fieldHandle = new RuntimeFieldHandleInternal(ptr);
+        public RuntimeFieldInfoStub(RuntimeFieldHandleInternal fieldHandle, object keepalive)
+        {
+            m_keepalive = keepalive;
+            m_fieldHandle = fieldHandle;
+        }
+
+        private readonly object m_keepalive;
 
         // These unused variables are used to ensure that this class has the same layout as RuntimeFieldInfo
 #pragma warning disable 414, 169
-        private object? m_keepalive;
         private object? m_c;
         private object? m_d;
         private int m_b;
@@ -1250,7 +1254,12 @@ namespace System
         /// </summary>
         /// <param name="value">An IntPtr handle to a RuntimeFieldInfo to create a <see cref="RuntimeFieldHandle"/> object from.</param>
         /// <returns>A new <see cref="RuntimeFieldHandle"/> object that corresponds to the value parameter.</returns>
-        public static RuntimeFieldHandle FromIntPtr(IntPtr value) => new RuntimeFieldHandle(new RuntimeFieldInfoStub(value));
+        public static RuntimeFieldHandle FromIntPtr(IntPtr value)
+        {
+            var handle = new RuntimeFieldHandleInternal(value);
+            var fieldInfo = new RuntimeFieldInfoStub(handle, RuntimeFieldHandle.GetLoaderAllocator(handle));
+            return new RuntimeFieldHandle(fieldInfo);
+        }
 
         /// <summary>
         /// Returns the internal pointer representation of a <see cref="RuntimeFieldHandle"/> object.
@@ -1307,6 +1316,9 @@ namespace System
 
         [MethodImpl(MethodImplOptions.InternalCall)]
         internal static extern bool AcquiresContextFromThis(RuntimeFieldHandleInternal field);
+
+        [MethodImpl(MethodImplOptions.InternalCall)]
+        internal static extern LoaderAllocator GetLoaderAllocator(RuntimeFieldHandleInternal method);
 
         // ISerializable interface
         public void GetObjectData(SerializationInfo info, StreamingContext context)

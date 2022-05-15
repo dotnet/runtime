@@ -375,6 +375,29 @@ FCIMPL1(FC_BOOL_RET, RuntimeFieldHandle::AcquiresContextFromThis, FieldDesc *pFi
 }
 FCIMPLEND
 
+FCIMPL1(Object*, RuntimeFieldHandle::GetLoaderAllocator, FieldDesc *pField)
+{
+    CONTRACTL {
+        FCALL_CHECK;
+    }
+    CONTRACTL_END;
+
+    OBJECTREF loaderAllocator = NULL;
+
+    if (!pField)
+        FCThrowRes(kArgumentNullException, W("Arg_InvalidHandle"));
+
+    HELPER_METHOD_FRAME_BEGIN_RET_PROTECT(loaderAllocator);
+
+    LoaderAllocator *pLoaderAllocator = pField->GetApproxEnclosingMethodTable()->GetLoaderAllocator();
+    loaderAllocator = pLoaderAllocator->GetExposedObject();
+
+    HELPER_METHOD_FRAME_END();
+
+    return OBJECTREFToObject(loaderAllocator);
+}
+FCIMPLEND
+
 FCIMPL1(ReflectModuleBaseObject*, RuntimeTypeHandle::GetModule, ReflectClassBaseObject *pTypeUNSAFE) {
     CONTRACTL {
         FCALL_CHECK;
