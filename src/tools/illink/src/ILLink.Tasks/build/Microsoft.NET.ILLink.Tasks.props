@@ -13,7 +13,7 @@ Copyright (c) .NET Foundation. All rights reserved.
 
   <PropertyGroup>
     <UsingILLinkTasksSdk>true</UsingILLinkTasksSdk>
-    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net7.0\ILLink.Tasks.dll</ILLinkTasksAssembly>
+    <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' == 'Core'">$(MSBuildThisFileDirectory)..\tools\net6.0\ILLink.Tasks.dll</ILLinkTasksAssembly>
     <ILLinkTasksAssembly Condition="'$(MSBuildRuntimeType)' != 'Core'">$(MSBuildThisFileDirectory)..\tools\net472\ILLink.Tasks.dll</ILLinkTasksAssembly>
   </PropertyGroup>
 
