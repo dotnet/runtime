@@ -62,10 +62,6 @@ namespace System
 
         public static IntPtr ToIntPtr(RuntimeFieldHandle value) => value.Value;
 
-        public static explicit operator RuntimeFieldHandle (IntPtr value) => FromIntPtr(value);
-
-        public static explicit operator IntPtr (RuntimeFieldHandle value) => ToIntPtr(value);
-
         public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right)
         {
             return left.Equals(right);

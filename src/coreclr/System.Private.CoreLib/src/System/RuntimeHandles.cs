@@ -82,20 +82,6 @@ namespace System
         /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeTypeHandle"/> object.</returns>
         public static IntPtr ToIntPtr(RuntimeTypeHandle value) => value.Value;
 
-        /// <summary>
-        /// A new <see cref="RuntimeTypeHandle"/> object created from a handle to a RuntimeType.
-        /// </summary>
-        /// <param name="value">An IntPtr handle to a RuntimeType to create a <see cref="RuntimeTypeHandle"/> object from.</param>
-        /// <returns>A new <see cref="RuntimeTypeHandle"/> object that corresponds to the value parameter.</returns>
-        public static explicit operator RuntimeTypeHandle(IntPtr value) => FromIntPtr(value);
-
-        /// <summary>
-        /// The internal pointer representation of a <see cref="RuntimeTypeHandle"/> object.
-        /// </summary>
-        /// <param name="value">A <see cref="RuntimeTypeHandle"/> object to retrieve an internal pointer representation from.</param>
-        /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeTypeHandle"/> object.</returns>
-        public static explicit operator IntPtr(RuntimeTypeHandle value) => ToIntPtr(value);
-
         public static bool operator ==(RuntimeTypeHandle left, object? right) => left.Equals(right);
 
         public static bool operator ==(object? left, RuntimeTypeHandle right) => right.Equals(left);
@@ -928,20 +914,6 @@ namespace System
         /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeMethodHandle"/> object.</returns>
         public static IntPtr ToIntPtr(RuntimeMethodHandle value) => value.Value;
 
-        /// <summary>
-        /// A new <see cref="RuntimeMethodHandle"/> object created from a handle to a RuntimeMethod.
-        /// </summary>
-        /// <param name="value">An IntPtr handle to a RuntimeMethod to create a <see cref="RuntimeMethodHandle"/> object from.</param>
-        /// <returns>A new <see cref="RuntimeMethodHandle"/> object that corresponds to the value parameter.</returns>
-        public static explicit operator RuntimeMethodHandle (IntPtr value) => FromIntPtr(value);
-
-        /// <summary>
-        /// The internal pointer representation of a <see cref="RuntimeMethodHandle"/> object.
-        /// </summary>
-        /// <param name="value">A <see cref="RuntimeMethodHandle"/> object to retrieve an internal pointer representation from.</param>
-        /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeMethodHandle"/> object.</returns>
-        public static explicit operator IntPtr (RuntimeMethodHandle value) => ToIntPtr(value);
-
         public static bool operator ==(RuntimeMethodHandle left, RuntimeMethodHandle right) => left.Equals(right);
 
         public static bool operator !=(RuntimeMethodHandle left, RuntimeMethodHandle right) => !left.Equals(right);
@@ -1296,20 +1268,6 @@ namespace System
         /// <param name="value">A <see cref="RuntimeFieldHandle"/> object to retrieve an internal pointer representation from.</param>
         /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeFieldHandle"/> object.</returns>
         public static IntPtr ToIntPtr(RuntimeFieldHandle value) => value.Value;
-
-        /// <summary>
-        /// A new <see cref="RuntimeFieldHandle"/> object created from a handle to a RuntimeField.
-        /// </summary>
-        /// <param name="value">An IntPtr handle to a RuntimeField to create a <see cref="RuntimeFieldHandle"/> object from.</param>
-        /// <returns>A new <see cref="RuntimeFieldHandle"/> object that corresponds to the value parameter.</returns>
-        public static explicit operator RuntimeFieldHandle (IntPtr value) => FromIntPtr(value);
-
-        /// <summary>
-        /// The internal pointer representation of a <see cref="RuntimeFieldHandle"/> object.
-        /// </summary>
-        /// <param name="value">A <see cref="RuntimeFieldHandle"/> object to retrieve an internal pointer representation from.</param>
-        /// <returns>An <see cref="IntPtr"/> object that represents a <see cref="RuntimeFieldHandle"/> object.</returns>
-        public static explicit operator IntPtr (RuntimeFieldHandle value) => ToIntPtr(value);
 
         public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right) => left.Equals(right);
 

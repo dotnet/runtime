@@ -4089,8 +4089,6 @@ namespace System
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static System.RuntimeFieldHandle FromIntPtr(System.IntPtr value) { throw null; }
         public static System.IntPtr ToIntPtr(System.RuntimeFieldHandle value) { throw null; }
-        public static explicit operator System.RuntimeFieldHandle (System.IntPtr value) { throw null; }
-        public static explicit operator System.IntPtr (System.RuntimeFieldHandle value) { throw null; }
         public static bool operator ==(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
         public static bool operator !=(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
     }
@@ -4106,8 +4104,6 @@ namespace System
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static System.RuntimeMethodHandle FromIntPtr(System.IntPtr value) { throw null; }
         public static System.IntPtr ToIntPtr(System.RuntimeMethodHandle value) { throw null; }
-        public static explicit operator System.RuntimeMethodHandle (System.IntPtr value) { throw null; }
-        public static explicit operator System.IntPtr (System.RuntimeMethodHandle value) { throw null; }
         public static bool operator ==(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
         public static bool operator !=(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
     }
@@ -4123,8 +4119,6 @@ namespace System
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
         public static System.RuntimeTypeHandle FromIntPtr(System.IntPtr value) { throw null; }
         public static System.IntPtr ToIntPtr(System.RuntimeTypeHandle value) { throw null; }
-        public static explicit operator System.RuntimeTypeHandle (System.IntPtr value) { throw null; }
-        public static explicit operator System.IntPtr (System.RuntimeTypeHandle value) { throw null; }
         public static bool operator ==(object? left, System.RuntimeTypeHandle right) { throw null; }
         public static bool operator ==(System.RuntimeTypeHandle left, object? right) { throw null; }
         public static bool operator !=(object? left, System.RuntimeTypeHandle right) { throw null; }

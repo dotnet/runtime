@@ -35,10 +35,9 @@ public static class HandleTests
         Assert.True(h != default(RuntimeFieldHandle));
 
         IntPtr hPtr = RuntimeFieldHandle.ToIntPtr(h);
-        Assert.True(hPtr == (IntPtr)h);
         RuntimeFieldHandle hNew = RuntimeFieldHandle.FromIntPtr(hPtr);
-        Assert.True(h == hNew);
-        Assert.True(hNew == (RuntimeFieldHandle)hPtr);
+        Assert.True(h.Equals(hNew));
+        Assert.True(hNew.Equals(h));
     }
 
     [Fact]
@@ -67,10 +66,9 @@ public static class HandleTests
         Assert.True(h != default(RuntimeMethodHandle));
 
         IntPtr hPtr = RuntimeMethodHandle.ToIntPtr(h);
-        Assert.True(hPtr == (IntPtr)h);
         RuntimeMethodHandle hNew = RuntimeMethodHandle.FromIntPtr(hPtr);
         Assert.True(h.Equals(hNew));
-        Assert.True(hNew.Equals((RuntimeMethodHandle)hPtr));
+        Assert.True(hNew.Equals(h));
     }
 
     [Fact]
@@ -110,10 +108,9 @@ public static class HandleTests
         Assert.True(null != h);
 
         IntPtr hPtr = RuntimeTypeHandle.ToIntPtr(h);
-        Assert.True(hPtr == (IntPtr)h);
         RuntimeTypeHandle hNew = RuntimeTypeHandle.FromIntPtr(hPtr);
         Assert.True(h.Equals(hNew));
-        Assert.True(hNew.Equals((RuntimeTypeHandle)hPtr));
+        Assert.True(hNew.Equals(h));
     }
 
     private class Base

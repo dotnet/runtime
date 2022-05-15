@@ -94,10 +94,6 @@ namespace System
 
         public static IntPtr ToIntPtr(RuntimeTypeHandle value) => value.Value;
 
-        public static explicit operator RuntimeTypeHandle(IntPtr value) => FromIntPtr(value);
-
-        public static explicit operator IntPtr(RuntimeTypeHandle value) => ToIntPtr(value);
-
         public static bool operator ==(RuntimeTypeHandle left, object right)
         {
             return (right != null) && (right is RuntimeTypeHandle) && left.Equals((RuntimeTypeHandle)right);
