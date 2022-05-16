@@ -259,7 +259,7 @@ function initializeImportsAndExports(
             let value: any = undefined;
             Object.defineProperty(globalThis, name, {
                 get: () => {
-                    if (!is_nullish(value)) {
+                    if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
                         console.warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
