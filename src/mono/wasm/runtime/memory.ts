@@ -15,9 +15,7 @@ function _ensure_allocated(): void {
     alloca_limit = <VoidPtr>(<any>alloca_base + alloca_buffer_size);
 }
 
-function is_bingint_supported() {
-    return typeof BigInt !== "undefined" && typeof BigInt64Array !== "undefined";
-}
+const is_bingint_supported = typeof BigInt !== "undefined" && typeof BigInt64Array !== "undefined";
 
 export function temp_malloc(size: number): VoidPtr {
     _ensure_allocated();
@@ -92,7 +90,7 @@ export function setI52(offset: _MemOffset, value: number): void {
 }
 
 export function setI64Big(offset: _MemOffset, value: bigint): void {
-    assert(is_bingint_supported(), "BigInt is not supported.");
+    assert(is_bingint_supported, "BigInt is not supported.");
     HEAPI64[<any>offset >>> 3] = value;
 }
 
@@ -151,7 +149,7 @@ export function getI52(offset: _MemOffset): number {
 }
 
 export function getI64Big(offset: _MemOffset): bigint {
-    assert(is_bingint_supported(), "BigInt is not supported.");
+    assert(is_bingint_supported, "BigInt is not supported.");
     return HEAPI64[<any>offset >>> 3];
 }
 
@@ -164,7 +162,7 @@ export function getF64(offset: _MemOffset): number {
 }
 
 export function afterUpdateGlobalBufferAndViews(buffer: Buffer): void {
-    if (is_bingint_supported()) {
+    if (is_bingint_supported) {
         HEAPI64 = new BigInt64Array(buffer);
     }
 }
