@@ -40,5 +40,23 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             }
             Assert.Equal(expected, actual2);
         }
+
+        [Theory]
+        [InlineData(double.NaN)]
+        [InlineData(double.NegativeInfinity)]
+        [InlineData(double.PositiveInfinity)]
+        [InlineData(double.MinValue)]
+        [InlineData(double.MaxValue)]
+        [InlineData(double.Pi)]
+        [InlineData(9007199254740993.0)]//MAX_SAFE_INTEGER +2
+        public static unsafe void Int52TestInvalid(double value)
+        {
+            long actual = 0;
+            uint ptr = (uint)Unsafe.AsPointer(ref actual);
+            var bagFn = new Function("ptr", "value", @"
+                globalThis.App.MONO.setI52(ptr, value);");
+            var ex=Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
+            Assert.Contains("Int64 value out of JavaScript Number safe integer range", ex.Message);
+        }
     }
 }
