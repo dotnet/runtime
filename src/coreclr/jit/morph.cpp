@@ -13336,8 +13336,10 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
     GenTree* op1 = cmp->gtGetOp1();
     GenTree* op2 = cmp->gtGetOp2();
 
-    // Caller is expected to call this function only if we have CAST nodes
+    // Caller is expected to call this function only if we have at least one CAST node
     assert(op1->OperIs(GT_CAST) || op2->OperIs(GT_CAST));
+
+    assert(genActualType(op1) == genActualType(op2));
 
     if (!op1->TypeIs(TYP_LONG))
     {
@@ -13346,78 +13348,88 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
         return cmp;
     }
 
-    GenTree* castOp;
-    GenTree* knownPositiveOp;
-
-    bool knownPositiveIsOp2;
-    if (op2->IsIntegralConst() || ((op2->OperIs(GT_CAST) && op2->AsCast()->CastOp()->OperIs(GT_ARR_LENGTH))))
-    {
-        // op2 is either a LONG constant or (T)ARR_LENGTH
-        knownPositiveIsOp2 = true;
-        castOp             = cmp->gtGetOp1();
-        knownPositiveOp    = cmp->gtGetOp2();
-    }
-    else
-    {
-        // op1 is either a LONG constant (yes, it's pretty normal for relops)
-        // or (T)ARR_LENGTH
-        castOp             = cmp->gtGetOp2();
-        knownPositiveOp    = cmp->gtGetOp1();
-        knownPositiveIsOp2 = false;
-    }
-
-    if (castOp->OperIs(GT_CAST) && varTypeIsLong(castOp->CastToType()) && castOp->AsCast()->CastOp()->TypeIs(TYP_INT) &&
-        castOp->IsUnsigned() && !castOp->gtOverflow())
-    {
-        IntegralRange knownPositiveOpRange = IntegralRange::ForNode(knownPositiveOp, this);
-        bool          knownPositiveFitsIntoU32 =
-            IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::UIntMax).Contains(knownPositiveOpRange);
-
-        if (!knownPositiveFitsIntoU32)
+    auto supportedOp = [](GenTree* op) {
+        if (op->IsIntegralConst())
         {
-            return cmp;
+            return true;
         }
 
+        if (op->OperIs(GT_CAST))
+        {
+            if (op->gtOverflow())
+            {
+                return false;
+            }
+
+            if (genActualType(op->CastFromType()) != TYP_INT)
+            {
+                return false;
+            }
+
+            // For unchecked widening we only expect TYP_LONG, not TYP_ULONG
+            assert(op->CastToType() == TYP_LONG);
+            return true;
+        }
+
+        return false;
+    };
+
+    if (!supportedOp(op1) || !supportedOp(op2))
+    {
+        return cmp;
+    }
+
+    auto isUpper0 = [this](GenTree* op) {
+        if (op->IsIntegralConst())
+        {
+            int64_t lng = op->AsIntConCommon()->LngValue();
+            return (lng >= 0) && (lng <= UINT_MAX);
+        }
+
+        assert(op->OperIs(GT_CAST));
+        if (op->AsCast()->IsUnsigned())
+        {
+            return true;
+        }
+
+        return IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax)
+            .Contains(IntegralRange::ForNode(op->AsCast()->CastOp(), this));
+    };
+
+    bool op1UpperIsZero = isUpper0(op1);
+    bool op2UpperIsZero = isUpper0(op2);
+
+    // If both operands have zero as the upper half we can optimize then any
+    // signed/unsigned 64-bit comparison is equivalent to the same unsigned
+    // 32-bit comparison.
+    if (op1UpperIsZero && op2UpperIsZero)
+    {
         JITDUMP("Removing redundant cast(s) for:\n")
         DISPTREE(cmp)
         JITDUMP("\n\nto:\n\n")
 
         cmp->SetUnsigned();
 
-        // Drop cast from castOp
-        if (knownPositiveIsOp2)
-        {
-            cmp->gtOp1 = castOp->AsCast()->CastOp();
-        }
-        else
-        {
-            cmp->gtOp2 = castOp->AsCast()->CastOp();
-        }
-        DEBUG_DESTROY_NODE(castOp);
-
-        if (knownPositiveOp->OperIs(GT_CAST))
-        {
-            // Drop cast from knownPositiveOp too
-            if (knownPositiveIsOp2)
+        auto transform = [this](GenTree** use) {
+            if ((*use)->IsIntegralConst())
             {
-                cmp->gtOp2 = knownPositiveOp->AsCast()->CastOp();
+                (*use)->BashToConst(static_cast<int>((*use)->AsIntConCommon()->LngValue()), TYP_INT);
+                fgUpdateConstTreeValueNumber(*use);
             }
             else
             {
-                cmp->gtOp1 = knownPositiveOp->AsCast()->CastOp();
+                assert((*use)->OperIs(GT_CAST));
+                GenTreeCast* cast = (*use)->AsCast();
+                *use              = cast->CastOp();
+                DEBUG_DESTROY_NODE(cast);
             }
-            DEBUG_DESTROY_NODE(knownPositiveOp);
-        }
-        else
-        {
-            // Change type for constant from LONG to INT
-            knownPositiveOp->ChangeType(TYP_INT);
-#ifndef TARGET_64BIT
-            assert(knownPositiveOp->OperIs(GT_CNS_LNG));
-            knownPositiveOp->BashToConst(static_cast<int>(knownPositiveOp->AsIntConCommon()->IntegralValue()));
-#endif
-            fgUpdateConstTreeValueNumber(knownPositiveOp);
-        }
+        };
+
+        transform(&cmp->gtOp1);
+        transform(&cmp->gtOp2);
+
+        assert((genActualType(cmp->gtOp1) == TYP_INT) && (genActualType(cmp->gtOp2) == TYP_INT));
+
         DISPTREE(cmp)
         JITDUMP("\n")
     }
