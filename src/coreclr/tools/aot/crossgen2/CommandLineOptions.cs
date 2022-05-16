@@ -48,7 +48,6 @@ namespace ILCompiler
         public string JitPath;
         public string SystemModule;
         public bool WaitForDebugger;
-        public bool Tuning;
         public bool Partial;
         public bool Resilient;
         public bool Map;
@@ -65,6 +64,7 @@ namespace ILCompiler
         public string FileLayout;
         public bool VerifyTypeAndFieldLayout;
         public string CallChainProfileFile;
+        public string ImageBase;
 
         public string SingleMethodTypeName;
         public string SingleMethodName;
@@ -132,7 +132,6 @@ namespace ILCompiler
                 syntax.DefineOption("compile-no-methods", ref CompileNoMethods, SR.CompileNoMethodsOption);
                 syntax.DefineOption("out-near-input", ref OutNearInput, SR.OutNearInputOption);
                 syntax.DefineOption("single-file-compilation", ref SingleFileCompilation, SR.SingleFileCompilationOption);
-                syntax.DefineOption("tuning", ref Tuning, SR.TuningImageOption);
                 syntax.DefineOption("partial", ref Partial, SR.PartialImageOption);
                 syntax.DefineOption("compilebubblegenerics", ref CompileBubbleGenerics, SR.BubbleGenericsOption);
                 syntax.DefineOption("embed-pgo-data", ref EmbedPgoData, SR.EmbedPgoDataOption);
@@ -143,6 +142,7 @@ namespace ILCompiler
                 syntax.DefineOption("waitfordebugger", ref WaitForDebugger, SR.WaitForDebuggerOption);
                 syntax.DefineOptionList("codegenopt|codegen-options", ref CodegenOptions, SR.CodeGenOptions);
                 syntax.DefineOption("resilient", ref Resilient, SR.ResilientOption);
+                syntax.DefineOption("imagebase", ref ImageBase, SR.ImageBase);
 
                 syntax.DefineOption("targetarch", ref TargetArch, SR.TargetArchOption);
                 syntax.DefineOption("targetos", ref TargetOS, SR.TargetOSOption);

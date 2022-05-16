@@ -50,5 +50,26 @@ namespace System.Runtime.InteropServices
         /// Indicates whether the current application is running on the specified platform.
         /// </summary>
         public static bool IsOSPlatform(OSPlatform osPlatform) => OperatingSystem.IsOSPlatform(osPlatform.Name);
+
+        public static Architecture ProcessArchitecture
+#if TARGET_X86
+            => Architecture.X86;
+#elif TARGET_AMD64
+            => Architecture.X64;
+#elif TARGET_ARMV6
+            => Architecture.Armv6;
+#elif TARGET_ARM
+            => Architecture.Arm;
+#elif TARGET_ARM64
+            => Architecture.Arm64;
+#elif TARGET_WASM
+            => Architecture.Wasm;
+#elif TARGET_S390X
+            => Architecture.S390x;
+#elif TARGET_LOONGARCH64
+            => Architecture.LoongArch64;
+#else
+#error Unknown Architecture
+#endif
     }
 }

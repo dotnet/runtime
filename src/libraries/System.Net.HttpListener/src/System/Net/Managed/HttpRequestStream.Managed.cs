@@ -161,8 +161,10 @@ namespace System.Net
             return _stream.BeginRead(buffer, offset, size, cback, state);
         }
 
-        public override int EndRead(IAsyncResult asyncResult!!)
+        public override int EndRead(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             if (asyncResult is HttpStreamAsyncResult r)
             {
                 if (!ReferenceEquals(this, r._parent))

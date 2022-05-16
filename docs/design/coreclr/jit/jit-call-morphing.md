@@ -43,18 +43,21 @@ call site and is created by the Importer when it sees a call in the IL.  It is a
 used for internal calls that the JIT needs such as helper calls.  Every `GT_CALL` node
 should have a `GTF_CALL` flag set on it.  Nodes that may be implemented using a function
 call also should have the `GTF_CALL` flag set on them. The arguments for a single call
-site are held by three fields in the `GenTreeCall`: `gtCallObjp`, `gtCallArgs`, and
-`gtCallLateArgs`.  The first one, `gtCallObjp`, contains the instance pointer ("this"
-pointer) when you are calling a method that takes an instance pointer, otherwise it is
-null.  The `gtCallArgs` contains all of the normal arguments in a null terminated `GT_LIST`
-format.  When the `GenTreeCall` is first created the `gtCallLateArgs` is null and is
-set up later when we call `fgMorphArgs()` during the global Morph of all nodes. To
-accurately record and track all of the information about call site arguments we create
-a `fgArgInfo` that records information and decisions that we make about how each argument
-for this call site is handled.  It has a dynamically sized array member `argTable` that
-contains details about each argument. This per-argument information is contained in the
-`fgArgTabEntry` struct.
+site are encapsulated in the `CallArgs` class. Every call has an instance of this class
+in `GenTreeCall::gtArgs`. `CallArgs` contains two linked list of arguments: the "normal"
+linked list, which can be enumerated via `CallArgs::Args`, and the "late" linked list,
+enumerated via `CallArgs::LateArgs`.
 
+The normal linked list is a linked list of `CallArg` structures, in normal argument
+order. When the `GenTreeCall` is first created the late args list is empty and is
+set up later when we call `fgMorphArgs()` during the global Morph of all nodes. The short
+explanation of why we need two lists is that we may need to force the correct evaluation
+order of arguments and also architecture-specific ways of passing some arguments. See
+below and the documentation of `fgMorphArgs` and `AddFinalArgsAndDetermineABIInfo` for
+more information about late args.
+
+In addition to containing IR nodes, each `CallArg` entry also contains information about
+how it was evaluated and ABI information describing how to pass it.
 
 `FEATURE_FIXED_OUT_ARGS`
 -----------------
@@ -77,9 +80,9 @@ calls for x86 but do not allow them for the other architectures.
 Rules for when Arguments must be evaluated into temp LclVars
 -----------------
 
-During the first Morph phase known as global Morph we call `fgArgInfo::ArgsComplete()`
-after we have completed building the `argTable` for `fgArgInfo` struct. This method
-applies the following rules:
+During the first Morph phase known as global Morph we call `CallArgs::ArgsComplete()`
+after we have completed determining ABI information for each arg. This method applies
+the following rules:
 
 1. When an argument is marked as containing an assignment using `GTF_ASG`, then we
 force all previous non-constant arguments to be evaluated into temps.  This is very
@@ -93,7 +96,7 @@ we force that argument and any previous argument that is marked with any of the
     area is marked as needing a placeholder temp using `needPlace`.
 3. We force any arguments that use `localloc` to be evaluated into temps.
 4. We mark any address taken locals with the `GTF_GLOB_REF` flag. For two special
-cases we call `EvalToTmp()` and set up the temp in `fgMorphArgs`.  `EvalToTmp`
+cases we call `SetNeedsTemp()` and set up the temp in `fgMorphArgs`. `SetNeedsTemp`
 records the tmpNum used and sets `isTmp` so that we handle it like the other temps.
 The special cases are for `GT_MKREFANY` and for a `TYP_STRUCT` argument passed by
 value when we can't optimize away the extra copy.
@@ -104,7 +107,7 @@ Rules use to determine the order of argument evaluation
 
 After calling `ArgsComplete()` the `SortArgs()` method is called to determine the
 optimal way to evaluate the arguments.  This sorting controls the order that we place
-the nodes in the `gtCallLateArgs` list.
+the nodes in the late argument list.
 
 1. We iterate over the arguments and move any constant arguments to be evaluated
 last and remove them from further consideration by marking them as processed.
@@ -123,35 +126,32 @@ Evaluating Args into new LclVar temps and the creation of the LateArgs
 After calling `SortArgs()`, the `EvalArgsToTemps()` method is called to create
 the temp assignments and to populate the LateArgs list.
 
-Arguments that are marked with `needTmp == true`.
+For arguments that are marked as needing a temp:
 -----------------
 
 1. We create an assignment using `gtNewTempAssign`. This assignment replaces
-the original argument in the `gtCallArgs` list.  After we create the assignment
-the argument is marked as `isTmp`.  The new assignment is marked with the
-`GTF_LATE_ARG` flag.
-2. Arguments that are already marked with `isTmp` are treated similarly as
+the original argument in the early argument list.  After we create the assignment
+the argument is marked with `m_isTmp = true`.
+2. Arguments that are already marked with `m_isTmp` are treated similarly as
 above except we don't create an assignment for them.
-3. A `TYP_STRUCT` argument passed by value will have `isTmp` set to true
+3. A `TYP_STRUCT` argument passed by value will have `m_isTmp` set to true
 and will use a `GT_COPYBLK` or a `GT_COPYOBJ` to perform the assignment of the temp.
 4. The assignment node or the CopyBlock node is referred to as `arg1 SETUP` in the JitDump.
 
 
-Argument that are marked with `needTmp == false`.
+For arguments that are marked as not needing a temp:
 -----------------
 
 1. If this is an argument that is passed in a register, then the existing
-node is moved to the `gtCallLateArgs` list and a new `GT_ARGPLACE` (placeholder)
-node replaces it in the `gtArgList` list.
-2. Additionally, if `needPlace` is true (only for `FEATURE_FIXED_OUT_ARGS`)
-then the existing node is moved to the `gtCallLateArgs` list and a new
-`GT_ARGPLACE` (placeholder) node replaces it in the `gtArgList` list.
-3. Otherwise the argument is left in the `gtCallArgs` and it will be
-evaluated into the outgoing arg area or pushed on the stack.
+node is moved to the late argument list.
+2. Similarly, if `m_needPlace` is true (only for `FEATURE_FIXED_OUT_ARGS`)
+then the existing node is moved to the late argument list.
+3. Otherwise the argument is left in the early argument and it will be
+evaluated directly into the outgoing arg area or pushed on the stack.
 
 After the Call node is fully morphed the LateArgs list will contain the arguments
-passed in registers as well as additional ones for `needPlace` marked
+passed in registers as well as additional ones for `m_needPlace` marked
 arguments whenever we have a nested call for a stack based argument.
-When `needTmp` is true the LateArg will be a LclVar that was created
-to evaluate the arg (single-def/single-use).  When `needTmp` is false
+When `m_needTmp` is true the LateArg will be a LclVar that was created
+to evaluate the arg (single-def/single-use).  When `m_needTmp` is false
 the LateArg can be an arbitrary expression tree.

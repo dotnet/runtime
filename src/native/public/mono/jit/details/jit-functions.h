@@ -6,8 +6,11 @@
 #error "MONO_API_FUNCTION(ret,name,args) macro not defined before including function declaration header"
 #endif
 
-MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoDomain *, mono_jit_init, (const char *file))
+MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoDomain *, mono_jit_init, (const char *root_domain_name))
 
+/**
+ * This function is deprecated, use mono_jit_init instead. Ignores runtime_version parameter.
+ */
 MONO_API_FUNCTION(MONO_RT_EXTERNAL_ONLY MonoDomain *, mono_jit_init_version, (const char *root_domain_name, const char *runtime_version))
 
 MONO_API_FUNCTION(MonoDomain *, mono_jit_init_version_for_test_only, (const char *root_domain_name, const char *runtime_version))

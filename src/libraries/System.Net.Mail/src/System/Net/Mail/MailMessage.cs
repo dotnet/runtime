@@ -52,8 +52,11 @@ namespace System.Net.Mail
         }
 
 
-        public MailMessage(MailAddress from!!, MailAddress to!!)
+        public MailMessage(MailAddress from, MailAddress to)
         {
+            ArgumentNullException.ThrowIfNull(from);
+            ArgumentNullException.ThrowIfNull(to);
+
             _message = new Message(from, to);
         }
 

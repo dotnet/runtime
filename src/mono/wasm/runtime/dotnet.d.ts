@@ -153,6 +153,7 @@ declare type MonoConfig = {
     aot_profiler_options?: AOTProfilerOptions;
     coverage_profiler_options?: CoverageProfilerOptions;
     ignore_pdb_load_errors?: boolean;
+    wait_for_debugger?: number;
 };
 declare type MonoConfigError = {
     isError: true;
@@ -382,6 +383,8 @@ declare const BINDING: {
      * @deprecated Renamed to conv_string_root
      */
     conv_string_rooted: typeof conv_string_root;
+    mono_obj_array_new_ref: (size: number, result: MonoObjectRef) => void;
+    mono_obj_array_set_ref: (array: MonoObjectRef, idx: number, obj: MonoObjectRef) => void;
     js_string_to_mono_string_root: typeof js_string_to_mono_string_root;
     js_typed_array_to_array_root: typeof js_typed_array_to_array_root;
     js_to_mono_obj_root: typeof js_to_mono_obj_root;

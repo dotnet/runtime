@@ -23,8 +23,7 @@ namespace System
             bool ignoreCase,
             ref StackCrawlMark stackMark)
         {
-            if (typeName == null)
-                throw new ArgumentNullException(nameof(typeName));
+            ArgumentNullException.ThrowIfNull(typeName);
 
             ParsedName? pname = ParseName(typeName, false, 0, out int end_pos);
             if (pname == null)

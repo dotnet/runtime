@@ -24,9 +24,9 @@
 .subsystem 0x00000003
 .file alignment 512
 .corflags 0x00000001
-.namespace hello
+.namespace hello_tryfinallyintrycatchwithleaveintotry_leaves_il
 {
-  .class private auto ansi beforefieldinit Class1
+  .class public auto ansi beforefieldinit Class1
          extends [mscorlib]System.Object
   {
     .method public hidebysig static void 
@@ -120,17 +120,17 @@
       {
         ldstr      "in Try ..."
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void hello.Class1::inTry()
+        call       void hello_tryfinallyintrycatchwithleaveintotry_leaves_il.Class1::inTry()
 
       cont1:
         ldstr      "in Try ... (again)"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void hello.Class1::inTry()
+        call       void hello_tryfinallyintrycatchwithleaveintotry_leaves_il.Class1::inTry()
 
       cont2:
         ldstr      "in Try ... (again)"
         call       void [System.Console]System.Console::WriteLine(string)
-        call       void hello.Class1::inTry()
+        call       void hello_tryfinallyintrycatchwithleaveintotry_leaves_il.Class1::inTry()
 
       cont3:
         nop
@@ -150,7 +150,7 @@
       catch [mscorlib]System.Exception 
       {
         pop
-        call       void hello.Class1::inCatch()
+        call       void hello_tryfinallyintrycatchwithleaveintotry_leaves_il.Class1::inCatch()
         ldloc.0
         brfalse.s zero
         ldc.i4.1

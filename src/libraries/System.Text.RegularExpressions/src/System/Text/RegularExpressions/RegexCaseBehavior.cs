@@ -12,12 +12,16 @@ namespace System.Text.RegularExpressions
     /// same character. Note that we don't consider a mapping when the only relationship between 'A' and 'B' is that one is the ToUpper() representation of the other. This
     /// is for backwards compatibility since, in Regex, we have only consider ToLower() for case insensitive comparisons. Given the case mappings vary depending on the culture,
     /// Regex supports 3 main different behaviors or mappings: Invariant, NonTurkish, and Turkish. This is in order to match the behavior of all .NET supported cultures
-    /// current behavior for ToLower(). As a side note, there should be no cases where 'A'.ToLower() == 'B' but 'A'.ToLower() != 'B'.ToLower(). This aspect is important since
-    /// for backreferences we make use a.ToLower() == b.ToLower() for comparisons so if there was such a case then it would lead to inconsistencies between how we handle
-    /// backreferences vs how we handle other case insensitive comparisons.
+    /// current behavior for ToLower(). As a side note, there should be no cases where 'A'.ToLower() == 'B' but 'A'.ToLower() != 'B'.ToLower().
     /// </summary>
     internal enum RegexCaseBehavior
     {
+        /// <summary>
+        /// This means that the RegexCaseBehavior hasn't been calculated based on a passed in culture yet, so it will need to be calculated before the first
+        /// equivalence check by calling <see cref="RegexCaseEquivalences.GetRegexBehavior(CultureInfo)"/>
+        /// </summary>
+        NotSet,
+
         /// <summary>
         /// Invariant case-mappings are used. This includes all of the common mappings across cultures. This behavior is used when either the  user
         /// specified <see cref="RegexOptions.CultureInvariant"/> or when the CurrentCulture is <see cref="CultureInfo.InvariantCulture"/>.

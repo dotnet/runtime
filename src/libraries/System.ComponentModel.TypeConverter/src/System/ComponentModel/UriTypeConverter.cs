@@ -62,8 +62,10 @@ namespace System
         /// Converts the given value object to
         /// the specified destination type using the specified context and arguments.
         /// </summary>
-        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (value is Uri uri)
             {
                 if (destinationType == typeof(InstanceDescriptor))

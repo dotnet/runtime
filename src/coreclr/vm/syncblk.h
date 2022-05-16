@@ -1287,8 +1287,8 @@ class SyncBlockCache
     DWORD       m_FreeSyncBlock;        // Next Free Syncblock in the array
 
         // The next variables deal with SyncTableEntries.  Instead of having the object-header
-        // point directly at SyncBlocks, the object points a a syncTableEntry, which points at
-        // the syncBlock.  This is done because in a common case (need a hash code for an object)
+        // point directly at SyncBlocks, the object points at a syncTableEntry, which in turn points
+        // at the syncBlock.  This is done because in a common case (need a hash code for an object)
         // you just need a syncTableEntry.
 
     DWORD       m_FreeSyncTableIndex;   // We allocate a large array of SyncTableEntry structures.

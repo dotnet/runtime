@@ -3,7 +3,7 @@
     <Python>python3</Python>
     <HelixPreCommands>$(HelixPreCommands);chmod +x $HELIX_WORKITEM_PAYLOAD/SOD/SizeOnDisk</HelixPreCommands>
 
-    <PublishArgs>--has-workload --msbuild "/p:_TrimmerDumpDependencies=true" --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27</PublishArgs>
+    <PublishArgs>--has-workload --readonly-dotnet --msbuild "/p:_TrimmerDumpDependencies=true" --msbuild-static AdditionalMonoLinkerOptions=%27&quot;%24(AdditionalMonoLinkerOptions) --dump-dependencies&quot;%27</PublishArgs>
     <PublishCommand>$(Python) pre.py publish $(PublishArgs)</PublishCommand>
   </PropertyGroup>
 
@@ -50,24 +50,24 @@
     <HelixWorkItem Include="SOD - New Blazor Template - Publish">
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
         <Command>cd $(BlazorDirectory) &amp;&amp; $(PublishCommand) --binlog %27./traces/blazor_publish.binlog%27 &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
-        <PostCommands>$(Python) post.py</PostCommands>
+        <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - New Blazor Template - Publish - AOT">
         <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
         <Command>cd $(BlazorAOTDirectory) &amp;&amp; $(PublishCommand) --binlog %27./traces/blazor_publish.binlog%27 &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
-        <PostCommands>$(Python) post.py</PostCommands>
+        <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Pizza App - Publish">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <!-- Specifying both linker dump msbuild properties in case linker version is not updated -->
       <Command>cd $(BlazorPizzaDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) --binlog %27./traces/blazor_publish.binlog%27 &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
-      <PostCommands>$(Python) post.py</PostCommands>
+      <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
     </HelixWorkItem>
     <HelixWorkItem Include="SOD - Pizza App - Publish - AOT">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <!-- Specifying both linker dump msbuild properties in case linker version is not updated -->
       <Command>cd $(BlazorPizzaAOTDirectory) &amp;&amp; $(PublishCommand) -f $(PerflabTargetFrameworks) --binlog %27./traces/blazor_publish.binlog%27 &amp;&amp; $(Python) test.py sod --scenario-name &quot;%(Identity)&quot; --dirs $(PizzaAppPubLocation)</Command>
-      <PostCommands>$(Python) post.py</PostCommands>
+      <PostCommands>$(Python) post.py --readonly-dotnet</PostCommands>
       <Timeout>1:00</Timeout>
     </HelixWorkItem>
   </ItemGroup>

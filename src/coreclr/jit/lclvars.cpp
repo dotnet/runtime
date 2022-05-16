@@ -438,7 +438,6 @@ void Compiler::lvaInitArgs(InitVarDscInfo* varDscInfo)
     // Now walk the function signature for the explicit user arguments
     //-------------------------------------------------------------------------
     lvaInitUserArgs(varDscInfo, numUserArgsToSkip, numUserArgs);
-
 #if !USER_ARGS_COME_LAST
     //@GENERICS: final instantiation-info argument for shared generic methods
     // and shared generic struct instance methods
@@ -1224,7 +1223,7 @@ void Compiler::lvaInitUserArgs(InitVarDscInfo* varDscInfo, unsigned skipArgs, un
 
             // If we needed to use the stack in order to pass this argument then
             // record the fact that we have used up any remaining registers of this 'type'
-            // This prevents any 'backfilling' from occuring on ARM64/LoongArch64.
+            // This prevents any 'backfilling' from occurring on ARM64/LoongArch64.
             //
             varDscInfo->setAllRegArgUsed(argType);
 
@@ -2264,7 +2263,7 @@ bool Compiler::StructPromotionHelper::ShouldPromoteStructVar(unsigned lclNum)
 
     //
     // If the lvRefCnt is zero and we have a struct promoted parameter we can end up with an extra store of
-    // the the incoming register into the stack frame slot.
+    // the incoming register into the stack frame slot.
     // In that case, we would like to avoid promortion.
     // However we haven't yet computed the lvRefCnt values so we can't do that.
     //
@@ -2883,7 +2882,7 @@ void Compiler::lvaSetVarDoNotEnregister(unsigned varNum DEBUGARG(DoNotEnregister
 
 // Returns true if this local var is a multireg struct.
 // TODO-Throughput: This does a lookup on the class handle, and in the outgoing arg context
-// this information is already available on the fgArgTabEntry, and shouldn't need to be
+// this information is already available on the CallArgABIInformation, and shouldn't need to be
 // recomputed.
 //
 bool Compiler::lvaIsMultiregStruct(LclVarDsc* varDsc, bool isVarArg)
@@ -3310,7 +3309,7 @@ void Compiler::lvaUpdateClass(unsigned varNum, GenTree* tree, CORINFO_CLASS_HAND
 //
 // Returns:
 //    Number of bytes needed on the frame for such a local.
-
+//
 unsigned Compiler::lvaLclSize(unsigned varNum)
 {
     assert(varNum < lvaCount);
@@ -4549,8 +4548,8 @@ void Compiler::lvaMarkLocalVars()
 
 #endif // !FEATURE_EH_FUNCLETS
 
-    // PSPSym and LocAllocSPvar are not used by the CoreRT ABI
-    if (!IsTargetAbi(CORINFO_CORERT_ABI))
+    // PSPSym and LocAllocSPvar are not used by the NativeAOT ABI
+    if (!IsTargetAbi(CORINFO_NATIVEAOT_ABI))
     {
 #if defined(FEATURE_EH_FUNCLETS)
         if (ehNeedsPSPSym())

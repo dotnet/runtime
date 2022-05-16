@@ -19,32 +19,32 @@
 }
 .assembly extern xunit.core {}
 // MVID: {98C433B3-3689-48CF-A0CC-1320952F1424}
-.namespace Test
+.namespace Test_refarg_o_il
 {
   .class private auto ansi AA extends ['mscorlib']System.Object
   {
     .field family wchar pad1
     .field public int32 mm
-    .field public class Test.AA m_aa
+    .field public class Test_refarg_o_il.AA m_aa
     .method public hidebysig specialname rtspecialname 
-            instance void  .ctor(class Test.AA aa) il managed
+            instance void  .ctor(class Test_refarg_o_il.AA aa) il managed
     {
       // Code size       37 (0x25)
       .maxstack  8
       IL_0000:  ldarg.0
       IL_0001:  ldc.i4.s   122
-      IL_0003:  stfld      wchar Test.AA::pad1
+      IL_0003:  stfld      wchar Test_refarg_o_il.AA::pad1
       IL_0008:  ldarg.0
       IL_0009:  ldc.i4.s   11
-      IL_000b:  stfld      int32 Test.AA::mm
+      IL_000b:  stfld      int32 Test_refarg_o_il.AA::mm
       IL_0010:  ldarg.0
       IL_0011:  ldnull
-      IL_0012:  stfld      class Test.AA Test.AA::m_aa
+      IL_0012:  stfld      class Test_refarg_o_il.AA Test_refarg_o_il.AA::m_aa
       IL_0017:  ldarg.0
       IL_0018:  call       instance void ['mscorlib']System.Object::.ctor()
       IL_001d:  ldarg.0
       IL_001e:  ldarg.1
-      IL_001f:  stfld      class Test.AA Test.AA::m_aa
+      IL_001f:  stfld      class Test_refarg_o_il.AA Test_refarg_o_il.AA::m_aa
       IL_0024:  ret
     } // end of method 'AA::.ctor'
 
@@ -54,12 +54,12 @@
       // Code size       71 (0x47)
       .maxstack  2
       IL_0000:  ldarg.0
-      IL_0001:  ldfld      wchar Test.AA::pad1
+      IL_0001:  ldfld      wchar Test_refarg_o_il.AA::pad1
       IL_0006:  ldc.i4.s   122
       IL_0008:  bne.un.s   IL_0014
 
       IL_000a:  ldarg.0
-      IL_000b:  ldfld      int32 Test.AA::mm
+      IL_000b:  ldfld      int32 Test_refarg_o_il.AA::mm
       IL_0010:  ldc.i4.s   11
       IL_0012:  beq.s      IL_001a
 
@@ -67,18 +67,18 @@
       IL_0019:  throw
 
       IL_001a:  ldarg.0
-      IL_001b:  ldfld      class Test.AA Test.AA::m_aa
+      IL_001b:  ldfld      class Test_refarg_o_il.AA Test_refarg_o_il.AA::m_aa
       IL_0020:  brfalse.s  IL_0046
 
       IL_0022:  ldarg.0
-      IL_0023:  ldfld      class Test.AA Test.AA::m_aa
-      IL_0028:  ldfld      wchar Test.AA::pad1
+      IL_0023:  ldfld      class Test_refarg_o_il.AA Test_refarg_o_il.AA::m_aa
+      IL_0028:  ldfld      wchar Test_refarg_o_il.AA::pad1
       IL_002d:  ldc.i4.s   122
       IL_002f:  bne.un.s   IL_0040
 
       IL_0031:  ldarg.0
-      IL_0032:  ldfld      class Test.AA Test.AA::m_aa
-      IL_0037:  ldfld      int32 Test.AA::mm
+      IL_0032:  ldfld      class Test_refarg_o_il.AA Test_refarg_o_il.AA::m_aa
+      IL_0037:  ldfld      int32 Test_refarg_o_il.AA::mm
       IL_003c:  ldc.i4.s   11
       IL_003e:  beq.s      IL_0046
 
@@ -90,9 +90,9 @@
 
   } // end of class 'AA'
 
-  .class private auto ansi App extends ['mscorlib']System.Object
+  .class public auto ansi App extends ['mscorlib']System.Object
   {
-    .field private static class Test.AA s_aa
+    .field private static class Test_refarg_o_il.AA s_aa
     .method private hidebysig static void
             Litter() il managed
     {
@@ -121,17 +121,17 @@
     } // end of method 'App::Litter'
 
     .method private hidebysig static int32 
-            Test(class Test.AA& aa) il managed
+            Test_refarg_o_il(class Test_refarg_o_il.AA& aa) il managed
     {
       // Code size       52 (0x34)
       .maxstack  2
       .locals (int32 V_0)
       IL_0000:  ldnull
-      IL_0001:  stsfld     class Test.AA Test.App::s_aa
-      IL_0006:  call       void Test.App::Litter()
+      IL_0001:  stsfld     class Test_refarg_o_il.AA Test_refarg_o_il.App::s_aa
+      IL_0006:  call       void Test_refarg_o_il.App::Litter()
       IL_000b:  ldarg.0
       IL_000c:  ldind.ref
-      IL_000d:  ldfld      int32 Test.AA::mm
+      IL_000d:  ldfld      int32 Test_refarg_o_il.AA::mm
       IL_0012:  ldc.i4.s   11
       IL_0014:  beq.s      IL_0024
 
@@ -149,9 +149,9 @@
 
       IL_0032:  ldloc.0
       IL_0033:  ret
-    } // end of method 'App::Test'
+    } // end of method 'App::Test_refarg_o_il'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -162,9 +162,9 @@
       .maxstack  1
       .locals (int32 V_0,
                int32 V_1)
-      IL_0000:  ldsfld     class Test.AA Test.App::s_aa
-      IL_0005:  ldflda     class Test.AA Test.AA::m_aa
-      IL_000a:  call       int32 Test.App::Test(class Test.AA&)
+      IL_0000:  ldsfld     class Test_refarg_o_il.AA Test_refarg_o_il.App::s_aa
+      IL_0005:  ldflda     class Test_refarg_o_il.AA Test_refarg_o_il.AA::m_aa
+      IL_000a:  call       int32 Test_refarg_o_il.App::Test_refarg_o_il(class Test_refarg_o_il.AA&)
       IL_000f:  stloc.0
       IL_0010:  call       void ['mscorlib']System.GC::Collect()
       IL_0015:  call       void ['mscorlib']System.GC::WaitForPendingFinalizers()
@@ -182,9 +182,9 @@
       // Code size       17 (0x11)
       .maxstack  8
       IL_0000:  ldnull
-      IL_0001:  newobj     instance void Test.AA::.ctor(class Test.AA)
-      IL_0006:  newobj     instance void Test.AA::.ctor(class Test.AA)
-      IL_000b:  stsfld     class Test.AA Test.App::s_aa
+      IL_0001:  newobj     instance void Test_refarg_o_il.AA::.ctor(class Test_refarg_o_il.AA)
+      IL_0006:  newobj     instance void Test_refarg_o_il.AA::.ctor(class Test_refarg_o_il.AA)
+      IL_000b:  stsfld     class Test_refarg_o_il.AA Test_refarg_o_il.App::s_aa
       IL_0010:  ret
     } // end of method 'App::.cctor'
 
@@ -200,6 +200,6 @@
 
   } // end of class 'App'
 
-} // end of namespace 'Test'
+} // end of namespace 'Test_refarg_o_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

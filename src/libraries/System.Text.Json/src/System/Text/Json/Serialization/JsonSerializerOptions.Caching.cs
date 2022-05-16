@@ -288,9 +288,12 @@ namespace System.Text.Json
                     left._propertyNameCaseInsensitive == right._propertyNameCaseInsensitive &&
                     left._writeIndented == right._writeIndented &&
                     left._serializerContext == right._serializerContext &&
-                    CompareConverters(left._converters, right._converters);
+                    CompareLists(left._converters, right._converters) &&
+#pragma warning disable CA2252 // This API requires opting into preview features
+                    CompareLists(left._polymorphicTypeConfigurations, right._polymorphicTypeConfigurations);
+#pragma warning restore CA2252 // This API requires opting into preview features
 
-                static bool CompareConverters(ConverterList left, ConverterList right)
+                static bool CompareLists<TValue>(ConfigurationList<TValue> left, ConfigurationList<TValue> right)
                 {
                     int n;
                     if ((n = left.Count) != right.Count)
@@ -300,7 +303,7 @@ namespace System.Text.Json
 
                     for (int i = 0; i < n; i++)
                     {
-                        if (left[i] != right[i])
+                        if (!left[i]!.Equals(right[i]))
                         {
                             return false;
                         }
@@ -332,10 +335,17 @@ namespace System.Text.Json
                 hc.Add(options._propertyNameCaseInsensitive);
                 hc.Add(options._writeIndented);
                 hc.Add(options._serializerContext);
+                GetHashCode(ref hc, options._converters);
+#pragma warning disable CA2252 // This API requires opting into preview features
+                GetHashCode(ref hc, options._polymorphicTypeConfigurations);
+#pragma warning restore CA2252 // This API requires opting into preview features
 
-                for (int i = 0; i < options._converters.Count; i++)
+                static void GetHashCode<TValue>(ref HashCode hc, ConfigurationList<TValue> list)
                 {
-                    hc.Add(options._converters[i]);
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        hc.Add(list[i]);
+                    }
                 }
 
                 return hc.ToHashCode();

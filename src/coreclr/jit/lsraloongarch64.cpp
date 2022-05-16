@@ -120,7 +120,6 @@ int LinearScan::BuildNode(GenTree* tree)
             srcCount = 0;
             break;
 
-        case GT_ARGPLACE:
         case GT_NO_OP:
         case GT_START_NONGC:
             srcCount = 0;
@@ -163,7 +162,6 @@ int LinearScan::BuildNode(GenTree* tree)
         case GT_COMMA:
         case GT_QMARK:
         case GT_COLON:
-        case GT_CLS_VAR:
         case GT_ADDR:
             srcCount = 0;
             assert(dstCount == 0);
@@ -597,7 +595,7 @@ int LinearScan::BuildNode(GenTree* tree)
         {
             assert(dstCount == 0);
 
-            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree))
+            if (compiler->codeGen->gcInfo.gcIsWriteBarrierStoreIndNode(tree->AsStoreInd()))
             {
                 srcCount = BuildGCWriteBarrier(tree);
                 break;
@@ -850,22 +848,19 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // Each register argument corresponds to one source.
     bool callHasFloatRegArgs = false;
 
-    for (GenTreeCall::Use& arg : call->LateArgs())
+    for (CallArg& arg : call->gtArgs.LateArgs())
     {
-        GenTree* argNode = arg.GetNode();
+        CallArgABIInformation& abiInfo = arg.AbiInfo;
+        GenTree*               argNode = arg.GetLateNode();
 
 #ifdef DEBUG
-        // During Build, we only use the ArgTabEntry for validation,
-        // as getting it is rather expensive.
-        fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, argNode);
-        regNumber      argReg         = curArgTabEntry->GetRegNum();
-        assert(curArgTabEntry != nullptr);
+        regNumber argReg = abiInfo.GetRegNum();
 #endif
 
         if (argNode->gtOper == GT_PUTARG_STK)
         {
             // late arg that is not passed in a register
-            assert(curArgTabEntry->GetRegNum() == REG_STK);
+            assert(abiInfo.GetRegNum() == REG_STK);
             // These should never be contained.
             assert(!argNode->isContained());
             continue;
@@ -921,27 +916,25 @@ int LinearScan::BuildCall(GenTreeCall* call)
     // because the code generator doesn't actually consider it live,
     // so it can't be spilled.
 
-    for (GenTreeCall::Use& use : call->Args())
+    for (CallArg& arg : call->gtArgs.EarlyArgs())
     {
-        GenTree* arg = use.GetNode();
+        GenTree* argNode = arg.GetEarlyNode();
 
         // Skip arguments that have been moved to the Late Arg list
-        if ((arg->gtFlags & GTF_LATE_ARG) == 0)
+        if ((argNode->gtFlags & GTF_LATE_ARG) == 0)
         {
-            fgArgTabEntry* curArgTabEntry = compiler->gtArgEntryByNode(call, arg);
-            assert(curArgTabEntry != nullptr);
 #if FEATURE_ARG_SPLIT
             // PUTARG_SPLIT nodes must be in the gtCallLateArgs list, since they
             // define registers used by the call.
-            assert(arg->OperGet() != GT_PUTARG_SPLIT);
+            assert(argNode->OperGet() != GT_PUTARG_SPLIT);
 #endif // FEATURE_ARG_SPLIT
-            if (arg->gtOper == GT_PUTARG_STK)
+            if (argNode->gtOper == GT_PUTARG_STK)
             {
-                assert(curArgTabEntry->GetRegNum() == REG_STK);
+                assert(arg.AbiInfo.GetRegNum() == REG_STK);
             }
             else
             {
-                assert(!arg->IsValue() || arg->IsUnusedValue());
+                assert(!argNode->IsValue() || argNode->IsUnusedValue());
             }
         }
     }

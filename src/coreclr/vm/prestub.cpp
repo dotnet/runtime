@@ -430,9 +430,6 @@ PCODE MethodDesc::PrepareILBasedCode(PrepareCodeConfig* pConfig)
         DACNotifyCompilationFinished(this, pCode);
     }
 
-    // Mark the code as hot in case the method ends up in the native image
-    g_IBCLogger.LogMethodCodeAccess(this);
-
     return pCode;
 }
 
@@ -2014,9 +2011,6 @@ PCODE MethodDesc::DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMo
 
     MethodTable *pMT = GetMethodTable();
 
-    // Running a prestub on a method causes us to access its MethodTable
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (ContainsGenericVariables())
     {
         COMPlusThrow(kInvalidOperationException, IDS_EE_CODEEXECUTION_CONTAINSGENERICVAR);
@@ -2291,7 +2285,7 @@ PCODE TheVarargNDirectStub(BOOL hasRetBuffArg)
 {
     LIMITED_METHOD_CONTRACT;
 
-#if !defined(TARGET_X86) && !defined(TARGET_ARM64)
+#if !defined(TARGET_X86) && !defined(TARGET_ARM64) && !defined(TARGET_LOONGARCH64)
     if (hasRetBuffArg)
     {
         return GetEEFuncEntryPoint(VarargPInvokeStub_RetBuffArg);

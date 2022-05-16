@@ -485,7 +485,7 @@ namespace Microsoft.Extensions.Http
                 kvp = default;
             }
 
-            // Let's verify the the ActiveHandlerTrackingEntry is gone. This would be prevent
+            // Let's verify the ActiveHandlerTrackingEntry is gone. This would be prevent
             // the handler from being disposed if it was still rooted.
             Assert.Empty(factory.ActiveEntryState);
 

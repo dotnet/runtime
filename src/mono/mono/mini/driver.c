@@ -2070,7 +2070,6 @@ mono_main (int argc, char* argv[])
 	int mini_verbose_level = 0;
 	char *trace_options = NULL;
 	char *aot_options = NULL;
-	char *forced_version = NULL;
 	GPtrArray *agents = NULL;
 	char *extra_bindings_config_file = NULL;
 #ifdef MONO_JIT_INFO_TABLE_TEST
@@ -2306,7 +2305,7 @@ mono_main (int argc, char* argv[])
 		} else if (strcmp (argv [i], "--compile-all") == 0) {
 			action = DO_COMPILE;
 		} else if (strncmp (argv [i], "--runtime=", 10) == 0) {
-			forced_version = &argv [i][10];
+			// ignore
 		} else if (strcmp (argv [i], "--jitmap") == 0) {
 			mono_enable_jit_map ();
 #ifdef ENABLE_JIT_DUMP
@@ -2393,8 +2392,7 @@ mono_main (int argc, char* argv[])
 			mono_gc_set_desktop_mode ();
 			/* Put more desktop-specific optimizations here */
 		} else if (strcmp (argv [i], "--server") == 0){
-			mono_config_set_server_mode (TRUE);
-			/* Put more server-specific optimizations here */
+			// ignore
 		} else if (strcmp (argv [i], "--inside-mdb") == 0) {
 			action = DO_DEBUGGER;
 		} else if (strncmp (argv [i], "--wapi=", 7) == 0) {
@@ -2531,9 +2529,6 @@ mono_main (int argc, char* argv[])
 	mono_w32handle_init ();
 #endif
 
-	/* Set rootdir before loading config */
-	mono_set_rootdir ();
-
 	if (trace_options != NULL){
 		/*
 		 * Need to call this before mini_init () so we can trace methods
@@ -2565,7 +2560,7 @@ mono_main (int argc, char* argv[])
 
 	mono_set_defaults (mini_verbose_level, opt);
 
-	domain = mini_init (argv [i], forced_version);
+	domain = mini_init (argv [i]);
 
 	mono_gc_set_stack_end (&domain);
 
@@ -2643,8 +2638,6 @@ mono_main (int argc, char* argv[])
 
 	if (mono_compile_aot || action == DO_EXEC) {
 		const char *version_error;
-
-		//mono_set_rootdir ();
 
 		version_error = mono_check_corlib_version ();
 		if (version_error) {
@@ -2796,47 +2789,41 @@ mono_main (int argc, char* argv[])
 
 /**
  * mono_jit_init:
+ * \param root_domain_name Friendly name to give to the initial domain
+ *
+ * \returns the \c MonoDomain representing the domain where the assembly
+ * was loaded.
  */
 MonoDomain *
-mono_jit_init (const char *file)
+mono_jit_init (const char *root_domain_name)
 {
-	MonoDomain *ret = mini_init (file, NULL);
+	MonoDomain *ret = mini_init (root_domain_name);
 	MONO_ENTER_GC_SAFE_UNBALANCED; //once it is not executing any managed code yet, it's safe to run the gc
 	return ret;
 }
 
 /**
  * mono_jit_init_version:
- * \param domain_name the name of the root domain
- * \param runtime_version the version of the runtime to load
+ * \param root_domain_name Friendly name to give to the initial domain
+ * \param runtime_version ignored
  *
- * Use this version when you want to force a particular runtime
- * version to be used.  By default Mono will pick the runtime that is
- * referenced by the initial assembly (specified in \p file), this
- * routine allows programmers to specify the actual runtime to be used
- * as the initial runtime is inherited by all future assemblies loaded
- * (since Mono does not support having more than one mscorlib runtime
- * loaded at once).
- *
- * The \p runtime_version can be one of these strings: "v4.0.30319" for
- * desktop, "mobile" for mobile or "moonlight" for Silverlight compat.
- * If an unrecognized string is input, the vm will default to desktop.
+ * Deprecated. Use mono_jit_init instead.
  *
  * \returns the \c MonoDomain representing the domain where the assembly
  * was loaded.
  */
 MonoDomain *
-mono_jit_init_version (const char *domain_name, const char *runtime_version)
+mono_jit_init_version (const char *root_domain_name, const char *runtime_version)
 {
-	MonoDomain *ret = mini_init (domain_name, runtime_version);
+	MonoDomain *ret = mini_init (root_domain_name);
 	MONO_ENTER_GC_SAFE_UNBALANCED; //once it is not executing any managed code yet, it's safe to run the gc
 	return ret;
 }
 
 MonoDomain *
-mono_jit_init_version_for_test_only (const char *domain_name, const char *runtime_version)
+mono_jit_init_version_for_test_only (const char *root_domain_name, const char *runtime_version)
 {
-	MonoDomain *ret = mini_init (domain_name, runtime_version);
+	MonoDomain *ret = mini_init (root_domain_name);
 	return ret;
 }
 

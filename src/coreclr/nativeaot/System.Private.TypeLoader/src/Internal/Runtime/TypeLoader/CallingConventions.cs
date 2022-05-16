@@ -618,7 +618,7 @@ namespace Internal.Runtime.CallConverter
 
                     case CorElementType.ELEMENT_TYPE_VALUETYPE:
                         {
-                            // On ProjectN valuetypes of integral size are passed enregistered
+                            // Valuetypes of integral size are passed enregistered
                             int structSize = TypeHandle.GetElemSize(typ, thArgType);
                             switch (structSize)
                             {
@@ -1357,7 +1357,7 @@ namespace Internal.Runtime.CallConverter
             if (this.HasRetBuffArg() && IsRetBuffPassedAsFirstArg())
             {
                 // DESKTOP BEHAVIOR                numRegistersUsed++;
-                // On ProjectN ret buff arg is passed on the call stack as the top stack arg
+                // ret buff arg is passed on the call stack as the top stack arg
                 nSizeOfArgStack += IntPtr.Size;
             }
 

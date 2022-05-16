@@ -63,7 +63,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void NextSubpath_PathFigureNotClosed_ReturnsExpeced()
         {
@@ -87,7 +86,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void NextSubpath_NullPath_ReturnsExpected()
         {
@@ -98,7 +96,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void NextSubpath_FigureNotClosed_ReturnsExpected()
         {
@@ -239,7 +236,6 @@ namespace System.Drawing.Drawing2D.Tests
             }
         }
 
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/22221", TestPlatforms.AnyUnix)]
         [ConditionalFact(Helpers.IsDrawingSupported)]
         public void Rewind_Success()
         {

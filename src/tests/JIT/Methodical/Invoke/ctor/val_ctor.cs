@@ -2,10 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-namespace JitTest
+namespace JitTest_val_ctor_cs
 {
-    internal struct TestStruct
+    public struct TestStruct
     {
         private long _m_testParam;
         private static long s_m_sum = 0;
@@ -21,7 +22,8 @@ namespace JitTest
             }
         }
 
-        private static int Main()
+        [Fact]
+        public static int TestEntryPoint()
         {
             try
             {

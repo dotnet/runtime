@@ -18,8 +18,10 @@ namespace System.Text
         {
         }
 
-        public DecoderReplacementFallback(string replacement!!)
+        public DecoderReplacementFallback(string replacement)
         {
+            ArgumentNullException.ThrowIfNull(replacement);
+
             // Make sure it doesn't have bad surrogate pairs
             bool bFoundHigh = false;
             foreach (char c in replacement)
@@ -91,7 +93,7 @@ namespace System.Text
         public override bool Fallback(byte[] bytesUnknown, int index)
         {
             // We expect no previous fallback in our buffer
-            // We can't call recursively but others might (note, we don't test on last char!!!)
+            // We can't call recursively but others might (note, we don't test on last char!)
             if (_fallbackCount >= 1)
             {
                 ThrowLastBytesRecursive(bytesUnknown);

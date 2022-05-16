@@ -1,0 +1,31 @@
+<Project>
+  <!-- Version number to revision number mapping from http://omahaproxy.appspot.com/ and find the closest one in
+    https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Linux_x64/
+    and https://commondatastorage.googleapis.com/chromium-browser-snapshots/index.html?prefix=Win_x64/
+
+    Eg. latest stable version is 100.0.4896.88 with revision 972766.
+    but the closest one available in the snapshosts is 972765.
+    Please make sure to check both platforms as sometimes
+    the same snapshot might not be available in both of them.
+  -->
+  <PropertyGroup Condition="'$(BrowserHost)' != 'windows'">
+    <ChromiumRevision>972765</ChromiumRevision>
+    <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chrome-linux.zip</ChromiumUrl>
+    <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Linux_x64/$(ChromiumRevision)/chromedriver_linux64.zip</ChromeDriverUrl>
+    <ChromiumDirName>chrome-linux</ChromiumDirName>
+    <ChromeDriverDirName>chromedriver_linux64</ChromeDriverDirName>
+    <ChromiumBinaryName>chrome</ChromiumBinaryName>
+    <FirefoxRevision>97.0.1</FirefoxRevision>
+    <FirefoxUrl>https://ftp.mozilla.org/pub/firefox/releases/$(FirefoxRevision)/linux-x86_64/en-US/firefox-$(FirefoxRevision).tar.bz2</FirefoxUrl>
+    <FirefoxBinaryName>firefox</FirefoxBinaryName>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(BrowserHost)' == 'windows'">
+    <ChromiumRevision>972766</ChromiumRevision>
+    <ChromiumUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chrome-win.zip</ChromiumUrl>
+    <ChromeDriverUrl>https://storage.googleapis.com/chromium-browser-snapshots/Win_x64/$(ChromiumRevision)/chromedriver_win32.zip</ChromeDriverUrl>
+    <ChromiumDirName>chrome-win</ChromiumDirName>
+    <ChromeDriverDirName>chromedriver_win32</ChromeDriverDirName>
+    <ChromiumBinaryName>chrome.exe</ChromiumBinaryName>
+  </PropertyGroup>
+</Project>

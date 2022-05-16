@@ -307,7 +307,7 @@ load_image (MonoAotModule *amodule, int index, MonoError *error)
 	 * so it's not obvious that we can call mono_assembly_open_predicate.
 	 *
 	 * In the JIT, an assembly opened with LoadFile is supposed to only
-	 * refer to already-loaded assemblies (or to GAC & MONO_PATH)
+	 * refer to already-loaded assemblies (or to MONO_PATH)
 	 * assemblies - so nothing new should be loading.  And for the
 	 * LoadFile'd assembly itself, we can check if the name and guid of the
 	 * current AOT module matches the wanted name and guid and just return
@@ -5371,7 +5371,7 @@ load_function_full (MonoAotModule *amodule, const char *name, MonoTrampInfo **ou
 				continue;
 
 			/*
-			 * When this code is executed, the runtime may not be initalized yet, so
+			 * When this code is executed, the runtime may not be initialized yet, so
 			 * resolve the patch info by hand.
 			 */
 			if (ji->type == MONO_PATCH_INFO_SPECIFIC_TRAMPOLINE_LAZY_FETCH_ADDR) {

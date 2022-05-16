@@ -88,7 +88,7 @@ namespace Internal.Runtime.CompilerHelpers
 
         private static void AddModule(TypeManagerHandle newModuleHandle)
         {
-            if (s_modules == null || s_moduleCount >= s_modules.Length)
+            if (s_moduleCount >= s_modules!.Length)
             {
                 // Reallocate logical module array
                 int newModuleLength = 2 * s_moduleCount;

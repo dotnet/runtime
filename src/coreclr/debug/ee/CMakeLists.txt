@@ -28,6 +28,7 @@ set(CORDBEE_SOURCES_WKS
   canary.cpp
   shared.cpp
   frameinfo.cpp
+  dactable.cpp
   ${ARCH_SOURCES_DIR}/primitives.cpp
 )
 
@@ -45,12 +46,6 @@ set(CORDBEE_HEADERS_DAC
   ${CORDBEE_HEADERS_DAC_AND_WKS}
 )
 
-if(CLR_CMAKE_HOST_UNIX)
-  list(APPEND CORDBEE_SOURCES_WKS
-    dactable.cpp
-  )
-endif(CLR_CMAKE_HOST_UNIX)
-
 if(CLR_CMAKE_TARGET_ARCH_AMD64)
   list(APPEND CORDBEE_SOURCES_WKS
     ${ARCH_SOURCES_DIR}/debuggerregdisplayhelper.cpp
@@ -65,6 +60,8 @@ elseif(CLR_CMAKE_TARGET_ARCH_ARM)
   list(APPEND CORDBEE_SOURCES_WKS ${ARCH_SOURCES_DIR}/armwalker.cpp)
 elseif(CLR_CMAKE_TARGET_ARCH_ARM64)
   list(APPEND CORDBEE_SOURCES_WKS ${ARCH_SOURCES_DIR}/arm64walker.cpp)
+elseif(CLR_CMAKE_TARGET_ARCH_LOONGARCH64)
+  list(APPEND CORDBEE_SOURCES_WKS ${ARCH_SOURCES_DIR}/loongarch64walker.cpp)
 endif()
 
 convert_to_absolute_path(CORDBEE_SOURCES_DAC ${CORDBEE_SOURCES_DAC})

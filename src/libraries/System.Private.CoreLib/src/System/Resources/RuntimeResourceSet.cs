@@ -150,8 +150,8 @@ namespace System.Resources
     // into smaller chunks, each of size sqrt(n), would be substantially better for
     // resource files containing thousands of resources.
     //
-#if CORERT
-    public  // On CoreRT, this must be public to prevent it from getting reflection blocked.
+#if NATIVEAOT
+    public  // On NativeAOT, this must be public to prevent it from getting reflection blocked.
 #else
     internal
 #endif
@@ -188,11 +188,16 @@ namespace System.Resources
             _defaultReader = new ResourceReader(stream, _resCache, permitDeserialization);
         }
 #else
-        internal RuntimeResourceSet(IResourceReader reader!!) :
+        internal RuntimeResourceSet(IResourceReader reader) :
             // explicitly do not call IResourceReader constructor since it caches all resources
             // the purpose of RuntimeResourceSet is to lazily load and cache.
             base()
         {
+            if (reader is null)
+            {
+                throw new ArgumentNullException(nameof(reader));
+            }
+
             _defaultReader = reader as DeserializingResourceReader ?? throw new ArgumentException(SR.Format(SR.NotSupported_WrongResourceReader_Type, reader.GetType()), nameof(reader));
             _resCache = new Dictionary<string, ResourceLocator>(FastResourceComparer.Default);
 
@@ -260,8 +265,13 @@ namespace System.Resources
             return GetObject(key, ignoreCase, false);
         }
 
-        private object? GetObject(string key!!, bool ignoreCase, bool isString)
+        private object? GetObject(string key, bool ignoreCase, bool isString)
         {
+            if (key is null)
+            {
+                throw new ArgumentNullException(nameof(key));
+            }
+
             ResourceReader? reader = _defaultReader;
             Dictionary<string, ResourceLocator>? cache = _resCache;
             if (reader is null || cache is null)

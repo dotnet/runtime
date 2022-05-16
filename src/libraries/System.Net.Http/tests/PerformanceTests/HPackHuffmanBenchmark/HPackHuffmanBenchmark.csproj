@@ -5,7 +5,6 @@
     <TargetFramework>net6.0</TargetFramework>
     <StringResourcesPath>../../../src/Resources/Strings.resx</StringResourcesPath>
     <Nullable>enable</Nullable>
-    <LangVersion>preview</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

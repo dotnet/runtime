@@ -24,5 +24,8 @@ int          getpagesize(void);
 int          open(const char *, int, ...);
 ssize_t      read(int fd, void *buf, size_t count);
 ssize_t      write(int, const void *, size_t);
+long         sysconf(int name);
+
+#define _SC_PAGESIZE 11
 
 #endif // _MSC_VER

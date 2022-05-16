@@ -32,8 +32,10 @@ namespace System.Reflection.Emit
 
         // *** ILGenerator api ***
 
-        public override LocalBuilder DeclareLocal(Type localType!!, bool pinned)
+        public override LocalBuilder DeclareLocal(Type localType, bool pinned)
         {
+            ArgumentNullException.ThrowIfNull(localType);
+
             LocalBuilder localBuilder;
 
             RuntimeType? rtType = localType as RuntimeType;
@@ -53,8 +55,10 @@ namespace System.Reflection.Emit
         // Token resolution calls
         //
         //
-        public override void Emit(OpCode opcode, MethodInfo meth!!)
+        public override void Emit(OpCode opcode, MethodInfo meth)
         {
+            ArgumentNullException.ThrowIfNull(meth);
+
             int stackchange = 0;
             int token;
             DynamicMethod? dynMeth = meth as DynamicMethod;
@@ -105,8 +109,10 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, ConstructorInfo con!!)
+        public override void Emit(OpCode opcode, ConstructorInfo con)
         {
+            ArgumentNullException.ThrowIfNull(con);
+
             RuntimeConstructorInfo? rtConstructor = con as RuntimeConstructorInfo;
             if (rtConstructor == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeMethodInfo, nameof(con));
@@ -129,8 +135,10 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, Type type!!)
+        public override void Emit(OpCode opcode, Type type)
         {
+            ArgumentNullException.ThrowIfNull(type);
+
             RuntimeType? rtType = type as RuntimeType;
 
             if (rtType == null)
@@ -142,8 +150,10 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, FieldInfo field!!)
+        public override void Emit(OpCode opcode, FieldInfo field)
         {
+            ArgumentNullException.ThrowIfNull(field);
+
             RuntimeFieldInfo? runtimeField = field as RuntimeFieldInfo;
             if (runtimeField == null)
                 throw new ArgumentException(SR.Argument_MustBeRuntimeFieldInfo, nameof(field));
@@ -159,8 +169,10 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void Emit(OpCode opcode, string str!!)
+        public override void Emit(OpCode opcode, string str)
         {
+            ArgumentNullException.ThrowIfNull(str);
+
             int tempVal = GetTokenForString(str);
             EnsureCapacity(7);
             InternalEmit(opcode);
@@ -247,8 +259,10 @@ namespace System.Reflection.Emit
             PutInteger4(token);
         }
 
-        public override void EmitCall(OpCode opcode, MethodInfo methodInfo!!, Type[]? optionalParameterTypes)
+        public override void EmitCall(OpCode opcode, MethodInfo methodInfo, Type[]? optionalParameterTypes)
         {
+            ArgumentNullException.ThrowIfNull(methodInfo);
+
             if (!(opcode.Equals(OpCodes.Call) || opcode.Equals(OpCodes.Callvirt) || opcode.Equals(OpCodes.Newobj)))
                 throw new ArgumentException(SR.Argument_NotMethodCallOpcode, nameof(opcode));
 
@@ -283,8 +297,10 @@ namespace System.Reflection.Emit
             PutInteger4(tk);
         }
 
-        public override void Emit(OpCode opcode, SignatureHelper signature!!)
+        public override void Emit(OpCode opcode, SignatureHelper signature)
         {
+            ArgumentNullException.ThrowIfNull(signature);
+
             int stackchange = 0;
             EnsureCapacity(7);
             InternalEmit(opcode);

@@ -4,8 +4,11 @@
 using System;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using Xunit;
 
-class Program
+namespace Test_skippage5_cs
+{
+public class Program
 {
     [StructLayout(LayoutKind.Sequential)]
     unsafe struct S
@@ -18,7 +21,8 @@ class Program
         public S s;
     }
 
-    static int Main() => Test(new C());
+    [Fact]
+    public static int TestEntryPoint() => Test(new C());
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     static void Call(int r0, int r1, int r2, int r3, int r4, int r5, int r6, S s)
@@ -32,4 +36,5 @@ class Program
         Console.WriteLine("TEST PASSED");
         return 100; // If we don't crash, we pass
     }
+}
 }

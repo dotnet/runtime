@@ -175,8 +175,10 @@ namespace System.Xml.Schema
             return InferSchema1(instanceDocument, schemas);
         }
 
-        internal XmlSchemaSet InferSchema1(XmlReader instanceDocument!!, XmlSchemaSet schemas)
+        internal XmlSchemaSet InferSchema1(XmlReader instanceDocument, XmlSchemaSet schemas)
         {
+            ArgumentNullException.ThrowIfNull(instanceDocument);
+
             _rootSchema = null;
             _xtr = instanceDocument;
             schemas.Compile();
