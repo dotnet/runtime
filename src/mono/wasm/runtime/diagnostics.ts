@@ -4,6 +4,7 @@
 import { Module } from "./imports";
 import cwraps from "./cwraps";
 import type { EventPipeSessionOptions } from "./types";
+import type { VoidPtr } from "./types/emscripten";
 import * as memory from "./memory";
 
 const sizeOfInt32 = 4;
@@ -81,12 +82,27 @@ class EventPipeFileSession implements EventPipeSession {
     }
 }
 
+// a conter for the number of sessions created
+let totalSessions = 0;
+
+function createSessionWithPtrCB (sessionIdOutPtr: VoidPtr, options: EventPipeSessionOptions | undefined, tracePath: string): false | number {
+    const defaultRundownRequested = true;
+    const defaultProviders = "";
+    const defaultBufferSizeInMB = 1;
+
+    const rundown = options?.collectRundownEvents ?? defaultRundownRequested;
+
+    memory.setI32(sessionIdOutPtr, 0);
+    if (!cwraps.mono_wasm_event_pipe_enable(tracePath, defaultBufferSizeInMB, defaultProviders, rundown, sessionIdOutPtr)) {
+        return false;
+    } else {
+        return memory.getI32 (sessionIdOutPtr);
+    }
+}
+
 export interface Diagnostics {
     createEventPipeSession (options?: EventPipeSessionOptions): EventPipeSession | null;
 }
-
-// a conter for the number of sessions created
-let totalSessions = 0;
 
 /// APIs for working with .NET diagnostics from JavaScript.
 export const diagnostics: Diagnostics = {
@@ -98,22 +114,11 @@ export const diagnostics: Diagnostics = {
         // but we'd like it to be distinct from other traces.
         const tracePath =`/trace-${totalSessions++}.nettrace`;
 
-        const [success, sessionID] = memory.withStackAlloc (sizeOfInt32, (sessionIdOutPtr, memory, cwraps, options, tracePath) => {
-            const defaultRundownRequested = true;
-            const defaultProviders = "";
-            const defaultBufferSizeInMB = 1;
+        const success = memory.withStackAlloc (sizeOfInt32, createSessionWithPtrCB, options, tracePath);
 
-            const rundown = options?.collectRundownEvents ?? defaultRundownRequested;
-
-            memory.setI32(sessionIdOutPtr, 0);
-            if (!cwraps.mono_wasm_event_pipe_enable(tracePath, defaultBufferSizeInMB, defaultProviders, rundown, sessionIdOutPtr)) {
-                return [false, 0];
-            } else {
-                return [true, memory.getI32 (sessionIdOutPtr)];
-            }}, memory, cwraps, options, tracePath);
-
-        if (!success)
+        if (success === false)
             return null;
+        const sessionID = success;
 
         const session = new EventPipeFileSession(sessionID, tracePath);
         return session;
