@@ -2495,7 +2495,7 @@ void RedirectedThreadFrame::ExceptionUnwind()
 #ifdef TARGET_X86
 
 //****************************************************************************************
-// This will check who caused the exception.  If it was caused by the the redirect function,
+// This will check who caused the exception.  If it was caused by the redirect function,
 // the reason is to resume the thread back at the point it was redirected in the first
 // place.  If the exception was not caused by the function, then it was caused by the call
 // out to the I[GC|Debugger]ThreadControl client and we need to determine if it's an

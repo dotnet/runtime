@@ -928,6 +928,10 @@ void Module::Destruct()
 
     m_pPEAssembly->Release();
 
+#if defined(PROFILING_SUPPORTED)
+    delete m_pJitInlinerTrackingMap;
+#endif
+
     // If this module was loaded as domain-specific, then
     // we must free its ModuleIndex so that it can be reused
     FreeModuleIndex();
@@ -7723,8 +7727,6 @@ void Module::ExpandAll()
             EX_CATCH
             {
                 hr = GET_EXCEPTION()->GetHR();
-                //@telesto what should we do with this HR?  the Silverlight code doesn't seem
-                //to do anything...but that doesn't seem safe...
             }
             EX_END_CATCH(SwallowAllExceptions);
         }

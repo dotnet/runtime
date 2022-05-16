@@ -129,7 +129,7 @@
     <None Include="..\repro\Program.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="$(NativeAotSourceRoot)\BuildIntegration\CoreRTNatVis.natvis" />
+    <Natvis Include="$(NativeAotSourceRoot)\BuildIntegration\NativeAOT.natvis" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

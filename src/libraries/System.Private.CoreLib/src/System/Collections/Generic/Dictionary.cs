@@ -112,7 +112,7 @@ namespace System.Collections.Generic
                     return;
                 }
 
-                // This is not currently a true .AddRange as it needs to be an initalized dictionary
+                // This is not currently a true .AddRange as it needs to be an initialized dictionary
                 // of the correct size, and also an empty dictionary with no current entities (and no argument checks).
                 Debug.Assert(source._entries is not null);
                 Debug.Assert(_entries is not null);

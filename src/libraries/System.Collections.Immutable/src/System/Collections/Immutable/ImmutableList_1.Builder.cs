@@ -751,6 +751,106 @@ namespace System.Collections.Immutable
             }
 
             /// <summary>
+            /// Removes the first occurrence matching the specified value from this list.
+            /// </summary>
+            /// <param name="item">The item to remove.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
+            public bool Remove(T item, IEqualityComparer<T>? equalityComparer)
+            {
+                int index = this.IndexOf(item, 0, this.Count, equalityComparer);
+                if (index >= 0)
+                {
+                    this.RemoveAt(index);
+                    return true;
+                }
+
+                return false;
+            }
+
+            /// <summary>
+            /// Removes the specified range of values from this list.
+            /// </summary>
+            /// <param name="index">The starting index to begin removal.</param>
+            /// <param name="count">The number of elements to remove.</param>
+            public void RemoveRange(int index, int count)
+            {
+                Requires.Range(index >= 0 && index <= this.Count, nameof(index));
+                Requires.Range(count >= 0 && index + count <= this.Count, nameof(count));
+
+                int remaining = count;
+                while (remaining-- > 0)
+                {
+                    this.RemoveAt(index);
+                }
+            }
+
+            /// <summary>
+            /// Removes any first occurrences of the specified values from this list.
+            /// </summary>
+            /// <param name="items">The items to remove if matches are found in this list.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
+            public void RemoveRange(IEnumerable<T> items, IEqualityComparer<T>? equalityComparer)
+            {
+                Requires.NotNull(items, nameof(items));
+
+                foreach (T item in items.GetEnumerableDisposable<T, Enumerator>())
+                {
+                    int index = this.Root.IndexOf(item, equalityComparer);
+                    if (index >= 0)
+                    {
+                        this.RemoveAt(index);
+                    }
+                }
+            }
+
+            /// <summary>
+            /// Removes any first occurrences of the specified values from this list.
+            /// </summary>
+            /// <param name="items">The items to remove if matches are found in this list.</param>
+            public void RemoveRange(IEnumerable<T> items)
+            {
+                this.RemoveRange(items, EqualityComparer<T>.Default);
+            }
+
+            /// <summary>
+            /// Replaces the first equal element in the list with the specified element.
+            /// </summary>
+            /// <param name="oldValue">The element to replace.</param>
+            /// <param name="newValue">The element to replace the old element with.</param>
+            /// <exception cref="ArgumentException">Thrown when the old value does not exist in the list.</exception>
+            public void Replace(T oldValue, T newValue)
+            {
+                this.Replace(oldValue, newValue, EqualityComparer<T>.Default);
+            }
+
+            /// <summary>
+            /// Replaces the first equal element in the list with the specified element.
+            /// </summary>
+            /// <param name="oldValue">The element to replace.</param>
+            /// <param name="newValue">The element to replace the old element with.</param>
+            /// <param name="equalityComparer">
+            /// The equality comparer to use in the search.
+            /// If <c>null</c>, <see cref="EqualityComparer{T}.Default"/> is used.
+            /// </param>
+            /// <exception cref="ArgumentException">Thrown when the old value does not exist in the list.</exception>
+            public void Replace(T oldValue, T newValue, IEqualityComparer<T>? equalityComparer)
+            {
+                int index = this.IndexOf(oldValue, 0, this.Count, equalityComparer);
+                if (index < 0)
+                {
+                    throw new ArgumentException(SR.CannotFindOldValue, nameof(oldValue));
+                }
+
+                this.Root = this.Root.ReplaceAt(index, newValue);
+            }
+
+            /// <summary>
             /// Reverses the order of the elements in the entire ImmutableList&lt;T&gt;.
             /// </summary>
             public void Reverse()

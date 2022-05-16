@@ -122,7 +122,7 @@ namespace System.Reflection
             }
         }
 
-#if !CORERT
+#if !NATIVEAOT
         private protected void ValidateInvokeTarget(object? target)
         {
             // Confirm member invocation has an instance and is of the correct type

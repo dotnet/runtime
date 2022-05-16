@@ -1602,7 +1602,7 @@ build_imt_slots (MonoClass *klass, MonoVTable *vt, gpointer* imt, GSList *extra_
 
 			if (has_generic_virtual || has_variant_iface) {
 				/*
-				 * There might be collisions later when the the trampoline is expanded.
+				 * There might be collisions later when the trampoline is expanded.
 				 */
 				imt_collisions_bitmap |= (1 << i);
 

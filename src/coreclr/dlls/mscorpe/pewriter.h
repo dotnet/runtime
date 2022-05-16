@@ -305,9 +305,9 @@ inline unsigned PEWriter::getSubsystem() {
 }
 
 inline void PEWriter::setSubsystem(unsigned subsystem, unsigned major, unsigned minor) {
-    m_ntHeaders->OptionalHeader.Subsystem = VAL16(subsystem);
-    m_ntHeaders->OptionalHeader.MajorSubsystemVersion = VAL16(major);
-    m_ntHeaders->OptionalHeader.MinorSubsystemVersion = VAL16(minor);
+    m_ntHeaders->OptionalHeader.Subsystem = (USHORT)VAL16(subsystem);
+    m_ntHeaders->OptionalHeader.MajorSubsystemVersion = (USHORT)VAL16(major);
+    m_ntHeaders->OptionalHeader.MinorSubsystemVersion = (USHORT)VAL16(minor);
 }
 
 inline void PEWriter::setCharacteristics(unsigned mask) {

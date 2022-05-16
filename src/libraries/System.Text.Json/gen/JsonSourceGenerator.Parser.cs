@@ -62,6 +62,7 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly Type? _listOfTType;
             private readonly Type? _dictionaryType;
+            private readonly Type? _iasyncEnumerableOfTType;
             private readonly Type? _idictionaryOfTKeyTValueType;
             private readonly Type? _ireadonlyDictionaryType;
             private readonly Type? _isetType;
@@ -84,6 +85,8 @@ namespace System.Text.Json.SourceGeneration
 
             private readonly Type? _timeSpanType;
             private readonly Type? _dateTimeOffsetType;
+            private readonly Type? _dateOnlyType;
+            private readonly Type? _timeOnlyType;
             private readonly Type? _byteArrayType;
             private readonly Type? _guidType;
             private readonly Type? _uriType;
@@ -101,11 +104,6 @@ namespace System.Text.Json.SourceGeneration
             private readonly Type _serializationInfoType;
             private readonly Type _intPtrType;
             private readonly Type _uIntPtrType;
-
-            // Unsupported types that may not resolve
-            private readonly Type? _iAsyncEnumerableGenericType;
-            private readonly Type? _dateOnlyType;
-            private readonly Type? _timeOnlyType;
 
             // Needed for converter validation
             private readonly Type _jsonConverterOfTType;
@@ -200,6 +198,7 @@ namespace System.Text.Json.SourceGeneration
 
                 _listOfTType = _metadataLoadContext.Resolve(typeof(List<>));
                 _dictionaryType = _metadataLoadContext.Resolve(typeof(Dictionary<,>));
+                _iasyncEnumerableOfTType = _metadataLoadContext.Resolve(IAsyncEnumerableFullName);
                 _idictionaryOfTKeyTValueType = _metadataLoadContext.Resolve(typeof(IDictionary<,>));
                 _ireadonlyDictionaryType = _metadataLoadContext.Resolve(typeof(IReadOnlyDictionary<,>));
                 _isetType = _metadataLoadContext.Resolve(typeof(ISet<>));
@@ -239,7 +238,6 @@ namespace System.Text.Json.SourceGeneration
                 _serializationInfoType = _metadataLoadContext.Resolve(typeof(Runtime.Serialization.SerializationInfo));
                 _intPtrType = _metadataLoadContext.Resolve(typeof(IntPtr));
                 _uIntPtrType = _metadataLoadContext.Resolve(typeof(UIntPtr));
-                _iAsyncEnumerableGenericType = _metadataLoadContext.Resolve(IAsyncEnumerableFullName);
                 _dateOnlyType = _metadataLoadContext.Resolve(DateOnlyFullName);
                 _timeOnlyType = _metadataLoadContext.Resolve(TimeOnlyFullName);
 
@@ -772,9 +770,21 @@ namespace System.Text.Json.SourceGeneration
                 {
                     classType = ClassType.Enum;
                 }
+                else if (type.GetCompatibleGenericInterface(_iasyncEnumerableOfTType) is Type iasyncEnumerableType)
+                {
+                    if (type.CanUseDefaultConstructorForDeserialization())
+                    {
+                        constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
+                    }
+
+                    Type elementType = iasyncEnumerableType.GetGenericArguments()[0];
+                    collectionValueTypeSpec = GetOrAddTypeGenerationSpec(elementType, generationMode);
+                    collectionType = CollectionType.IAsyncEnumerableOfT;
+                    classType = ClassType.Enumerable;
+                }
                 else if (_ienumerableType.IsAssignableFrom(type))
                 {
-                    if ((type.GetConstructor(Type.EmptyTypes) != null || type.IsValueType) && !type.IsAbstract && !type.IsInterface)
+                    if (type.CanUseDefaultConstructorForDeserialization())
                     {
                         constructionStrategy = ObjectConstructionStrategy.ParameterlessConstructor;
                     }
@@ -938,9 +948,7 @@ namespace System.Text.Json.SourceGeneration
                         }
                     }
                 }
-                else if (_knownUnsupportedTypes.Contains(type) ||
-                    ImplementsIAsyncEnumerableInterface(type) ||
-                    _delegateType.IsAssignableFrom(type))
+                else if (_knownUnsupportedTypes.Contains(type) || _delegateType.IsAssignableFrom(type))
                 {
                     classType = ClassType.KnownUnsupportedType;
                 }
@@ -1102,16 +1110,6 @@ namespace System.Text.Json.SourceGeneration
                     isPolymorphic : isPolymorphic);
 
                 return typeMetadata;
-            }
-
-            private bool ImplementsIAsyncEnumerableInterface(Type type)
-            {
-                if (_iAsyncEnumerableGenericType == null)
-                {
-                    return false;
-                }
-
-                return type.GetCompatibleGenericInterface(_iAsyncEnumerableGenericType) is not null;
             }
 
             private static string GetDictionaryTypeRef(TypeGenerationSpec keyType, TypeGenerationSpec valueType)
@@ -1551,6 +1549,8 @@ namespace System.Text.Json.SourceGeneration
                 AddTypeIfNotNull(_knownTypes, _byteArrayType);
                 AddTypeIfNotNull(_knownTypes, _timeSpanType);
                 AddTypeIfNotNull(_knownTypes, _dateTimeOffsetType);
+                AddTypeIfNotNull(_knownTypes, _dateOnlyType);
+                AddTypeIfNotNull(_knownTypes, _timeOnlyType);
                 AddTypeIfNotNull(_knownTypes, _guidType);
                 AddTypeIfNotNull(_knownTypes, _uriType);
                 AddTypeIfNotNull(_knownTypes, _versionType);
@@ -1565,9 +1565,6 @@ namespace System.Text.Json.SourceGeneration
                 _knownUnsupportedTypes.Add(_serializationInfoType);
                 _knownUnsupportedTypes.Add(_intPtrType);
                 _knownUnsupportedTypes.Add(_uIntPtrType);
-
-                AddTypeIfNotNull(_knownUnsupportedTypes, _dateOnlyType);
-                AddTypeIfNotNull(_knownUnsupportedTypes, _timeOnlyType);
 
                 static void AddTypeIfNotNull(HashSet<Type> types, Type? type)
                 {

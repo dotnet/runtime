@@ -141,7 +141,7 @@ namespace System.Diagnostics
         /// <returns><see langword="this" /> for convenient chaining.</returns>
         /// <remarks>
         /// When passing code value different than ActivityStatusCode.Error, the Activity.StatusDescription will reset to null value.
-        /// The description paramater will be respected only when passing ActivityStatusCode.Error value.
+        /// The description parameter will be respected only when passing ActivityStatusCode.Error value.
         /// </remarks>
         public Activity SetStatus(ActivityStatusCode code, string? description = null)
         {
@@ -1518,7 +1518,7 @@ namespace System.Diagnostics
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
 
-        private sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
+        internal sealed class TagsLinkedList : IEnumerable<KeyValuePair<string, object?>>
         {
             private DiagNode<KeyValuePair<string, object?>>? _first;
             private DiagNode<KeyValuePair<string, object?>>? _last;

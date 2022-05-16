@@ -687,8 +687,7 @@ namespace System.Runtime.Serialization.Formatters.Tests
                 }
 
                 Regex regex = new Regex(pattern);
-                Match match = regex.Match(testDataLine);
-                if (match.Success)
+                if (regex.IsMatch(testDataLine))
                 {
                     numberOfFoundBlobs++;
                 }

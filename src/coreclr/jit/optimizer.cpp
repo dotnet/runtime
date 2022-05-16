@@ -572,15 +572,16 @@ void Compiler::optUpdateLoopsBeforeRemoveBlock(BasicBlock* block, bool skipUnmar
         reportAfter();
     }
 
-    if ((skipUnmarkLoop == false) &&                  //
-        block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        //
-        block->bbJumpDest->isLoopHead() &&            //
-        (block->bbJumpDest->bbNum <= block->bbNum) && //
-        fgDomsComputed &&                             //
+    if ((skipUnmarkLoop == false) &&                  // If we don't want to unmark this loop...
+        block->KindIs(BBJ_ALWAYS, BBJ_COND) &&        // This block reaches conditionally or always
+        block->bbJumpDest->isLoopHead() &&            // to a loop head...
+        (fgCurBBEpochSize == fgBBNumMax + 1) &&       // We didn't add new blocks since last renumber...
+        (block->bbJumpDest->bbNum <= block->bbNum) && // This is a backedge...
+        fgDomsComputed &&                             // Given the doms are computed and valid...
         (fgCurBBEpochSize == fgDomBBcount + 1) &&     //
-        fgReachable(block->bbJumpDest, block))
+        fgReachable(block->bbJumpDest, block))        // Block's destination is reachable from block...
     {
-        optUnmarkLoopBlocks(block->bbJumpDest, block);
+        optUnmarkLoopBlocks(block->bbJumpDest, block); // Unscale the blocks in such loop.
     }
 }
 
@@ -2625,7 +2626,7 @@ void Compiler::optIdentifyLoopsForAlignment()
                 }
                 else
                 {
-                    JITDUMP("Skip alignment for " FMT_LP " that starts at " FMT_BB " weight=" FMT_WT ".\n", loopInd,
+                    JITDUMP(";; Skip alignment for " FMT_LP " that starts at " FMT_BB " weight=" FMT_WT ".\n", loopInd,
                             top->bbNum, topWeight);
                 }
             }
@@ -6407,7 +6408,7 @@ void Compiler::optRecordLoopMemoryDependence(GenTree* tree, BasicBlock* block, V
         updateLoopNum = updateParentLoopNum;
     }
 
-    // If the update block is not the the header of a loop containing
+    // If the update block is not the header of a loop containing
     // block, we can also ignore the update.
     //
     if (!optLoopContains(updateLoopNum, loopNum))
@@ -6528,7 +6529,7 @@ void Compiler::optHoistLoopBlocks(unsigned loopNum, ArrayStack<BasicBlock*>* blo
             else if (node->OperIs(GT_NULLCHECK))
             {
                 // If a null-check is for `this` object, it is safe to
-                // hoist it out of the loop. Assrtionprop will get rid
+                // hoist it out of the loop. Assertionprop will get rid
                 // of left over nullchecks present inside the loop. Also,
                 // since NULLCHECK has no value, it will never be CSE,
                 // hence this check is not present in optIsCSEcandidate().
@@ -7854,6 +7855,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                         GenTreeArrAddr* arrAddr  = nullptr;
                         GenTree*        baseAddr = nullptr;
                         FieldSeqNode*   fldSeq   = nullptr;
+                        ssize_t         offset   = 0;
 
                         if (arg->IsArrayAddr(&arrAddr))
                         {
@@ -7865,7 +7867,7 @@ bool Compiler::optComputeLoopSideEffectsOfBlock(BasicBlock* blk)
                             // Conservatively assume byrefs may alias this array element
                             memoryHavoc |= memoryKindSet(ByrefExposed);
                         }
-                        else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq))
+                        else if (arg->IsFieldAddr(this, &baseAddr, &fldSeq, &offset))
                         {
                             assert((fldSeq != nullptr) && (fldSeq != FieldSeqStore::NotAField()));
 
@@ -9571,6 +9573,8 @@ bool Compiler::optAnyChildNotRemoved(unsigned loopNum)
 // optMarkLoopRemoved: Mark the specified loop as removed (some optimization, such as unrolling, has made the
 // loop no longer exist). Note that only the given loop is marked as being removed; if it has any children,
 // they are not touched (but a warning message is output to the JitDump).
+// This method resets the `bbNatLoopNum` field to point to either parent's loop number or NOT_IN_LOOP.
+// For consistency, it also updates the child loop's `lpParent` field to have its parent
 //
 // Arguments:
 //      loopNum - the loop number to remove
@@ -9581,6 +9585,34 @@ void Compiler::optMarkLoopRemoved(unsigned loopNum)
 
     assert(loopNum < optLoopCount);
     LoopDsc& loop = optLoopTable[loopNum];
+
+    for (BasicBlock* const auxBlock : loop.LoopBlocks())
+    {
+        if (auxBlock->bbNatLoopNum == loopNum)
+        {
+            JITDUMP("Resetting loop number for " FMT_BB " from " FMT_LP " to " FMT_LP ".\n", auxBlock->bbNum,
+                    auxBlock->bbNatLoopNum, loop.lpParent);
+            auxBlock->bbNatLoopNum = loop.lpParent;
+        }
+    }
+
+    // Stop referring this loop as a parent of child loops
+    // TODO: As `optAnyChildNotRemoved()` points out, child loops should
+    // be live if parent is getting removed, but until we fix it, this will
+    // at least guarantee that the loopTable is somewhat accurate and up to
+    // date.
+    for (BasicBlock::loopNumber l = loop.lpChild; //
+         l != BasicBlock::NOT_IN_LOOP;            //
+         l = optLoopTable[l].lpSibling)
+    {
+        if ((optLoopTable[l].lpFlags & LPFLG_REMOVED) == 0)
+        {
+            JITDUMP("Resetting parent of loop number " FMT_LP " from " FMT_LP " to " FMT_LP ".\n", l,
+                    optLoopTable[l].lpParent, loop.lpParent);
+            optLoopTable[l].lpParent = loop.lpParent;
+        }
+    }
+
     loop.lpFlags |= LPFLG_REMOVED;
 
 #ifdef DEBUG

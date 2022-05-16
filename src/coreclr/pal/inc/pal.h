@@ -734,19 +734,6 @@ MoveFileExW(
 #define MoveFileEx MoveFileExA
 #endif
 
-typedef struct _BY_HANDLE_FILE_INFORMATION {
-    DWORD dwFileAttributes;
-    FILETIME ftCreationTime;
-    FILETIME ftLastAccessTime;
-    FILETIME ftLastWriteTime;
-    DWORD dwVolumeSerialNumber;
-    DWORD nFileSizeHigh;
-    DWORD nFileSizeLow;
-    DWORD nNumberOfLinks;
-    DWORD nFileIndexHigh;
-    DWORD nFileIndexLow;
-} BY_HANDLE_FILE_INFORMATION, *PBY_HANDLE_FILE_INFORMATION, *LPBY_HANDLE_FILE_INFORMATION;
-
 typedef struct _WIN32_FIND_DATAA {
     DWORD dwFileAttributes;
     FILETIME ftCreationTime;
@@ -1596,13 +1583,11 @@ typedef struct _XMM_SAVE_AREA32 {
     BYTE  Reserved4[96];
 } XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
 
-#define LEGACY_SAVE_AREA_LENGTH sizeof(XMM_SAVE_AREA32)
-
 //
 // Context Frame
 //
 //  This frame has a several purposes: 1) it is used as an argument to
-//  NtContinue, 2) is is used to constuct a call frame for APC delivery,
+//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
 //  and 3) it is used in the user level thread creation routines.
 //
 //
@@ -3452,7 +3437,6 @@ InterlockedDecrement(
     return result;
 }
 
-#define InterlockedDecrementAcquire InterlockedDecrement
 #define InterlockedDecrementRelease InterlockedDecrement
 
 EXTERN_C
@@ -3653,30 +3637,6 @@ InterlockedOr(
     LONG result = __sync_fetch_and_or(Destination, Value);
     PAL_ArmInterlockedOperationBarrier();
     return result;
-}
-
-EXTERN_C
-PALIMPORT
-inline
-UCHAR
-PALAPI
-InterlockedBitTestAndReset(
-    IN OUT LONG volatile *Base,
-    IN LONG Bit)
-{
-    return (InterlockedAnd(Base, ~(1 << Bit)) & (1 << Bit)) != 0;
-}
-
-EXTERN_C
-PALIMPORT
-inline
-UCHAR
-PALAPI
-InterlockedBitTestAndSet(
-    IN OUT LONG volatile *Base,
-    IN LONG Bit)
-{
-    return (InterlockedOr(Base, (1 << Bit)) & (1 << Bit)) != 0;
 }
 
 #if defined(HOST_64BIT)

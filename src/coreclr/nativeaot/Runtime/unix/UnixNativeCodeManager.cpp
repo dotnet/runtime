@@ -286,13 +286,8 @@ bool UnixNativeCodeManager::GetReturnAddressHijackInfo(MethodInfo *    pMethodIn
                                                        PTR_PTR_VOID *  ppvRetAddrLocation, // out
                                                        GCRefKind *     pRetValueKind)      // out
 {
-    // @TODO: CORERT: GetReturnAddressHijackInfo
+    // @TODO: GetReturnAddressHijackInfo
     return false;
-}
-
-void UnixNativeCodeManager::UnsynchronizedHijackMethodLoops(MethodInfo * pMethodInfo)
-{
-    // @TODO: CORERT: UnsynchronizedHijackMethodLoops
 }
 
 PTR_VOID UnixNativeCodeManager::RemapHardwareFaultToGCSafePoint(MethodInfo * pMethodInfo, PTR_VOID controlPC)
@@ -390,7 +385,7 @@ bool UnixNativeCodeManager::EHEnumNext(EHEnumState * pEHEnumState, EHClause * pE
 
         // Read target type
         {
-            // @TODO: CORERT: Compress EHInfo using type table index scheme
+            // @TODO: Compress EHInfo using type table index scheme
             // https://github.com/dotnet/corert/issues/972
             int32_t typeRelAddr = *((PTR_Int32&)pEnumState->pEHInfo);
             pEHClauseOut->m_pTargetType = dac_cast<PTR_VOID>(pEnumState->pEHInfo + typeRelAddr);

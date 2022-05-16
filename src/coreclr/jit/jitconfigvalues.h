@@ -291,6 +291,43 @@ CONFIG_INTEGER(EnableEHWriteThru, W("EnableEHWriteThru"), 1) // Enable the regis
 CONFIG_INTEGER(EnableMultiRegLocals, W("EnableMultiRegLocals"), 1) // Enable the enregistration of locals that are
                                                                    // defined or used in a multireg context.
 
+// clang-format off
+
+//
+// Hardware Intrinsic ISAs; keep in sync with clrconfigvalues.h
+//
+CONFIG_INTEGER(EnableHWIntrinsic,  W("EnableHWIntrinsic"),  1) // Allows Base+ hardware intrinsics to be disabled
+
+#if defined(TARGET_AMD64) || defined(TARGET_X86)
+CONFIG_INTEGER(EnableAES,          W("EnableAES"),          1) // Allows AES+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX,          W("EnableAVX"),          1) // Allows AVX+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVX2,         W("EnableAVX2"),         1) // Allows AVX2+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableAVXVNNI,      W("EnableAVXVNNI"),      1) // Allows AVX VNNI+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableBMI1,         W("EnableBMI1"),         1) // Allows BMI1+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableBMI2,         W("EnableBMI2"),         1) // Allows BMI2+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableFMA,          W("EnableFMA"),          1) // Allows FMA+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableLZCNT,        W("EnableLZCNT"),        1) // Allows LZCNT+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnablePCLMULQDQ,    W("EnablePCLMULQDQ"),    1) // Allows PCLMULQDQ+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnablePOPCNT,       W("EnablePOPCNT"),       1) // Allows POPCNT+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE,          W("EnableSSE"),          1) // Allows SSE+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE2,         W("EnableSSE2"),         1) // Allows SSE2+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE3,         W("EnableSSE3"),         1) // Allows SSE3+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE3_4,       W("EnableSSE3_4"),       1) // Allows SSE3+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE41,        W("EnableSSE41"),        1) // Allows SSE4.1+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSE42,        W("EnableSSE42"),        1) // Allows SSE4.2+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableSSSE3,        W("EnableSSSE3"),        1) // Allows SSSE3+ hardware intrinsics to be disabled
+#elif defined(TARGET_ARM64)
+CONFIG_INTEGER(EnableArm64AdvSimd, W("EnableArm64AdvSimd"), 1) // Allows Arm64 AdvSimd+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Aes,     W("EnableArm64Aes"),     1) // Allows Arm64 Aes+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Atomics, W("EnableArm64Atomics"), 1) // Allows Arm64 Atomics+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Crc32,   W("EnableArm64Crc32"),   1) // Allows Arm64 Crc32+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Dczva,   W("EnableArm64Dczva"),   1) // Allows Arm64 Dczva+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Dp,      W("EnableArm64Dp"),      1) // Allows Arm64 Dp+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Rdm,     W("EnableArm64Rdm"),     1) // Allows Arm64 Rdm+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Sha1,    W("EnableArm64Sha1"),    1) // Allows Arm64 Sha1+ hardware intrinsics to be disabled
+CONFIG_INTEGER(EnableArm64Sha256,  W("EnableArm64Sha256"),  1) // Allows Arm64 Sha256+ hardware intrinsics to be disabled
+#endif
+
 // clang-format on
 
 #ifdef FEATURE_SIMD
