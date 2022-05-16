@@ -1038,7 +1038,7 @@ ExecuteCodes:
                         ContextRecord,
                         8 * (NextCode & 0x3f),
                         8 + ((CurCode & 1) << 2) + (NextCode >> 6),
-                        2 + AccumulatedSaveNexts,
+                        2 + 2 * AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
         }
@@ -1054,7 +1054,7 @@ ExecuteCodes:
                         ContextRecord,
                         -8 * ((NextCode & 0x3f) + 1),
                         8 + ((CurCode & 1) << 2) + (NextCode >> 6),
-                        2 + AccumulatedSaveNexts,
+                        2 + 2 * AccumulatedSaveNexts,
                         UnwindParams);
             AccumulatedSaveNexts = 0;
         }
