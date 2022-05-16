@@ -2959,10 +2959,16 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     }
 #endif
 
-    // If one of the src or dst is not local, we will generate code that produce GC references in
-    // in temporary registers and are not reported. For such cases, ensure that the block is marked
-    // with non-interruptible.
-    assert((isSrcRegAddrAlignmentKnown && isDstRegAddrAlignmentKnown) || node->gtBlkOpGcUnsafe);
+#ifndef JIT32_GCENCODER
+    if (!node->gtBlkOpGcUnsafe && ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0)))
+    {
+        // If node is not already marked as non-interruptible, and if are about to generate code
+        // that produce GC references in temporary registers not reported, then mark the block
+        // as non-interruptible.
+        node->gtBlkOpGcUnsafe = true;
+        GetEmitter()->emitDisableGC();
+    }
+#endif
 
     if ((srcOffsetAdjustment != 0) && (dstOffsetAdjustment != 0))
     {
