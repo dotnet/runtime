@@ -15,7 +15,7 @@ type EventPipeSessionIDImpl = number;
 /// events from the runtime and managed libraries.  There may be multiple active sessions at the same time.
 /// Each session subscribes to a number of providers and will collect events from the time that start() is called, until stop() is called.
 /// Upon completion the session saves the events to a file on the VFS.
-/// The data can then be retrieved as Blob or as a data URI (prefer Blob).
+/// The data can then be retrieved as Blob.
 export interface EventPipeSession {
     // session ID for debugging logging only
     get sessionID(): EventPipeSessionID;
@@ -37,14 +37,6 @@ function start_streaming (sessionID: EventPipeSessionIDImpl): void {
 
 function stop_streaming (sessionID: EventPipeSessionIDImpl): void {
     cwraps.mono_wasm_event_pipe_session_disable (sessionID);
-}
-
-function makeTimestamp(): string
-{
-    // ISO date string, but with : and . replaced by -
-    const t = new Date();
-    const s = t.toISOString();
-    return s.replace(/[:.]/g, "-");
 }
 
 /// An EventPipe session that saves the event data to a file in the VFS.
@@ -102,22 +94,23 @@ export const diagnostics: Diagnostics = {
     /// Use the options to control the kinds of events to be collected.
     /// Multiple sessions may be created and started at the same time.
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null {
-        const defaultRundownRequested = true;
-        const defaultProviders = "";
-        const defaultBufferSizeInMB = 1;
+        // The session trace is saved to a file in the VFS. The file name doesn't matter,
+        // but we'd like it to be distinct from other traces.
+        const tracePath =`/trace-${totalSessions++}.nettrace`;
 
-        // The session trace is saved to a file in the VFS. The file name doesn't matter, but we'd like it to be
-        // distinct from other traces. We include the current time in the file name.
-        const tracePath =`/trace-${makeTimestamp()}-${totalSessions++}.nettrace`;
-        const rundown = options?.collectRundownEvents ?? defaultRundownRequested;
+        const [success, sessionID] = memory.withStackAlloc (sizeOfInt32, (sessionIdOutPtr, memory, cwraps, options, tracePath) => {
+            const defaultRundownRequested = true;
+            const defaultProviders = "";
+            const defaultBufferSizeInMB = 1;
 
-        const [success, sessionID] = memory.withStackAlloc (sizeOfInt32, (sessionIdOutPtr) => {
+            const rundown = options?.collectRundownEvents ?? defaultRundownRequested;
+
             memory.setI32(sessionIdOutPtr, 0);
             if (!cwraps.mono_wasm_event_pipe_enable(tracePath, defaultBufferSizeInMB, defaultProviders, rundown, sessionIdOutPtr)) {
                 return [false, 0];
             } else {
                 return [true, memory.getI32 (sessionIdOutPtr)];
-            }});
+            }}, memory, cwraps, options, tracePath);
 
         if (!success)
             return null;
