@@ -22,6 +22,10 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             HelperMarshal._f64Value = 0;
             Runtime.InvokeJS("App.call_test_method (\"InvokeDouble\", [4.5])");
             Assert.Equal(4.5, HelperMarshal._f64Value);
+
+            HelperMarshal._i64Value = 0;
+            Runtime.InvokeJS("App.call_test_method (\"InvokeLong\", [99])");
+            Assert.Equal(99, HelperMarshal._i64Value);
         }
 
         [Fact]

@@ -10,7 +10,7 @@ import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
 import {
     _create_temp_frame,
     getI32, getU32, getF32, getF64,
-    setI32, setU32, setF32, setF64
+    setI32, setU32, setF32, setF64, setI52
 } from "./memory";
 import {
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
@@ -131,7 +131,7 @@ export function _create_primitive_converters(): void {
     result.set("j", { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }], size: 8 });
 
     result.set("i", { steps: [{ indirect: "i32" }], size: 8 });
-    // result.set("l", { steps: [{ indirect: "i64" }], size: 8 });
+    result.set("l", { steps: [{ indirect: "i52" }], size: 8 });
     result.set("f", { steps: [{ indirect: "float" }], size: 8 });
     result.set("d", { steps: [{ indirect: "double" }], size: 8 });
 }
@@ -218,6 +218,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         setU32,
         setF32,
         setF64,
+        setI52,
         scratchValueRoot: converter.scratchValueRoot
     };
     let indirectLocalOffset = 0;
@@ -287,6 +288,8 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
                 case "double":
                     body.push(`setF64(${offsetText}, ${valueKey});`);
                     break;
+                case "i52":
+                    body.push(`setI52(${offsetText}, ${valueKey});`);
                     break;
                 default:
                     throw new Error("Unimplemented indirect type: " + step.indirect);
@@ -561,8 +564,8 @@ We currently don't use these types because it makes typeScript compiler very slo
 declare const enum ArgsMarshal {
     Int32 = "i", // int32
     Int32Enum = "j", // int32 - Enum with underlying type of int32
-    // Int64 = "l", // int64
-    // Int64Enum = "k", // int64 - Enum with underlying type of int64
+    Int64 = "l", // int64
+    Int64Enum = "k", // int64 - Enum with underlying type of int64
     Float32 = "f", // float
     Float64 = "d", // double
     String = "s", // string
@@ -581,7 +584,7 @@ export type ArgsMarshalString = ""
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
 */
 
-type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "reference"
+type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i52" | "reference"
 
 export type Converter = {
     steps: {
