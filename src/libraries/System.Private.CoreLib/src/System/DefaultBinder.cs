@@ -11,7 +11,7 @@ using CultureInfo = System.Globalization.CultureInfo;
 
 namespace System
 {
-#if CORERT
+#if NATIVEAOT
     public sealed
 #else
     internal

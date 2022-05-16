@@ -270,13 +270,15 @@ struct insGroup
 #define IGF_FUNCLET_PROLOG 0x0008 // this group belongs to a funclet prolog
 #define IGF_FUNCLET_EPILOG 0x0010 // this group belongs to a funclet epilog.
 #define IGF_EPILOG 0x0020         // this group belongs to a main function epilog
-#define IGF_NOGCINTERRUPT 0x0040  // this IG is is a no-interrupt region (prolog, epilog, etc.)
+#define IGF_NOGCINTERRUPT 0x0040  // this IG is in a no-interrupt region (prolog, epilog, etc.)
 #define IGF_UPD_ISZ 0x0080        // some instruction sizes updated
 #define IGF_PLACEHOLDER 0x0100    // this is a placeholder group, to be filled in later
 #define IGF_EXTEND 0x0200         // this block is conceptually an extension of the previous block
                                   // and the emitter should continue to track GC info as if there was no new block.
 #define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
+#define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
+                                  // without updating the IG's size/offsets.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -352,6 +354,16 @@ struct insGroup
     bool endsWithAlignInstr() const
     {
         return (igFlags & IGF_HAS_ALIGN) != 0;
+    }
+
+    //  hadAlignInstr: Checks if this IG was ever marked as aligned and later
+    //                 decided to not align. Sometimes, a loop is marked as not
+    //                 needing alignment, but the igSize was not adjusted immediately.
+    //                 This method is used during loopSize calculation, where we adjust
+    //                 the loop size by removed alignment bytes.
+    bool hadAlignInstr() const
+    {
+        return (igFlags & IGF_REMOVED_ALIGN) != 0;
     }
 
 }; // end of struct insGroup
@@ -1386,6 +1398,7 @@ protected:
 #define PERFSCORE_THROUGHPUT_19C 19.0f   // slower - 19 cycles
 #define PERFSCORE_THROUGHPUT_25C 25.0f   // slower - 25 cycles
 #define PERFSCORE_THROUGHPUT_33C 33.0f   // slower - 33 cycles
+#define PERFSCORE_THROUGHPUT_50C 50.0f   // slower - 50 cycles
 #define PERFSCORE_THROUGHPUT_52C 52.0f   // slower - 52 cycles
 #define PERFSCORE_THROUGHPUT_57C 57.0f   // slower - 57 cycles
 #define PERFSCORE_THROUGHPUT_140C 140.0f // slower - 140 cycles
@@ -1553,6 +1566,7 @@ protected:
         void removeAlignFlags()
         {
             idaIG->igFlags &= ~IGF_HAS_ALIGN;
+            idaIG->igFlags |= IGF_REMOVED_ALIGN;
         }
     };
     void emitCheckAlignFitInCurIG(unsigned nAlignInstr);
@@ -2135,7 +2149,7 @@ private:
 #endif
 
     // Terminates any in-progress instruction group, making the current IG a new empty one.
-    // Mark this instruction group as having a label; return the the new instruction group.
+    // Mark this instruction group as having a label; return the new instruction group.
     // Sets the emitter's record of the currently live GC variables
     // and registers.  The "isFinallyTarget" parameter indicates that the current location is
     // the start of a basic block that is returned to after a finally clause in non-exceptional execution.

@@ -2328,7 +2328,7 @@ namespace CorUnix
                 }
                 else if (0 > iRet)
                 {
-                    ERROR("Unable to read %d bytes from the the process pipe "
+                    ERROR("Unable to read %d bytes from the process pipe "
                           "[pipe=%d ret=%d errno=%d (%s)]\n", iBytes - iBytesRead,
                           m_iProcessPipeRead, iRet, errno, strerror(errno));
                     goto RBFPP_exit;
@@ -2977,7 +2977,7 @@ namespace CorUnix
     Method:
       CPalSynchronizationManager::MarkWaitForDelegatedObjectSignalingInProgress
 
-    Marks all the thread waiting list nodes involved in the the current wait-all
+    Marks all the thread waiting list nodes involved in the current wait-all
     for "delegated object signaling in progress", so that this wait cannot be
     involved in another delegated object signaling that may happen while the
     current object singaling is being tranfered to the target process (while

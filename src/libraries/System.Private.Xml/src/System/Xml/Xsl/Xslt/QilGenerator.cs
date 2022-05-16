@@ -239,7 +239,7 @@ namespace System.Xml.Xsl.Xslt
         {
             // Initialization code should be executed before any other code (global variables/parameters or root expression)
             // For this purpose we insert it as THE FIRST global variable $init (global variables are calculated before global parameters)
-            // and put all initalization code in it.
+            // and put all initialization code in it.
             // In retail mode global variables are calculated lasely if they don't have side effects.
             // To mark $init as variable with side effect we put all code to function and set SideEffect flag on this function.
             // ILGen expects that all library functions are sideeffect free. To prevent calls to RegisterDecimalFormat() to be optimized out
