@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <RunScriptWindowsCmd Condition="'$(TargetOS)' == 'windows' and '$(RunScriptWindowsCmd)' == ''">false</RunScriptWindowsCmd>
-    <RunScriptWindowsCmd Condition="'$(TargetOS)' != 'windows' and '$(RunScriptWindowsCmd)' == ''">true</RunScriptWindowsCmd>
+    <RunScriptWindowsCmd Condition="'$(TargetOS)' == 'windows' and '$(RunScriptWindowsCmd)' == ''">true</RunScriptWindowsCmd>
+    <RunScriptWindowsCmd Condition="'$(TargetOS)' != 'windows' and '$(RunScriptWindowsCmd)' == ''">false</RunScriptWindowsCmd>
   </PropertyGroup>
   <PropertyGroup Condition="'$(RunScriptInputName)' == ''">
     <RunScriptInputName Condition="'$(RunScriptWindowsCmd)' == 'true'">RunnerTemplate.cmd</RunScriptInputName>
