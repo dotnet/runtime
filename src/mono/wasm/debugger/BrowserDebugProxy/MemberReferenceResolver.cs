@@ -424,7 +424,18 @@ namespace Microsoft.WebAssembly.Diagnostics
             bool isExtensionMethod = false;
             try
             {
-                var typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
+                List<int> typeIds;
+                if (objectId.IsValueType)
+                {
+                    if (!context.SdbAgent.ValueCreator.TryGetValueTypeById(objectId.Value, out ValueTypeClass valueType))
+                        throw new Exception($"Could not find valuetype {objectId}");
+
+                    typeIds = new List<int>(1) { valueType.TypeId };
+                }
+                else
+                {
+                    typeIds = await context.SdbAgent.GetTypeIdsForObject(objectId.Value, true, token);
+                }
                 int methodId = await context.SdbAgent.GetMethodIdByName(typeIds[0], methodName, token);
                 var className = await context.SdbAgent.GetTypeNameOriginal(typeIds[0], token);
                 if (methodId == 0) //try to search on System.Linq.Enumerable
