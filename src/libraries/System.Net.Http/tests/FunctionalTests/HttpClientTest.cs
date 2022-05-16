@@ -221,21 +221,21 @@ namespace System.Net.Http.Functional.Tests
 
         [Fact]
         [SkipOnPlatform(TestPlatforms.Browser, "Socket is not supported on Browser")]
-        public async Task GetContentAsync_WhenCanNotConnect_ExceptionContainsHostInfo()
+        public async Task GetContentAsync_WhenCannotConnect_ExceptionContainsHostInfo()
         {
-            const string host = "localhost:1234";
+            const string Host = "localhost:1234";
 
             using HttpClientHandler handler = CreateHttpClientHandler();
             handler.ServerCertificateCustomValidationCallback = TestHelper.AllowAllCertificates;
             var socketsHandler = (SocketsHttpHandler)GetUnderlyingSocketsHttpHandler(handler);
             socketsHandler.ConnectCallback = (context, token) =>
             {
-                throw new InvalidOperationException(nameof(GetContentAsync_WhenCanNotConnect_ExceptionContainsHostInfo));
+                throw new InvalidOperationException(nameof(GetContentAsync_WhenCannotConnect_ExceptionContainsHostInfo));
             };
 
             using var client = CreateHttpClient(handler);
-            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync($"http://{host}"));
-            Assert.Contains(host, ex.Message);
+            HttpRequestException ex = await Assert.ThrowsAsync<HttpRequestException>(() => client.GetStreamAsync($"http://{Host}"));
+            Assert.Contains(Host, ex.Message);
         }
 
         [Fact]
