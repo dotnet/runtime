@@ -101,10 +101,11 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             SettingLocation rollForwardOnNoCandidateFxLocation,
             bool passes)
         {
+            string requestedVersion = "5.0.0";
             CommandResult result = RunTest(
                 new TestSettings()
                     .WithRuntimeConfigCustomizer(runtimeConfig => runtimeConfig
-                        .WithFramework(MicrosoftNETCoreApp, "5.0.0"))
+                        .WithFramework(MicrosoftNETCoreApp, requestedVersion))
                     .With(RollForwardSetting(rollForwardLocation, Constants.RollForwardSetting.Major))
                     .With(RollForwardOnNoCandidateFxSetting(rollForwardOnNoCandidateFxLocation, 0)));
 
@@ -114,7 +115,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.FrameworkResolution
             }
             else
             {
-                result.Should().Fail().And.DidNotFindCompatibleFrameworkVersion();
+                result.ShouldFailToFindCompatibleFrameworkVersion(MicrosoftNETCoreApp, requestedVersion);
             }
         }
 

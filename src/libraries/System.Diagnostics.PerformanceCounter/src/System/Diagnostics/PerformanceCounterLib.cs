@@ -1046,9 +1046,9 @@ namespace System.Diagnostics
             return _performanceMonitor.GetData(item, usePool);
         }
 
-        internal void ReleasePerformanceData(byte[] data)
+        internal static void ReleasePerformanceData(byte[] data)
         {
-            _performanceMonitor.ReleaseData(data);
+            PerformanceMonitor.ReleaseData(data);
         }
 
         private Hashtable GetStringTable(bool isHelp)
@@ -1385,9 +1385,9 @@ namespace System.Diagnostics
             throw new Win32Exception(error);
         }
 
-        internal void ReleaseData(byte[] data)
+        internal static void ReleaseData(byte[] data)
         {
-            perfDataKey.ReleaseData(data);
+            PerformanceDataRegistryKey.ReleaseData(data);
         }
 
     }
@@ -1678,7 +1678,7 @@ namespace System.Diagnostics
 
             _disposed = true;
 
-            _library.ReleasePerformanceData(_data);
+            PerformanceCounterLib.ReleasePerformanceData(_data);
         }
 
         private void CheckDisposed()

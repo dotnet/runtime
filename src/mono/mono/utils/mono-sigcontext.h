@@ -458,55 +458,6 @@
 	 } while (0)
 #endif
 
-#elif defined(__mips__)
-
-# if HAVE_UCONTEXT_H
-#  include <ucontext.h>
-# endif
-
-/* No ucontext.h */
-#if defined(TARGET_ANDROID)
-
-#define NGREG   32
-#define NFPREG  32
-
-typedef unsigned long gregset_t[NGREG];
-
-typedef struct fpregset {
-	union {
-		double  fp_dregs[NFPREG];
-		struct {
-			float           _fp_fregs;
-			unsigned int    _fp_pad;
-		} fp_fregs[NFPREG];
-	} fp_r;
-} fpregset_t;
-
-typedef struct
-  {
-    unsigned int regmask;
-    unsigned int status;
-    unsigned long pc;
-    gregset_t gregs;
-    fpregset_t fpregs;
-	  /* missing fields follow */
-} mcontext_t;
-
-typedef struct ucontext
-  {
-    unsigned long int uc_flags;
-    struct ucontext *uc_link;
-    stack_t uc_stack;
-    mcontext_t uc_mcontext;
-	  /* missing fields follow */
-  } ucontext_t;
-
-#endif
-
-# define UCONTEXT_GREGS(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.gregs)
-# define UCONTEXT_FPREGS(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.fpregs.fp_r.fp_dregs)
-# define UCONTEXT_REG_PC(ctx)	(((ucontext_t *)(ctx))->uc_mcontext.pc)
-
 #elif defined(__s390x__)
 
 # if HAVE_UCONTEXT_H

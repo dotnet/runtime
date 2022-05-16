@@ -20,24 +20,24 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
     hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, FALSE, pid);
     if (hProcess == NULL)
     {
-        fprintf(stderr, "Invalid process id '%d' error %d\n", pid, GetLastError());
+        printf_error("Invalid process id '%d' error %d\n", pid, GetLastError());
         goto exit;
     }
     if (GetModuleBaseNameA(hProcess, NULL, pszName, MAX_LONGPATH) <= 0)
     {
-        fprintf(stderr, "Get process name FAILED %d\n", GetLastError());
+        printf_error("Get process name FAILED %d\n", GetLastError());
         goto exit;
     }
     if (!FormatDumpName(dumpPath, dumpPathTemplate, pszName, pid))
     {
         goto exit;
     }
-    printf("Writing %s to file %s\n", dumpType, dumpPath.c_str());
+    printf_status("Writing %s to file %s\n", dumpType, dumpPath.c_str());
 
     hFile = CreateFileA(dumpPath.c_str(), GENERIC_READ | GENERIC_WRITE, 0, NULL, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, NULL);
     if (hFile == INVALID_HANDLE_VALUE)
     {
-        fprintf(stderr, "Invalid dump path '%s' error %d\n", dumpPath.c_str(), GetLastError());
+        printf_error("Invalid dump path '%s' error %d\n", dumpPath.c_str(), GetLastError());
         goto exit;
     }
 
@@ -54,7 +54,7 @@ CreateDump(const char* dumpPathTemplate, int pid, const char* dumpType, MINIDUMP
             int err = GetLastError();
             if (err != HRESULT_FROM_WIN32(ERROR_PARTIAL_COPY))
             {
-                fprintf(stderr, "Write dump FAILED 0x%08x\n", err);
+                printf_error("Write dump FAILED 0x%08x\n", err);
                 break;
             }
         }

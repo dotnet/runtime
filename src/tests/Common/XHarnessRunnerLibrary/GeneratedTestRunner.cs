@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Threading.Tasks;
 using Microsoft.DotNet.XHarness.Common;
 using Microsoft.DotNet.XHarness.TestRunners.Common;
@@ -15,16 +16,20 @@ public sealed class GeneratedTestRunner : TestRunner
     TestFilter.ISearchClause? _filter;
     Func<TestFilter?, TestSummary> _runTestsCallback;
     HashSet<string> _testExclusionList;
+    private readonly Boolean _writeBase64TestResults;
+
     public GeneratedTestRunner(
         LogWriter logger, 
         Func<TestFilter?, TestSummary> runTestsCallback, 
         string assemblyName,
-        HashSet<string> testExclusionList)
+        HashSet<string> testExclusionList,
+        bool writeBase64TestResults)
         :base(logger)
     {
         _assemblyName = assemblyName;
         _runTestsCallback = runTestsCallback;
         _testExclusionList = testExclusionList;
+        _writeBase64TestResults = writeBase64TestResults;
         ResultsFileName = $"{_assemblyName}.testResults.xml";
     }
 
@@ -53,7 +58,17 @@ public sealed class GeneratedTestRunner : TestRunner
     public override void WriteResultsToFile(TextWriter writer, XmlResultJargon jargon)
     {
         Debug.Assert(jargon == XmlResultJargon.xUnit);
-        writer.WriteLine(LastTestRun.GetTestResultOutput(_assemblyName));
+        string lastTestResults = LastTestRun.GetTestResultOutput(_assemblyName);
+        if (_writeBase64TestResults)
+        {
+            byte[] encodedBytes = Encoding.Unicode.GetBytes(lastTestResults);
+            string base64Results = Convert.ToBase64String(encodedBytes);
+            writer.WriteLine($"STARTRESULTXML {encodedBytes.Length} {base64Results} ENDRESULTXML");
+        }
+        else
+        {
+            writer.WriteLine(lastTestResults);
+        }
     }
 
     public override void SkipTests(IEnumerable<string> tests)

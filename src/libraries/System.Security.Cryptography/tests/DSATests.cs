@@ -13,14 +13,6 @@ namespace System.Security.Cryptography.Tests
     {
         public static bool SupportsKeyGeneration => DSAFactory.SupportsKeyGeneration;
 
-        [Fact]
-        public void BaseVirtualsNotImplementedException()
-        {
-            var dsa = new EmptyDSA();
-            Assert.Throws<NotImplementedException>(() => dsa.HashData(null, HashAlgorithmName.SHA1));
-            Assert.Throws<NotImplementedException>(() => dsa.HashData(null, 0, 0, HashAlgorithmName.SHA1));
-        }
-
         [ConditionalFact(nameof(SupportsKeyGeneration))]
         public void TryCreateSignature_UsesCreateSignature()
         {

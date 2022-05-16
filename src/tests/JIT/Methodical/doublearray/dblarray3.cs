@@ -5,6 +5,7 @@
 
 using System;
 using System.Runtime.InteropServices;
+using Xunit;
 
 internal struct VT
 {
@@ -16,7 +17,7 @@ internal class CL
     public double[] cl_arr = new double[1000];
 }
 
-internal class DblArray3
+public class DblArray3
 {
     private static int s_LOH_GEN = 0;
     public static double[] s_arr;
@@ -139,7 +140,8 @@ internal class DblArray3
         }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Console.WriteLine(RuntimeInformation.ProcessArchitecture);
         if (RuntimeInformation.ProcessArchitecture == Architecture.X86)

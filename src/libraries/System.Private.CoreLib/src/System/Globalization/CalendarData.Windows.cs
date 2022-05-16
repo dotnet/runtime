@@ -64,7 +64,7 @@ namespace System.Globalization
             return result;
         }
 
-        private void InsertOrSwapOverride(string? value, ref string[] destination)
+        private static void InsertOrSwapOverride(string? value, ref string[] destination)
         {
             if (value == null)
                 return;

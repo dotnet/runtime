@@ -135,6 +135,8 @@ namespace ILCompiler
 
         private EcmaModule GetOrAddModuleFromPath(string filePath, bool useForBinding)
         {
+            filePath = Path.GetFullPath(filePath);
+
             // This method is not expected to be called frequently. Linear search is acceptable.
             foreach (var entry in ModuleHashtable.Enumerator.Get(_moduleHashtable))
             {
@@ -182,6 +184,8 @@ namespace ILCompiler
 
         private EcmaModule AddModule(string filePath, string expectedSimpleName, bool useForBinding, ModuleData oldModuleData = null)
         {
+            filePath = Path.GetFullPath(filePath);
+
             PEReader peReader = null;
             MemoryMappedViewAccessor mappedViewAccessor = null;
             PdbSymbolReader pdbReader = null;

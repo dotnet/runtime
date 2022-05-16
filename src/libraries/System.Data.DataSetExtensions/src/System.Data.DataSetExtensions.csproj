@@ -2,15 +2,11 @@
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="System.Collections" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Threading.Thread" />
     <Reference Include="System.Data.Common" />
-    <Reference Include="System.Linq" />
   </ItemGroup>
 </Project>

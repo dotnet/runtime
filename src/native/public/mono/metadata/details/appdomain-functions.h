@@ -6,11 +6,17 @@
 #error "MONO_API_FUNCTION(ret,name,args) macro not defined before including function declaration header"
 #endif
 
-MONO_API_FUNCTION(MonoDomain*, mono_init, (const char *filename))
+MONO_API_FUNCTION(MonoDomain*, mono_init, (const char *root_domain_name))
 
-MONO_API_FUNCTION(MonoDomain *, mono_init_from_assembly, (const char *domain_name, const char *filename))
+/**
+ * This function is deprecated, use mono_init instead. Ignores filename parameter.
+ */
+MONO_API_FUNCTION(MonoDomain *, mono_init_from_assembly, (const char *root_domain_name, const char *filename))
 
-MONO_API_FUNCTION(MonoDomain *, mono_init_version, (const char *domain_name, const char *version))
+/**
+ * This function is deprecated, use mono_init instead. Ignores version parameter.
+ */
+MONO_API_FUNCTION(MonoDomain *, mono_init_version, (const char *root_domain_name, const char *version))
 
 MONO_API_FUNCTION(MonoDomain*, mono_get_root_domain, (void))
 

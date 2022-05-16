@@ -51,8 +51,14 @@ namespace System.Text.Json
         /// Writes the <see cref="float"/> using the default <see cref="StandardFormat"/> (that is, 'G').
         /// The property name is escaped before writing.
         /// </remarks>
-        public void WriteNumber(string propertyName!!, float value)
-            => WriteNumber(propertyName.AsSpan(), value);
+        public void WriteNumber(string propertyName, float value)
+        {
+            if (propertyName is null)
+            {
+                ThrowHelper.ThrowArgumentNullException(nameof(propertyName));
+            }
+            WriteNumber(propertyName.AsSpan(), value);
+        }
 
         /// <summary>
         /// Writes the property name and <see cref="float"/> value (as a JSON number) as part of a name/value pair of a JSON object.

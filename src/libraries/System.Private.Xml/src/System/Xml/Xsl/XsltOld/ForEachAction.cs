@@ -9,7 +9,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class ForEachAction : ContainerAction
+    internal sealed class ForEachAction : ContainerAction
     {
         private const int ProcessedSort = 2;
         private const int ProcessNextNode = 3;
@@ -100,7 +100,7 @@ namespace System.Xml.Xsl.XsltOld
             }
         }
 
-        protected void CompileSortElements(Compiler compiler)
+        private void CompileSortElements(Compiler compiler)
         {
             NavigatorInput input = compiler.Input;
             do

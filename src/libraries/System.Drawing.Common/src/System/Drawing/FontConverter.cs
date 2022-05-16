@@ -153,7 +153,7 @@ namespace System.Drawing
                 if (styleIndex != -1)
                 {
                     // style found.
-                    style = font.Substring(styleIndex, font.Length - styleIndex);
+                    style = font.Substring(styleIndex);
 
                     // Get the mid-substring containing the size information.
                     sizeStr = font.Substring(nameIndex + 1, styleIndex - nameIndex - 1);
@@ -216,7 +216,7 @@ namespace System.Drawing
             static TypeConverter GetFloatConverter() => TypeDescriptor.GetConverter(typeof(float));
         }
 
-        private (string?, string?) ParseSizeTokens(string text, char separator)
+        private static (string?, string?) ParseSizeTokens(string text, char separator)
         {
             string? size = null;
             string? units = null;
@@ -257,7 +257,7 @@ namespace System.Drawing
             return (size, units);
         }
 
-        private GraphicsUnit ParseGraphicsUnits(string units) =>
+        private static GraphicsUnit ParseGraphicsUnits(string units) =>
             units switch
             {
                 "display" => GraphicsUnit.Display,
@@ -270,8 +270,10 @@ namespace System.Drawing
                 _ => throw new ArgumentException(SR.Format(SR.InvalidArgumentValueFontConverter, units), nameof(units)),
             };
 
-        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues!!)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
+            ArgumentNullException.ThrowIfNull(propertyValues);
+
             object? value;
             byte charSet = 1;
             float size = 8;

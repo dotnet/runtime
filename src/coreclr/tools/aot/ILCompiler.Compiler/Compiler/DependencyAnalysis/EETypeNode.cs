@@ -315,8 +315,16 @@ namespace ILCompiler.DependencyAnalysis
 
             DefType defType = _type.GetClosestDefType();
 
+            // Interfaces don't have vtables and we don't need to track their slot use.
+            // The only exception are those interfaces that provide IDynamicInterfaceCastable implementations;
+            // those have slots and we dispatch on them.
+            bool needsDependenciesForVirtualMethodImpls = !defType.IsInterface
+                || ((MetadataType)defType).IsDynamicInterfaceCastableImplementation();
+
             // If we're producing a full vtable, none of the dependencies are conditional.
-            if (!factory.VTable(defType).HasFixedSlots)
+            needsDependenciesForVirtualMethodImpls &= !factory.VTable(defType).HasFixedSlots;
+            
+            if (needsDependenciesForVirtualMethodImpls)
             {
                 foreach (MethodDesc decl in defType.EnumAllVirtualSlots())
                 {
@@ -437,9 +445,9 @@ namespace ILCompiler.DependencyAnalysis
             if (method.IsPInvoke)
                 return false;
 
-            // CoreRT can generate method bodies for these no matter what (worst case
-            // they'll be throwing). We don't want to take the "return false" code path on CoreRT because
-            // delegate methods fall into the runtime implemented category on CoreRT, but we
+            // NativeAOT can generate method bodies for these no matter what (worst case
+            // they'll be throwing). We don't want to take the "return false" code path because
+            // delegate methods fall into the runtime implemented category on NativeAOT, but we
             // just treat them like regular method bodies.
             return true;
         }

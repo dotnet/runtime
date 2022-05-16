@@ -236,7 +236,7 @@ namespace Wasm.Build.Tests
             string wasmProjectDir = Path.Combine(_projectDir!, "wasm");
             string wasmProjectFile = Path.Combine(wasmProjectDir, "wasm.csproj");
             Directory.CreateDirectory(wasmProjectDir);
-            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+            new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(wasmProjectDir)
                     .ExecuteWithCapturedOutput("new blazorwasm")
                     .EnsureSuccessful();
@@ -244,7 +244,7 @@ namespace Wasm.Build.Tests
 
             string razorProjectDir = Path.Combine(_projectDir!, "RazorClassLibrary");
             Directory.CreateDirectory(razorProjectDir);
-            new DotNetCommand(s_buildEnv, useDefaultArgs: false)
+            new DotNetCommand(s_buildEnv, _testOutput, useDefaultArgs: false)
                     .WithWorkingDirectory(razorProjectDir)
                     .ExecuteWithCapturedOutput("new razorclasslib")
                     .EnsureSuccessful();

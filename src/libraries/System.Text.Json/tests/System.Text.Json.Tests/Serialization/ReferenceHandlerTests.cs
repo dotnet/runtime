@@ -15,7 +15,6 @@ namespace System.Text.Json.Serialization.Tests
         public ReferenceHandlerTestsDynamic_AsyncStream() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
 
-    [ActiveIssue("https://github.com/dotnet/runtime/issues/66727")]
     public sealed class ReferenceHandlerTestsDynamic_AsyncStreamWithSmallBuffer : ReferenceHandlerTests
     {
         public ReferenceHandlerTestsDynamic_AsyncStreamWithSmallBuffer() : base(JsonSerializerWrapper.AsyncStreamSerializerWithSmallBuffer) { }

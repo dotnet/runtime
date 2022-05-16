@@ -2,7 +2,6 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Reflection;
 using System.Text.Json.Serialization;
 using System.Text.Json.Serialization.Metadata;
 
@@ -11,7 +10,7 @@ namespace System.Text.Json.SourceGeneration.Tests
     public interface ITestContext
     {
         public JsonSourceGenerationMode JsonSourceGenerationMode { get; }
-        public bool IsIncludeFieldsEnabled => GetType().GetCustomAttribute<JsonSourceGenerationOptionsAttribute>()?.IncludeFields ?? false;
+        public bool IsIncludeFieldsEnabled { get; }
 
         public JsonTypeInfo<Location> Location { get; }
         public JsonTypeInfo<NumberTypes> NumberTypes { get; }
@@ -28,14 +27,20 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<MyTypeWithPropertyOrdering> MyTypeWithPropertyOrdering { get; }
         public JsonTypeInfo<MyIntermediateType> MyIntermediateType { get; }
         public JsonTypeInfo<HighLowTempsImmutable> HighLowTempsImmutable { get; }
+        public JsonTypeInfo<HighLowTempsRecord> HighLowTempsRecord { get; }
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass> MyNestedClass { get; }
         public JsonTypeInfo<RealWorldContextTests.MyNestedClass.MyNestedNestedClass> MyNestedNestedClass { get; }
         public JsonTypeInfo<object[]> ObjectArray { get; }
         public JsonTypeInfo<byte[]> ByteArray { get; }
         public JsonTypeInfo<string> String { get; }
         public JsonTypeInfo<(string Label1, int Label2, bool)> ValueTupleStringInt32Boolean { get; }
+        public JsonTypeInfo<JsonDocument> JsonDocument { get; }
+        public JsonTypeInfo<JsonElement> JsonElement { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithEnumAndNullable> ClassWithEnumAndNullable { get; }
         public JsonTypeInfo<RealWorldContextTests.ClassWithNullableProperties> ClassWithNullableProperties { get; }
+#if NETCOREAPP
+        public JsonTypeInfo<RealWorldContextTests.ClassWithDateOnlyAndTimeOnlyValues> ClassWithDateOnlyAndTimeOnlyValues { get; }
+#endif
         public JsonTypeInfo<ClassWithCustomConverter> ClassWithCustomConverter { get; }
         public JsonTypeInfo<StructWithCustomConverter> StructWithCustomConverter { get; }
         public JsonTypeInfo<ClassWithCustomConverterFactory> ClassWithCustomConverterFactory { get; }
@@ -49,6 +54,7 @@ namespace System.Text.Json.SourceGeneration.Tests
         public JsonTypeInfo<PersonStruct?> NullablePersonStruct { get; }
         public JsonTypeInfo<TypeWithValidationAttributes> TypeWithValidationAttributes { get; }
         public JsonTypeInfo<TypeWithDerivedAttribute> TypeWithDerivedAttribute { get; }
+        public JsonTypeInfo<PolymorphicClass> PolymorphicClass { get; }
     }
 
     internal partial class JsonContext : JsonSerializerContext

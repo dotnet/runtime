@@ -2,7 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
-internal unsafe class testout1
+using Xunit;
+namespace Test_5w1d_02
+{
+public unsafe class testout1
 {
     private static double[] s_arr1d_0 = new double[6];
     private static double s_a2_0 = 128.0;
@@ -18,7 +21,8 @@ internal unsafe class testout1
         return Convert.ToDouble(((s_a2_0 - asgop0) - (asgop1)));
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         s_arr1d_0[0] = 3758096384.0;
 
@@ -31,4 +35,5 @@ internal unsafe class testout1
         Console.WriteLine(retval);
         return retval;
     }
+}
 }

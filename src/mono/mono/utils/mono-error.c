@@ -26,7 +26,7 @@
 #define set_error_message() do { \
 	va_list args; \
 	va_start (args, msg_format); \
-	set_error_messagev();	     \
+	set_error_messagev(); \
 	va_end (args); \
 } while (0)
 
@@ -666,25 +666,25 @@ mono_error_prepare_exception (MonoError *oerror, MonoError *error_out)
 		break;
 
 	case MONO_ERROR_TYPE_LOAD: {
-		MonoStringHandle assembly_name;
-		MonoStringHandle type_name;
+		MonoStringHandle assembly_name_str;
+		MonoStringHandle type_name_str;
 
 		if ((error->type_name && error->assembly_name) || error->exn.klass) {
-			type_name = get_type_name_as_mono_string (error, error_out);
+			type_name_str = get_type_name_as_mono_string (error, error_out);
 			if (!is_ok (error_out))
 				break;
 
 			if (error->assembly_name) {
-				assembly_name = string_new_cleanup (error->assembly_name);
-				if (MONO_HANDLE_IS_NULL (assembly_name)) {
+				assembly_name_str = string_new_cleanup (error->assembly_name);
+				if (MONO_HANDLE_IS_NULL (assembly_name_str)) {
 					mono_error_set_out_of_memory (error_out, "Could not allocate assembly name");
 					break;
 				}
 			} else {
-				assembly_name = mono_string_empty_handle ();
+				assembly_name_str = mono_string_empty_handle ();
 			}
 
-			exception = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System", "TypeLoadException", type_name, assembly_name, error_out);
+			exception = mono_exception_from_name_two_strings_checked (mono_get_corlib (), "System", "TypeLoadException", type_name_str, assembly_name_str, error_out);
 			if (!MONO_HANDLE_IS_NULL (exception)) {
 				const char *full_message = error->full_message;
 				if (full_message && full_message [0]) {

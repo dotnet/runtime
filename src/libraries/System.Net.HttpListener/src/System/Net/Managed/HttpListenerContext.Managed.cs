@@ -45,7 +45,7 @@ namespace System.Net
             }
         }
 
-        internal IPrincipal? ParseBasicAuthentication(string authData) =>
+        internal static IPrincipal? ParseBasicAuthentication(string authData) =>
             TryParseBasicAuth(authData, out _, out string? username, out string? password) ?
                 new GenericPrincipal(new HttpListenerBasicIdentity(username, password), Array.Empty<string>()) :
                 null;

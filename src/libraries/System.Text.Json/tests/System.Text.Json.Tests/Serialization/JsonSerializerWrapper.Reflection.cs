@@ -122,6 +122,8 @@ namespace System.Text.Json.Serialization.Tests
         {
             private readonly bool _forceSmallBufferInOptions;
 
+            public override bool IsAsyncSerializer => true;
+
             public AsyncStreamSerializerWrapper(bool forceSmallBufferInOptions = false)
             {
                 _forceSmallBufferInOptions = forceSmallBufferInOptions;
@@ -183,7 +185,7 @@ namespace System.Text.Json.Serialization.Tests
             private JsonSerializerOptions? ResolveOptionsInstance(JsonSerializerOptions? options)
                 => _forceSmallBufferInOptions ? JsonSerializerOptionsSmallBufferMapper.ResolveOptionsInstanceWithSmallBuffer(options) : options;
 
-            public override bool IsBlockingSerializer => true;
+            public override bool IsAsyncSerializer => false;
 
             public override Task SerializeWrapper<T>(Stream utf8Json, T value, JsonSerializerOptions options = null)
             {

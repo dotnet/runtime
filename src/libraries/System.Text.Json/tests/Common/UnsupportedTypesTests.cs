@@ -31,14 +31,6 @@ namespace System.Text.Json.Serialization.Tests
             await RunTest<IntPtr>(json);
             await RunTest<IntPtr?>(json); // One nullable variation.
             await RunTest<UIntPtr>(json);
-#if NETCOREAPP
-            await RunTest<DateOnly>(json);
-            await RunTest<TimeOnly>(json);
-#endif
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            await RunTest<IAsyncEnumerable<int>>(json);
-            await RunTest<ClassThatImplementsIAsyncEnumerable>(json);
-#endif
 
             async Task RunTest<T>(string json)
             {
@@ -72,18 +64,12 @@ namespace System.Text.Json.Serialization.Tests
         [Fact]
         public async Task SerializeUnsupportedType()
         {
+            // TODO refactor to Xunit theory
             await RunTest(typeof(int));
             await RunTest(new SerializationInfo(typeof(Type), new FormatterConverter()));
             await RunTest((IntPtr)123);
             await RunTest<IntPtr?>(new IntPtr(123)); // One nullable variation.
             await RunTest((UIntPtr)123);
-#if NETCOREAPP
-            await RunTest(DateOnly.MaxValue);
-            await RunTest(TimeOnly.MinValue);
-#endif
-#if BUILDING_SOURCE_GENERATOR_TESTS
-            await RunTest(new ClassThatImplementsIAsyncEnumerable());
-#endif
 
             async Task RunTest<T>(T value)
             {
@@ -96,7 +82,6 @@ namespace System.Text.Json.Serialization.Tests
                 Assert.Contains("$", exAsStr);
 
                 ClassWithType<T> obj = new ClassWithType<T> { Prop = value };
-
                 ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(obj));
                 exAsStr = ex.ToString();
                 Assert.Contains(fullName, exAsStr);
@@ -124,6 +109,20 @@ namespace System.Text.Json.Serialization.Tests
                     serialized = await Serializer.SerializeWrapper(obj, new JsonSerializerOptions { IgnoreNullValues = true });
                     Assert.Equal(@"{}", serialized);
                 }
+
+#if !BUILDING_SOURCE_GENERATOR_TESTS
+                Type runtimeType = GetNullableOfTUnderlyingType(value.GetType(), out bool _);
+
+                ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper<object>(value));
+                exAsStr = ex.ToString();
+                Assert.Contains(runtimeType.FullName, exAsStr);
+                Assert.Contains("$", exAsStr);
+
+                ClassWithType<object> polyObj = new ClassWithType<object> { Prop = value };
+                ex = await Assert.ThrowsAsync<NotSupportedException>(async () => await Serializer.SerializeWrapper(polyObj));
+                exAsStr = ex.ToString();
+                Assert.Contains(runtimeType.FullName, exAsStr);
+#endif
             }
         }
 

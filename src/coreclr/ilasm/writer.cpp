@@ -366,7 +366,6 @@ HRESULT Assembler::CreateExportDirectory()
         pAlias[i] = pEATE->szAlias;
     }
     bool swapped = true;
-    unsigned j;
     char*    pch;
     while(swapped)
     {
@@ -379,14 +378,14 @@ HRESULT Assembler::CreateExportDirectory()
                 pch = pAlias[i-1];
                 pAlias[i-1] = pAlias[i];
                 pAlias[i] = pch;
-                j = pOT[i-1];
+                WORD j = pOT[i-1];
                 pOT[i-1] = pOT[i];
                 pOT[i] = j;
             }
         }
     }
     // normalize ordinals
-    for(i = 0; i < Nentries; i++) pOT[i] -= ordBase;
+    for(i = 0; i < Nentries; i++) pOT[i] -= (WORD)ordBase;
     // fill the export address table
 #ifdef _PREFAST_
 #pragma warning(push)
@@ -401,7 +400,7 @@ HRESULT Assembler::CreateExportDirectory()
 #pragma warning(pop)
 #endif
     // fill the export names table
-    unsigned l;
+    unsigned l, j;
     for(i = 0, j = 0; i < Nentries; i++)
     {
         pNPT[i] = j; // relative offset in the table
@@ -1065,7 +1064,7 @@ HRESULT Assembler::CreatePEFile(_In_ __nullterminated WCHAR *pwzOutputFilename)
                 {
                     if(pMD->m_wVTSlot >= 0x8000)
                     {
-                        pMD->m_wVTSlot -= 0x8000 + OrdBase - 1;
+                        pMD->m_wVTSlot -= (WORD)(0x8000 + OrdBase - 1);
                     }
                 }
             }

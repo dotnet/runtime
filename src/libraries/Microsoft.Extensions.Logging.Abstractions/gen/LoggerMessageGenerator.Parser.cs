@@ -141,15 +141,20 @@ namespace Microsoft.Extensions.Logging.Generators
                                     }
 
                                     bool hasMisconfiguredInput = false;
-                                    ImmutableArray<AttributeData>? boundAttrbutes = logMethodSymbol?.GetAttributes();
+                                    ImmutableArray<AttributeData>? boundAttributes = logMethodSymbol?.GetAttributes();
 
-                                    if (boundAttrbutes == null)
+                                    if (boundAttributes == null || boundAttributes!.Value.Length == 0)
                                     {
                                         continue;
                                     }
 
-                                    foreach (AttributeData attributeData in boundAttrbutes)
+                                    foreach (AttributeData attributeData in boundAttributes)
                                     {
+                                        if (attributeData.AttributeClass?.Equals(loggerMessageAttribute) != true)
+                                        {
+                                            continue;
+                                        }
+
                                         // supports: [LoggerMessage(0, LogLevel.Warning, "custom message")]
                                         // supports: [LoggerMessage(eventId: 0, level: LogLevel.Warning, message: "custom message")]
                                         if (attributeData.ConstructorArguments.Any())

@@ -3406,9 +3406,6 @@ namespace FieldLayoutBugRepro
         {
             Type targ1 = typeof(EventPattern<>).MakeGenericType(TypeOf.String);
             Type targ2 = typeof(StateProducer<>).MakeGenericType(targ1);
-            // *** RANDOME REFLECTION BUG: this works on the desktop CLR, but doesn't in ProjectN :) ***:
-            //Type targ3 = targ2.GetTypeInfo().GetDeclaredNestedType("State").MakeGenericType(targ1);
-            // Use this workaround instead:
             Type targ3 = typeof(StateProducer<>).GetTypeInfo().GetDeclaredNestedType("State").MakeGenericType(targ1);
             Type delType = typeof(Func<,,>).MakeGenericType(typeof(IInterface), targ3, TypeOf.String);
 

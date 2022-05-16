@@ -510,7 +510,7 @@ namespace System.Net
                 {
                     username = Uri.UnescapeDataString(userInfo.Substring(0, index));
                     index++; // skip ':'
-                    password = Uri.UnescapeDataString(userInfo.Substring(index, userInfo.Length - index));
+                    password = Uri.UnescapeDataString(userInfo.Substring(index));
                 }
                 networkCredential = new NetworkCredential(username, password);
             }
@@ -683,11 +683,12 @@ namespace System.Net
         /// <summary>
         /// <para>Returns result of query for the Response of an FTP request [async version]</para>
         /// </summary>
-        public override WebResponse EndGetResponse(IAsyncResult asyncResult!!)
+        public override WebResponse EndGetResponse(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             try
             {
-                // parameter validation
                 LazyAsyncResult? castedAsyncResult = asyncResult as LazyAsyncResult;
                 if (castedAsyncResult == null)
                 {
@@ -803,8 +804,10 @@ namespace System.Net
             return asyncResult;
         }
 
-        public override Stream EndGetRequestStream(IAsyncResult asyncResult!!)
+        public override Stream EndGetRequestStream(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             Stream? requestStream;
             try
             {
@@ -935,7 +938,7 @@ namespace System.Net
             }
         }
 
-        private Exception TranslateConnectException(Exception e)
+        private static Exception TranslateConnectException(Exception e)
         {
             if (e is SocketException se)
             {
@@ -958,9 +961,9 @@ namespace System.Net
             object result;
             try
             {
-                var client = new TcpClient();
+                var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
                 await client.ConnectAsync(_uri.Host, _uri.Port).ConfigureAwait(false);
-                result = new FtpControlStream(client);
+                result = new FtpControlStream(new NetworkStream(client, ownsSocket: true));
             }
             catch (Exception e)
             {
@@ -975,7 +978,7 @@ namespace System.Net
             string hostname = _uri.Host;
             int port = _uri.Port;
 
-            TcpClient client = new TcpClient();
+            var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
             try
             {
@@ -986,7 +989,7 @@ namespace System.Net
                 throw TranslateConnectException(e);
             }
 
-            return new FtpControlStream(client);
+            return new FtpControlStream(new NetworkStream(client, ownsSocket: true));
         }
 
         private Stream? TimedSubmitRequestHelper(bool isAsync)

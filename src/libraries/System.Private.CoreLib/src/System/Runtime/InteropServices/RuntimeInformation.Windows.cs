@@ -31,7 +31,7 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        public static Architecture OSArchitecture
+        public static unsafe Architecture OSArchitecture
         {
             get
             {
@@ -39,17 +39,36 @@ namespace System.Runtime.InteropServices
 
                 if (osArch < 0)
                 {
-                    Interop.Kernel32.SYSTEM_INFO sysInfo;
-                    unsafe
+                    // If we are running an x64 process on a non-x64 windows machine, we will report x64 as OS architecutre.
+                    //
+                    // IsWow64Process2 is only available on Windows 10+, so we will perform run-time introspection via indirect load
+                    if (NativeLibrary.TryGetExport(NativeLibrary.Load(Interop.Libraries.Kernel32), "IsWow64Process2", out IntPtr isWow64Process2Ptr))
                     {
-                        Interop.Kernel32.GetNativeSystemInfo(&sysInfo);
+                        ushort processMachine, nativeMachine;
+                        var isWow64Process2 = (delegate* unmanaged<IntPtr, ushort*, ushort*, int>)isWow64Process2Ptr;
+                        if (isWow64Process2(Interop.Kernel32.GetCurrentProcess(), &processMachine, &nativeMachine) != 0)
+                        {
+                            osArch = (int)MapMachineConstant(nativeMachine);
+                        }
+                        else
+                        {
+                            Debug.Fail("Call to IsWow64Process2() failed unexpectedly. Falling back to ProcessArchitecture");
+                            osArch = (int)ProcessArchitecture;
+                        }
                     }
-                    osArch = (int)Map(sysInfo.wProcessorArchitecture);
+                    else
+                    {
+                        Interop.Kernel32.SYSTEM_INFO sysInfo;
+                        Interop.Kernel32.GetNativeSystemInfo(&sysInfo);
+
+                        osArch = (int)Map(sysInfo.wProcessorArchitecture);
+                    }
 
                     s_osArchPlusOne = osArch + 1;
+
+                    Debug.Assert(osArch >= 0);
                 }
 
-                Debug.Assert(osArch >= 0);
                 return (Architecture)osArch;
             }
         }
@@ -68,6 +87,28 @@ namespace System.Runtime.InteropServices
                 default:
                     Debug.Assert(processorArchitecture == Interop.Kernel32.PROCESSOR_ARCHITECTURE_INTEL, "Unidentified Architecture");
                     return Architecture.X86;
+            }
+        }
+
+        private static Architecture MapMachineConstant(ushort processMachine)
+        {
+            switch (processMachine)
+            {
+                case 0x01C4: // IMAGE_FILE_MACHINE_ARMNT
+                    return Architecture.Arm;
+
+                case 0x8664: // IMAGE_FILE_MACHINE_AMD64
+                    return Architecture.X64;
+
+                case 0xAA64: // IMAGE_FILE_MACHINE_ARM64
+                    return Architecture.Arm64;
+
+                case 0x014C: // IMAGE_FILE_MACHINE_I386
+                    return Architecture.X86;
+
+                default: // IMAGE_FILE_MACHINE_UNKNOWN etc.
+                    Debug.Fail("Unidentified OS Architecture. Falling back to ProcessArchitecture");
+                    return ProcessArchitecture;
             }
         }
     }

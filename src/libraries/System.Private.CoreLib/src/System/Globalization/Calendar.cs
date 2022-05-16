@@ -82,8 +82,10 @@ namespace System.Globalization
             return o;
         }
 
-        public static Calendar ReadOnly(Calendar calendar!!)
+        public static Calendar ReadOnly(Calendar calendar)
         {
+            ArgumentNullException.ThrowIfNull(calendar);
+
             if (calendar.IsReadOnly)
             {
                 return calendar;

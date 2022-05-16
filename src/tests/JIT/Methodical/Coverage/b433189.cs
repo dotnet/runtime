@@ -9,6 +9,7 @@ using System.Threading;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Collections;
+using Xunit;
 
 public delegate void MyDelegate();
 
@@ -45,7 +46,8 @@ public class cs1
     {
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         try
         {

@@ -232,9 +232,17 @@ namespace System.Net.Sockets
             }
         }
 
-        private static SafeSocketHandle ValidateHandle(SafeSocketHandle handle!!) =>
-            handle.IsInvalid ? throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle)) :
-            handle;
+        private static SafeSocketHandle ValidateHandle(SafeSocketHandle handle)
+        {
+            ArgumentNullException.ThrowIfNull(handle);
+
+            if (handle.IsInvalid)
+            {
+                throw new ArgumentException(SR.Arg_InvalidHandle, nameof(handle));
+            }
+
+            return handle;
+        }
 
         //
         // Properties
@@ -989,8 +997,6 @@ namespace System.Net.Sockets
         // Creates a new Sockets.Socket instance to handle an incoming connection.
         public Socket Accept()
         {
-            // Validate input parameters.
-
             ThrowIfDisposed();
 
             if (_rightEndPoint == null)
@@ -2138,10 +2144,12 @@ namespace System.Net.Sockets
             return status;
         }
 
+        public bool Poll(TimeSpan timeout, SelectMode mode) =>
+            Poll(ToTimeoutMicroseconds(timeout), mode);
+
         // Determines the status of a socket.
         public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, int microSeconds)
         {
-            // Validate input parameters.
             if ((checkRead == null || checkRead.Count == 0) &&
                 (checkWrite == null || checkWrite.Count == 0) &&
                 (checkError == null || checkError.Count == 0))
@@ -2169,6 +2177,18 @@ namespace System.Net.Sockets
             {
                 throw new SocketException((int)errorCode);
             }
+        }
+
+        public static void Select(IList? checkRead, IList? checkWrite, IList? checkError, TimeSpan timeout) => Select(checkRead, checkWrite, checkError, ToTimeoutMicroseconds(timeout));
+
+        private static int ToTimeoutMicroseconds(TimeSpan timeout)
+        {
+            long totalMicroseconds = (long)timeout.TotalMicroseconds;
+            if (totalMicroseconds < -1 || totalMicroseconds > int.MaxValue)
+            {
+                throw new ArgumentOutOfRangeException(nameof(timeout));
+            }
+            return (int)totalMicroseconds;
         }
 
         public IAsyncResult BeginConnect(EndPoint remoteEP, AsyncCallback? callback, object? state) =>
@@ -2487,7 +2507,6 @@ namespace System.Net.Sockets
         // There's no direct equivalent of this in the Task APIs, so we mimic it here.
         private async Task<(Socket s, byte[] buffer, int bytesReceived)> AcceptAndReceiveHelperAsync(Socket? acceptSocket, int receiveSize)
         {
-            // Validate input parameters.
             if (receiveSize < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(receiveSize));
@@ -2721,8 +2740,10 @@ namespace System.Net.Sockets
             return pending;
         }
 
-        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e!!)
+        public static bool ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e)
         {
+            ArgumentNullException.ThrowIfNull(e);
+
             if (e.HasMultipleBuffers)
             {
                 throw new ArgumentException(SR.net_multibuffernotsupported, nameof(e));
@@ -2763,8 +2784,10 @@ namespace System.Net.Sockets
         /// <summary>Binds an unbound socket to "any" if necessary to support a connect.</summary>
         partial void WildcardBindForConnectIfNecessary(AddressFamily addressFamily);
 
-        public static void CancelConnectAsync(SocketAsyncEventArgs e!!)
+        public static void CancelConnectAsync(SocketAsyncEventArgs e)
         {
+            ArgumentNullException.ThrowIfNull(e);
+
             e.CancelConnectAsync();
         }
 
@@ -3559,7 +3582,7 @@ namespace System.Net.Sockets
             }
         }
 
-        private bool IsWildcardEndPoint(EndPoint? endPoint)
+        private static bool IsWildcardEndPoint(EndPoint? endPoint)
         {
             if (endPoint == null)
             {

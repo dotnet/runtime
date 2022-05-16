@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Diagnostics.Tracing;
 using System.Reflection;
 using System.Runtime.ExceptionServices;
@@ -29,8 +30,10 @@ namespace System
             // It is the value read from the TargetFrameworkAttribute on the .exe that started the process.
             Assembly.GetEntryAssembly()?.GetCustomAttribute<TargetFrameworkAttribute>()?.FrameworkName;
 
-        public static object? GetData(string name!!)
+        public static object? GetData(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (s_dataStore == null)
                 return null;
 
@@ -48,8 +51,10 @@ namespace System
         /// <param name="name">The name of the data element</param>
         /// <param name="data">The value of <paramref name="name"/></param>
         /// <exception cref="ArgumentNullException">If <paramref name="name"/> is <see langword="null"/></exception>
-        public static void SetData(string name!!, object? data)
+        public static void SetData(string name, object? data)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (s_dataStore == null)
             {
                 Interlocked.CompareExchange(ref s_dataStore, new Dictionary<string, object?>(), null);
@@ -62,8 +67,10 @@ namespace System
         }
 
 #pragma warning disable CS0067 // events raised by the VM
+        [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(UnhandledExceptionEventArgs))]
         public static event UnhandledExceptionEventHandler? UnhandledException;
 
+        [field: DynamicDependency(DynamicallyAccessedMemberTypes.PublicConstructors, typeof(FirstChanceExceptionEventArgs))]
         public static event EventHandler<FirstChanceExceptionEventArgs>? FirstChanceException;
 #pragma warning restore CS0067
 
@@ -129,7 +136,7 @@ namespace System
             }
         }
 
-#if !CORERT
+#if !NATIVEAOT
         internal static unsafe void Setup(char** pNames, char** pValues, int count)
         {
             Debug.Assert(s_dataStore == null, "s_dataStore is not expected to be inited before Setup is called");

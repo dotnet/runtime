@@ -2876,7 +2876,7 @@ namespace System.Xml.Xsl.Xslt
             ResolveQName(/*ignoreDefaultNs:*/true, attValue, out localName, out namespaceName, out prefix);
             method = XmlOutputMethod.AutoDetect;
 
-            if (_compiler.IsPhantomNamespace(namespaceName))
+            if (Compiler.IsPhantomNamespace(namespaceName))
             {
                 return null;
             }

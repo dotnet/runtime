@@ -23,7 +23,7 @@ namespace Internal.TypeSystem
 {
     public abstract partial class TypeSystemContext
     {
-        internal TemplateLocator TemplateLookup => new TemplateLocator();
+        internal static TemplateLocator TemplateLookup => new TemplateLocator();
 
         internal class RuntimeTypeHandleToParameterTypeRuntimeTypeHandleHashtable : LockFreeReaderHashtableOfPointers<RuntimeTypeHandle, RuntimeTypeHandle>
         {
@@ -141,7 +141,7 @@ namespace Internal.TypeSystem
 #endif
 
         // Helper routine for ResolveRuntimeTypeHandle, used to handle lookups which may result in a metadata based type.
-        private TypeDesc TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(RuntimeTypeHandle rtth)
+        private static TypeDesc TryGetMetadataBasedTypeFromRuntimeTypeHandle_Uncached(RuntimeTypeHandle rtth)
         {
 #if SUPPORTS_NATIVE_METADATA_TYPE_LOADING
             QTypeDefinition qTypeDefinition;
@@ -433,7 +433,7 @@ namespace Internal.TypeSystem
 
         /// <summary>
         /// Get a DefType that is the generic instantiation of an open generic type over instantiation arguments
-        /// This looks like a rename of GetInstantiatedType, but isn't because the corert GetInstantiatedType
+        /// This looks like a rename of GetInstantiatedType, but isn't because the GetInstantiatedType
         /// relies on typeDef being a MetadataType, whereas this permits non-metadata types.
         /// </summary>
         public DefType ResolveGenericInstantiation(DefType typeDef, Instantiation arguments)

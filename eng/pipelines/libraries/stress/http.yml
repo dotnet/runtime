@@ -81,6 +81,11 @@ jobs:
     displayName: Run HttpStress - HTTP 1.1
     condition: and(eq(variables['buildRuntime.succeeded'], 'true'), eq(variables['buildStress.succeeded'], 'true'))
 
+  - bash: |
+      sudo chown -R $(id -u):$(id -g) $(Build.ArtifactStagingDirectory)/dumps
+    displayName: Own shared dumps and files
+    condition: failed()
+
   - publish: $(Build.ArtifactStagingDirectory)/dumps
     artifact: DumpsLinux
     condition: failed()
@@ -92,7 +97,7 @@ jobs:
     DUMPS_SHARE_MOUNT_ROOT: "C:/dumps-share"
   pool:
     name: NetCore1ESPool-Public
-    demands: ImageOverride -equals Build.Server.Amd64.VS2019.Open
+    demands: ImageOverride -equals Build.Windows.Amd64.VS2022.Pre
 
   steps:
   - checkout: self

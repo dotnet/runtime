@@ -93,7 +93,7 @@ namespace System.Diagnostics
             return data;
         }
 
-        public void ReleaseData(byte[] data, bool usePool = true)
+        internal static void ReleaseData(byte[] data, bool usePool = true)
         {
             if (usePool)
             {
@@ -111,7 +111,7 @@ namespace System.Diagnostics
             _hkey.Dispose();
         }
 
-        private byte[] CreateBlob(int size, in bool usePool)
+        private static byte[] CreateBlob(int size, in bool usePool)
         {
             return usePool
                 ? ArrayPool<byte>.Shared.Rent(size)

@@ -610,7 +610,7 @@ namespace System.Reflection.Runtime.TypeInfos
 
         protected sealed override bool IsCOMObjectImpl()
         {
-            return ReflectionCoreExecution.ExecutionEnvironment.IsCOMObject(this);
+            return false;
         }
 
         protected sealed override bool IsPrimitiveImpl()
@@ -894,7 +894,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         if (baseType == valueType && this != enumType)
                         {
                             classification |= TypeClassification.IsValueType;
-                            foreach (Type primitiveType in ReflectionCoreExecution.ExecutionDomain.PrimitiveTypes)
+                            foreach (Type primitiveType in ExecutionDomain.PrimitiveTypes)
                             {
                                 if (this.Equals(primitiveType))
                                 {

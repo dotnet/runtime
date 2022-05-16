@@ -17,7 +17,7 @@ using Internal.Metadata.NativeFormat;
 namespace Internal.Reflection.Execution
 {
     //=============================================================================================================================
-    // The assembly resolution policy for Project N's emulation of "classic reflection."
+    // The assembly resolution policy for emulation of "classic reflection."
     //
     // The policy is very simple: the only assemblies that can be "loaded" are those that are statically linked into the running
     // native process. There is no support for probing for assemblies in directories, user-supplied files, GACs, NICs or any
@@ -130,7 +130,7 @@ namespace Internal.Reflection.Execution
         //
         // Encapsulates the assembly ref->def matching policy.
         //
-        private bool AssemblyNameMatches(RuntimeAssemblyName refName, RuntimeAssemblyName defName, ref Exception preferredException)
+        private static bool AssemblyNameMatches(RuntimeAssemblyName refName, RuntimeAssemblyName defName, ref Exception preferredException)
         {
             //
             // The defName came from trusted metadata so it should be fully specified.
@@ -231,7 +231,7 @@ namespace Internal.Reflection.Execution
             }
         }
 
-        private void AddScopesFromReaderToGroups(LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> groups, MetadataReader reader)
+        private static void AddScopesFromReaderToGroups(LowLevelDictionaryWithIEnumerable<RuntimeAssemblyName, ScopeDefinitionGroup> groups, MetadataReader reader)
         {
             foreach (ScopeDefinitionHandle scopeDefinitionHandle in reader.ScopeDefinitions)
             {

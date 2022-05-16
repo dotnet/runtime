@@ -73,7 +73,8 @@
 
   <PropertyGroup Condition="'$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst'">
     <IncludeXHarnessCli>true</IncludeXHarnessCli>
-    <EnableXHarnessTelemetry>true</EnableXHarnessTelemetry>
+    <!-- XHarness telemetry not supported with custom WASM workloads yet -->
+    <EnableXHarnessTelemetry Condition="'$(TargetOS)' == 'Browser'">false</EnableXHarnessTelemetry>
   </PropertyGroup>
 
   <ItemGroup Condition="'$(MonoEnvOptions)' != ''">
@@ -143,11 +144,6 @@
     <DotNetCliPackageType>sdk</DotNetCliPackageType>
   </PropertyGroup>
 
-  <PropertyGroup Condition="'$(UseDotNetCliVersionFromGlobalJson)' == 'true'">
-    <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
-    <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <HelixProperties Condition="'$(RuntimeFlavor)' != ''" Include="runtimeFlavor" Value="$(RuntimeFlavor)" />
     <HelixProperties Condition="'$(Scenario)' != ''" Include="scenario" Value="$(Scenario)" />
@@ -155,6 +151,11 @@
 
   <!-- Ensure that all HelixPreCommand items are ready before this -->
   <Target Name="BuildHelixCommand">
+    <!-- setting DotNetCliVersion here to ensure that it is set to the intended value -->
+    <PropertyGroup Condition="'$(UseDotNetCliVersionFromGlobalJson)' == 'true'">
+      <GlobalJsonContent>$([System.IO.File]::ReadAllText('$(RepoRoot)global.json'))</GlobalJsonContent>
+      <DotNetCliVersion>$([System.Text.RegularExpressions.Regex]::Match($(GlobalJsonContent), '(%3F&lt;="dotnet": ").*(%3F=")'))</DotNetCliVersion>
+    </PropertyGroup>
 
     <PropertyGroup>
       <HelixPreCommands>@(HelixPreCommand)</HelixPreCommands>

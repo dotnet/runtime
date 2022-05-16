@@ -12,71 +12,68 @@ namespace System.Xml
     {
         internal abstract Task WriteCharsAsync(char[] chars, int index, int count);
 
-        internal async Task EncodeAsync(byte[] buffer!!, int index, int count)
+        internal Task EncodeAsync(byte[] buffer, int index, int count)
         {
-            if (index < 0)
+            ArgumentNullException.ThrowIfNull(buffer);
+            if (index < 0 || (uint)count > buffer.Length - index)
             {
-                throw new ArgumentOutOfRangeException(nameof(index));
+                throw new ArgumentOutOfRangeException(index < 0 ? nameof(index) : nameof(count));
             }
-            if (count < 0)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
-            if (count > buffer.Length - index)
-            {
-                throw new ArgumentOutOfRangeException(nameof(count));
-            }
+            return Core(buffer, index, count);
 
-            // encode left-over buffer
-            if (_leftOverBytesCount > 0)
+            async Task Core(byte[] buffer, int index, int count)
             {
-                int i = _leftOverBytesCount;
-                while (i < 3 && count > 0)
+                // encode left-over buffer
+                if (_leftOverBytesCount > 0)
                 {
-                    _leftOverBytes![i++] = buffer[index++];
-                    count--;
+                    int i = _leftOverBytesCount;
+                    while (i < 3 && count > 0)
+                    {
+                        _leftOverBytes![i++] = buffer[index++];
+                        count--;
+                    }
+
+                    // the total number of buffer we have is less than 3 -> return
+                    if (count == 0 && i < 3)
+                    {
+                        _leftOverBytesCount = i;
+                        return;
+                    }
+
+                    // encode the left-over buffer and write out
+                    int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes!, 0, 3, _charsLine, 0);
+                    await WriteCharsAsync(_charsLine, 0, leftOverChars).ConfigureAwait(false);
                 }
 
-                // the total number of buffer we have is less than 3 -> return
-                if (count == 0 && i < 3)
+                // store new left-over buffer
+                _leftOverBytesCount = count % 3;
+                if (_leftOverBytesCount > 0)
                 {
-                    _leftOverBytesCount = i;
-                    return;
+                    count -= _leftOverBytesCount;
+                    if (_leftOverBytes == null)
+                    {
+                        _leftOverBytes = new byte[3];
+                    }
+                    for (int i = 0; i < _leftOverBytesCount; i++)
+                    {
+                        _leftOverBytes[i] = buffer[index + count + i];
+                    }
                 }
 
-                // encode the left-over buffer and write out
-                int leftOverChars = Convert.ToBase64CharArray(_leftOverBytes!, 0, 3, _charsLine, 0);
-                await WriteCharsAsync(_charsLine, 0, leftOverChars).ConfigureAwait(false);
-            }
-
-            // store new left-over buffer
-            _leftOverBytesCount = count % 3;
-            if (_leftOverBytesCount > 0)
-            {
-                count -= _leftOverBytesCount;
-                if (_leftOverBytes == null)
+                // encode buffer in 76 character long chunks
+                int endIndex = index + count;
+                int chunkSize = LineSizeInBytes;
+                while (index < endIndex)
                 {
-                    _leftOverBytes = new byte[3];
-                }
-                for (int i = 0; i < _leftOverBytesCount; i++)
-                {
-                    _leftOverBytes[i] = buffer[index + count + i];
-                }
-            }
+                    if (index + chunkSize > endIndex)
+                    {
+                        chunkSize = endIndex - index;
+                    }
+                    int charCount = Convert.ToBase64CharArray(buffer, index, chunkSize, _charsLine, 0);
+                    await WriteCharsAsync(_charsLine, 0, charCount).ConfigureAwait(false);
 
-            // encode buffer in 76 character long chunks
-            int endIndex = index + count;
-            int chunkSize = LineSizeInBytes;
-            while (index < endIndex)
-            {
-                if (index + chunkSize > endIndex)
-                {
-                    chunkSize = endIndex - index;
+                    index += chunkSize;
                 }
-                int charCount = Convert.ToBase64CharArray(buffer, index, chunkSize, _charsLine, 0);
-                await WriteCharsAsync(_charsLine, 0, charCount).ConfigureAwait(false);
-
-                index += chunkSize;
             }
         }
 

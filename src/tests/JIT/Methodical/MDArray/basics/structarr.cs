@@ -4,6 +4,7 @@
 //Simple arithmatic manipulation of one 2D array elements
 
 using System;
+using Xunit;
 
 public struct ArrayStruct
 {
@@ -150,7 +151,8 @@ public class struct1
             }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 

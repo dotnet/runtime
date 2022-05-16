@@ -157,7 +157,7 @@ namespace System.Xml.Xsl.XsltOld
 
         public override char QuoteChar
         {
-            get { return _encoder.QuoteChar; }
+            get { return XmlEncoder.QuoteChar; }
         }
 
         public override bool IsDefault
@@ -732,10 +732,7 @@ namespace System.Xml.Xsl.XsltOld
                 return _buffer.ToString();
             }
 
-            public char QuoteChar
-            {
-                get { return '"'; }
-            }
+            public const char QuoteChar = '"';
         }
     }
 }

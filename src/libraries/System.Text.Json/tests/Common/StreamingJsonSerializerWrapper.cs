@@ -15,7 +15,7 @@ namespace System.Text.Json.Serialization.Tests
         /// <summary>
         /// True if the serializer is streaming data synchronously.
         /// </summary>
-        public virtual bool IsBlockingSerializer => false;
+        public abstract bool IsAsyncSerializer { get; }
 
         public abstract Task SerializeWrapper(Stream stream, object value, Type inputType, JsonSerializerOptions? options = null);
         public abstract Task SerializeWrapper<T>(Stream stream, T value, JsonSerializerOptions? options = null);

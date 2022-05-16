@@ -8,9 +8,14 @@ namespace System.Text.Json.Serialization.Tests
         public StreamTests_Async() : base(JsonSerializerWrapper.AsyncStreamSerializer) { }
     }
 
+    public sealed class StreamTests_AsyncWithSmallBuffer : StreamTests
+    {
+        public StreamTests_AsyncWithSmallBuffer() : base(JsonSerializerWrapper.AsyncStreamSerializerWithSmallBuffer) { }
+    }
+
     public sealed class StreamTests_Sync : StreamTests
     {
-        public StreamTests_Sync() : base(StreamingJsonSerializerWrapper.SyncStreamSerializer) { }
+        public StreamTests_Sync() : base(JsonSerializerWrapper.SyncStreamSerializer) { }
     }
 
     public abstract partial class StreamTests

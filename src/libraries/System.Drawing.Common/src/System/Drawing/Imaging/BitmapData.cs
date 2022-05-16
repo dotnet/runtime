@@ -3,11 +3,25 @@
 
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 
 namespace System.Drawing.Imaging
 {
-    public partial class BitmapData
+    /// <summary>
+    /// Specifies the attributes of a bitmap image.
+    /// </summary>
+    [StructLayout(LayoutKind.Sequential)]
+    public sealed class BitmapData
     {
+        private int _width;
+        private int _height;
+        private int _stride;
+        private PixelFormat _pixelFormat;
+        private IntPtr _scan0;
+        private int _reserved;
+
         /// <summary>
         /// Specifies the pixel width of the <see cref='Bitmap'/>.
         /// </summary>

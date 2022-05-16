@@ -50,8 +50,10 @@ namespace System.Net.WebSockets
             }
         }
 
-        public Task ConnectAsync(Uri uri!!, CancellationToken cancellationToken)
+        public Task ConnectAsync(Uri uri, CancellationToken cancellationToken)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+
             if (!uri.IsAbsoluteUri)
             {
                 throw new ArgumentException(SR.net_uri_NotAbsolute, nameof(uri));

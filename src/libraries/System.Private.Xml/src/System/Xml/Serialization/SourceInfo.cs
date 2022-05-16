@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Text.RegularExpressions;
-using System.Xml.Extensions;
 
 namespace System.Xml.Serialization
 {
@@ -74,7 +73,7 @@ namespace System.Xml.Serialization
             if (match.Success)
             {
                 object varA = ILG.GetVariable(match.Groups["a"].Value);
-                Type varType = ILG.GetVariableType(varA);
+                Type varType = CodeGenerator.GetVariableType(varA);
                 object varIA = ILG.GetVariable(match.Groups["ia"].Value);
                 if (varType.IsArray)
                 {
@@ -148,7 +147,7 @@ namespace System.Xml.Serialization
                 if (Arg.StartsWith("o.@", StringComparison.Ordinal) || MemberInfo != null)
                 {
                     var = ILG.GetVariable(Arg.StartsWith("o.@", StringComparison.Ordinal) ? "o" : Arg);
-                    varType = ILG.GetVariableType(var);
+                    varType = CodeGenerator.GetVariableType(var);
                     if (varType.IsValueType)
                         ILG.LoadAddress(var);
                     else
@@ -157,7 +156,7 @@ namespace System.Xml.Serialization
                 else
                 {
                     var = ILG.GetVariable(Arg);
-                    varType = ILG.GetVariableType(var);
+                    varType = CodeGenerator.GetVariableType(var);
 
                     if (CodeGenerator.IsNullableGenericType(varType) &&
                         varType.GetGenericArguments()[0] == elementType)

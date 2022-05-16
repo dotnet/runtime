@@ -3,43 +3,52 @@
 
 using System;
 using System.IO;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Hosting;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 
 #nullable enable
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
-    public class ProxyOptions
-    {
-        public Uri DevToolsUrl { get; set; } = new Uri("http://localhost:9222");
-
-        public int? OwnerPid { get; set; }
-    }
-
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             IConfigurationRoot config = new ConfigurationBuilder().AddCommandLine(args).Build();
-            int proxyPort = 0;
-            if (config["proxy-port"] is not null && int.TryParse(config["proxy-port"], out int port))
-                proxyPort = port;
+            ProxyOptions options = new();
+            config.Bind(options);
 
-            IWebHost host = new WebHostBuilder()
-                .UseSetting("UseIISIntegration", false.ToString())
-                .UseKestrel()
-                .UseContentRoot(Directory.GetCurrentDirectory())
-                .UseStartup<Startup>()
-                .ConfigureAppConfiguration((hostingContext, config) =>
-                {
-                    config.AddCommandLine(args);
-                })
-                .UseUrls($"http://127.0.0.1:{proxyPort}")
-                .Build();
+            using ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
+            {
+                builder.AddSimpleConsole(options =>
+                        {
+                            options.TimestampFormat = "[HH:mm:ss] ";
+                        })
+                        .AddFilter("DevToolsProxy", LogLevel.Information)
+                        .AddFilter("FirefoxMonoProxy", LogLevel.Information)
+                        .AddFilter(null, LogLevel.Warning);
 
-            host.Run();
+                if (!string.IsNullOrEmpty(options.LogPath))
+                    builder.AddFile(Path.Combine(options.LogPath, "proxy.log"),
+                                minimumLevel: LogLevel.Trace,
+                                outputTemplate: "{Timestamp:o} [{Level:u3}] {SourceContext}: {Message}{NewLine}{Exception}");
+            });
+
+            CancellationTokenSource cts = new();
+            _ = Task.Run(() => DebugProxyHost.RunDebugProxyAsync(options, args, loggerFactory, cts.Token))
+                                .ConfigureAwait(false);
+
+            TaskCompletionSource tcs = new();
+            Console.CancelKeyPress += (_, _) =>
+            {
+                tcs.SetResult();
+                cts.Cancel();
+            };
+
+            await tcs.Task;
         }
     }
 }

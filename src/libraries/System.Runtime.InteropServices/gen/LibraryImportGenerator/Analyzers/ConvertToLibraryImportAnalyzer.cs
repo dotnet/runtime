@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.Collections.Generic;
 using System.Collections.Immutable;
 using System.Runtime.InteropServices;
@@ -27,12 +28,12 @@ namespace Microsoft.Interop.Analyzers
         public static readonly DiagnosticDescriptor ConvertToLibraryImport =
             new DiagnosticDescriptor(
                 Ids.ConvertToLibraryImport,
-                GetResourceString(nameof(Resources.ConvertToLibraryImportTitle)),
-                GetResourceString(nameof(Resources.ConvertToLibraryImportMessage)),
+                GetResourceString(nameof(SR.ConvertToLibraryImportTitle)),
+                GetResourceString(nameof(SR.ConvertToLibraryImportMessage)),
                 Category,
                 DiagnosticSeverity.Info,
                 isEnabledByDefault: false,
-                description: GetResourceString(nameof(Resources.ConvertToLibraryImportDescription)));
+                description: GetResourceString(nameof(SR.ConvertToLibraryImportDescription)));
 
         public override ImmutableArray<DiagnosticDescriptor> SupportedDiagnostics => ImmutableArray.Create(ConvertToLibraryImport);
 

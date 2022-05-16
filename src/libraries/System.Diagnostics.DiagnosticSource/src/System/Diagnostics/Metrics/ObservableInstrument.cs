@@ -62,7 +62,7 @@ namespace System.Diagnostics.Metrics
 
         // Will be called from the concrete classes which extends ObservabilityInstrument<T> when calling Observe() method.
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal IEnumerable<Measurement<T>> Observe(object callback)
+        internal static IEnumerable<Measurement<T>> Observe(object callback)
         {
             if (callback is Func<T> valueOnlyFunc)
             {

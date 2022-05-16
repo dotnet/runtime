@@ -11,7 +11,6 @@ namespace System.Xml.Serialization
     using System.Reflection;
     using System.Text;
     using System.Xml;
-    using System.Xml.Extensions;
     using System.Xml.Schema;
 
     // These classes provide a higher level view on reflection specific to
@@ -152,7 +151,7 @@ namespace System.Xml.Serialization
             get { return _isXsdType; }
         }
 
-        internal bool IsMappedType
+        internal static bool IsMappedType
         {
             get { return false; }
         }
@@ -686,12 +685,12 @@ namespace System.Xml.Serialization
             AddNonXsdPrimitive(type, dataTypeName, ns, formatterName, baseTypeName, Array.Empty<XmlSchemaFacet>(), flags);
         }
 
-        internal TypeDesc? GetTypeDesc(string name, string ns)
+        internal static TypeDesc? GetTypeDesc(string name, string ns)
         {
             return GetTypeDesc(name, ns, TypeFlags.CanBeElementValue | TypeFlags.CanBeTextValue | TypeFlags.CanBeAttributeValue);
         }
 
-        internal TypeDesc? GetTypeDesc(string name, string? ns, TypeFlags flags)
+        internal static TypeDesc? GetTypeDesc(string name, string? ns, TypeFlags flags)
         {
             TypeDesc? typeDesc = (TypeDesc?)s_primitiveNames[name, ns];
             if (typeDesc != null)
@@ -704,7 +703,7 @@ namespace System.Xml.Serialization
             return null;
         }
 
-        internal TypeDesc? GetTypeDesc(XmlSchemaSimpleType dataType)
+        internal static TypeDesc? GetTypeDesc(XmlSchemaSimpleType dataType)
         {
             return (TypeDesc?)s_primitiveDataTypes[dataType];
         }

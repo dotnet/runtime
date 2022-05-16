@@ -248,7 +248,7 @@ namespace System.Xml.Serialization
             return code;
         }
 
-        private string ToString(XmlSchemaObject o, SchemaObjectWriter writer)
+        private static string ToString(XmlSchemaObject o, SchemaObjectWriter writer)
         {
             return writer.WriteXmlSchemaObject(o);
         }

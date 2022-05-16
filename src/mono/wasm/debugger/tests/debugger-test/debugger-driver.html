@@ -5,6 +5,7 @@
 	<body>
 	<script type='text/javascript'>
 		var App = {
+			static_method_table: {},
 			init: function () {
 				this.int_add = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:IntAdd");
 				this.use_complex = getDotnetRuntime(0).INTERNAL.mono_bind_static_method ("[debugger-test] Math:UseComplex");

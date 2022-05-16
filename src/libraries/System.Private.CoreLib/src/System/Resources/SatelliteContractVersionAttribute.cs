@@ -21,8 +21,10 @@ namespace System.Resources
     [EditorBrowsable(EditorBrowsableState.Never)]
     public sealed class SatelliteContractVersionAttribute : Attribute
     {
-        public SatelliteContractVersionAttribute(string version!!)
+        public SatelliteContractVersionAttribute(string version)
         {
+            ArgumentNullException.ThrowIfNull(version);
+
             Version = version;
         }
 

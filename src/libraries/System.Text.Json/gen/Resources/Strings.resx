@@ -165,4 +165,10 @@
   <data name="InaccessibleJsonIncludePropertiesNotSupportedFormat" xml:space="preserve">
     <value>The member '{0}.{1}' has been annotated with the JsonIncludeAttribute but is not visible to the source generator.</value>
   </data>
+  <data name="FastPathPolymorphismNotSupportedTitle" xml:space="preserve">
+    <value>'JsonDerivedTypeAttribute' is not supported in 'JsonSourceGenerationMode.Serialization'.</value>
+  </data>
+  <data name="FastPathPolymorphismNotSupportedMessageFormat" xml:space="preserve">
+    <value>Type '{0}' is annotated with 'JsonDerivedTypeAttribute' which is not supported in 'JsonSourceGenerationMode.Serialization'.</value>
+  </data>
 </root>

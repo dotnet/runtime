@@ -1,6 +1,7 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
 using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Reflection.PortableExecutable;
@@ -13,13 +14,15 @@ namespace System.Reflection.Metadata
         internal AssemblyName GetAssemblyName(StringHandle nameHandle, Version version, StringHandle cultureHandle, BlobHandle publicKeyOrTokenHandle, AssemblyHashAlgorithm assemblyHashAlgorithm, AssemblyFlags flags)
         {
             string name = GetString(nameHandle);
-            // compat: normalize 'null' culture name to "" to match AssemblyName.GetAssemblyName()
+            // compat: normalize Nil culture name to "" to match original behavior of AssemblyName.GetAssemblyName()
             string cultureName = (!cultureHandle.IsNil) ? GetString(cultureHandle) : "";
             var hashAlgorithm = (Configuration.Assemblies.AssemblyHashAlgorithm)assemblyHashAlgorithm;
-            byte[]? publicKeyOrToken = !publicKeyOrTokenHandle.IsNil ? GetBlobBytes(publicKeyOrTokenHandle) : null;
+            // compat: original native implementation used to guarantee that publicKeyOrToken is never null in this scenario.
+            byte[]? publicKeyOrToken = !publicKeyOrTokenHandle.IsNil ? GetBlobBytes(publicKeyOrTokenHandle) : Array.Empty<byte>();
 
-            var assemblyName = new AssemblyName(name)
+            var assemblyName = new AssemblyName()
             {
+                Name = name,
                 Version = version,
                 CultureName = cultureName,
 #pragma warning disable SYSLIB0037 // AssemblyName.HashAlgorithm is obsolete
@@ -42,8 +45,13 @@ namespace System.Reflection.Metadata
             return assemblyName;
         }
 
-        internal static unsafe AssemblyName GetAssemblyName(string assemblyFile!!)
+        internal static unsafe AssemblyName GetAssemblyName(string assemblyFile)
         {
+            if (assemblyFile is null)
+            {
+                Throw.ArgumentNull(nameof(assemblyFile));
+            }
+
             FileStream? fileStream = null;
             MemoryMappedFile? mappedFile = null;
             MemoryMappedViewAccessor? accessor = null;
@@ -84,7 +92,7 @@ namespace System.Reflection.Metadata
             }
         }
 
-        private AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
+        private static AssemblyNameFlags GetAssemblyNameFlags(AssemblyFlags flags)
         {
             AssemblyNameFlags assemblyNameFlags = AssemblyNameFlags.None;
 
@@ -103,7 +111,7 @@ namespace System.Reflection.Metadata
             return assemblyNameFlags;
         }
 
-        private AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
+        private static AssemblyContentType GetContentTypeFromAssemblyFlags(AssemblyFlags flags)
         {
             return (AssemblyContentType)(((int)flags & (int)AssemblyFlags.ContentTypeMask) >> 9);
         }

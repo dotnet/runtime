@@ -125,8 +125,7 @@ public:
     // This is really a denorm of the size already stored in rgTypeParameters, but we
     // need a persistent place to stash this away so EventDataDescCreate & EventWrite
     // have a reliable place to copy it from.  This is filled in at the last minute,
-    // when sending the event.  (On ProjectN, which doesn't have StackSArray, this is
-    // filled in earlier and used in more places.)
+    // when sending the event.
     ULONG cTypeParameters;
 
 #ifdef FEATURE_REDHAWK

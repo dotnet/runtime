@@ -53,8 +53,10 @@ namespace System
             return CustomAttribute.GetCustomAttributes(this, ObjectType, inherit);
         }
 
-        public override object[] GetCustomAttributes(Type attributeType!!, bool inherit)
+        public override object[] GetCustomAttributes(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
@@ -91,8 +93,10 @@ namespace System
 
         public override Type GetElementType() => RuntimeTypeHandle.GetElementType(this);
 
-        public override string? GetEnumName(object value!!)
+        public override string? GetEnumName(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             Type valueType = value.GetType();
 
             if (!(valueType.IsEnum || IsIntegerType(valueType)))
@@ -233,16 +237,20 @@ namespace System
 
         protected override bool IsContextfulImpl() => false;
 
-        public override bool IsDefined(Type attributeType!!, bool inherit)
+        public override bool IsDefined(Type attributeType, bool inherit)
         {
+            ArgumentNullException.ThrowIfNull(attributeType);
+
             if (attributeType.UnderlyingSystemType is not RuntimeType attributeRuntimeType)
                 throw new ArgumentException(SR.Arg_MustBeType, nameof(attributeType));
 
             return CustomAttribute.IsDefined(this, attributeRuntimeType, inherit);
         }
 
-        public override bool IsEnumDefined(object value!!)
+        public override bool IsEnumDefined(object value)
         {
+            ArgumentNullException.ThrowIfNull(value);
+
             if (!IsEnum)
                 throw new ArgumentException(SR.Arg_MustBeEnum, "enumType");
 
@@ -358,9 +366,11 @@ namespace System
         [DebuggerHidden]
         [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.All)]
         public override object? InvokeMember(
-            string name!!, BindingFlags bindingFlags, Binder? binder, object? target,
+            string name, BindingFlags bindingFlags, Binder? binder, object? target,
             object?[]? providedArgs, ParameterModifier[]? modifiers, CultureInfo? culture, string[]? namedParams)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             const BindingFlags MemberBindingMask = (BindingFlags)0x000000FF;
             const BindingFlags InvocationMask = (BindingFlags)0x0000FF00;
             const BindingFlags BinderGetSetField = BindingFlags.GetField | BindingFlags.SetField;
@@ -772,8 +782,10 @@ namespace System
                     SR.Format(SR.Argument_NeverValidGenericArgument, type));
         }
 
-        internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments!!, RuntimeType[] genericParameters)
+        internal static void SanityCheckGenericArguments(RuntimeType[] genericArguments, RuntimeType[] genericParameters)
         {
+            ArgumentNullException.ThrowIfNull(genericArguments);
+
             for (int i = 0; i < genericArguments.Length; i++)
             {
                 ArgumentNullException.ThrowIfNull(genericArguments[i], null);

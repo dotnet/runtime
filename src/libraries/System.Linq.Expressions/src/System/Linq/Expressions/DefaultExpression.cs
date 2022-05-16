@@ -63,7 +63,7 @@ namespace System.Linq.Expressions
         /// </returns>
         public static DefaultExpression Default(Type type)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
             TypeUtils.ValidateType(type, nameof(type));
             return new DefaultExpression(type);
         }

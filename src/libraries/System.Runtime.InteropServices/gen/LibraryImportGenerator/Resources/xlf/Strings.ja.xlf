@@ -1,0 +1,549 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xliff xmlns="urn:oasis:names:tc:xliff:document:1.2" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" version="1.2" xsi:schemaLocation="urn:oasis:names:tc:xliff:document:1.2 xliff-core-1.2-transitional.xsd">
+  <file datatype="xml" source-language="en" target-language="ja" original="../Strings.resx">
+    <body>
+      <trans-unit id="AddMissingCustomTypeMarshallerMembers">
+        <source>Add missing custom type marshaller members</source>
+        <target state="translated">不足しているカスタム型マーシャラー メンバーの追加</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="AddMissingFeaturesToCustomTypeMarshaller">
+        <source>Add missing features to the 'CustomTypeMarshallerAttribute' attribute</source>
+        <target state="translated">不足している機能を 'CustomTypeMarshallerAttribute' 属性に追加する</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocConstructorMustHaveBufferSizeDescription">
+        <source>When a constructor taking a 'Span&lt;byte&gt;' is specified on the native type, the type must set the BufferSize field on the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to provide the size of the caller-allocated buffer.</source>
+        <target state="translated">ネイティブ型で 'Span&lt;byte&gt;' を受け取るコンストラクターが指定されている場合、その型は 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' に BufferSize フィールドを設定して呼び出し元に割り当てられたバッファーのサイズを指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocConstructorMustHaveBufferSizeMessage">
+        <source>The native type '{0}' must set the 'BufferSize' field on the applied 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' to specify the size of the caller-allocated buffer because it has a constructor that takes a caller-allocated 'Span&lt;byte&gt;'</source>
+        <target state="translated">ネイティブ型 '{0}' は、呼び出し元が割り当てた 'Span&lt;byte&gt;' を受け取るコンストラクターを持つため、その型は 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' に BufferSize フィールドを設定して呼び出し元に割り当てられた 'BufferSize' フィールドを指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocConstructorMustHaveBufferSizeTitle">
+        <source>'BufferSize' should be set on 'CustomTypeMarshallerAttribute'</source>
+        <target state="translated">'CustomTypeMarshallerAttribute' に 'BufferSize' を設定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackDescription">
+        <source>A type that supports marshalling from managed to native using a caller-allocated buffer should also support marshalling from managed to native where using a caller-allocated buffer is impossible.</source>
+        <target state="translated">呼び出し元に割り当てられたバッファーを使用してマネージドからネイティブへのマーシャリングをサポートする型は、呼び出し元に割り当てられたバッファーを使用できない場合に、マネージドからネイティブへのマーシャリングもサポートする必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocMarshallingShouldSupportAllocatingMarshallingFallbackMessage">
+        <source>Native type '{0}' has a constructor taking a caller-allocated buffer, but does not support marshalling in scenarios where using a caller-allocated buffer is impossible</source>
+        <target state="translated">ネイティブ型 '{0}' には、呼び出し元が割り当てたバッファーを受け取るコンストラクターがありますが、呼び出し元に割り当てられたバッファーを使用できないシナリオではマーシャリングはサポートされていません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureDescription">
+        <source>A marshaller type that provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' should specify that it supports the 'CallerAllocatedBuffer' feature.</source>
+        <target state="translated">呼び出し元に割り当てられた 'Span&lt;byte&gt;' を受け取るコンストラクターを指定するマーシャラー型では、'CallerAllocatedBuffer' 機能をサポートすることを指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CallerAllocatedBufferConstructorProvidedShouldSpecifyFeatureMessage">
+        <source>The type '{0}' provides a constructor taking a caller-allocated 'Span&lt;byte&gt;' but does not specify that it supports the 'CallerAllocatedBuffer' feature. The constructor will not be used unless the feature is specified.</source>
+        <target state="translated">型'{0}'は、呼び出し元に割り当てられた 'Span&lt;byte&gt;' を受け取るコンストラクターを指定しますが、'CallerAllocatedBuffer' 機能をサポートすることを指定していません。この機能が指定されていない限り、コンストラクターは使用されません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportDescription">
+        <source>The generated 'DllImportAttribute' will not have a value corresponding to '{0}'.</source>
+        <target state="translated">生成された 'DllImportAttribute' には、'{0}' に対応する値がありません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportMessage">
+        <source>'{0}' has no equivalent in 'DllImportAtttribute' and will not be forwarded</source>
+        <target state="translated">'{0}' には、'DllImportAtttribute' に相当するものがないため、転送されません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CannotForwardToDllImportTitle">
+        <source>Specified 'LibraryImportAttribute' arguments cannot be forwarded to 'DllImportAttribute'</source>
+        <target state="translated">指定された 'LibraryImportAttribute' 引数を 'DllImportAttribute' に転送することはできません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedDescription">
+        <source>Source-generated P/Invokes will ignore any configuration that is not supported.</source>
+        <target state="translated">ソース生成済みの P/Invoke は、サポートされていない構成を無視します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessage">
+        <source>The '{0}' configuration is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
+        <target state="translated">'{0}' 構成は、ソース生成済みの P/Invoke ではサポートされていません。指定された構成が必要な場合は、代わりに通常の 'DllImport' を使用します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageMarshallingInfo">
+        <source>The specified marshalling configuration is not supported by source-generated P/Invokes. {0}.</source>
+        <target state="translated">指定されたマーシャリング構成は、ソースで生成された P/Invoke ではサポートされていません。{0}。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageParameter">
+        <source>The specified '{0}' configuration for parameter '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
+        <target state="translated">パラメーター '{1}' 向けに指定された '{0}' 構成は、ソース生成済みの P/Invoke ではサポートされていません。指定された構成が必要な場合は、代わりに通常の 'DllImport' を使用します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageReturn">
+        <source>The specified '{0}' configuration for the return value of method '{1}' is not supported by source-generated P/Invokes. If the specified configuration is required, use a regular `DllImport` instead.</source>
+        <target state="translated">メソッド '{1}' の戻り値向けに指定された '{0}' 構成は、ソース生成済みの P/Invoke ではサポートされていません。指定された構成が必要な場合は、代わりに通常の 'DllImport' を使用します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedMessageValue">
+        <source>The specified value '{0}' for '{1}' is not supported by source-generated P/Invokes. If the specified value is required, use a regular `DllImport` instead.</source>
+        <target state="translated">'{0}' 向けに指定された値 '{1}' は、ソース生成済みの P/Invoke ではサポートされていません。指定された値が必要な場合は、代わりに通常の 'DllImport' を使用します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConfigurationNotSupportedTitle">
+        <source>Specified configuration is not supported by source-generated P/Invokes.</source>
+        <target state="translated">指定された構成は、ソースで生成された P/Invoke ではサポートされていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConstantAndElementCountInfoDisallowed">
+        <source>Only one of 'ConstantElementCount' or 'ElementCountInfo' may be used in a 'MarshalUsingAttribute' for a given 'ElementIndirectionDepth'</source>
+        <target state="translated">指定された 'ElementIndirectionDepth' 向けに 'MarshalUsingAttribute' で使用できるのは、'ConstantElementCount' または 'ElementCountInfo' のいずれか 1 つだけです</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertNoPreserveSigDllImportToGeneratedMayProduceInvalidCode">
+        <source>Automatically converting a P/Invoke with 'PreserveSig' set to 'false' to a source-generated P/Invoke may produce invalid code</source>
+        <target state="translated">'PreserveSig' が 'false' に設定された P/Invoke をソース生成済みの P/Invoke に自動的に変換すると、無効なコードが生成される場合があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImport">
+        <source>Convert to 'LibraryImport'</source>
+        <target state="translated">'LibraryImport' への変換</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportDescription">
+        <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">コンパイル時に P/Invoke マーシャリング コードを生成するには、'DllImportAttribute' の代わりに 'LibraryImportAttribute' を使用します</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportMessage">
+        <source>Mark the method '{0}' with 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">コンパイル時に P/Invoke マーシャリング コードを生成するには、'DllImportAttribute' の代わりに 'LibraryImportAttribute' を持つメソッド '{0}' をマークします</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportTitle">
+        <source>Use 'LibraryImportAttribute' instead of 'DllImportAttribute' to generate P/Invoke marshalling code at compile time</source>
+        <target state="translated">コンパイル時に P/Invoke マーシャリング コードを生成するには、'DllImportAttribute' の代わりに 'LibraryImportAttribute' を使用します</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWarning">
+        <source>Conversion to 'LibraryImport' may change behavior and compatibility. See {0} for more information.</source>
+        <target state="translated">'LibraryImport' に変換すると、動作と互換性が変更される場合があります。詳細については、「{0}」を参照してください。</target>
+        <note>{0} is a documentation link</note>
+      </trans-unit>
+      <trans-unit id="ConvertToLibraryImportWithSuffix">
+        <source>Convert to 'LibraryImport' with '{0}' suffix</source>
+        <target state="translated">'{0}' サフィックスを持つ 'LibraryImport' への変換</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomMarshallerTypeMustHaveRequiredShapeTitle">
+        <source>Marshaller type does not have the required shape</source>
+        <target state="translated">マーシャラー型に必要な図形がありません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomMarshallerTypeMustSupportDirectionDescription">
+        <source>A native must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</source>
+        <target state="translated">ネイティブは、'CustomTypeMarshallerAttribute' の 'Direction' プロパティを、'CustomTypeMarshallerDirection' 列挙型に少なくとも 1 つの既知のフラグ値を設定した値に設定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomMarshallerTypeMustSupportDirectionMessage">
+        <source>The native type '{0}' must set the 'Direction' property on the 'CustomTypeMarshallerAttribute' to a value that sets at least one known flag value on the 'CustomTypeMarshallerDirection' enum</source>
+        <target state="translated">ネイティブ型 '{0}' は、'CustomTypeMarshallerAttribute' の 'Direction' プロパティを、'CustomTypeMarshallerDirection' 列挙型に少なくとも 1 つの既知のフラグ値を設定した値に設定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomTypeMarshallerAttributeMustBeValidDescription">
+        <source>The 'CustomTypeMarshallerAttribute' attribute must be semantically valid</source>
+        <target state="translated">'CustomTypeMarshallerAttribute' 属性は意味的に有効である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomTypeMarshallerAttributeMustBeValidMessage">
+        <source>The 'CustomTypeMarshallerAttribute' on '{0}' is semantically invalid</source>
+        <target state="translated">'{0}' での 'CustomTypeMarshallerAttribute' は意味的に無効です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomTypeMarshallingManagedToNativeUnsupported">
+        <source>The specified parameter needs to be marshalled from managed to native, but the native type '{0}' does not support it.</source>
+        <target state="translated">指定されたパラメーターはマネージドからネイティブにマーシャリングする必要がありますが、ネイティブ型 '{0}' ではそれをサポートしません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="CustomTypeMarshallingNativeToManagedUnsupported">
+        <source>The specified parameter needs to be marshalled from native to managed, but the native type '{0}' does not support it.</source>
+        <target state="translated">指定されたパラメーターはネイティブからマネージドにマーシャリングする必要がありますが、ネイティブ型 '{0}' ではそれをサポートしません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureDescription">
+        <source>A marshaller type that provides a 'FreeNative' method should specify that it supports the 'UnmanagedResources' feature.</source>
+        <target state="translated">'FreeNative' メソッドを指定するマーシャラー型では、'UnmanagedResources' 機能をサポートすることを指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FreeNativeMethodProvidedShouldSpecifyUnmanagedResourcesFeatureMessage">
+        <source>The type '{0}' provides a 'FreeNative' method but does not specify that it supports the 'UnmanagedResources' feature. The method will not be used unless the feature is specified.</source>
+        <target state="translated">型 '{0}' は 'FreeNative' メソッドを指定しますが、'UnmanagedResources' 機能をサポートすることは指定されていません。このメソッドは、機能が指定されていない限り使用されません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
+        <source>A marshaller type that provides a 'FromNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
+        <target state="translated">'FromNativeValue' メソッドを指定するマーシャラー型では、'TwoStageMarshalling' 機能をサポートすることを指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="FromNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage">
+        <source>The type '{0}' provides a 'FromNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</source>
+        <target state="translated">型 '{0}' は 'FromNativeValue' メソッドを指定しますが、'TwoStageMarshalling' 機能をサポートすることは指定されていません。このメソッドは、機能が指定されていない限り使用されません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceReturnTypeBlittableDescription">
+        <source>The return type of 'GetPinnableReference' (after accounting for 'ref') must be blittable.</source>
+        <target state="translated">'GetPinnableReference' の戻り値の型 ('ref' の会計後) は blittable である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceReturnTypeBlittableMessage">
+        <source>The dereferenced type of the return type of the 'GetPinnableReference' method must be blittable</source>
+        <target state="translated">'GetPinnableReference' メソッドの戻り値の逆参照型は blittable である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackDescription">
+        <source>A type that supports marshalling from managed to native by pinning should also support marshalling from managed to native where pinning is impossible.</source>
+        <target state="translated">ピン留めによってマネージドからネイティブへのマーシャリングをサポートする型は、ピン留めできない場合に、マネージドからネイティブへのマーシャリングもサポートする必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="GetPinnableReferenceShouldSupportAllocatingMarshallingFallbackMessage">
+        <source>Type '{0}' has a 'GetPinnableReference' method but its native type does not support marshalling in scenarios where pinning is impossible</source>
+        <target state="translated">型 '{0}' に 'GetPinnableReference' メソッドがありますが、そのネイティブ型はピン留めできないシナリオではマーシャリングをサポートしません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InTwoStageMarshallingRequiresToNativeValueDescription">
+        <source>The 'TwoStageMarshalling' feature requires a 'TNativeType ToNativeValue()' method for the 'In' direction.</source>
+        <target state="translated">'TwoStageMarshalling' 機能には、'In' 方向に 'TNativeType ToNativeValue()' メソッドが必要です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InTwoStageMarshallingRequiresToNativeValueMessage">
+        <source>A marshaller type '{0}' that supports marshalling in the 'In' direction with the 'TwoStageMarshalling' feature must provide a 'ToNativeValue' instance method that returns the native value</source>
+        <target state="translated">マーシャラー型 '{0}' が 'TwoStageMarshalling' 機能を使用して 'In' 方向のマーシャリングをサポートする場合、ネイティブ値を返す 'ToNativeValue' インスタンス メソッドを指定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodContainingTypeMissingModifiersMessage">
+        <source>Method '{0}' is contained in a type '{1}' that is not marked 'partial'. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="translated">メソッド '{0}' は、'partial' とマークされていない型 '{1}' に含まれています。P/Invoke ソース生成はメソッド '{0}' を無視します。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodDescription">
+        <source>Methods marked with 'LibraryImportAttribute' should be 'static', 'partial', and non-generic. P/Invoke source generation will ignore methods that are non-'static', non-'partial', or generic.</source>
+        <target state="translated">'LibraryImportAttribute' でマークされたメソッドは、'static'、'partial'、非ジェネリックである必要があります。P/Invoke ソース生成では、非 'static'、非 'partial'、ジェネリックであるメソッドは無視されます。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidAttributedMethodSignatureMessage">
+        <source>Method '{0}' should be 'static', 'partial', and non-generic when marked with 'LibraryImportAttribute'. P/Invoke source generation will ignore method '{0}'.</source>
+        <target state="translated">'LibraryImportAttribute' でマークされている場合、メソッド '{0}'は 'static'、'partial'、非ジェネリックである必要があります。P/Invoke ソース生成では、メソッド '{0}' は無視されます。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidCustomTypeMarshallerAttributeUsageTitle">
+        <source>Invalid `CustomTypeMarshallerAttribute` usage</source>
+        <target state="translated">無効な `CustomTypeMarshallerAttribute` の使用</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidLibraryImportAttributeUsageTitle">
+        <source>Invalid 'LibraryImportAttribute' usage</source>
+        <target state="translated">'LibraryImportAttribute' の使用状況が無効です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidNativeTypeTitle">
+        <source>Specified native type is invalid</source>
+        <target state="translated">指定されたネイティブ型は無効です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidSignaturesInMarshallerShapeTitle">
+        <source>Marshaller type has incompatible method signatures</source>
+        <target state="translated">マーシャラー型に互換性のないメソッド シグネチャがあります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationDescription">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' is invalid.</source>
+        <target state="translated">'StringMarshalling' と 'StringMarshallingCustomType' の構成が無効です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMessage">
+        <source>The configuration of 'StringMarshalling' and 'StringMarshallingCustomType' on method '{0}' is invalid. {1}</source>
+        <target state="translated">メソッド '{0}' の 'StringMarshalling' と 'StringMarshallingCustomType' の構成が無効です。{1}</target>
+        <note>{1} is a message containing additional details about what is not valid</note>
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationMissingCustomType">
+        <source>'StringMarshallingCustomType' must be specified when 'StringMarshalling' is set to 'StringMarshalling.Custom'.</source>
+        <target state="translated">'StringMarshalling' が 'StringMarshalling.Custom' に設定されている場合は、'StringMarshallingCustomType' を指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="InvalidStringMarshallingConfigurationNotCustom">
+        <source>'StringMarshalling' should be set to 'StringMarshalling.Custom' when 'StringMarshallingCustomType' is specified.</source>
+        <target state="translated">'StringMarshallingCustomType' が指定されている場合、'StringMarshalling' を 'StringMarshalling.Custom' に設定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionElementTypesMustMatchDescription">
+        <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'.</source>
+        <target state="translated">'GetManagedValuesSource' によって返される 'ReadOnlySpan' の要素型は、'GetManagedValuesDestination' によって返される要素型と同じである必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionElementTypesMustMatchMessage">
+        <source>The element type of the 'ReadOnlySpan' returned by 'GetManagedValuesSource' must be the same as the element type returned by 'GetManagedValuesDestination'</source>
+        <target state="translated">'GetManagedValuesSource' によって返される 'ReadOnlySpan' の要素型は、'GetManagedValuesDestination' によって返される要素型と同じである必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorDescription">
+        <source>A 'LinearCollection'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a three-parameter constructor taking the managed type as the first parameter, a 'Span&lt;byte&gt;' as the second parameter, and the native size of the element as the third parameter</source>
+        <target state="translated">'CallerAllocatedBuffer' 機能をサポートする 'LinearCollection' 型のネイティブ型は、マネージド型を最初のパラメーターとして、'Span&lt;byte&gt;' を 2 番目のパラメーターとして、要素のネイティブ サイズを 3 番目のパラメーターとして、3 つのパラメーター コンストラクターを指定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a three-parameter constructor that takes a '{1}' , a 'Span&lt;byte&gt;', and an 'int'</source>
+        <target state="translated">型 '{0}' は、'{1}' の 'CallerAllocatedBuffer' 機能を使用した 'In' マーシャリングをサポートすることを指定していますが、'{1}'、'Span&lt;byte&gt;'、'int' を受け取る 3 つのパラメーター コンストラクターを指定しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresCollectionMethodsDescription">
+        <source>A 'LinearCollection'-kind native type that supports marshalling in the 'In' direction must provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetNativeValuesDestination' method that returns a 'Span&lt;byte&gt;'.</source>
+        <target state="translated">'In' 方向のマーシャリングをサポートする 'LinearCollection' のネイティブ型では、'ReadOnlySpan&lt;&gt;' を返す 'GetManagedValuesSource' と、'Span&lt;byte&gt;' を返す 'GetNativeValuesDestination' メソッドは指定されていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that is supports marshalling in the 'In' direction, but it does not provide a 'GetManagedValuesSource' that returns a 'ReadOnlySpan&lt;&gt;' and a 'GetNativeValuesDestination' method that returns a 'Span&lt;byte&gt;'</source>
+        <target state="translated">型 '{0}' は、'In' 方向のマーシャリングをサポートすることを指定されていますが、'ReadOnlySpan&lt;&gt;' を返す 'GetManagedValuesSource' と、'Span&lt;byte&gt;' を返す 'GetNativeValuesDestination' メソッドは指定されていません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresTwoParameterConstructorDescription">
+        <source>A 'LinearCollection'-kind native type must provide a two-parameter constructor taking the managed type as the first parameter and the native size of the element as the second parameter</source>
+        <target state="translated">'LinearCollection' 型のネイティブ型は、マネージド型を最初のパラメーターとして、要素のネイティブ サイズを 2 番目のパラメーターとして受け取る 2 つのパラメーター コンストラクターを指定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionInRequiresTwoParameterConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a two-parameter constructor that takes a '{1}' as the first parameter and an 'int' as the second parameter</source>
+        <target state="translated">型 '{0}' は、'{1}' の 'In' マーシャリングをサポートすることを指定していますが、'{1}' を最初のパラメーターとして受け取り、'int' を 2 番目のパラメーターとして受け取る 2 つのパラメーター コンストラクターを指定しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresCollectionMethodsDescription">
+        <source>A 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetNativeValuesSource' method that takes an 'int' and rreturns a 'ReadOnlySpan&lt;byte&gt;'.</source>
+        <target state="translated">'LinearCollection' のネイティブ型は、'Out' 方向のマーシャリングをサポートすることを指定されていますが、'int' を受け取って 'Span&lt;&gt;' を返す 'GetManagedValuesDestination' と、'int' を受け取って 'ReadOnlySpan&lt;byte&gt;' を返す 'GetNativeValuesDestination' メソッドを指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresCollectionMethodsMessage">
+        <source>The type '{0}' specifies that it supports marshalling in the 'Out' direction, but it does not provide a 'GetManagedValuesDestination' that takes an 'int' and returns a 'Span&lt;&gt;' and a 'GetNativeValuesSource' method that takes an 'int' and rreturns a 'ReadOnlySpan&lt;byte&gt;'</source>
+        <target state="translated">型 '{0}' は、'Out' 方向のマーシャリングをサポートすることを指定されていますが、'int' を受け取って 'Span&lt;&gt;' を返す 'GetManagedValuesDestination' と、'int' を受け取って 'ReadOnlySpan&lt;byte&gt;' を返す 'GetNativeValuesDestination' メソッドは指定されていません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresIntConstructorDescription">
+        <source>A 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a constructor that takes the size of the native element as an 'int'.</source>
+        <target state="translated">'Out' 方向のマーシャリングをサポートする 'LinearCollection' 型のネイティブ型は、ネイティブ要素のサイズを 'int' として受け取るコンストラクターを指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="LinearCollectionOutRequiresIntConstructorMessage">
+        <source>The type '{0}' specifies that it supports marshalling in the 'Out' direction, but it does not provide a constructor that takes the size of the native element as an 'int'.</source>
+        <target state="translated">型 '{0}' は、'Out' 方向のマーシャリングをサポートすることを指定しますが、ネイティブ要素のサイズを 'int' として受け取るコンストラクターは指定されていません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerDirectionMustBeValidDescription">
+        <source>The specified marshaller direction must be a valid value of the 'System.Runtime.InteropServices.CustomMarshallerDirection' enum.</source>
+        <target state="translated">指定されたマーシャラーの方向は、'System.Runtime.InteropServices.CustomMarshallerDirection' 列挙型の有効な値である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerDirectionMustBeValidMessage">
+        <source>The specified custom marshaller direction for '{0}' is invalid</source>
+        <target state="translated">'{0}' 向けに指定されたカスタム マーシャラーの方向が無効です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerGetPinnableReferenceRequiresTwoStageMarshallingDescription">
+        <source>The use cases for 'GetPinnableReference' are not applicable in any scenarios where 'TwoStageMarshalling' is not also required.</source>
+        <target state="translated">'GetPinnableReference' のユース ケースは、'TwoStageMarshalling' も必要としないシナリオでは適用できません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerGetPinnableReferenceRequiresTwoStageMarshallingMessage">
+        <source>The 'GetPinnableReference' method cannot be provided on the native type '{0}' unless the 'TwoStageMarshalling' feature is also supported</source>
+        <target state="translated">'TwoStageMarshalling' 機能がサポートされていない限り、ネイティブ型 '{0}' に 'GetPinnableReference' メソッドを指定することはできません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerKindMustBeValidDescription">
+        <source>The specified marshaller kind must be a valid value of the 'System.Runtime.InteropServices.CustomMarshallerKind' enum.</source>
+        <target state="translated">指定されたマーシャラーの種類は、'System.Runtime.InteropServices.CustomMarshallerKind' 列挙型の有効な値である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerKindMustBeValidMessage">
+        <source>The specified custom marshaller kind for '{0}' is invalid</source>
+        <target state="translated">'{0}' 向けに指定されたカスタム マーシャラーの種類が無効です</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustSpecifyManagedTypeDescription">
+        <source>A type with a 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' must specify a managed type</source>
+        <target state="translated">'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' を持つ型には、マネージド型を指定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MarshallerTypeMustSpecifyManagedTypeMessage">
+        <source>The type '{0}' does not specify a managed type in the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' applied to the type</source>
+        <target state="translated">型 '{0}' は、型に適用される 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' でマネージド型を指定しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="MissingAllocatingMarshallingFallbackTitle">
+        <source>Marshaller type does not support allocating constructor</source>
+        <target state="translated">マーシャラー型ではコンストラクターの割り当てがサポートされていません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityDescription">
+        <source>The native type '{0}' must be a closed generic or have the same number of generic parameters as the managed type so the emitted code can use a specific instantiation.</source>
+        <target state="translated">ネイティブ型 '{0}' は、マネージド型と同じ数のジェネリック パラメーターであるか、またはマネージド型と同じ数のジェネリック パラメーターを持つ必要があります。生成されたコードは特定のインスタンス化を使用できます。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NativeGenericTypeMustBeClosedOrMatchArityMessage">
+        <source>The native type '{0}' for managed type '{1}' must be a closed generic type or have the same arity as the managed type.</source>
+        <target state="translated">マネージド型 '{0}' 向けのネイティブ型 '{1}' は、閉じられたジェネリック型であるか、マネージド型と同じアリティを持つ必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NativeTypeMustBeBlittableDescription">
+        <source>A native type must be blittable.</source>
+        <target state="translated">ネイティブ型は blittable である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NativeTypeMustBeBlittableMessage">
+        <source>The native type '{0}' for type '{1}' must be blittable</source>
+        <target state="translated">型 '{1}' 向けのネイティブ型 '{0}' は blittable である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NativeTypeMustBePointerSizedDescription">
+        <source>The native type must be pointer sized so the pinned result of 'GetPinnableReference' can be cast to the native type.</source>
+        <target state="translated">'GetPinnableReference' のピン留めされた結果をネイティブ型にキャストできるように、ネイティブ型はポインター サイズである必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NativeTypeMustBePointerSizedMessage">
+        <source>The native type '{0}' must be pointer sized because the managed type '{1}' has a 'GetPinnableReference' method</source>
+        <target state="translated">マネージド型 '{1}' には 'GetPinnableReference' メソッドがあるため、ネイティブ型 '{0}' はポインター サイズにする必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NativeTypeMustHaveCustomTypeMarshallerAttributeDescription">
+        <source>A native type for a given type must have the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type.</source>
+        <target state="translated">指定された型のネイティブ型は、この型をマネージド型として指定する 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' を持つ型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="NativeTypeMustHaveCustomTypeMarshallerAttributeMessage">
+        <source>The native type for the type '{0}' must be a type with the 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' that specifies this type as the managed type</source>
+        <target state="translated">型 '{0}' 向けのネイティブ型は、この型をマネージド型として指定する 'System.Runtime.InteropServices.CustomTypeMarshallerAttribute' を持つ型である必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutRequiresToManagedDescription">
+        <source>A 'Value' or 'LinearCollection'-kind native type that supports marshalling in the 'Out' direction must provide a 'ToManaged' method that returns the managed type.</source>
+        <target state="translated">'Out' 方向のマーシャリングをサポートする 'Value' や 'LinearCollection' 型のネイティブ型では、マネージド型を返す 'ToManaged' メソッドを指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutRequiresToManagedMessage">
+        <source>The type '{0}' specifies it supports marshalling in the 'Out' direction, but it does not provide a 'ToManaged' method that returns the managed type</source>
+        <target state="translated">型 '{0}' は、'Out' 方向のマーシャリングをサポートしますが、マネージド型を返す 'ToManaged' メソッドは指定されません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutTwoStageMarshallingRequiresFromNativeValueDescription">
+        <source>The 'TwoStageMarshalling' feature requires a 'void FromNativeValue(TNativeType value)' method for the 'Out' direction.</source>
+        <target state="translated">'TwoStageMarshalling' 機能には、'Out' 方向に 'void FromNativeValue(TNativeType value)' メソッドが必要です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="OutTwoStageMarshallingRequiresFromNativeValueMessage">
+        <source>The marshaller type '{0}' supports marshalling in the 'Out' direction with the 'TwoStageMarshalling' feature, but it does not provide a 'FromNativeValue' instance method that returns 'void' and takes one parameter.</source>
+        <target state="translated">マーシャラー型 '{0}' は、'TwoStageMarshalling' 機能を使用して 'Out' 方向のマーシャリングをサポートしますが、'void' を返し、1 つのパラメーターを受け取る 'FromNativeValue' インスタンス メソッドは指定されません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ProvidedMethodsNotSpecifiedInFeaturesTitle">
+        <source>Marshaller type defines a well-known method without specifying support for the corresponding feature</source>
+        <target state="translated">マーシャラー型は、対応する機能のサポートを指定せずに既知のメソッドを定義します</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RefNativeValueUnsupportedDescription">
+        <source>The 'Value' property must not be a 'ref' or 'readonly ref' property.</source>
+        <target state="translated">'Value' プロパティを 'ref' プロパティや 'readonly ref' プロパティにすることはできません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="RefNativeValueUnsupportedMessage">
+        <source>The 'Value' property on the native type '{0}' must not be a 'ref' or 'readonly ref' property.</source>
+        <target state="translated">ネイティブ型 '{0}' の 'Value' プロパティを 'ref' プロパティや 'readonly ref' プロパティにすることはできません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="SafeHandleByRefMustBeConcrete">
+        <source>An abstract type derived from 'SafeHandle' cannot be marshalled by reference. The provided type must be concrete.</source>
+        <target state="translated">'SafeHandle' から派生した抽象型は、参照でマーシャリングできません。指定される型は具象型である必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureDescription">
+        <source>A marshaller type that provides a 'ToNativeValue' method should specify that it supports the 'TwoStageMarshalling' feature.</source>
+        <target state="translated">'ToNativeValue' メソッドを指定するマーシャラー型では、'TwoStageMarshalling' 機能をサポートすることを指定する必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ToNativeValueMethodProvidedShouldSpecifyTwoStageMarshallingFeatureMessage">
+        <source>The type '{0}' provides a 'ToNativeValue' method but does not specify that it supports the 'TwoStageMarshalling' feature. The method will not be used unless the feature is specified.</source>
+        <target state="translated">型 '{0}' は 'ToNativeValue' メソッドを指定しますが、'TwoStageMarshalling' 機能をサポートすることは指定されていません。このメソッドは、機能が指定されていない限り使用されません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TwoStageMarshallingNativeTypesMustMatchDescription">
+        <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same.</source>
+        <target state="translated">'ToNativeValue' の戻り値の型と 'FromNativeValue' のパラメーター型は同じである必要があります。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TwoStageMarshallingNativeTypesMustMatchMessage">
+        <source>The return type of 'ToNativeValue' and the parameter type of 'FromNativeValue' must be the same</source>
+        <target state="translated">'ToNativeValue' の戻り値の型と 'FromNativeValue' のパラメーター型は同じである必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedDescription">
+        <source>For types that are not supported by source-generated P/Invokes, the resulting P/Invoke will rely on the underlying runtime to marshal the specified type.</source>
+        <target state="translated">ソース生成済みの P/Invoke でサポートされていない型である場合、生成された P/Invoke は、基礎となるなるランタイムに依存して、指定された型をマーシャリングします。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameter">
+        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">型 '{0}' は、ソース生成済みの P/Invoke ではサポートされていません。生成されたソースは、パラメーター '{1}' のマーシャリングを処理しません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageParameterWithDetails">
+        <source>{0} The generated source will not handle marshalling of parameter '{1}'.</source>
+        <target state="translated">{0} 生成されたソースはパラメーター '{1}' のマーシャリングを処理しません。</target>
+        <note>{0} is a message containing additional details about what is not supported
+{1} is the name of the parameter</note>
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturn">
+        <source>The type '{0}' is not supported by source-generated P/Invokes. The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">型 '{0}' は、ソース生成済みの P/Invoke ではサポートされていません。生成されたソースは、メソッド '{1}' の戻り値のマーシャリングを処理しません。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedMessageReturnWithDetails">
+        <source>{0} The generated source will not handle marshalling of the return value of method '{1}'.</source>
+        <target state="translated">{0} 生成されたソースは、メソッド '{1}' の戻り値のマーシャリングを処理しません。</target>
+        <note>{0} is a message containing additional details about what is not supported
+{1} is the name of the method</note>
+      </trans-unit>
+      <trans-unit id="TypeNotSupportedTitle">
+        <source>Specified type is not supported by source-generated P/Invokes</source>
+        <target state="translated">指定された型は、ソースで生成された P/Invoke ではサポートされていません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnmanagedResourcesRequiresFreeNativeDescription">
+        <source>The 'UnmanagedResources' feature requires a 'void FreeNative()' method.</source>
+        <target state="translated">'UnmanagedResources' 機能には 'void FreeNative()' メソッドが必要です。</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="UnmanagedResourcesRequiresFreeNativeMessage">
+        <source>The marshaller type '{0}' supports marshalling with the 'UnmanagedResources' feature, but it does not provide a parameterless 'FreeNative' instance method that returns 'void'</source>
+        <target state="translated">マーシャラー型 '{0}' は、'UnmanagedResources' 機能を使用したマーシャリングをサポートしていますが、'void' を返すパラメーターなしの 'FreeNative' インスタンス メソッドは指定されません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorDescription">
+        <source>A 'Value'-kind native type that supports the 'CallerAllocatedBuffer' feature must provide a two-parameter constructor taking the managed type and a 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">'CallerAllocatedBuffer' 機能をサポートする 'Value' のネイティブ型では、マネージド型と 'アンマネージド' 型の 'Span' をパラメーターとして受け取る 2 つのパラメーター コンストラクターを指定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInCallerAllocatedBufferRequiresSpanConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling with the 'CallerAllocatedBuffer' feature for '{1}' but does not provide a two-parameter constructor that takes a '{1}' and 'Span' of an 'unmanaged' type as parameters</source>
+        <target state="translated">型 '{0}' は、'{1}' の 'CallerAllocatedBuffer' 機能を使用した 'In' マーシャリングをサポートすることを指定していますが、'{1}' と 'アンマネージド' 型の 'Span' をパラメーターとして受け取る、2 つのパラメーター コンストラクターを指定しません</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInRequiresOneParameterConstructorDescription">
+        <source>A 'Value'-kind native type must provide a one-parameter constructor taking the managed type as a parameter</source>
+        <target state="translated">'Value' のネイティブ型は、マネージド型をパラメーターとして受け取る 1 つのパラメーター コンストラクターを指定する必要があります</target>
+        <note />
+      </trans-unit>
+      <trans-unit id="ValueInRequiresOneParameterConstructorMessage">
+        <source>The type '{0}' specifies that it supports 'In' marshalling of '{1}' but does not provide a one-parameter constructor that takes a '{1}' as a parameter</source>
+        <target state="translated">型 '{0}' では、'{1}' の 'In' マーシャリングをサポートするように指定されていますが、'{1}' をパラメーターとして受け取る 1 つのパラメーター コンストラクターは指定されません</target>
+        <note />
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

@@ -10,6 +10,7 @@
     <SkipTestUtilitiesReference>true</SkipTestUtilitiesReference>
     <BundleXunitRunner>true</BundleXunitRunner>
     <TestFramework>xunit</TestFramework>
+    <DebuggerHost Condition="'$(DebuggerHost)' == ''">chrome</DebuggerHost>
 
     <CoreBuildDependsOn />
     <BundleTestWasmAppDependsOn>BundleDebuggerTestsForHelix</BundleTestWasmAppDependsOn>
@@ -36,11 +37,13 @@
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set DEBUGGER_TEST_PATH=%25cd%25/debugger-test" />
     </ItemGroup>
 
-    <ItemGroup>
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' != 'Windows_NT'"
-                         Include="export CHROME_PATH_FOR_DEBUGGER_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
-      <RunScriptCommands Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'"
-                         Include="set CHROME_PATH_FOR_DEBUGGER_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DebuggerHost)' == 'chrome'">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/chrome-linux/chrome" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BROWSER_PATH_FOR_TESTS=%HELIX_CORRELATION_PAYLOAD%\chrome-win\chrome.exe" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(DebuggerHost)' == 'firefox'">
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BROWSER_PATH_FOR_TESTS=$HELIX_CORRELATION_PAYLOAD/firefox/firefox" />
     </ItemGroup>
 
     <PropertyGroup>

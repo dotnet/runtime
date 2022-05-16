@@ -10,9 +10,9 @@ namespace System.Transactions.Configuration
 
         internal static DefaultSettingsSection GetSection() => s_section;
 
-        public string DistributedTransactionManagerName { get; set; } = ConfigurationStrings.DefaultDistributedTransactionManagerName;
+        public static string DistributedTransactionManagerName { get; set; } = ConfigurationStrings.DefaultDistributedTransactionManagerName;
 
-        public TimeSpan Timeout
+        public static TimeSpan Timeout
         {
             get { return s_timeout; }
         }

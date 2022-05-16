@@ -111,7 +111,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// A context that redefines the 'native' identifier for a TypePositionInfo to be the marshaller identifier.
     /// </summary>
-    internal class CustomNativeTypeWithToFromNativeValueContext : StubCodeContext
+    internal sealed record CustomNativeTypeWithToFromNativeValueContext : StubCodeContext
     {
         public CustomNativeTypeWithToFromNativeValueContext(StubCodeContext parentContext)
         {
@@ -191,7 +191,7 @@ namespace Microsoft.Interop
                         ArgumentList())));
         }
 
-        private StatementSyntax GenerateFromNativeValueInvocation(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithToFromNativeValueContext subContext)
+        private static StatementSyntax GenerateFromNativeValueInvocation(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithToFromNativeValueContext subContext)
         {
             // <marshalerIdentifier>.FromNativeValue(<nativeIdentifier>);
             return ExpressionStatement(
@@ -252,11 +252,13 @@ namespace Microsoft.Interop
     internal sealed class StackallocOptimizationMarshalling : ICustomNativeTypeMarshallingStrategy
     {
         private readonly ICustomNativeTypeMarshallingStrategy _innerMarshaller;
+        private readonly TypeSyntax _bufferElementType;
         private readonly int _bufferSize;
 
-        public StackallocOptimizationMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, int bufferSize)
+        public StackallocOptimizationMarshalling(ICustomNativeTypeMarshallingStrategy innerMarshaller, TypeSyntax bufferElementType, int bufferSize)
         {
             _innerMarshaller = innerMarshaller;
+            _bufferElementType = bufferElementType;
             _bufferSize = bufferSize;
         }
 
@@ -274,16 +276,16 @@ namespace Microsoft.Interop
         {
             if (StackAllocOptimizationValid(info, context))
             {
-                // byte* <managedIdentifier>__stackptr = stackalloc byte[<_bufferSize>];
+                // <bufferElementType>* <managedIdentifier>__stackptr = stackalloc <bufferElementType>[<_bufferSize>];
                 yield return LocalDeclarationStatement(
                 VariableDeclaration(
-                    PointerType(PredefinedType(Token(SyntaxKind.ByteKeyword))),
+                    PointerType(_bufferElementType),
                     SingletonSeparatedList(
                         VariableDeclarator(GetStackAllocPointerIdentifier(info, context))
                             .WithInitializer(EqualsValueClause(
                                 StackAllocArrayCreationExpression(
                                         ArrayType(
-                                            PredefinedType(Token(SyntaxKind.ByteKeyword)),
+                                            _bufferElementType,
                                             SingletonList(ArrayRankSpecifier(SingletonSeparatedList<ExpressionSyntax>(
                                                 LiteralExpression(SyntaxKind.NumericLiteralExpression, Literal(_bufferSize))
                                             ))))))))));
@@ -332,7 +334,7 @@ namespace Microsoft.Interop
                     ObjectCreationExpression(
                         GenericName(Identifier(TypeNames.System_Span),
                             TypeArgumentList(SingletonSeparatedList<TypeSyntax>(
-                                PredefinedType(Token(SyntaxKind.ByteKeyword))))))
+                                _bufferElementType))))
                     .WithArgumentList(
                         ArgumentList(SeparatedList(new ArgumentSyntax[]
                         {
@@ -425,7 +427,7 @@ namespace Microsoft.Interop
             _nativeValueType = nativeValueType;
         }
 
-        private bool CanPinMarshaller(TypePositionInfo info, StubCodeContext context)
+        private static bool CanPinMarshaller(TypePositionInfo info, StubCodeContext context)
         {
             return context.SingleFrameSpansNativeContext && !info.IsManagedReturnPosition && !info.IsByRef || info.RefKind == RefKind.In;
         }
@@ -479,12 +481,13 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context)
         {
-            // fixed (<_nativeTypeSyntax> <ignoredIdentifier> = &<marshalerIdentifier>)
+            // The type of the ignored identifier isn't relevant, so we use void* for all.
+            // fixed (void* <ignoredIdentifier> = &<marshalerIdentifier>)
             //  <assignment to Value property>
             var subContext = new CustomNativeTypeWithToFromNativeValueContext(context);
             yield return FixedStatement(
                 VariableDeclaration(
-                _nativeValueType,
+                PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
                 SingletonSeparatedList(
                     VariableDeclarator(Identifier(context.GetAdditionalIdentifier(info, "ignored")))
                         .WithInitializer(EqualsValueClause(
@@ -508,7 +511,7 @@ namespace Microsoft.Interop
             }
         }
 
-        private StatementSyntax GenerateFromNativeValueInvocation(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithToFromNativeValueContext subContext)
+        private static StatementSyntax GenerateFromNativeValueInvocation(TypePositionInfo info, StubCodeContext context, CustomNativeTypeWithToFromNativeValueContext subContext)
         {
             // <marshalerIdentifier>.FromNativeValue(<nativeIdentifier>);
             return ExpressionStatement(
@@ -1159,7 +1162,7 @@ namespace Microsoft.Interop
         /// This handles the case where the native type of a non-blittable managed type is a pointer,
         /// which are unsupported in generic type parameters.
         /// </summary>
-        private class PointerNativeTypeAssignmentRewriter : CSharpSyntaxRewriter
+        private sealed class PointerNativeTypeAssignmentRewriter : CSharpSyntaxRewriter
         {
             private readonly string _nativeIdentifier;
             private readonly PointerTypeSyntax _nativeType;

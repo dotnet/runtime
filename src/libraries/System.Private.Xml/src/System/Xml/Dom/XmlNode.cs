@@ -790,7 +790,7 @@ namespace System.Xml
             StringBuilderCache.Release(sb);
         }
 
-        private XmlNode? NormalizeWinner(XmlNode? firstNode, XmlNode secondNode)
+        private static XmlNode? NormalizeWinner(XmlNode? firstNode, XmlNode secondNode)
         {
             //first node has the priority
             if (firstNode == null)

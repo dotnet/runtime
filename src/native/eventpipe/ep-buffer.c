@@ -83,24 +83,16 @@ ep_buffer_write_event (
 
 	bool success = true;
 
+	// Calculate the location of the data payload.
+	uint8_t *data_dest;
+	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof(EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_get_instance_size (stack));
+
 	// Calculate the size of the event.
-	uint32_t event_size = sizeof (EventPipeEventInstance) + ep_event_payload_get_size (payload);
+	uint32_t event_size = sizeof (EventPipeEventInstance) - sizeof (EventPipeStackContentsInstance) + ep_stack_contents_get_instance_size (stack) + ep_event_payload_get_size (payload);
 
 	// Make sure we have enough space to write the event.
 	if(buffer->current + event_size > buffer->limit)
 		ep_raise_error ();
-
-	// Calculate the location of the data payload.
-	uint8_t *data_dest;
-	data_dest = (ep_event_payload_get_size (payload) == 0 ? NULL : buffer->current + sizeof(EventPipeEventInstance));
-
-	EventPipeStackContents stack_contents;
-	EventPipeStackContents *current_stack_contents;
-	current_stack_contents = ep_stack_contents_init (&stack_contents);
-	if (stack == NULL && ep_event_get_need_stack (ep_event) && !ep_session_get_rundown_enabled (session)) {
-		ep_walk_managed_stack_for_current_thread (current_stack_contents);
-		stack = current_stack_contents;
-	}
 
 	uint32_t proc_number;
 	proc_number = ep_rt_current_processor_get_number ();
@@ -118,7 +110,7 @@ ep_buffer_write_event (
 
 	// Copy the stack if a separate stack trace was provided.
 	if (stack != NULL)
-		ep_stack_contents_copyto (stack, ep_event_instance_get_stack_contents_ref (instance));
+		ep_stack_contents_flatten (stack, ep_event_instance_get_stack_contents_instance_ref (instance));
 
 	// Write the event payload data to the buffer.
 	if (ep_event_payload_get_size (payload) > 0)
@@ -150,13 +142,7 @@ ep_buffer_move_next_read_event (EventPipeBuffer *buffer)
 			EP_ASSERT (!"Input pointer is out of range.");
 			buffer->current_read_event = NULL;
 		} else {
-			if (ep_event_instance_get_data (buffer->current_read_event))
-				// We have a pointer within the bounds of the buffer.
-				// Find the next event by skipping the current event with it's data payload immediately after the instance.
-				buffer->current_read_event = (EventPipeEventInstance *)ep_buffer_get_next_aligned_address (buffer, (uint8_t *)(ep_event_instance_get_data (buffer->current_read_event) + ep_event_instance_get_data_len (buffer->current_read_event)));
-			else
-				// In case we do not have a payload, the next instance is right after the current instance
-				buffer->current_read_event = (EventPipeEventInstance *)ep_buffer_get_next_aligned_address (buffer, (uint8_t *)(buffer->current_read_event + 1));
+			buffer->current_read_event = (EventPipeEventInstance *)ep_buffer_get_next_aligned_address (buffer, (uint8_t *)buffer->current_read_event + ep_event_instance_get_flattened_size (buffer->current_read_event));
 
 			// this may roll over and that is fine
 			buffer->event_sequence_number++;
@@ -243,7 +229,7 @@ ep_buffer_ensure_consistency (const EventPipeBuffer *buffer)
 		);
 
 		// Skip the event.
-		ptr = ep_buffer_get_next_aligned_address (buffer, ptr + sizeof (EventPipeEventInstance) + ep_event_instance_get_data_len (instance));
+		ptr = ep_buffer_get_next_aligned_address (buffer, ptr + ep_event_instance_get_flattened_size (instance));
 	}
 
 	// When we're done walking the filled portion of the buffer,
@@ -263,7 +249,7 @@ ep_buffer_ensure_consistency (const EventPipeBuffer *buffer)
 #endif /* !defined(EP_INCLUDE_SOURCE_FILES) || defined(EP_FORCE_INCLUDE_SOURCE_FILES) */
 #endif /* ENABLE_PERFTRACING */
 
-#ifndef EP_INCLUDE_SOURCE_FILES
+#if !defined(ENABLE_PERFTRACING) || (defined(EP_INCLUDE_SOURCE_FILES) && !defined(EP_FORCE_INCLUDE_SOURCE_FILES))
 extern const char quiet_linker_empty_file_warning_eventpipe_buffer;
 const char quiet_linker_empty_file_warning_eventpipe_buffer = 0;
 #endif

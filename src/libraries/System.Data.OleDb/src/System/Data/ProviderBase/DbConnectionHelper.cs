@@ -44,7 +44,7 @@ namespace System.Data.OleDb
             }
         }
 
-        internal DbConnectionFactory ConnectionFactory
+        private static DbConnectionFactory ConnectionFactory
         {
             get
             {

@@ -136,51 +136,6 @@ namespace System.Xml.Xsl.Xslt
                 _content.InsertRange(0, collection);
             }
         }
-
-        internal string? TraceName
-        {
-            get
-            {
-#if DEBUG
-                System.Text.StringBuilder sb = new System.Text.StringBuilder();
-                string nodeTypeName = NodeType switch
-                {
-                    XslNodeType.AttributeSet => "attribute-set",
-                    XslNodeType.Template => "template",
-                    XslNodeType.Param => "param",
-                    XslNodeType.Variable => "variable",
-                    XslNodeType.WithParam => "with-param",
-                    _ => NodeType.ToString(),
-                };
-                sb.Append(nodeTypeName);
-                if (Name != null)
-                {
-                    sb.Append(' ');
-                    sb.Append(Name.QualifiedName);
-                }
-
-                ISourceLineInfo? lineInfo = SourceLine;
-                if (lineInfo == null && NodeType == XslNodeType.AttributeSet)
-                {
-                    lineInfo = Content[0].SourceLine;
-                    Debug.Assert(lineInfo != null);
-                }
-                if (lineInfo != null)
-                {
-                    string fileName = SourceLineInfo.GetFileName(lineInfo.Uri!);
-                    int idx = fileName.LastIndexOf(System.IO.Path.DirectorySeparatorChar) + 1;
-                    sb.Append(" (");
-                    sb.Append(fileName, idx, fileName.Length - idx);
-                    sb.Append(':');
-                    sb.Append(lineInfo.Start.Line);
-                    sb.Append(')');
-                }
-                return sb.ToString();
-#else
-                return null;
-#endif
-            }
-        }
     }
 
     internal abstract class ProtoTemplate : XslNode
@@ -204,14 +159,7 @@ namespace System.Xml.Xsl.Xslt
 
         public AttributeSet(QilName name, XslVersion xslVer) : base(XslNodeType.AttributeSet, name, xslVer) { }
 
-        public override string GetDebugName()
-        {
-            StringBuilder dbgName = new StringBuilder();
-            dbgName.Append("<xsl:attribute-set name=\"");
-            dbgName.Append(Name!.QualifiedName);
-            dbgName.Append("\">");
-            return dbgName.ToString();
-        }
+        public override string GetDebugName() => $"<xsl:attribute-set name=\"{Name!.QualifiedName}\">";
 
         public new void AddContent(XslNode node)
         {

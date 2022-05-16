@@ -17,9 +17,9 @@ namespace System.Threading.RateLimiting
         /// Constructs a <see cref="MetadataName{T}"/> object with the given name.
         /// </summary>
         /// <param name="name">The name of the <see cref="MetadataName"/> object.</param>
-        public MetadataName(string name!!)
+        public MetadataName(string name)
         {
-            _name = name;
+            _name = name ?? throw new ArgumentNullException(nameof(name));
         }
 
         /// <summary>

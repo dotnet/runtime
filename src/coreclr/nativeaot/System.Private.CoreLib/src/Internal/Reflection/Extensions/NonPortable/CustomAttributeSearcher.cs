@@ -56,7 +56,7 @@ namespace Internal.Reflection.Extensions.NonPortable
                     //
                     // Since "typeFilterKnownToBeSealed" is only used to enable an optimization, it's always safe to leave it "false".
                     //
-                    // Because the Project N toolchain removes any custom attribute that refuses to opt into metadata so at this point,
+                    // Because the NativeAOT toolchain removes any custom attribute that refuses to opt into metadata so at this point,
                     // we could simply return an empty enumeration and "be correct." However, the code paths following this already do that naturally.
                     // (i.e. the "passFilter" will never return true, thus we will never attempt to query the custom attribute type for its
                     // own AttributeUsage custom attribute.) If the toolchain behavior changes in the future, it's preferable that
@@ -72,6 +72,30 @@ namespace Internal.Reflection.Extensions.NonPortable
                     delegate (Type actualType)
                     {
                         return true;
+                    };
+            }
+            else if (optionalAttributeTypeFilter.IsGenericTypeDefinition)
+            {
+                passesFilter =
+                    delegate (Type actualType)
+                    {
+                        if (actualType.IsConstructedGenericType && actualType.GetGenericTypeDefinition() == optionalAttributeTypeFilter)
+                        {
+                            return true;
+                        }
+
+                        if (!typeFilterKnownToBeSealed)
+                        {
+                            for (Type? type = actualType.BaseType; type != null; type = type.BaseType)
+                            {
+                                if (type.IsConstructedGenericType && type.GetGenericTypeDefinition() == optionalAttributeTypeFilter)
+                                {
+                                    return true;
+                                }
+                            }
+                        }
+
+                        return false;
                     };
             }
             else
@@ -184,15 +208,13 @@ namespace Internal.Reflection.Extensions.NonPortable
         //
         // Internal helper to compute the AttributeUsage. This must be coded specially to avoid an infinite recursion.
         //
-        private AttributeUsageAttribute GetAttributeUsage(Type attributeType)
+        private static AttributeUsageAttribute GetAttributeUsage(Type attributeType)
         {
             // This is only invoked when the seacher is called with "inherit: true", thus calling the searcher again
             // with "inherit: false" will not cause infinite recursion.
             //
             // Legacy: Why aren't we checking the parent types? Answer: Although AttributeUsageAttribute is itself marked inheritable, desktop Reflection
             // treats it as *non*-inheritable for the purpose of deciding whether another attribute class is inheritable.
-            // This behavior goes all the way back to at least 3.5 (and perhaps earlier). For compat reasons,
-            // we won't-fixed this in 4.5 and we won't-fix this in Project N.
             //
             AttributeUsageAttribute? usage = attributeType.GetCustomAttribute<AttributeUsageAttribute>(inherit: false);
             if (usage == null)

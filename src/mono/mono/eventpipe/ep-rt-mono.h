@@ -23,6 +23,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/metadata-internals.h>
+#include "mono/utils/mono-logger-internals.h"
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
@@ -600,6 +601,14 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 #else
 	return (size_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
 #endif
+}
+
+static
+inline
+ep_char8_t *
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
+{
+	return (ep_char8_t *)mono_atomic_cas_ptr ((volatile gpointer *)target, (gpointer)value, (gpointer)expected);
 }
 
 /*
@@ -1265,7 +1274,7 @@ ep_rt_thread_create (
 	rt_mono_thread_params_internal_t *thread_params = g_new0 (rt_mono_thread_params_internal_t, 1);
 	if (thread_params) {
 		thread_params->thread_params.thread_type = thread_type;
-		thread_params->thread_params.thread_func = thread_func;
+		thread_params->thread_params.thread_func = (ep_rt_thread_start_func)thread_func;
 		thread_params->thread_params.thread_params = params;
 		thread_params->background_thread = true;
 		return (mono_thread_platform_create_thread (ep_rt_thread_mono_start_func, thread_params, NULL, (ep_rt_thread_id_t *)id) == TRUE) ? true : false;
@@ -1526,12 +1535,14 @@ ep_rt_spin_lock_set_owning_thread_id (
 	ep_rt_spin_lock_handle_t *spin_lock,
 	MonoNativeThreadId thread_id)
 {
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof (spin_lock->owning_thread_id) == sizeof (uint32_t))
 		ep_rt_volatile_store_uint32_t ((uint32_t *)&spin_lock->owning_thread_id, MONO_NATIVE_THREAD_ID_TO_UINT (thread_id));
 	else if (sizeof (spin_lock->owning_thread_id) == sizeof (uint64_t))
 		ep_rt_volatile_store_uint64_t ((uint64_t *)&spin_lock->owning_thread_id, MONO_NATIVE_THREAD_ID_TO_UINT (thread_id));
 	else
 		spin_lock->owning_thread_id = thread_id;
+MONO_RESTORE_WARNING
 }
 
 static
@@ -1539,12 +1550,14 @@ inline
 MonoNativeThreadId
 ep_rt_spin_lock_get_owning_thread_id (const ep_rt_spin_lock_handle_t *spin_lock)
 {
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
 	if (sizeof (spin_lock->owning_thread_id) == sizeof (uint32_t))
 		return MONO_UINT_TO_NATIVE_THREAD_ID (ep_rt_volatile_load_uint32_t ((const uint32_t *)&spin_lock->owning_thread_id));
 	else if (sizeof (spin_lock->owning_thread_id) == sizeof (uint64_t))
 		return MONO_UINT_TO_NATIVE_THREAD_ID (ep_rt_volatile_load_uint64_t ((const uint64_t *)&spin_lock->owning_thread_id));
 	else
 		return spin_lock->owning_thread_id;
+MONO_RESTORE_WARNING
 }
 #endif
 
@@ -2294,6 +2307,12 @@ ep_rt_write_event_threadpool_io_dequeue (
 bool
 ep_rt_write_event_threadpool_working_thread_count (
 	uint16_t count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_io_pack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
 	uint16_t clr_instance_id);
 
 /*

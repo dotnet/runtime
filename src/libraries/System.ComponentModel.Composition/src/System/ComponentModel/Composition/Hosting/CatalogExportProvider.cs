@@ -22,8 +22,10 @@ namespace System.ComponentModel.Composition.Hosting
         {
             private readonly CatalogExportProvider _outerExportProvider;
 
-            public InnerCatalogExportProvider(CatalogExportProvider outerExportProvider!!)
+            public InnerCatalogExportProvider(CatalogExportProvider outerExportProvider)
             {
+                ArgumentNullException.ThrowIfNull(outerExportProvider);
+
                 _outerExportProvider = outerExportProvider;
             }
 
@@ -562,8 +564,10 @@ namespace System.ComponentModel.Composition.Hosting
             DisposePart(exportedValue, catalogPart, atomicComposition);
         }
 
-        private void DisposePart(object? exportedValue, CatalogPart catalogPart!!, AtomicComposition? atomicComposition)
+        private void DisposePart(object? exportedValue, CatalogPart catalogPart, AtomicComposition? atomicComposition)
         {
+            ArgumentNullException.ThrowIfNull(catalogPart);
+
             if (_isDisposed)
                 return;
 
@@ -611,8 +615,11 @@ namespace System.ComponentModel.Composition.Hosting
             }
         }
 
-        private void PreventPartCollection(object exportedValue!!, ComposablePart part!!)
+        private void PreventPartCollection(object exportedValue, ComposablePart part)
         {
+            ArgumentNullException.ThrowIfNull(exportedValue);
+            ArgumentNullException.ThrowIfNull(part);
+
             using (_lock.LockStateForWrite())
             {
                 List<ComposablePart>? partList;
@@ -814,7 +821,7 @@ namespace System.ComponentModel.Composition.Hosting
 
                     foreach (var import in definition.ImportDefinitions.Where(ImportEngine.IsRequiredImportForPreview))
                     {
-                        if (changedExports.Any(export => import.IsConstraintSatisfiedBy(export)))
+                        if (changedExports.Any(import.IsConstraintSatisfiedBy))
                         {
                             affectedRejections.Add(definition);
                             break;

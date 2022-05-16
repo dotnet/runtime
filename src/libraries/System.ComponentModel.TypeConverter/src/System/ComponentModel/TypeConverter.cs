@@ -110,8 +110,10 @@ namespace System.ComponentModel
         /// Converts the given value object to
         /// the specified destination type using the specified context and arguments.
         /// </summary>
-        public virtual object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public virtual object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (destinationType == typeof(string))
             {
                 if (value == null)
@@ -189,7 +191,7 @@ namespace System.ComponentModel
         /// </summary>
         protected Exception GetConvertFromException(object? value)
         {
-            string? valueTypeName = value == null ? SR.Null : value.GetType().FullName;
+            string? valueTypeName = value == null ? SR.GetResourceString(nameof(SR.Null), "(null)") : value.GetType().FullName;
             throw new NotSupportedException(SR.Format(SR.ConvertFromException, GetType().Name, valueTypeName));
         }
 
@@ -199,7 +201,7 @@ namespace System.ComponentModel
         /// </summary>
         protected Exception GetConvertToException(object? value, Type destinationType)
         {
-            string? valueTypeName = value == null ? SR.Null : value.GetType().FullName;
+            string? valueTypeName = value == null ? SR.GetResourceString(nameof(SR.Null), "(null)") : value.GetType().FullName;
             throw new NotSupportedException(SR.Format(SR.ConvertToException, GetType().Name, valueTypeName, destinationType.FullName));
         }
 

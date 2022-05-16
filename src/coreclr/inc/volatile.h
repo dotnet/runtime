@@ -217,7 +217,7 @@ T VolatileLoad(Volatile<T> const * pt)
 }
 
 //
-// VolatileStore stores a T into the target of a pointer to T.  Is is guaranteed that this store will
+// VolatileStore stores a T into the target of a pointer to T.  It is guaranteed that this store will
 // not be optimized away by the compiler, and that any operation that occurs before this store, in program
 // order, will not be moved after this store.  In general, it is not guaranteed that the store will be
 // atomic, though this is the case for most aligned scalar data types.  If you need atomic loads or stores,
@@ -329,6 +329,9 @@ void VolatileLoadBarrier()
 template <typename T>
 class Volatile
 {
+    // To enable the DAC table to correctly handle volatile DAC-ized statics while also being computed at compile time, we need to
+    // give the dac table type access to the internal field directly to take the address of it.
+    friend struct _DacGlobals;
 private:
     //
     // The data which we are treating as volatile

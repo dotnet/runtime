@@ -204,7 +204,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void Prepare(XmlSchema schema)
+        private static void Prepare(XmlSchema schema)
         {
             // need to remove illegal <import> externals;
             ArrayList removes = new ArrayList();
@@ -361,7 +361,7 @@ namespace System.Xml.Serialization
             }
         }
 
-        private void AddImport(IList schemas, string? ns)
+        private static void AddImport(IList schemas, string? ns)
         {
             foreach (XmlSchema s in schemas)
             {
@@ -618,7 +618,7 @@ namespace System.Xml.Serialization
             return err;
         }
 
-        internal XmlSchemaObject? Find(XmlSchemaObject o, IList originals)
+        internal static XmlSchemaObject? Find(XmlSchemaObject o, IList originals)
         {
             string? name = ItemName(o);
             if (name == null)

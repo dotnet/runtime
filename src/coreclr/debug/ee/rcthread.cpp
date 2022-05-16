@@ -17,8 +17,6 @@
 #endif
 #include <aclapi.h>
 
-#include "eemessagebox.h"
-
 #ifndef SM_REMOTESESSION
 #define SM_REMOTESESSION 0x1000
 #endif
@@ -823,7 +821,7 @@ bool DebuggerRCThread::HandleRSEA()
     memcpy(e, GetIPCEventReceiveBuffer(), CorDBIPC_BUFFER_SIZE);
 #else
     // Be sure to fetch the event into the official receive buffer since some event handlers assume it's there
-    // regardless of the the event buffer pointer passed to them.
+    // regardless of the event buffer pointer passed to them.
     e = GetIPCEventReceiveBuffer();
     g_pDbgTransport->GetNextEvent(e, CorDBIPC_BUFFER_SIZE);
 #endif // !FEATURE_DBGIPC_TRANSPOPRT

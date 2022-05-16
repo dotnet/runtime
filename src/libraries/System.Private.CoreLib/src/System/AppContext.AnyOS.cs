@@ -12,12 +12,13 @@ namespace System
 {
     public static partial class AppContext
     {
+#if !TARGET_BROWSER
         [UnconditionalSuppressMessage("SingleFile", "IL3000: Avoid accessing Assembly file path when publishing as a single file",
             Justification = "Single File apps should always set APP_CONTEXT_BASE_DIRECTORY therefore code handles Assembly.Location equals null")]
         private static string GetBaseDirectoryCore()
         {
             // Fallback path for hosts that do not set APP_CONTEXT_BASE_DIRECTORY explicitly
-#if CORERT
+#if NATIVEAOT
             string? path = Environment.ProcessPath;
 #else
             string? path = Assembly.GetEntryAssembly()?.Location;
@@ -33,6 +34,7 @@ namespace System
 
             return directory;
         }
+#endif
 
 #if FEATURE_PERFTRACING
         internal static void LogSwitchValues(RuntimeEventSource ev)
