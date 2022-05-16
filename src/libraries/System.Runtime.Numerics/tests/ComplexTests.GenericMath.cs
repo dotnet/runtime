@@ -35,35 +35,9 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(expected.Imaginary, actual.Imaginary);
         }
 
-        [Fact]
-        public static void AdditiveIdentityTest()
-        {
-            AssertBitwiseEqual(0.0, AdditiveIdentityHelper<Complex, Complex>.AdditiveIdentity);
-        }
-
-        [Fact]
-        public static void MultiplicativeIdentityTest()
-        {
-            AssertBitwiseEqual(1.0, MultiplicativeIdentityHelper<Complex, Complex>.MultiplicativeIdentity);
-        }
-
-        [Fact]
-        public static void NegativeOneTest()
-        {
-            Assert.Equal(-1.0, SignedNumberHelper<Complex>.NegativeOne);
-        }
-
-        [Fact]
-        public static void OneTest()
-        {
-            AssertBitwiseEqual(1.0, NumberBaseHelper<Complex>.One);
-        }
-
-        [Fact]
-        public static void ZeroTest()
-        {
-            AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.Zero);
-        }
+        //
+        // IAdditionOperators
+        //
 
         [Fact]
         public static void op_AdditionTest()
@@ -93,6 +67,20 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(2.0, AdditionOperatorsHelper<Complex, Complex, Complex>.op_CheckedAddition(1.0, 1.0));
         }
 
+        //
+        // IAdditiveIdentity
+        //
+
+        [Fact]
+        public static void AdditiveIdentityTest()
+        {
+            AssertBitwiseEqual(0.0, AdditiveIdentityHelper<Complex, Complex>.AdditiveIdentity);
+        }
+
+        //
+        // IDecrementOperators
+        //
+
         [Fact]
         public static void op_DecrementTest()
         {
@@ -120,6 +108,10 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(-1.0, DecrementOperatorsHelper<Complex>.op_CheckedDecrement(MinNormal));
             AssertBitwiseEqual(0.0, DecrementOperatorsHelper<Complex>.op_CheckedDecrement(1.0));
         }
+
+        //
+        // IDivisionOperators
+        //
 
         [Fact]
         public static void op_DivisionTest()
@@ -149,6 +141,10 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(0.5, DivisionOperatorsHelper<Complex, Complex, Complex>.op_CheckedDivision(1.0, 2.0));
         }
 
+        //
+        // IEqualityOperators
+        //
+
         [Fact]
         public static void op_EqualityTest()
         {
@@ -176,6 +172,10 @@ namespace System.Numerics.Tests
             Assert.True(EqualityOperatorsHelper<Complex, Complex>.op_Inequality(MinNormal, 1.0));
             Assert.False(EqualityOperatorsHelper<Complex, Complex>.op_Inequality(1.0, 1.0));
         }
+
+        //
+        // IIncrementOperators
+        //
 
         [Fact]
         public static void op_IncrementTest()
@@ -205,6 +205,20 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(2.0, IncrementOperatorsHelper<Complex>.op_CheckedIncrement(1.0));
         }
 
+        //
+        // IMultiplicativeIdentity
+        //
+
+        [Fact]
+        public static void MultiplicativeIdentityTest()
+        {
+            AssertBitwiseEqual(1.0, MultiplicativeIdentityHelper<Complex, Complex>.MultiplicativeIdentity);
+        }
+
+        //
+        // IMultiplyOperators
+        //
+
         [Fact]
         public static void op_MultiplyTest()
         {
@@ -232,6 +246,36 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(4.4501477170144028E-308, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_CheckedMultiply(MinNormal, 2.0));
             AssertBitwiseEqual(2.0, MultiplyOperatorsHelper<Complex, Complex, Complex>.op_CheckedMultiply(1.0, 2.0));
         }
+
+        //
+        // INumberBase
+        //
+
+        [Fact]
+        public static void OneTest()
+        {
+            AssertBitwiseEqual(1.0, NumberBaseHelper<Complex>.One);
+        }
+
+        [Fact]
+        public static void ZeroTest()
+        {
+            AssertBitwiseEqual(0.0, NumberBaseHelper<Complex>.Zero);
+        }
+
+        //
+        // ISignedNumber
+        //
+
+        [Fact]
+        public static void NegativeOneTest()
+        {
+            Assert.Equal(-1.0, SignedNumberHelper<Complex>.NegativeOne);
+        }
+
+        //
+        // ISubtractionOperators
+        //
 
         [Fact]
         public static void op_SubtractionTest()
@@ -261,6 +305,10 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(0.0, SubtractionOperatorsHelper<Complex, Complex, Complex>.op_CheckedSubtraction(1.0, 1.0));
         }
 
+        //
+        // IUnaryNegationOperators
+        //
+
         [Fact]
         public static void op_UnaryNegationTest()
         {
@@ -288,6 +336,10 @@ namespace System.Numerics.Tests
             AssertBitwiseEqual(-MinNormal, UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(MinNormal));
             AssertBitwiseEqual(new Complex(-1.0, -0.0), UnaryNegationOperatorsHelper<Complex, Complex>.op_CheckedUnaryNegation(1.0));
         }
+
+        //
+        // IUnaryPlusOperators
+        //
 
         [Fact]
         public static void op_UnaryPlusTest()

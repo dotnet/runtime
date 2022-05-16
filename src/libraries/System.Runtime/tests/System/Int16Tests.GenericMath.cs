@@ -8,47 +8,9 @@ namespace System.Tests
 {
     public class Int16Tests_GenericMath
     {
-        [Fact]
-        public static void AdditiveIdentityTest()
-        {
-            Assert.Equal((short)0x0000, AdditiveIdentityHelper<short, short>.AdditiveIdentity);
-        }
-
-        [Fact]
-        public static void MinValueTest()
-        {
-            Assert.Equal(unchecked((short)0x8000), MinMaxValueHelper<short>.MinValue);
-        }
-
-        [Fact]
-        public static void MaxValueTest()
-        {
-            Assert.Equal((short)0x7FFF, MinMaxValueHelper<short>.MaxValue);
-        }
-
-        [Fact]
-        public static void MultiplicativeIdentityTest()
-        {
-            Assert.Equal((short)0x0001, MultiplicativeIdentityHelper<short, short>.MultiplicativeIdentity);
-        }
-
-        [Fact]
-        public static void NegativeOneTest()
-        {
-            Assert.Equal(unchecked((short)0xFFFF), SignedNumberHelper<short>.NegativeOne);
-        }
-
-        [Fact]
-        public static void OneTest()
-        {
-            Assert.Equal((short)0x0001, NumberBaseHelper<short>.One);
-        }
-
-        [Fact]
-        public static void ZeroTest()
-        {
-            Assert.Equal((short)0x0000, NumberBaseHelper<short>.Zero);
-        }
+        //
+        // IAdditionOperators
+        //
 
         [Fact]
         public static void op_AdditionTest()
@@ -69,6 +31,30 @@ namespace System.Tests
             Assert.Equal((short)0x0000, AdditionOperatorsHelper<short, short, short>.op_CheckedAddition(unchecked((short)0xFFFF), (short)1));
 
             Assert.Throws<OverflowException>(() => AdditionOperatorsHelper<short, short, short>.op_CheckedAddition((short)0x7FFF, (short)1));
+        }
+
+        //
+        // IAdditiveIdentity
+        //
+
+        [Fact]
+        public static void AdditiveIdentityTest()
+        {
+            Assert.Equal((short)0x0000, AdditiveIdentityHelper<short, short>.AdditiveIdentity);
+        }
+
+        //
+        // IBinaryInteger
+        //
+
+        [Fact]
+        public static void DivRemTest()
+        {
+            Assert.Equal(((short)0x0000, (short)0x0000), BinaryIntegerHelper<short>.DivRem((short)0x0000, (short)2));
+            Assert.Equal(((short)0x0000, (short)0x0001), BinaryIntegerHelper<short>.DivRem((short)0x0001, (short)2));
+            Assert.Equal(((short)0x3FFF, (short)0x0001), BinaryIntegerHelper<short>.DivRem((short)0x7FFF, (short)2));
+            Assert.Equal((unchecked((short)0xC000), (short)0x0000), BinaryIntegerHelper<short>.DivRem(unchecked((short)0x8000), (short)2));
+            Assert.Equal(((short)0x0000, unchecked((short)0xFFFF)), BinaryIntegerHelper<short>.DivRem(unchecked((short)0xFFFF), (short)2));
         }
 
         [Fact]
@@ -122,6 +108,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void GetByteCountTest()
+        {
+            Assert.Equal(2, BinaryIntegerHelper<short>.GetByteCount((short)0x0000));
+            Assert.Equal(2, BinaryIntegerHelper<short>.GetByteCount((short)0x0001));
+            Assert.Equal(2, BinaryIntegerHelper<short>.GetByteCount((short)0x7FFF));
+            Assert.Equal(2, BinaryIntegerHelper<short>.GetByteCount(unchecked((short)0x8000)));
+            Assert.Equal(2, BinaryIntegerHelper<short>.GetByteCount(unchecked((short)0xFFFF)));
+        }
+
+        [Fact]
         public static void GetShortestBitLengthTest()
         {
             Assert.Equal(0x00, BinaryIntegerHelper<short>.GetShortestBitLength((short)0x0000));
@@ -130,6 +126,72 @@ namespace System.Tests
             Assert.Equal(0x10, BinaryIntegerHelper<short>.GetShortestBitLength(unchecked((short)0x8000)));
             Assert.Equal(0x01, BinaryIntegerHelper<short>.GetShortestBitLength(unchecked((short)0xFFFF)));
         }
+
+        [Fact]
+        public static void TryWriteBigEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[2];
+            int bytesWritten = 0;
+
+            Assert.True(BinaryIntegerHelper<short>.TryWriteBigEndian((short)0x0000, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<short>.TryWriteBigEndian((short)0x0001, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x01 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<short>.TryWriteBigEndian((short)0x7FFF, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x7F, 0xFF }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<short>.TryWriteBigEndian(unchecked((short)0x8000), destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x80, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<short>.TryWriteBigEndian(unchecked((short)0xFFFF), destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
+
+            Assert.False(BinaryIntegerHelper<short>.TryWriteBigEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
+        }
+
+        [Fact]
+        public static void TryWriteLittleEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[2];
+            int bytesWritten = 0;
+
+            Assert.True(BinaryIntegerHelper<short>.TryWriteLittleEndian((short)0x0000, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<short>.TryWriteLittleEndian((short)0x0001, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x01, 0x00 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<short>.TryWriteLittleEndian((short)0x7FFF, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0x7F }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<short>.TryWriteLittleEndian(unchecked((short)0x8000), destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x80 }, destination.ToArray());
+
+            Assert.True(BinaryIntegerHelper<short>.TryWriteLittleEndian(unchecked((short)0xFFFF), destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
+
+            Assert.False(BinaryIntegerHelper<short>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
+        }
+
+        //
+        // IBinaryNumber
+        //
 
         [Fact]
         public static void IsPow2Test()
@@ -150,6 +212,10 @@ namespace System.Tests
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryNumberHelper<short>.Log2(unchecked((short)0x8000)));
             Assert.Throws<ArgumentOutOfRangeException>(() => BinaryNumberHelper<short>.Log2(unchecked((short)0xFFFF)));
         }
+
+        //
+        // IBitwiseOperators
+        //
 
         [Fact]
         public static void op_BitwiseAndTest()
@@ -191,25 +257,9 @@ namespace System.Tests
             Assert.Equal((short)0x0000, BitwiseOperatorsHelper<short, short, short>.op_OnesComplement(unchecked((short)0xFFFF)));
         }
 
-        [Fact]
-        public static void op_LessThanTest()
-        {
-            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThan((short)0x0000, (short)1));
-            Assert.False(ComparisonOperatorsHelper<short, short>.op_LessThan((short)0x0001, (short)1));
-            Assert.False(ComparisonOperatorsHelper<short, short>.op_LessThan((short)0x7FFF, (short)1));
-            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThan(unchecked((short)0x8000), (short)1));
-            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThan(unchecked((short)0xFFFF), (short)1));
-        }
-
-        [Fact]
-        public static void op_LessThanOrEqualTest()
-        {
-            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThanOrEqual((short)0x0000, (short)1));
-            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThanOrEqual((short)0x0001, (short)1));
-            Assert.False(ComparisonOperatorsHelper<short, short>.op_LessThanOrEqual((short)0x7FFF, (short)1));
-            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThanOrEqual(unchecked((short)0x8000), (short)1));
-            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThanOrEqual(unchecked((short)0xFFFF), (short)1));
-        }
+        //
+        // IComparisonOperators
+        //
 
         [Fact]
         public static void op_GreaterThanTest()
@@ -232,6 +282,30 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void op_LessThanTest()
+        {
+            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThan((short)0x0000, (short)1));
+            Assert.False(ComparisonOperatorsHelper<short, short>.op_LessThan((short)0x0001, (short)1));
+            Assert.False(ComparisonOperatorsHelper<short, short>.op_LessThan((short)0x7FFF, (short)1));
+            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThan(unchecked((short)0x8000), (short)1));
+            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThan(unchecked((short)0xFFFF), (short)1));
+        }
+
+        [Fact]
+        public static void op_LessThanOrEqualTest()
+        {
+            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThanOrEqual((short)0x0000, (short)1));
+            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThanOrEqual((short)0x0001, (short)1));
+            Assert.False(ComparisonOperatorsHelper<short, short>.op_LessThanOrEqual((short)0x7FFF, (short)1));
+            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThanOrEqual(unchecked((short)0x8000), (short)1));
+            Assert.True(ComparisonOperatorsHelper<short, short>.op_LessThanOrEqual(unchecked((short)0xFFFF), (short)1));
+        }
+
+        //
+        // IDecrementOperators
+        //
+
+        [Fact]
         public static void op_DecrementTest()
         {
             Assert.Equal(unchecked((short)0xFFFF), DecrementOperatorsHelper<short>.op_Decrement((short)0x0000));
@@ -251,6 +325,10 @@ namespace System.Tests
 
             Assert.Throws<OverflowException>(() => DecrementOperatorsHelper<short>.op_CheckedDecrement(unchecked((short)0x8000)));
         }
+
+        //
+        // IDivisionOperators
+        //
 
         [Fact]
         public static void op_DivisionTest()
@@ -276,6 +354,10 @@ namespace System.Tests
             Assert.Throws<DivideByZeroException>(() => DivisionOperatorsHelper<short, short, short>.op_CheckedDivision((short)0x0001, (short)0));
         }
 
+        //
+        // IEqualityOperators
+        //
+
         [Fact]
         public static void op_EqualityTest()
         {
@@ -295,6 +377,10 @@ namespace System.Tests
             Assert.True(EqualityOperatorsHelper<short, short>.op_Inequality(unchecked((short)0x8000), (short)1));
             Assert.True(EqualityOperatorsHelper<short, short>.op_Inequality(unchecked((short)0xFFFF), (short)1));
         }
+
+        //
+        // IIncrementOperators
+        //
 
         [Fact]
         public static void op_IncrementTest()
@@ -317,6 +403,26 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => IncrementOperatorsHelper<short>.op_CheckedIncrement((short)0x7FFF));
         }
 
+        //
+        // IMinMaxValue
+        //
+
+        [Fact]
+        public static void MaxValueTest()
+        {
+            Assert.Equal((short)0x7FFF, MinMaxValueHelper<short>.MaxValue);
+        }
+
+        [Fact]
+        public static void MinValueTest()
+        {
+            Assert.Equal(unchecked((short)0x8000), MinMaxValueHelper<short>.MinValue);
+        }
+
+        //
+        // IModulusOperators
+        //
+
         [Fact]
         public static void op_ModulusTest()
         {
@@ -328,6 +434,20 @@ namespace System.Tests
 
             Assert.Throws<DivideByZeroException>(() => ModulusOperatorsHelper<short, short, short>.op_Modulus((short)0x0001, (short)0));
         }
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        [Fact]
+        public static void MultiplicativeIdentityTest()
+        {
+            Assert.Equal((short)0x0001, MultiplicativeIdentityHelper<short, short>.MultiplicativeIdentity);
+        }
+
+        //
+        // IMultiplyOperators
+        //
 
         [Fact]
         public static void op_MultiplyTest()
@@ -350,15 +470,9 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => MultiplyOperatorsHelper<short, short, short>.op_CheckedMultiply(unchecked((short)0x8000), (short)2));
         }
 
-        [Fact]
-        public static void AbsTest()
-        {
-            Assert.Equal((short)0x0000, NumberBaseHelper<short>.Abs((short)0x0000));
-            Assert.Equal((short)0x0001, NumberBaseHelper<short>.Abs((short)0x0001));
-            Assert.Equal((short)0x7FFF, NumberBaseHelper<short>.Abs((short)0x7FFF));
-            Assert.Throws<OverflowException>(() => NumberBaseHelper<short>.Abs(unchecked((short)0x8000)));
-            Assert.Equal((short)0x0001, NumberBaseHelper<short>.Abs(unchecked((short)0xFFFF)));
-        }
+        //
+        // INumber
+        //
 
         [Fact]
         public static void ClampTest()
@@ -368,6 +482,62 @@ namespace System.Tests
             Assert.Equal((short)0x003F, NumberHelper<short>.Clamp((short)0x7FFF, unchecked((short)0xFFC0), (short)0x003F));
             Assert.Equal(unchecked((short)0xFFC0), NumberHelper<short>.Clamp(unchecked((short)0x8000), unchecked((short)0xFFC0), (short)0x003F));
             Assert.Equal(unchecked((short)0xFFFF), NumberHelper<short>.Clamp(unchecked((short)0xFFFF), unchecked((short)0xFFC0), (short)0x003F));
+        }
+
+        [Fact]
+        public static void MaxTest()
+        {
+            Assert.Equal((short)0x0001, NumberHelper<short>.Max((short)0x0000, (short)1));
+            Assert.Equal((short)0x0001, NumberHelper<short>.Max((short)0x0001, (short)1));
+            Assert.Equal((short)0x7FFF, NumberHelper<short>.Max((short)0x7FFF, (short)1));
+            Assert.Equal((short)0x0001, NumberHelper<short>.Max(unchecked((short)0x8000), (short)1));
+            Assert.Equal((short)0x0001, NumberHelper<short>.Max(unchecked((short)0xFFFF), (short)1));
+        }
+
+        [Fact]
+        public static void MinTest()
+        {
+            Assert.Equal((short)0x0000, NumberHelper<short>.Min((short)0x0000, (short)1));
+            Assert.Equal((short)0x0001, NumberHelper<short>.Min((short)0x0001, (short)1));
+            Assert.Equal((short)0x0001, NumberHelper<short>.Min((short)0x7FFF, (short)1));
+            Assert.Equal(unchecked((short)0x8000), NumberHelper<short>.Min(unchecked((short)0x8000), (short)1));
+            Assert.Equal(unchecked((short)0xFFFF), NumberHelper<short>.Min(unchecked((short)0xFFFF), (short)1));
+        }
+
+        [Fact]
+        public static void SignTest()
+        {
+            Assert.Equal(0, NumberHelper<short>.Sign((short)0x0000));
+            Assert.Equal(1, NumberHelper<short>.Sign((short)0x0001));
+            Assert.Equal(1, NumberHelper<short>.Sign((short)0x7FFF));
+            Assert.Equal(-1, NumberHelper<short>.Sign(unchecked((short)0x8000)));
+            Assert.Equal(-1, NumberHelper<short>.Sign(unchecked((short)0xFFFF)));
+        }
+
+        //
+        // INumberBase
+        //
+
+        [Fact]
+        public static void OneTest()
+        {
+            Assert.Equal((short)0x0001, NumberBaseHelper<short>.One);
+        }
+
+        [Fact]
+        public static void ZeroTest()
+        {
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.Zero);
+        }
+
+        [Fact]
+        public static void AbsTest()
+        {
+            Assert.Equal((short)0x0000, NumberBaseHelper<short>.Abs((short)0x0000));
+            Assert.Equal((short)0x0001, NumberBaseHelper<short>.Abs((short)0x0001));
+            Assert.Equal((short)0x7FFF, NumberBaseHelper<short>.Abs((short)0x7FFF));
+            Assert.Throws<OverflowException>(() => NumberBaseHelper<short>.Abs(unchecked((short)0x8000)));
+            Assert.Equal((short)0x0001, NumberBaseHelper<short>.Abs(unchecked((short)0xFFFF)));
         }
 
         [Fact]
@@ -767,46 +937,6 @@ namespace System.Tests
         }
 
         [Fact]
-        public static void DivRemTest()
-        {
-            Assert.Equal(((short)0x0000, (short)0x0000), BinaryIntegerHelper<short>.DivRem((short)0x0000, (short)2));
-            Assert.Equal(((short)0x0000, (short)0x0001), BinaryIntegerHelper<short>.DivRem((short)0x0001, (short)2));
-            Assert.Equal(((short)0x3FFF, (short)0x0001), BinaryIntegerHelper<short>.DivRem((short)0x7FFF, (short)2));
-            Assert.Equal((unchecked((short)0xC000), (short)0x0000), BinaryIntegerHelper<short>.DivRem(unchecked((short)0x8000), (short)2));
-            Assert.Equal(((short)0x0000, unchecked((short)0xFFFF)), BinaryIntegerHelper<short>.DivRem(unchecked((short)0xFFFF), (short)2));
-        }
-
-        [Fact]
-        public static void MaxTest()
-        {
-            Assert.Equal((short)0x0001, NumberHelper<short>.Max((short)0x0000, (short)1));
-            Assert.Equal((short)0x0001, NumberHelper<short>.Max((short)0x0001, (short)1));
-            Assert.Equal((short)0x7FFF, NumberHelper<short>.Max((short)0x7FFF, (short)1));
-            Assert.Equal((short)0x0001, NumberHelper<short>.Max(unchecked((short)0x8000), (short)1));
-            Assert.Equal((short)0x0001, NumberHelper<short>.Max(unchecked((short)0xFFFF), (short)1));
-        }
-
-        [Fact]
-        public static void MinTest()
-        {
-            Assert.Equal((short)0x0000, NumberHelper<short>.Min((short)0x0000, (short)1));
-            Assert.Equal((short)0x0001, NumberHelper<short>.Min((short)0x0001, (short)1));
-            Assert.Equal((short)0x0001, NumberHelper<short>.Min((short)0x7FFF, (short)1));
-            Assert.Equal(unchecked((short)0x8000), NumberHelper<short>.Min(unchecked((short)0x8000), (short)1));
-            Assert.Equal(unchecked((short)0xFFFF), NumberHelper<short>.Min(unchecked((short)0xFFFF), (short)1));
-        }
-
-        [Fact]
-        public static void SignTest()
-        {
-            Assert.Equal(0, NumberHelper<short>.Sign((short)0x0000));
-            Assert.Equal(1, NumberHelper<short>.Sign((short)0x0001));
-            Assert.Equal(1, NumberHelper<short>.Sign((short)0x7FFF));
-            Assert.Equal(-1, NumberHelper<short>.Sign(unchecked((short)0x8000)));
-            Assert.Equal(-1, NumberHelper<short>.Sign(unchecked((short)0xFFFF)));
-        }
-
-        [Fact]
         public static void TryCreateFromByteTest()
         {
             short result;
@@ -1077,77 +1207,9 @@ namespace System.Tests
             }
         }
 
-        [Fact]
-        public static void GetByteCountTest()
-        {
-            Assert.Equal(2, BinaryIntegerHelper<short>.GetByteCount((short)0x0000));
-            Assert.Equal(2, BinaryIntegerHelper<short>.GetByteCount((short)0x0001));
-            Assert.Equal(2, BinaryIntegerHelper<short>.GetByteCount((short)0x7FFF));
-            Assert.Equal(2, BinaryIntegerHelper<short>.GetByteCount(unchecked((short)0x8000)));
-            Assert.Equal(2, BinaryIntegerHelper<short>.GetByteCount(unchecked((short)0xFFFF)));
-        }
-
-        [Fact]
-        public static void TryWriteBigEndianTest()
-        {
-            Span<byte> destination = stackalloc byte[2];
-            int bytesWritten = 0;
-
-            Assert.True(BinaryIntegerHelper<short>.TryWriteBigEndian((short)0x0000, destination, out bytesWritten));
-            Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray());
-
-            Assert.True(BinaryIntegerHelper<short>.TryWriteBigEndian((short)0x0001, destination, out bytesWritten));
-            Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x01 }, destination.ToArray());
-
-            Assert.True(BinaryIntegerHelper<short>.TryWriteBigEndian((short)0x7FFF, destination, out bytesWritten));
-            Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x7F, 0xFF }, destination.ToArray());
-
-            Assert.True(BinaryIntegerHelper<short>.TryWriteBigEndian(unchecked((short)0x8000), destination, out bytesWritten));
-            Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x80, 0x00 }, destination.ToArray());
-
-            Assert.True(BinaryIntegerHelper<short>.TryWriteBigEndian(unchecked((short)0xFFFF), destination, out bytesWritten));
-            Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
-
-            Assert.False(BinaryIntegerHelper<short>.TryWriteBigEndian(default, Span<byte>.Empty, out bytesWritten));
-            Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
-        }
-
-        [Fact]
-        public static void TryWriteLittleEndianTest()
-        {
-            Span<byte> destination = stackalloc byte[2];
-            int bytesWritten = 0;
-
-            Assert.True(BinaryIntegerHelper<short>.TryWriteLittleEndian((short)0x0000, destination, out bytesWritten));
-            Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray());
-
-            Assert.True(BinaryIntegerHelper<short>.TryWriteLittleEndian((short)0x0001, destination, out bytesWritten));
-            Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x01, 0x00 }, destination.ToArray());
-
-            Assert.True(BinaryIntegerHelper<short>.TryWriteLittleEndian((short)0x7FFF, destination, out bytesWritten));
-            Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0x7F }, destination.ToArray());
-
-            Assert.True(BinaryIntegerHelper<short>.TryWriteLittleEndian(unchecked((short)0x8000), destination, out bytesWritten));
-            Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0x00, 0x80 }, destination.ToArray());
-
-            Assert.True(BinaryIntegerHelper<short>.TryWriteLittleEndian(unchecked((short)0xFFFF), destination, out bytesWritten));
-            Assert.Equal(2, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
-
-            Assert.False(BinaryIntegerHelper<short>.TryWriteLittleEndian(default, Span<byte>.Empty, out bytesWritten));
-            Assert.Equal(0, bytesWritten);
-            Assert.Equal(new byte[] { 0xFF, 0xFF }, destination.ToArray());
-        }
+        //
+        // IShiftOperators
+        //
 
         [Fact]
         public static void op_LeftShiftTest()
@@ -1179,6 +1241,20 @@ namespace System.Tests
             Assert.Equal((short)0x7FFF, ShiftOperatorsHelper<short, short>.op_UnsignedRightShift(unchecked((short)0xFFFF), 1));
         }
 
+        //
+        // ISignedNumber
+        //
+
+        [Fact]
+        public static void NegativeOneTest()
+        {
+            Assert.Equal(unchecked((short)0xFFFF), SignedNumberHelper<short>.NegativeOne);
+        }
+
+        //
+        // ISubtractionOperators
+        //
+
         [Fact]
         public static void op_SubtractionTest()
         {
@@ -1199,6 +1275,10 @@ namespace System.Tests
 
             Assert.Throws<OverflowException>(() => SubtractionOperatorsHelper<short, short, short>.op_CheckedSubtraction(unchecked((short)0x8000), (short)1));
         }
+
+        //
+        // IUnaryNegationOperators
+        //
 
         [Fact]
         public static void op_UnaryNegationTest()
@@ -1221,6 +1301,10 @@ namespace System.Tests
             Assert.Throws<OverflowException>(() => UnaryNegationOperatorsHelper<short, short>.op_CheckedUnaryNegation(unchecked((short)0x8000)));
         }
 
+        //
+        // IUnaryPlusOperators
+        //
+
         [Fact]
         public static void op_UnaryPlusTest()
         {
@@ -1230,6 +1314,10 @@ namespace System.Tests
             Assert.Equal(unchecked((short)0x8000), UnaryPlusOperatorsHelper<short, short>.op_UnaryPlus(unchecked((short)0x8000)));
             Assert.Equal(unchecked((short)0xFFFF), UnaryPlusOperatorsHelper<short, short>.op_UnaryPlus(unchecked((short)0xFFFF)));
         }
+
+        //
+        // IParsable and ISpanParsable
+        //
 
         [Theory]
         [MemberData(nameof(Int16Tests.Parse_Valid_TestData), MemberType = typeof(Int16Tests))]
