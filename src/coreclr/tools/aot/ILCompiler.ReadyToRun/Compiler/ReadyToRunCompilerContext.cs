@@ -36,7 +36,7 @@ namespace ILCompiler
         private SystemObjectFieldLayoutAlgorithm _systemObjectFieldLayoutAlgorithm;
         private VectorOfTFieldLayoutAlgorithm _vectorOfTFieldLayoutAlgorithm;
         private VectorFieldLayoutAlgorithm _vectorFieldLayoutAlgorithm;
-        private Int128FieldLayoutAlgorithm _Int128FieldLayoutAlgorithm;
+        private Int128FieldLayoutAlgorithm _int128FieldLayoutAlgorithm;
 
         public ReadyToRunCompilerContext(TargetDetails details, SharedGenericsMode genericsMode, bool bubbleIncludesCorelib, CompilerTypeSystemContext oldTypeSystemContext = null)
             : base(details, genericsMode)
@@ -57,7 +57,7 @@ namespace ILCompiler
             _vectorOfTFieldLayoutAlgorithm = new VectorOfTFieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm, _vectorFieldLayoutAlgorithm, matchingVectorType, bubbleIncludesCorelib);
 
             // Int128 and UInt128 should be ABI stable on all currently supported platforms
-            _Int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
+            _int128FieldLayoutAlgorithm = new Int128FieldLayoutAlgorithm(_r2rFieldLayoutAlgorithm);
 
             if (oldTypeSystemContext != null)
             {
@@ -83,7 +83,7 @@ namespace ILCompiler
             }
             else if (Int128FieldLayoutAlgorithm.IsIntegerType(type))
             {
-                return _Int128FieldLayoutAlgorithm;
+                return _int128FieldLayoutAlgorithm;
             }
             else
             {
