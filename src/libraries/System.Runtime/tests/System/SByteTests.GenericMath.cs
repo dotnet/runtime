@@ -495,6 +495,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void MaxNumberTest()
+        {
+            Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.MaxNumber((sbyte)0x00, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.MaxNumber((sbyte)0x01, (sbyte)1));
+            Assert.Equal((sbyte)0x7F, NumberHelper<sbyte>.MaxNumber((sbyte)0x7F, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.MaxNumber(unchecked((sbyte)0x80), (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.MaxNumber(unchecked((sbyte)0xFF), (sbyte)1));
+        }
+
+        [Fact]
         public static void MinTest()
         {
             Assert.Equal((sbyte)0x00, NumberHelper<sbyte>.Min((sbyte)0x00, (sbyte)1));
@@ -502,6 +512,16 @@ namespace System.Tests
             Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.Min((sbyte)0x7F, (sbyte)1));
             Assert.Equal(unchecked((sbyte)0x80), NumberHelper<sbyte>.Min(unchecked((sbyte)0x80), (sbyte)1));
             Assert.Equal(unchecked((sbyte)0xFF), NumberHelper<sbyte>.Min(unchecked((sbyte)0xFF), (sbyte)1));
+        }
+
+        [Fact]
+        public static void MinNumberTest()
+        {
+            Assert.Equal((sbyte)0x00, NumberHelper<sbyte>.MinNumber((sbyte)0x00, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.MinNumber((sbyte)0x01, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberHelper<sbyte>.MinNumber((sbyte)0x7F, (sbyte)1));
+            Assert.Equal(unchecked((sbyte)0x80), NumberHelper<sbyte>.MinNumber(unchecked((sbyte)0x80), (sbyte)1));
+            Assert.Equal(unchecked((sbyte)0xFF), NumberHelper<sbyte>.MinNumber(unchecked((sbyte)0xFF), (sbyte)1));
         }
 
         [Fact]
@@ -934,6 +954,126 @@ namespace System.Tests
                 Assert.Equal((sbyte)0x00, NumberBaseHelper<sbyte>.CreateTruncating<nuint>((nuint)0x80000000));
                 Assert.Equal(unchecked((sbyte)0xFF), NumberBaseHelper<sbyte>.CreateTruncating<nuint>((nuint)0xFFFFFFFF));
             }
+        }
+
+        [Fact]
+        public static void IsFiniteTest()
+        {
+            Assert.True(NumberBaseHelper<sbyte>.IsFinite((sbyte)0x00));
+            Assert.True(NumberBaseHelper<sbyte>.IsFinite((sbyte)0x01));
+            Assert.True(NumberBaseHelper<sbyte>.IsFinite((sbyte)0x7F));
+            Assert.True(NumberBaseHelper<sbyte>.IsFinite(unchecked((sbyte)0x80)));
+            Assert.True(NumberBaseHelper<sbyte>.IsFinite(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<sbyte>.IsInfinity((sbyte)0x00));
+            Assert.False(NumberBaseHelper<sbyte>.IsInfinity((sbyte)0x01));
+            Assert.False(NumberBaseHelper<sbyte>.IsInfinity((sbyte)0x7F));
+            Assert.False(NumberBaseHelper<sbyte>.IsInfinity(unchecked((sbyte)0x80)));
+            Assert.False(NumberBaseHelper<sbyte>.IsInfinity(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsNaNTest()
+        {
+            Assert.False(NumberBaseHelper<sbyte>.IsNaN((sbyte)0x00));
+            Assert.False(NumberBaseHelper<sbyte>.IsNaN((sbyte)0x01));
+            Assert.False(NumberBaseHelper<sbyte>.IsNaN((sbyte)0x7F));
+            Assert.False(NumberBaseHelper<sbyte>.IsNaN(unchecked((sbyte)0x80)));
+            Assert.False(NumberBaseHelper<sbyte>.IsNaN(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsNegativeTest()
+        {
+            Assert.False(NumberBaseHelper<sbyte>.IsNegative((sbyte)0x00));
+            Assert.False(NumberBaseHelper<sbyte>.IsNegative((sbyte)0x01));
+            Assert.False(NumberBaseHelper<sbyte>.IsNegative((sbyte)0x7F));
+            Assert.True(NumberBaseHelper<sbyte>.IsNegative(unchecked((sbyte)0x80)));
+            Assert.True(NumberBaseHelper<sbyte>.IsNegative(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsNegativeInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<sbyte>.IsNegativeInfinity((sbyte)0x00));
+            Assert.False(NumberBaseHelper<sbyte>.IsNegativeInfinity((sbyte)0x01));
+            Assert.False(NumberBaseHelper<sbyte>.IsNegativeInfinity((sbyte)0x7F));
+            Assert.False(NumberBaseHelper<sbyte>.IsNegativeInfinity(unchecked((sbyte)0x80)));
+            Assert.False(NumberBaseHelper<sbyte>.IsNegativeInfinity(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsNormalTest()
+        {
+            Assert.False(NumberBaseHelper<sbyte>.IsNormal((sbyte)0x00));
+            Assert.True(NumberBaseHelper<sbyte>.IsNormal((sbyte)0x01));
+            Assert.True(NumberBaseHelper<sbyte>.IsNormal((sbyte)0x7F));
+            Assert.True(NumberBaseHelper<sbyte>.IsNormal(unchecked((sbyte)0x80)));
+            Assert.True(NumberBaseHelper<sbyte>.IsNormal(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsPositiveInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<sbyte>.IsPositiveInfinity((sbyte)0x00));
+            Assert.False(NumberBaseHelper<sbyte>.IsPositiveInfinity((sbyte)0x01));
+            Assert.False(NumberBaseHelper<sbyte>.IsPositiveInfinity((sbyte)0x7F));
+            Assert.False(NumberBaseHelper<sbyte>.IsPositiveInfinity(unchecked((sbyte)0x80)));
+            Assert.False(NumberBaseHelper<sbyte>.IsPositiveInfinity(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void IsSubnormalTest()
+        {
+            Assert.False(NumberBaseHelper<sbyte>.IsSubnormal((sbyte)0x00));
+            Assert.False(NumberBaseHelper<sbyte>.IsSubnormal((sbyte)0x01));
+            Assert.False(NumberBaseHelper<sbyte>.IsSubnormal((sbyte)0x7F));
+            Assert.False(NumberBaseHelper<sbyte>.IsSubnormal(unchecked((sbyte)0x80)));
+            Assert.False(NumberBaseHelper<sbyte>.IsSubnormal(unchecked((sbyte)0xFF)));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeTest()
+        {
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MaxMagnitude((sbyte)0x00, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MaxMagnitude((sbyte)0x01, (sbyte)1));
+            Assert.Equal((sbyte)0x7F, NumberBaseHelper<sbyte>.MaxMagnitude((sbyte)0x7F, (sbyte)1));
+            Assert.Equal(unchecked((sbyte)0x80), NumberBaseHelper<sbyte>.MaxMagnitude(unchecked((sbyte)0x80), (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MaxMagnitude(unchecked((sbyte)0xFF), (sbyte)1));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeNumberTest()
+        {
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MaxMagnitudeNumber((sbyte)0x00, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MaxMagnitudeNumber((sbyte)0x01, (sbyte)1));
+            Assert.Equal((sbyte)0x7F, NumberBaseHelper<sbyte>.MaxMagnitudeNumber((sbyte)0x7F, (sbyte)1));
+            Assert.Equal(unchecked((sbyte)0x80), NumberBaseHelper<sbyte>.MaxMagnitudeNumber(unchecked((sbyte)0x80), (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MaxMagnitudeNumber(unchecked((sbyte)0xFF), (sbyte)1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeTest()
+        {
+            Assert.Equal((sbyte)0x00, NumberBaseHelper<sbyte>.MinMagnitude((sbyte)0x00, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MinMagnitude((sbyte)0x01, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MinMagnitude((sbyte)0x7F, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MinMagnitude(unchecked((sbyte)0x80), (sbyte)1));
+            Assert.Equal(unchecked((sbyte)0xFF), NumberBaseHelper<sbyte>.MinMagnitude(unchecked((sbyte)0xFF), (sbyte)1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeNumberTest()
+        {
+            Assert.Equal((sbyte)0x00, NumberBaseHelper<sbyte>.MinMagnitudeNumber((sbyte)0x00, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MinMagnitudeNumber((sbyte)0x01, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MinMagnitudeNumber((sbyte)0x7F, (sbyte)1));
+            Assert.Equal((sbyte)0x01, NumberBaseHelper<sbyte>.MinMagnitudeNumber(unchecked((sbyte)0x80), (sbyte)1));
+            Assert.Equal(unchecked((sbyte)0xFF), NumberBaseHelper<sbyte>.MinMagnitudeNumber(unchecked((sbyte)0xFF), (sbyte)1));
         }
 
         [Fact]

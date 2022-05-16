@@ -495,6 +495,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void MaxNumberTest()
+        {
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.MaxNumber((ushort)0x0000, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.MaxNumber((ushort)0x0001, (ushort)1));
+            Assert.Equal((ushort)0x7FFF, NumberHelper<ushort>.MaxNumber((ushort)0x7FFF, (ushort)1));
+            Assert.Equal((ushort)0x8000, NumberHelper<ushort>.MaxNumber((ushort)0x8000, (ushort)1));
+            Assert.Equal((ushort)0xFFFF, NumberHelper<ushort>.MaxNumber((ushort)0xFFFF, (ushort)1));
+        }
+
+        [Fact]
         public static void MinTest()
         {
             Assert.Equal((ushort)0x0000, NumberHelper<ushort>.Min((ushort)0x0000, (ushort)1));
@@ -502,6 +512,16 @@ namespace System.Tests
             Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Min((ushort)0x7FFF, (ushort)1));
             Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Min((ushort)0x8000, (ushort)1));
             Assert.Equal((ushort)0x0001, NumberHelper<ushort>.Min((ushort)0xFFFF, (ushort)1));
+        }
+
+        [Fact]
+        public static void MinNumberTest()
+        {
+            Assert.Equal((ushort)0x0000, NumberHelper<ushort>.MinNumber((ushort)0x0000, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.MinNumber((ushort)0x0001, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.MinNumber((ushort)0x7FFF, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.MinNumber((ushort)0x8000, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberHelper<ushort>.MinNumber((ushort)0xFFFF, (ushort)1));
         }
 
         [Fact]
@@ -934,6 +954,126 @@ namespace System.Tests
                 Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.CreateTruncating<nuint>((nuint)0x80000000));
                 Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.CreateTruncating<nuint>((nuint)0xFFFFFFFF));
             }
+        }
+
+        [Fact]
+        public static void IsFiniteTest()
+        {
+            Assert.True(NumberBaseHelper<ushort>.IsFinite((ushort)0x0000));
+            Assert.True(NumberBaseHelper<ushort>.IsFinite((ushort)0x0001));
+            Assert.True(NumberBaseHelper<ushort>.IsFinite((ushort)0x7FFF));
+            Assert.True(NumberBaseHelper<ushort>.IsFinite((ushort)0x8000));
+            Assert.True(NumberBaseHelper<ushort>.IsFinite((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<ushort>.IsInfinity((ushort)0x0000));
+            Assert.False(NumberBaseHelper<ushort>.IsInfinity((ushort)0x0001));
+            Assert.False(NumberBaseHelper<ushort>.IsInfinity((ushort)0x7FFF));
+            Assert.False(NumberBaseHelper<ushort>.IsInfinity((ushort)0x8000));
+            Assert.False(NumberBaseHelper<ushort>.IsInfinity((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsNaNTest()
+        {
+            Assert.False(NumberBaseHelper<ushort>.IsNaN((ushort)0x0000));
+            Assert.False(NumberBaseHelper<ushort>.IsNaN((ushort)0x0001));
+            Assert.False(NumberBaseHelper<ushort>.IsNaN((ushort)0x7FFF));
+            Assert.False(NumberBaseHelper<ushort>.IsNaN((ushort)0x8000));
+            Assert.False(NumberBaseHelper<ushort>.IsNaN((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsNegativeTest()
+        {
+            Assert.False(NumberBaseHelper<ushort>.IsNegative((ushort)0x0000));
+            Assert.False(NumberBaseHelper<ushort>.IsNegative((ushort)0x0001));
+            Assert.False(NumberBaseHelper<ushort>.IsNegative((ushort)0x7FFF));
+            Assert.False(NumberBaseHelper<ushort>.IsNegative((ushort)0x8000));
+            Assert.False(NumberBaseHelper<ushort>.IsNegative((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsNegativeInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<ushort>.IsNegativeInfinity((ushort)0x0000));
+            Assert.False(NumberBaseHelper<ushort>.IsNegativeInfinity((ushort)0x0001));
+            Assert.False(NumberBaseHelper<ushort>.IsNegativeInfinity((ushort)0x7FFF));
+            Assert.False(NumberBaseHelper<ushort>.IsNegativeInfinity((ushort)0x8000));
+            Assert.False(NumberBaseHelper<ushort>.IsNegativeInfinity((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsNormalTest()
+        {
+            Assert.False(NumberBaseHelper<ushort>.IsNormal((ushort)0x0000));
+            Assert.True(NumberBaseHelper<ushort>.IsNormal((ushort)0x0001));
+            Assert.True(NumberBaseHelper<ushort>.IsNormal((ushort)0x7FFF));
+            Assert.True(NumberBaseHelper<ushort>.IsNormal((ushort)0x8000));
+            Assert.True(NumberBaseHelper<ushort>.IsNormal((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsPositiveInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<ushort>.IsPositiveInfinity((ushort)0x0000));
+            Assert.False(NumberBaseHelper<ushort>.IsPositiveInfinity((ushort)0x0001));
+            Assert.False(NumberBaseHelper<ushort>.IsPositiveInfinity((ushort)0x7FFF));
+            Assert.False(NumberBaseHelper<ushort>.IsPositiveInfinity((ushort)0x8000));
+            Assert.False(NumberBaseHelper<ushort>.IsPositiveInfinity((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void IsSubnormalTest()
+        {
+            Assert.False(NumberBaseHelper<ushort>.IsSubnormal((ushort)0x0000));
+            Assert.False(NumberBaseHelper<ushort>.IsSubnormal((ushort)0x0001));
+            Assert.False(NumberBaseHelper<ushort>.IsSubnormal((ushort)0x7FFF));
+            Assert.False(NumberBaseHelper<ushort>.IsSubnormal((ushort)0x8000));
+            Assert.False(NumberBaseHelper<ushort>.IsSubnormal((ushort)0xFFFF));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeTest()
+        {
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MaxMagnitude((ushort)0x0000, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MaxMagnitude((ushort)0x0001, (ushort)1));
+            Assert.Equal((ushort)0x7FFF, NumberBaseHelper<ushort>.MaxMagnitude((ushort)0x7FFF, (ushort)1));
+            Assert.Equal((ushort)0x8000, NumberBaseHelper<ushort>.MaxMagnitude((ushort)0x8000, (ushort)1));
+            Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.MaxMagnitude((ushort)0xFFFF, (ushort)1));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeNumberTest()
+        {
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MaxMagnitudeNumber((ushort)0x0000, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MaxMagnitudeNumber((ushort)0x0001, (ushort)1));
+            Assert.Equal((ushort)0x7FFF, NumberBaseHelper<ushort>.MaxMagnitudeNumber((ushort)0x7FFF, (ushort)1));
+            Assert.Equal((ushort)0x8000, NumberBaseHelper<ushort>.MaxMagnitudeNumber((ushort)0x8000, (ushort)1));
+            Assert.Equal((ushort)0xFFFF, NumberBaseHelper<ushort>.MaxMagnitudeNumber((ushort)0xFFFF, (ushort)1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeTest()
+        {
+            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.MinMagnitude((ushort)0x0000, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MinMagnitude((ushort)0x0001, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MinMagnitude((ushort)0x7FFF, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MinMagnitude((ushort)0x8000, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MinMagnitude((ushort)0xFFFF, (ushort)1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeNumberTest()
+        {
+            Assert.Equal((ushort)0x0000, NumberBaseHelper<ushort>.MinMagnitudeNumber((ushort)0x0000, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MinMagnitudeNumber((ushort)0x0001, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MinMagnitudeNumber((ushort)0x7FFF, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MinMagnitudeNumber((ushort)0x8000, (ushort)1));
+            Assert.Equal((ushort)0x0001, NumberBaseHelper<ushort>.MinMagnitudeNumber((ushort)0xFFFF, (ushort)1));
         }
 
         [Fact]

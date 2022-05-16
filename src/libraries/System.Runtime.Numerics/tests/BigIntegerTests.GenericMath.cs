@@ -929,6 +929,20 @@ namespace System.Numerics.Tests
         }
 
         [Fact]
+        public static void MaxNumberTest()
+        {
+            Assert.Equal(One, NumberHelper<BigInteger>.MaxNumber(Zero, 1));
+            Assert.Equal(One, NumberHelper<BigInteger>.MaxNumber(One, 1));
+            Assert.Equal(Int64MaxValue, NumberHelper<BigInteger>.MaxNumber(Int64MaxValue, 1));
+
+            Assert.Equal(One, NumberHelper<BigInteger>.MaxNumber(Int64MinValue, 1));
+            Assert.Equal(One, NumberHelper<BigInteger>.MaxNumber(NegativeOne, 1));
+
+            Assert.Equal(Int64MaxValuePlusOne, NumberHelper<BigInteger>.MaxNumber(Int64MaxValuePlusOne, 1));
+            Assert.Equal(UInt64MaxValue, NumberHelper<BigInteger>.MaxNumber(UInt64MaxValue, 1));
+        }
+
+        [Fact]
         public static void MinTest()
         {
             Assert.Equal(Zero, NumberHelper<BigInteger>.Min(Zero, 1));
@@ -940,6 +954,20 @@ namespace System.Numerics.Tests
 
             Assert.Equal(One, NumberHelper<BigInteger>.Min(Int64MaxValuePlusOne, 1));
             Assert.Equal(One, NumberHelper<BigInteger>.Min(UInt64MaxValue, 1));
+        }
+
+        [Fact]
+        public static void MinNumberTest()
+        {
+            Assert.Equal(Zero, NumberHelper<BigInteger>.MinNumber(Zero, 1));
+            Assert.Equal(One, NumberHelper<BigInteger>.MinNumber(One, 1));
+            Assert.Equal(One, NumberHelper<BigInteger>.MinNumber(Int64MaxValue, 1));
+
+            Assert.Equal(Int64MinValue, NumberHelper<BigInteger>.MinNumber(Int64MinValue, 1));
+            Assert.Equal(NegativeOne, NumberHelper<BigInteger>.MinNumber(NegativeOne, 1));
+
+            Assert.Equal(One, NumberHelper<BigInteger>.MinNumber(Int64MaxValuePlusOne, 1));
+            Assert.Equal(One, NumberHelper<BigInteger>.MinNumber(UInt64MaxValue, 1));
         }
 
         [Fact]
@@ -1380,6 +1408,174 @@ namespace System.Numerics.Tests
                 Assert.Equal(Int32MaxValuePlusOne, NumberBaseHelper<BigInteger>.CreateTruncating<nuint>((nuint)0x80000000));
                 Assert.Equal(UInt32MaxValue, NumberBaseHelper<BigInteger>.CreateTruncating<nuint>((nuint)0xFFFFFFFF));
             }
+        }
+
+        [Fact]
+        public static void IsFiniteTest()
+        {
+            Assert.True(NumberBaseHelper<BigInteger>.IsFinite(Zero));
+            Assert.True(NumberBaseHelper<BigInteger>.IsFinite(One));
+            Assert.True(NumberBaseHelper<BigInteger>.IsFinite(Int64MaxValue));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsFinite(Int64MinValue));
+            Assert.True(NumberBaseHelper<BigInteger>.IsFinite(NegativeOne));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsFinite(Int64MaxValuePlusOne));
+            Assert.True(NumberBaseHelper<BigInteger>.IsFinite(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<BigInteger>.IsInfinity(Zero));
+            Assert.False(NumberBaseHelper<BigInteger>.IsInfinity(One));
+            Assert.False(NumberBaseHelper<BigInteger>.IsInfinity(Int64MaxValue));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsInfinity(Int64MinValue));
+            Assert.False(NumberBaseHelper<BigInteger>.IsInfinity(NegativeOne));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsInfinity(Int64MaxValuePlusOne));
+            Assert.False(NumberBaseHelper<BigInteger>.IsInfinity(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsNaNTest()
+        {
+            Assert.False(NumberBaseHelper<BigInteger>.IsNaN(Zero));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNaN(One));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNaN(Int64MaxValue));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsNaN(Int64MinValue));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNaN(NegativeOne));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsNaN(Int64MaxValuePlusOne));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNaN(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsNegativeTest()
+        {
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegative(Zero));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegative(One));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegative(Int64MaxValue));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsNegative(Int64MinValue));
+            Assert.True(NumberBaseHelper<BigInteger>.IsNegative(NegativeOne));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegative(Int64MaxValuePlusOne));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegative(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsNegativeInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegativeInfinity(Zero));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegativeInfinity(One));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegativeInfinity(Int64MaxValue));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegativeInfinity(Int64MinValue));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegativeInfinity(NegativeOne));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegativeInfinity(Int64MaxValuePlusOne));
+            Assert.False(NumberBaseHelper<BigInteger>.IsNegativeInfinity(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsNormalTest()
+        {
+            Assert.False(NumberBaseHelper<BigInteger>.IsNormal(Zero));
+            Assert.True(NumberBaseHelper<BigInteger>.IsNormal(One));
+            Assert.True(NumberBaseHelper<BigInteger>.IsNormal(Int64MaxValue));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsNormal(Int64MinValue));
+            Assert.True(NumberBaseHelper<BigInteger>.IsNormal(NegativeOne));
+
+            Assert.True(NumberBaseHelper<BigInteger>.IsNormal(Int64MaxValuePlusOne));
+            Assert.True(NumberBaseHelper<BigInteger>.IsNormal(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsPositiveInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<BigInteger>.IsPositiveInfinity(Zero));
+            Assert.False(NumberBaseHelper<BigInteger>.IsPositiveInfinity(One));
+            Assert.False(NumberBaseHelper<BigInteger>.IsPositiveInfinity(Int64MaxValue));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsPositiveInfinity(Int64MinValue));
+            Assert.False(NumberBaseHelper<BigInteger>.IsPositiveInfinity(NegativeOne));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsPositiveInfinity(Int64MaxValuePlusOne));
+            Assert.False(NumberBaseHelper<BigInteger>.IsPositiveInfinity(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void IsSubnormalTest()
+        {
+            Assert.False(NumberBaseHelper<BigInteger>.IsSubnormal(Zero));
+            Assert.False(NumberBaseHelper<BigInteger>.IsSubnormal(One));
+            Assert.False(NumberBaseHelper<BigInteger>.IsSubnormal(Int64MaxValue));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsSubnormal(Int64MinValue));
+            Assert.False(NumberBaseHelper<BigInteger>.IsSubnormal(NegativeOne));
+
+            Assert.False(NumberBaseHelper<BigInteger>.IsSubnormal(Int64MaxValuePlusOne));
+            Assert.False(NumberBaseHelper<BigInteger>.IsSubnormal(UInt64MaxValue));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeTest()
+        {
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MaxMagnitude(Zero, 1));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MaxMagnitude(One, 1));
+            Assert.Equal(Int64MaxValue, NumberBaseHelper<BigInteger>.MaxMagnitude(Int64MaxValue, 1));
+
+            Assert.Equal(Int64MinValue, NumberBaseHelper<BigInteger>.MaxMagnitude(Int64MinValue, 1));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MaxMagnitude(NegativeOne, 1));
+
+            Assert.Equal(Int64MaxValuePlusOne, NumberBaseHelper<BigInteger>.MaxMagnitude(Int64MaxValuePlusOne, 1));
+            Assert.Equal(UInt64MaxValue, NumberBaseHelper<BigInteger>.MaxMagnitude(UInt64MaxValue, 1));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeNumberTest()
+        {
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MaxMagnitudeNumber(Zero, 1));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MaxMagnitudeNumber(One, 1));
+            Assert.Equal(Int64MaxValue, NumberBaseHelper<BigInteger>.MaxMagnitudeNumber(Int64MaxValue, 1));
+
+            Assert.Equal(Int64MinValue, NumberBaseHelper<BigInteger>.MaxMagnitudeNumber(Int64MinValue, 1));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MaxMagnitudeNumber(NegativeOne, 1));
+
+            Assert.Equal(Int64MaxValuePlusOne, NumberBaseHelper<BigInteger>.MaxMagnitudeNumber(Int64MaxValuePlusOne, 1));
+            Assert.Equal(UInt64MaxValue, NumberBaseHelper<BigInteger>.MaxMagnitudeNumber(UInt64MaxValue, 1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.MinMagnitude(Zero, 1));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitude(One, 1));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitude(Int64MaxValue, 1));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitude(Int64MinValue, 1));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.MinMagnitude(NegativeOne, 1));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitude(Int64MaxValuePlusOne, 1));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitude(UInt64MaxValue, 1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeNumberTest()
+        {
+            Assert.Equal(Zero, NumberBaseHelper<BigInteger>.MinMagnitudeNumber(Zero, 1));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitudeNumber(One, 1));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitudeNumber(Int64MaxValue, 1));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitudeNumber(Int64MinValue, 1));
+            Assert.Equal(NegativeOne, NumberBaseHelper<BigInteger>.MinMagnitudeNumber(NegativeOne, 1));
+
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitudeNumber(Int64MaxValuePlusOne, 1));
+            Assert.Equal(One, NumberBaseHelper<BigInteger>.MinMagnitudeNumber(UInt64MaxValue, 1));
         }
 
         [Fact]

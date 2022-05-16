@@ -486,6 +486,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void MaxNumberTest()
+        {
+            Assert.Equal(1.0m, NumberHelper<decimal>.MaxNumber(decimal.MinValue, 1.0m));
+            Assert.Equal(1.0m, NumberHelper<decimal>.MaxNumber(-1.0m, 1.0m));
+            Assert.Equal(1.0m, NumberHelper<decimal>.MaxNumber(-0.0m, 1.0m));
+            Assert.Equal(1.0m, NumberHelper<decimal>.MaxNumber(0.0m, 1.0m));
+            Assert.Equal(1.0m, NumberHelper<decimal>.MaxNumber(1.0m, 1.0m));
+            Assert.Equal(decimal.MaxValue, NumberHelper<decimal>.MaxNumber(decimal.MaxValue, 1.0m));
+        }
+
+        [Fact]
         public static void MinTest()
         {
             Assert.Equal(decimal.MinValue, NumberHelper<decimal>.Min(decimal.MinValue, 1.0m));
@@ -494,6 +505,17 @@ namespace System.Tests
             Assert.Equal(0.0m, NumberHelper<decimal>.Min(0.0m, 1.0m));
             Assert.Equal(1.0m, NumberHelper<decimal>.Min(1.0m, 1.0m));
             Assert.Equal(1.0m, NumberHelper<decimal>.Min(decimal.MaxValue, 1.0m));
+        }
+
+        [Fact]
+        public static void MinNumberTest()
+        {
+            Assert.Equal(decimal.MinValue, NumberHelper<decimal>.MinNumber(decimal.MinValue, 1.0m));
+            Assert.Equal(-1.0m, NumberHelper<decimal>.MinNumber(-1.0m, 1.0m));
+            Assert.Equal(-0.0m, NumberHelper<decimal>.MinNumber(-0.0m, 1.0m));
+            Assert.Equal(0.0m, NumberHelper<decimal>.MinNumber(0.0m, 1.0m));
+            Assert.Equal(1.0m, NumberHelper<decimal>.MinNumber(1.0m, 1.0m));
+            Assert.Equal(1.0m, NumberHelper<decimal>.MinNumber(decimal.MaxValue, 1.0m));
         }
 
         [Fact]
@@ -1000,6 +1022,138 @@ namespace System.Tests
                 Assert.Equal(2147483648.0m, NumberBaseHelper<decimal>.CreateTruncating<nuint>((nuint)0x80000000));
                 Assert.Equal(4294967295.0m, NumberBaseHelper<decimal>.CreateTruncating<nuint>((nuint)0xFFFFFFFF));
             }
+        }
+
+        [Fact]
+        public static void IsFiniteTest()
+        {
+            Assert.True(NumberBaseHelper<decimal>.IsFinite(decimal.MinValue));
+            Assert.True(NumberBaseHelper<decimal>.IsFinite(-1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsFinite(-0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsFinite(0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsFinite(1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsFinite(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void IsInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<decimal>.IsInfinity(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsInfinity(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsInfinity(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsInfinity(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsInfinity(1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsInfinity(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void IsNaNTest()
+        {
+            Assert.False(NumberBaseHelper<decimal>.IsNaN(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsNaN(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNaN(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNaN(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNaN(1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNaN(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void IsNegativeTest()
+        {
+            Assert.True(NumberBaseHelper<decimal>.IsNegative(decimal.MinValue));
+            Assert.True(NumberBaseHelper<decimal>.IsNegative(-1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsNegative(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNegative(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNegative(1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNegative(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void IsNegativeInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<decimal>.IsNegativeInfinity(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsNegativeInfinity(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNegativeInfinity(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNegativeInfinity(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNegativeInfinity(1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNegativeInfinity(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void IsNormalTest()
+        {
+            Assert.True(NumberBaseHelper<decimal>.IsNormal(decimal.MinValue));
+            Assert.True(NumberBaseHelper<decimal>.IsNormal(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNormal(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsNormal(0.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsNormal(1.0m));
+            Assert.True(NumberBaseHelper<decimal>.IsNormal(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void IsPositiveInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<decimal>.IsPositiveInfinity(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsPositiveInfinity(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsPositiveInfinity(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsPositiveInfinity(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsPositiveInfinity(1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsPositiveInfinity(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void IsSubnormalTest()
+        {
+            Assert.False(NumberBaseHelper<decimal>.IsSubnormal(decimal.MinValue));
+            Assert.False(NumberBaseHelper<decimal>.IsSubnormal(-1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsSubnormal(-0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsSubnormal(0.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsSubnormal(1.0m));
+            Assert.False(NumberBaseHelper<decimal>.IsSubnormal(decimal.MaxValue));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeTest()
+        {
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.MaxMagnitude(decimal.MinValue, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MaxMagnitude(-1.0m, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MaxMagnitude(-0.0m, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MaxMagnitude(0.0m, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MaxMagnitude(1.0m, 1.0m));
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.MaxMagnitude(decimal.MaxValue, 1.0m));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeNumberTest()
+        {
+            Assert.Equal(decimal.MinValue, NumberBaseHelper<decimal>.MaxMagnitudeNumber(decimal.MinValue, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MaxMagnitudeNumber(-1.0m, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MaxMagnitudeNumber(-0.0m, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MaxMagnitudeNumber(0.0m, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MaxMagnitudeNumber(1.0m, 1.0m));
+            Assert.Equal(decimal.MaxValue, NumberBaseHelper<decimal>.MaxMagnitudeNumber(decimal.MaxValue, 1.0m));
+        }
+
+        [Fact]
+        public static void MinMagnitudeTest()
+        {
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MinMagnitude(decimal.MinValue, 1.0m));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.MinMagnitude(-1.0m, 1.0m));
+            Assert.Equal(-0.0m, NumberBaseHelper<decimal>.MinMagnitude(-0.0m, 1.0m));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.MinMagnitude(0.0m, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MinMagnitude(1.0m, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MinMagnitude(decimal.MaxValue, 1.0m));
+        }
+
+        [Fact]
+        public static void MinMagnitudeNumberTest()
+        {
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MinMagnitudeNumber(decimal.MinValue, 1.0m));
+            Assert.Equal(-1.0m, NumberBaseHelper<decimal>.MinMagnitudeNumber(-1.0m, 1.0m));
+            Assert.Equal(-0.0m, NumberBaseHelper<decimal>.MinMagnitudeNumber(-0.0m, 1.0m));
+            Assert.Equal(0.0m, NumberBaseHelper<decimal>.MinMagnitudeNumber(0.0m, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MinMagnitudeNumber(1.0m, 1.0m));
+            Assert.Equal(1.0m, NumberBaseHelper<decimal>.MinMagnitudeNumber(decimal.MaxValue, 1.0m));
         }
 
         [Fact]

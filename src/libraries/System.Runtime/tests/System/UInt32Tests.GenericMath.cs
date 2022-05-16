@@ -496,6 +496,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void MaxNumberTest()
+        {
+            Assert.Equal((uint)0x00000001, NumberHelper<uint>.MaxNumber((uint)0x00000000, 1));
+            Assert.Equal((uint)0x00000001, NumberHelper<uint>.MaxNumber((uint)0x00000001, 1));
+            Assert.Equal((uint)0x7FFFFFFF, NumberHelper<uint>.MaxNumber((uint)0x7FFFFFFF, 1));
+            Assert.Equal((uint)0x80000000, NumberHelper<uint>.MaxNumber((uint)0x80000000, 1));
+            Assert.Equal((uint)0xFFFFFFFF, NumberHelper<uint>.MaxNumber((uint)0xFFFFFFFF, 1));
+        }
+
+        [Fact]
         public static void MinTest()
         {
             Assert.Equal((uint)0x00000000, NumberHelper<uint>.Min((uint)0x00000000, 1));
@@ -503,6 +513,16 @@ namespace System.Tests
             Assert.Equal((uint)0x00000001, NumberHelper<uint>.Min((uint)0x7FFFFFFF, 1));
             Assert.Equal((uint)0x00000001, NumberHelper<uint>.Min((uint)0x80000000, 1));
             Assert.Equal((uint)0x00000001, NumberHelper<uint>.Min((uint)0xFFFFFFFF, 1));
+        }
+
+        [Fact]
+        public static void MinNumberTest()
+        {
+            Assert.Equal((uint)0x00000000, NumberHelper<uint>.MinNumber((uint)0x00000000, 1));
+            Assert.Equal((uint)0x00000001, NumberHelper<uint>.MinNumber((uint)0x00000001, 1));
+            Assert.Equal((uint)0x00000001, NumberHelper<uint>.MinNumber((uint)0x7FFFFFFF, 1));
+            Assert.Equal((uint)0x00000001, NumberHelper<uint>.MinNumber((uint)0x80000000, 1));
+            Assert.Equal((uint)0x00000001, NumberHelper<uint>.MinNumber((uint)0xFFFFFFFF, 1));
         }
 
         [Fact]
@@ -935,6 +955,126 @@ namespace System.Tests
                 Assert.Equal((uint)0x80000000, NumberBaseHelper<uint>.CreateTruncating<nuint>((nuint)0x80000000));
                 Assert.Equal((uint)0xFFFFFFFF, NumberBaseHelper<uint>.CreateTruncating<nuint>((nuint)0xFFFFFFFF));
             }
+        }
+
+        [Fact]
+        public static void IsFiniteTest()
+        {
+            Assert.True(NumberBaseHelper<uint>.IsFinite((uint)0x00000000));
+            Assert.True(NumberBaseHelper<uint>.IsFinite((uint)0x00000001));
+            Assert.True(NumberBaseHelper<uint>.IsFinite((uint)0x7FFFFFFF));
+            Assert.True(NumberBaseHelper<uint>.IsFinite((uint)0x80000000));
+            Assert.True(NumberBaseHelper<uint>.IsFinite((uint)0xFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<uint>.IsInfinity((uint)0x00000000));
+            Assert.False(NumberBaseHelper<uint>.IsInfinity((uint)0x00000001));
+            Assert.False(NumberBaseHelper<uint>.IsInfinity((uint)0x7FFFFFFF));
+            Assert.False(NumberBaseHelper<uint>.IsInfinity((uint)0x80000000));
+            Assert.False(NumberBaseHelper<uint>.IsInfinity((uint)0xFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsNaNTest()
+        {
+            Assert.False(NumberBaseHelper<uint>.IsNaN((uint)0x00000000));
+            Assert.False(NumberBaseHelper<uint>.IsNaN((uint)0x00000001));
+            Assert.False(NumberBaseHelper<uint>.IsNaN((uint)0x7FFFFFFF));
+            Assert.False(NumberBaseHelper<uint>.IsNaN((uint)0x80000000));
+            Assert.False(NumberBaseHelper<uint>.IsNaN((uint)0xFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsNegativeTest()
+        {
+            Assert.False(NumberBaseHelper<uint>.IsNegative((uint)0x00000000));
+            Assert.False(NumberBaseHelper<uint>.IsNegative((uint)0x00000001));
+            Assert.False(NumberBaseHelper<uint>.IsNegative((uint)0x7FFFFFFF));
+            Assert.False(NumberBaseHelper<uint>.IsNegative((uint)0x80000000));
+            Assert.False(NumberBaseHelper<uint>.IsNegative((uint)0xFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsNegativeInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<uint>.IsNegativeInfinity((uint)0x00000000));
+            Assert.False(NumberBaseHelper<uint>.IsNegativeInfinity((uint)0x00000001));
+            Assert.False(NumberBaseHelper<uint>.IsNegativeInfinity((uint)0x7FFFFFFF));
+            Assert.False(NumberBaseHelper<uint>.IsNegativeInfinity((uint)0x80000000));
+            Assert.False(NumberBaseHelper<uint>.IsNegativeInfinity((uint)0xFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsNormalTest()
+        {
+            Assert.False(NumberBaseHelper<uint>.IsNormal((uint)0x00000000));
+            Assert.True(NumberBaseHelper<uint>.IsNormal((uint)0x00000001));
+            Assert.True(NumberBaseHelper<uint>.IsNormal((uint)0x7FFFFFFF));
+            Assert.True(NumberBaseHelper<uint>.IsNormal((uint)0x80000000));
+            Assert.True(NumberBaseHelper<uint>.IsNormal((uint)0xFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsPositiveInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<uint>.IsPositiveInfinity((uint)0x00000000));
+            Assert.False(NumberBaseHelper<uint>.IsPositiveInfinity((uint)0x00000001));
+            Assert.False(NumberBaseHelper<uint>.IsPositiveInfinity((uint)0x7FFFFFFF));
+            Assert.False(NumberBaseHelper<uint>.IsPositiveInfinity((uint)0x80000000));
+            Assert.False(NumberBaseHelper<uint>.IsPositiveInfinity((uint)0xFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsSubnormalTest()
+        {
+            Assert.False(NumberBaseHelper<uint>.IsSubnormal((uint)0x00000000));
+            Assert.False(NumberBaseHelper<uint>.IsSubnormal((uint)0x00000001));
+            Assert.False(NumberBaseHelper<uint>.IsSubnormal((uint)0x7FFFFFFF));
+            Assert.False(NumberBaseHelper<uint>.IsSubnormal((uint)0x80000000));
+            Assert.False(NumberBaseHelper<uint>.IsSubnormal((uint)0xFFFFFFFF));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeTest()
+        {
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MaxMagnitude((uint)0x00000000, 1));
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MaxMagnitude((uint)0x00000001, 1));
+            Assert.Equal((uint)0x7FFFFFFF, NumberBaseHelper<uint>.MaxMagnitude((uint)0x7FFFFFFF, 1));
+            Assert.Equal((uint)0x80000000, NumberBaseHelper<uint>.MaxMagnitude((uint)0x80000000, 1));
+            Assert.Equal((uint)0xFFFFFFFF, NumberBaseHelper<uint>.MaxMagnitude((uint)0xFFFFFFFF, 1));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeNumberTest()
+        {
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MaxMagnitudeNumber((uint)0x00000000, 1));
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MaxMagnitudeNumber((uint)0x00000001, 1));
+            Assert.Equal((uint)0x7FFFFFFF, NumberBaseHelper<uint>.MaxMagnitudeNumber((uint)0x7FFFFFFF, 1));
+            Assert.Equal((uint)0x80000000, NumberBaseHelper<uint>.MaxMagnitudeNumber((uint)0x80000000, 1));
+            Assert.Equal((uint)0xFFFFFFFF, NumberBaseHelper<uint>.MaxMagnitudeNumber((uint)0xFFFFFFFF, 1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeTest()
+        {
+            Assert.Equal((uint)0x00000000, NumberBaseHelper<uint>.MinMagnitude((uint)0x00000000, 1));
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MinMagnitude((uint)0x00000001, 1));
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MinMagnitude((uint)0x7FFFFFFF, 1));
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MinMagnitude((uint)0x80000000, 1));
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MinMagnitude((uint)0xFFFFFFFF, 1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeNumberTest()
+        {
+            Assert.Equal((uint)0x00000000, NumberBaseHelper<uint>.MinMagnitudeNumber((uint)0x00000000, 1));
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MinMagnitudeNumber((uint)0x00000001, 1));
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MinMagnitudeNumber((uint)0x7FFFFFFF, 1));
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MinMagnitudeNumber((uint)0x80000000, 1));
+            Assert.Equal((uint)0x00000001, NumberBaseHelper<uint>.MinMagnitudeNumber((uint)0xFFFFFFFF, 1));
         }
 
         [Fact]

@@ -494,6 +494,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void MaxNumberTest()
+        {
+            Assert.Equal((ulong)0x0000000000000001, NumberHelper<ulong>.MaxNumber((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberHelper<ulong>.MaxNumber((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, NumberHelper<ulong>.MaxNumber((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x8000000000000000, NumberHelper<ulong>.MaxNumber((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFF, NumberHelper<ulong>.MaxNumber((ulong)0xFFFFFFFFFFFFFFFF, 1));
+        }
+
+        [Fact]
         public static void MinTest()
         {
             Assert.Equal((ulong)0x0000000000000000, NumberHelper<ulong>.Min((ulong)0x0000000000000000, 1));
@@ -501,6 +511,16 @@ namespace System.Tests
             Assert.Equal((ulong)0x0000000000000001, NumberHelper<ulong>.Min((ulong)0x7FFFFFFFFFFFFFFF, 1));
             Assert.Equal((ulong)0x0000000000000001, NumberHelper<ulong>.Min((ulong)0x8000000000000000, 1));
             Assert.Equal((ulong)0x0000000000000001, NumberHelper<ulong>.Min((ulong)0xFFFFFFFFFFFFFFFF, 1));
+        }
+
+        [Fact]
+        public static void MinNumberTest()
+        {
+            Assert.Equal((ulong)0x0000000000000000, NumberHelper<ulong>.MinNumber((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberHelper<ulong>.MinNumber((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberHelper<ulong>.MinNumber((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberHelper<ulong>.MinNumber((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberHelper<ulong>.MinNumber((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]
@@ -933,6 +953,126 @@ namespace System.Tests
                 Assert.Equal((ulong)0x0000000080000000, NumberBaseHelper<ulong>.CreateTruncating<nuint>((nuint)0x80000000));
                 Assert.Equal((ulong)0x00000000FFFFFFFF, NumberBaseHelper<ulong>.CreateTruncating<nuint>((nuint)0xFFFFFFFF));
             }
+        }
+
+        [Fact]
+        public static void IsFiniteTest()
+        {
+            Assert.True(NumberBaseHelper<ulong>.IsFinite((ulong)0x0000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsFinite((ulong)0x0000000000000001));
+            Assert.True(NumberBaseHelper<ulong>.IsFinite((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.True(NumberBaseHelper<ulong>.IsFinite((ulong)0x8000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsFinite((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<ulong>.IsInfinity((ulong)0x0000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsInfinity((ulong)0x0000000000000001));
+            Assert.False(NumberBaseHelper<ulong>.IsInfinity((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.False(NumberBaseHelper<ulong>.IsInfinity((ulong)0x8000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsInfinity((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsNaNTest()
+        {
+            Assert.False(NumberBaseHelper<ulong>.IsNaN((ulong)0x0000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsNaN((ulong)0x0000000000000001));
+            Assert.False(NumberBaseHelper<ulong>.IsNaN((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.False(NumberBaseHelper<ulong>.IsNaN((ulong)0x8000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsNaN((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsNegativeTest()
+        {
+            Assert.False(NumberBaseHelper<ulong>.IsNegative((ulong)0x0000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsNegative((ulong)0x0000000000000001));
+            Assert.False(NumberBaseHelper<ulong>.IsNegative((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.False(NumberBaseHelper<ulong>.IsNegative((ulong)0x8000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsNegative((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsNegativeInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<ulong>.IsNegativeInfinity((ulong)0x0000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsNegativeInfinity((ulong)0x0000000000000001));
+            Assert.False(NumberBaseHelper<ulong>.IsNegativeInfinity((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.False(NumberBaseHelper<ulong>.IsNegativeInfinity((ulong)0x8000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsNegativeInfinity((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsNormalTest()
+        {
+            Assert.False(NumberBaseHelper<ulong>.IsNormal((ulong)0x0000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsNormal((ulong)0x0000000000000001));
+            Assert.True(NumberBaseHelper<ulong>.IsNormal((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.True(NumberBaseHelper<ulong>.IsNormal((ulong)0x8000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsNormal((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsPositiveInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<ulong>.IsPositiveInfinity((ulong)0x0000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsPositiveInfinity((ulong)0x0000000000000001));
+            Assert.False(NumberBaseHelper<ulong>.IsPositiveInfinity((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.False(NumberBaseHelper<ulong>.IsPositiveInfinity((ulong)0x8000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsPositiveInfinity((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsSubnormalTest()
+        {
+            Assert.False(NumberBaseHelper<ulong>.IsSubnormal((ulong)0x0000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsSubnormal((ulong)0x0000000000000001));
+            Assert.False(NumberBaseHelper<ulong>.IsSubnormal((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.False(NumberBaseHelper<ulong>.IsSubnormal((ulong)0x8000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsSubnormal((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeTest()
+        {
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MaxMagnitude((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MaxMagnitude((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, NumberBaseHelper<ulong>.MaxMagnitude((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x8000000000000000, NumberBaseHelper<ulong>.MaxMagnitude((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFF, NumberBaseHelper<ulong>.MaxMagnitude((ulong)0xFFFFFFFFFFFFFFFF, 1));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeNumberTest()
+        {
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MaxMagnitudeNumber((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MaxMagnitudeNumber((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x7FFFFFFFFFFFFFFF, NumberBaseHelper<ulong>.MaxMagnitudeNumber((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x8000000000000000, NumberBaseHelper<ulong>.MaxMagnitudeNumber((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0xFFFFFFFFFFFFFFFF, NumberBaseHelper<ulong>.MaxMagnitudeNumber((ulong)0xFFFFFFFFFFFFFFFF, 1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeTest()
+        {
+            Assert.Equal((ulong)0x0000000000000000, NumberBaseHelper<ulong>.MinMagnitude((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MinMagnitude((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MinMagnitude((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MinMagnitude((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MinMagnitude((ulong)0xFFFFFFFFFFFFFFFF, 1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeNumberTest()
+        {
+            Assert.Equal((ulong)0x0000000000000000, NumberBaseHelper<ulong>.MinMagnitudeNumber((ulong)0x0000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MinMagnitudeNumber((ulong)0x0000000000000001, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MinMagnitudeNumber((ulong)0x7FFFFFFFFFFFFFFF, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MinMagnitudeNumber((ulong)0x8000000000000000, 1));
+            Assert.Equal((ulong)0x0000000000000001, NumberBaseHelper<ulong>.MinMagnitudeNumber((ulong)0xFFFFFFFFFFFFFFFF, 1));
         }
 
         [Fact]

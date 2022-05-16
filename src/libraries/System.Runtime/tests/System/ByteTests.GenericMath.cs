@@ -495,6 +495,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void MaxNumberTest()
+        {
+            Assert.Equal((byte)0x01, NumberHelper<byte>.MaxNumber((byte)0x00, (byte)1));
+            Assert.Equal((byte)0x01, NumberHelper<byte>.MaxNumber((byte)0x01, (byte)1));
+            Assert.Equal((byte)0x7F, NumberHelper<byte>.MaxNumber((byte)0x7F, (byte)1));
+            Assert.Equal((byte)0x80, NumberHelper<byte>.MaxNumber((byte)0x80, (byte)1));
+            Assert.Equal((byte)0xFF, NumberHelper<byte>.MaxNumber((byte)0xFF, (byte)1));
+        }
+
+        [Fact]
         public static void MinTest()
         {
             Assert.Equal((byte)0x00, NumberHelper<byte>.Min((byte)0x00, (byte)1));
@@ -502,6 +512,16 @@ namespace System.Tests
             Assert.Equal((byte)0x01, NumberHelper<byte>.Min((byte)0x7F, (byte)1));
             Assert.Equal((byte)0x01, NumberHelper<byte>.Min((byte)0x80, (byte)1));
             Assert.Equal((byte)0x01, NumberHelper<byte>.Min((byte)0xFF, (byte)1));
+        }
+
+        [Fact]
+        public static void MinNumberTest()
+        {
+            Assert.Equal((byte)0x00, NumberHelper<byte>.MinNumber((byte)0x00, (byte)1));
+            Assert.Equal((byte)0x01, NumberHelper<byte>.MinNumber((byte)0x01, (byte)1));
+            Assert.Equal((byte)0x01, NumberHelper<byte>.MinNumber((byte)0x7F, (byte)1));
+            Assert.Equal((byte)0x01, NumberHelper<byte>.MinNumber((byte)0x80, (byte)1));
+            Assert.Equal((byte)0x01, NumberHelper<byte>.MinNumber((byte)0xFF, (byte)1));
         }
 
         [Fact]
@@ -934,6 +954,126 @@ namespace System.Tests
                 Assert.Equal((byte)0x00, NumberBaseHelper<byte>.CreateTruncating<nuint>((nuint)0x80000000));
                 Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.CreateTruncating<nuint>((nuint)0xFFFFFFFF));
             }
+        }
+
+        [Fact]
+        public static void IsFiniteTest()
+        {
+            Assert.True(NumberBaseHelper<byte>.IsFinite((byte)0x00));
+            Assert.True(NumberBaseHelper<byte>.IsFinite((byte)0x01));
+            Assert.True(NumberBaseHelper<byte>.IsFinite((byte)0x7F));
+            Assert.True(NumberBaseHelper<byte>.IsFinite((byte)0x80));
+            Assert.True(NumberBaseHelper<byte>.IsFinite((byte)0xFF));
+        }
+
+        [Fact]
+        public static void IsInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<byte>.IsInfinity((byte)0x00));
+            Assert.False(NumberBaseHelper<byte>.IsInfinity((byte)0x01));
+            Assert.False(NumberBaseHelper<byte>.IsInfinity((byte)0x7F));
+            Assert.False(NumberBaseHelper<byte>.IsInfinity((byte)0x80));
+            Assert.False(NumberBaseHelper<byte>.IsInfinity((byte)0xFF));
+        }
+
+        [Fact]
+        public static void IsNaNTest()
+        {
+            Assert.False(NumberBaseHelper<byte>.IsNaN((byte)0x00));
+            Assert.False(NumberBaseHelper<byte>.IsNaN((byte)0x01));
+            Assert.False(NumberBaseHelper<byte>.IsNaN((byte)0x7F));
+            Assert.False(NumberBaseHelper<byte>.IsNaN((byte)0x80));
+            Assert.False(NumberBaseHelper<byte>.IsNaN((byte)0xFF));
+        }
+
+        [Fact]
+        public static void IsNegativeTest()
+        {
+            Assert.False(NumberBaseHelper<byte>.IsNegative((byte)0x00));
+            Assert.False(NumberBaseHelper<byte>.IsNegative((byte)0x01));
+            Assert.False(NumberBaseHelper<byte>.IsNegative((byte)0x7F));
+            Assert.False(NumberBaseHelper<byte>.IsNegative((byte)0x80));
+            Assert.False(NumberBaseHelper<byte>.IsNegative((byte)0xFF));
+        }
+
+        [Fact]
+        public static void IsNegativeInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<byte>.IsNegativeInfinity((byte)0x00));
+            Assert.False(NumberBaseHelper<byte>.IsNegativeInfinity((byte)0x01));
+            Assert.False(NumberBaseHelper<byte>.IsNegativeInfinity((byte)0x7F));
+            Assert.False(NumberBaseHelper<byte>.IsNegativeInfinity((byte)0x80));
+            Assert.False(NumberBaseHelper<byte>.IsNegativeInfinity((byte)0xFF));
+        }
+
+        [Fact]
+        public static void IsNormalTest()
+        {
+            Assert.False(NumberBaseHelper<byte>.IsNormal((byte)0x00));
+            Assert.True(NumberBaseHelper<byte>.IsNormal((byte)0x01));
+            Assert.True(NumberBaseHelper<byte>.IsNormal((byte)0x7F));
+            Assert.True(NumberBaseHelper<byte>.IsNormal((byte)0x80));
+            Assert.True(NumberBaseHelper<byte>.IsNormal((byte)0xFF));
+        }
+
+        [Fact]
+        public static void IsPositiveInfinityTest()
+        {
+            Assert.False(NumberBaseHelper<byte>.IsPositiveInfinity((byte)0x00));
+            Assert.False(NumberBaseHelper<byte>.IsPositiveInfinity((byte)0x01));
+            Assert.False(NumberBaseHelper<byte>.IsPositiveInfinity((byte)0x7F));
+            Assert.False(NumberBaseHelper<byte>.IsPositiveInfinity((byte)0x80));
+            Assert.False(NumberBaseHelper<byte>.IsPositiveInfinity((byte)0xFF));
+        }
+
+        [Fact]
+        public static void IsSubnormalTest()
+        {
+            Assert.False(NumberBaseHelper<byte>.IsSubnormal((byte)0x00));
+            Assert.False(NumberBaseHelper<byte>.IsSubnormal((byte)0x01));
+            Assert.False(NumberBaseHelper<byte>.IsSubnormal((byte)0x7F));
+            Assert.False(NumberBaseHelper<byte>.IsSubnormal((byte)0x80));
+            Assert.False(NumberBaseHelper<byte>.IsSubnormal((byte)0xFF));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeTest()
+        {
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MaxMagnitude((byte)0x00, (byte)1));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MaxMagnitude((byte)0x01, (byte)1));
+            Assert.Equal((byte)0x7F, NumberBaseHelper<byte>.MaxMagnitude((byte)0x7F, (byte)1));
+            Assert.Equal((byte)0x80, NumberBaseHelper<byte>.MaxMagnitude((byte)0x80, (byte)1));
+            Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.MaxMagnitude((byte)0xFF, (byte)1));
+        }
+
+        [Fact]
+        public static void MaxMagnitudeNumberTest()
+        {
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MaxMagnitudeNumber((byte)0x00, (byte)1));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MaxMagnitudeNumber((byte)0x01, (byte)1));
+            Assert.Equal((byte)0x7F, NumberBaseHelper<byte>.MaxMagnitudeNumber((byte)0x7F, (byte)1));
+            Assert.Equal((byte)0x80, NumberBaseHelper<byte>.MaxMagnitudeNumber((byte)0x80, (byte)1));
+            Assert.Equal((byte)0xFF, NumberBaseHelper<byte>.MaxMagnitudeNumber((byte)0xFF, (byte)1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeTest()
+        {
+            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.MinMagnitude((byte)0x00, (byte)1));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MinMagnitude((byte)0x01, (byte)1));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MinMagnitude((byte)0x7F, (byte)1));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MinMagnitude((byte)0x80, (byte)1));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MinMagnitude((byte)0xFF, (byte)1));
+        }
+
+        [Fact]
+        public static void MinMagnitudeNumberTest()
+        {
+            Assert.Equal((byte)0x00, NumberBaseHelper<byte>.MinMagnitudeNumber((byte)0x00, (byte)1));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MinMagnitudeNumber((byte)0x01, (byte)1));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MinMagnitudeNumber((byte)0x7F, (byte)1));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MinMagnitudeNumber((byte)0x80, (byte)1));
+            Assert.Equal((byte)0x01, NumberBaseHelper<byte>.MinMagnitudeNumber((byte)0xFF, (byte)1));
         }
 
         [Fact]
