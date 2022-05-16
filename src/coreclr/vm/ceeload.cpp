@@ -7727,8 +7727,6 @@ void Module::ExpandAll()
             EX_CATCH
             {
                 hr = GET_EXCEPTION()->GetHR();
-                //@telesto what should we do with this HR?  the Silverlight code doesn't seem
-                //to do anything...but that doesn't seem safe...
             }
             EX_END_CATCH(SwallowAllExceptions);
         }

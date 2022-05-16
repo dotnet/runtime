@@ -1782,21 +1782,21 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
 
     CQuickBytes qb;
     const size_t cchBuff = MAX_CLASSNAME_LENGTH + 30;
-    LPWSTR buff = fDebug ? (LPWSTR) qb.AllocNoThrow(cchBuff * sizeof(WCHAR)) : NULL;
+    LPSTR buff = fDebug ? (LPSTR) qb.AllocNoThrow(cchBuff * sizeof(CHAR)) : NULL;
 
     if ((buff == NULL) && fDebug)
     {
-        WszOutputDebugString(W("OOM when dumping VTable - falling back to logging"));
+        OutputDebugStringUtf8("OOM when dumping VTable - falling back to logging");
         fDebug = FALSE;
     }
 
     if (fDebug)
     {
-        swprintf_s(buff, cchBuff, W("Vtable (with interface dupes) for '%S':\n"), szClassName);
+        sprintf_s(buff, cchBuff, "Vtable (with interface dupes) for '%s':\n", szClassName);
 #ifdef _DEBUG
-        swprintf_s(&buff[wcslen(buff)], cchBuff - wcslen(buff) , W("  Total duplicate slots = %d\n"), g_dupMethods);
+        sprintf_s(&buff[strlen(buff)], cchBuff - strlen(buff) , "  Total duplicate slots = %d\n", g_dupMethods);
 #endif
-        WszOutputDebugString(buff);
+        OutputDebugStringUtf8(buff);
     }
     else
     {
@@ -1819,8 +1819,8 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
             {
                 DefineFullyQualifiedNameForClass();
                 LPCUTF8 name = GetFullyQualifiedNameForClass(pMD->GetMethodTable());
-                swprintf_s(buff, cchBuff,
-                           W("  slot %2d: %S::%S%S  0x%p (slot = %2d)\n"),
+                sprintf_s(buff, cchBuff,
+                           "  slot %2d: %s::%s%s  0x%p (slot = %2d)\n",
                            it.GetSlotNumber(),
                            name,
                            pszName,
@@ -1828,7 +1828,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
                            (VOID *)pMD->GetMethodEntryPoint(),
                            pMD->GetSlot()
                           );
-                WszOutputDebugString(buff);
+                OutputDebugStringUtf8(buff);
             }
             else
             {
@@ -1847,7 +1847,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
             {
                 if (fDebug)
                 {
-                    WszOutputDebugString(W("  <-- vtable ends here\n"));
+                    OutputDebugStringUtf8("  <-- vtable ends here\n");
                 }
                 else
                 {
@@ -1861,7 +1861,7 @@ MethodTable::DebugDumpVtable(LPCUTF8 szClassName, BOOL fDebug)
 
     if (fDebug)
     {
-        WszOutputDebugString(W("\n"));
+        OutputDebugStringUtf8("\n");
     }
     else
     {
