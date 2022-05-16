@@ -873,7 +873,7 @@ PhaseStatus Rationalizer::DoPhase()
                             {
                                 size_t cnsValue1 = cns1->AsIntConCommon()->IntegralValue();
                                 size_t cnsValue2 = cns2->AsIntConCommon()->IntegralValue();
-                                if ((cnsValue2 >> cnsValue1) == 1)
+                                if (cnsValue1 == cnsValue2)
                                 {
                                     node->ChangeOper(GT_MOD);
                                     node->AsOp()->gtOp2 = cns1;
