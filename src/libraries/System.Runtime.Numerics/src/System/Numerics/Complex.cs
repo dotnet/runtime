@@ -1159,7 +1159,8 @@ namespace System.Numerics
             // much as IsFinite requires both part to be finite, we require both
             // part to be "normal" (finite, non-zero, and non-subnormal) to be true
 
-            return double.IsNormal(value.m_real) && double.IsNormal(value.m_imaginary);
+            return double.IsNormal(value.m_real)
+                && ((value.m_imaginary == 0.0) || double.IsNormal(value.m_imaginary));
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
@@ -1443,9 +1444,13 @@ namespace System.Numerics
                         return y;
                     }
                 }
+                else
+                {
+                    return x;
+                }
             }
 
-            return x;
+            return y;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
@@ -1531,9 +1536,13 @@ namespace System.Numerics
                         return y;
                     }
                 }
+                else
+                {
+                    return x;
+                }
             }
 
-            return x;
+            return y;
         }
 
         /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />
