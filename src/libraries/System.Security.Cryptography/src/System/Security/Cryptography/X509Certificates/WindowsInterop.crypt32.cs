@@ -90,6 +90,14 @@ internal static partial class Interop
             return Interop.Crypt32.CryptDecodeObjectPointer(dwCertEncodingType, (IntPtr)lpszStructType, pbEncoded, cbEncoded, dwFlags, pvStructInfo, ref pcbStructInfo);
         }
 
+        public static unsafe bool CryptDecodeObjectPointer(Interop.Crypt32.CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, ReadOnlySpan<byte> encoded, Interop.Crypt32.CryptDecodeObjectFlags dwFlags, void* pvStructInfo, ref int pcbStructInfo)
+        {
+            fixed (byte* pEncoded = encoded)
+            {
+                return Interop.Crypt32.CryptDecodeObjectPointer(dwCertEncodingType, (IntPtr)lpszStructType, pEncoded, encoded.Length, dwFlags, pvStructInfo, ref pcbStructInfo);
+            }
+        }
+
         public static unsafe bool CryptEncodeObject(Interop.Crypt32.CertEncodingType dwCertEncodingType, CryptDecodeObjectStructType lpszStructType, void* pvStructInfo, byte[]? pbEncoded, ref int pcbEncoded)
         {
             return Interop.Crypt32.CryptEncodeObject(dwCertEncodingType, (IntPtr)lpszStructType, pvStructInfo, pbEncoded, ref pcbEncoded);
