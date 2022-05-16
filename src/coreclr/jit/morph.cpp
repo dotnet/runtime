@@ -13389,17 +13389,12 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
             return true;
         }
 
-        return IntegralRange(SymbolicIntegerValue::Zero, SymbolicIntegerValue::IntMax)
-            .Contains(IntegralRange::ForNode(op->AsCast()->CastOp(), this));
+        return IntegralRange::ForNode(op->AsCast()->CastOp(), this).IsPositive();
     };
 
-    bool op1UpperIsZero = isUpperZero(op1);
-    bool op2UpperIsZero = isUpperZero(op2);
-
-    // If both operands have zero as the upper half we can optimize then any
-    // signed/unsigned 64-bit comparison is equivalent to the same unsigned
-    // 32-bit comparison.
-    if (op1UpperIsZero && op2UpperIsZero)
+    // If both operands have zero as the upper half then any signed/unsigned
+    // 64-bit comparison is equivalent to the same unsigned 32-bit comparison.
+    if (isUpperZero(op1) && isUpperZero(op2))
     {
         JITDUMP("Removing redundant cast(s) for:\n")
         DISPTREE(cmp)
@@ -13410,7 +13405,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
         auto transform = [this](GenTree** use) {
             if ((*use)->IsIntegralConst())
             {
-                (*use)->BashToConst(static_cast<int>((*use)->AsIntConCommon()->LngValue()), TYP_INT);
+                (*use)->BashToConst(static_cast<int>((*use)->AsIntConCommon()->LngValue()));
                 fgUpdateConstTreeValueNumber(*use);
             }
             else
