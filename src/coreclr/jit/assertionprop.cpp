@@ -193,13 +193,6 @@ bool IntegralRange::Contains(int64_t value) const
             break;
 #endif // defined(FEATURE_HW_INTRINSICS)
 
-        // TODO-Casts: more precise ranges
-        case GT_CNS_INT:
-            return ForConstant(node->AsIntCon()->gtIconVal);
-
-        case GT_CNS_LNG:
-            return ForConstant(node->AsLngCon()->gtLconVal);
-
         default:
             break;
     }
@@ -421,64 +414,6 @@ bool IntegralRange::Contains(int64_t value) const
     }
 
     return {lowerBound, upperBound};
-}
-
-//------------------------------------------------------------------------
-// ForConstant: Get the smallest symbolic range that contains a constant.
-//
-// Arguments:
-//   value - The value
-//
-// Returns:
-//   The smallest range that contains `value`.
-//
-/* static */ IntegralRange IntegralRange::ForConstant(int64_t value)
-{
-    struct SymValuePair
-    {
-        int64_t              Value;
-        SymbolicIntegerValue SymValue;
-    };
-
-    static const SymValuePair Pairs[] = {
-        {INT64_MIN, SymbolicIntegerValue::LongMin},
-        {INT32_MIN, SymbolicIntegerValue::IntMin},
-        {INT16_MIN, SymbolicIntegerValue::ShortMin},
-        {INT8_MIN, SymbolicIntegerValue::ByteMin},
-        {0, SymbolicIntegerValue::Zero},
-        {1, SymbolicIntegerValue::One},
-        {INT8_MAX, SymbolicIntegerValue::ByteMax},
-        {UINT8_MAX, SymbolicIntegerValue::UByteMax},
-        {INT16_MAX, SymbolicIntegerValue::ShortMax},
-        {UINT16_MAX, SymbolicIntegerValue::UShortMax},
-        {INT32_MAX, SymbolicIntegerValue::IntMax},
-        {UINT32_MAX, SymbolicIntegerValue::UIntMax},
-        {INT64_MAX, SymbolicIntegerValue::LongMax},
-    };
-
-    static_assert_no_msg(ARRAY_SIZE(Pairs) == static_cast<int>(SymbolicIntegerValue::LongMax) + 1);
-
-    IntegralRange result;
-    for (size_t i = 0; i < ARRAY_SIZE(Pairs) - 1; i++)
-    {
-        if (value == Pairs[i].Value)
-        {
-            result = {Pairs[i].SymValue, Pairs[i].SymValue};
-            goto DONE;
-        }
-
-        if (value < Pairs[i + 1].Value)
-        {
-            result = {Pairs[i].SymValue, Pairs[i + 1].SymValue};
-            goto DONE;
-        }
-    }
-
-    result = {Pairs[ARRAY_SIZE(Pairs) - 1].SymValue, Pairs[ARRAY_SIZE(Pairs) - 1].SymValue};
-
-DONE:
-    assert(result.Contains(value));
-    return result;
 }
 
 #ifdef DEBUG

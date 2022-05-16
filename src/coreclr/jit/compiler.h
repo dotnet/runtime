@@ -1271,7 +1271,6 @@ public:
     static IntegralRange ForNode(GenTree* node, Compiler* compiler);
     static IntegralRange ForCastInput(GenTreeCast* cast);
     static IntegralRange ForCastOutput(GenTreeCast* cast);
-    static IntegralRange ForConstant(int64_t value);
 
 #ifdef DEBUG
     static void Print(IntegralRange range);
