@@ -1148,8 +1148,7 @@ namespace DebuggerTests
                    );
             });
 
-        
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateNullObjectPropertiesPositive() => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 6, "Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateNullableProperties:Evaluate'); 1 }})",
@@ -1170,7 +1169,7 @@ namespace DebuggerTests
                    ("tcNull?.memberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)));
             });
 
-        [Fact]
+        [ConditionalFact(nameof(RunningOnChrome))]
         public async Task EvaluateNullObjectPropertiesNegative() => await CheckInspectLocalsAtBreakpointSite(
             $"DebuggerTests.EvaluateNullableProperties", "Evaluate", 6, "Evaluate",
             $"window.setTimeout(function() {{ invoke_static_method ('[debugger-test] DebuggerTests.EvaluateNullableProperties:Evaluate'); 1 }})",
