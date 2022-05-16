@@ -12084,8 +12084,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 // Throw an InvalidCastException
 //==========================================================================
 
-extern void GetAssemblyLoadContextNameFromBinderForExceptionHandling(AssemblyBinder* binder, /*out*/ SString& alcName);
-
 VOID GetAssemblyDetailInfo(SString    &sType,
                            SString    &sAssemblyDisplayName,
                            PEAssembly *pPEAssembly,
@@ -12096,7 +12094,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
     StackSString sFormat;
     StackSString sAlcName;
 
-    GetAssemblyLoadContextNameFromBinderForExceptionHandling(pPEAssembly->GetAssemblyBinder(), sAlcName);
+    pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
 
     if (pPEAssembly->GetPath().IsEmpty())
     {

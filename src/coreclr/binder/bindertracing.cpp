@@ -80,59 +80,6 @@ namespace
 #endif // FEATURE_EVENT_TRACE
     }
 
-    void GetAssemblyLoadContextNameFromManagedALC(INT_PTR managedALC, /* out */ SString &alcName)
-    {
-        if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
-        {
-            alcName.Set(W("Default"));
-            return;
-        }
-
-        OBJECTREF *alc = reinterpret_cast<OBJECTREF *>(managedALC);
-
-        GCX_COOP();
-        struct _gc {
-            STRINGREF alcName;
-        } gc;
-        ZeroMemory(&gc, sizeof(gc));
-
-        GCPROTECT_BEGIN(gc);
-
-        PREPARE_VIRTUAL_CALLSITE(METHOD__OBJECT__TO_STRING, *alc);
-        DECLARE_ARGHOLDER_ARRAY(args, 1);
-        args[ARGNUM_0] = OBJECTREF_TO_ARGHOLDER(*alc);
-        CALL_MANAGED_METHOD_RETREF(gc.alcName, STRINGREF, args);
-        gc.alcName->GetSString(alcName);
-
-        GCPROTECT_END();
-    }
-
-    void GetAssemblyLoadContextNameFromBinder(AssemblyBinder *binder, /*out*/ SString &alcName)
-    {
-        _ASSERTE(binder != nullptr);
-
-        if (binder->IsDefault())
-        {
-            alcName.Set(W("Default"));
-        }
-        else
-        {
-            GetAssemblyLoadContextNameFromManagedALC(binder->GetManagedAssemblyLoadContext(), alcName);
-        }
-    }
-
-    void GetAssemblyLoadContextNameFromSpec(AssemblySpec *spec, /*out*/ SString &alcName)
-    {
-        _ASSERTE(spec != nullptr);
-
-        AppDomain *domain = spec->GetAppDomain();
-        AssemblyBinder* binder = spec->GetBinder();
-        if (binder == nullptr)
-            binder = spec->GetBinderFromParentAssembly(domain);
-
-        GetAssemblyLoadContextNameFromBinder(binder, alcName);
-    }
-
     void PopulateBindRequest(/*inout*/ BinderTracing::AssemblyBindOperation::BindRequest &request)
     {
         AssemblySpec *spec = request.AssemblySpec;
@@ -150,18 +97,13 @@ namespace
 
             AssemblyBinder *binder = pPEAssembly->GetAssemblyBinder();
 
-            GetAssemblyLoadContextNameFromBinder(binder, request.RequestingAssemblyLoadContext);
+            binder->GetNameForDiagnostics(request.RequestingAssemblyLoadContext);
         }
 
-        GetAssemblyLoadContextNameFromSpec(spec, request.AssemblyLoadContext);
+        AssemblyBinder::GetNameForDiagnosticsFromSpec(spec, request.AssemblyLoadContext);
     }
 
     const WCHAR *s_assemblyNotFoundMessage = W("Could not locate assembly");
-}
-
-void GetAssemblyLoadContextNameFromBinderForExceptionHandling(AssemblyBinder* binder, /*out*/ SString& alcName)
-{
-    GetAssemblyLoadContextNameFromBinder(binder, alcName);
 }
 
 bool BinderTracing::IsEnabled()
@@ -257,11 +199,11 @@ namespace BinderTracing
 
         if (managedALC != 0)
         {
-            GetAssemblyLoadContextNameFromManagedALC(managedALC, m_assemblyLoadContextName);
+            AssemblyBinder::GetNameForDiagnosticsFromManagedALC(managedALC, m_assemblyLoadContextName);
         }
         else
         {
-            GetAssemblyLoadContextNameFromBinder(binder, m_assemblyLoadContextName);
+            binder->GetNameForDiagnostics(m_assemblyLoadContextName);
         }
     }
 
@@ -425,7 +367,7 @@ namespace BinderTracing
         spec->GetDisplayName(ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN, assemblyName);
 
         StackSString alcName;
-        GetAssemblyLoadContextNameFromSpec(spec, alcName);
+        AssemblyBinder::GetNameForDiagnosticsFromSpec(spec, alcName);
 
         FireEtwResolutionAttempted(
             GetClrInstanceId(),
