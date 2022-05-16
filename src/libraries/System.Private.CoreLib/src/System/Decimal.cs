@@ -1236,8 +1236,8 @@ namespace System
         {
             if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
             {
-                uint lo64 = _lo64;
-                ulong hi32 = _hi32;
+                ulong lo64 = _lo64;
+                uint hi32 = _hi32;
 
                 if (!BitConverter.IsLittleEndian)
                 {
