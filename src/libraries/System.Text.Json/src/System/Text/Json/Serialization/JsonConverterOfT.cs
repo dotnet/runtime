@@ -18,6 +18,19 @@ namespace System.Text.Json.Serialization
         /// </summary>
         protected internal JsonConverter()
         {
+            Initialize();
+        }
+
+        internal JsonConverter(bool initialize)
+        {
+            if (initialize)
+            {
+                Initialize();
+            }
+        }
+
+        internal void Initialize()
+        {
             IsValueType = typeof(T).IsValueType;
             IsInternalConverter = GetType().Assembly == typeof(JsonConverter).Assembly;
 
@@ -62,6 +75,11 @@ namespace System.Text.Json.Serialization
         internal sealed override JsonParameterInfo CreateJsonParameterInfo()
         {
             return new JsonParameterInfo<T>();
+        }
+
+        internal sealed override JsonConverter<TargetType> CreateCastingConverter<TargetType>()
+        {
+            return new CastingConverter<TargetType, T>(this);
         }
 
         internal override Type? KeyType => null;
@@ -318,7 +336,7 @@ namespace System.Text.Json.Serialization
                 state.Current.PolymorphicSerializationState != PolymorphicSerializationState.PolymorphicReEntryStarted)
             {
                 JsonTypeInfo jsonTypeInfo = state.PeekNestedJsonTypeInfo();
-                Debug.Assert(jsonTypeInfo.PropertyInfoForTypeInfo.ConverterBase.TypeToConvert == TypeToConvert);
+                Debug.Assert(jsonTypeInfo.Converter.TypeToConvert == TypeToConvert);
 
                 bool canBePolymorphic = CanBePolymorphic || jsonTypeInfo.PolymorphicTypeResolver is not null;
                 JsonConverter? polymorphicConverter = canBePolymorphic ?
@@ -528,7 +546,11 @@ namespace System.Text.Json.Serialization
         /// <remarks>Method should be overridden in custom converters of types used in deserialized dictionary keys.</remarks>
         public virtual T ReadAsPropertyName(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
         {
-            if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
+            if (!IsInternalConverter &&
+                options.SerializerContext is null && // For consistency do not return any default converters for
+                                                     // options instances linked to a JsonSerializerContext,
+                                                     // even if the default converters might have been rooted.
+                DefaultJsonTypeInfoResolver.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
             {
                 // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
                 Debug.Assert(defaultConverter.IsInternalConverter && defaultConverter is JsonConverter<T>);
@@ -562,7 +584,11 @@ namespace System.Text.Json.Serialization
         /// <remarks>Method should be overridden in custom converters of types used in serialized dictionary keys.</remarks>
         public virtual void WriteAsPropertyName(Utf8JsonWriter writer, T value, JsonSerializerOptions options)
         {
-            if (!IsInternalConverter && options.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
+            if (!IsInternalConverter &&
+                options.SerializerContext is null && // For consistency do not return any default converters for
+                                                     // options instances linked to a JsonSerializerContext,
+                                                     // even if the default converters might have been rooted.
+                DefaultJsonTypeInfoResolver.TryGetDefaultSimpleConverter(TypeToConvert, out JsonConverter? defaultConverter))
             {
                 // .NET 5 backward compatibility: hardcode the default converter for primitive key serialization.
                 Debug.Assert(defaultConverter.IsInternalConverter && defaultConverter is JsonConverter<T>);

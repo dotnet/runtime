@@ -196,20 +196,20 @@ namespace System.Text.Json.Serialization.Tests
                 // for reflection-based serialization should throw NotSupportedException
                 // since it can't resolve reflection-based metadata.
                 Assert.Throws<NotSupportedException>(() => converter.Write(writer, value, options));
-                Debug.Assert(writer.BytesCommitted + writer.BytesPending == 0);
+                Assert.Equal(0, writer.BytesCommitted + writer.BytesPending);
 
                 JsonSerializer.Serialize(42, options);
 
                 // Same operation should succeed when instance has been primed.
                 converter.Write(writer, value, options);
-                Debug.Assert(writer.BytesCommitted + writer.BytesPending > 0);
+                Assert.NotEqual(0, writer.BytesCommitted + writer.BytesPending);
                 writer.Reset();
 
                 // State change should not leak into unrelated options instances.
                 var options2 = new JsonSerializerOptions();
                 options2.AddContext<JsonContext>();
                 Assert.Throws<NotSupportedException>(() => converter.Write(writer, value, options2));
-                Debug.Assert(writer.BytesCommitted + writer.BytesPending == 0);
+                Assert.Equal(0, writer.BytesCommitted + writer.BytesPending);
             }).Dispose();
         }
 

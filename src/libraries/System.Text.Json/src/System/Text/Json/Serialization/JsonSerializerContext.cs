@@ -1,6 +1,7 @@
 ﻿// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System.Diagnostics;
 using System.Text.Json.Serialization.Metadata;
 
 namespace System.Text.Json.Serialization
@@ -8,7 +9,7 @@ namespace System.Text.Json.Serialization
     /// <summary>
     /// Provides metadata about a set of types that is relevant to JSON serialization.
     /// </summary>
-    public abstract partial class JsonSerializerContext
+    public abstract partial class JsonSerializerContext : IJsonTypeInfoResolver
     {
         private bool? _canUseSerializationLogic;
 
@@ -19,9 +20,9 @@ namespace System.Text.Json.Serialization
         /// when instanciating the context, then a new instance is bound and returned.
         /// </summary>
         /// <remarks>
-        /// The instance cannot be mutated once it is bound with the context instance.
+        /// The instance cannot be mutated once it is bound to the context instance.
         /// </remarks>
-        public JsonSerializerOptions Options => _options ??= new JsonSerializerOptions { JsonSerializerContext = this };
+        public JsonSerializerOptions Options => _options ??= new JsonSerializerOptions { TypeInfoResolver = this };
 
         /// <summary>
         /// Indicates whether pre-generated serialization logic for types in the context
@@ -83,8 +84,8 @@ namespace System.Text.Json.Serialization
         {
             if (options != null)
             {
-                options.JsonSerializerContext = this;
-                _options = options;
+                options.TypeInfoResolver = this;
+                Debug.Assert(_options == options, "options.TypeInfoResolver setter did not assign options");
             }
         }
 
@@ -94,5 +95,16 @@ namespace System.Text.Json.Serialization
         /// <param name="type">The type to fetch metadata about.</param>
         /// <returns>The metadata for the specified type, or <see langword="null" /> if the context has no metadata for the type.</returns>
         public abstract JsonTypeInfo? GetTypeInfo(Type type);
+
+        JsonTypeInfo? IJsonTypeInfoResolver.GetTypeInfo(Type type, JsonSerializerOptions options)
+        {
+            if (options != null && _options != options)
+            {
+                // TODO is this the appropriate exception message to throw?
+                ThrowHelper.ThrowInvalidOperationException_SerializerContextOptionsImmutable();
+            }
+
+            return GetTypeInfo(type);
+        }
     }
 }
