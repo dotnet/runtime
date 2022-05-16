@@ -848,6 +848,43 @@ PhaseStatus Rationalizer::DoPhase()
                 m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
             }
 
+#ifdef TARGET_ARM64
+            // Transform: a - (a / cns1) * cns1  =>  a % cns1
+            //            where cns1 is an signed integer constant that is a power of 2.
+            // We do this transformation because Lowering has a specific optimization
+            // for 'a % cns1' that is not easily reduced by other means.
+            if (node->OperGet() == GT_SUB)
+            {
+                GenTree* op1 = node->gtGetOp1();
+                GenTree* op2 = node->gtGetOp2();
+                if (node->TypeIs(TYP_INT, TYP_LONG) && !node->IsUnsigned() && op1->OperIs(GT_LCL_VAR))
+                {
+                    GenTree* mul = op2;
+                    if (mul->OperIs(GT_MUL))
+                    {
+                        GenTree* div  = mul->gtGetOp1();
+                        GenTree* cns1 = mul->gtGetOp2();
+                        if (div->OperIs(GT_DIV) && cns1->IsIntegralConst())
+                        {
+                            GenTree* a    = div->gtGetOp1();
+                            GenTree* cns2 = div->gtGetOp2();
+                            if (a->OperIs(GT_LCL_VAR) && cns2->IsIntegralConstPow2() &&
+                                op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
+                            {
+                                size_t cnsValue1 = cns1->AsIntConCommon()->IntegralValue();
+                                size_t cnsValue2 = cns2->AsIntConCommon()->IntegralValue();
+                                if ((cnsValue2 >> cnsValue1) == 1)
+                                {
+                                    node->ChangeOper(GT_MOD);
+                                    node->AsOp()->gtOp2 = cns1;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+#endif
+
             return Compiler::WALK_CONTINUE;
         }
 
