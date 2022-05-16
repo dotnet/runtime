@@ -510,21 +510,21 @@ namespace System
                     }
 
                     int length = list.Length;
-                    int cachedCount = cachedMembers.Length;
-                    int freeSlotIndex = length;
-
                     T[] newCache = list;
-                    Array.Resize(ref newCache, cachedCount + length);
 
-                    for (int cachedIndex = 0; cachedIndex < cachedCount; cachedIndex++)
+                    // When all members are requested there should be no element in cache that not found within all members list.
+                    // But somehow in very rare case such element found in cache and not appending that to the all members list
+                    // causing random test failure, must be related to the bug commented on row 597
+                    Array.Resize(ref newCache, length + 1);
+
+                    foreach (T cachedMemberInfo in cachedMembers)
                     {
-                        T cachedMemberInfo = cachedMembers[cachedIndex];
                         bool foundInList = false;
 
                         if (cachedMemberInfo == null)
                             break;
 
-                        for (int i = 0; i < length; i++)
+                        for (int i = 0; i < list.Length; i++)
                         {
                             T newMemberInfo = list[i];
 
@@ -539,8 +539,7 @@ namespace System
 
                         if (!foundInList)
                         {
-                            Volatile.Write(ref newCache[freeSlotIndex], cachedMemberInfo);
-                            freeSlotIndex++;
+                            newCache[length] = cachedMemberInfo;
                         }
                     }
 

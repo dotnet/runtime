@@ -69,11 +69,6 @@ namespace System.Reflection.Tests
             Assert.NotNull(method2);
             Assert.NotNull(mInterface2);
             MethodInfo[] methods = t.GetMethods();
-            Console.WriteLine("Methods");
-            for (int i = 0; i < methods.Length; i++)
-            {
-                Console.WriteLine("{0} {1} ", methods[i].Name, methods[i].MetadataToken);
-            }
             Assert.Equal("Method1", methods[0].Name);
             Assert.Equal(method2, methods[1]);
             Assert.Equal("add_Event1", methods[2].Name);
@@ -89,11 +84,6 @@ namespace System.Reflection.Tests
             MemberInfo[] methods = t.GetMember("Method3");
             Assert.NotNull(method3Int);
             Assert.NotNull(method3String);
-            Console.WriteLine("Method3 overloads");
-            for (int i = 0; i < methods.Length; i++)
-            {
-                Console.WriteLine("{0} {1} ", methods[i].Name, methods[i].MetadataToken);
-            }
             Assert.Equal(0, ((MethodInfo)methods[0]).GetParameters().Length);
             Assert.Equal(method3String, methods[1]);
             Assert.Equal(method3Int, methods[2]);
@@ -106,11 +96,6 @@ namespace System.Reflection.Tests
             ConstructorInfo constuctor3 = t.GetConstructor(new Type[] { typeof(string) });
             Assert.NotNull(constuctor3);
             ConstructorInfo[] constuctors = t.GetConstructors();
-            Console.WriteLine("constuctors");
-            for (int i = 0; i < constuctors.Length; i++)
-            {
-                Console.WriteLine("{0} {1} ", constuctors[i].Name, constuctors[i].MetadataToken);
-            }
             Assert.Equal(typeof(int), constuctors[0].GetParameters()[0].ParameterType);
             Assert.Equal(0, constuctors[1].GetParameters().Length);
             Assert.Equal(constuctor3, constuctors[2]);
@@ -123,11 +108,6 @@ namespace System.Reflection.Tests
             EventInfo event2 = t.GetEvent("Event2");
             Assert.NotNull(event2);
             EventInfo[] events = t.GetEvents();
-            Console.WriteLine("Events");
-            for (int i = 0; i < events.Length; i++)
-            {
-                Console.WriteLine("{0} {1} ", events[i].Name, events[i].MetadataToken);
-            }
             Assert.Equal("Event1", events[0].Name);
             Assert.Equal(event2, events[1]);
             Assert.Equal("Event3", events[2].Name);
@@ -142,11 +122,6 @@ namespace System.Reflection.Tests
             Assert.NotNull(propertyBase);
             Assert.NotNull(property3);
             PropertyInfo[] properties = t.GetProperties();
-            Console.WriteLine("Properties");
-            for (int i = 0; i < properties.Length; i++)
-            {
-                Console.WriteLine("{0} {1} ", properties[i].Name, properties[i].MetadataToken);
-            }
             Assert.Equal("Property1", properties[0].Name);
             Assert.Equal("Property2", properties[1].Name);
             Assert.Equal(property3, properties[2]);
@@ -160,11 +135,6 @@ namespace System.Reflection.Tests
             FieldInfo field3 = t.GetField("field3");
             Assert.NotNull(field3);
             FieldInfo[] fields = t.GetFields();
-            Console.WriteLine("Fields");
-            for (int i = 0; i < fields.Length; i++)
-            {
-                Console.WriteLine("{0} {1} ", fields[i].Name, fields[i].MetadataToken);
-            }
             Assert.Equal("field1", fields[0].Name);
             Assert.Equal("field2", fields[1].Name);
             Assert.Equal(field3, fields[2]);
