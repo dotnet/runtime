@@ -2719,7 +2719,6 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
     // This may take the lock and lazily create an entry, so we do it up front.
     dji = dmi->GetLatestJitInfo(fd);
 
-
     DebuggerDataLockHolder debuggerDataLockHolder(this);
 
     // Note the call to GetLatestJitInfo() will lazily create the first DJI if we don't already have one.
@@ -2730,6 +2729,7 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
             break;
         }
     }
+
     LOG((LF_CORDB, LL_INFO1000, "D::GJI: for md:0x%x (%s::%s), got dmi:0x%x.\n",
          fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
          dmi));
@@ -2757,7 +2757,9 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
             LOG((LF_CORDB,LL_INFO1000,"Couldn't find a DJI by address 0x%p, "
                 "so it might be a stub or thunk\n", pbAddr));
             TraceDestination trace;
-
+            // Nothing here needs the data lock anymore, and GetJitInfo will grab the lock as needed.
+            // However, tracing may go into code versioning paths and this lock can't be held for that.
+            debuggerDataLockHolder.Release();
             g_pEEInterface->TraceStub((const BYTE *)pbAddr, &trace);
 
             if ((trace.GetTraceType() == TRACE_MANAGED) && (pbAddr != (const BYTE *)trace.GetAddress()))
@@ -16507,7 +16509,7 @@ HRESULT DebuggerHeap::Init(BOOL fExecutable)
             return E_OUTOFMEMORY;
         }
     }
-#endif    
+#endif
 
 #endif // !DACCESS_COMPILE
 
