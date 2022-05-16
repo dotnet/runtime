@@ -98,4 +98,5 @@ async function main() {
     wasm_exit(exit_code);
 }
 
+console.log("Waiting 10s for curious human before starting the program");
 setTimeout(main, 10000);
