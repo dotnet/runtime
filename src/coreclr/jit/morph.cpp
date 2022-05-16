@@ -13343,8 +13343,6 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
 
     if (!op1->TypeIs(TYP_LONG))
     {
-        // We can extend this logic to handle small types as well, but currently it's done mostly to
-        // assist range check elimination
         return cmp;
     }
 
@@ -13366,8 +13364,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
                 return false;
             }
 
-            // For unchecked widening we only expect TYP_LONG, not TYP_ULONG
-            assert(op->CastToType() == TYP_LONG);
+            assert(varTypeIsLong(op->CastToType()));
             return true;
         }
 
