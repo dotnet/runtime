@@ -876,7 +876,7 @@ PhaseStatus Rationalizer::DoPhase()
                                 if (cnsValue1 == cnsValue2)
                                 {
                                     node->ChangeOper(GT_MOD);
-                                    node->gtGetOp2()->BashToConst(cnsValue1, cns1->TypeGet());
+                                    node->AsOp()->gtOp2 = cns1;
 
                                     m_rationalizer.comp->fgSetTreeSeq(node);
                                 }
