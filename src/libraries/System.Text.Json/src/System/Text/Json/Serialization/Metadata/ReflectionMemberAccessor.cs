@@ -22,7 +22,7 @@ namespace System.Text.Json.Serialization.Metadata
                 => Activator.CreateInstance(_type, nonPublic: false);
         }
 
-        public override JsonTypeInfo.ConstructorDelegate? CreateConstructor(
+        public override Func<object>? CreateConstructor(
             [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)] Type type)
         {
             Debug.Assert(type != null);
@@ -38,7 +38,7 @@ namespace System.Text.Json.Serialization.Metadata
                 return null;
             }
 
-            return new ConstructorContext(type).CreateInstance;
+            return new ConstructorContext(type).CreateInstance!;
         }
 
         public override Func<object[], T>? CreateParameterizedConstructor<T>(ConstructorInfo constructor)

@@ -17,15 +17,27 @@ namespace System.Text.Json.Serialization.Metadata
     /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public partial class JsonTypeInfo
+    public abstract partial class JsonTypeInfo
     {
         internal const string JsonObjectTypeName = "System.Text.Json.Nodes.JsonObject";
 
-        internal delegate object? ConstructorDelegate();
-
         internal delegate T ParameterizedConstructorDelegate<T, TArg0, TArg1, TArg2, TArg3>(TArg0 arg0, TArg1 arg1, TArg2 arg2, TArg3 arg3);
 
-        internal ConstructorDelegate? CreateObject { get; set; }
+        /// <summary>
+        /// Object constructor. If set to null type is not deserializable.
+        /// </summary>
+        internal Func<object>? CreateObject
+        {
+            get => UntypedCreateObjectAbstract;
+            set => UntypedCreateObjectAbstract = value;
+        }
+
+        // Untyped CreateObject is non-virtual public API so we pretend it's virtual by using this indirection
+        // We need it to be abstract so that we can keep typed value in sync
+        internal abstract Func<object>? UntypedCreateObjectAbstract { get; set; }
+
+        // Actual value of UntypedCreateObject, for perf it's non-virtual
+        internal Func<object>? UntypedCreateObject { get; set; }
 
         internal object? CreateObjectWithArgs { get; set; }
 

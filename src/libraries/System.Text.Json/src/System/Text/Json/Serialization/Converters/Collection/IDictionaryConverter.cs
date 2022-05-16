@@ -98,10 +98,10 @@ namespace System.Text.Json.Serialization.Converters
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
             // Deserialize as Dictionary<TKey,TValue> for interface types that support it.
-            if (jsonTypeInfo.CreateObject is null && TypeToConvert.IsAssignableFrom(typeof(Dictionary<string, object?>)))
+            if (jsonTypeInfo.UntypedCreateObject is null && TypeToConvert.IsAssignableFrom(typeof(Dictionary<string, object?>)))
             {
                 Debug.Assert(TypeToConvert.IsInterface);
-                jsonTypeInfo.CreateObject = () => new Dictionary<string, object?>();
+                jsonTypeInfo.UntypedCreateObject = () => new Dictionary<string, object?>();
             }
         }
     }

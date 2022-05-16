@@ -34,7 +34,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
             else
             {
-                SetCreateObjectFunc(objectInfo.ObjectCreator);
+                CreateObject = objectInfo.ObjectCreator;
             }
 
 
@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Metadata
             SerializeHandler = collectionInfo.SerializeHandler;
             CreateObjectWithArgs = createObjectWithArgs;
             AddMethodDelegate = addFunc;
-            SetCreateObjectFunc(collectionInfo.ObjectCreator);
+            CreateObject = collectionInfo.ObjectCreator;
         }
 
         private static JsonConverter GetConverter(JsonObjectInfoValues<T> objectInfo)
@@ -180,14 +180,6 @@ namespace System.Text.Json.Serialization.Metadata
             }
 
             PropertyCache = propertyCache;
-        }
-
-        private void SetCreateObjectFunc(Func<T>? createObjectFunc)
-        {
-            if (createObjectFunc != null)
-            {
-                CreateObject = () => createObjectFunc();
-            }
         }
     }
 }

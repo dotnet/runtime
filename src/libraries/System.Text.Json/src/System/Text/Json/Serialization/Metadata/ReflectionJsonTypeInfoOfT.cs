@@ -40,7 +40,7 @@ namespace System.Text.Json.Serialization.Metadata
                 AddPropertiesAndParametersUsingReflection();
             }
 
-            CreateObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
+            UntypedCreateObject = Options.MemberAccessorStrategy.CreateConstructor(typeof(T));
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",

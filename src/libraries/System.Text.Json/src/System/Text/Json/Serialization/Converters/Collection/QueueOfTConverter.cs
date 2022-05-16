@@ -16,12 +16,12 @@ namespace System.Text.Json.Serialization.Converters
 
         protected override void CreateCollection(ref Utf8JsonReader reader, ref ReadStack state, JsonSerializerOptions options)
         {
-            if (state.Current.JsonTypeInfo.CreateObject == null)
+            if (state.Current.JsonTypeInfo.UntypedCreateObject == null)
             {
                 ThrowHelper.ThrowNotSupportedException_SerializationNotSupported(state.Current.JsonTypeInfo.Type);
             }
 
-            state.Current.ReturnValue = state.Current.JsonTypeInfo.CreateObject();
+            state.Current.ReturnValue = state.Current.JsonTypeInfo.UntypedCreateObject();
         }
     }
 }

@@ -38,10 +38,10 @@ namespace System.Text.Json.Serialization.Converters
         internal override void ConfigureJsonTypeInfo(JsonTypeInfo jsonTypeInfo, JsonSerializerOptions options)
         {
             // Deserialize as List<T> for interface types that support it.
-            if (jsonTypeInfo.CreateObject is null && TypeToConvert.IsAssignableFrom(typeof(List<TElement>)))
+            if (jsonTypeInfo.UntypedCreateObject is null && TypeToConvert.IsAssignableFrom(typeof(List<TElement>)))
             {
                 Debug.Assert(TypeToConvert.IsInterface);
-                jsonTypeInfo.CreateObject = () => new List<TElement>();
+                jsonTypeInfo.UntypedCreateObject = () => new List<TElement>();
             }
         }
     }

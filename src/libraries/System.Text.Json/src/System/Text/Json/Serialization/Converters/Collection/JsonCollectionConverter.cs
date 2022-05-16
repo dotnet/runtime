@@ -26,7 +26,7 @@ namespace System.Text.Json.Serialization
         {
             JsonTypeInfo typeInfo = state.Current.JsonTypeInfo;
 
-            if (typeInfo.CreateObject is null)
+            if (typeInfo.UntypedCreateObject is null)
             {
                 // The contract model was not able to produce a default constructor for two possible reasons:
                 // 1. Either the declared collection type is abstract and cannot be instantiated.
@@ -41,7 +41,7 @@ namespace System.Text.Json.Serialization
                 }
             }
 
-            state.Current.ReturnValue = typeInfo.CreateObject()!;
+            state.Current.ReturnValue = typeInfo.UntypedCreateObject();
             Debug.Assert(state.Current.ReturnValue is TCollection);
         }
 

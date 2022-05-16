@@ -31,12 +31,12 @@ namespace System.Text.Json.Serialization.Converters
                     ThrowHelper.ThrowJsonException_DeserializeUnableToConvertValue(TypeToConvert);
                 }
 
-                if (jsonTypeInfo.CreateObject == null)
+                if (jsonTypeInfo.UntypedCreateObject == null)
                 {
                     ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
                 }
 
-                obj = jsonTypeInfo.CreateObject!()!;
+                obj = jsonTypeInfo.UntypedCreateObject()!;
 
                 if (obj is IJsonOnDeserializing onDeserializing)
                 {
@@ -127,12 +127,12 @@ namespace System.Text.Json.Serialization.Converters
                         return true;
                     }
 
-                    if (jsonTypeInfo.CreateObject == null)
+                    if (jsonTypeInfo.UntypedCreateObject == null)
                     {
                         ThrowHelper.ThrowNotSupportedException_DeserializeNoConstructor(jsonTypeInfo.Type, ref reader, ref state);
                     }
 
-                    obj = jsonTypeInfo.CreateObject!()!;
+                    obj = jsonTypeInfo.UntypedCreateObject()!;
 
                     if (state.Current.MetadataPropertyNames.HasFlag(MetadataPropertyName.Id))
                     {

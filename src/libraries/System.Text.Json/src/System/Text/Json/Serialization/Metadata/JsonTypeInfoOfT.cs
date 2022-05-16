@@ -15,6 +15,32 @@ namespace System.Text.Json.Serialization.Metadata
     {
         private Action<Utf8JsonWriter, T>? _serialize;
 
+        private Func<T>? _typedCreateObject;
+
+        /// <summary>
+        /// Function for creating object before properties are set. If set to null type is not deserializable.
+        /// </summary>
+        internal new Func<T>? CreateObject
+        {
+            get => _typedCreateObject ??= UntypedCreateObject == null ? null : () => (T)UntypedCreateObject();
+            set
+            {
+                _typedCreateObject = value;
+                UntypedCreateObject = value == null ? null : () => value()!;
+            }
+        }
+
+        internal override Func<object>? UntypedCreateObjectAbstract
+        {
+            get => UntypedCreateObject;
+            set
+            {
+                UntypedCreateObject = value;
+                // We invalidate the cached typed value
+                _typedCreateObject = null;
+            }
+        }
+
         internal JsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(typeof(T), converter, options)
         { }
