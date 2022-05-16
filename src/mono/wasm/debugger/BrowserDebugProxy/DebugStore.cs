@@ -792,6 +792,8 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool TriedToLoadSymbolsOnDemand { get; set; }
         public MethodInfo EntryPoint { get; private set; }
 
+        private readonly Dictionary<int, SourceFile> d2s = new Dictionary<int, SourceFile>();
+
         public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
         {
             debugId = -1;
@@ -865,32 +867,55 @@ namespace Microsoft.WebAssembly.Diagnostics
         private void PopulateEnC(MetadataReader asmMetadataReaderParm, MetadataReader pdbMetadataReaderParm)
         {
             int i = 1;
-            foreach (EntityHandle encMapHandle in asmMetadataReaderParm.GetEditAndContinueMapEntries())
-            {
-                if (encMapHandle.Kind == HandleKind.MethodDebugInformation)
+            TypeInfo typeInfo = null;
+            try {
+                foreach (var entry in asmMetadataReaderParm.GetEditAndContinueLogEntries())
                 {
-                    var method = methods[asmMetadataReader.GetRowNumber(encMapHandle)];
-                    method.UpdateEnC(asmMetadataReaderParm, pdbMetadataReaderParm, i);
-                    i++;
+                    if (entry.Operation == EditAndContinueOperation.AddMethod)
+                    {
+                        var typeHandle = (TypeDefinitionHandle)entry.Handle;
+                        typeInfo = TypesByToken[MetadataTokens.GetToken(asmMetadataReaderParm, typeHandle)];
+                    }
+                    else
+                    {
+                        if (entry.Handle.Kind == HandleKind.MethodDefinition)
+                        {
+                            if (methods.TryGetValue(asmMetadataReader.GetRowNumber(entry.Handle), out MethodInfo method))
+                                method.UpdateEnC(asmMetadataReaderParm, pdbMetadataReaderParm, i);
+                            else if (typeInfo != null)
+                            {
+                                var methodDefinitionHandle = (MethodDefinitionHandle)entry.Handle;
+                                var methodDefinition = asmMetadataReaderParm.GetMethodDefinition(methodDefinitionHandle);
+                                var methodDebugInformation = pdbMetadataReaderParm.GetMethodDebugInformation(methodDefinitionHandle.ToDebugInformationHandle());
+                                Console.WriteLine(methodDebugInformation.Document.IsNil);
+                                var document = pdbMetadataReaderParm.GetDocument(methodDebugInformation.Document);
+                                var documentName = pdbMetadataReaderParm.GetString(document.Name);
+                                SourceFile source = FindSource(methodDebugInformation.Document, asmMetadataReaderParm.GetRowNumber(methodDebugInformation.Document), documentName);
+                                var methodInfo = new MethodInfo(this, methodDefinitionHandle, asmMetadataReaderParm.GetRowNumber(methodDefinitionHandle), source, typeInfo, asmMetadataReader, pdbMetadataReader);
+                                methods[asmMetadataReader.GetRowNumber(entry.Handle)] = methodInfo;
+                            }
+                        }
+                    }
                 }
             }
+            catch (Exception e)
+            {
+                Console.WriteLine($"olha thays {e}");
+            }
+        }
+        private SourceFile FindSource(DocumentHandle doc, int rowid, string documentName)
+        {
+            if (d2s.TryGetValue(rowid, out SourceFile source))
+                return source;
+
+            var src = new SourceFile(this, sources.Count, doc, GetSourceLinkUrl(documentName), documentName);
+            sources.Add(src);
+            d2s[rowid] = src;
+            return src;
         }
 
         private void Populate()
         {
-            var d2s = new Dictionary<int, SourceFile>();
-
-            SourceFile FindSource(DocumentHandle doc, int rowid, string documentName)
-            {
-                if (d2s.TryGetValue(rowid, out SourceFile source))
-                    return source;
-
-                var src = new SourceFile(this, sources.Count, doc, GetSourceLinkUrl(documentName), documentName);
-                sources.Add(src);
-                d2s[rowid] = src;
-                return src;
-            };
-
             foreach (DocumentHandle dh in asmMetadataReader.Documents)
             {
                 asmMetadataReader.GetDocument(dh);

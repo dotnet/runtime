@@ -409,5 +409,28 @@ namespace DebuggerTests
             AssertEqual("StaticMethod1", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
             CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 48, 12, scripts, top_frame["location"]);
         }
+
+        [ConditionalFact(nameof(RunningOnChrome))]
+        public async Task DebugHotReloadMethod_AddingNewMethod()
+        {
+            string asm_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.dll");
+            string pdb_file = Path.Combine(DebuggerTestAppPath, "ApplyUpdateReferencedAssembly.pdb");
+            string asm_file_hot_reload = Path.Combine(DebuggerTestAppPath, "../wasm/ApplyUpdateReferencedAssembly.dll");
+
+            var bp_notchanged = await SetBreakpoint(".*/MethodBody1.cs$", 55, 12, use_regex: true);
+            var bp_invalid = await SetBreakpoint(".*/MethodBody1.cs$", 59, 12, use_regex: true);
+
+            var pause_location = await LoadAssemblyAndTestHotReloadUsingSDBWithoutChanges(
+                    asm_file, pdb_file, "MethodBody6", "StaticMethod1");
+
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 55, 12, scripts, pause_location["callFrames"]?[0]["location"]);
+            //apply first update
+            pause_location = await LoadAssemblyAndTestHotReloadUsingSDB(
+                    asm_file_hot_reload, "MethodBody6", "NewMethodStatic", 1);
+
+            JToken top_frame = pause_location["callFrames"]?[0];
+            AssertEqual("NewMethodStatic", top_frame?["functionName"]?.Value<string>(), top_frame?.ToString());
+            CheckLocation("dotnet://ApplyUpdateReferencedAssembly.dll/MethodBody1.cs", 59, 12, scripts, top_frame["location"]);
+        }
     }
 }
