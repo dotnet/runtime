@@ -615,39 +615,3 @@ export function mono_wasm_invoke_js(code: MonoString, is_exception: Int32Ptr): M
         return wrap_error(is_exception, ex);
     }
 }
-
-// TODO is this unused code ?
-// Compiles a JavaScript function from the function data passed.
-// Note: code snippet is not a function definition. Instead it must create and return a function instance.
-// code like `return function() { App.call_test_method(); };`
-export function mono_wasm_compile_function_ref(code: MonoStringRef, is_exception: Int32Ptr, result_address: MonoObjectRef): void {
-    const codeRoot = mono_wasm_new_external_root<MonoString>(code),
-        resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
-
-    const js_code = conv_string_root(codeRoot);
-    if (!js_code) {
-        // FIXME: We should probably throw an error here, compiling an empty function is almost certainly a mistake
-        js_to_mono_obj_root(MonoStringNull, resultRoot, true);
-        return;
-    }
-
-    try {
-        const closure = {
-            Module, MONO, BINDING, INTERNAL
-        };
-        const fn_body_template = `const {Module, MONO, BINDING, INTERNAL} = __closure; ${js_code} ;`;
-        const fn_defn = new Function("__closure", fn_body_template);
-        const res = fn_defn(closure);
-        if (!res || typeof res !== "function") {
-            wrap_error_root(is_exception, "Code must return an instance of a JavaScript function. Please use `return` statement to return a function.", resultRoot);
-            return;
-        }
-        Module.setValue(is_exception, 0, "i32");
-
-        js_to_mono_obj_root(res, resultRoot, true);
-    } catch (ex) {
-        wrap_error_root(is_exception, ex, resultRoot);
-    } finally {
-        resultRoot.release();
-    }
-}
