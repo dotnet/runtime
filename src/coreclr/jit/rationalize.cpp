@@ -289,6 +289,61 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
                       arg1, arg2);
 }
 
+#ifdef TARGET_ARM64
+// RewriteSubLshDiv: Possibly rewrite a SubLshDiv node into a Mod.
+//
+// Arguments:
+//    use - A use of a node.
+//
+// Transform: a - (a / cns1) >> shift  =>  a % cns1
+//            where cns1 is an signed integer constant that is a power of 2.
+// We do this transformation because Lowering has a specific optimization
+// for 'a % cns1' that is not easily reduced by other means.
+//
+void Rationalizer::RewriteSubLshDiv(GenTree** use) {
+    GenTree* const node           = *use;
+
+    if (!node->OperIs(GT_SUB))
+        return;
+
+    GenTree* op1 = node->gtGetOp1();
+    GenTree* op2 = node->gtGetOp2();
+
+    if (!(node->TypeIs(TYP_INT, TYP_LONG) && !node->IsUnsigned() && op1->OperIs(GT_LCL_VAR)))
+        return;
+
+    if (!op2->OperIs(GT_LSH))
+        return;
+
+    GenTree* lsh = op2;
+    GenTree* div  = lsh->gtGetOp1();
+    GenTree* cns1 = lsh->gtGetOp2();
+    if (div->OperIs(GT_DIV) && cns1->IsIntegralConst())
+    {
+        GenTree* a    = div->gtGetOp1();
+        GenTree* cns2 = div->gtGetOp2();
+        if (a->OperIs(GT_LCL_VAR) && cns2->IsIntegralConstPow2() &&
+            op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
+        {
+            size_t cnsValue1 = cns1->AsIntConCommon()->IntegralValue();
+            size_t cnsValue2 = cns2->AsIntConCommon()->IntegralValue();
+            if ((cnsValue2 >> cnsValue1) == 1)
+            {
+                GenTree* const treeFirstNode  = comp->fgGetFirstNode(node);
+                GenTree* const insertionPoint = treeFirstNode->gtPrev;
+                BlockRange().Remove(treeFirstNode, node);
+
+                node->ChangeOper(GT_MOD);
+                node->AsOp()->gtOp2 = cns1;
+
+                comp->gtSetEvalOrder(node);
+                BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(node), node));
+            }
+        }
+    }
+}
+#endif
+
 #ifdef DEBUG
 
 void Rationalizer::ValidateStatement(Statement* stmt, BasicBlock* block)
@@ -849,41 +904,9 @@ PhaseStatus Rationalizer::DoPhase()
             }
 
 #ifdef TARGET_ARM64
-            // Transform: a - (a / cns1) * cns1  =>  a % cns1
-            //            where cns1 is an signed integer constant that is a power of 2.
-            // We do this transformation because Lowering has a specific optimization
-            // for 'a % cns1' that is not easily reduced by other means.
             if (node->OperGet() == GT_SUB)
             {
-                GenTree* op1 = node->gtGetOp1();
-                GenTree* op2 = node->gtGetOp2();
-                if (node->TypeIs(TYP_INT, TYP_LONG) && !node->IsUnsigned() && op1->OperIs(GT_LCL_VAR))
-                {
-                    GenTree* mul = op2;
-                    if (mul->OperIs(GT_MUL))
-                    {
-                        GenTree* div  = mul->gtGetOp1();
-                        GenTree* cns1 = mul->gtGetOp2();
-                        if (div->OperIs(GT_DIV) && cns1->IsIntegralConst())
-                        {
-                            GenTree* a    = div->gtGetOp1();
-                            GenTree* cns2 = div->gtGetOp2();
-                            if (a->OperIs(GT_LCL_VAR) && cns2->IsIntegralConstPow2() &&
-                                op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
-                            {
-                                size_t cnsValue1 = cns1->AsIntConCommon()->IntegralValue();
-                                size_t cnsValue2 = cns2->AsIntConCommon()->IntegralValue();
-                                if (cnsValue1 == cnsValue2)
-                                {
-                                    node->ChangeOper(GT_MOD);
-                                    node->AsOp()->gtOp2 = cns1;
-
-                                    m_rationalizer.comp->fgSetTreeSeq(node);
-                                }
-                            }
-                        }
-                    }
-                }
+                m_rationalizer.RewriteSubLshDiv(use);
             }
 #endif
 
