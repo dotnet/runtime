@@ -127,3 +127,17 @@ export function setCU64(offset: _MemOffset, value: cuint64.CUInt64): void {
     setI32 (offset, lo);
     setI32 (<any>offset + 4, hi);
 }
+
+/// Allocates a new buffer of the given size on the Emscripten stack and passes a pointer to it to the callback.
+/// Returns the result of the callback.  As usual with stack allocations, the buffer is freed when the callback returns.
+/// Do not attempt to use the stack pointer after the callback is finished.
+export function withStackAlloc<TResult> (bytesWanted: number, f : (ptr: VoidPtr) => TResult): TResult {
+    const sp = Module.stackSave();
+    const ptr = Module.stackAlloc (bytesWanted);
+    try {
+        return f (ptr);
+    } finally {
+        Module.stackRestore(sp);
+    }
+}
+

@@ -4,7 +4,6 @@
 import { Module } from "./imports";
 import cwraps from "./cwraps";
 import type { EventPipeSessionOptions } from "./types";
-import type { VoidPtr } from "./types/emscripten";
 import * as memory from "./memory";
 
 const sizeOfInt32 = 4;
@@ -30,16 +29,6 @@ enum State {
     Initialized,
     Started,
     Done,
-}
-
-function withStackAlloc<TRes> (bytesWanted: number, f : (ptr: VoidPtr) => TRes): TRes {
-    const sp = Module.stackSave();
-    const ptr = Module.stackAlloc (bytesWanted);
-    try {
-        return f (ptr);
-    } finally {
-        Module.stackRestore(sp);
-    }
 }
 
 function start_streaming (sessionID: EventPipeSessionIDImpl): void {
@@ -123,7 +112,7 @@ export const diagnostics: Diagnostics = {
         const tracePath = computeTracePath();
         const rundown = options?.collectRundownEvents ?? defaultRundownRequested;
 
-        const [success, sessionID] = withStackAlloc (sizeOfInt32, (sessionIdOutPtr) => {
+        const [success, sessionID] = memory.withStackAlloc (sizeOfInt32, (sessionIdOutPtr) => {
             memory.setI32(sessionIdOutPtr, 0);
             if (!cwraps.mono_wasm_event_pipe_enable(tracePath, defaultBufferSizeInMB, defaultProviders, rundown, sessionIdOutPtr)) {
                 return [false, 0];
