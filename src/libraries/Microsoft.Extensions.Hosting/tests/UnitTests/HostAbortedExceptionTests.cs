@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 using Xunit;
 
 namespace Microsoft.Extensions.Hosting.Unit.Tests
@@ -13,7 +15,7 @@ namespace Microsoft.Extensions.Hosting.Unit.Tests
         {
             var exception = new HostAbortedException();
             Assert.Null(exception.InnerException);
-            Assert.Throws<HostAbortedException>(() => throw exception);
+            Assert.Throws<HostAbortedException>(new Action(() => throw exception));
         }
 
         [Theory]
@@ -21,8 +23,7 @@ namespace Microsoft.Extensions.Hosting.Unit.Tests
         [InlineData("Host aborted.", true)]
         public void TestException(string? message, bool innerException)
         {
-            HostAbortedException exception;
-            exception = innerException
+            HostAbortedException exception = innerException
                 ? new HostAbortedException(message, new Exception())
                 : new HostAbortedException(message);
 
@@ -32,7 +33,24 @@ namespace Microsoft.Extensions.Hosting.Unit.Tests
                 Assert.NotNull(exception.InnerException);
             } 
             
-            Assert.Throws<HostAbortedException>(message, () => throw exception);
+            HostAbortedException thrownException = Assert.Throws<HostAbortedException>(new Action(() => throw exception));
+            Assert.Equal(message, thrownException.Message);
+        }
+
+        [Fact]
+        public void TestSerialization()
+        {
+            var exception = new HostAbortedException();
+            using var serializationStream = new MemoryStream();
+
+            var formatter = new BinaryFormatter();
+            formatter.Serialize(serializationStream, exception);
+
+            using var deserializationStream = new MemoryStream(serializationStream.ToArray());
+            HostAbortedException deserializedException = (HostAbortedException) formatter.Deserialize(deserializationStream);
+
+            Assert.Equal(exception.Message, deserializedException.Message);
+            Assert.Null(deserializedException.InnerException);
         }
     }
 }
