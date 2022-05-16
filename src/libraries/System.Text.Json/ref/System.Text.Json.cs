@@ -1155,7 +1155,7 @@ namespace System.Text.Json.Serialization.Metadata
         public System.Action<object, T?>? Setter { get { throw null; } init { } }
     }
     [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
-    public abstract partial class JsonTypeInfo
+    public partial class JsonTypeInfo
     {
         internal JsonTypeInfo() { }
     }

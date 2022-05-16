@@ -17,7 +17,7 @@ namespace System.Text.Json.Serialization.Metadata
     /// <remarks>This API is for use by the output of the System.Text.Json source generator and should not be called directly.</remarks>
     [DebuggerDisplay("{DebuggerDisplay,nq}")]
     [EditorBrowsable(EditorBrowsableState.Never)]
-    public abstract partial class JsonTypeInfo
+    public partial class JsonTypeInfo
     {
         internal const string JsonObjectTypeName = "System.Text.Json.Nodes.JsonObject";
 
@@ -34,7 +34,18 @@ namespace System.Text.Json.Serialization.Metadata
 
         // Untyped CreateObject is non-virtual public API so we pretend it's virtual by using this indirection
         // We need it to be abstract so that we can keep typed value in sync
-        internal abstract Func<object>? UntypedCreateObjectAbstract { get; set; }
+        internal virtual Func<object>? UntypedCreateObjectAbstract
+        {
+            get
+            {
+                Debug.Fail("This should be overriden");
+                return null;
+            }
+            set
+            {
+                Debug.Fail("This should be overriden");
+            }
+        }
 
         // Actual value of UntypedCreateObject, for perf it's non-virtual
         internal Func<object>? UntypedCreateObject { get; set; }
