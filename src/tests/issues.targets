@@ -597,6 +597,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/JIT/jit64/opt/rngchk/RngchkStress3/*">
             <Issue>Needs Triage</Issue>
         </ExcludeList>
+        <ExcludeList Include="$(XunitTestBinBase)/Exceptions/UnwindFpBleedTest/UnwindFpBleedTest/*">
+          <Issue>Windows's unwinder in ARM64v8 queue doesn't contain FP unwind fix</Issue>
+        </ExcludeList>
     </ItemGroup>
 
     <!-- The following are x64 Unix failures on CoreCLR. -->
@@ -1138,9 +1141,9 @@
         <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/Reflection/Reflection/**">
             <Issue>https://github.com/dotnet/runtime/issues/34371</Issue>
         </ExcludeList>
-        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/**"> 
-            <Issue>Not supported on Mono</Issue> 
-        </ExcludeList>        
+        <ExcludeList Include="$(XunitTestBinBase)/Interop/COM/ComWrappers/**">
+            <Issue>Not supported on Mono</Issue>
+        </ExcludeList>
         <ExcludeList Include="$(XunitTestBinBase)/Interop/ICastable/Castable/**">
             <Issue>needs triage</Issue>
         </ExcludeList>
