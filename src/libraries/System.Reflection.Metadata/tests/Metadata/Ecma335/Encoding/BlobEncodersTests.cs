@@ -31,7 +31,7 @@ namespace System.Reflection.Metadata.Ecma335.Tests
         public void BlobEncoder_Field()
         {
             var b = new BlobBuilder();
-            var e = new BlobEncoder();
+            var e = new BlobEncoder(b);
             Assert.Same(b, e.Builder);
 
             var f = e.Field();
@@ -40,6 +40,14 @@ namespace System.Reflection.Metadata.Ecma335.Tests
                 .AddModifier(MetadataTokens.TypeDefinitionHandle(2), isOptional: false);
             f.Type(isByRef: true).Object();
             AssertEx.Equal(new byte[] { 0x06, 0x20, 0x04, 0x1F, 0x08, 0x10, 0x1C }, b.ToArray());
+
+            b.Clear();
+            f = e.Field();
+            f.CustomModifiers()
+                .AddModifier(MetadataTokens.TypeDefinitionHandle(1), isOptional: true)
+                .AddModifier(MetadataTokens.TypeDefinitionHandle(2), isOptional: false);
+            f.Type().Int32();
+            AssertEx.Equal(new byte[] { 0x06, 0x20, 0x04, 0x1F, 0x08, 0x08 }, b.ToArray());
         }
 
         [Fact]
