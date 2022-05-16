@@ -122,7 +122,7 @@ namespace System.Buffers
             return buffer;
         }
 
-        public override void Return(T[] array, bool clearArray = false)
+        public override async void Return(T[] array, bool clearArray = false)
         {
             if (array is null)
             {
@@ -145,7 +145,7 @@ namespace System.Buffers
                 haveBucket = true;
 
                 // Clear the array if the user requested it.
-                if (clearArray)
+                if (clearArray || RuntimeHelpers.IsReferenceOrContainsReferences<T>())
                 {
                     Array.Clear(array);
                 }
