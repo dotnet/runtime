@@ -569,7 +569,10 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
                 }
                 if (!fPortablePDB)
                 {
+                    // We didn't see a portable PDB in the debug directory but to just make sure we defensively assume that is
+                    // portable and if the diasymreader doesn't exist or fails, we go down the portable PDB path.
                     fPortablePDB = TRUE;
+
                     BOOL fFileInfoSet = FALSE;
                     ULONG32 sourceLine = 0;
                     ULONG32 sourceColumn = 0;
