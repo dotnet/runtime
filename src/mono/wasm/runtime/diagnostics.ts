@@ -47,12 +47,6 @@ function makeTimestamp(): string
     return s.replace(/[:.]/g, "-");
 }
 
-// The name of the session trace file on the VFS.  This is an implementation detail that is not exposed to the user.
-function computeTracePath (): string {
-    const timestamp = makeTimestamp();
-    return `/trace-${timestamp}.nettrace`;
-}
-
 /// An EventPipe session that saves the event data to a file in the VFS.
 class EventPipeFileSession implements EventPipeSession {
     private _state: State;
@@ -99,6 +93,9 @@ export interface Diagnostics {
     createEventPipeSession (options?: EventPipeSessionOptions): EventPipeSession | null;
 }
 
+// a conter for the number of sessions created
+let totalSessions = 0;
+
 /// APIs for working with .NET diagnostics from JavaScript.
 export const diagnostics: Diagnostics = {
     /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
@@ -109,7 +106,9 @@ export const diagnostics: Diagnostics = {
         const defaultProviders = "";
         const defaultBufferSizeInMB = 1;
 
-        const tracePath = computeTracePath();
+        // The session trace is saved to a file in the VFS. The file name doesn't matter, but we'd like it to be
+        // distinct from other traces. We include the current time in the file name.
+        const tracePath =`/trace-${makeTimestamp()}-${totalSessions++}.nettrace`;
         const rundown = options?.collectRundownEvents ?? defaultRundownRequested;
 
         const [success, sessionID] = memory.withStackAlloc (sizeOfInt32, (sessionIdOutPtr) => {
