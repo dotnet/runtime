@@ -3341,7 +3341,7 @@ namespace System.Numerics
                     // When the value is positive, we simply need to copy all bits as little endian
 
                     ref byte address = ref MemoryMarshal.GetReference(destination);
-                    address = ref Unsafe.Add(ref address, bits.Length - 1);
+                    address = ref Unsafe.Add(ref address, (bits.Length - 1) * sizeof(uint));
 
                     for (int i = 0; i < bits.Length; i++)
                     {
@@ -3362,7 +3362,7 @@ namespace System.Numerics
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
                     ref byte address = ref MemoryMarshal.GetReference(destination);
-                    address = ref Unsafe.Add(ref address, bits.Length - 1);
+                    address = ref Unsafe.Add(ref address, (bits.Length - 1) * sizeof(uint));
 
                     int i = 0;
                     uint part;
