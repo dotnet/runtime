@@ -112,8 +112,9 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             // Inbound streams are already started
             _state.StartCompletionSource.SetResult();
-
             _state.Handle = streamHandle;
+            _streamId = GetStreamId(); // needs _state.Handle to be set
+
             _canRead = true;
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
             if (!_canWrite)
@@ -257,12 +258,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             get
             {
                 ThrowIfDisposed();
-
-                if (_streamId == -1)
-                {
-                    _streamId = GetStreamId();
-                }
-
+                Debug.Assert(_streamId != -1);
                 return _streamId;
             }
         }
@@ -1138,6 +1134,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static int HandleEventStartComplete(State state, ref QUIC_STREAM_EVENT streamEvent)
         {
+            Debug.Assert(state.Stream != null);
             int status = streamEvent.START_COMPLETE.Status;
 
             // The way we expose Open(Uni|Bi)directionalStreamAsync operations is that the stream
@@ -1145,7 +1142,19 @@ namespace System.Net.Quic.Implementations.MsQuic
             // We may receive START_COMPLETE notification before the stream is accepted, so we defer
             // completing the StartcompletionSource until we get PeerAccepted notification.
 
-            if (status != QUIC_STATUS_SUCCESS)
+            if (StatusSucceeded(status))
+            {
+                state.Stream._streamId = (long)streamEvent.START_COMPLETE.ID;
+
+                if (streamEvent.START_COMPLETE.PeerAccepted != 0)
+                {
+                    // Start succeeded and we were within stream limits, stream already usable.
+                    state.StartCompletionSource.TrySetResult();
+                }
+                // if PeerAccepted == 0, we will later receive PEER_ACCEPTED event, which will
+                // complete the StartCompletionSource
+            }
+            else
             {
                 // Start irrecoverably failed. The possible status codes are:
                 //   - Aborted - connection aborted by peer
@@ -1165,13 +1174,6 @@ namespace System.Net.Quic.Implementations.MsQuic
                         ExceptionDispatchInfo.SetCurrentStackTrace(new MsQuicException(status, "StreamStart failed")));
                 }
             }
-            else if ((streamEvent.START_COMPLETE.PeerAccepted & 1) != 0)
-            {
-                // Start succeeded and we were within stream limits, stream already usable.
-                state.StartCompletionSource.TrySetResult();
-            }
-            // if PeerAccepted == 0, we will later receive PEER_ACCEPTED event, which will
-            // complete the StartCompletionSource
 
             return QUIC_STATUS_SUCCESS;
         }
@@ -1707,6 +1709,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             int status;
             unsafe
             {
+                _state.Stream = this;
                 status = MsQuicApi.Api.ApiTable->StreamStart(
                     _state.Handle.QuicHandle,
                     QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
@@ -1720,6 +1723,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             await _state.StartCompletionSource.Task.ConfigureAwait(false);
+            _state.Stream = null;
         }
 
         // Read state transitions:

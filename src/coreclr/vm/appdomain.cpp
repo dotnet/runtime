@@ -1521,15 +1521,9 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
     }
     CONTRACTL_END;
 
-    // Check for dynamically generated Invoke methods.
-    if (pMeth->IsDynamicMethod())
-    {
-        if (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0)
-            return true;
-    }
-
-    // All other reflection invocation methods are defined in CoreLib.
     MethodTable* pCaller = pMeth->GetMethodTable();
+
+    // All Reflection Invocation methods are defined in CoreLib
     if (!pCaller->GetModule()->IsSystem())
         return false;
 
@@ -1563,6 +1557,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__MULTICAST_DELEGATE,
         CLASS__METHOD_INVOKER,
         CLASS__CONSTRUCTOR_INVOKER,
+        CLASS__DYNAMIC_METHOD_INVOKER
     };
 
     static bool fInited = false;
@@ -1749,6 +1744,8 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     Frame* frame = pCf->GetFrame();
     _ASSERTE(pCf->IsFrameless() || frame);
 
+
+
     // Skipping reflection frames. We don't need to be quite as exhaustive here
     // as the security or reflection stack walking code since we know this logic
     // is only invoked for selected methods in CoreLib itself. So we're
@@ -1822,7 +1819,9 @@ StackWalkAction SystemDomain::CallersMethodCallback(CrawlFrame* pCf, VOID* data)
         pCaller->skip--;
         return SWA_CONTINUE;
     }
+
 }
+
 
 void AppDomain::Create()
 {
