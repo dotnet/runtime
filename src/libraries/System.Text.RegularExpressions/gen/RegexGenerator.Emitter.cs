@@ -837,7 +837,7 @@ namespace System.Text.RegularExpressions.Generator
                                 writer.WriteLine($"// The primary set being searched for was found. {numRemainingSets} more set{(numRemainingSets > 1 ? "s" : "")} will be checked so as");
                                 writer.WriteLine($"// to minimize the number of places TryMatchAtCurrentPosition is run unnecessarily.");
                                 writer.WriteLine($"// Make sure {(numRemainingSets > 1 ? "they fit" : "it fits")} in the remainder of the input.");
-                                using (EmitBlock(writer, $"if ((uint)(i + {maxDistance}) >= span.Length)"))
+                                using (EmitBlock(writer, $"if ((uint)(i + {maxDistance}) >= (uint)span.Length)"))
                                 {
                                     noMatchFoundLabelNeeded = true;
                                     Goto(NoMatchFound);

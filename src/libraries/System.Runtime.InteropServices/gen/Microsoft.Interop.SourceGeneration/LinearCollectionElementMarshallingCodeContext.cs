@@ -3,7 +3,7 @@
 
 namespace Microsoft.Interop
 {
-    internal sealed class LinearCollectionElementMarshallingCodeContext : StubCodeContext
+    internal sealed record LinearCollectionElementMarshallingCodeContext : StubCodeContext
     {
         private readonly string _managedSpanIdentifier;
         private readonly string _nativeSpanIdentifier;

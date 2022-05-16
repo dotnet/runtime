@@ -277,6 +277,8 @@ struct insGroup
                                   // and the emitter should continue to track GC info as if there was no new block.
 #define IGF_HAS_ALIGN 0x0400      // this group contains an alignment instruction(s) at the end to align either the next
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
+#define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
+                                  // without updating the IG's size/offsets.
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be
@@ -352,6 +354,16 @@ struct insGroup
     bool endsWithAlignInstr() const
     {
         return (igFlags & IGF_HAS_ALIGN) != 0;
+    }
+
+    //  hadAlignInstr: Checks if this IG was ever marked as aligned and later
+    //                 decided to not align. Sometimes, a loop is marked as not
+    //                 needing alignment, but the igSize was not adjusted immediately.
+    //                 This method is used during loopSize calculation, where we adjust
+    //                 the loop size by removed alignment bytes.
+    bool hadAlignInstr() const
+    {
+        return (igFlags & IGF_REMOVED_ALIGN) != 0;
     }
 
 }; // end of struct insGroup
@@ -1554,6 +1566,7 @@ protected:
         void removeAlignFlags()
         {
             idaIG->igFlags &= ~IGF_HAS_ALIGN;
+            idaIG->igFlags |= IGF_REMOVED_ALIGN;
         }
     };
     void emitCheckAlignFitInCurIG(unsigned nAlignInstr);
