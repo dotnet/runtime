@@ -23,7 +23,7 @@ if(HOST_DARWIN)
   set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
 
   if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
-    set(OS_LIBS "-lobjc" "-lc++")
+    set(OS_LIBS ${OS_LIBS} "-lobjc" "-lc++")
   endif()
 elseif(HOST_IOS)
 set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
@@ -79,6 +79,13 @@ if(HAVE_SYS_ICU)
       pal_timeZoneInfo.c
       entrypoints.c
       ${pal_icushim_sources_base})
+
+  if (TARGET_DARWIN)
+    set(icu_shim_sources_base
+        ${icu_shim_sources_base}
+        pal_locale.m)
+  endif()
+
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
   set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
   set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I\"${ICU_INCLUDEDIR}\" -I\"${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/System.Globalization.Native/\" -I\"${CMAKE_CURRENT_SOURCE_DIR}/../../../libraries/Native/Unix/Common/\" ${ICU_FLAGS}")
