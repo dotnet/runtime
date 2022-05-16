@@ -32,8 +32,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             // It must be kept alive until we receive SHUTDOWN_COMPLETE event
             public GCHandle StateGCHandle;
 
-            // Backing for StreamId
-            public long _streamId = -1;
+            public long StreamId = -1;
 
             public MsQuicStream? Stream; // roots the stream in the pinned state to prevent GC during an async read I/O.
             public MsQuicConnection.State ConnectionState = null!; // set in ctor.
@@ -113,7 +112,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Inbound streams are already started
             _state.StartCompletionSource.SetResult();
             _state.Handle = streamHandle;
-            _state._streamId = GetStreamId(streamHandle);
+            _state.StreamId = GetStreamId(streamHandle);
 
             _canRead = true;
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
@@ -144,7 +143,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 NetEventSource.Info(
                     _state,
                     $"{_state.Handle} Inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in connection {_state.ConnectionState.Handle} with StreamId {_state._streamId}.");
+                        $"in connection {_state.ConnectionState.Handle} with StreamId {_state.StreamId}.");
             }
         }
 
@@ -258,8 +257,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             get
             {
                 ThrowIfDisposed();
-                Debug.Assert(_state._streamId != -1);
-                return _state._streamId;
+                Debug.Assert(_state.StreamId != -1);
+                return _state.StreamId;
             }
         }
 
@@ -1143,8 +1142,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (StatusSucceeded(status))
             {
-                state._streamId = (long)streamEvent.START_COMPLETE.ID;
-                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.Handle} StreamId = {state._streamId}");
+                state.StreamId = (long)streamEvent.START_COMPLETE.ID;
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.Handle} StreamId = {state.StreamId}");
 
                 if (streamEvent.START_COMPLETE.PeerAccepted != 0)
                 {
