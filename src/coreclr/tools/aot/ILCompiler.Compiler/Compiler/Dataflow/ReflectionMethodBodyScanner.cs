@@ -35,7 +35,6 @@ namespace ILCompiler.Dataflow
         private readonly FlowAnnotations _annotations;
         private readonly Logger _logger;
         private readonly NodeFactory _factory;
-        private DependencyList _dependencies = new DependencyList();
         private readonly ReflectionMarker _reflectionMarker;
         private const string RequiresUnreferencedCodeAttribute = nameof(RequiresUnreferencedCodeAttribute);
         private const string RequiresDynamicCodeAttribute = nameof(RequiresDynamicCodeAttribute);
@@ -129,7 +128,7 @@ namespace ILCompiler.Dataflow
             _logger = logger;
             _factory = factory;
             _purpose = purpose;
-            _reflectionMarker = new ReflectionMarker(logger);
+            _reflectionMarker = new ReflectionMarker(logger, factory, annotations, purpose == ScanningPurpose.GetTypeDataflow, ????);
         }
 
         public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodBody)
@@ -170,7 +169,7 @@ namespace ILCompiler.Dataflow
                 }
             }
 
-            return scanner._dependencies;
+            return scanner._reflectionMarker.Dependencies;
         }
 
         public static DependencyList ProcessAttributeDataflow(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodDesc method, CustomAttributeValue arguments)
@@ -230,11 +229,11 @@ namespace ILCompiler.Dataflow
                         scanner.RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, targetValue);
                         if (result == null)
                         {
-                            result = scanner._dependencies;
+                            result = scanner._reflectionMarker.Dependencies;
                         }
                         else
                         {
-                            result.AddRange(scanner._dependencies);
+                            result.AddRange(scanner._reflectionMarker.Dependencies);
                         }
                     }
                 }
@@ -253,7 +252,7 @@ namespace ILCompiler.Dataflow
             scanner.MarkTypeForDynamicallyAccessedMembers(ref reflectionPatternContext, type, annotation);
             reflectionPatternContext.RecordHandledPattern();
             reflectionPatternContext.Dispose();
-            return scanner._dependencies;
+            return scanner._reflectionMarker.Dependencies;
         }
 
         static MultiValue GetValueNodeForCustomAttributeArgument(object argument)
@@ -291,7 +290,7 @@ namespace ILCompiler.Dataflow
             var diagnosticContext = new DiagnosticContext(new MessageOrigin(source), diagnosticsEnabled: true, logger);
             scanner.RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue);
 
-            return scanner._dependencies;
+            return scanner._reflectionMarker.Dependencies;
         }
 
         protected override void WarnAboutInvalidILInMethod(MethodIL method, int ilOffset)
@@ -565,7 +564,7 @@ namespace ILCompiler.Dataflow
                                 {
                                     if (systemTypeValue.TypeRepresented.IsEnum)
                                     {
-                                        _dependencies.Add(_factory.ConstructedTypeSymbol(systemTypeValue.TypeRepresented.MakeArrayType()), "Enum.GetValues");
+                                        _reflectionMarker.Dependencies.Add(_factory.ConstructedTypeSymbol(systemTypeValue.TypeRepresented.MakeArrayType()), "Enum.GetValues");
                                     }
                                 }
                                 else
@@ -600,7 +599,7 @@ namespace ILCompiler.Dataflow
                                 {
                                     if (systemTypeValue.TypeRepresented.IsDefType)
                                     {
-                                        _dependencies.Add(_factory.StructMarshallingData((DefType)systemTypeValue.TypeRepresented), "Marshal API");
+                                        _reflectionMarker.Dependencies.Add(_factory.StructMarshallingData((DefType)systemTypeValue.TypeRepresented), "Marshal API");
                                     }
                                 }
                                 else
@@ -625,7 +624,7 @@ namespace ILCompiler.Dataflow
                                 {
                                     if (systemTypeValue.TypeRepresented.IsDefType)
                                     {
-                                        _dependencies.Add(_factory.DelegateMarshallingData((DefType)systemTypeValue.TypeRepresented), "Marshal API");
+                                        _reflectionMarker.Dependencies.Add(_factory.DelegateMarshallingData((DefType)systemTypeValue.TypeRepresented), "Marshal API");
                                     }
                                 }
                                 else
@@ -693,7 +692,7 @@ namespace ILCompiler.Dataflow
 
                                     if (annotation != default)
                                     {
-                                        _dependencies.Add(_factory.ObjectGetTypeFlowDependencies(closestMetadataType), "GetType called on this type");
+                                        _reflectionMarker.Dependencies.Add(_factory.ObjectGetTypeFlowDependencies(closestMetadataType), "GetType called on this type");
                                     }
 
                                     reflectionContext.RecordHandledPattern();
@@ -1414,7 +1413,7 @@ namespace ILCompiler.Dataflow
                     {
                         // Also add module metadata in case this reference was through a type forward
                         if (_factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
-                            _dependencies.Add(_factory.ModuleMetadata(referenceModule), reflectionContext.MemberWithRequirements.ToString());
+                            _reflectionMarker.Dependencies.Add(_factory.ModuleMetadata(referenceModule), reflectionContext.MemberWithRequirements.ToString());
 
                         MarkType(ref reflectionContext, foundType);
                         MarkTypeForDynamicallyAccessedMembers(ref reflectionContext, foundType, requiredMemberTypes);
@@ -1524,7 +1523,7 @@ namespace ILCompiler.Dataflow
 
         void MarkType(ref ReflectionPatternContext reflectionContext, TypeDesc type)
         {
-            RootingHelpers.TryGetDependenciesForReflectedType(ref _dependencies, _factory, type, reflectionContext.MemberWithRequirements.ToString());
+            RootingHelpers.TryGetDependenciesForReflectedType(ref _reflectionMarker.Dependencies, _factory, type, reflectionContext.MemberWithRequirements.ToString());
             reflectionContext.RecordHandledPattern();
         }
 
@@ -1570,7 +1569,7 @@ namespace ILCompiler.Dataflow
                 WarnOnReflectionAccess(ref reflectionContext, method);
             }
 
-            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _dependencies, _factory, method, reflectionContext.MemberWithRequirements.ToString());
+            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _reflectionMarker.Dependencies, _factory, method, reflectionContext.MemberWithRequirements.ToString());
             reflectionContext.RecordHandledPattern();
         }
 
@@ -1581,7 +1580,7 @@ namespace ILCompiler.Dataflow
                 WarnOnReflectionAccess(ref reflectionContext, field);
             }
 
-            RootingHelpers.TryGetDependenciesForReflectedField(ref _dependencies, _factory, field, reflectionContext.MemberWithRequirements.ToString());
+            RootingHelpers.TryGetDependenciesForReflectedField(ref _reflectionMarker.Dependencies, _factory, field, reflectionContext.MemberWithRequirements.ToString());
             reflectionContext.RecordHandledPattern();
         }
 
