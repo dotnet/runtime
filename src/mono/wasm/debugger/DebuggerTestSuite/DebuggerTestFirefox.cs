@@ -422,7 +422,7 @@ public class DebuggerTestFirefox : DebuggerTestBase
                     description = res.Value["result"]["value"]["description"],
                     objectId = actor
                 });
-                if (actor.StartsWith("dotnet:valuetype:"))
+                if (actor?.StartsWith("dotnet:valuetype:") == true)
                     resObj["isValueType"] = true;
                 return (resObj, res);
             }

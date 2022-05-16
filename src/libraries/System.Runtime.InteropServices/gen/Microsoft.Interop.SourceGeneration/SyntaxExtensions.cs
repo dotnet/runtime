@@ -3,6 +3,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -12,7 +13,7 @@ namespace Microsoft.Interop
 {
     public static class SyntaxExtensions
     {
-        public static FixedStatementSyntax AddStatementWithoutEmptyStatements(this FixedStatementSyntax fixedStatement, StatementSyntax childStatement)
+        private static FixedStatementSyntax AddStatementWithoutEmptyStatements(this FixedStatementSyntax fixedStatement, StatementSyntax childStatement)
         {
             if (fixedStatement.Statement.IsKind(SyntaxKind.EmptyStatement))
             {
@@ -28,6 +29,43 @@ namespace Microsoft.Interop
                 return fixedStatement.WithStatement(block.AddStatements(childStatement));
             }
             return fixedStatement.WithStatement(SyntaxFactory.Block(fixedStatement.Statement, childStatement));
+        }
+
+        public static StatementSyntax NestFixedStatements(this ImmutableArray<FixedStatementSyntax> fixedStatements, StatementSyntax innerStatement)
+        {
+            StatementSyntax nestedStatement = innerStatement;
+            if (!fixedStatements.IsEmpty)
+            {
+                int i = fixedStatements.Length - 1;
+                nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(SyntaxFactory.Block(nestedStatement));
+                i--;
+                for (; i >= 0; i--)
+                {
+                    nestedStatement = fixedStatements[i].AddStatementWithoutEmptyStatements(nestedStatement);
+                }
+            }
+            return nestedStatement;
+        }
+
+        public static SyntaxTokenList StripTriviaFromTokens(this SyntaxTokenList tokenList)
+        {
+            SyntaxToken[] strippedTokens = new SyntaxToken[tokenList.Count];
+            for (int i = 0; i < tokenList.Count; i++)
+            {
+                strippedTokens[i] = tokenList[i].WithoutTrivia();
+            }
+            return new SyntaxTokenList(strippedTokens);
+        }
+
+        public static SyntaxTokenList AddToModifiers(this SyntaxTokenList modifiers, SyntaxKind modifierToAdd)
+        {
+            if (modifiers.IndexOf(modifierToAdd) >= 0)
+                return modifiers;
+
+            int idx = modifiers.IndexOf(SyntaxKind.PartialKeyword);
+            return idx >= 0
+                ? modifiers.Insert(idx, SyntaxFactory.Token(modifierToAdd))
+                : modifiers.Add(SyntaxFactory.Token(modifierToAdd));
         }
     }
 }

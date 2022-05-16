@@ -34,11 +34,10 @@ namespace Microsoft.WebAssembly.Diagnostics
         public bool IsRunning => Stopped is null;
         public RunLoopExitState Stopped { get; private set; }
 
-        public DevToolsProxy(ILoggerFactory loggerFactory, string loggerId)
+        public DevToolsProxy(ILogger logger, string loggerId)
         {
             _loggerId = loggerId;
-            string loggerSuffix = string.IsNullOrEmpty(loggerId) ? string.Empty : $"-{loggerId}";
-            logger = loggerFactory.CreateLogger($"DevToolsProxy{loggerSuffix}");
+            this.logger = logger;
 
             var channel = Channel.CreateUnbounded<Task>(new UnboundedChannelOptions { SingleReader = true });
             _channelWriter = channel.Writer;

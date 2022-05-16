@@ -27,6 +27,7 @@ import {
     mono_wasm_change_debugger_log_level,
     mono_wasm_symbolicate_string,
     mono_wasm_stringify_as_error_with_stack,
+    mono_wasm_debugger_attached,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
 import { DotnetModuleConfigImports, DotnetModule } from "./types";
@@ -387,6 +388,7 @@ const INTERNAL: any = {
     mono_wasm_detach_debugger,
     mono_wasm_raise_debug_event,
     mono_wasm_change_debugger_log_level,
+    mono_wasm_debugger_attached,
     mono_wasm_runtime_is_ready: runtimeHelpers.mono_wasm_runtime_is_ready,
 };
 

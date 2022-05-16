@@ -683,6 +683,8 @@ INST1(pause,            "pause",            IUM_RD, 0x0090F3,                   
 INST1(lock,             "lock",             IUM_RD, 0x0000F0,                                                            INS_FLAGS_None )
 INST1(leave,            "leave",            IUM_RD, 0x0000C9,                                                            INS_FLAGS_None )
 
+INST1(serialize,        "serialize",        IUM_RD, 0x0fe801,                                                            INS_FLAGS_None )
+
 INST1(neg,              "neg",              IUM_RW, 0x0018F6,                                                            Writes_OF      | Writes_SF     | Writes_ZF     | Writes_AF     | Writes_PF     | Writes_CF     | INS_FLAGS_Has_Wbit )
 INST1(not,              "not",              IUM_RW, 0x0010F6,                                                            INS_FLAGS_None | INS_FLAGS_Has_Wbit )
 

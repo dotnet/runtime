@@ -115,7 +115,7 @@
     </When>
   </Choose>
 
-  <Import Project="$(RepoRoot)src\mono\wasm\BrowsersForTesting.props" />
+  <Import Project="$(RepositoryEngineeringDir)testing\ProvisioningVersions.props" />
 
   <Target Name="PrepareForBuildHelixWorkItems_Wasm">
     <PropertyGroup>
