@@ -540,6 +540,9 @@ FCIMPL4(void, DebugStackTrace::GetStackFramesInternal,
             {
 #ifdef FEATURE_ISYM_READER
                 BOOL fPortablePDB = FALSE;
+                // We are checking if the PE image's debug directory contains a portable or embedded PDB because
+                // the native diasymreader's portable PDB support has various bugs (crashes on certain PDBs) and
+                // limitations (doesn't support in-memory or embedded PDBs).
                 if (pModule->GetPEAssembly()->HasLoadedPEImage())
                 {
                     PEDecoder* pe = pModule->GetPEAssembly()->GetLoadedLayout();
