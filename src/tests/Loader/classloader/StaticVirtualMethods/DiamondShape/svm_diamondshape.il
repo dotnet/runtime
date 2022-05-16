@@ -232,7 +232,7 @@
 .class interface private abstract auto ansi I4Reabstract
        implements I4
 {
-  .method private hidebysig final abstract virtual
+  .method private hidebysig abstract
           static int32  Func(int32 a) cil managed
   {
     .override method int32 I1::Func(int32)
@@ -254,7 +254,7 @@
     IL_0006:  call       void [mscorlib]System.Console::WriteLine(string)
     IL_000b:  nop
     IL_000c:  ldarg.0
-    IL_000d:  ldc.i4.3
+    IL_000d:  ldc.i4.7
     IL_000e:  add
     IL_000f:  stloc.0
     IL_0010:  br.s       IL_0012
@@ -664,6 +664,55 @@
                   class GI3`1<!T>
 {
 } // end of class GI4Struct`1
+
+.class interface private abstract auto ansi IResolutionAtRuntime`1<T>
+{
+  .method public hidebysig newslot abstract virtual static int32 Func(int32 arg) cil managed
+  {
+  } // end of method IResolutionAtRuntime`1::Func
+
+} // end of class GI1`1
+
+.class private auto ansi beforefieldinit ResolutionAtRuntime
+       implements class IResolutionAtRuntime`1<object>,
+                  class IResolutionAtRuntime`1<string>
+{
+  .method private hidebysig static int32 FuncObject(int32 arg) cil managed
+  {
+    .override  method int32 class IResolutionAtRuntime`1<object>::Func(int32)
+              ldstr      "At ResolutionAtRuntime.FuncObject"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldarg.0
+              ldc.i4.s   19
+              add
+              ret
+  }
+
+  .method private hidebysig static int32 FuncString(int32 arg) cil managed
+  {
+    .override  method int32 class IResolutionAtRuntime`1<string>::Func(int32)
+              ldstr      "At ResolutionAtRuntime.FuncString"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldarg.0
+              ldc.i4.s   23
+              add
+              ret
+  }
+
+  .method public hidebysig static int32 RuntimeResolvedFunc`2<(class IResolutionAtRuntime`1<!!V>) T, V>(int32 arg)
+  {
+              ldstr      "At RuntimeResolvedFunc"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldarg.0
+              constrained. !!T
+              call       int32 class [svm_diamondshape]IResolutionAtRuntime`1<!!V>::Func(int32)
+              ret
+  }
+
+} // end of class ResolutionAtRuntime
 
 .class private auto ansi beforefieldinit Program
        extends [mscorlib]System.Object
@@ -1141,7 +1190,7 @@
               ldc.i4.s   10
               constrained. class I4ReimplementClass
               call       int32 I1::Func(int32)
-              ldc.i4.s   14
+              ldc.i4.s   17
               ceq
               ldstr      "Expecting I1.Func to land on I4Reimplement.Func"
               call       void Test::Assert(bool, string)
@@ -1360,6 +1409,26 @@
               ldstr      "S must be string"
               call       void Test::Assert(bool, string)
               nop
+
+              ldstr      "Calling ResolutionAtRuntime::RuntimeResolvedFunc<ResolutionAtRuntime, object> - expecting ResolutionAtRuntime.FuncObject"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   100
+              call       int32 class [svm_diamondshape]ResolutionAtRuntime::RuntimeResolvedFunc`2<class [svm_diamondshape]ResolutionAtRuntime, object>(int32)
+              ldc.i4.s   119
+              ceq
+              ldstr      "Expecting ResolutionAtRuntime::RuntimeResolvedFunc<ResolutionAtRuntime, object> to land on RuntimeResolvedFunc.FuncObject"
+              call       void Test::Assert(bool, string)
+
+              ldstr      "Calling ResolutionAtRuntime::RuntimeResolvedFunc<ResolutionAtRuntime, string> - expecting ResolutionAtRuntime.FuncString"
+              call       void [mscorlib]System.Console::WriteLine(string)
+              nop
+              ldc.i4.s   100
+              call       int32 class [svm_diamondshape]ResolutionAtRuntime::RuntimeResolvedFunc`2<class [svm_diamondshape]ResolutionAtRuntime, string>(int32)
+              ldc.i4.s   123
+              ceq
+              ldstr      "Expecting ResolutionAtRuntime::RuntimeResolvedFunc<ResolutionAtRuntime, string> to land on RuntimeResolvedFunc.FuncString"
+              call       void Test::Assert(bool, string)
 
     IL_00bc:  ret
   } // end of method Program::Positive
