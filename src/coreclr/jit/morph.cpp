@@ -13376,7 +13376,7 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
         return cmp;
     }
 
-    auto isUpper0 = [this](GenTree* op) {
+    auto isUpperZero = [this](GenTree* op) {
         if (op->IsIntegralConst())
         {
             int64_t lng = op->AsIntConCommon()->LngValue();
@@ -13393,8 +13393,8 @@ GenTree* Compiler::fgOptimizeRelationalComparisonWithCasts(GenTreeOp* cmp)
             .Contains(IntegralRange::ForNode(op->AsCast()->CastOp(), this));
     };
 
-    bool op1UpperIsZero = isUpper0(op1);
-    bool op2UpperIsZero = isUpper0(op2);
+    bool op1UpperIsZero = isUpperZero(op1);
+    bool op2UpperIsZero = isUpperZero(op2);
 
     // If both operands have zero as the upper half we can optimize then any
     // signed/unsigned 64-bit comparison is equivalent to the same unsigned
