@@ -21,6 +21,20 @@ internal static partial class Interop
         throw Interop.GetExceptionForIoErrno(errorInfo, path, isDirectory);
     }
 
+    internal static int CheckIo(int result, ReadOnlySpan<char> path, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
+    {
+        if (result < 0)
+        {
+            CheckIo(result, path.ToString(), isDirectory, errorRewriter);
+        }
+        return result;
+    }
+
+    internal static void CheckIo(Error error, ReadOnlySpan<char> path, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
+    {
+        CheckIo(error, path.ToString(), isDirectory, errorRewriter);
+    }
+
     internal static void CheckIo(Error error, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
     {
         if (error != Interop.Error.SUCCESS)

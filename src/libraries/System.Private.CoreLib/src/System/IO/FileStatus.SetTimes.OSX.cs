@@ -38,8 +38,7 @@ namespace System.IO
             }
             else
             {
-                string? pathStr = path.Length > 0 ? path.ToString() : default;
-                Interop.CheckIo(error, pathStr, asDirectory);
+                Interop.CheckIo(error, path, asDirectory);
             }
         }
 

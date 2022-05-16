@@ -409,10 +409,10 @@ namespace System.IO
                 buf[1].TvNsec = nanoseconds;
             }
 #endif
-            string? pathStr = path.ToString();
-            int rv = handle is not null ? Interop.Sys.FUTimens(handle, buf) :
-                                          Interop.Sys.UTimensat(pathStr, buf);
-            Interop.CheckIo(rv, pathStr, asDirectory);
+            int rv = handle is not null
+                ? Interop.Sys.FUTimens(handle, buf)
+                : Interop.Sys.UTimensat(path.ToString(), buf);
+            Interop.CheckIo(rv, path, asDirectory);
 
             // On OSX-like platforms, when the modification time is less than the creation time (including
             // when the modification time is already less than but access time is being set), the creation
@@ -432,7 +432,7 @@ namespace System.IO
                 Interop.Error error = SetCreationTimeCore(handle, path, _fileCache.BirthTime, _fileCache.BirthTimeNsec);
                 if (error != Interop.Error.SUCCESS && error != Interop.Error.ENOTSUP)
                 {
-                    Interop.CheckIo(error, pathStr, asDirectory);
+                    Interop.CheckIo(error, path, asDirectory);
                 }
             }
         }

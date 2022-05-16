@@ -71,6 +71,11 @@ namespace System.IO
 
         internal static void ThrowNotFound(ReadOnlySpan<char> path)
         {
+            ThrowNotFound(path.Length == 0 ? default : path.ToString());
+        }
+
+        internal static void ThrowNotFound(string? path)
+        {
             // Windows distinguishes between whether the directory or the file isn't found,
             // and throws a different exception in these cases.  We attempt to approximate that
             // here; there is a race condition here, where something could change between
@@ -78,9 +83,8 @@ namespace System.IO
             // worst case in such a race condition (which could occur if the file system is
             // being manipulated concurrently with these checks) is that we throw a
             // FileNotFoundException instead of DirectoryNotFoundException.
-            string? pathStr = path.Length > 0 ? path.ToString() : default;
-            bool directoryError = path.Length > 0 && !Directory.Exists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(pathStr!)));
-            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), pathStr, directoryError);
+            bool directoryError = path is not null && !FileSystem.DirectoryExists(Path.GetDirectoryName(Path.TrimEndingDirectorySeparator(path.AsSpan())));
+            throw Interop.GetExceptionForIoErrno(new Interop.ErrorInfo(Interop.Error.ENOENT), path, directoryError);
         }
 
         // There is no special handling for Unix- see Windows code for the reason we do this
