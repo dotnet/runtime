@@ -1684,10 +1684,10 @@ namespace System.Text.RegularExpressions.Generator
                     additionalDeclarations.Add("int matchLength = 0;");
                     writer.WriteLine($"matchLength = base.MatchLength({capnum});");
 
+                    // Validate that the remaining length of the slice is sufficient
+                    // to possibly match, and then do a SequenceEqual against the matched text.
                     if ((node.Options & RegexOptions.RightToLeft) == 0)
                     {
-                        // Validate that the remaining length of the slice is sufficient
-                        // to possibly match, and then do a SequenceEqual against the matched text.
                         writer.WriteLine($"if ({sliceSpan}.Length < matchLength || ");
                         using (EmitBlock(writer, $"    !inputSpan.Slice(base.MatchIndex({capnum}), matchLength).SequenceEqual({sliceSpan}.Slice(0, matchLength)))"))
                         {
@@ -1696,29 +1696,19 @@ namespace System.Text.RegularExpressions.Generator
 
                         writer.WriteLine();
                         writer.WriteLine($"pos += matchLength;");
-                        SliceInputSpan();
                     }
                     else
                     {
-                        using (EmitBlock(writer, $"if (pos < matchLength)"))
+                        writer.WriteLine($"if (pos < matchLength || ");
+                        using (EmitBlock(writer, $"    !inputSpan.Slice(base.MatchIndex({capnum}), matchLength).SequenceEqual(inputSpan.Slice(pos - matchLength, matchLength)))"))
                         {
                             Goto(doneLabel);
-                        }
-                        writer.WriteLine();
-
-                        additionalDeclarations.Add("int matchIndex = 0;");
-                        writer.WriteLine($"matchIndex = base.MatchIndex({capnum});");
-                        using (EmitBlock(writer, $"for (int i = 0; i < matchLength; i++)"))
-                        {
-                            using (EmitBlock(writer, $"if (inputSpan[matchIndex + i] != inputSpan[pos - matchLength + i])"))
-                            {
-                                Goto(doneLabel);
-                            }
                         }
 
                         writer.WriteLine();
                         writer.WriteLine($"pos -= matchLength;");
                     }
+                    SliceInputSpan();
                 }
             }
 
@@ -3195,34 +3185,17 @@ namespace System.Text.RegularExpressions.Generator
                 int minIterations = node.M;
                 int maxIterations = node.N;
                 string originalDoneLabel = doneLabel;
-                bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
 
-                // If this is actually an atomic lazy loop, we need to output just the minimum number of iterations,
-                // as nothing will backtrack into the lazy loop to get it progress further.
-                if (isAtomic)
+                // If this is actually a repeater, reuse the loop implementation, as a loop and a lazy loop
+                // both need to greedily consume up to their min iteration count and are identical in
+                // behavior when min == max.
+                if (minIterations == maxIterations)
                 {
-                    switch (minIterations)
-                    {
-                        case 0:
-                            // Atomic lazy with a min count of 0: nop.
-                            return;
-
-                        case 1:
-                            // Atomic lazy with a min count of 1: just output the child, no looping required.
-                            EmitNode(child);
-                            return;
-                    }
-
-                    writer.WriteLine();
-                }
-
-                // If this is actually a repeater and the child doesn't have any backtracking in it that might
-                // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !rm.Analysis.MayBacktrack(child))
-                {
-                    EmitNonBacktrackingRepeater(node);
+                    EmitLoop(node);
                     return;
                 }
+
+                Debug.Assert(!rm.Analysis.IsAtomicByAncestor(node), "An atomic lazy should have had its upper bound lowered to its lower bound.");
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
                 // the same regardless, we always need it to contain the same value, and the easiest such value is 0.
@@ -3379,87 +3352,84 @@ namespace System.Text.RegularExpressions.Generator
                 Goto(originalDoneLabel);
                 writer.WriteLine();
 
-                MarkLabel(endLoop, emitSemicolon: isAtomic);
+                MarkLabel(endLoop, emitSemicolon: false);
 
-                // If the lazy loop is not atomic, then subsequent code may backtrack back into this lazy loop, either
+                // The lazy loop is not atomic, so subsequent code may backtrack back into this lazy loop, either
                 // causing it to add additional iterations, or backtracking into existing iterations and potentially
                 // unwinding them.  We need to do a timeout check, and then determine whether to branch back to add more
                 // iterations (if we haven't hit the loop's maximum iteration count and haven't seen an empty iteration)
                 // or unwind by branching back to the last backtracking location.  Either way, we need a dedicated
                 // backtracking section that a subsequent construct will see as its backtracking target.
-                if (!isAtomic)
+
+                // We need to ensure that some state (e.g. iteration count) is persisted if we're backtracked to.
+                // We also need to push the current position, so that subsequent iterations pick up at the right
+                // point (and subsequent expressions are almost certain to have changed the current pos). However,
+                // if we're not inside of a loop, the other local's used for this construct are sufficient, as nothing
+                // else will overwrite them between now and when backtracking occurs.  If, however, we are inside
+                // of another loop, then any number of iterations might have such state that needs to be stored,
+                // and thus it needs to be pushed on to the backtracking stack.
+                EmitStackPush(
+                    !rm.Analysis.IsInLoop(node) ? new[] { "pos" } :
+                    iterationMayBeEmpty ? new[] { "pos", iterationCount, startingPos!, sawEmpty! } :
+                    new[] { "pos", iterationCount });
+
+                string skipBacktrack = ReserveName("LazyLoopSkipBacktrack");
+                Goto(skipBacktrack);
+                writer.WriteLine();
+
+                // Emit a backtracking section that checks the timeout, restores the loop's state, and jumps to
+                // the appropriate label.
+                string backtrack = ReserveName($"LazyLoopBacktrack");
+                MarkLabel(backtrack, emitSemicolon: false);
+
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded(writer, rm);
+
+                EmitStackPop(
+                    !rm.Analysis.IsInLoop(node) ? new[] { "pos" } :
+                    iterationMayBeEmpty ? new[] { sawEmpty!, startingPos!, iterationCount, "pos" } :
+                    new[] { iterationCount, "pos" });
+                SliceInputSpan();
+
+                // Determine where to branch, either back to the lazy loop body to add an additional iteration,
+                // or to the last backtracking label.
+                if (maxIterations != int.MaxValue || iterationMayBeEmpty)
                 {
-                    // We need to ensure that some state (e.g. iteration count) is persisted if we're backtracked to.
-                    // If we're not inside of a loop, the local's used for this construct are sufficient, as nothing
-                    // else will overwrite them between now and when backtracking occurs.  If, however, we are inside
-                    // of another loop, then any number of iterations might have such state that needs to be stored,
-                    // and thus it needs to be pushed on to the backtracking stack.
-                    if (rm.Analysis.IsInLoop(node))
+                    FinishEmitBlock clause;
+
+                    if (maxIterations == int.MaxValue)
                     {
-                        EmitStackPush(iterationMayBeEmpty ?
-                            new[] { iterationCount, startingPos!, sawEmpty! } :
-                            new[] { iterationCount });
+                        // If the last iteration matched empty, backtrack.
+                        writer.WriteLine("// If the last iteration matched empty, don't continue lazily iterating. Instead, backtrack.");
+                        clause = EmitBlock(writer, $"if ({sawEmpty} != 0)");
+                    }
+                    else if (iterationMayBeEmpty)
+                    {
+                        // If the last iteration matched empty or if we've reached our upper bound, backtrack.
+                        writer.WriteLine($"// If the upper bound {maxIterations} has already been reached, or if the last");
+                        writer.WriteLine($"// iteration matched empty, don't continue lazily iterating. Instead, backtrack.");
+                        clause = EmitBlock(writer, $"if ({CountIsGreaterThanOrEqualTo(iterationCount, maxIterations)} || {sawEmpty} != 0)");
+                    }
+                    else
+                    {
+                        // If we've reached our upper bound, backtrack.
+                        writer.WriteLine($"// If the upper bound {maxIterations} has already been reached,");
+                        writer.WriteLine($"// don't continue lazily iterating. Instead, backtrack.");
+                        clause = EmitBlock(writer, $"if ({CountIsGreaterThanOrEqualTo(iterationCount, maxIterations)})");
                     }
 
-                    string skipBacktrack = ReserveName("LazyLoopSkipBacktrack");
-                    Goto(skipBacktrack);
-                    writer.WriteLine();
-
-                    // Emit a backtracking section that checks the timeout, restores the loop's state, and jumps to
-                    // the appropriate label.
-                    string backtrack = ReserveName($"LazyLoopBacktrack");
-                    MarkLabel(backtrack, emitSemicolon: false);
-
-                    // We're backtracking.  Check the timeout.
-                    EmitTimeoutCheckIfNeeded(writer, rm);
-
-                    if (rm.Analysis.IsInLoop(node))
+                    using (clause)
                     {
-                        EmitStackPop(iterationMayBeEmpty ?
-                            new[] { sawEmpty!, startingPos!, iterationCount } :
-                            new[] { iterationCount });
+                        Goto(doneLabel);
                     }
-
-                    // Determine where to branch, either back to the lazy loop body to add an additional iteration,
-                    // or to the last backtracking label.
-                    if (maxIterations != int.MaxValue || iterationMayBeEmpty)
-                    {
-                        FinishEmitBlock clause;
-
-                        if (maxIterations == int.MaxValue)
-                        {
-                            // If the last iteration matched empty, backtrack.
-                            writer.WriteLine("// If the last iteration matched empty, don't continue lazily iterating. Instead, backtrack.");
-                            clause = EmitBlock(writer, $"if ({sawEmpty} != 0)");
-                        }
-                        else if (iterationMayBeEmpty)
-                        {
-                            // If the last iteration matched empty or if we've reached our upper bound, backtrack.
-                            writer.WriteLine($"// If the upper bound {maxIterations} has already been reached, or if the last");
-                            writer.WriteLine($"// iteration matched empty, don't continue lazily iterating. Instead, backtrack.");
-                            clause = EmitBlock(writer, $"if ({CountIsGreaterThanOrEqualTo(iterationCount, maxIterations)} || {sawEmpty} != 0)");
-                        }
-                        else
-                        {
-                            // If we've reached our upper bound, backtrack.
-                            writer.WriteLine($"// If the upper bound {maxIterations} has already been reached,");
-                            writer.WriteLine($"// don't continue lazily iterating. Instead, backtrack.");
-                            clause = EmitBlock(writer, $"if ({CountIsGreaterThanOrEqualTo(iterationCount, maxIterations)})");
-                        }
-
-                        using (clause)
-                        {
-                            Goto(doneLabel);
-                        }
-                    }
-
-                    // Otherwise, try to match another iteration.
-                    Goto(body);
-                    writer.WriteLine();
-
-                    doneLabel = backtrack;
-                    MarkLabel(skipBacktrack);
                 }
+
+                // Otherwise, try to match another iteration.
+                Goto(body);
+                writer.WriteLine();
+
+                doneLabel = backtrack;
+                MarkLabel(skipBacktrack);
             }
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
@@ -3582,24 +3552,33 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     TransferSliceStaticPosToPos(); // we don't use static position for rtl
 
-                    string expr = $"inputSpan[pos - {iterationLocal} - 1]";
-                    if (node.IsSetFamily)
+                    if (node.IsSetFamily && maxIterations == int.MaxValue && node.Str == RegexCharClass.AnyClass)
                     {
-                        expr = MatchCharacterClass(options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
+                        // If this loop will consume the remainder of the input, just set the iteration variable
+                        // to pos directly rather than looping to get there.
+                        writer.WriteLine($"int {iterationLocal} = pos;");
                     }
                     else
                     {
-                        expr = $"{expr} {(node.IsOneFamily ? "==" : "!=")} {Literal(node.Ch)}";
-                    }
+                        writer.WriteLine($"int {iterationLocal} = 0;");
 
-                    writer.WriteLine($"int {iterationLocal} = 0;");
+                        string expr = $"inputSpan[pos - {iterationLocal} - 1]";
+                        if (node.IsSetFamily)
+                        {
+                            expr = MatchCharacterClass(options, expr, node.Str!, negate: false, additionalDeclarations, requiredHelpers);
+                        }
+                        else
+                        {
+                            expr = $"{expr} {(node.IsOneFamily ? "==" : "!=")} {Literal(node.Ch)}";
+                        }
 
-                    string maxClause = maxIterations != int.MaxValue ? $"{CountIsLessThan(iterationLocal, maxIterations)} && " : "";
-                    using (EmitBlock(writer, $"while ({maxClause}pos > {iterationLocal} && {expr})"))
-                    {
-                        writer.WriteLine($"{iterationLocal}++;");
+                        string maxClause = maxIterations != int.MaxValue ? $"{CountIsLessThan(iterationLocal, maxIterations)} && " : "";
+                        using (EmitBlock(writer, $"while ({maxClause}pos > {iterationLocal} && {expr})"))
+                        {
+                            writer.WriteLine($"{iterationLocal}++;");
+                        }
+                        writer.WriteLine();
                     }
-                    writer.WriteLine();
                 }
                 else if (node.IsNotoneFamily && maxIterations == int.MaxValue)
                 {
@@ -3793,12 +3772,27 @@ namespace System.Text.RegularExpressions.Generator
                 int minIterations = node.M;
                 int maxIterations = node.N;
 
-                // If this is actually a repeater and the child doesn't have any backtracking in it that might
-                // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !rm.Analysis.MayBacktrack(child))
+                // Special-case some repeaters.
+                if (minIterations == maxIterations)
                 {
-                    EmitNonBacktrackingRepeater(node);
-                    return;
+                    switch (minIterations)
+                    {
+                        case 0:
+                            // No iteration. Nop.
+                            return;
+
+                        case 1:
+                            // One iteration.  Just emit the child without any loop ceremony.
+                            EmitNode(child);
+                            return;
+
+                        case > 1 when !rm.Analysis.MayBacktrack(child):
+                            // The child doesn't backtrack.  Emit it as a non-backtracking repeater.
+                            // (If the child backtracks, we need to fall through to the more general logic
+                            // that supports unwinding iterations.)
+                            EmitNonBacktrackingRepeater(node);
+                            return;
+                    }
                 }
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
@@ -3807,8 +3801,14 @@ namespace System.Text.RegularExpressions.Generator
                 TransferSliceStaticPosToPos();
 
                 bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
-                string originalDoneLabel = doneLabel;
+                string? startingStackpos = null;
+                if (isAtomic)
+                {
+                    startingStackpos = ReserveName("startingStackpos");
+                    writer.WriteLine($"int {startingStackpos} = stackpos;");
+                }
 
+                string originalDoneLabel = doneLabel;
                 string body = ReserveName("LoopBody");
                 string endLoop = ReserveName("LoopEnd");
                 string iterationCount = ReserveName("loop_iteration");
@@ -3840,7 +3840,9 @@ namespace System.Text.RegularExpressions.Generator
                 // it to pos. Note that unlike some other constructs that only need to push state on to the stack if
                 // they're inside of a loop (because if they're not inside of a loop, nothing would overwrite the locals),
                 // here we still need the stack, because each iteration of _this_ loop may have its own state, e.g. we
-                // need to know where each iteration began so when backtracking we can jump back to that location.
+                // need to know where each iteration began so when backtracking we can jump back to that location.  This is
+                // true even if the loop is atomic, as we might need to backtrack within the loop in order to match the
+                // minimum iteration count.
                 EmitStackPush(
                     expressionHasCaptures && iterationMayBeEmpty ? new[] { "base.Crawlpos()", startingPos!, "pos" } :
                     expressionHasCaptures ? new[] { "base.Crawlpos()", "pos" } :
@@ -4006,6 +4008,14 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     doneLabel = originalDoneLabel;
                     MarkLabel(endLoop);
+
+                    // The loop is atomic, which means any backtracking will go around this loop.  That also means we can't leave
+                    // stack polluted with state from successful iterations, so we need to remove all such state; such state will
+                    // only have been pushed if minIterations > 0.
+                    if (startingStackpos is not null)
+                    {
+                        writer.WriteLine($"stackpos = {startingStackpos};");
+                    }
                 }
                 else
                 {

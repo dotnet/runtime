@@ -3641,32 +3641,17 @@ namespace System.Text.RegularExpressions
                 int minIterations = node.M;
                 int maxIterations = node.N;
                 Label originalDoneLabel = doneLabel;
-                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
-                // If this is actually an atomic lazy loop, we need to output just the minimum number of iterations,
-                // as nothing will backtrack into the lazy loop to get it progress further.
-                if (isAtomic)
+                // If this is actually a repeater, reuse the loop implementation, as a loop and a lazy loop
+                // both need to greedily consume up to their min iteration count and are identical in
+                // behavior when min == max.
+                if (minIterations == maxIterations)
                 {
-                    switch (minIterations)
-                    {
-                        case 0:
-                            // Atomic lazy with a min count of 0: nop.
-                            return;
-
-                        case 1:
-                            // Atomic lazy with a min count of 1: just output the child, no looping required.
-                            EmitNode(child);
-                            return;
-                    }
-                }
-
-                // If this is actually a repeater and the child doesn't have any backtracking in it that might
-                // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !analysis.MayBacktrack(child))
-                {
-                    EmitNonBacktrackingRepeater(node);
+                    EmitLoop(node);
                     return;
                 }
+
+                Debug.Assert(!analysis.IsAtomicByAncestor(node), "An atomic lazy should have had its upper bound lowered to its lower bound.");
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
                 // the same regardless, we always need it to contain the same value, and the easiest such value is 0.
@@ -3871,82 +3856,89 @@ namespace System.Text.RegularExpressions
 
                 MarkLabel(endLoop);
 
-                // If the lazy loop is not atomic, then subsequent code may backtrack back into this lazy loop, either
+                // The lazy loop is not atomic, so subsequent code may backtrack back into this lazy loop, either
                 // causing it to add additional iterations, or backtracking into existing iterations and potentially
                 // unwinding them.  We need to do a timeout check, and then determine whether to branch back to add more
                 // iterations (if we haven't hit the loop's maximum iteration count and haven't seen an empty iteration)
                 // or unwind by branching back to the last backtracking location.  Either way, we need a dedicated
                 // backtracking section that a subsequent construct will see as its backtracking target.
-                if (!isAtomic)
+                // We need to ensure that some state (e.g. iteration count) is persisted if we're backtracked to.
+                // If we're not inside of a loop, the local's used for this construct are sufficient, as nothing
+                // else will overwrite them between now and when backtracking occurs.  If, however, we are inside
+                // of another loop, then any number of iterations might have such state that needs to be stored,
+                // and thus it needs to be pushed on to the backtracking stack.
+                // base.runstack[stackpos++] = pos;
+                // base.runstack[stackpos++] = iterationCount;
+                // base.runstack[stackpos++] = startingPos;
+                // base.runstack[stackpos++] = sawEmpty;
+                bool isInLoop = analysis.IsInLoop(node);
+                EmitStackResizeIfNeeded(1 + (isInLoop ? 1 + (iterationMayBeEmpty ? 2 : 0) : 0));
+                EmitStackPush(() => Ldloc(pos));
+                if (isInLoop)
                 {
-                    // We need to ensure that some state (e.g. iteration count) is persisted if we're backtracked to.
-                    // If we're not inside of a loop, the local's used for this construct are sufficient, as nothing
-                    // else will overwrite them between now and when backtracking occurs.  If, however, we are inside
-                    // of another loop, then any number of iterations might have such state that needs to be stored,
-                    // and thus it needs to be pushed on to the backtracking stack.
-                    if (analysis.IsInLoop(node))
-                    {
-                        EmitStackResizeIfNeeded(1 + (iterationMayBeEmpty ? 2 : 0));
-                        EmitStackPush(() => Ldloc(iterationCount));
-                        if (iterationMayBeEmpty)
-                        {
-                            EmitStackPush(() => Ldloc(startingPos!));
-                            EmitStackPush(() => Ldloc(sawEmpty!));
-                        }
-                    }
-
-                    Label skipBacktrack = DefineLabel();
-                    BrFar(skipBacktrack);
-
-                    // Emit a backtracking section that checks the timeout, restores the loop's state, and jumps to
-                    // the appropriate label.
-                    Label backtrack = DefineLabel();
-                    MarkLabel(backtrack);
-
-                    // We're backtracking.  Check the timeout.
-                    EmitTimeoutCheckIfNeeded();
-
-                    if (analysis.IsInLoop(node))
-                    {
-                        // sawEmpty = base.runstack[--stackpos];
-                        // startingPos = base.runstack[--stackpos];
-                        // iterationCount = base.runstack[--stackpos];
-                        if (iterationMayBeEmpty)
-                        {
-                            EmitStackPop();
-                            Stloc(sawEmpty!);
-                            EmitStackPop();
-                            Stloc(startingPos!);
-                        }
-                        EmitStackPop();
-                        Stloc(iterationCount);
-                    }
-
-                    // Determine where to branch, either back to the lazy loop body to add an additional iteration,
-                    // or to the last backtracking label.
-
+                    EmitStackPush(() => Ldloc(iterationCount));
                     if (iterationMayBeEmpty)
                     {
-                        // if (sawEmpty != 0) goto doneLabel;
-                        Ldloc(sawEmpty!);
-                        Ldc(0);
-                        BneFar(doneLabel);
+                        EmitStackPush(() => Ldloc(startingPos!));
+                        EmitStackPush(() => Ldloc(sawEmpty!));
                     }
-
-                    if (maxIterations != int.MaxValue)
-                    {
-                        // if (iterationCount >= maxIterations) goto doneLabel;
-                        Ldloc(iterationCount);
-                        Ldc(maxIterations);
-                        BgeFar(doneLabel);
-                    }
-
-                    // goto body;
-                    BrFar(body);
-
-                    doneLabel = backtrack;
-                    MarkLabel(skipBacktrack);
                 }
+
+                Label skipBacktrack = DefineLabel();
+                BrFar(skipBacktrack);
+
+                // Emit a backtracking section that checks the timeout, restores the loop's state, and jumps to
+                // the appropriate label.
+                Label backtrack = DefineLabel();
+                MarkLabel(backtrack);
+
+                // We're backtracking.  Check the timeout.
+                EmitTimeoutCheckIfNeeded();
+
+                if (isInLoop)
+                {
+                    // sawEmpty = base.runstack[--stackpos];
+                    // startingPos = base.runstack[--stackpos];
+                    // iterationCount = base.runstack[--stackpos];
+                    // pos = base.runstack[--stackpos];
+                    if (iterationMayBeEmpty)
+                    {
+                        EmitStackPop();
+                        Stloc(sawEmpty!);
+                        EmitStackPop();
+                        Stloc(startingPos!);
+                    }
+                    EmitStackPop();
+                    Stloc(iterationCount);
+                }
+                EmitStackPop();
+                Stloc(pos);
+                SliceInputSpan();
+
+                // Determine where to branch, either back to the lazy loop body to add an additional iteration,
+                // or to the last backtracking label.
+
+                if (iterationMayBeEmpty)
+                {
+                    // if (sawEmpty != 0) goto doneLabel;
+                    Ldloc(sawEmpty!);
+                    Ldc(0);
+                    BneFar(doneLabel);
+                }
+
+                if (maxIterations != int.MaxValue)
+                {
+                    // if (iterationCount >= maxIterations) goto doneLabel;
+                    Ldloc(iterationCount);
+                    Ldc(maxIterations);
+                    BgeFar(doneLabel);
+                }
+
+                // goto body;
+                BrFar(body);
+
+                doneLabel = backtrack;
+                MarkLabel(skipBacktrack);
             }
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
@@ -4533,14 +4525,28 @@ namespace System.Text.RegularExpressions
 
                 int minIterations = node.M;
                 int maxIterations = node.N;
-                bool isAtomic = analysis.IsAtomicByAncestor(node);
 
-                // If this is actually a repeater and the child doesn't have any backtracking in it that might
-                // cause us to need to unwind already taken iterations, just output it as a repeater loop.
-                if (minIterations == maxIterations && !analysis.MayBacktrack(child))
+                // Special-case some repeaters.
+                if (minIterations == maxIterations)
                 {
-                    EmitNonBacktrackingRepeater(node);
-                    return;
+                    switch (minIterations)
+                    {
+                        case 0:
+                            // No iteration. Nop.
+                            return;
+
+                        case 1:
+                            // One iteration.  Just emit the child without any loop ceremony.
+                            EmitNode(child);
+                            return;
+
+                        case > 1 when !analysis.MayBacktrack(child):
+                            // The child doesn't backtrack.  Emit it as a non-backtracking repeater.
+                            // (If the child backtracks, we need to fall through to the more general logic
+                            // that supports unwinding iterations.)
+                            EmitNonBacktrackingRepeater(node);
+                            return;
+                    }
                 }
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
@@ -4548,8 +4554,16 @@ namespace System.Text.RegularExpressions
                 // So, we transfer sliceStaticPos to pos, and ensure that any path out of here has sliceStaticPos as 0.
                 TransferSliceStaticPosToPos();
 
-                Label originalDoneLabel = doneLabel;
+                bool isAtomic = analysis.IsAtomicByAncestor(node);
+                LocalBuilder? startingStackpos = null;
+                if (isAtomic)
+                {
+                    startingStackpos = DeclareInt32();
+                    Ldloc(stackpos);
+                    Stloc(startingStackpos);
+                }
 
+                Label originalDoneLabel = doneLabel;
                 Label body = DefineLabel();
                 Label endLoop = DefineLabel();
                 LocalBuilder iterationCount = DeclareInt32();
@@ -4579,7 +4593,9 @@ namespace System.Text.RegularExpressions
                 // it to pos. Note that unlike some other constructs that only need to push state on to the stack if
                 // they're inside of a loop (because if they're not inside of a loop, nothing would overwrite the locals),
                 // here we still need the stack, because each iteration of _this_ loop may have its own state, e.g. we
-                // need to know where each iteration began so when backtracking we can jump back to that location.
+                // need to know where each iteration began so when backtracking we can jump back to that location.  This is
+                // true even if the loop is atomic, as we might need to backtrack within the loop in order to match the
+                // minimum iteration count.
                 EmitStackResizeIfNeeded(1 + (expressionHasCaptures ? 1 : 0) + (startingPos is not null ? 1 : 0));
                 if (expressionHasCaptures)
                 {
@@ -4773,6 +4789,15 @@ namespace System.Text.RegularExpressions
                 {
                     doneLabel = originalDoneLabel;
                     MarkLabel(endLoop);
+
+                    // The loop is atomic, which means any backtracking will go around this loop.  That also means we can't leave
+                    // stack polluted with state from successful iterations, so we need to remove all such state; such state will
+                    // only have been pushed if minIterations > 0.
+                    if (startingStackpos is not null)
+                    {
+                        Ldloc(startingStackpos);
+                        Stloc(stackpos);
+                    }
                 }
                 else
                 {
