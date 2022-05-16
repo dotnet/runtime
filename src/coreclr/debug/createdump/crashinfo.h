@@ -31,6 +31,7 @@ typedef __typeof__(((elf_aux_entry*) 0)->a_un.a_val) elf_aux_val_t;
 #endif
 
 extern const std::string GetFileName(const std::string& fileName);
+extern const std::string GetDirectory(const std::string& fileName);
 extern std::string FormatString(const char* format, ...);
 extern std::string FormatGuid(const GUID* guid);
 
@@ -60,6 +61,7 @@ private:
     int m_fd;                                       // /proc/<pid>/mem handle
 #endif
     std::string m_coreclrPath;                      // the path of the coreclr module or empty if none
+    uint64_t m_runtimeBaseAddress;
 #ifdef __APPLE__
     std::set<MemoryRegion> m_allMemoryRegions;      // all memory regions on MacOS
 #else
@@ -108,6 +110,7 @@ public:
     inline const uint32_t Signal() const { return m_signal; }
     inline const std::string& Name() const { return m_name; }
     inline const ModuleInfo* MainModule() const { return m_mainModule; }
+    inline const uint64_t RuntimeBaseAddress() const { return m_runtimeBaseAddress; }
 
     inline const std::vector<ThreadInfo*>& Threads() const { return m_threads; }
     inline const std::set<MemoryRegion>& ModuleMappings() const { return m_moduleMappings; }

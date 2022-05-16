@@ -13,16 +13,20 @@ namespace System.Xml.Xsl.XsltOld
     {
         private TextWriter _writer;
 
-        internal TextOutput(Processor processor, Stream stream!!)
+        internal TextOutput(Processor processor, Stream stream)
             : base(processor)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             this.encoding = processor.Output.Encoding;
             _writer = new StreamWriter(stream, this.encoding);
         }
 
-        internal TextOutput(Processor processor, TextWriter writer!!)
+        internal TextOutput(Processor processor, TextWriter writer)
             : base(processor)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             this.encoding = writer.Encoding;
             _writer = writer;
         }

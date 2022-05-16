@@ -10,7 +10,6 @@
 #include "vars.hpp"
 #include "cordbpriv.h"
 #include "eeprofinterfaces.h"
-#include "bbsweep.h"
 
 #ifndef DACCESS_COMPILE
 //
@@ -28,8 +27,6 @@ const char g_psBaseLibraryName[]  = CoreLibName_A;
 const char g_psBaseLibrarySatelliteAssemblyName[]  = CoreLibSatelliteName_A;
 
 Volatile<int32_t>       g_TrapReturningThreads;
-
-BBSweep                 g_BBSweep;
 
 #ifdef _DEBUG
 // next two variables are used to enforce an ASSERT in Thread::DbgFindThread
@@ -247,7 +244,7 @@ void OBJECTREF_EnumMemoryRegions(OBJECTREF ref)
 extern "C" RAW_KEYWORD(volatile) const GSCookie s_gsCookie = 0;
 
 #else
-__GlobalVal< GSCookie > s_gsCookie(&g_dacGlobals.dac__s_gsCookie);
+__GlobalVal< GSCookie > s_gsCookie(&DacGlobals::dac__s_gsCookie);
 #endif //!DACCESS_COMPILE
 
 //==============================================================================

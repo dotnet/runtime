@@ -288,13 +288,12 @@ namespace System.Security.Cryptography.Xml.Tests
         }
 
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/20575", TestPlatforms.OSX)]
         [SkipOnPlatform(PlatformSupport.MobileAppleCrypto, "DSA is not available")]
         public void AsymmetricDSASignature()
         {
             SignedXml signedXml = MSDNSample();
 
-            DSA key = DSA.Create();
+            DSA key = TestHelpers.GetWorkingDSA();
             signedXml.SigningKey = key;
 
             // Add a KeyInfo.
@@ -1843,6 +1842,20 @@ namespace System.Security.Cryptography.Xml.Tests
             SignedXml subject = CreateSubjectForMultipleEnvelopedSignatures(tampered, signatureParent);
 
             Assert.Equal(expected, subject.CheckSignature());
+        }
+
+        [Theory]
+        [InlineData("a", "b")]
+        [InlineData("a", "nonexisting")]
+        [SkipOnTargetFramework(TargetFrameworkMonikers.NetFramework, "SignedXml has been failing validation on nested signatures all the time with .NET Framework and .NET (Core) up to .NET 6. This test was added together with a fix for .NET 7.")]
+        public void CheckSignatureHandlesIncorrectOrTamperedReferenceWithMultipleEnvelopedSignatures(
+            string signatureParent, string newReference)
+        {
+            var tampered = multipleSignaturesXml.Replace($"URI=\"#{signatureParent}", $"URI=\"#{newReference}");
+
+            SignedXml subject = CreateSubjectForMultipleEnvelopedSignatures(tampered, signatureParent);
+
+            Assert.False(subject.CheckSignature());
         }
     }
 }

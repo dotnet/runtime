@@ -505,16 +505,6 @@ mono_w32handle_ops_prewait (MonoW32Handle *handle_data)
 		handle_ops [handle_data->type]->prewait (handle_data);
 }
 
-static void
-mono_w32handle_unlock_handles (MonoW32Handle **handles_data, gsize nhandles)
-{
-	for (int i = ((int)nhandles - 1); i >= 0; i--) {
-		if (!handles_data [i])
-			continue;
-		mono_w32handle_unlock (handles_data [i]);
-	}
-}
-
 static int
 mono_w32handle_timedwait_signal_naked (MonoCoopCond *cond, MonoCoopMutex *mutex, guint32 timeout, gboolean poll, gboolean *alerted)
 {

@@ -2,8 +2,11 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using Xunit;
 
-internal class test
+namespace Test_i8_cs
+{
+public class test
 {
     private static Int64 f00(Int64 x, Int64 y)
     {
@@ -666,7 +669,8 @@ internal class test
     }
 
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         Int64 x;
         bool pass = true;
@@ -1675,4 +1679,5 @@ internal class test
         else
             return 1;
     }
+}
 }

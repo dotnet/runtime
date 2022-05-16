@@ -1735,17 +1735,7 @@ namespace System.Configuration
 
         // Take an element name, and create an xml string that contains
         // that element in an empty state
-        private static string WriteEmptyElement(string elementName)
-        {
-            StringBuilder sb = new StringBuilder();
-
-            // Create element
-            sb.Append('<');
-            sb.Append(elementName);
-            sb.Append(" />");
-
-            return sb.ToString();
-        }
+        private static string WriteEmptyElement(string elementName) => $"<{elementName} />";
 
         // After the config file has been written out, update the section records
         // to reflect changes that were made in the config file.

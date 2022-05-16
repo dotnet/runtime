@@ -16,13 +16,9 @@ namespace System.Net.Quic.Implementations
 
         internal abstract ValueTask ConnectAsync(CancellationToken cancellationToken = default);
 
-        internal abstract ValueTask WaitForAvailableUnidirectionalStreamsAsync(CancellationToken cancellationToken = default);
+        internal abstract ValueTask<QuicStreamProvider> OpenUnidirectionalStreamAsync(CancellationToken cancellationToken = default);
 
-        internal abstract ValueTask WaitForAvailableBidirectionalStreamsAsync(CancellationToken cancellationToken = default);
-
-        internal abstract QuicStreamProvider OpenUnidirectionalStream();
-
-        internal abstract QuicStreamProvider OpenBidirectionalStream();
+        internal abstract ValueTask<QuicStreamProvider> OpenBidirectionalStreamAsync(CancellationToken cancellationToken = default);
 
         internal abstract int GetRemoteAvailableUnidirectionalStreamCount();
 
@@ -32,7 +28,7 @@ namespace System.Net.Quic.Implementations
 
         internal abstract System.Net.Security.SslApplicationProtocol NegotiatedApplicationProtocol { get; }
 
-        internal abstract System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get ; }
+        internal abstract System.Security.Cryptography.X509Certificates.X509Certificate? RemoteCertificate { get; }
 
         internal abstract ValueTask CloseAsync(long errorCode, CancellationToken cancellationToken = default);
 

@@ -186,8 +186,10 @@ namespace System.Xml.Schema
                 }
             }
 
-            public void CopyTo(Array array!!, int arrayIndex)
+            public void CopyTo(Array array, int arrayIndex)
             {
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (arrayIndex < 0)
                     throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 
@@ -238,8 +240,10 @@ namespace System.Xml.Schema
                 }
             }
 
-            public void CopyTo(Array array!!, int arrayIndex)
+            public void CopyTo(Array array, int arrayIndex)
             {
+                ArgumentNullException.ThrowIfNull(array);
+
                 if (arrayIndex < 0)
                     throw new ArgumentOutOfRangeException(nameof(arrayIndex));
 

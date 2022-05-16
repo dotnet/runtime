@@ -353,13 +353,14 @@ bool WrapICorJitInfo::isValidStringRef(
     return temp;
 }
 
-const char16_t* WrapICorJitInfo::getStringLiteral(
+int WrapICorJitInfo::getStringLiteral(
           CORINFO_MODULE_HANDLE module,
           unsigned metaTOK,
-          int* length)
+          char16_t* buffer,
+          int bufferSize)
 {
     API_ENTER(getStringLiteral);
-    const char16_t* temp = wrapHnd->getStringLiteral(module, metaTOK, length);
+    int temp = wrapHnd->getStringLiteral(module, metaTOK, buffer, bufferSize);
     API_LEAVE(getStringLiteral);
     return temp;
 }

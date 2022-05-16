@@ -2701,9 +2701,7 @@ HCIMPL2(Object*, JIT_Box, CORINFO_CLASS_HANDLE type, void* unboxedData)
 
     pMT->CheckRestore();
 
-    // You can only box valuetypes
-    if (!pMT->IsValueType())
-        COMPlusThrow(kInvalidCastException, W("Arg_ObjObj"));
+    _ASSERTE (pMT->IsValueType() && !pMT->IsByRefLike());
 
 #ifdef _DEBUG
     if (g_pConfig->FastGCStressLevel()) {
@@ -5457,7 +5455,7 @@ HCIMPLEND
 
 /**********************************************************************/
 /* Fills out portions of an InlinedCallFrame for JIT64    */
-/* The idea here is to allocate and initalize the frame to only once, */
+/* The idea here is to allocate and initialize the frame to only once, */
 /* regardless of how many PInvokes there are in the method            */
 Thread * __stdcall JIT_InitPInvokeFrame(InlinedCallFrame *pFrame, PTR_VOID StubSecretArg)
 {

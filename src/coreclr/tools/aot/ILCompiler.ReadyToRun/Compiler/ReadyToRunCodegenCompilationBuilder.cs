@@ -40,6 +40,7 @@ namespace ILCompiler
         private int _customPESectionAlignment;
         private bool _verifyTypeAndFieldLayout;
         private CompositeImageSettings _compositeImageSettings;
+        private ulong _imageBase;
 
         private string _jitPath;
         private string _outputFile;
@@ -54,7 +55,7 @@ namespace ILCompiler
             ReadyToRunCompilationModuleGroupBase group,
             IEnumerable<string> inputFiles,
             string compositeRootPath)
-            : base(context, group, new CoreRTNameMangler())
+            : base(context, group, new NativeAotNameMangler())
         {
             _inputFiles = inputFiles;
             _compositeRootPath = compositeRootPath;
@@ -83,7 +84,7 @@ namespace ILCompiler
                 builder.Add(new KeyValuePair<string, string>(name, value));
             }
 
-            if (_context.Target.Abi == TargetAbi.CoreRTArmel)
+            if (_context.Target.Abi == TargetAbi.NativeAotArmel)
             {
                 builder.Add(new KeyValuePair<string, string>("JitSoftFP", "1"));
             }
@@ -198,6 +199,12 @@ namespace ILCompiler
             return this;
         }
 
+        public ReadyToRunCodegenCompilationBuilder UseImageBase(ulong imageBase)
+        {
+            _imageBase = imageBase;
+            return this;
+        }
+
         public override ICompilation ToCompilation()
         {
             // TODO: only copy COR headers for single-assembly build and for composite build with embedded MSIL
@@ -240,7 +247,9 @@ namespace ILCompiler
                 corHeaderNode,
                 debugDirectoryNode,
                 win32Resources,
-                flags);
+                flags,
+                _imageBase
+                );
 
             factory.CompositeImageSettings = _compositeImageSettings;
 

@@ -22,7 +22,7 @@ namespace ILCompiler.IBC
 {
     static class MIbcProfileParser
     {
-        private class MetadataLoaderForPgoData : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown>
+        private class MetadataLoaderForPgoData : IPgoSchemaDataLoader<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>
         {
             private readonly EcmaMethodIL _ilBody;
 
@@ -30,12 +30,12 @@ namespace ILCompiler.IBC
             {
                 _ilBody = ilBody;
             }
-            TypeSystemEntityOrUnknown IPgoSchemaDataLoader<TypeSystemEntityOrUnknown>.TypeFromLong(long token)
+            TypeSystemEntityOrUnknown IPgoSchemaDataLoader<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>.TypeFromLong(long token)
             {
                 try
                 {
                     if (token == 0)
-                        return new TypeSystemEntityOrUnknown(null);
+                        return new TypeSystemEntityOrUnknown((TypeDesc)null);
                     if ((token & 0xFF000000) == 0)
                     {
                         // token type is 0, therefore it can't be a type
@@ -47,6 +47,29 @@ namespace ILCompiler.IBC
                         return new TypeSystemEntityOrUnknown((int)token & 0x00FFFFFF);
                     }
                     return new TypeSystemEntityOrUnknown(foundType);
+                }
+                catch
+                {
+                    return new TypeSystemEntityOrUnknown((int)token);
+                }
+            }
+            TypeSystemEntityOrUnknown IPgoSchemaDataLoader<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>.MethodFromLong(long token)
+            {
+                try
+                {
+                    if (token == 0)
+                        return new TypeSystemEntityOrUnknown((MethodDesc)null);
+                    if ((token & 0xFF000000) == 0)
+                    {
+                        // token type is 0, therefore it can't be a method
+                        return new TypeSystemEntityOrUnknown((int)token);
+                    }
+                    MethodDesc foundMethod = _ilBody.GetObject((int)token, NotFoundBehavior.ReturnNull) as MethodDesc;
+                    if (foundMethod == null)
+                    {
+                        return new TypeSystemEntityOrUnknown((int)token & 0x00FFFFFF);
+                    }
+                    return new TypeSystemEntityOrUnknown(foundMethod);
                 }
                 catch
                 {
@@ -413,7 +436,7 @@ namespace ILCompiler.IBC
                                     {
                                         instrumentationDataLongs.Add(2); // MarshalMask 2 (Type)
                                         instrumentationDataLongs.Add(0); // PgoInstrumentationKind.Done (0)
-                                        pgoSchemaData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown>(metadataLoader, instrumentationDataLongs, false).ToArray();
+                                        pgoSchemaData = PgoProcessor.ParsePgoData<TypeSystemEntityOrUnknown, TypeSystemEntityOrUnknown>(metadataLoader, instrumentationDataLongs, false).ToArray();
                                     }
                                     state = MibcGroupParseState.LookingForOptionalData;
                                     break;

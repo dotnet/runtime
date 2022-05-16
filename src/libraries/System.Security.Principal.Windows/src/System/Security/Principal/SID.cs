@@ -392,8 +392,10 @@ namespace System.Security.Principal
 
         [MemberNotNull(nameof(_binaryForm))]
         [MemberNotNull(nameof(_subAuthorities))]
-        private void CreateFromBinaryForm(byte[] binaryForm!!, int offset)
+        private void CreateFromBinaryForm(byte[] binaryForm, int offset)
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             //
             // Negative offsets are not allowed
             //
@@ -486,8 +488,10 @@ namespace System.Security.Principal
         //
 
 
-        public SecurityIdentifier(string sddlForm!!)
+        public SecurityIdentifier(string sddlForm)
         {
+            ArgumentNullException.ThrowIfNull(sddlForm);
+
             //
             // Call into the underlying O/S conversion routine
             //
@@ -515,8 +519,10 @@ namespace System.Security.Principal
         // Constructs a SecurityIdentifier object from its binary representation
         //
 
-        public SecurityIdentifier(byte[] binaryForm!!, int offset)
+        public SecurityIdentifier(byte[] binaryForm, int offset)
         {
+            ArgumentNullException.ThrowIfNull(binaryForm);
+
             CreateFromBinaryForm(binaryForm, offset);
         }
 
@@ -800,8 +806,10 @@ namespace System.Security.Principal
         }
 
 
-        public override IdentityReference Translate(Type targetType!!)
+        public override IdentityReference Translate(Type targetType)
         {
+            ArgumentNullException.ThrowIfNull(targetType);
+
             if (targetType == typeof(SecurityIdentifier))
             {
                 return this; // assumes SecurityIdentifier objects are immutable
@@ -930,8 +938,10 @@ namespace System.Security.Principal
         }
 
 
-        private static unsafe IdentityReferenceCollection TranslateToNTAccounts(IdentityReferenceCollection sourceSids!!, out bool someFailed)
+        private static unsafe IdentityReferenceCollection TranslateToNTAccounts(IdentityReferenceCollection sourceSids, out bool someFailed)
         {
+            ArgumentNullException.ThrowIfNull(sourceSids);
+
             if (sourceSids.Count == 0)
             {
                 throw new ArgumentException(SR.Arg_EmptyCollection, nameof(sourceSids));
@@ -1104,8 +1114,10 @@ namespace System.Security.Principal
         }
 
 
-        internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceSids!!, Type targetType, out bool someFailed)
+        internal static IdentityReferenceCollection Translate(IdentityReferenceCollection sourceSids, Type targetType, out bool someFailed)
         {
+            ArgumentNullException.ThrowIfNull(sourceSids);
+
             if (targetType == typeof(NTAccount))
             {
                 return TranslateToNTAccounts(sourceSids, out someFailed);

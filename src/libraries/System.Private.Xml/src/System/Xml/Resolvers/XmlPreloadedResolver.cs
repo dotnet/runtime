@@ -222,8 +222,10 @@ namespace System.Xml.Resolvers
             return base.ResolveUri(baseUri, relativeUri);
         }
 
-        public override object? GetEntity(Uri absoluteUri!!, string? role, Type? ofObjectToReturn)
+        public override object? GetEntity(Uri absoluteUri, string? role, Type? ofObjectToReturn)
         {
+            ArgumentNullException.ThrowIfNull(absoluteUri);
+
             PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
             {
@@ -260,8 +262,10 @@ namespace System.Xml.Resolvers
             }
         }
 
-        public override bool SupportsType(Uri absoluteUri!!, Type? type)
+        public override bool SupportsType(Uri absoluteUri, Type? type)
         {
+            ArgumentNullException.ThrowIfNull(absoluteUri);
+
             PreloadedData? data;
             if (!_mappings.TryGetValue(absoluteUri, out data))
             {
@@ -275,13 +279,19 @@ namespace System.Xml.Resolvers
             return data.SupportsType(type);
         }
 
-        public void Add(Uri uri!!, byte[] value!!)
+        public void Add(Uri uri, byte[] value)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
             Add(uri, new ByteArrayChunk(value, 0, value.Length));
         }
 
-        public void Add(Uri uri!!, byte[] value!!, int offset, int count)
+        public void Add(Uri uri, byte[] value, int offset, int count)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (count < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(count));
@@ -298,8 +308,11 @@ namespace System.Xml.Resolvers
             Add(uri, new ByteArrayChunk(value, offset, count));
         }
 
-        public void Add(Uri uri!!, Stream value!!)
+        public void Add(Uri uri, Stream value)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
             if (value.CanSeek)
             {
                 // stream of known length -> allocate the byte array and read all data into it
@@ -325,8 +338,11 @@ namespace System.Xml.Resolvers
             }
         }
 
-        public void Add(Uri uri!!, string value!!)
+        public void Add(Uri uri, string value)
         {
+            ArgumentNullException.ThrowIfNull(uri);
+            ArgumentNullException.ThrowIfNull(value);
+
             Add(uri, new StringData(value));
         }
 
@@ -341,10 +357,7 @@ namespace System.Xml.Resolvers
 
         public void Remove(Uri uri)
         {
-            if (uri == null)
-            {
-                throw new ArgumentNullException(nameof(uri));
-            }
+            ArgumentNullException.ThrowIfNull(uri);
             _mappings.Remove(uri);
         }
 

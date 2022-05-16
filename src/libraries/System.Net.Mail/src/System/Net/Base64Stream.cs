@@ -156,13 +156,17 @@ namespace System.Net
 
         public string GetEncodedString() => _encoder.GetEncodedString();
 
-        public override int EndRead(IAsyncResult asyncResult!!)
+        public override int EndRead(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             return ReadAsyncResult.End(asyncResult);
         }
 
-        public override void EndWrite(IAsyncResult asyncResult!!)
+        public override void EndWrite(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             WriteAsyncResult.End(asyncResult);
         }
 

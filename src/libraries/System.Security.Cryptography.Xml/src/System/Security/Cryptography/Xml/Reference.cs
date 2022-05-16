@@ -205,8 +205,13 @@ namespace System.Security.Cryptography.Xml
             return referenceElement;
         }
 
-        public void LoadXml(XmlElement value!!)
+        public void LoadXml(XmlElement value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             _id = Utils.GetAttribute(value, "Id", SignedXml.XmlDsigNamespaceUrl);
             _uri = Utils.GetAttribute(value, "URI", SignedXml.XmlDsigNamespaceUrl);
             _type = Utils.GetAttribute(value, "Type", SignedXml.XmlDsigNamespaceUrl);
@@ -273,7 +278,7 @@ namespace System.Security.Cryptography.Xml
                                 ? transformElement.OwnerDocument
                                 : SignedXml.GetIdElement(transformElement.OwnerDocument, Utils.GetIdFromLocalUri(_uri, out bool _));
 
-                            XmlNodeList signatureList = referenceTarget.SelectNodes(".//ds:Signature", nsm);
+                            XmlNodeList signatureList = referenceTarget?.SelectNodes(".//ds:Signature", nsm);
                             if (signatureList != null)
                             {
                                 int position = 0;
@@ -319,8 +324,13 @@ namespace System.Security.Cryptography.Xml
             _cachedXml = value;
         }
 
-        public void AddTransform(Transform transform!!)
+        public void AddTransform(Transform transform)
         {
+            if (transform is null)
+            {
+                throw new ArgumentNullException(nameof(transform));
+            }
+
             transform.Reference = this;
             TransformChain.Add(transform);
         }

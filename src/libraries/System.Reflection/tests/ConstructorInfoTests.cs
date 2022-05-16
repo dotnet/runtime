@@ -59,7 +59,7 @@ namespace System.Reflection.Tests
             Assert.NotNull(obj);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInvokingStaticConstructorsSupported))]
         public void Invoke_StaticConstructor_NullObject_NullParameters()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWithStaticConstructor));
@@ -68,7 +68,7 @@ namespace System.Reflection.Tests
             Assert.Null(obj);
         }
 
-        [Fact]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsInvokingStaticConstructorsSupported))]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/40351", TestRuntimes.Mono)]
         public void Invoke_StaticConstructorMultipleTimes()
         {
@@ -107,13 +107,14 @@ namespace System.Reflection.Tests
             // Try to invoke Array ctors with different lengths
             foreach (int length in arraylength)
             {
-                // Create big Array with  elements
+                // Create big Array with elements
                 object[] arr = (object[])constructors[0].Invoke(new object[] { length });
                 Assert.Equal(arr.Length, length);
             }
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
         public void Invoke_OneDimensionalArray_NegativeLengths_ThrowsOverflowException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(object[]));
@@ -121,12 +122,14 @@ namespace System.Reflection.Tests
             // Try to invoke Array ctors with different lengths
             foreach (int length in arraylength)
             {
-                // Create big Array with  elements
-                Assert.Throws<OverflowException>(() => (object[])constructors[0].Invoke(new object[] { length }));
+                // Create big Array with elements
+                Exception ex = Assert.Throws<TargetInvocationException>(() => constructors[0].Invoke(new object[] { length }));
+                Assert.IsType<OverflowException>(ex.InnerException);
             }
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoDimensionalArray_CustomBinder_IncorrectTypeArguments()
         {
             var ctor = typeof(int[,]).GetConstructor(new[] { typeof(int), typeof(int) });
@@ -155,6 +158,7 @@ namespace System.Reflection.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67531", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_TwoParameters_CustomBinder_IncorrectTypeArgument()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(ClassWith3Constructors));

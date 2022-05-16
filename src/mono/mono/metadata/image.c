@@ -1779,7 +1779,6 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 	if (coree_module_handle) {
 		HMODULE module_handle;
 		gunichar2 *fname_utf16;
-		DWORD last_error;
 
 		absfname = mono_path_resolve_symlinks (fname);
 		fname_utf16 = NULL;
@@ -1803,6 +1802,8 @@ mono_image_open_a_lot_parameterized (MonoLoadedImages *li, MonoAssemblyLoadConte
 			g_free (absfname);
 			return image;
 		}
+
+		DWORD last_error = ERROR_SUCCESS;
 
 		// Image not loaded, load it now
 		fname_utf16 = g_utf8_to_utf16 (absfname, -1, NULL, NULL, NULL);
@@ -2166,12 +2167,8 @@ mono_image_close_except_pools (MonoImage *image)
 		char *old_name = image->name;
 		image->name = g_strdup_printf ("%s - UNLOADED", old_name);
 		g_free (old_name);
-		g_free (image->filename);
-		image->filename = NULL;
 	} else {
 		g_free (image->name);
-		g_free (image->filename);
-		g_free (image->guid);
 		g_free (image->version);
 	}
 
@@ -2235,6 +2232,7 @@ mono_image_close_except_pools (MonoImage *image)
 		g_free (ii->cli_section_tables);
 		g_free (ii->cli_sections);
 		g_free (image->image_info);
+		image->image_info = NULL;
 	}
 
 	mono_image_close_except_pools_all (image->files, image->file_count);
@@ -2255,6 +2253,13 @@ mono_image_close_except_pools (MonoImage *image)
 	}
 
 	MONO_PROFILER_RAISE (image_unloaded, (image));
+
+	g_free (image->filename);
+	image->filename = NULL;
+	if (!debug_assembly_unload) {
+		g_free (image->guid);
+		image->guid = NULL;
+	}
 
 	return TRUE;
 }

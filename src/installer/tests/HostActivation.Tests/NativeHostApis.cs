@@ -97,7 +97,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
 
                 Directory.CreateDirectory(WorkingDir);
 
-                // start with an empty global.json, it will be ignored, but prevent one lying on disk 
+                // start with an empty global.json, it will be ignored, but prevent one lying on disk
                 // on a given machine from impacting the test.
                 File.WriteAllText(GlobalJson, "{}");
 
@@ -224,17 +224,19 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         [Fact]
         public void Hostfxr_resolve_sdk2_with_global_json_and_disallowing_previews()
         {
-            // With global.json specifying a preview, roll forward to preview 
+            // With global.json specifying a preview, roll forward to preview
             // since flag has no impact if global.json specifies a preview.
             // Also check that global.json that impacted resolution is reported.
 
             var f = new SdkResolutionFixture(sharedTestState);
 
-            File.WriteAllText(f.GlobalJson, "{ \"sdk\": { \"version\": \"5.6.6-preview\" } }");
+            string requestedVersion = "5.6.6-preview";
+            File.WriteAllText(f.GlobalJson, "{ \"sdk\": { \"version\": \"" + requestedVersion + "\" } }");
             string expectedData = string.Join(';', new[]
             {
                 ("resolved_sdk_dir", Path.Combine(f.LocalSdkDir, "5.6.7-preview")),
                 ("global_json_path", f.GlobalJson),
+                ("requested_version", requestedVersion),
             });
 
             f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_resolve_sdk2", f.ExeDir, f.WorkingDir, "disallow_prerelease" })
@@ -425,7 +427,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation
         public void Hostfxr_get_dotnet_environment_info_global_install_path()
         {
             var f = new SdkResolutionFixture(sharedTestState);
-            
+
             f.Dotnet.Exec(f.AppDll, new[] { "hostfxr_get_dotnet_environment_info" })
             .CaptureStdOut()
             .CaptureStdErr()

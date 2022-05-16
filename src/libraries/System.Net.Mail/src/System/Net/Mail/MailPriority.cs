@@ -296,8 +296,10 @@ namespace System.Net.Mail
             }
         }
 
-        internal void EndSend(IAsyncResult asyncResult!!)
+        internal void EndSend(IAsyncResult asyncResult)
         {
+            ArgumentNullException.ThrowIfNull(asyncResult);
+
             if (Content != null)
             {
                 Content.EndSend(asyncResult);

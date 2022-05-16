@@ -2,13 +2,15 @@ using System;
 using System.Runtime.InteropServices;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics;
+using Xunit;
 
 public class KeepAliveBoxFieldsTest
 {
     private static string _failedTest;
     private static string _failedFieldName;
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         TestLocalsOneBlock();
         Reset();

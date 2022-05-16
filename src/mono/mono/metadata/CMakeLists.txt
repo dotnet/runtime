@@ -18,6 +18,8 @@ set(ilgen_base_sources
     method-builder-ilgen-internals.h
     marshal-ilgen.c
     marshal-ilgen.h
+    marshal-shared.c
+    marshal-shared.h
     sgen-mono-ilgen.c
     sgen-mono-ilgen.h)
 
@@ -167,8 +169,6 @@ set(metadata_common_sources
     abi-details.h
     abi.c
     memory-manager.c
-    mono-config-dirs.h
-    mono-config-dirs.c
     icall-table.h
     ${icall_table_sources})
 
@@ -181,7 +181,6 @@ if(MONO_GC STREQUAL "sgen")
     set(metadata_gc_sources
         sgen-bridge.c
         sgen-bridge-internals.h
-        sgen-old-bridge.c
         sgen-new-bridge.c
         sgen-tarjan-bridge.c
         sgen-toggleref.c
@@ -201,16 +200,5 @@ addprefix(metadata_gc_dependent_real_sources ../metadata "${metadata_gc_dependen
 addprefix(metadata_gc_real_sources ../metadata "${metadata_gc_sources}")
 addprefix(ilgen_real_sources ../metadata "${ilgen_sources}")
 set_source_files_properties(${metadata_gc_real_sources};${metadata_gc_dependent_real_sources};${ilgen_real_sources} PROPERTIES COMPILE_DEFINITIONS "${metadata_compile_definitions}")
-
-#
-# We localize the usage of MONO_BINDIR etc. to just one source file, thus enabling
-# ccache to work even if the value of these defines change.
-#
-set(bindir "${CMAKE_INSTALL_FULL_BINDIR}")
-set(assembliesdir "${CMAKE_INSTALL_FULL_LIBDIR}")
-set(confdir "${CMAKE_INSTALL_FULL_SYSCONFDIR}")
-set(reloc_libdir "${CMAKE_INSTALL_LIBDIR}")
-
-set_source_files_properties(../metadata/mono-config-dirs.c PROPERTIES COMPILE_DEFINITIONS "MONO_BINDIR=\"${bindir}\";MONO_ASSEMBLIES=\"${assembliesdir}\";MONO_CFG_DIR=\"${confdir}\";MONO_RELOC_LIBDIR=\"../${reloc_libdir}\"")
 
 addprefix(metadata_sources ../metadata/ "${metadata_platform_sources};${metadata_common_sources};${metadata_gc_dependent_sources};${metadata_gc_sources};${ilgen_sources}")

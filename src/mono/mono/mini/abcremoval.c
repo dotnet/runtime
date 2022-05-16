@@ -737,7 +737,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 				printf ("\n");
 			}
 
-			// We decie what to do according the the type of the related value
+			// We decie what to do according the type of the related value
 			switch (relation->related_value.type) {
 			case MONO_ANY_SUMMARIZED_VALUE:
 				// No added information, skip it
@@ -1191,6 +1191,8 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 			}
 		}
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 		/*
 		 * Eliminate MONO_INST_FAULT flags if possible.
 		 */
@@ -1229,6 +1231,8 @@ process_block (MonoCompile *cfg, MonoBasicBlock *bb, MonoVariableRelationsEvalua
 			}
 			*/
 		}
+
+MONO_RESTORE_WARNING
 	}
 
 	for (dominated_bb = bb->dominated; dominated_bb != NULL; dominated_bb = dominated_bb->next) {

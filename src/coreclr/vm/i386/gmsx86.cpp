@@ -1273,7 +1273,7 @@ done:
     _ASSERTE(epilogCallRet == 0);
 
     // At this point the fields in 'frame' coorespond exactly to the register
-    // state when the the helper returns to its caller.
+    // state when the helper returns to its caller.
     lazyState->_esp = dac_cast<TADDR>(ESP);
 }
 #ifdef _PREFAST_

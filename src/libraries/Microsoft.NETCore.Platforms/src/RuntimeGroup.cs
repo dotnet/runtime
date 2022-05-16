@@ -78,7 +78,7 @@ namespace Microsoft.NETCore.Platforms.BuildTasks
             }
         }
 
-        internal class RIDMapping
+        internal sealed class RIDMapping
         {
             public RIDMapping(RID runtimeIdentifier)
             {

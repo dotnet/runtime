@@ -3,5 +3,6 @@
     <OutputPath>$(RuntimeBinDir)ilc/</OutputPath>
     <RuntimeIdentifier>$(OutputRid)</RuntimeIdentifier>
   </PropertyGroup>
+
   <Import Project="ILCompiler.props" />
 </Project>

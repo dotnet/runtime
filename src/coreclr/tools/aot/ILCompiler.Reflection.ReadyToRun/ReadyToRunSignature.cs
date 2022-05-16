@@ -14,7 +14,7 @@ using Internal.ReadyToRunConstants;
 namespace ILCompiler.Reflection.ReadyToRun
 {
     /// <summary>
-    /// This represents all possible signatures that is 
+    /// This represents all possible signatures that is
     /// </summary>
     public abstract class ReadyToRunSignature
     {

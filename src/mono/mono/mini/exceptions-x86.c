@@ -34,6 +34,8 @@
 #include "aot-runtime.h"
 #include "mono/utils/mono-tls-inline.h"
 
+MONO_DISABLE_WARNING(4127) /* conditional expression is constant */
+
 static gpointer signal_exception_trampoline;
 
 gpointer

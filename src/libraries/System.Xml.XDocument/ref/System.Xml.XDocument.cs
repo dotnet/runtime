@@ -188,8 +188,8 @@ namespace System.Xml.Linq
         public static System.Xml.Linq.XDocument Load(System.IO.Stream stream, System.Xml.Linq.LoadOptions options) { throw null; }
         public static System.Xml.Linq.XDocument Load(System.IO.TextReader textReader) { throw null; }
         public static System.Xml.Linq.XDocument Load(System.IO.TextReader textReader, System.Xml.Linq.LoadOptions options) { throw null; }
-        public static System.Xml.Linq.XDocument Load(string uri) { throw null; }
-        public static System.Xml.Linq.XDocument Load(string uri, System.Xml.Linq.LoadOptions options) { throw null; }
+        public static System.Xml.Linq.XDocument Load([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { throw null; }
+        public static System.Xml.Linq.XDocument Load([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri, System.Xml.Linq.LoadOptions options) { throw null; }
         public static System.Xml.Linq.XDocument Load(System.Xml.XmlReader reader) { throw null; }
         public static System.Xml.Linq.XDocument Load(System.Xml.XmlReader reader, System.Xml.Linq.LoadOptions options) { throw null; }
         public static System.Threading.Tasks.Task<System.Xml.Linq.XDocument> LoadAsync(System.IO.Stream stream, System.Xml.Linq.LoadOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }
@@ -255,8 +255,8 @@ namespace System.Xml.Linq
         public static System.Xml.Linq.XElement Load(System.IO.Stream stream, System.Xml.Linq.LoadOptions options) { throw null; }
         public static System.Xml.Linq.XElement Load(System.IO.TextReader textReader) { throw null; }
         public static System.Xml.Linq.XElement Load(System.IO.TextReader textReader, System.Xml.Linq.LoadOptions options) { throw null; }
-        public static System.Xml.Linq.XElement Load(string uri) { throw null; }
-        public static System.Xml.Linq.XElement Load(string uri, System.Xml.Linq.LoadOptions options) { throw null; }
+        public static System.Xml.Linq.XElement Load([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri) { throw null; }
+        public static System.Xml.Linq.XElement Load([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("Uri")] string uri, System.Xml.Linq.LoadOptions options) { throw null; }
         public static System.Xml.Linq.XElement Load(System.Xml.XmlReader reader) { throw null; }
         public static System.Xml.Linq.XElement Load(System.Xml.XmlReader reader, System.Xml.Linq.LoadOptions options) { throw null; }
         public static System.Threading.Tasks.Task<System.Xml.Linq.XElement> LoadAsync(System.IO.Stream stream, System.Xml.Linq.LoadOptions options, System.Threading.CancellationToken cancellationToken) { throw null; }

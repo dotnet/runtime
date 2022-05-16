@@ -2343,13 +2343,9 @@ void* MethodContext::repGetHelperFtn(CorInfoHelpFunc ftnNum, void** ppIndirectio
 // Return Value:
 //    True if there is a helper function associated with the given target address; false otherwise.
 //
-// Assumptions:
-//    Only the lower 32 bits of the method address are necessary to identify the method.
-//
 // Notes:
-//    - See notes for fndGetFunctionEntryPoint for a more in-depth discussion of why we only match on the
-//      lower 32 bits of the target address.
-//    - This might not work correctly with method contexts recorded via NGen compilation.
+//    - This might not work correctly with method contexts recorded via NGen compilation; it doesn't compare
+//      the ppIndirection value.
 //
 bool MethodContext::fndGetHelperFtn(void* functionAddress, CorInfoHelpFunc* pResult)
 {
@@ -2487,7 +2483,7 @@ void MethodContext::repGetFunctionEntryPoint(CORINFO_METHOD_HANDLE ftn,
 //                    handle associated with the given target address, it will be written to here.
 //
 // Return Value:
-//    True if there is a helper function associated with the given target address; false otherwise.
+//    True if there is a function associated with the given target address; false otherwise.
 //
 // Assumptions:
 //    - The given method address does not point to a jump stub.
@@ -4769,20 +4765,23 @@ bool MethodContext::repIsValidStringRef(CORINFO_MODULE_HANDLE module, unsigned m
     return value != 0;
 }
 
-
-void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int length, const char16_t* result)
+void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize, int length)
 {
     if (GetStringLiteral == nullptr)
-        GetStringLiteral = new LightWeightMap<DLD, DD>();
+        GetStringLiteral = new LightWeightMap<DLDD, DD>();
 
-    DLD key;
+    DLDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
+    key.C = (DWORD)bufferSize;
 
     DWORD strBuf = (DWORD)-1;
-    if (result != nullptr)
-        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)result, (unsigned int)((wcslen((LPCWSTR)result) * 2) + 2));
+    if (buffer != nullptr && length != -1)
+    {
+        int bufferRealSize = min(length, bufferSize) * sizeof(char16_t);
+        strBuf = (DWORD)GetStringLiteral->AddBuffer((unsigned char*)buffer, (unsigned int)bufferRealSize);
+    }
 
     DD value;
     value.A = (DWORD)length;
@@ -4792,39 +4791,42 @@ void MethodContext::recGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned m
     DEBUG_REC(dmpGetStringLiteral(key, value));
 }
 
-void MethodContext::dmpGetStringLiteral(DLD key, DD value)
+void MethodContext::dmpGetStringLiteral(DLDD key, DD value)
 {
-    printf("GetStringLiteral key mod-%016llX tok-%08X, result-%s, len-%u", key.A, key.B,
-        GetStringLiteral->GetBuffer(value.B), value.A);
+    printf("GetStringLiteral key mod-%016llX tok-%08X, bufSize-%u, len-%u", key.A, key.B, key.C, value.A);
     GetStringLiteral->Unlock();
 }
 
-const char16_t* MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, int* length)
+int MethodContext::repGetStringLiteral(CORINFO_MODULE_HANDLE module, unsigned metaTOK, char16_t* buffer, int bufferSize)
 {
     if (GetStringLiteral == nullptr)
     {
-        *length = -1;
-        return nullptr;
+        return -1;
     }
 
-    DLD key;
+    DLDD key;
     ZeroMemory(&key, sizeof(key)); // Zero key including any struct padding
     key.A = CastHandle(module);
     key.B = (DWORD)metaTOK;
+    key.C = (DWORD)bufferSize;
 
     int itemIndex = GetStringLiteral->GetIndex(key);
     if (itemIndex < 0)
     {
-        *length = -1;
-        return nullptr;
+        return -1;
     }
     else
     {
         DD value = GetStringLiteral->Get(key);
         DEBUG_REP(dmpGetStringLiteral(key, value));
-
-        *length = (int)value.A;
-        return (const char16_t*)GetStringLiteral->GetBuffer(value.B);
+        int srcBufferLength = (int)value.A;
+        if (buffer != nullptr && srcBufferLength > 0)
+        {
+            char16_t* srcBuffer = (char16_t*)GetStringLiteral->GetBuffer(value.B);
+            Assert(srcBuffer != nullptr);
+            memcpy(buffer, srcBuffer, min(srcBufferLength, bufferSize) * sizeof(char16_t));
+        }
+        return srcBufferLength;
     }
 }
 
@@ -5591,13 +5593,14 @@ void MethodContext::dmpGetPgoInstrumentationResults(DWORDLONG key, const Agnosti
                 case ICorJitInfo::PgoInstrumentationKind::EdgeLongCount:
                     printf("E %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramIntCount:
                     printf("T %u", *(unsigned*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount:
                     printf("T %llu", *(uint64_t*)(pInstrumentationData + pBuf[i].Offset));
                     break;
-                case ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramTypeHandle:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes:
+                case ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods:
                     for (unsigned int j = 0; j < pBuf[i].Count; j++)
                     {
                         printf("[%u] %016llX ", j, CastHandle(*(uintptr_t*)(pInstrumentationData + pBuf[i].Offset + j * sizeof(uintptr_t))));
@@ -7069,10 +7072,11 @@ int MethodContext::dumpMD5HashToBuffer(BYTE* pBuffer, int bufLen, char* hash, in
     return m_hash.HashBuffer(pBuffer, bufLen, hash, hashLen);
 }
 
-bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource)
+bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool& hasMethodProfile, bool& hasLikelyClass, ICorJitInfo::PgoSource& pgoSource)
 {
     hasEdgeProfile = false;
     hasClassProfile = false;
+    hasMethodProfile = false;
     hasLikelyClass = false;
 
     // Obtain the Method Info structure for this method
@@ -7095,8 +7099,8 @@ bool MethodContext::hasPgoData(bool& hasEdgeProfile, bool& hasClassProfile, bool
             {
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeIntCount);
                 hasEdgeProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::EdgeLongCount);
-                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramIntCount);
-                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::TypeHandleHistogramLongCount);
+                hasClassProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes);
+                hasMethodProfile |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods);
                 hasLikelyClass |= (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::GetLikelyClass);
 
                 if (hasEdgeProfile && hasClassProfile && hasLikelyClass)

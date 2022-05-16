@@ -120,6 +120,11 @@ namespace System.Text.Json.SourceGeneration
                         GenerateTypeInfo(typeGenerationSpec);
                     }
 
+                    foreach (TypeGenerationSpec typeGenerationSpec in _currentContext.ImplicitlyRegisteredTypes)
+                    {
+                        GenerateTypeInfo(typeGenerationSpec);
+                    }
+
                     string contextName = _currentContext.ContextType.Name;
 
                     // Add root context implementation.
@@ -474,6 +479,7 @@ namespace {@namespace}
                     CollectionType.Stack => $"{JsonMetadataServicesTypeRef}.CreateStackInfo<",
                     CollectionType.Queue => $"{JsonMetadataServicesTypeRef}.CreateQueueInfo<",
                     CollectionType.IEnumerableOfT => $"{JsonMetadataServicesTypeRef}.CreateIEnumerableInfo<",
+                    CollectionType.IAsyncEnumerableOfT => $"{JsonMetadataServicesTypeRef}.CreateIAsyncEnumerableInfo<",
                     CollectionType.IDictionaryOfTKeyTValue => $"{JsonMetadataServicesTypeRef}.CreateIDictionaryInfo<",
                     _ => $"{JsonMetadataServicesTypeRef}.Create{collectionType}Info<"
                 };
@@ -850,7 +856,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                 {
                     string exceptionMessage = string.Format(ExceptionMessages.InvalidSerializablePropertyConfiguration, typeRef);
 
-                    return GenerateFastPathFuncForType(typeGenSpec, 
+                    return GenerateFastPathFuncForType(typeGenSpec,
                         $@"throw new {InvalidOperationExceptionTypeRef}(""{exceptionMessage}"");",
                         emitNullCheck: false); // Skip null check since we want to throw an exception straightaway.
                 }
@@ -1255,7 +1261,7 @@ private {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({TypeTypeRef}
     {{
         throw new {InvalidOperationExceptionTypeRef}(string.Format(""{ExceptionMessages.InvalidJsonConverterFactoryOutput}"", factory.GetType()));
     }}
-     
+
     return converter;
 }}";
             }
@@ -1293,7 +1299,7 @@ private {JsonConverterTypeRef} {GetConverterFromFactoryMethodName}({TypeTypeRef}
 
             private string GetPropertyNameInitialization()
             {
-                // Ensure metadata for types has already occured.
+                // Ensure metadata for types has already occurred.
                 Debug.Assert(!(
                     _currentContext.TypesWithMetadataGenerated.Count == 0
                     && _currentContext.RuntimePropertyNames.Count > 0));

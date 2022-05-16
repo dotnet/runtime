@@ -324,7 +324,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.FreeBSD | TestPlatforms.NetBSD)]
+        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX | TestPlatforms.FreeBSD | TestPlatforms.NetBSD)]
         public void MoveDirectory_FailToMoveDirectoryWithUpperCaseToOtherDirectoryWithLowerCase()
         {
             Directory.CreateDirectory($"{TestDirectory}/FOO");
@@ -333,17 +333,7 @@ namespace System.IO.Tests
         }
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]
-        public void MoveDirectory_NoOpWhenMovingDirectoryWithUpperCaseToOtherDirectoryWithLowerCase()
-        {
-            Directory.CreateDirectory($"{TestDirectory}/FOO");
-            Directory.CreateDirectory($"{TestDirectory}/bar/foo");
-            Move($"{TestDirectory}/FOO", $"{TestDirectory}/bar/foo");
-            Assert.True(Directory.Exists(Path.Combine(TestDirectory, "bar", "foo")));
-        }
-
-        [Fact]
-        [PlatformSpecific(TestPlatforms.Windows | TestPlatforms.OSX)]
+        [PlatformSpecific(TestPlatforms.Windows)]
         public void MoveDirectory_FailToMoveLowerCaseDirectoryWhenUpperCaseDirectoryExists()
         {
             Directory.CreateDirectory($"{TestDirectory}/bar/FOO");

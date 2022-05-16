@@ -10,13 +10,11 @@ namespace System.Net
 {
     internal static partial class UnmanagedCertificateContext
     {
-        internal static unsafe X509Certificate2Collection GetRemoteCertificatesFromStoreContext(IntPtr certContext)
+        internal static unsafe void GetRemoteCertificatesFromStoreContext(IntPtr certContext, X509Certificate2Collection result)
         {
-            X509Certificate2Collection result = new X509Certificate2Collection();
-
             if (certContext == IntPtr.Zero)
             {
-                return result;
+                return;
             }
 
             Interop.Crypt32.CERT_CONTEXT context = *(Interop.Crypt32.CERT_CONTEXT*)certContext;
@@ -46,8 +44,6 @@ namespace System.Net
                     last = next;
                 }
             }
-
-            return result;
         }
     }
 }
