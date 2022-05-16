@@ -23,13 +23,24 @@ steps:
   continueOnError: true
   condition: eq(variables.SkipTests, false)
 
-# Upload test result files (including any dumps) on failure
+# Upload binaries and symbols on failure to allow debugging issues
 - ${{ if eq(parameters.skipTests, false) }}:
-  - task: ArchiveFiles@2
-    displayName: 'Zip TestResults folder'
+  - task: CopyFiles@2
+    displayName: Prepare binaries to publish
     inputs:
-      rootFolderOrFile: '$(Build.SourcesDirectory)/artifacts/TestResults/$(_BuildConfig)'
-      archiveFile: '$(Build.StagingDirectory)/TestResults$(archiveExtension)'
+      SourceFolder: '$(Build.SourcesDirectory)/artifacts/bin'
+      Contents: |
+        */corehost/**
+        */corehost_test/**
+      TargetFolder: '$(Build.StagingDirectory)/Binaries'
+    continueOnError: true
+    condition: failed()
+
+  - task: ArchiveFiles@2
+    displayName: Zip binaries
+    inputs:
+      rootFolderOrFile: '$(Build.StagingDirectory)/Binaries'
+      archiveFile: '$(Build.StagingDirectory)/corehost-bin-${{ parameters.name }}-$(_BuildConfig)$(archiveExtension)'
       archiveType: $(archiveType)
       tarCompression: $(tarCompression)
       includeRootFolder: false
@@ -37,10 +48,10 @@ steps:
     condition: failed()
 
   - task: PublishBuildArtifacts@1
-    displayName: 'Publish TestResults folder'
+    displayName: Publish binaries
     inputs:
-      pathtoPublish: '$(Build.StagingDirectory)/TestResults$(archiveExtension)'
-      artifactName: Installer-TestResults-${{parameters.pgoType }}${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
+      pathtoPublish: '$(Build.StagingDirectory)/corehost-bin-${{ parameters.name }}-$(_BuildConfig)$(archiveExtension)'
+      artifactName: Installer-Binaries-${{parameters.pgoType }}${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
     continueOnError: true
     condition: failed()
 
