@@ -12,6 +12,7 @@
 //
 // Notes:
 //    'value' must have exactly one bit set.
+//    It performs the "TrailingZeroCount" operation using intrinsics.
 //
 inline
 unsigned            BitPosition(unsigned value)
@@ -23,7 +24,7 @@ unsigned            BitPosition(unsigned value)
 }
 
 
-#ifdef TARGET_64BIT
+#ifdef HOST_64BIT
 //------------------------------------------------------------------------
 // BitPosition: Return the position of the single bit that is set in 'value'.
 //
@@ -32,6 +33,7 @@ unsigned            BitPosition(unsigned value)
 //
 // Notes:
 //    'value' must have exactly one bit set.
+//    It performs the "TrailingZeroCount" operation using intrinsics.
 //
 inline
 unsigned            BitPosition(unsigned __int64 value)
@@ -41,6 +43,6 @@ unsigned            BitPosition(unsigned __int64 value)
     BitScanForward64(&index, value);
     return index;
 }
-#endif // TARGET_64BIT
+#endif // HOST_64BIT
 
 #endif

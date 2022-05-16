@@ -97,11 +97,16 @@ inline T genFindLowestBit(T value)
     return (value & (0 - value));
 }
 
-/*****************************************************************************/
-/*****************************************************************************
- *
- *  Return the highest bit that is set (that is, a mask that includes just the highest bit).
- */
+//------------------------------------------------------------------------
+// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
+//                     highest bit).
+//
+// Return Value:
+//    The highest position (0 is LSB) of bit that is set in the 'value'.
+//
+// Note:
+//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
+//    but the highest bit.
 inline unsigned int genFindHighestBit(unsigned int mask)
 {
     assert(mask != 0);
@@ -114,6 +119,16 @@ inline unsigned int genFindHighestBit(unsigned int mask)
     return 1L << index;
 }
 
+//------------------------------------------------------------------------
+// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
+//                     highest bit).
+//
+// Return Value:
+//    The highest position (0 is LSB) of bit that is set in the 'value'.
+//
+// Note:
+//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
+//    but the highest bit.
 inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 {
     assert(mask != 0);
@@ -200,9 +215,9 @@ inline unsigned uhi32(unsigned __int64 value)
 
 inline unsigned genLog2(unsigned __int64 value)
 {
-#ifdef TARGET_64BIT
+#ifdef HOST_64BIT
     return BitPosition(value);
-#else // TARGET_32BIT
+#else // HOST_32BIT
     unsigned     lo32 = ulo32(value);
     unsigned     hi32 = uhi32(value);
 
