@@ -12,8 +12,8 @@ namespace System.Text
 {
     internal static partial class ASCIIUtility
     {
-        private static string? envsetting = Environment.GetEnvironmentVariable("AVX_TEST");
-        private static string? envsetting2 = Environment.GetEnvironmentVariable("AVX_TEST2");
+        //private static string? envsetting = Environment.GetEnvironmentVariable("AVX_TEST");
+        //private static string? envsetting2 = Environment.GetEnvironmentVariable("AVX_TEST2");
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool AllBytesInUInt64AreAscii(ulong value)
@@ -624,11 +624,11 @@ namespace System.Text
             // pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            if (Avx2.IsSupported && envsetting == "AVX2")
+            if (Avx2.IsSupported)
             {
                 return GetIndexOfFirstNonAsciiChar_Avx2(pBuffer, bufferLength);
             }
-            else if (Sse2.IsSupported && envsetting == "SSE")
+            else if (Sse2.IsSupported)
             {
                 return GetIndexOfFirstNonAsciiChar_Sse2(pBuffer, bufferLength);
             }
@@ -1625,7 +1625,7 @@ namespace System.Text
             // pmovmskb, ptest, vpminuw which we know are optimized, and (b) we can avoid downclocking the
             // processor while this method is running.
 
-            if (Avx2.IsSupported && envsetting == "AVX2" && elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
+            if (Avx2.IsSupported && elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
             {
                 Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if AVX2 is supported.");
 
@@ -2234,7 +2234,7 @@ namespace System.Text
             // pmovmskb which we know are optimized, and (b) we can avoid downclocking the processor while
             // this method is running.
 
-            if (Avx2.IsSupported && envsetting2 == "AVX2" && elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
+            if (Avx2.IsSupported && elementCount >= 2 * (uint)Unsafe.SizeOf<Vector256<byte>>())
             {
                 currentOffset = WidenAsciiToUtf16_Avx2(pAsciiBuffer, pUtf16Buffer, elementCount);
             }
