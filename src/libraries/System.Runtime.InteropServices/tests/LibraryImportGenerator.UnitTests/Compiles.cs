@@ -173,7 +173,8 @@ namespace LibraryImportGenerator.UnitTests
             yield return new[] { CodeSnippets.CustomStructMarshalling.OptionalStackallocParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling.TwoStageParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling.PinnableParametersAndModifiers };
-            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeTypePinnable };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeTypePinnable("byte", "byte") };
+            yield return new[] { CodeSnippets.CustomStructMarshalling.NativeTypePinnable("byte", "int") };
             yield return new[] { CodeSnippets.CustomStructMarshalling.MarshalUsingParametersAndModifiers };
             yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyOutParameter };
             yield return new[] { CodeSnippets.CustomStructMarshalling.NativeToManagedOnlyReturnValue };

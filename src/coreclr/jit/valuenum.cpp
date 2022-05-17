@@ -2010,7 +2010,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN)
     assert(arg0VN == VNNormalValue(arg0VN)); // Arguments don't carry exceptions.
 
     // Try to perform constant-folding.
-    if (CanEvalForConstantArgs(func) && IsVNConstant(arg0VN))
+    if (VNEvalCanFoldUnaryFunc(typ, func, arg0VN))
     {
         return EvalFuncForConstantArgs(typ, func, arg0VN);
     }
@@ -2063,56 +2063,15 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
 
     ValueNum resultVN;
 
-    // When both operands are constants we can usually perform constant-folding.
+    // When both operands are constants we can usually perform constant-folding,
+    // except if the expression will always throw an exception (constant VN-based
+    // propagation depends on that).
     //
-    if (CanEvalForConstantArgs(func) && IsVNConstant(arg0VN) && IsVNConstant(arg1VN))
+    if (VNEvalCanFoldBinaryFunc(typ, func, arg0VN, arg1VN) && VNEvalShouldFold(typ, func, arg0VN, arg1VN))
     {
-        bool canFold = true; // Normally we will be able to fold this 'func'
-
-        // Special case for VNF_Cast of constant handles
-        // Don't allow an eval/fold of a GT_CAST(non-I_IMPL, Handle)
-        //
-        if (VNFuncIsNumericCast(func) && (typ != TYP_I_IMPL) && IsVNHandle(arg0VN))
-        {
-            canFold = false;
-        }
-
-        // It is possible for us to have mismatched types (see Bug 750863)
-        // We don't try to fold a binary operation when one of the constant operands
-        // is a floating-point constant and the other is not, except for casts.
-        // For casts, the second operand just carries the information about the source.
-
-        var_types arg0VNtyp      = TypeOfVN(arg0VN);
-        bool      arg0IsFloating = varTypeIsFloating(arg0VNtyp);
-
-        var_types arg1VNtyp      = TypeOfVN(arg1VN);
-        bool      arg1IsFloating = varTypeIsFloating(arg1VNtyp);
-
-        if (!VNFuncIsNumericCast(func) && (arg0IsFloating != arg1IsFloating))
-        {
-            canFold = false;
-        }
-
-        if (typ == TYP_BYREF)
-        {
-            // We don't want to fold expressions that produce TYP_BYREF
-            canFold = false;
-        }
-
-        bool shouldFold = canFold;
-
-        if (canFold)
-        {
-            // We can fold the expression, but we don't want to fold
-            // when the expression will always throw an exception
-            shouldFold = VNEvalShouldFold(typ, func, arg0VN, arg1VN);
-        }
-
-        if (shouldFold)
-        {
-            return EvalFuncForConstantArgs(typ, func, arg0VN, arg1VN);
-        }
+        return EvalFuncForConstantArgs(typ, func, arg0VN, arg1VN);
     }
+
     // We canonicalize commutative operations.
     // (Perhaps should eventually handle associative/commutative [AC] ops -- but that gets complicated...)
     if (VNFuncIsCommutative(func))
@@ -2141,7 +2100,7 @@ ValueNum ValueNumStore::VNForFunc(var_types typ, VNFunc func, ValueNum arg0VN, V
             resultVN = EvalUsingMathIdentity(typ, func, arg0VN, arg1VN);
 
             // Do we have a valid resultVN?
-            if ((resultVN == NoVN) || (TypeOfVN(resultVN) != typ))
+            if ((resultVN == NoVN) || (genActualType(TypeOfVN(resultVN)) != genActualType(typ)))
             {
                 // Otherwise, Allocate a new ValueNum for 'func'('arg0VN','arg1VN')
                 //
@@ -2838,8 +2797,8 @@ ValueNum ValueNumStore::VNForFieldSelector(CORINFO_FIELD_HANDLE fieldHnd, var_ty
 
 ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, ValueNum arg0VN)
 {
-    assert(CanEvalForConstantArgs(func));
-    assert(IsVNConstant(arg0VN));
+    assert(VNEvalCanFoldUnaryFunc(typ, func, arg0VN));
+
     switch (TypeOfVN(arg0VN))
     {
         case TYP_INT:
@@ -2985,14 +2944,17 @@ float ValueNumStore::GetConstantSingle(ValueNum argVN)
 //
 ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
-    assert(CanEvalForConstantArgs(func));
-    assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
-    assert(!VNHasExc(arg0VN) && !VNHasExc(arg1VN)); // Otherwise, would not be constant.
+    assert(VNEvalCanFoldBinaryFunc(typ, func, arg0VN, arg1VN));
 
     // if our func is the VNF_Cast operation we handle it first
     if (VNFuncIsNumericCast(func))
     {
         return EvalCastForConstantArgs(typ, func, arg0VN, arg1VN);
+    }
+
+    if (func == VNF_BitCast)
+    {
+        return EvalBitCastForConstantArgs(typ, arg0VN);
     }
 
     var_types arg0VNtyp = TypeOfVN(arg0VN);
@@ -3144,8 +3106,7 @@ ValueNum ValueNumStore::EvalFuncForConstantArgs(var_types typ, VNFunc func, Valu
 //
 ValueNum ValueNumStore::EvalFuncForConstantFPArgs(var_types typ, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
 {
-    assert(CanEvalForConstantArgs(func));
-    assert(IsVNConstant(arg0VN) && IsVNConstant(arg1VN));
+    assert(VNEvalCanFoldBinaryFunc(typ, func, arg0VN, arg1VN));
 
     // We expect both argument types to be floating-point types
     var_types arg0VNtyp = TypeOfVN(arg0VN);
@@ -3460,39 +3421,131 @@ ValueNum ValueNumStore::EvalCastForConstantArgs(var_types typ, VNFunc func, Valu
     }
 }
 
-//-----------------------------------------------------------------------------------
-// CanEvalForConstantArgs:  - Given a VNFunc value return true when we can perform
-//                            compile-time constant folding for the operation.
+//------------------------------------------------------------------------
+// EvalBitCastForConstantArgs: Evaluate "BitCast(const)".
 //
 // Arguments:
-//    vnf        - The VNFunc that we are inquiring about
+//    dstType - The target type
+//    arg0VN  - VN of the argument (must be a constant)
 //
 // Return Value:
-//               - Returns true if we can always compute a constant result
-//                 when given all constant args.
+//    The constant VN representing "BitCast<dstType>(arg0VN)".
 //
-// Notes:        - When this method returns true, the logic to compute the
-//                 compile-time result must also be added to EvalOP,
-//                 EvalOpspecialized or EvalComparison
-//
-bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
+ValueNum ValueNumStore::EvalBitCastForConstantArgs(var_types dstType, ValueNum arg0VN)
 {
-    if (vnf < VNF_Boundary)
+    // Handles - when generating relocatable code - don't represent their final
+    // values, so we'll not fold bitcasts from them (always, for simplicity).
+    assert(!IsVNHandle(arg0VN));
+
+    var_types srcType = TypeOfVN(arg0VN);
+    assert((genTypeSize(srcType) == genTypeSize(dstType)) || (varTypeIsSmall(dstType) && (srcType == TYP_INT)));
+
+    int           int32    = 0;
+    int64_t       int64    = 0;
+    target_size_t nuint    = 0;
+    float         float32  = 0;
+    double        float64  = 0;
+    unsigned char bytes[8] = {};
+
+    switch (srcType)
     {
-        genTreeOps oper = genTreeOps(vnf);
+        case TYP_INT:
+            int32 = ConstantValue<int>(arg0VN);
+            memcpy(bytes, &int32, sizeof(int32));
+            break;
+        case TYP_LONG:
+            int64 = ConstantValue<int64_t>(arg0VN);
+            memcpy(bytes, &int64, sizeof(int64));
+            break;
+        case TYP_BYREF:
+            nuint = ConstantValue<target_size_t>(arg0VN);
+            memcpy(bytes, &nuint, sizeof(nuint));
+            break;
+        case TYP_REF:
+            noway_assert(arg0VN == VNForNull());
+            nuint = 0;
+            memcpy(bytes, &nuint, sizeof(nuint));
+            break;
+        case TYP_FLOAT:
+            float32 = ConstantValue<float>(arg0VN);
+            memcpy(bytes, &float32, sizeof(float32));
+            break;
+        case TYP_DOUBLE:
+            float64 = ConstantValue<double>(arg0VN);
+            memcpy(bytes, &float64, sizeof(float64));
+            break;
+        default:
+            unreached();
+    }
 
-        switch (oper)
+    // "BitCast<small type>" has the semantic of only changing the upper bits (without truncation).
+    if (varTypeIsSmall(dstType))
+    {
+        assert(FitsIn(varTypeToSigned(dstType), int32) || FitsIn(varTypeToUnsigned(dstType), int32));
+    }
+
+    switch (dstType)
+    {
+        case TYP_BOOL:
+        case TYP_UBYTE:
+            memcpy(&int32, bytes, sizeof(int32));
+            return VNForIntCon(static_cast<uint8_t>(int32));
+        case TYP_BYTE:
+            memcpy(&int32, bytes, sizeof(int32));
+            return VNForIntCon(static_cast<int8_t>(int32));
+        case TYP_USHORT:
+            memcpy(&int32, bytes, sizeof(int32));
+            return VNForIntCon(static_cast<uint16_t>(int32));
+        case TYP_SHORT:
+            memcpy(&int32, bytes, sizeof(int32));
+            return VNForIntCon(static_cast<int16_t>(int32));
+        case TYP_INT:
+            memcpy(&int32, bytes, sizeof(int32));
+            return VNForIntCon(int32);
+        case TYP_LONG:
+            memcpy(&int64, bytes, sizeof(int64));
+            return VNForLongCon(int64);
+        case TYP_BYREF:
+            memcpy(&nuint, bytes, sizeof(nuint));
+            return VNForByrefCon(nuint);
+        case TYP_FLOAT:
+            memcpy(&float32, bytes, sizeof(float32));
+            return VNForFloatCon(float32);
+        case TYP_DOUBLE:
+            memcpy(&float64, bytes, sizeof(float64));
+            return VNForDoubleCon(float64);
+        default:
+            unreached();
+    }
+}
+
+//------------------------------------------------------------------------
+// VNEvalCanFoldBinaryFunc: Can the given binary function be constant-folded?
+//
+// Arguments:
+//    type   - The result type
+//    func   - The function
+//    arg0VN - VN of the first argument
+//    arg1VN - VN of the second argument
+//
+// Return Value:
+//    Whether the caller can constant-fold "func" with the given arguments.
+//
+// Notes:
+//    Returning "true" from this method implies support for evaluating the
+//    function in "EvalFuncForConstantArgs" (one of its callees).
+//
+bool ValueNumStore::VNEvalCanFoldBinaryFunc(var_types type, VNFunc func, ValueNum arg0VN, ValueNum arg1VN)
+{
+    if (!IsVNConstant(arg0VN) || !IsVNConstant(arg1VN))
+    {
+        return false;
+    }
+
+    if (func < VNF_Boundary)
+    {
+        switch (genTreeOps(func))
         {
-            // Only return true for the node kinds that have code that supports
-            // them in EvalOP, EvalOpspecialized or EvalComparison
-
-            // Unary Ops
-            case GT_NEG:
-            case GT_NOT:
-            case GT_BSWAP16:
-            case GT_BSWAP:
-
-            // Binary Ops
             case GT_ADD:
             case GT_SUB:
             case GT_MUL:
@@ -3512,26 +3565,21 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
             case GT_ROL:
             case GT_ROR:
 
-            // Equality Ops
             case GT_EQ:
             case GT_NE:
             case GT_GT:
             case GT_GE:
             case GT_LT:
             case GT_LE:
-
-                // We can evaluate these.
-                return true;
+                break;
 
             default:
-                // We can not evaluate these.
                 return false;
         }
     }
     else
     {
-        // some VNF_ that we can evaluate
-        switch (vnf)
+        switch (func)
         {
             case VNF_GT_UN:
             case VNF_GE_UN:
@@ -3547,14 +3595,87 @@ bool ValueNumStore::CanEvalForConstantArgs(VNFunc vnf)
 
             case VNF_Cast:
             case VNF_CastOvf:
-                // We can evaluate these.
-                return true;
+                if ((type != TYP_I_IMPL) && IsVNHandle(arg0VN))
+                {
+                    return false;
+                }
+                break;
+
+            case VNF_BitCast:
+                if (!varTypeIsArithmetic(type) || IsVNHandle(arg0VN))
+                {
+                    return false;
+                }
+                break;
 
             default:
-                // We can not evaluate these.
                 return false;
         }
     }
+
+    // It is possible for us to have mismatched types (see Bug 750863)
+    // We don't try to fold a binary operation when one of the constant operands
+    // is a floating-point constant and the other is not, except for casts.
+    // For casts, the second operand just carries the information about the type.
+
+    var_types arg0VNtyp      = TypeOfVN(arg0VN);
+    bool      arg0IsFloating = varTypeIsFloating(arg0VNtyp);
+
+    var_types arg1VNtyp      = TypeOfVN(arg1VN);
+    bool      arg1IsFloating = varTypeIsFloating(arg1VNtyp);
+
+    if (!VNFuncIsNumericCast(func) && (func != VNF_BitCast) && (arg0IsFloating != arg1IsFloating))
+    {
+        return false;
+    }
+
+    if (type == TYP_BYREF)
+    {
+        // We don't want to fold expressions that produce TYP_BYREF
+        return false;
+    }
+
+    return true;
+}
+
+//------------------------------------------------------------------------
+// VNEvalCanFoldUnaryFunc: Can the given unary function be constant-folded?
+//
+// Arguments:
+//    type   - The result type
+//    func   - The function
+//    arg0VN - VN of the argument
+//
+// Return Value:
+//    Whether the caller can constant-fold "func" with the given argument.
+//
+// Notes:
+//    Returning "true" from this method implies support for evaluating the
+//    function in "EvalFuncForConstantArgs" (one of its callees).
+//
+bool ValueNumStore::VNEvalCanFoldUnaryFunc(var_types typ, VNFunc func, ValueNum arg0VN)
+{
+    if (!IsVNConstant(arg0VN))
+    {
+        return false;
+    }
+
+    if (func < VNF_Boundary)
+    {
+        switch (genTreeOps(func))
+        {
+            case GT_NEG:
+            case GT_NOT:
+            case GT_BSWAP16:
+            case GT_BSWAP:
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    return false;
 }
 
 //----------------------------------------------------------------------------------------
@@ -4269,30 +4390,9 @@ ValueNum ValueNumStore::VNForLoadStoreBitCast(ValueNum value, var_types indType,
 
     if (typeOfValue != indType)
     {
-        if ((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT))
-        {
-            value = VNForBitCast(value, indType);
-        }
-        else
-        {
-            assert(genTypeSize(indType) == indSize);
+        assert((typeOfValue == TYP_STRUCT) || (indType == TYP_STRUCT) || (genTypeSize(indType) == indSize));
 
-            // TODO-PhysicalVN: remove this pessimization.
-            if (varTypeIsSIMD(indType))
-            {
-                JITDUMP("    *** Mismatched types in VNForLoadStoreBitcast (indType is SIMD)\n");
-                value = VNForExpr(m_pComp->compCurBB, indType);
-            }
-            else if (!varTypeIsFloating(typeOfValue) && !varTypeIsFloating(indType))
-            {
-                // TODO-PhysicalVN: implement constant folding for bitcasts and remove this special case.
-                value = VNForCast(value, indType, TypeOfVN(value));
-            }
-            else
-            {
-                value = VNForBitCast(value, indType);
-            }
-        }
+        value = VNForBitCast(value, indType);
 
         JITDUMP("    VNForLoadStoreBitcast returns ");
         JITDUMPEXEC(m_pComp->vnPrint(value, 1));
@@ -9623,9 +9723,7 @@ ValueNum ValueNumStore::VNForBitCast(ValueNum srcVN, var_types castToType)
 
     assert((castToType != TYP_STRUCT) || (srcType != TYP_STRUCT));
 
-    // TODO-PhysicalVN: implement proper constant folding for BitCast.
-    if ((srcVNFunc.m_func == VNF_ZeroObj) ||
-        ((castToType != TYP_STRUCT) && (srcType != TYP_STRUCT) && (srcVN == VNZeroForType(srcType))))
+    if (srcVNFunc.m_func == VNF_ZeroObj)
     {
         return VNZeroForType(castToType);
     }

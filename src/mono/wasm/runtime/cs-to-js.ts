@@ -5,7 +5,7 @@ import { mono_wasm_new_root, WasmRoot, mono_wasm_new_external_root } from "./roo
 import {
     GCHandle, JSHandleDisposed, MarshalError, MarshalType, MonoArray,
     MonoArrayNull, MonoObject, MonoObjectNull, MonoString,
-    MonoType, MonoTypeNull, MonoObjectRef, MonoStringRef
+    MonoType, MonoTypeNull, MonoObjectRef, MonoStringRef, is_nullish
 } from "./types";
 import { runtimeHelpers } from "./imports";
 import { conv_string_root } from "./strings";
@@ -350,7 +350,7 @@ export function _unbox_ref_type_root_as_js_object(root: WasmRoot<MonoObject>): a
     let result = _lookup_js_owned_object(gc_handle);
 
     // If the JS object for this gc_handle was already collected (or was never created)
-    if (!result) {
+    if (is_nullish(result)) {
         result = {};
 
         // keep the gc_handle so that we could easily convert it back to original C# object for roundtrip

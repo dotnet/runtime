@@ -97,56 +97,49 @@ inline T genFindLowestBit(T value)
     return (value & (0 - value));
 }
 
-/*****************************************************************************/
-/*****************************************************************************
- *
- *  Return the highest bit that is set (that is, a mask that includes just the highest bit).
- *  TODO-ARM64-Throughput: we should convert these to use the _BitScanReverse() / _BitScanReverse64()
- *  compiler intrinsics, but our CRT header file intrin.h doesn't define these for ARM64 yet.
- */
-
+//------------------------------------------------------------------------
+// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
+//                     highest bit).
+//
+// Return Value:
+//    The highest position (0 is LSB) of bit that is set in the 'value'.
+//
+// Note:
+//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
+//    but the highest bit.
 inline unsigned int genFindHighestBit(unsigned int mask)
 {
     assert(mask != 0);
-    unsigned int bit = 1U << ((sizeof(unsigned int) * 8) - 1); // start looking at the top
-    while ((bit & mask) == 0)
-    {
-        bit >>= 1;
-    }
-    return bit;
-}
-
-inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
-{
-    assert(mask != 0);
-    unsigned __int64 bit = 1ULL << ((sizeof(unsigned __int64) * 8) - 1); // start looking at the top
-    while ((bit & mask) == 0)
-    {
-        bit >>= 1;
-    }
-    return bit;
-}
-
-#if 0
-// TODO-ARM64-Cleanup: These should probably be the implementation, when intrin.h is updated for ARM64
-inline
-unsigned int genFindHighestBit(unsigned int mask)
-{
-    assert(mask != 0);
+#if defined(_MSC_VER)
+    unsigned long index;
+#else
     unsigned int index;
-    _BitScanReverse(&index, mask);
+#endif
+    BitScanReverse(&index, mask);
     return 1L << index;
 }
 
-inline
-unsigned __int64 genFindHighestBit(unsigned __int64 mask)
+//------------------------------------------------------------------------
+// genFindHighestBit:  Return the highest bit that is set (that is, a mask that includes just the
+//                     highest bit).
+//
+// Return Value:
+//    The highest position (0 is LSB) of bit that is set in the 'value'.
+//
+// Note:
+//    It performs the "LeadingZeroCount " operation using intrinsics and then mask out everything
+//    but the highest bit.
+inline unsigned __int64 genFindHighestBit(unsigned __int64 mask)
 {
     assert(mask != 0);
+#if defined(_MSC_VER)
+    unsigned long index;
+#else
     unsigned int index;
-    _BitScanReverse64(&index, mask);
+#endif
+    BitScanReverse64(&index, mask);
     return 1LL << index;
 }
-#endif // 0
 
 /*****************************************************************************
 *
@@ -222,8 +215,11 @@ inline unsigned uhi32(unsigned __int64 value)
 
 inline unsigned genLog2(unsigned __int64 value)
 {
-    unsigned lo32 = ulo32(value);
-    unsigned hi32 = uhi32(value);
+#ifdef HOST_64BIT
+    return BitPosition(value);
+#else // HOST_32BIT
+    unsigned     lo32 = ulo32(value);
+    unsigned     hi32 = uhi32(value);
 
     if (lo32 != 0)
     {
@@ -234,6 +230,7 @@ inline unsigned genLog2(unsigned __int64 value)
     {
         return genLog2(hi32) + 32;
     }
+#endif
 }
 
 /*****************************************************************************
