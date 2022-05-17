@@ -136,7 +136,7 @@ namespace System.Text
                 {
                     s_codePagesEncodingDataStream.Seek(m_firstDataWordOffset, SeekOrigin.Begin);
                     int bytesRead = s_codePagesEncodingDataStream.Read(buffer, 0, m_dataSize);
-                    Debug.Assert(bytesRead == m_dataSize);
+                    Debug.Assert(bytesRead == m_dataSize, "s_codePagesEncodingDataStream.Read should have read a full buffer.");
                 }
 
                 fixed (byte* pBuffer = buffer)
@@ -259,7 +259,7 @@ namespace System.Text
                     {
                         s_codePagesEncodingDataStream.Seek(m_firstDataWordOffset, SeekOrigin.Begin);
                         int bytesRead = s_codePagesEncodingDataStream.Read(buffer, 0, m_dataSize);
-                        Debug.Assert(bytesRead == m_dataSize);
+                        Debug.Assert(bytesRead == m_dataSize, "s_codePagesEncodingDataStream.Read should have read a full buffer.");
                     }
 
                     fixed (byte* pBuffer = buffer)
