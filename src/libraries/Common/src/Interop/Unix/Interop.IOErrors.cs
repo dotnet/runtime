@@ -25,7 +25,7 @@ internal static partial class Interop
     {
         if (result < 0)
         {
-            CheckIo(result, path.ToString(), isDirectory, errorRewriter);
+            ThrowExceptionForIoErrno(Sys.GetLastErrorInfo(), path.ToString(), isDirectory, errorRewriter);
         }
         return result;
     }
