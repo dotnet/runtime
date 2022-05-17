@@ -93,11 +93,13 @@ namespace System.Security.Cryptography.X509Certificates
                 (hexValue, decimalValue),
                 static (state, pCertContext) =>
                 {
-                    byte[] actual = pCertContext.CertContext->pCertInfo->SerialNumber.ToByteArray();
-                    GC.KeepAlive(pCertContext);
+                    ReadOnlySpan<byte> actual = pCertContext.CertContext->pCertInfo->SerialNumber.DangerousAsSpan();
 
                     // Convert to BigInteger as the comparison must not fail due to spurious leading zeros
-                    BigInteger actualAsBigInteger = PositiveBigIntegerFromByteArray(actual);
+                    BigInteger actualAsBigInteger = new BigInteger(actual, isUnsigned: true);
+
+                    // Keep the CERT_CONTEXT alive until the data has been read in to the BigInteger.
+                    GC.KeepAlive(pCertContext);
 
                     return state.hexValue.Equals(actualAsBigInteger) || state.decimalValue.Equals(actualAsBigInteger);
                 });
