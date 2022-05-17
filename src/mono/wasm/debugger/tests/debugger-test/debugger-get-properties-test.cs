@@ -117,22 +117,27 @@ namespace DebuggerTests.GetPropertiesTests
 
     public class BaseBaseClass2
     {
-        private string _baseBase_BackingFieldForAutoProperty = "BaseBase#BaseBase_BackingFieldForAutoProperty";
-
-        // for new-hidden with a field:
+        // for new-hidding with a field:
         public int BaseBase_FieldForHidingWithField = 5;
         public int BaseBase_PropertyForHidingWithField => 10;
-        public int BaseBase_AutoPropertyForHidingWithField { get { return 15; } }
+        public int BaseBase_AutoPropertyForHidingWithField { get; set; }
 
-        // for new-hidden with a property:
+        // for new-hidding with a property:
         public string BaseBase_FieldForHidingWithProperty = "BaseBase#BaseBase_FieldForHidingWithProperty";
         public string BaseBase_PropertyForHidingWithProperty => "BaseBase#BaseBase_PropertyForHidingWithProperty";
-        public string BaseBase_AutoPropertyForHidingWithProperty { get { return _baseBase_BackingFieldForAutoProperty; } }
+        public string BaseBase_AutoPropertyForHidingWithProperty { get; set; }
 
-        // for new-hidden with an auto-property:
+        // for new-hidding with an auto-property:
         public string BaseBase_FieldForHidingWithAutoProperty = "BaseBase#BaseBase_FieldForHidingWithAutoProperty";
         public string BaseBase_PropertyForHidingWithAutoProperty => "BaseBase#BaseBase_PropertyForHidingWithAutoProperty";
-        public string BaseBase_AutoPropertyForHidingWithAutoProperty { get { return _baseBase_BackingFieldForAutoProperty; } }
+        public string BaseBase_AutoPropertyForHidingWithAutoProperty { get; set; }
+
+        public BaseBaseClass2()
+        {
+            BaseBase_AutoPropertyForHidingWithField = 15;
+            BaseBase_AutoPropertyForHidingWithProperty = "BaseBase#BaseBase_AutoPropertyForHidingWithProperty";
+            BaseBase_AutoPropertyForHidingWithAutoProperty = "BaseBase#BaseBase_AutoPropertyForHidingWithAutoProperty";
+        }
     }
 
     public class BaseClass2 : BaseBaseClass2, IName
@@ -148,52 +153,56 @@ namespace DebuggerTests.GetPropertiesTests
         private new string BaseBase_AutoPropertyForHidingWithProperty => "Base#BaseBase_AutoPropertyForHidingWithProperty";
 
         // hiding with an auto-property:
-        public new string BaseBase_FieldForHidingWithAutoProperty { get { return "Base#BaseBase_FieldForHidingWithAutoProperty"; } }
-        private new string BaseBase_PropertyForHidingWithAutoProperty { get { return "Base#BaseBase_PropertyForHidingWithAutoProperty"; } }
-        protected new string BaseBase_AutoPropertyForHidingWithAutoProperty { get { return "Base#BaseBase_AutoPropertyForHidingWithAutoProperty"; } }
+        public new string BaseBase_FieldForHidingWithAutoProperty { get; set; }
+        private new string BaseBase_PropertyForHidingWithAutoProperty { get; set; }
+        protected new string BaseBase_AutoPropertyForHidingWithAutoProperty { get; set; }
 
-        private DateTime _base_BackingFieldForAutoProperty = new DateTime(2134, 5, 7, 1, 9, 2);
-
-        // cannot override with fields
+        // cannot override field and cannot override with a field: skipping
 
         // for overriding with a property:
-        internal virtual DateTime Base_FieldForOverridingWithProperty => new DateTime(2134, 5, 7, 1, 9, 2);
         public virtual DateTime Base_PropertyForOverridingWithProperty => new DateTime(2134, 5, 7, 1, 9, 2);
-        protected virtual DateTime Base_AutoPropertyForOverridingWithProperty => new DateTime(2134, 5, 7, 1, 9, 2);
+        protected virtual DateTime Base_AutoPropertyForOverridingWithProperty { get; set; }
 
         // for overriding with a auto-property:
-        public virtual DateTime Base_FieldForOverridingWithAutoProperty { get { return _base_BackingFieldForAutoProperty; } }
-        internal virtual DateTime Base_PropertyForOverridingWithAutoProperty { get { return _base_BackingFieldForAutoProperty; } }
-        protected virtual DateTime Base_AutoPropertyForOverridingWithAutoProperty { get { return _base_BackingFieldForAutoProperty; } }
+        internal virtual DateTime Base_PropertyForOverridingWithAutoProperty => new DateTime(2134, 5, 7, 1, 9, 2);
+        protected virtual DateTime Base_AutoPropertyForOverridingWithAutoProperty { get; set; }
 
         public virtual string FirstName => "BaseClass#FirstName";
         public virtual string LastName => "BaseClass#LastName";
-        
+
         public BaseClass2()
         {
-            BaseBase_PropertyForHidingWithField = BaseBase_FieldForHidingWithField + 5;
+            BaseBase_PropertyForHidingWithField = BaseBase_FieldForHidingWithField + 5; // surpressing non-used variable warning
+            BaseBase_FieldForHidingWithAutoProperty = "Base#BaseBase_FieldForHidingWithAutoProperty";
+            BaseBase_PropertyForHidingWithAutoProperty = "Base#BaseBase_PropertyForHidingWithAutoProperty";
+            BaseBase_AutoPropertyForHidingWithAutoProperty = "Base#BaseBase_AutoPropertyForHidingWithAutoProperty";
+            Base_AutoPropertyForOverridingWithProperty = new DateTime(2134, 5, 7, 1, 9, 2);
+            Base_AutoPropertyForOverridingWithAutoProperty = new DateTime(2134, 5, 7, 1, 9, 2);
         }
     }
 
     public class DerivedClass2 : BaseClass2
     {
-        private DateTime _base_BackingFieldForAutoProperty = new DateTime(2020, 7, 6, 5, 4, 3);
-
-        // overriding with a property:
-        internal override DateTime Base_FieldForOverridingWithProperty => new DateTime(2020, 7, 6, 5, 4, 3);
+        // // overriding with a property:
         public override DateTime Base_PropertyForOverridingWithProperty => new DateTime(2020, 7, 6, 5, 4, 3);
         protected override DateTime Base_AutoPropertyForOverridingWithProperty => new DateTime(2020, 7, 6, 5, 4, 3);
 
-        // overriding with a auto-property:
-        public override DateTime Base_FieldForOverridingWithAutoProperty { get { return _base_BackingFieldForAutoProperty; } }
-        internal override DateTime Base_PropertyForOverridingWithAutoProperty { get { return _base_BackingFieldForAutoProperty; } }
-        protected override DateTime Base_AutoPropertyForOverridingWithAutoProperty { get { return _base_BackingFieldForAutoProperty; } }
+        // // overriding with a auto-property:
+        internal override DateTime Base_PropertyForOverridingWithAutoProperty { get; }
+        protected override DateTime Base_AutoPropertyForOverridingWithAutoProperty { get; set; }
 
         // hiding sample members from BaseBase:
         public new int BaseBase_PropertyForHidingWithField = 210;
         protected new string BaseBase_AutoPropertyForHidingWithProperty => "Derived#BaseBase_AutoPropertyForHidingWithProperty";
-        private new string BaseBase_FieldForHidingWithAutoProperty { get { return "Derived#BaseBase_FieldForHidingWithAutoProperty"; } }
-    
+        private new string BaseBase_FieldForHidingWithAutoProperty { get; set; }
+
+        public DerivedClass2()
+        {
+            Base_PropertyForOverridingWithAutoProperty = new DateTime(2020, 7, 6, 5, 4, 3);
+            Base_AutoPropertyForOverridingWithAutoProperty = new DateTime(2020, 7, 6, 5, 4, 3);
+            BaseBase_FieldForHidingWithAutoProperty = "Derived#BaseBase_FieldForHidingWithAutoProperty";
+        }
+
         public static void run()
         {
             new DerivedClass2().InstanceMethod();
@@ -217,7 +226,7 @@ namespace DebuggerTests.GetPropertiesTests
         private string _stringField;
         private DateTime _dateTime;
         private DateTime _DTProp => new DateTime(2200, 5, 6, 7, 8, 9);
-        
+
         internal bool b = true;
 
         public int a;

@@ -334,93 +334,110 @@ namespace BrowserDebugProxy
 
                 // handle parents' members:
                 var propNameWithSufix = propName;
-                JObject backingField;
-                if (allMembers.TryGetValue(propName, out backingField) && !isOwn)
+                JObject existingMember;
+                if (allMembers.TryGetValue(propName, out existingMember))
                 {
-                    // virtual properties and overriding members have the same attributes;
-                    // we want to skip only the latter. Virtuals are never fields.
-                    // backingField != true, checks if member is a property,
-                    // so that we don't skip virtuals
-                    if (backingField["__isBackingField"]?.Value<bool>() != true)
+                    bool isBackingFieldBelongingToIth = existingMember["__processing_in_progress"]?.Value<bool>() == true;
+                    if (isBackingFieldBelongingToIth)
+                    {
+                        existingMember.Property("__processing_in_progress")?.Remove();
+                    }
+                    if (!isOwn)
                     {
                         bool isOverriding = (getterInfo?.Info.Attributes & MethodAttributes.VtableLayoutMask) == MethodAttributes.NewSlot;
                         if (isOverriding)
+                        {
+                            if (!isBackingFieldBelongingToIth)
+                            {
+                                propNameWithSufix = $"{propName} ({parentSuffix})";
+                                allMembers.Remove(propNameWithSufix);
+                            }
                             continue;
+                        }
+                        if (!isBackingFieldBelongingToIth)
+                        {
+                            propNameWithSufix = $"{propName} ({parentSuffix})";
+                            existingMember = allMembers.GetValueOrDefault(propNameWithSufix);
+                        }
                     }
-                    propNameWithSufix = $"{propName} ({parentSuffix})";
-                    backingField = allMembers.GetValueOrDefault(propNameWithSufix);
                 }
 
-                if (backingField != null)
+                if (existingMember != null)
                 {
-                    if (backingField["__isBackingField"]?.Value<bool>() == true)
+                    if (existingMember["__isBackingField"]?.Value<bool>() == true)
                     {
                         // Update backingField's access with the one from the property getter
-                        backingField["__section"] = getterAttrs switch
+                        existingMember["__section"] = getterAttrs switch
                         {
                             MethodAttributes.Private => "private",
                             MethodAttributes.Public => "result",
                             _ => "internal"
                         };
-                        backingField["__state"] = state?.ToString();
+                        existingMember["__state"] = state?.ToString();
 
                         if (state is not null)
                         {
                             string namePrefix = GetNamePrefixForValues(propNameWithSufix, containerTypeName, isOwn, state);
 
-                            string backingFieldTypeName = backingField["value"]?["className"]?.Value<string>();
+                            string backingFieldTypeName = existingMember["value"]?["className"]?.Value<string>();
                             var expanded = await GetExpandedMemberValues(
-                                sdbHelper, backingFieldTypeName, namePrefix, backingField, state, includeStatic, token);
-                            backingField.Remove();
+                                sdbHelper, backingFieldTypeName, namePrefix, existingMember, state, includeStatic, token);
+                            existingMember.Remove();
                             allMembers.Remove(propNameWithSufix);
                             foreach (JObject evalue in expanded)
                                 allMembers[evalue["name"].Value<string>()] = evalue;
                         }
                     }
+                    existingMember.Property("__processing_in_progress")?.Remove();
                     // derived type already had a member of this name
                     continue;
                 }
                 else
                 {
-                    string returnTypeName = await sdbHelper.GetReturnType(getMethodId, token);
-                    JObject propRet = null;
-                    if (isAutoExpandable || (state is DebuggerBrowsableState.RootHidden && IsACollectionType(returnTypeName)))
-                    {
-                        try
-                        {
-                            propRet = await sdbHelper.InvokeMethod(getterParamsBuffer, getMethodId, token, name: propNameWithSufix);
-                        }
-                        catch (Exception)
-                        {
-                            continue;
-                        }
-                    }
-                    else
-                        propRet = GetNotAutoExpandableObject(getMethodId, propNameWithSufix);
-
-                    propRet["isOwn"] = isOwn;
-                    propRet["__section"] = getterAttrs switch
-                    {
-                        MethodAttributes.Private => "private",
-                        MethodAttributes.Public => "result",
-                        _ => "internal"
-                    };
-                    propRet["__state"] = state?.ToString();
-
-                    string namePrefix = GetNamePrefixForValues(propNameWithSufix, containerTypeName, isOwn, state);
-                    var expandedMembers = await GetExpandedMemberValues(
-                        sdbHelper, returnTypeName, namePrefix, propRet, state, includeStatic, token);
-                    foreach (var member in expandedMembers)
-                    {
-                        var key = member["name"]?.Value<string>();
-                        if (key != null)
-                        {
-                            allMembers.TryAdd(key, member as JObject);
-                        }
-                    }
+                    await AddProperty(getMethodId, state, propNameWithSufix, getterAttrs);
                 }
             }
             return allMembers;
+
+            async Task AddProperty(int getMethodId, DebuggerBrowsableState? state, string propNameWithSufix, MethodAttributes getterAttrs)
+            {
+                string returnTypeName = await sdbHelper.GetReturnType(getMethodId, token);
+                JObject propRet = null;
+                if (isAutoExpandable || (state is DebuggerBrowsableState.RootHidden && IsACollectionType(returnTypeName)))
+                {
+                    try
+                    {
+                        propRet = await sdbHelper.InvokeMethod(getterParamsBuffer, getMethodId, token, name: propNameWithSufix);
+                    }
+                    catch (Exception)
+                    {
+                        return;
+                    }
+                }
+                else
+                    propRet = GetNotAutoExpandableObject(getMethodId, propNameWithSufix);
+
+                propRet["isOwn"] = isOwn;
+                propRet["__section"] = getterAttrs switch
+                {
+                    MethodAttributes.Private => "private",
+                    MethodAttributes.Public => "result",
+                    _ => "internal"
+                };
+                propRet["__state"] = state?.ToString();
+
+                string namePrefix = GetNamePrefixForValues(propNameWithSufix, containerTypeName, isOwn, state);
+                var expandedMembers = await GetExpandedMemberValues(
+                    sdbHelper, returnTypeName, namePrefix, propRet, state, includeStatic, token);
+                foreach (var member in expandedMembers)
+                {
+                    var key = member["name"]?.Value<string>();
+                    if (key != null)
+                    {
+                        allMembers.TryAdd(key, member as JObject);
+                    }
+                }
+            }
 
             JObject GetNotAutoExpandableObject(int methodId, string propertyName)
             {
@@ -541,6 +558,9 @@ namespace BrowserDebugProxy
             {
                 foreach (var item in namedValues)
                 {
+                    if (item["__isBackingField"]?.Value<bool>() == true)
+                        item["__processing_in_progress"] = true;
+
                     var key = item["name"]?.Value<string>();
                     if (key == null
                         || valuesDict.TryAdd(key, item as JObject)
