@@ -335,20 +335,42 @@ namespace System.Security.Cryptography.X509Certificates
                 keyIdentifier,
                 static (keyIdentifier, pCertContext) =>
                 {
-                    int cbData = 0;
-                    if (!Interop.Crypt32.CertGetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, null, ref cbData))
+                    unsafe
                     {
-                        return false;
+                        int cbData = 0;
+
+                        if (!Interop.Crypt32.CertGetCertificateContextPropertyPtr(
+                            pCertContext,
+                            Interop.Crypt32.CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID,
+                            null,
+                            ref cbData))
+                        {
+                            return false;
+                        }
+
+                        // The common scenario for a SKI is a hash with some ASN.1 overhead, so 128 is reasonable to start.
+                        const int MaxStackAllocSize = 128;
+                        Span<byte> actual = stackalloc byte[MaxStackAllocSize];
+
+                        if ((uint)cbData > MaxStackAllocSize)
+                        {
+                            actual = new byte[cbData];
+                        }
+
+                        fixed (byte* pActual = actual)
+                        {
+                            if (!Interop.Crypt32.CertGetCertificateContextPropertyPtr(
+                                pCertContext,
+                                Interop.Crypt32.CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID,
+                                pActual,
+                                ref cbData))
+                            {
+                                return false;
+                            }
+                        }
+
+                        return actual.Slice(0, cbData).SequenceEqual(keyIdentifier);
                     }
-
-                    byte[] actual = new byte[cbData];
-
-                    if (!Interop.Crypt32.CertGetCertificateContextProperty(pCertContext, Interop.Crypt32.CertContextPropId.CERT_KEY_IDENTIFIER_PROP_ID, actual, ref cbData))
-                    {
-                        return false;
-                    }
-
-                    return keyIdentifier.ContentsEqual(actual);
                 });
         }
 
