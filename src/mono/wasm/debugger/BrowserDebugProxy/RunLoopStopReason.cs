@@ -8,8 +8,5 @@ public enum RunLoopStopReason
     Shutdown,
     Cancelled,
     Exception,
-    ProxyConnectionClosed,
-    IDEConnectionClosed,
-    HostConnectionClosed
-
+    ConnectionClosed
 }

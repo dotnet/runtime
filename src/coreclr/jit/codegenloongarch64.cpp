@@ -566,7 +566,7 @@ void CodeGen::genSaveCalleeSavedRegisterGroup(regMaskTP regsMask, int spDelta, i
 // The caller can tell us to fold in a stack pointer adjustment, which we will do with the first instruction.
 // Note that the stack pointer adjustment must be by a multiple of 16 to preserve the invariant that the
 // stack pointer is always 16 byte aligned. If we are saving an odd number of callee-saved
-// registers, though, we will have an empty aligment slot somewhere. It turns out we will put
+// registers, though, we will have an empty alignment slot somewhere. It turns out we will put
 // it below (at a lower address) the callee-saved registers, as that is currently how we
 // do frame layout. This means that the first stack offset will be 8 and the stack pointer
 // adjustment must be done by a SUB, and not folded in to a pre-indexed store.
@@ -785,7 +785,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -819,7 +819,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -851,7 +851,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~
  *      |-----------------------|
@@ -887,7 +887,7 @@ void CodeGen::genRestoreCalleeSavedRegistersHelp(regMaskTP regsToRestoreMask, in
  *      |-----------------------|
  *      |Callee saved registers | // multiple of 8 bytes
  *      |-----------------------|
- *      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+ *      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
  *      |-----------------------|
  *      ~  alignment padding    ~ // To make the whole frame 16 byte aligned.
  *      |-----------------------|
@@ -1084,7 +1084,8 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // If there is no PSPSym (CoreRT ABI), we are done. Otherwise, we need to set up the PSPSym in the functlet frame.
+    // If there is no PSPSym (NativeAOT ABI), we are done. Otherwise, we need to set up the PSPSym in the functlet
+    // frame.
     if (compiler->lvaPSPSym != BAD_VAR_NUM)
     {
         if (isFilter)
@@ -6171,19 +6172,12 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         if (varNode != nullptr)
         {
             assert(varNode->isContained());
-            srcVarNum = varNode->GetLclNum();
-            assert(srcVarNum < compiler->lvaCount);
+            srcVarNum         = varNode->GetLclNum();
+            LclVarDsc* varDsc = compiler->lvaGetDesc(srcVarNum);
 
-            // handle promote situation
-            LclVarDsc* varDsc = compiler->lvaTable + srcVarNum;
-
-            // This struct also must live in the stack frame
-            // And it can't live in a register (SIMD)
-            assert(varDsc->lvType == TYP_STRUCT);
+            // This struct also must live in the stack frame.
+            // And it can't live in a register.
             assert(varDsc->lvOnFrame && !varDsc->lvRegister);
-
-            // We don't split HFA struct
-            assert(!varDsc->lvIsHfa());
         }
         else // addrNode is used
         {
@@ -6743,7 +6737,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     assert(index->isUsedFromReg());
 
     // Generate the bounds check if necessary.
-    if ((node->gtFlags & GTF_INX_RNGCHK) != 0)
+    if (node->IsBoundsChecked())
     {
         GetEmitter()->emitIns_R_R_I(INS_ld_w, EA_4BYTE, REG_R21, base->GetRegNum(), node->gtLenOffset);
         // if (index >= REG_R21)
@@ -8597,7 +8591,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/RA; multiple of 8 bytes
     //      |-----------------------|
-    //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|
@@ -8630,7 +8624,7 @@ void CodeGen::genPushCalleeSavedRegisters(regNumber initReg, bool* pInitRegZeroe
     //      |-----------------------|
     //      |Callee saved registers | // not including FP/RA; multiple of 8 bytes
     //      |-----------------------|
-    //      |        PSP slot       | // 8 bytes (omitted in CoreRT ABI)
+    //      |        PSP slot       | // 8 bytes (omitted in NativeAOT ABI)
     //      |-----------------------|
     //      | locals, temps, etc.   |
     //      |-----------------------|
@@ -9048,7 +9042,7 @@ void CodeGen::genFnPrologCalleeRegArgs()
         // When we have a promoted struct we have two possible LclVars that can represent the incoming argument
         // in the regArgTab[], either the original TYP_STRUCT argument or the introduced lvStructField.
         // We will use the lvStructField if we have a TYPE_INDEPENDENT promoted struct field otherwise
-        // use the the original TYP_STRUCT argument.
+        // use the original TYP_STRUCT argument.
         //
         if (varDsc->lvPromoted || varDsc->lvIsStructField)
         {

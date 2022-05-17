@@ -13,6 +13,7 @@ namespace System.Text.Json
             public int Year;
             public int Month;
             public int Day;
+            public bool IsCalendarDateOnly;
             public int Hour;
             public int Minute;
             public int Second;
@@ -21,94 +22,6 @@ namespace System.Text.Json
             public int OffsetMinutes;
             public bool OffsetNegative => OffsetToken == JsonConstants.Hyphen;
             public byte OffsetToken;
-        }
-
-        public static string FormatDateTimeOffset(DateTimeOffset value)
-        {
-            Span<byte> span = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
-
-            JsonWriterHelper.WriteDateTimeOffsetTrimmed(span, value, out int bytesWritten);
-
-            return JsonReaderHelper.GetTextFromUtf8(span.Slice(0, bytesWritten));
-        }
-
-        public static string FormatDateTime(DateTime value)
-        {
-            Span<byte> span = stackalloc byte[JsonConstants.MaximumFormatDateTimeOffsetLength];
-
-            JsonWriterHelper.WriteDateTimeTrimmed(span, value, out int bytesWritten);
-
-            return JsonReaderHelper.GetTextFromUtf8(span.Slice(0, bytesWritten));
-        }
-
-        public static bool TryParseAsISO(ReadOnlySpan<char> source, out DateTime value)
-        {
-            if (!IsValidDateTimeOffsetParseLength(source.Length))
-            {
-                value = default;
-                return false;
-            }
-
-            int maxLength = checked(source.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
-
-            Span<byte> bytes = maxLength <= JsonConstants.StackallocByteThreshold
-                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
-                : new byte[maxLength];
-
-            int length = JsonReaderHelper.GetUtf8FromText(source, bytes);
-
-            bytes = bytes.Slice(0, length);
-
-            if (bytes.IndexOf(JsonConstants.BackSlash) != -1)
-            {
-                return JsonReaderHelper.TryGetEscapedDateTime(bytes, out value);
-            }
-
-            Debug.Assert(bytes.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (TryParseAsISO(bytes, out DateTime tmp))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
-        }
-
-        public static bool TryParseAsISO(ReadOnlySpan<char> source, out DateTimeOffset value)
-        {
-            if (!IsValidDateTimeOffsetParseLength(source.Length))
-            {
-                value = default;
-                return false;
-            }
-
-            int maxLength = checked(source.Length * JsonConstants.MaxExpansionFactorWhileTranscoding);
-
-            Span<byte> bytes = maxLength <= JsonConstants.StackallocByteThreshold
-                ? stackalloc byte[JsonConstants.StackallocByteThreshold]
-                : new byte[maxLength];
-
-            int length = JsonReaderHelper.GetUtf8FromText(source, bytes);
-
-            bytes = bytes.Slice(0, length);
-
-            if (bytes.IndexOf(JsonConstants.BackSlash) != -1)
-            {
-                return JsonReaderHelper.TryGetEscapedDateTimeOffset(bytes, out value);
-            }
-
-            Debug.Assert(bytes.IndexOf(JsonConstants.BackSlash) == -1);
-
-            if (TryParseAsISO(bytes, out DateTimeOffset tmp))
-            {
-                value = tmp;
-                return true;
-            }
-
-            value = default;
-            return false;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -179,6 +92,22 @@ namespace System.Text.Json
             // No offset, attempt to read as local time.
             return TryCreateDateTimeOffsetInterpretingDataAsLocalTime(parseData, out value);
         }
+
+#if NETCOREAPP
+        public static bool TryParseAsIso(ReadOnlySpan<byte> source, out DateOnly value)
+        {
+            if (TryParseDateTimeOffset(source, out DateTimeParseData parseData) &&
+                parseData.IsCalendarDateOnly &&
+                TryCreateDateTime(parseData, DateTimeKind.Unspecified, out DateTime dateTime))
+            {
+                value = DateOnly.FromDateTime(dateTime);
+                return true;
+            }
+
+            value = default;
+            return false;
+        }
+#endif
 
         /// <summary>
         /// ISO 8601 date time parser (ISO 8601-1:2019).
@@ -251,7 +180,7 @@ namespace System.Text.Json
             // We now have YYYY-MM-DD [dateX]
             if (source.Length == 10)
             {
-                // Just a calendar date
+                parseData.IsCalendarDateOnly = true;
                 return true;
             }
 

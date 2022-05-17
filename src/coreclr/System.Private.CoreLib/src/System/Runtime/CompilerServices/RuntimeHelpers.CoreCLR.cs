@@ -230,6 +230,8 @@ namespace System.Runtime.CompilerServices
             return rawSize;
         }
 
+        // Returns array element size.
+        // Callers are required to keep obj alive
         internal static unsafe ushort GetElementSize(this Array array)
         {
             Debug.Assert(ObjectHasComponentSize(array));

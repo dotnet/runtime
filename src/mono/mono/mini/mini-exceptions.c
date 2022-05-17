@@ -860,7 +860,7 @@ mono_get_generic_info_from_stack_frame (MonoJitInfo *ji, MonoContext *ctx)
 		/* Avoid returning a managed object */
 		MonoObject *this_obj = (MonoObject *)info;
 
-		return this_obj->vtable;
+		return this_obj ? this_obj->vtable : NULL;
 	}
 }
 
@@ -926,7 +926,7 @@ get_method_from_stack_frame (MonoJitInfo *ji, gpointer generic_info)
 	MonoGenericContext context;
 	MonoMethod *method;
 
-	if (!ji->has_generic_jit_info || !mono_jit_info_get_generic_jit_info (ji)->has_this)
+	if (!ji->has_generic_jit_info || !mono_jit_info_get_generic_jit_info (ji)->has_this || !generic_info)
 		return jinfo_get_method (ji);
 	context = mono_get_generic_context_from_stack_frame (ji, generic_info);
 

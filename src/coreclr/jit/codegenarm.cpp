@@ -2269,7 +2269,7 @@ void CodeGen::genPopCalleeSavedRegisters(bool jmpEpilog)
  *      |Pre-spill regs space   |   // This is only necessary to keep the PSP slot at the same offset
  *      |                       |   // in function and funclet
  *      |-----------------------|
- *      |        PSP slot       |   // Omitted in CoreRT ABI
+ *      |        PSP slot       |   // Omitted in NativeAOT ABI
  *      |-----------------------|
  *      ~  possible 4 byte pad  ~
  *      ~     for alignment     ~
@@ -2341,7 +2341,7 @@ void CodeGen::genFuncletProlog(BasicBlock* block)
     // This is the end of the OS-reported prolog for purposes of unwinding
     compiler->unwindEndProlog();
 
-    // If there is no PSPSym (CoreRT ABI), we are done.
+    // If there is no PSPSym (NativeAOT ABI), we are done.
     if (compiler->lvaPSPSym == BAD_VAR_NUM)
     {
         return;

@@ -350,10 +350,12 @@ private:
     GenTree* TryLowerAndOpToResetLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToExtractLowestSetBit(GenTreeOp* andNode);
     GenTree* TryLowerAndOpToAndNot(GenTreeOp* andNode);
+    void LowerBswapOp(GenTreeOp* node);
 #elif defined(TARGET_ARM64)
     bool IsValidConstForMovImm(GenTreeHWIntrinsic* node);
     void LowerHWIntrinsicFusedMultiplyAddScalar(GenTreeHWIntrinsic* node);
     GenTree* LowerModPow2(GenTree* node);
+    GenTree* LowerAddForPossibleContainment(GenTreeOp* node);
 #endif // !TARGET_XARCH && !TARGET_ARM64
 
     union VectorConstant {
@@ -570,6 +572,10 @@ public:
     {
         return m_lsra->isContainableMemoryOp(node);
     }
+
+#ifdef TARGET_ARM64
+    bool IsContainableBinaryOp(GenTree* parentNode, GenTree* childNode) const;
+#endif // TARGET_ARM64
 
 #ifdef FEATURE_HW_INTRINSICS
     // Tries to get a containable node for a given HWIntrinsic

@@ -287,7 +287,7 @@ struct _EventPipeThreadSessionState_Internal {
 	// by the thread capturing the sequence point. The only utility this
 	// unsychronized read has is that if some other thread observes a sequence
 	// number X, it knows this thread must have attempted to write at least
-	// X events prior to the moment in time when the read occured. If the event
+	// X events prior to the moment in time when the read occurred. If the event
 	// buffers are later read and there are fewer than X events timestamped
 	// prior to the sequence point we can be certain the others were dropped.
 	volatile uint32_t sequence_number;

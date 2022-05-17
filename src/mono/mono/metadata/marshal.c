@@ -1666,7 +1666,7 @@ get_wrapper_target_class (MonoImage *image)
 	 * - can't put all wrappers into an mscorlib class, because they reference
 	 *   metadata (signature) so they should be put into the same image as the
 	 *   method they wrap, so they are unloaded together.
-	 * - putting them into a class with a type initalizer could cause the
+	 * - putting them into a class with a type initializer could cause the
 	 *   initializer to be executed which can be a problem if the wrappers are
 	 *   shared.
 	 * - putting them into an inflated class can cause problems if the the

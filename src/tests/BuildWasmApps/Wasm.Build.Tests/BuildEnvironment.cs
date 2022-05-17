@@ -4,6 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 #nullable enable
@@ -43,7 +44,18 @@ namespace Wasm.Build.Tests
 
             string? sdkForWorkloadPath = EnvironmentVariables.SdkForWorkloadTestingPath;
             if (string.IsNullOrEmpty(sdkForWorkloadPath))
-                throw new Exception($"Environment variable SDK_FOR_WORKLOAD_TESTING_PATH not set");
+            {
+                // Is this a "local run?
+                string probePath = Path.Combine(Path.GetDirectoryName(typeof(BuildEnvironment).Assembly.Location)!,
+                                                "..",
+                                                "..",
+                                                "..",
+                                                "dotnet-workload");
+                if (Directory.Exists(probePath))
+                    sdkForWorkloadPath = Path.GetFullPath(probePath);
+                else
+                    throw new Exception($"Environment variable SDK_FOR_WORKLOAD_TESTING_PATH not set, and could not find it at {probePath}");
+            }
             if (!Directory.Exists(sdkForWorkloadPath))
                 throw new Exception($"Could not find SDK_FOR_WORKLOAD_TESTING_PATH={sdkForWorkloadPath}");
 

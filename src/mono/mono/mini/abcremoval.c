@@ -737,7 +737,7 @@ evaluate_relation_with_target_variable (MonoVariableRelationsEvaluationArea *are
 				printf ("\n");
 			}
 
-			// We decie what to do according the the type of the related value
+			// We decie what to do according the type of the related value
 			switch (relation->related_value.type) {
 			case MONO_ANY_SUMMARIZED_VALUE:
 				// No added information, skip it

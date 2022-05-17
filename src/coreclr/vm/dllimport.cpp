@@ -2983,7 +2983,7 @@ void PInvokeStaticSigInfo::InitCallConv(CorInfoCallConvExtension callConv, BOOL 
     _ASSERTE(m_callConv != CallConvWinApiSentinel);
 }
 
-void PInvokeStaticSigInfo::ThrowError(WORD errorResourceID)
+void PInvokeStaticSigInfo::ThrowError(UINT errorResourceID)
 {
     CONTRACTL
     {
@@ -5449,8 +5449,6 @@ namespace
         }
         CONTRACT_END;
 
-        g_IBCLogger.LogNDirectCodeAccess(pMD);
-
         RETURN pMD->FindEntryPoint(hMod);
     }
 
@@ -5776,7 +5774,6 @@ VOID NDirectMethodDesc::SetNDirectTarget(LPVOID pTarget)
     CONTRACTL_END;
 
     NDirectWriteableData* pWriteableData = GetWriteableData();
-    g_IBCLogger.LogNDirectCodeAccess(this);
     pWriteableData->m_pNDirectTarget = pTarget;
 }
 

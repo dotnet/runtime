@@ -612,35 +612,26 @@ namespace System.Text.Json
         }
 
         [DoesNotReturn]
-        public static void ThrowFormatException(DataType dateType)
+        public static void ThrowFormatException(DataType dataType)
         {
             string message = "";
 
-            switch (dateType)
+            switch (dataType)
             {
                 case DataType.Boolean:
-                    message = SR.FormatBoolean;
-                    break;
+                case DataType.DateOnly:
                 case DataType.DateTime:
-                    message = SR.FormatDateTime;
-                    break;
                 case DataType.DateTimeOffset:
-                    message = SR.FormatDateTimeOffset;
-                    break;
                 case DataType.TimeSpan:
-                    message = SR.FormatTimeSpan;
+                case DataType.Guid:
+                case DataType.Version:
+                    message = SR.Format(SR.UnsupportedFormat, dataType);
                     break;
                 case DataType.Base64String:
                     message = SR.CannotDecodeInvalidBase64;
                     break;
-                case DataType.Guid:
-                    message = SR.FormatGuid;
-                    break;
-                case DataType.Version:
-                    message = SR.FormatVersion;
-                    break;
                 default:
-                    Debug.Fail($"The DateType enum value: {dateType} is not part of the switch. Add the appropriate case and exception message.");
+                    Debug.Fail($"The DataType enum value: {dataType} is not part of the switch. Add the appropriate case and exception message.");
                     break;
             }
 
@@ -723,6 +714,7 @@ namespace System.Text.Json
     internal enum DataType
     {
         Boolean,
+        DateOnly,
         DateTime,
         DateTimeOffset,
         TimeSpan,

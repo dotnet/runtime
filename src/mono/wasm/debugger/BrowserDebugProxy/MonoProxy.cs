@@ -12,22 +12,26 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Net.Http;
+using BrowserDebugProxy;
 
 namespace Microsoft.WebAssembly.Diagnostics
 {
     internal class MonoProxy : DevToolsProxy
     {
         private IList<string> urlSymbolServerList;
-        private static HttpClient client = new HttpClient();
         private HashSet<SessionId> sessions = new HashSet<SessionId>();
         protected Dictionary<SessionId, ExecutionContext> contexts = new Dictionary<SessionId, ExecutionContext>();
         private const string sPauseOnUncaught = "pause_on_uncaught";
         private const string sPauseOnCaught = "pause_on_caught";
+
+        public static HttpClient HttpClient => new HttpClient();
+
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
+        public bool AutoSetBreakpointOnEntryPoint { get; set; }
 
-        public MonoProxy(ILoggerFactory loggerFactory, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "") : base(loggerFactory, loggerId)
+        public MonoProxy(ILogger logger, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "") : base(logger, loggerId)
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             RuntimeId = runtimeId;
@@ -475,16 +479,19 @@ namespace Microsoft.WebAssembly.Diagnostics
                         if (!DotnetObjectId.TryParse(args?["objectId"], out DotnetObjectId objectId))
                             break;
 
-                        var valueOrError = await RuntimeGetPropertiesInternal(id, objectId, args, token, true);
+                        var valueOrError = await RuntimeGetObjectMembers(id, objectId, args, token, true);
                         if (valueOrError.IsError)
                         {
                             logger.LogDebug($"Runtime.getProperties: {valueOrError.Error}");
                             SendResponse(id, valueOrError.Error.Value, token);
+                            return true;
                         }
-                        else
+                        if (valueOrError.Value.JObject == null)
                         {
-                            SendResponse(id, Result.OkFromObject(valueOrError.Value), token);
+                            SendResponse(id, Result.Err($"Failed to get properties for '{objectId}'"), token);
+                            return true;
                         }
+                        SendResponse(id, Result.OkFromObject(valueOrError.Value.JObject), token);
                         return true;
                     }
 
@@ -662,8 +669,10 @@ namespace Microsoft.WebAssembly.Diagnostics
             }
             switch (objectId.Scheme)
             {
+                case "method":
+                    args["details"] = await context.SdbAgent.GetMethodProxy(objectId.ValueAsJson, token);
+                    break;
                 case "object":
-                case "methodId":
                     args["details"] = await context.SdbAgent.GetObjectProxy(objectId.Value, token);
                     break;
                 case "valuetype":
@@ -679,12 +688,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                     args["details"] = await context.SdbAgent.GetArrayValuesProxy(objectId.Value, token);
                     break;
                 case "cfo_res":
-                {
                     Result cfo_res = await SendMonoCommand(id, MonoCommands.CallFunctionOn(RuntimeId, args), token);
                     cfo_res = Result.OkFromObject(new { result = cfo_res.Value?["result"]?["value"]});
                     SendResponse(id, cfo_res, token);
                     return true;
-                }
                 case "scope":
                 {
                     SendResponse(id,
@@ -707,7 +714,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 byte[] newBytes = Convert.FromBase64String(res.Value?["result"]?["value"]?["value"]?.Value<string>());
                 var retDebuggerCmdReader = new MonoBinaryReader(newBytes);
                 retDebuggerCmdReader.ReadByte(); //number of objects returned.
-                var obj = await context.SdbAgent.CreateJObjectForVariableValue(retDebuggerCmdReader, "ret", false, -1, false, token);
+                var obj = await context.SdbAgent.ValueCreator.ReadAsVariableValue(retDebuggerCmdReader, "ret", token);
                 /*JTokenType? res_value_type = res.Value?["result"]?["value"]?.Type;*/
                 res = Result.OkFromObject(new { result = obj["value"]});
                 SendResponse(id, res, token);
@@ -738,83 +745,69 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        internal async Task<ValueOrError<JToken>> RuntimeGetPropertiesInternal(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
+        internal async Task<ValueOrError<GetMembersResult>> RuntimeGetObjectMembers(SessionId id, DotnetObjectId objectId, JToken args, CancellationToken token, bool sortByAccessLevel = false)
         {
             var context = GetContext(id);
-            var accessorPropertiesOnly = false;
-            GetObjectCommandOptions objectValuesOpt = GetObjectCommandOptions.WithProperties;
+            GetObjectCommandOptions getObjectOptions = GetObjectCommandOptions.WithProperties;
             if (args != null)
             {
                 if (args["accessorPropertiesOnly"] != null && args["accessorPropertiesOnly"].Value<bool>())
                 {
-                    objectValuesOpt |= GetObjectCommandOptions.AccessorPropertiesOnly;
-                    accessorPropertiesOnly = true;
+                    getObjectOptions |= GetObjectCommandOptions.AccessorPropertiesOnly;
                 }
                 if (args["ownProperties"] != null && args["ownProperties"].Value<bool>())
                 {
-                    objectValuesOpt |= GetObjectCommandOptions.OwnProperties;
+                    getObjectOptions |= GetObjectCommandOptions.OwnProperties;
                 }
             }
-            try {
+            try
+            {
                 switch (objectId.Scheme)
                 {
                     case "scope":
-                    {
                         Result resScope = await GetScopeProperties(id, objectId.Value, token);
                         return resScope.IsOk
-                            ? ValueOrError<JToken>.WithValue(sortByAccessLevel ? resScope.Value : resScope.Value?["result"])
-                            : ValueOrError<JToken>.WithError(resScope);
-                    }
+                            ? ValueOrError<GetMembersResult>.WithValue(
+                                new GetMembersResult((JArray)resScope.Value?["result"], sortByAccessLevel: false))
+                            : ValueOrError<GetMembersResult>.WithError(resScope);
                     case "valuetype":
-                    {
-                        var valType = context.SdbAgent.GetValueTypeClass(objectId.Value);
-                        if (valType == null)
-                            return ValueOrError<JToken>.WithError($"Internal Error: No valuetype found for {objectId}.");
-                        var resValue = await valType.GetValues(context.SdbAgent, accessorPropertiesOnly, token);
+                        var resValue = await MemberObjectsExplorer.GetValueTypeMemberValues(
+                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: false);
                         return resValue switch
                         {
-                            null => ValueOrError<JToken>.WithError($"Could not get properties for {objectId}"),
-                            _ => ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resValue }) : resValue)
+                            null => ValueOrError<GetMembersResult>.WithError($"Could not get properties for {objectId}"),
+                            _ => ValueOrError<GetMembersResult>.WithValue(resValue)
                         };
-                    }
                     case "array":
-                    {
                         var resArr = await context.SdbAgent.GetArrayValues(objectId.Value, token);
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resArr }) : resArr);
-                    }
-                    case "methodId":
-                    {
-                        var resMethod = await context.SdbAgent.InvokeMethodInObject(objectId, objectId.SubValue, null, token);
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = new JArray(resMethod) }) : new JArray(resMethod));
-                    }
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(resArr));
+                    case "method":
+                        var resMethod = await context.SdbAgent.InvokeMethod(objectId, token);
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(new JArray(resMethod)));
                     case "object":
-                    {
-                        var resObj = await context.SdbAgent.GetObjectValues(objectId.Value, objectValuesOpt, token, sortByAccessLevel);
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? resObj[0] : resObj);
-                    }
+                        var resObj = await MemberObjectsExplorer.GetObjectMemberValues(
+                            context.SdbAgent, objectId.Value, getObjectOptions, token, sortByAccessLevel, includeStatic: true);
+                        return ValueOrError<GetMembersResult>.WithValue(resObj);
                     case "pointer":
-                    {
                         var resPointer = new JArray { await context.SdbAgent.GetPointerContent(objectId.Value, token) };
-                        return ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = resPointer }) : resPointer);
-                    }
+                        return ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(resPointer));
                     case "cfo_res":
-                    {
                         Result res = await SendMonoCommand(id, MonoCommands.GetDetails(RuntimeId, objectId.Value, args), token);
                         string value_json_str = res.Value["result"]?["value"]?["__value_as_json_string__"]?.Value<string>();
                         if (res.IsOk && value_json_str == null)
-                            return ValueOrError<JToken>.WithError($"Internal error: Could not find expected __value_as_json_string__ field in the result: {res}");
+                            return ValueOrError<GetMembersResult>.WithError(
+                                $"Internal error: Could not find expected __value_as_json_string__ field in the result: {res}");
 
                         return value_json_str != null
-                                    ? ValueOrError<JToken>.WithValue(sortByAccessLevel ? JObject.FromObject(new { result = JArray.Parse(value_json_str) }) : JArray.Parse(value_json_str))
-                                    : ValueOrError<JToken>.WithError(res);
-                    }
+                                    ? ValueOrError<GetMembersResult>.WithValue(GetMembersResult.FromValues(JArray.Parse(value_json_str)))
+                                    : ValueOrError<GetMembersResult>.WithError(res);
                     default:
-                        return ValueOrError<JToken>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
+                        return ValueOrError<GetMembersResult>.WithError($"RuntimeGetProperties: unknown object id scheme: {objectId.Scheme}");
                 }
             }
             catch (Exception ex)
             {
-                return ValueOrError<JToken>.WithError($"RuntimeGetProperties: Failed to get properties for {objectId}: {ex}");
+                return ValueOrError<GetMembersResult>.WithError($"RuntimeGetProperties: Failed to get properties for {objectId}: {ex}");
             }
         }
 
@@ -831,7 +824,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 var resolver = new MemberReferenceResolver(this, context, sessionId, mono_frame.Id, logger);
                 JObject retValue = await resolver.Resolve(condition, token);
                 if (retValue == null)
-                    retValue = await EvaluateExpression.CompileAndRunTheExpression(condition, resolver, token);
+                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(condition, resolver, logger, token);
                 if (retValue?["value"]?.Type == JTokenType.Boolean ||
                     retValue?["value"]?.Type == JTokenType.Integer ||
                     retValue?["value"]?.Type == JTokenType.Float) {
@@ -993,8 +986,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     continue;
                 }
 
-                Log("debug", $"frame il offset: {il_pos} method token: {method.Info.Token} assembly name: {method.Info.Assembly.Name}");
-                Log("debug", $"\tmethod {method.Name} location: {location}");
+                // logger.LogTrace($"frame il offset: {il_pos} method token: {method.Info.Token} assembly name: {method.Info.Assembly.Name}");
+                // logger.LogTrace($"\tmethod {method.Name} location: {location}");
                 frames.Add(new Frame(method, location, frame_id));
 
                 callFrames.Add(new
@@ -1105,7 +1098,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                         string reason = "exception";
                         int object_id = retDebuggerCmdReader.ReadInt32();
                         var caught = retDebuggerCmdReader.ReadByte();
-                        var exceptionObject = await context.SdbAgent.GetObjectValues(object_id, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
+                        var exceptionObject = await MemberObjectsExplorer.GetObjectMemberValues(
+                            context.SdbAgent, object_id, GetObjectCommandOptions.WithProperties | GetObjectCommandOptions.OwnProperties, token);
                         var exceptionObjectMessage = exceptionObject.FirstOrDefault(attr => attr["name"].Value<string>().Equals("_message"));
                         var data = JObject.FromObject(new
                         {
@@ -1162,7 +1156,7 @@ namespace Microsoft.WebAssembly.Diagnostics
 
                 try
                 {
-                    using HttpResponseMessage response = await client.GetAsync(downloadURL, token);
+                    using HttpResponseMessage response = await HttpClient.GetAsync(downloadURL, token);
                     if (!response.IsSuccessStatusCode)
                     {
                         Log("info", $"Unable to download symbols on demand url:{downloadURL} assembly: {asm.Name}");
@@ -1323,7 +1317,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 JObject retValue = await resolver.Resolve(expression, token);
                 if (retValue == null)
                 {
-                    retValue = await EvaluateExpression.CompileAndRunTheExpression(expression, resolver, token);
+                    retValue = await ExpressionEvaluator.CompileAndRunTheExpression(expression, resolver, logger, token);
                 }
 
                 if (retValue != null)
@@ -1445,10 +1439,36 @@ namespace Microsoft.WebAssembly.Diagnostics
                     {
                         await OnSourceFileAdded(sessionId, source, context, token);
                     }
+
+                    if (AutoSetBreakpointOnEntryPoint)
+                    {
+                        var entryPoint = context.store.FindEntryPoint();
+                        if (entryPoint is not null)
+                        {
+                            var sourceFile = entryPoint.Assembly.Sources.Single(sf => sf.SourceId == entryPoint.SourceId);
+                            string bpId = $"auto:{entryPoint.StartLocation.Line}:{entryPoint.StartLocation.Column}:{sourceFile.DotNetUrl}";
+                            BreakpointRequest request = new(bpId, JObject.FromObject(new
+                            {
+                                lineNumber = entryPoint.StartLocation.Line,
+                                columnNumber = entryPoint.StartLocation.Column,
+                                url = sourceFile.Url
+                            }));
+                            logger.LogDebug($"Adding bp req {request}");
+                            context.BreakpointRequests[bpId] = request;
+                            request.TryResolve(sourceFile);
+                            if (request.TryResolve(sourceFile))
+                                await SetBreakpoint(sessionId, context.store, request, true, true, token);
+                        }
+                        else
+                        {
+                            logger.LogDebug($"No entrypoint found, for setting automatic breakpoint");
+                        }
+                    }
                 }
             }
             catch (Exception e)
             {
+                logger.LogError($"failed: {e}");
                 context.Source.SetException(e);
             }
 
@@ -1494,6 +1514,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             DebugStore store = await LoadStore(sessionId, token);
             context.ready.SetResult(store);
             await SendEvent(sessionId, "Mono.runtimeReady", new JObject(), token);
+            await SendMonoCommand(sessionId, MonoCommands.SetDebuggerAttached(RuntimeId), token);
             context.SdbAgent.ResetStore(store);
             return store;
         }
@@ -1686,7 +1707,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return false;
 
                     using (var reader = new StreamReader(data))
-                        source = await reader.ReadToEndAsync();
+                        source = await reader.ReadToEndAsync(token);
                 }
                 SendResponse(msg_id, Result.OkFromObject(new { scriptSource = source }), token);
             }
