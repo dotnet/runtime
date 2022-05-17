@@ -672,14 +672,7 @@ protected:
             _idCnsReloc = (EA_IS_CNS_RELOC(attr) ? 1 : 0);
             _idDspReloc = (EA_IS_DSP_RELOC(attr) ? 1 : 0);
         }
-        void idSetJmpAlwaysFlag(bool value)
-        {
-            _idIsJmpAlways = value ? 1 : 0;
-        }
-        bool idGetJmpAlwaysFlag()
-        {
-            return _idIsJmpAlways == 1;
-        }
+
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
         // x86:   17 bits
@@ -784,9 +777,8 @@ protected:
 
         unsigned _idCnsReloc : 1; // LargeCns is an RVA and needs reloc tag
         unsigned _idDspReloc : 1; // LargeDsp is an RVA and needs reloc tag
-        unsigned _idIsJmpAlways : 1;
 
-#define ID_EXTRA_RELOC_BITS (3)
+#define ID_EXTRA_RELOC_BITS (2)
 
         ////////////////////////////////////////////////////////////////////////
         // Space taken up to here:
@@ -1544,13 +1536,15 @@ protected:
             BYTE* idjAddr; // address of jump ins (for patching)
         } idjTemp;
 
-        unsigned idjOffs : 30;    // Before jump emission, this is the byte offset within IG of the jump instruction.
+        unsigned idjOffs : 29;    // Before jump emission, this is the byte offset within IG of the jump instruction.
                                   // After emission, for forward jumps, this is the target offset -- in bytes from the
                                   // beginning of the function -- of the target instruction of the jump, used to
                                   // determine if this jump needs to be patched.
         unsigned idjShort : 1;    // is the jump known to be a short  one?
         unsigned idjKeepLong : 1; // should the jump be kept long? (used for
                                   // hot to cold and cold to hot jumps)
+        unsigned idjIsJmpAlways : 1; // indicates that the jump was added at the end of a BB_ALWAYS basic block
+                                     // in case the next block was not the next target
     };
 
 #if FEATURE_LOOP_ALIGN

@@ -7493,9 +7493,8 @@ void emitter::emitIns_J(instruction ins, BasicBlock* dst, int instrCount /* = 0 
     }
 #endif // DEBUG
 
-    id->idSetJmpAlwaysFlag(isJmpAlways);
-
-    id->idjShort = 0;
+    id->idjIsJmpAlways = isJmpAlways ? 1 : 0;
+    id->idjShort       = 0;
     if (dst != nullptr)
     {
         /* Assume the jump will be long */

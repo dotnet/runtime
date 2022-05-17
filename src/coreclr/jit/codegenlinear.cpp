@@ -755,7 +755,7 @@ void CodeGen::genCodeForBBlist()
             case BBJ_ALWAYS:
                 inst_JMP(EJ_jmp, block->bbJumpDest,
 #ifdef TARGET_AMD64
-                         /* isJmpAlways */ !GetEmitter()->emitIsLastInsCall()
+                         /* isJmpAlways */ !GetEmitter()->emitIsLastInsCall() && !block->hasAlign()
 #else
                          /* isJmpAlways */ false
 #endif
