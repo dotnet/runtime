@@ -250,7 +250,8 @@ namespace System.Net.Http.Functional.Tests
         public static readonly object[][] CertificateValidationServersAndExpectedPolicies =
         {
             new object[] { Configuration.Http.ExpiredCertRemoteServer, SslPolicyErrors.RemoteCertificateChainErrors },
-            new object[] { Configuration.Http.WrongHostNameCertRemoteServer , SslPolicyErrors.RemoteCertificateNameMismatch},
+            // [ActiveIssue("https://github.com/dotnet/runtime/issues/69432")]
+            // new object[] { Configuration.Http.WrongHostNameCertRemoteServer , SslPolicyErrors.RemoteCertificateNameMismatch},
         };
 
         private async Task UseCallback_BadCertificate_ExpectedPolicyErrors_Helper(string url, string useHttp2String, SslPolicyErrors expectedErrors)
