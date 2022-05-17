@@ -365,7 +365,7 @@ namespace DebuggerTests
             try
             {
                 TestHarnessProxy.ShutdownProxy(Id.ToString());
-                await Client.Shutdown(_cancellationTokenSource.Token).ConfigureAwait(false);
+                await Client.ShutdownAsync(_cancellationTokenSource.Token).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
