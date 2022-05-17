@@ -471,7 +471,7 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
             runtimeHelpers.fetch = (<any>config).fetch_file_cb;
         }
 
-        const max_parallel_downloads = 100;
+        const max_parallel_downloads = 10;
         // in order to prevent net::ERR_INSUFFICIENT_RESOURCES if we start downloading too many files at same time
         let parallel_count = 0;
         let throttling_promise: Promise<void> | undefined = undefined;

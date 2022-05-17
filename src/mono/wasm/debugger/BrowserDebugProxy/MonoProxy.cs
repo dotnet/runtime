@@ -29,12 +29,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         // index of the runtime in a same JS page/process
         public int RuntimeId { get; private init; }
         public bool JustMyCode { get; private set; }
-        public bool AutoSetBreakpointOnEntryPoint { get; set; }
+        protected readonly ProxyOptions _options;
 
-        public MonoProxy(ILogger logger, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "") : base(logger, loggerId)
+        public MonoProxy(ILogger logger, IList<string> urlSymbolServerList, int runtimeId = 0, string loggerId = "", ProxyOptions options = null) : base(logger, loggerId)
         {
             this.urlSymbolServerList = urlSymbolServerList ?? new List<string>();
             RuntimeId = runtimeId;
+            _options = options;
         }
 
         internal ExecutionContext GetContext(SessionId sessionId)
@@ -1440,9 +1441,9 @@ namespace Microsoft.WebAssembly.Diagnostics
                         await OnSourceFileAdded(sessionId, source, context, token);
                     }
 
-                    if (AutoSetBreakpointOnEntryPoint)
+                    if (_options?.AutoSetBreakpointOnEntryPoint == true)
                     {
-                        var entryPoint = context.store.FindEntryPoint();
+                        MethodInfo entryPoint = context.store.FindEntryPoint(_options!.EntrypointAssembly);
                         if (entryPoint is not null)
                         {
                             var sourceFile = entryPoint.Assembly.Sources.Single(sf => sf.SourceId == entryPoint.SourceId);
@@ -1453,7 +1454,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                                 columnNumber = entryPoint.StartLocation.Column,
                                 url = sourceFile.Url
                             }));
-                            logger.LogDebug($"Adding bp req {request}");
+                            logger.LogInformation($"Adding bp req {request}");
                             context.BreakpointRequests[bpId] = request;
                             request.TryResolve(sourceFile);
                             if (request.TryResolve(sourceFile))
@@ -1461,7 +1462,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         }
                         else
                         {
-                            logger.LogDebug($"No entrypoint found, for setting automatic breakpoint");
+                            logger.LogWarning($"No entrypoint found for setting automatic breakpoint");
                         }
                     }
                 }
