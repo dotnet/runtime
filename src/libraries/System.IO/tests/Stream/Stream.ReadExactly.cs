@@ -164,20 +164,16 @@ namespace System.IO.Tests
 
             byte[] emptyBuffer = Array.Empty<byte>();
 
-            // The buffer is empty, so the Stream can only return 0 from Read. This looks like an end-of-stream,
-            // so an EndOfStreamException is thrown. Normally, 0-byte reads should use Read.
             if (async)
             {
-                await Assert.ThrowsAsync<EndOfStreamException>(async () => await s.ReadExactlyAsync(emptyBuffer));
-                await Assert.ThrowsAsync<EndOfStreamException>(async () => await s.ReadExactlyAsync(emptyBuffer, 0, emptyBuffer.Length));
+                await Assert.ThrowsAsync<ArgumentException>(async () => await s.ReadExactlyAsync(emptyBuffer));
             }
             else
             {
-                Assert.Throws<EndOfStreamException>(() => s.ReadExactly(emptyBuffer));
-                Assert.Throws<EndOfStreamException>(() => s.ReadExactly(emptyBuffer, 0, emptyBuffer.Length));
+                Assert.Throws<ArgumentException>(() => s.ReadExactly(emptyBuffer));
             }
 
-            Assert.Equal(2, readInvokedCount);
+            Assert.Equal(0, readInvokedCount);
         }
 
         [Theory]
@@ -250,6 +246,7 @@ namespace System.IO.Tests
             {
                 await Assert.ThrowsAsync<ArgumentNullException>(async () => await s.ReadExactlyAsync(null, 0, 1));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadExactlyAsync(buffer, 0, -1));
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadExactlyAsync(buffer, 0, 0));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadExactlyAsync(buffer, -1, buffer.Length));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadExactlyAsync(buffer, buffer.Length, 1));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadExactlyAsync(buffer, 0, buffer.Length + 1));
@@ -259,6 +256,7 @@ namespace System.IO.Tests
             {
                 Assert.Throws<ArgumentNullException>(() => s.ReadExactly(null, 0, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadExactly(buffer, 0, -1));
+                Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadExactly(buffer, 0, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadExactly(buffer, -1, buffer.Length));
                 Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadExactly(buffer, buffer.Length, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadExactly(buffer, 0, buffer.Length + 1));

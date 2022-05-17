@@ -339,11 +339,19 @@ namespace System.IO
         /// <param name="buffer">The buffer to write the data into.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous read operation.</returns>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="buffer"/> was an empty buffer.
+        /// </exception>
         /// <exception cref="EndOfStreamException">
         /// Thrown when the end of the stream is reached before filling the <paramref name="buffer"/>.
         /// </exception>
         public ValueTask ReadExactlyAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
+            if (buffer.IsEmpty)
+            {
+                ThrowHelper.ThrowArgumentException_BufferMustNotBeEmpty(nameof(buffer));
+            }
+
             ValueTask<int> vt = ReadAtLeastAsyncCore(buffer, buffer.Length, throwOnEndOfStream: true, cancellationToken);
 
             // transfer the ValueTask<int> to a ValueTask without allocating here.
@@ -362,7 +370,7 @@ namespace System.IO
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="offset"/> was outside the bounds of <paramref name="buffer"/>, or
-        /// <paramref name="count"/> was negative, or the range specified by the combination of
+        /// <paramref name="count"/> was not a positive value, or the range specified by the combination of
         /// <paramref name="offset"/> and <paramref name="count"/> exceed the length of <paramref name="buffer"/>.
         /// </exception>
         /// <exception cref="EndOfStreamException">
@@ -370,7 +378,7 @@ namespace System.IO
         /// </exception>
         public ValueTask ReadExactlyAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
-            ValidateBufferArguments(buffer, offset, count);
+            ValidateReadExactlyBufferArguments(buffer, offset, count);
 
             ValueTask<int> vt = ReadAtLeastAsyncCore(buffer.AsMemory(offset, count), count, throwOnEndOfStream: true, cancellationToken);
 
@@ -398,7 +406,7 @@ namespace System.IO
         /// that many bytes are not currently available.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="minimumBytes"/> is negative, or greater than the length of <paramref name="buffer"/>.
+        /// <paramref name="minimumBytes"/> was not a positive value, or greater than the length of <paramref name="buffer"/>.
         /// </exception>
         /// <exception cref="EndOfStreamException">
         /// Thrown when <paramref name="throwOnEndOfStream"/> is <see langword="true"/> and the end of the stream is reached before reading
@@ -415,6 +423,7 @@ namespace System.IO
         [AsyncMethodBuilder(typeof(PoolingAsyncValueTaskMethodBuilder<>))]
         private async ValueTask<int> ReadAtLeastAsyncCore(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream, CancellationToken cancellationToken)
         {
+            Debug.Assert(buffer.Length > 0);
             Debug.Assert(minimumBytes <= buffer.Length);
 
             int totalRead = 0;
@@ -427,10 +436,8 @@ namespace System.IO
                     {
                         ThrowHelper.ThrowEndOfFileException();
                     }
-                    else
-                    {
-                        return totalRead;
-                    }
+
+                    return totalRead;
                 }
 
                 totalRead += read;
@@ -812,11 +819,21 @@ namespace System.IO
         /// Reads bytes from the current stream and advances the position within the stream until the <paramref name="buffer"/> is filled.
         /// </summary>
         /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current stream.</param>
+        /// <exception cref="ArgumentException">
+        /// <paramref name="buffer"/> was an empty buffer.
+        /// </exception>
         /// <exception cref="EndOfStreamException">
         /// Thrown when the end of the stream is reached before filling the <paramref name="buffer"/>.
         /// </exception>
-        public void ReadExactly(Span<byte> buffer) =>
+        public void ReadExactly(Span<byte> buffer)
+        {
+            if (buffer.IsEmpty)
+            {
+                ThrowHelper.ThrowArgumentException_BufferMustNotBeEmpty(nameof(buffer));
+            }
+
             _ = ReadAtLeastCore(buffer, buffer.Length, throwOnEndOfStream: true);
+        }
 
         /// <summary>
         /// Reads <paramref name="count"/> number of bytes from the current stream and advances the position within the stream.
@@ -827,7 +844,7 @@ namespace System.IO
         /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
         /// <paramref name="offset"/> was outside the bounds of <paramref name="buffer"/>, or
-        /// <paramref name="count"/> was negative, or the range specified by the combination of
+        /// <paramref name="count"/> was not a positive value, or the range specified by the combination of
         /// <paramref name="offset"/> and <paramref name="count"/> exceed the length of <paramref name="buffer"/>.
         /// </exception>
         /// <exception cref="EndOfStreamException">
@@ -835,7 +852,7 @@ namespace System.IO
         /// </exception>
         public void ReadExactly(byte[] buffer, int offset, int count)
         {
-            ValidateBufferArguments(buffer, offset, count);
+            ValidateReadExactlyBufferArguments(buffer, offset, count);
 
             _ = ReadAtLeastCore(buffer.AsSpan(offset, count), count, throwOnEndOfStream: true);
         }
@@ -857,7 +874,7 @@ namespace System.IO
         /// of bytes allocated in the buffer if that many bytes are not currently available.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="minimumBytes"/> is negative, or greater than the length of <paramref name="buffer"/>.
+        /// <paramref name="minimumBytes"/> was not a positive value, or greater than the length of <paramref name="buffer"/>.
         /// </exception>
         /// <exception cref="EndOfStreamException">
         /// Thrown when <paramref name="throwOnEndOfStream"/> is <see langword="true"/> and the end of the stream is reached before reading
@@ -873,6 +890,7 @@ namespace System.IO
         // No argument checking is done here. It is up to the caller.
         private int ReadAtLeastCore(Span<byte> buffer, int minimumBytes, bool throwOnEndOfStream)
         {
+            Debug.Assert(buffer.Length > 0);
             Debug.Assert(minimumBytes <= buffer.Length);
 
             int totalRead = 0;
@@ -885,10 +903,8 @@ namespace System.IO
                     {
                         ThrowHelper.ThrowEndOfFileException();
                     }
-                    else
-                    {
-                        return totalRead;
-                    }
+
+                    return totalRead;
                 }
 
                 totalRead += read;
@@ -953,11 +969,21 @@ namespace System.IO
             }
         }
 
+        private static void ValidateReadExactlyBufferArguments(byte[] buffer, int offset, int count)
+        {
+            ValidateBufferArguments(buffer, offset, count);
+
+            if (count <= 0)
+            {
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedPosNum(nameof(count), count);
+            }
+        }
+
         private static void ValidateReadAtLeastArguments(int bufferLength, int minimumBytes)
         {
-            if (minimumBytes < 0)
+            if (minimumBytes <= 0)
             {
-                ThrowHelper.ThrowArgumentOutOfRangeException(ExceptionArgument.minimumBytes, ExceptionResource.ArgumentOutOfRange_NeedNonNegNum);
+                ThrowHelper.ThrowArgumentOutOfRangeException_NeedPosNum(nameof(minimumBytes), minimumBytes);
             }
 
             if (bufferLength < minimumBytes)

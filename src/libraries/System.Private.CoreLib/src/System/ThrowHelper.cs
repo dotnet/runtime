@@ -254,6 +254,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowArgumentException_BufferMustNotBeEmpty(string paramName)
+        {
+            throw new ArgumentException(SR.Arg_BufferMustNotBeEmpty, paramName);
+        }
+
+        [DoesNotReturn]
         internal static void ThrowArgumentException_HandleNotSync(string paramName)
         {
             throw new ArgumentException(SR.Arg_HandleNotSync, paramName);
@@ -521,9 +527,9 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentOutOfRangeException_NeedPosNum(string? paramName)
+        internal static void ThrowArgumentOutOfRangeException_NeedPosNum(string? paramName, int actualValue)
         {
-            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedPosNum);
+            throw new ArgumentOutOfRangeException(paramName, actualValue, SR.ArgumentOutOfRange_NeedPosNum);
         }
 
         [DoesNotReturn]

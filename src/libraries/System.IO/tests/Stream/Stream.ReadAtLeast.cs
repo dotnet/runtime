@@ -117,27 +117,27 @@ namespace System.IO.Tests
                 });
 
             byte[] buffer = new byte[20];
-
-            Assert.Equal(10, async ? await s.ReadAtLeastAsync(buffer, 0) : s.ReadAtLeast(buffer, 0));
-            Assert.Equal(1, readInvokedCount);
-            for (int i = 0; i < 10; i++) Assert.Equal(i, buffer[i]);
-            for (int i = 10; i < 20; i++) Assert.Equal(0, buffer[i]);
-
-            // now try with an empty buffer
-            readInvokedCount = 0;
-            byte[] emptyBuffer = Array.Empty<byte>();
-
-            // The buffer is empty, so the Stream can only return 0 from Read. This looks like an end-of-stream,
-            // so an EndOfStreamException is thrown. Normally, 0-byte reads should use Read.
             if (async)
             {
-                await Assert.ThrowsAsync<EndOfStreamException>(async () => await s.ReadAtLeastAsync(emptyBuffer, 0));
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadAtLeastAsync(buffer, 0));
             }
             else
             {
-                Assert.Throws<EndOfStreamException>(() => s.ReadAtLeast(emptyBuffer, 0));
+                Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadAtLeast(buffer, 0));
             }
-            Assert.Equal(1, readInvokedCount);
+            Assert.Equal(0, readInvokedCount);
+
+            // now try with an empty buffer
+            byte[] emptyBuffer = Array.Empty<byte>();
+            if (async)
+            {
+                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadAtLeastAsync(emptyBuffer, 0));
+            }
+            else
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadAtLeast(emptyBuffer, 0));
+            }
+            Assert.Equal(0, readInvokedCount);
         }
 
         [Theory]
