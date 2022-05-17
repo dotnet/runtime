@@ -9,18 +9,6 @@ using System.Collections.Generic;
 public class Test
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static uint Shlx32bit(uint x, int y) => x << y;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static int Sarx32bit(int x, int y) => x >> y;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static uint Shrx32bit(uint x, int y) => x >> y;
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
-    private static uint Ror(uint x) => BitOperations.RotateRight(x, 2);
-
-    [MethodImpl(MethodImplOptions.NoInlining)]
     private static ulong Shlx64bit(ulong x, int y) => x << y;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
@@ -51,85 +39,6 @@ public class Test
             ulong expectedULong = 0;
             long expectedLong = 0;
             int MOD64 = 64;
-
-/* TODO: Enable 32bit test when x86 shift is enabled.
-            uint valUInt = 0;
-            int valInt = 0;
-            uint resUInt = 0;
-            int resInt = 0;
-            uint expectedUInt = 0;
-            int expectedInt = 0;
-            int MOD32 = 32;
-            //
-            // Shlx32bit tests
-            //
-
-            Console.WriteLine("### UnitTest: Shlx32bit ###############");
-            uint[] valShlx32bit = new uint[] { 0, 8, 1, 1 };
-            int[] shiftByShlx32bit = new int[] { 1, 1, 31, 33 };
-            for (int idx = 0; idx < valShlx32bit.Length; idx++)
-            {
-                valUInt = valShlx32bit[idx];
-                shiftBy = shiftByShlx32bit[idx];
-                resUInt = Shlx32bit(valUInt, shiftBy);
-                expectedUInt = (uint)(valUInt * Math.Pow(2, (shiftBy % MOD32)));
-                if (!Validate<uint>(valUInt, shiftBy, resUInt, expectedUInt))
-                {
-                    returnCode = FAIL;
-                }
-            }
-
-            // Test only on x64 and x86. There is a known undefined behavior for Arm64 and Arm.
-            if (RuntimeInformation.ProcessArchitecture == Architecture.X64 || RuntimeInformation.ProcessArchitecture == Architecture.X86)
-            {
-                valUInt = 0xFFFFFFFF;
-                shiftBy = 1;
-                resUInt = Shlx32bit(valUInt, shiftBy);
-                expectedUInt = (uint)(valUInt * Math.Pow(2, (shiftBy % MOD32)));
-                if (!Validate<uint>(valUInt, shiftBy, resUInt, expectedUInt))
-                {
-                    returnCode = FAIL;
-                }
-            }
-
-            //
-            // Sarx32bit tests
-            //
-
-            Console.WriteLine("### UnitTest: Sarx32bit ###############");
-            int[] valSarx32bit = new int[] { 0, -8, 1, 0x7FFFFFFF, 0x7FFFFFFF };
-            int[] shiftBySarx32bit = new int[] { 1, 1, 33, 33, 30 };
-            for (int idx = 0; idx < valSarx32bit.Length; idx++)
-            {
-                valInt = valSarx32bit[idx];
-                shiftBy = shiftBySarx32bit[idx];
-                resInt = Sarx32bit(valInt, shiftBy);
-                expectedInt = (int)(valInt / Math.Pow(2, (shiftBy % MOD32)));
-                if (!Validate<int>(valInt, shiftBy, resInt, expectedInt))
-                {
-                    returnCode = FAIL;
-                }
-            }
-
-            //
-            // Shrx32bit tests
-            //
-
-            Console.WriteLine("### UnitTest: Shrx32bit ###############");
-            uint[] valShrx32bit = new uint[] { 1, 8, 1, 0xFFFFFFFF, 0xFFFFFFFF };
-            int[] shiftByShrx32bit = new int[] { 1, 2, 33, 31, 33 };
-            for (int idx = 0; idx < valShrx32bit.Length; idx++)
-            {
-                valUInt = valShrx32bit[idx];
-                shiftBy = shiftByShrx32bit[idx];
-                resUInt = Shrx32bit(valUInt, shiftBy);
-                expectedUInt = (uint)(valUInt / Math.Pow(2, (shiftBy % MOD32)));
-                if (!Validate<uint>(valUInt, shiftBy, resUInt, expectedUInt))
-                {
-                    returnCode = FAIL;
-                }
-            }
-*/ // End of x86 shift unit tests
 
             //
             // Shlx64bit tests
