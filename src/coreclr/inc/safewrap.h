@@ -57,36 +57,6 @@ consistency's sake.
 #include "holder.h"
 
 /* --------------------------------------------------------------------------- *
- * Simple wrapper around WszFindFirstFile/WszFindNextFile
- * --------------------------------------------------------------------------- */
-class ClrDirectoryEnumerator
-{
-    WIN32_FIND_DATAW    data;
-    FindHandleHolder    dirHandle;
-    BOOL                fFindNext; // Skip FindNextFile first time around
-
-public:
-    ClrDirectoryEnumerator(LPCWSTR pBaseDirectory, LPCWSTR pMask = W("*"));
-    bool Next();
-
-    LPCWSTR GetFileName()
-    {
-        return data.cFileName;
-    }
-
-    DWORD GetFileAttributes()
-    {
-        return data.dwFileAttributes;
-    }
-
-    void Close()
-    {
-        dirHandle.Clear();
-    }
-};
-
-
-/* --------------------------------------------------------------------------- *
  * Simple wrapper around RegisterEventSource/ReportEvent/DeregisterEventSource
  * --------------------------------------------------------------------------- */
 // Returns ERROR_SUCCESS if succeessful in reporting to event log, or
