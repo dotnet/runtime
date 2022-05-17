@@ -99,6 +99,12 @@ public class Test
         [BuildAndRun(aot: true)]
         public void ProjectUsingBrowserNativeCrypto(BuildArgs buildArgs, RunHost host, string id)
         {
+            if (host == RunHost.Chrome)
+            {
+                // SharedArrayBuffer not available in Chrome under this test harness.
+                return;
+            }
+
             string projectName = $"AppUsingBrowserNativeCrypto";
             buildArgs = buildArgs with { ProjectName = projectName };
             buildArgs = ExpandBuildArgs(buildArgs);
@@ -108,12 +114,13 @@ using System.Security.Cryptography;
 
 public class Test
 {
-    public static void Main()
+    public static int Main()
     {
         using (SHA256 mySHA256 = SHA256.Create())
         {
             byte[] data = { (byte)'H', (byte)'e', (byte)'l', (byte)'l', (byte)'o' };
             mySHA256.ComputeHash(data);
+            return 0;
         }
     }
 }";
@@ -128,14 +135,14 @@ public class Test
                                 test: output => {},
                                 host: host, id: id);
 
-            string cryptoInitializeSentinel = "MONO_WASM: Initialize Crypto WebWorker";
+            string cryptoInitMsg = "MONO_WASM: Initializing Crypto WebWorker";
             if (host == RunHost.V8 || host == RunHost.NodeJS)
             {
-                Assert.DoesNotContain(cryptoInitializeSentinel, output);
+                Assert.DoesNotContain(cryptoInitMsg, output);
             }
             else
             {
-                Assert.Contains(cryptoInitializeSentinel, output);
+                Assert.Contains(cryptoInitMsg, output);
             }
         }
     }
