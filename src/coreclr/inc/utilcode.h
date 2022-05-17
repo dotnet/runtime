@@ -417,6 +417,43 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     return str;
 }
 
+class FormatGuid
+{
+    char _buffer[ARRAY_SIZE("{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}")];
+public:
+    FormatGuid(const GUID& guid)
+    {
+        // Ensure we always have a null
+        _buffer[ARRAY_SIZE(_buffer) - 1] = '\0';
+        sprintf_s(_buffer, ARRAY_SIZE(_buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+            guid.Data1, guid.Data2, guid.Data3,
+            guid.Data4[0], guid.Data4[1],
+            guid.Data4[2], guid.Data4[3],
+            guid.Data4[4], guid.Data4[5],
+            guid.Data4[6], guid.Data4[7]);
+    }
+
+    FormatGuid(LPCWSTR guid)
+    {
+        // Ensure we always have a null
+        _buffer[ARRAY_SIZE(_buffer) - 1] = '\0';
+
+        size_t len = wcslen(guid);
+        if (len > ARRAY_SIZE(_buffer) - 1)
+            len = ARRAY_SIZE(_buffer) - 1;
+
+        // A simple downcast is possible because all UTF-16
+        // values and UTF-8 values are the same.
+        for (size_t i = 0; i < len; ++i)
+            _buffer[i] = (char)guid[i];
+    }
+
+    const char* ToUtf8() const
+    {
+        return _buffer;
+    }
+};
+
 inline
 LPWSTR DuplicateString(
     LPCWSTR wszString,

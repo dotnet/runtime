@@ -96,11 +96,11 @@ inline void AssertTriggersContract(BOOL fTriggers)
 //
 // Arguments:
 //    * iidRequested - IID to convert to string and log (as insertion string)
-//    * wszCLSID - CLSID to log (as insertion string)
+//    * szCLSID - CLSID to log (as insertion string)
 //
 
 // static
-inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCWSTR wszCLSID)
+inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCSTR szCLSID)
 {
     CONTRACTL
     {
@@ -110,15 +110,8 @@ inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCWST
     }
     CONTRACTL_END;
 
-    WCHAR wszIidRequested[39];
-    if (StringFromGUID2(iidRequested, wszIidRequested, ARRAY_SIZE(wszIidRequested)) == 0)
-    {
-        // This is a little super-paranoid; but just use an empty string if GUIDs
-        // get bigger than we expect.
-        _ASSERTE(!"IID buffer too small.");
-        wszIidRequested[0] = L'\0';
-    }
-    ProfilingAPIUtility::LogProfError(IDS_E_PROF_NO_CALLBACK_IFACE, wszCLSID, wszIidRequested);
+    FormatGuid iidStr(iidRequested);
+    ProfilingAPIUtility::LogProfError(IDS_E_PROF_NO_CALLBACK_IFACE, szCLSID, iidStr.ToUtf8());
 }
 
 #ifdef _DEBUG
@@ -181,21 +174,14 @@ inline HRESULT ProfilingAPIUtility::LoadProfilerForAttach(
     }
     CONTRACTL_END;
 
-    // Need string version of CLSID for event log messages
-    WCHAR wszClsid[40];
-    if (StringFromGUID2(*pClsid, wszClsid, ARRAY_SIZE(wszClsid)) == 0)
-    {
-        _ASSERTE(!"StringFromGUID2 failed!");
-        return E_UNEXPECTED;
-    }
-
     // Inform user we're about to try attaching the profiler
-    ProfilingAPIUtility::LogProfInfo(IDS_PROF_ATTACH_REQUEST_RECEIVED, wszClsid);
+    FormatGuid clsidStr(*pClsid);
+    ProfilingAPIUtility::LogProfInfo(IDS_PROF_ATTACH_REQUEST_RECEIVED, clsidStr.ToUtf8());
 
     return LoadProfiler(
         kAttachLoad,
         pClsid,
-        wszClsid,
+        clsidStr.ToUtf8(),
         wszProfilerDLL,
         pvClientData,
         cbClientData,
