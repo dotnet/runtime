@@ -39,12 +39,6 @@ namespace AppHost.Bundle.Tests
                 .Execute();
         }
 
-        [Fact]
-        public void CrashingTest()
-        {
-            System.Runtime.InteropServices.Marshal.StructureToPtr(1, new IntPtr(1), true);
-        }
-
         [InlineData(BundleOptions.None)]
         [InlineData(BundleOptions.BundleNativeBinaries)]
         [InlineData(BundleOptions.BundleAllContent)]
