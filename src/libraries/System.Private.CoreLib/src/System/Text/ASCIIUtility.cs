@@ -1653,7 +1653,7 @@ namespace System.Text
 
                 currentOffset = NarrowUtf16ToAscii_Avx2(pUtf16Buffer, pAsciiBuffer, elementCount);
             }
-            else if (Sse2.IsSupported && envsetting == "SSE")
+            else if (Sse2.IsSupported)
             {
                 Debug.Assert(BitConverter.IsLittleEndian, "Assume little endian if SSE2 is supported.");
 
@@ -1684,7 +1684,7 @@ namespace System.Text
                     currentOffset = NarrowUtf16ToAscii_Sse2(pUtf16Buffer, pAsciiBuffer, elementCount);
                 }
             }
-            else if (Vector.IsHardwareAccelerated && envsetting == "VECTOR")
+            else if (Vector.IsHardwareAccelerated)
             {
                 uint SizeOfVector = (uint)Unsafe.SizeOf<Vector<byte>>(); // JIT will make this a const
 
