@@ -32,7 +32,7 @@
 #include "pinvoke.h"
 
 #ifdef GEN_PINVOKE
-#include "wasm_m2n_invoke2.g.h"
+#include "wasm_m2n_invoke.g.h"
 #endif
 #include "gc-common.h"
 

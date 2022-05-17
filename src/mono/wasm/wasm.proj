@@ -64,7 +64,7 @@
   <UsingTask TaskName="InterpToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <Target Name="BuildInterpToNativeTable" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
     <PropertyGroup>
-      <WasmInterpToNativeTablePath>$(ArtifactsObjDir)wasm\wasm_m2n_invoke2.g.h</WasmInterpToNativeTablePath>
+      <WasmInterpToNativeTablePath>$(ArtifactsObjDir)wasm\wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
     </PropertyGroup>
 
     <InterpToNativeGenerator
@@ -196,7 +196,7 @@
     </ItemGroup>
     <PropertyGroup>
       <PInvokeTableFile>$(ArtifactsObjDir)wasm/pinvoke-table.h</PInvokeTableFile>
-      <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke2.g.h</InterpToNativeTableFile>
+      <InterpToNativeTableFile>$(ArtifactsObjDir)wasm/wasm_m2n_invoke.g.h</InterpToNativeTableFile>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Debug'">-g -Os -s -DDEBUG=1 -DENABLE_AOT_PROFILER=1</CMakeConfigurationEmccFlags>
       <CMakeConfigurationEmccFlags Condition="'$(Configuration)' == 'Release'">-Oz</CMakeConfigurationEmccFlags>
 

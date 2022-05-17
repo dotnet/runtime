@@ -164,7 +164,7 @@
       <_WasmICallTablePath>$(_WasmIntermediateOutputPath)icall-table.h</_WasmICallTablePath>
       <_WasmRuntimeICallTablePath>$(_WasmIntermediateOutputPath)runtime-icall-table.h</_WasmRuntimeICallTablePath>
       <_WasmPInvokeTablePath>$(_WasmIntermediateOutputPath)pinvoke-table.h</_WasmPInvokeTablePath>
-      <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)wasm_m2n_invoke2.g.h</_WasmInterpToNativeTablePath>
+      <_WasmInterpToNativeTablePath>$(_WasmIntermediateOutputPath)wasm_m2n_invoke.g.h</_WasmInterpToNativeTablePath>
       <_WasmPInvokeHPath>$(_WasmRuntimePackIncludeDir)wasm\pinvoke.h</_WasmPInvokeHPath>
       <_DriverGenCPath>$(_WasmIntermediateOutputPath)driver-gen.c</_DriverGenCPath>
       <DisableParallelAot Condition="'$(DisableParallelAot)' == ''">false</DisableParallelAot>
