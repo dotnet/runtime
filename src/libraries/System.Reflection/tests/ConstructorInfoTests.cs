@@ -115,7 +115,6 @@ namespace System.Reflection.Tests
 
         [Fact]
         [ActiveIssue("https://github.com/dotnet/runtime/issues/67457", TestRuntimes.Mono)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69336", typeof(PlatformDetection), nameof(PlatformDetection.IsNativeAot))]
         public void Invoke_OneDimensionalArray_NegativeLengths_ThrowsOverflowException()
         {
             ConstructorInfo[] constructors = GetConstructors(typeof(object[]));
