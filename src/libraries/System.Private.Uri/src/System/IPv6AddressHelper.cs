@@ -163,7 +163,7 @@ namespace System
             int i;
             for (i = start; i < end; ++i)
             {
-                if (havePrefix ? (name[i] >= '0' && name[i] <= '9') : Uri.IsHexDigit(name[i]))
+                if (havePrefix ? char.IsAsciiDigit(name[i]) : char.IsAsciiHexDigit(name[i]))
                 {
                     ++sequenceLength;
                     expectingNumber = false;
