@@ -582,7 +582,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>Make a concatenation of the supplied regex nodes.</summary>
-        internal static SymbolicRegexNode<TSet> CreateConcat(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right)
+        internal static SymbolicRegexNode<TSet> CreateConcat(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, bool keepLeftConcat = true)
         {
             // Concatenating anything with a nothing means the entire concatenation can't match
             if (left == builder._nothing || right == builder._nothing)
@@ -594,7 +594,7 @@ namespace System.Text.RegularExpressions.Symbolic
             if (right.IsEpsilon)
                 return left;
 
-            // Push concatenation inside Effect nodes
+            // push concatenation inside Effect nodes
             Debug.Assert(right._kind is not SymbolicRegexNodeKind.Effect);
             if (left._kind == SymbolicRegexNodeKind.Effect)
             {
@@ -602,13 +602,88 @@ namespace System.Text.RegularExpressions.Symbolic
                 return CreateEffect(builder, CreateConcat(builder, left._left, right), left._right);
             }
 
-            return Create(builder, SymbolicRegexNodeKind.Concat, left, right, -1, -1, default, null, SymbolicRegexInfo.Concat(left._info, right._info));
+            SymbolicRegexNode<TSet> rl = right._kind == SymbolicRegexNodeKind.Concat ? right._left! : right;
+            SymbolicRegexNode<TSet> rr = right._kind == SymbolicRegexNodeKind.Concat ? right._right! : builder.Epsilon;
+
+            // join concatenation of two loops with the same laziness status and bodies into a single loop
+            if (left._kind == SymbolicRegexNodeKind.Loop && rl._kind == SymbolicRegexNodeKind.Loop && left._left == rl._left &&
+               left._info.IsLazyLoop == rl._info.IsLazyLoop)
+            {
+                Debug.Assert(left._left is not null);
+                //either both loops are eager or both are lazy
+                //compute the sum of the bounds as the new bounds of the joined loop
+                int lower = left._lower + right._lower;
+                long upperInt64 = left._upper + right._upper;  //avoid overflow in case some loop has no upper bound
+                int upper = (upperInt64 >= int.MaxValue) ? int.MaxValue : (int)upperInt64;
+                SymbolicRegexNode<TSet> loop = CreateLoop(builder, left._left, lower, upper, left._info.IsLazyLoop);
+                return MkConcat(loop, rr);
+            }
+
+            //try to create loop structure: XX --> X{2}
+            if (left == rl)
+            {
+                int lower = left._info.IsHighPriorityNullable ? 0 : 2;
+                SymbolicRegexNode<TSet> loop = CreateLoop(builder, left, lower, 2, left._info.IsHighPriorityNullable);
+                return MkConcat(loop, rr);
+            }
+
+            //increment existing loop X{m,n}X --> X{m+1,n+1}
+            if (left._kind == SymbolicRegexNodeKind.Loop && left._left == rl)
+            {
+                int lower = rl._info.IsHighPriorityNullable ? 0 : left._lower + 1;
+                SymbolicRegexNode<TSet> loop = CreateLoop(builder, rl, lower, left._upper + 1, rl._info.IsHighPriorityNullable);
+                return MkConcat(loop, rr);
+            }
+            //increment existing loop XX{m,n} --> X{m+1,n+1}
+            if (rl._kind == SymbolicRegexNodeKind.Loop && rl._left == left)
+            {
+                //if the body of the loop is high-priority-nullable, e.g. a?
+                //make the lower bound 0 irrespective of the laziness of rl
+                int lower = left._info.IsHighPriorityNullable ? 0 : rl._lower + 1;
+                SymbolicRegexNode<TSet> loop = CreateLoop(builder, left, lower, rl._upper + 1, rl._info.IsLazyLoop);
+                return MkConcat(loop, rr);
+            }
+
+            // If left isn't a concatenation, then concatenate left with right.
+            if (left._kind != SymbolicRegexNodeKind.Concat || keepLeftConcat)
+            {
+                return Create(builder, SymbolicRegexNodeKind.Concat, left, right, -1, -1, default, null, SymbolicRegexInfo.Concat(left._info, right._info));
+            }
+
+            // The left is a concatenation.  We want to flatten it out and maintain a right-associative form.
+            SymbolicRegexNode<TSet> concat = right;
+            List<SymbolicRegexNode<TSet>> leftNodes = left.ToList();
+            for (int i = leftNodes.Count - 1; i >= 0; i--)
+            {
+                concat = Create(builder, SymbolicRegexNodeKind.Concat, leftNodes[i], concat, -1, -1, default, null, SymbolicRegexInfo.Concat(leftNodes[i]._info, concat._info));
+            }
+            return concat;
+
+            //private helper that handles the case when right is epsilon else makes a concatenation
+            SymbolicRegexNode<TSet> MkConcat(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right) =>
+                right.IsEpsilon ? left : Create(builder, SymbolicRegexNodeKind.Concat, left, right, -1, -1, default, null, SymbolicRegexInfo.Concat(left._info, right._info));
+        }
+
+        private bool IsWithEffects(SymbolicRegexNodeKind kind, [NotNullWhen(true)] out SymbolicRegexNode<TSet>? match)
+        {
+            if (_kind == kind)
+            {
+                match = this;
+                return true;
+            }
+            else if (_kind == SymbolicRegexNodeKind.Effect)
+            {
+                Debug.Assert(_left is not null);
+                return _left.IsWithEffects(kind, out match);
+            }
+            match = null;
+            return false;
         }
 
         /// <summary>
         /// Make an ordered or of given regexes, eliminate nothing regexes and treat .* as consuming element.
-        /// Also apply a subsumption simplification, such that if X subsumes Y then X|Y|Z is simplified to X|Z.
         /// Keep the or flat, assuming both right and left are flat.
+        /// Apply a counber subsumption/combining optimization, such that e.g. a{2,5}|a{3,10} will be combined to a{2,10}.
         /// </summary>
         internal static SymbolicRegexNode<TSet> OrderedOr(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, bool deduplicated = false)
         {
@@ -617,15 +692,39 @@ namespace System.Text.RegularExpressions.Symbolic
             if (left == builder._nothing)
                 return right;
 
-            // Handle the right side being another OrderedOr itself or something else transparently for the simplification rule below.
-            // Considering the right side as a list, rightHead is the first element, and rightTail is the rest of the list or nothing
-            // if the right side is not an OrderedOr.
-            SymbolicRegexNode<TSet> rightHead = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._left! : right;
-            SymbolicRegexNode<TSet> rightTail = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._right! : builder._nothing;
+            SymbolicRegexNode<TSet> rl = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._left! : right;
+            SymbolicRegexNode<TSet> rr = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._right! : builder._nothing;
 
-            // If left subsumes rightHead, then any match with rightHead would already be seen in left. Thus, rightHead is safe to eliminate.
-            if (builder.Subsumes(left, rightHead))
-                return OrderedOr(builder, left, rightTail);
+            if (builder.Subsumes(left, rl))
+                return OrderedOr(builder, left, rr);
+
+            ////try to simplify left|(rl|rr) by attempting to detect left as a suffix of rl
+            ////this subsumption simplies a common case of taking derivatives of concatenations by keeping them more compact
+            //if (TryToSimplifyAlternation(builder, left, rl, out SymbolicRegexNode<TSet>? left_or_rl))
+            //{
+            //    Debug.Assert(left_or_rl is not null);
+            //    return MkAlternation(left_or_rl, rr);
+            //}
+
+            ////check if both left and rl start with loops with the same body and continuation
+            ////try to match the case (X{l1,u1}Y|X{l2,u2}Y)
+            //SymbolicRegexNode<TSet> X1 = left._kind == SymbolicRegexNodeKind.Concat ? left._left! : left;
+            //SymbolicRegexNode<TSet> Y = left._kind == SymbolicRegexNodeKind.Concat ? left._right! : builder.Epsilon;
+            //SymbolicRegexNode<TSet> X2 = rl._kind == SymbolicRegexNodeKind.Concat ? rl._left! : rl;
+            //SymbolicRegexNode<TSet> Y_ = rl._kind == SymbolicRegexNodeKind.Concat ? rl._right! : builder.Epsilon;
+            //if (X1._kind == SymbolicRegexNodeKind.Loop && X2._kind == SymbolicRegexNodeKind.Loop &&
+            //    X1._left == X2._left && Y == Y_)
+            //{
+            //    Debug.Assert(X1._left is not null);
+            //    SymbolicRegexNode<TSet> X = X1._left;
+            //    if ((X1._lower == X1._upper || X1._info.IsLazyLoop) && X2._lower == X1._upper + 1 && X2._lower == X2._upper)
+            //    {
+            //        // (X{l,u}?Y|X{u+1}Y) --> X{l,u+1}?Y
+            //        //    (X{u}Y|X{u+1}Y) --> X{u,u+1}?Y
+            //        SymbolicRegexNode<TSet> XY = builder.CreateConcat(builder.CreateLoop(X, true, X1._lower, X2._upper), Y);
+            //        return MkAlternation(XY, rr);
+            //    }
+            //}
 
             // If left is not an Or, try to avoid allocation by checking if deduplication is necessary
             if (!deduplicated && left._kind != SymbolicRegexNodeKind.OrderedOr)
@@ -700,8 +799,322 @@ namespace System.Text.RegularExpressions.Symbolic
             Debug.Assert(left._kind != SymbolicRegexNodeKind.OrderedOr);
             Debug.Assert(deduplicated);
 
-            // Once we get here all simplification rules have been applied, so just construct the OrderedOr
+            // Counter optimization did not apply, just build the or
             return Create(builder, SymbolicRegexNodeKind.OrderedOr, left, right, -1, -1, default, null, SymbolicRegexInfo.Alternate(left._info, right._info));
+
+            //SymbolicRegexNode<TSet> MkAlternation(SymbolicRegexNode<TSet> arg1, SymbolicRegexNode<TSet> arg2) =>
+            //    arg2.IsNothing ? arg1 : Create(builder, SymbolicRegexNodeKind.OrderedOr, arg1, arg2, -1, -1, default, null, SymbolicRegexInfo.Alternate(arg1._info, arg2._info));
+
+            //bool TryToOptimizeOrderedOrOfLeftWithRightLeft(out SymbolicRegexNode<TSet> combined)
+            //{
+            //    SymbolicRegexNode<TSet> rightL = right.Left;
+
+            //    //try to match the case were left = YR and rightL = (Z)??R where Z = XY and Y is a nullable
+            //    //simplify the alternation YR|(Z)??R into (X)??YR
+            //    //this pattern will keep repeating where R is growing
+            //    //here Z is assumed to be in left-associative form that has been created by earlier simplifications
+            //    if (rightL.TrySplitConcatWithLazy01LoopLeft(out SymbolicRegexNode<TSet> Z, out SymbolicRegexNode<TSet> R) &&
+            //        left.TrySplitConcatWithSuffix(R, out SymbolicRegexNode<TSet> Y) &&
+            //        Z.TrySplitLeftAssocConcatWithSuffix(Y, out SymbolicRegexNode<TSet> X))
+            //    {
+            //        SymbolicRegexNode<TSet> X1 = builder.CreateLoop(X, true, 0, 1);
+            //        combined = builder.CreateConcat(X1, left);
+            //        return true;
+            //    }
+
+            //    if (rightL._kind != SymbolicRegexNodeKind.Concat || !rightL.Left.IsNullable)
+            //    {
+            //        combined = builder._nothing;
+            //        return false;
+            //    }
+
+            //    //this case kicks in if right.Left does not start with a lazy 0-1-loop
+            //    //try to create prefix as a concatenation of nullable elements in left-associative form
+            //    //such that right.Left == prefix ++ left
+            //    SymbolicRegexNode<TSet> prefix = rightL.Left;
+            //    rightL = rightL.Right;
+            //    while (rightL != left)
+            //    {
+            //        if (rightL._kind != SymbolicRegexNodeKind.Concat || !rightL.Left.IsNullable)
+            //        {
+            //            combined = builder._nothing;
+            //            return false;
+            //        }
+
+            //        prefix = CreateConcat(builder, prefix, rightL.Left, true);
+            //        rightL = rightL.Right;
+            //    }
+
+            //    combined = CreateConcat(builder, builder.CreateLoop(prefix, isLazy: true, lower: 0, upper: 1), left);
+            //    return true;
+            //}
+        }
+
+        /// <summary>If left = X{0,n}Y and right = X^nXY then simplify left|right to X{0,n+1}Y</summary>
+        private static bool TryToSimplifyAlternation(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, out SymbolicRegexNode<TSet>? left_or_right)
+        {
+            // right subsumes left
+            // Y|XY  --> X??Y
+            if (right._kind == SymbolicRegexNodeKind.Concat)
+            {
+                Debug.Assert(right._left is not null && right._right is not null);
+                if (right._right == left)
+                {
+                    left_or_right = CreateConcat(left._builder, right._left.MakeOptional(), left);
+                    return true;
+                }
+            }
+
+            // right subsumes left
+            // Y|X??(ZY) --> (X??Z??)Y
+            if (right._kind == SymbolicRegexNodeKind.Concat)
+            {
+                Debug.Assert(right._left is not null && right._right is not null);
+                if (right._right._kind == SymbolicRegexNodeKind.Concat && right._left!.IsHighPriorityNullable & right._right!._right == left)
+                {
+                    Debug.Assert(builder.Subsumes(right, left)); // TODO: just sanity checking
+                    Debug.Assert(right._right._left is not null && right._right._right is not null);
+                    //here rl = (X,(Z,left)) where X is high-priority nullable
+                    //then left|(X,(Z,left))|rr is simplied into ((X,Z?),left)|rr
+                    SymbolicRegexNode<TSet> X = right._left;
+                    SymbolicRegexNode<TSet> Z = right._right._left;
+                    //this simplifaction maintains the same pattern that can then be detected by this rule again
+                    //which is why rl1 is created in left-assaciative form as ((X,Z?),left) instead of (X,(Z?,left))
+                    //observe that (X,Z?) remains to be high-priority nullable because both X and Y? are so
+                    //e.g. if X=a{0,k}? and Y=a then CreateConcat(X,Z?) = a{0,k+1}?
+                    left_or_right = builder.CreateConcat(builder.CreateConcat(X, Z.MakeOptional()), left);
+                    return true;
+                }
+            }
+
+            // right subsumes left
+            // Y|X{0,k}?XY --> X{0,k+1}?Y
+            if (right._kind == SymbolicRegexNodeKind.Concat && right._left!.Kind == SymbolicRegexNodeKind.Loop &&
+                right._left._lower == 0 && right._left._info.IsLazyLoop &&
+                right._right!._kind == SymbolicRegexNodeKind.Concat &&
+                right._left._left == right._right._left && right._right._right == left)
+            {
+                Debug.Assert(builder.Subsumes(right, left)); // TODO: just sanity checking
+                Debug.Assert(right._left._left is not null);
+                left_or_right = CreateConcat(left._builder, CreateLoop(left._builder, right._left._left, 0, right._left._upper + 1, true), left);
+                return true;
+            }
+
+            // right subsumes left, but not detected currently
+            // X{0,k}?Y|X{k+1}Y --> X{0,k+1}?Y
+            if (left._kind == SymbolicRegexNodeKind.Concat && left._left!._kind == SymbolicRegexNodeKind.Loop &&
+                left._left._lower == 0 && left._left._info.IsLazyLoop &&
+                right._kind == SymbolicRegexNodeKind.Concat &&
+                right._left!.Kind == SymbolicRegexNodeKind.Loop &&
+                right._left._upper == left._left._upper + 1)
+            {
+                //Debug.Assert(builder.Subsumes(right, left)); // TODO: just sanity checking
+                left_or_right = CreateConcat(left._builder, CreateLoop(left._builder, left._left._left!, 0, right._left._upper, true), left._right!);
+                return true;
+            }
+
+            // TODO: remove, probably obsolete due to above rule
+            // X{0,k}?Y|X^kXY --> X{0,k+1}?Y
+            if (left._kind == SymbolicRegexNodeKind.Concat && left._left!._kind == SymbolicRegexNodeKind.Loop &&
+            left._left._lower == 0 && left._left._info.IsLazyLoop)
+            {
+                SymbolicRegexNode<TSet> X = left._left._left!;
+                SymbolicRegexNode<TSet> Y = left._right!;
+                int n = left._left._upper;
+                SymbolicRegexNode<TSet> nthright = right;
+                //try to extract the n'th right while checking that the first element is X
+                while (n > 0 && nthright._kind == SymbolicRegexNodeKind.Concat && X == nthright._left!)
+                {
+                    nthright = nthright._right!;
+                    n--;
+                }
+                if (n > 0)
+                {
+                    //the loop did not complete
+                    left_or_right = null;
+                    return false;
+                }
+                if (Y == nthright)
+                {
+                    //left subsumes right because right = X^nY and X{0,n}Y|X^nY is equivalent to X{0,n}Y
+                    left_or_right = left;
+                    return true;
+                }
+                if (nthright._kind == SymbolicRegexNodeKind.Concat && X == nthright._left! && Y == nthright._right!)
+                {
+                    //X{0,k}Y|X^kXY is simplified to X{0,k+1}Y
+                    left_or_right = CreateConcat(left._builder, CreateLoop(left._builder, X, 0, left._left._upper + 1, true), Y);
+                    return true;
+                }
+            }
+
+            left_or_right = null;
+            return false;
+        }
+
+
+        private SymbolicRegexNode<TSet> Left { get { Debug.Assert(_left is not null); return _left; } }
+        private SymbolicRegexNode<TSet> Right { get { Debug.Assert(_right is not null); return _right; } }
+
+        private SymbolicRegexNode<TSet> SkipCaptureMarkers()
+        {
+            SymbolicRegexNode<TSet> node = this;
+            while (node.Kind == SymbolicRegexNodeKind.Concat &&
+                   (node.Left._kind == SymbolicRegexNodeKind.CaptureStart ||
+                    node.Left._kind == SymbolicRegexNodeKind.CaptureEnd))
+            {
+                node = node.Right;
+            }
+
+            return node;
+        }
+
+        //private bool IfSubsumesCheck2(SymbolicRegexNode<TSet> node, out SymbolicRegexNode<TSet> result)
+        //{
+        //    List<SymbolicRegexNode<TSet>>? markers = null;
+        //    SymbolicRegexNode<TSet> current = this;
+        //    while (current.Kind == SymbolicRegexNodeKind.Concat && current.Left._kind == SymbolicRegexNodeKind.CaptureStart)
+        //    {
+        //        markers ??= new();
+        //        markers.Add(current.Left);
+        //        current = current.Right;
+        //    }
+
+        //    if (current.Kind == SymbolicRegexNodeKind.Concat && current.Left == node)
+        //    {
+        //        result = _builder.CreateConcat(_builder.CreateLoop(node, true, 0, 1), current.Right);
+        //        if (markers is not null)
+        //        {
+        //            for (int i= markers.Count - 1; i >= 0; i--)
+        //            {
+        //                // add back the markers
+        //                result = _builder.CreateConcat(markers[i], result);
+        //            }
+        //        }
+        //        return true;
+        //    }
+
+        //    result = _builder._nothing;
+        //    return false;
+        //}
+
+        ///// <summary>Try to split this into prefix ++ suffix for the given suffix</summary>
+        ///// <param name="suffix">given suffix</param>
+        ///// <param name="prefix">computed prefix in left-associative form</param>
+        ///// <returns>true iff the split succeeds</returns>
+        //private bool TrySplitLeftAssocConcatWithSuffix(SymbolicRegexNode<TSet> suffix, out SymbolicRegexNode<TSet> prefix)
+        //{
+        //    if (this == suffix)
+        //    {
+        //        //the prefix is empty
+        //        prefix = _builder.Epsilon;
+        //        return true;
+        //    }
+
+        //    //try to split the concatenation into a prefix followed by the given suffix
+        //    //here the concatenation as well as the given suffix
+        //    //are given in left associative form that result from prior steps
+        //    prefix = this;
+        //    while (prefix._kind == SymbolicRegexNodeKind.Concat)
+        //    {
+        //        if (suffix.Kind == SymbolicRegexNodeKind.Concat)
+        //        {
+        //            if (suffix.Right != prefix.Right)
+        //            {
+        //                //the current last elements do not match
+        //                return false;
+        //            }
+        //            //check the prior elements backwards
+        //            suffix = suffix.Left;
+        //            prefix = prefix.Left;
+        //        }
+        //        else
+        //        {
+        //            //at the beginning of the suffix
+        //            //check that the remaining element is the last element of prefix
+        //            if (suffix == prefix.Right)
+        //            {
+        //                prefix = prefix.Left;
+        //                return true;
+        //            }
+        //            return false;
+        //        }
+        //    }
+
+        //    //at this point the suffix did not match
+        //    //the case that prefix == suffix is not possible at this point
+        //    //because else the initial test (this == suffix) must have succeeded
+
+        //    Debug.Assert(prefix != suffix);
+
+        //    return false;
+        //}
+
+        ///// <summary>Try to split a concat into prefix (in left associative form) ++ suffix</summary>
+        ///// <param name="suffix">given suffix in right associative form</param>
+        ///// <param name="prefix">output prefix in left associative form</param>
+        ///// <returns>true iff the split succeeds</returns>
+        //private bool TrySplitConcatWithSuffix(SymbolicRegexNode<TSet> suffix, out SymbolicRegexNode<TSet> prefix)
+        //{
+        //    //try to split the concatenation into a nullable prefix followed by the given suffix
+        //    prefix = _builder.Epsilon;
+        //    SymbolicRegexNode<TSet> rest = this;
+        //    while (rest._kind == SymbolicRegexNodeKind.Concat && rest.Left.IsNullable)
+        //    {
+        //        //keep the prefix in left associative form
+        //        prefix = CreateConcat(_builder, prefix, rest.Left, true);
+        //        rest = rest.Right;
+        //        if (rest == suffix)
+        //        {
+        //            return true;
+        //        }
+        //    }
+
+        //    return false;
+        //}
+
+
+        ///// <summary>Try to split concat into (leftLoopBody)?? ++ right</summary>
+        ///// <param name="leftLoopBody">output loop body of a lazy 0-1-loop</param>
+        ///// <param name="right">output right element of the concatenation</param>
+        ///// <returns>true iff the split succeeds</returns>
+        //private bool TrySplitConcatWithLazy01LoopLeft(out SymbolicRegexNode<TSet> leftLoopBody, out SymbolicRegexNode<TSet> right)
+        //{
+        //    if (_kind == SymbolicRegexNodeKind.Concat &&
+        //        Left.Kind == SymbolicRegexNodeKind.Loop &&
+        //        Left.IsLazy && Left._lower == 0 && Left._upper == 1)
+        //    {
+        //        leftLoopBody = Left.Left;
+        //        right = Right;
+        //        return true;
+        //    }
+        //    leftLoopBody = _builder._nothing;
+        //    right = _builder._nothing;
+        //    return false;
+        //}
+
+        /// <summary>
+        /// Extract a counter as a loop followed by its continuation. For example, a*b returns (a*,b).
+        /// Also look into the first element of an or, so a+|xyz returns (a+,()).
+        /// If no counter is found returns ([],[]).
+        /// </summary>
+        /// <returns>a tuple of the loop and its continuation</returns>
+        private (SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>) FirstCounterInfo()
+        {
+            if (_kind == SymbolicRegexNodeKind.Loop)
+                return (this, _builder.Epsilon);
+            if (_kind == SymbolicRegexNodeKind.Concat)
+            {
+                Debug.Assert(_left is not null && _right is not null);
+                if (_left.Kind == SymbolicRegexNodeKind.Loop)
+                    return (_left, _right);
+            }
+            if (_kind == SymbolicRegexNodeKind.OrderedOr)
+            {
+                Debug.Assert(_left is not null);
+                return _left.FirstCounterInfo();
+            }
+            return (_builder._nothing, _builder._nothing);
         }
 
         internal static SymbolicRegexNode<TSet> Not(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> root)
@@ -1019,7 +1432,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <param name="elem">given element wrt which the derivative is taken</param>
         /// <param name="context">immediately surrounding character context that affects nullability of anchors</param>
         /// <returns>the derivative</returns>
-        internal SymbolicRegexNode<TSet> CreateDerivativeWithoutEffects(TSet elem, uint context) => CreateDerivative(elem, context).StripEffects();
+        internal SymbolicRegexNode<TSet> CreateDerivative(TSet elem, uint context) => CreateDerivativeGeneric(elem, context).StripEffects();
 
         /// <summary>
         /// Takes the derivative of the symbolic regex for the given element, which must be either
@@ -1029,7 +1442,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// would explore paths. For example the derivative of a*ab places a*ab before b, while for a*?ab the order is reversed.
         /// </summary>
         /// <remarks>
-        /// The differences of this to <see cref="CreateDerivativeWithoutEffects(TSet,uint)"/> are that (1) effects (e.g. capture starts and ends)
+        /// The differences of this to <see cref="CreateDerivative(TSet,uint)"/> are that (1) effects (e.g. capture starts and ends)
         /// are considered and (2) the different elements that would form a top level union are instead returned as separate
         /// nodes (paired with their associated effects). This function is meant to be used for NFA simulation, where top level
         /// unions would be broken up into separate states anyway, so nodes are not combined even if they have the same effects.
@@ -1040,11 +1453,11 @@ namespace System.Text.RegularExpressions.Symbolic
         internal List<(SymbolicRegexNode<TSet>, DerivativeEffect[])> CreateNfaDerivativeWithEffects(TSet elem, uint context)
         {
             List<(SymbolicRegexNode<TSet>, DerivativeEffect[])> transitions = new();
-            CreateDerivative(elem, context).StripAndMapEffects(context, transitions);
+            CreateDerivativeGeneric(elem, context).StripAndMapEffects(context, transitions);
             return transitions;
         }
 
-        internal SymbolicRegexNode<TSet> CreateDerivative(TSet elem, uint context)
+        internal SymbolicRegexNode<TSet> CreateDerivativeGeneric(TSet elem, uint context)
         {
             if (this._kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation)
             {
@@ -1069,7 +1482,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 SymbolicRegexNode<TSet> node = this;
                 if (IsNullableFor(context))
                 {
-                    node = PruneLowerPriorityThanNullability(context);
+                    node = Prune(context);
                 }
                 derivative = node.CreateDerivativeRec(elem, context);
                 _builder._derivativeCache[key] = derivative;
@@ -1077,18 +1490,17 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        private SymbolicRegexNode<TSet> PruneLowerPriorityThanNullability(uint context)
+        private SymbolicRegexNode<TSet> Prune(uint context)
         {
-            Debug.Assert(IsNullableFor(context));
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
                     if (_left.IsNullableFor(context))
                     {
-                        return _left.PruneLowerPriorityThanNullability(context);
+                        return _left.Prune(context);
                     }
-                    return OrderedOr(_builder, _left, _right.PruneLowerPriorityThanNullability(context), deduplicated: true);
+                    return OrderedOr(_builder, _left, _right.Prune(context), deduplicated: true);
 
                 case SymbolicRegexNodeKind.Concat:
                     Debug.Assert(_left is not null && _right is not null);
@@ -1097,23 +1509,27 @@ namespace System.Text.RegularExpressions.Symbolic
                         Debug.Assert(_left._left is not null && _left._right is not null);
                         if (_left._left.IsNullableFor(context))
                         {
-                            return CreateConcat(_builder, _left._left, _right).PruneLowerPriorityThanNullability(context);
+                            return CreateConcat(_builder, _left._left, _right).Prune(context);
                         }
-                        return OrderedOr(_builder, CreateConcat(_builder, _left._left, _right), CreateConcat(_builder, _left._right, _right).PruneLowerPriorityThanNullability(context));
+                        return OrderedOr(_builder, CreateConcat(_builder, _left._left, _right), CreateConcat(_builder, _left._right, _right).Prune(context));
                     }
-                    return CreateConcat(_builder, _left.PruneLowerPriorityThanNullability(context), _right.PruneLowerPriorityThanNullability(context));
+                    return CreateConcat(_builder, _left.Prune(context), _right.Prune(context));
 
                 case SymbolicRegexNodeKind.Loop when _info.IsLazyLoop && _lower == 0:
                     return _builder.Epsilon;
 
                 case SymbolicRegexNodeKind.Effect:
                     Debug.Assert(_left is not null && _right is not null);
-                    return CreateEffect(_builder, _left.PruneLowerPriorityThanNullability(context), _right);
+                    return CreateEffect(_builder, _left.Prune(context), _right);
 
                 default:
                     return this;
             }
         }
+
+
+        /// <summary>Wraps this node into a lazy 0-1-loop, unless this node is already high priority nullable and therefore optional</summary>
+        internal SymbolicRegexNode<TSet> MakeOptional() => _info.IsHighPriorityNullable ? this : CreateLoop(_builder, this, 0, 1, true);
 
         /// <summary>
         /// Helper function for CreateDerivative
