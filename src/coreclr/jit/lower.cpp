@@ -6401,6 +6401,11 @@ PhaseStatus Lowering::DoPhase()
             comp->fgLocalVarLiveness();
         }
     }
+    else
+    {
+        // If we are not optimizing, remove the dead blocks regardless.
+        comp->fgRemoveDeadBlocks();
+    }
 
     // Recompute local var ref counts again after liveness to reflect
     // impact of any dead code removal. Note this may leave us with
