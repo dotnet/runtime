@@ -43,8 +43,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Condition="'$(AdditionalRuntimeIdentifiers)' == ''" Include="runtime.json" PackagePath="/" />
-    <Content Condition="'$(AdditionalRuntimeIdentifiers)' != ''" Include="$(IntermediateOutputPath)runtime.json" PackagePath="/" />
+    <Content Include="$(LiveRuntimeIdGraphDefinitionFile)" PackagePath="/" />
     <Content Include="$(PlaceholderFile)" PackagePath="lib/netstandard1.0" />
   </ItemGroup>
 
@@ -58,13 +57,17 @@
   
   <UsingTask TaskName="GenerateRuntimeGraph" AssemblyFile="$(_generateRuntimeGraphTask)"/>
 
-  <Target Name="GenerateRuntimeJson" Condition="'$(AdditionalRuntimeIdentifiers)' != ''">
+  <Target Name="GenerateRuntimeJson">
     <MakeDir Directories="$(IntermediateOutputPath)" />
-    <GenerateRuntimeGraph RuntimeGroups="@(RuntimeGroupWithQualifiers)"
+    <GenerateRuntimeGraph Condition="'$(AdditionalRuntimeIdentifiers)' != ''"
+                          RuntimeGroups="@(RuntimeGroupWithQualifiers)"
                           AdditionalRuntimeIdentifiers="$(AdditionalRuntimeIdentifiers)"
                           AdditionalRuntimeIdentifierParent="$(AdditionalRuntimeIdentifierParent)"
-                          RuntimeJson="$(IntermediateOutputPath)runtime.json"
+                          RuntimeJson="$(LiveRuntimeIdGraphDefinitionFile)"
                           UpdateRuntimeFiles="True" />
+    <Copy Condition="'$(AdditionalRuntimeIdentifiers)' == ''"
+          SourceFiles="runtime.json"
+          DestinationFiles="$(LiveRuntimeIdGraphDefinitionFile)" />
   </Target>
 
   <Target Name="UpdateRuntimeJson">

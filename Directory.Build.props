@@ -267,6 +267,7 @@
     <Owners>microsoft,dotnetframework</Owners>
     <IncludeSymbols>true</IncludeSymbols>
     <RuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(LibrariesProjectRoot)', 'Microsoft.NETCore.Platforms', 'src', 'runtime.json'))</RuntimeIdGraphDefinitionFile>
+    <LiveRuntimeIdGraphDefinitionFile>$([MSBuild]::NormalizePath('$(ArtifactsBinDir)', 'Microsoft.NETCore.Platforms', '$(Configuration)', 'runtime.json'))</LiveRuntimeIdGraphDefinitionFile>
     <LicenseFile>$(MSBuildThisFileDirectory)LICENSE.TXT</LicenseFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>

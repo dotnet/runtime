@@ -221,6 +221,6 @@
             ResolveLibrariesRuntimeFilesFromLocalBuild" />
 
   <PropertyGroup>
-    <BundledRuntimeIdentifierGraphFile>$(RuntimeIdGraphDefinitionFile)</BundledRuntimeIdentifierGraphFile>
+    <BundledRuntimeIdentifierGraphFile>$(LiveRuntimeIdGraphDefinitionFile)</BundledRuntimeIdentifierGraphFile>
   </PropertyGroup>
 </Project>
