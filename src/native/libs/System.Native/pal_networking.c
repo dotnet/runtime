@@ -3182,20 +3182,21 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
 #else
     // Emulate sendfile using a simple read/send loop.
     *sent = 0;
+    char* buffer = NULL;
 
     // Save the original input file position and seek to the offset position
     off_t inputFileOrigOffset = lseek(in_fd, 0, SEEK_CUR);
     if (inputFileOrigOffset == -1 || lseek(in_fd, offtOffset, SEEK_SET) == -1)
     {
-        return SystemNative_ConvertErrorPlatformToPal(errno);
+        goto error;
     }
 
     // Allocate a buffer
     int bufferLength = Min(count, 80 * 1024 * sizeof(char));
-    char* buffer = (char*)malloc(bufferLength);
+    buffer = (char*)malloc(bufferLength);
     if (buffer == NULL)
     {
-        return SystemNative_ConvertErrorPlatformToPal(errno);
+        goto error;
     }
 
     // Repeatedly read from the source and write to the destination
@@ -3208,8 +3209,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
         while ((bytesRead = read(in_fd, buffer, numBytesToRead)) < 0 && errno == EINTR);
         if (bytesRead == -1)
         {
-            free(buffer);
-            return SystemNative_ConvertErrorPlatformToPal(errno);
+            goto error;
         }
         if (bytesRead == 0)
         {
@@ -3225,8 +3225,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
             while ((bytesWritten = write(out_fd, buffer + writeOffset, (size_t)bytesRead)) < 0 && errno == EINTR);
             if (bytesWritten == -1)
             {
-                free(buffer);
-                return SystemNative_ConvertErrorPlatformToPal(errno);
+                goto error;
             }
             assert(bytesWritten >= 0);
             bytesRead -= bytesWritten;
@@ -3239,12 +3238,17 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     // Restore the original input file position
     if (lseek(in_fd, inputFileOrigOffset, SEEK_SET) == -1)
     {
-        free(buffer);
-        return SystemNative_ConvertErrorPlatformToPal(errno);
+        goto error;
     }
 
     free(buffer);
     return Error_SUCCESS;
+
+error:
+    int savedErrno = errno;
+    free(buffer);
+    return SystemNative_ConvertErrorPlatformToPal(savedErrno);
+
 #endif
 }
 
