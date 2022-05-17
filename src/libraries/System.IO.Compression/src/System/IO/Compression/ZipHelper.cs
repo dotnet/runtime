@@ -165,12 +165,11 @@ namespace System.IO.Compression
             Debug.Assert(numBytesLeft >= 0);
             if (numBytesLeft > 0)
             {
-                const int throwAwayBufferSize = 64;
-                byte[] throwAwayBuffer = new byte[throwAwayBufferSize];
+                byte[] buffer = new byte[64];
                 do
                 {
-                    int numBytesToSkip = (numBytesLeft > throwAwayBufferSize) ? throwAwayBufferSize : (int)numBytesLeft;
-                    int numBytesActuallySkipped = stream.Read(throwAwayBuffer, 0, numBytesToSkip);
+                    int numBytesToSkip = (int)Math.Min(numBytesLeft, buffer.Length);
+                    int numBytesActuallySkipped = stream.Read(buffer, 0, numBytesToSkip);
                     if (numBytesActuallySkipped == 0)
                         throw new IOException(SR.UnexpectedEndOfStream);
                     numBytesLeft -= numBytesActuallySkipped;
