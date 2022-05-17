@@ -4,6 +4,7 @@
 #include "pal_config.h"
 #include "pal_networking.h"
 #include "pal_safecrt.h"
+#include "pal_uid.h"
 #include "pal_utilities.h"
 #include <pal_networking_common.h>
 #include <fcntl.h>
@@ -3026,48 +3027,11 @@ int32_t SystemNative_PlatformSupportsDualModeIPv4PacketInfo(void)
 #endif
 }
 
-static char* GetNameFromUid(uid_t uid)
-{
-    size_t bufferLength = 512;
-    while (1)
-    {
-        char *buffer = (char*)malloc(bufferLength);
-        if (buffer == NULL)
-            return NULL;
-
-        struct passwd pw;
-        struct passwd* result;
-        if (getpwuid_r(uid, &pw, buffer, bufferLength, &result) == 0)
-        {
-            if (result == NULL)
-            {
-                errno = ENOENT;
-                free(buffer);
-                return NULL;
-            }
-            else
-            {
-                char* name = strdup(pw.pw_name);
-                free(buffer);
-                return name;
-            }
-        }
-
-        free(buffer);
-        size_t tmpBufferLength;
-        if (errno != ERANGE || !multiply_s(bufferLength, (size_t)2, &tmpBufferLength))
-        {
-            return NULL;
-        }
-        bufferLength = tmpBufferLength;
-    }
-}
-
 char* SystemNative_GetPeerUserName(intptr_t socket)
 {
     uid_t euid;
     return SystemNative_GetPeerID(socket, &euid) == 0 ?
-        GetNameFromUid(euid) :
+        SystemNative_GetUserName(euid) :
         NULL;
 }
 
