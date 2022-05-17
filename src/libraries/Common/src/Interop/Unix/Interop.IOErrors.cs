@@ -32,7 +32,10 @@ internal static partial class Interop
 
     internal static void CheckIo(Error error, ReadOnlySpan<char> path, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
     {
-        CheckIo(error, path.ToString(), isDirectory, errorRewriter);
+        if (error != Interop.Error.SUCCESS)
+        {
+            ThrowExceptionForIoErrno(error.Info(), path.ToString(), isDirectory, errorRewriter);
+        }
     }
 
     internal static void CheckIo(Error error, string? path = null, bool isDirectory = false, Func<ErrorInfo, ErrorInfo>? errorRewriter = null)
