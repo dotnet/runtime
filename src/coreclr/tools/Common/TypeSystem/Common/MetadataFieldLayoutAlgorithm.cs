@@ -377,7 +377,6 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
         {
-            if (type.Name == "ObjectHandleOnStack") System.Diagnostics.Debugger.Break();
             var offsets = new FieldAndOffset[numInstanceFields];
 
             // For types inheriting from another type, field offsets continue on from where they left off
