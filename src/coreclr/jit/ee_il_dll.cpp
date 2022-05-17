@@ -1122,8 +1122,34 @@ void Compiler::eeDispLineInfos()
  * (e.g., host AMD64, target ARM64), then VM will get confused anyway.
  */
 
+void Compiler::eeAllocMem(AllocMemArgs* args, UNATIVE_OFFSET hotSizeRequest, UNATIVE_OFFSET coldSizeRequest)
+{
+    // Fake splitting implementation: hot section = hot code + 4K buffer + cold code
+    const UNATIVE_OFFSET buffer = 4096;
+    if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
+    {
+        args->hotCodeSize  = hotSizeRequest + buffer + coldSizeRequest;
+        args->coldCodeSize = 0;
+    }
+
+    info.compCompHnd->allocMem(args);
+
+    // Fix up hot/cold code pointers
+    if (JitConfig.JitFakeProcedureSplitting() && (coldSizeRequest > 0))
+    {
+        args->coldCodeBlock   = ((BYTE*)args->hotCodeBlock) + hotSizeRequest + buffer;
+        args->coldCodeBlockRW = ((BYTE*)args->hotCodeBlockRW) + hotSizeRequest + buffer;
+    }
+}
+
 void Compiler::eeReserveUnwindInfo(bool isFunclet, bool isColdCode, ULONG unwindSize)
 {
+    // Fake splitting currently does not handle unwind info for cold code
+    if (isColdCode && JitConfig.JitFakeProcedureSplitting())
+    {
+        return;
+    }
+
 #ifdef DEBUG
     if (verbose)
     {
@@ -1146,6 +1172,12 @@ void Compiler::eeAllocUnwindInfo(BYTE*          pHotCode,
                                  BYTE*          pUnwindBlock,
                                  CorJitFuncKind funcKind)
 {
+    // Fake splitting currently does not handle unwind info for cold code
+    if (pColdCode && JitConfig.JitFakeProcedureSplitting())
+    {
+        return;
+    }
+
 #ifdef DEBUG
     if (verbose)
     {

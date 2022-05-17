@@ -6046,7 +6046,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     args.xcptnsCount  = xcptnsCount;
     args.flag         = allocMemFlag;
 
-    emitCmpHandle->allocMem(&args);
+    emitComp->eeAllocMem(&args, emitTotalHotCodeSize, emitTotalColdCodeSize);
 
     codeBlock       = (BYTE*)args.hotCodeBlock;
     codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
@@ -6064,7 +6064,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
     args.xcptnsCount  = xcptnsCount;
     args.flag         = allocMemFlag;
 
-    emitCmpHandle->allocMem(&args);
+    emitComp->eeAllocMem(&args, emitTotalHotCodeSize, emitTotalColdCodeSize);
 
     codeBlock       = (BYTE*)args.hotCodeBlock;
     codeBlockRW     = (BYTE*)args.hotCodeBlockRW;
@@ -6318,6 +6318,7 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             assert(coldCodeBlock);
             cp              = coldCodeBlock;
             writeableOffset = coldCodeBlockRW - coldCodeBlock;
+            emitOffsAdj     = 0;
 #ifdef DEBUG
             if (emitComp->opts.disAsm || emitComp->verbose)
             {
