@@ -969,7 +969,7 @@ namespace System.Net.Security.Tests
                         int writeLength = Math.Min(data.Length, writeBufferSize);
                         if (useAsync)
                         {
-                            server.WriteAsync(data.Slice(0, writeLength)).GetAwaiter().GetResult();
+                            server.WriteAsync(data.Slice(0, writeLength)).AsTask().GetAwaiter().GetResult();
                         }
                         else
                         {
@@ -992,7 +992,7 @@ namespace System.Net.Security.Tests
                     {
                         if (useAsync)
                         {
-                            readLength = client.ReadAsync(readBuffer.Slice(totalLength, readBufferSize)).GetAwaiter().GetResult();
+                            readLength = client.ReadAsync(readBuffer.Slice(totalLength, readBufferSize)).AsTask().GetAwaiter().GetResult();
                         }
                         else
                         {
