@@ -43,5 +43,17 @@ namespace ILLink.Shared.TrimAnalysis
 		public override SingleValue DeepCopy () => this; // This value is immutable
 
 		public override string ToString () => this.ValueToString (Method, ParameterIndex, DynamicallyAccessedMemberTypes);
+
+        internal ParameterOrigin ParameterOrigin
+        {
+            get
+            {
+                int index = ParameterIndex;
+                if (!Method.Signature.IsStatic)
+                    index++;
+
+                return new ParameterOrigin(Method, index);
+            }
+        }
 	}
 }

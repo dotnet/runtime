@@ -322,6 +322,7 @@
     <Compile Include="Compiler\Dataflow\FlowAnnotations.cs" />
     <Compile Include="Compiler\Dataflow\GenericParameterProxy.cs" />
     <Compile Include="Compiler\Dataflow\GenericParameterValue.cs" />
+    <Compile Include="Compiler\Dataflow\HandleCallAction.cs" />
     <Compile Include="Compiler\Dataflow\IValueWithStaticType.cs" />
     <Compile Include="Compiler\Dataflow\MethodBodyScanner.cs" />
     <Compile Include="Compiler\Dataflow\MethodParameterValue.cs" />
@@ -333,6 +334,7 @@
     <Compile Include="Compiler\Dataflow\ReflectionMethodBodyScanner.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionPatternContext.cs" />
     <Compile Include="Compiler\Dataflow\ReflectionMarker.cs" />
+    <Compile Include="Compiler\Dataflow\RequireDynamicallyAccessedMembersAction.cs" />
     <Compile Include="Compiler\Dataflow\ScannerExtensions.cs" />
     <Compile Include="Compiler\Dataflow\TypeExtensions.cs" />
     <Compile Include="Compiler\Dataflow\TypeProxy.cs" />

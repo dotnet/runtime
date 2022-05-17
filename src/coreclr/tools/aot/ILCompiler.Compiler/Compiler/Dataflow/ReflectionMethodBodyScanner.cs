@@ -83,7 +83,7 @@ namespace ILCompiler.Dataflow
             ReportRequires(calledMember.GetDisplayName(), origin, diagnosticId, requiresAttribute);
         }
 
-        static bool ShouldSuppressAnalysisWarningsForRequires(TypeSystemEntity originMember, string requiresAttribute)
+        internal static bool ShouldSuppressAnalysisWarningsForRequires(TypeSystemEntity originMember, string requiresAttribute)
         {
             // Check if the current scope method has Requires on it
             // since that attribute automatically suppresses all trim analysis warnings.
@@ -128,7 +128,7 @@ namespace ILCompiler.Dataflow
             _logger = logger;
             _factory = factory;
             _purpose = purpose;
-            _reflectionMarker = new ReflectionMarker(logger, factory, annotations, purpose == ScanningPurpose.GetTypeDataflow, ????);
+            _reflectionMarker = new ReflectionMarker(logger, factory, annotations, purpose == ScanningPurpose.GetTypeDataflow);
         }
 
         public static DependencyList ScanAndProcessReturnValue(NodeFactory factory, FlowAnnotations annotations, Logger logger, MethodIL methodBody)
@@ -163,9 +163,8 @@ namespace ILCompiler.Dataflow
                 var methodReturnValue = scanner._annotations.GetMethodReturnValue(method);
                 if (methodReturnValue.DynamicallyAccessedMemberTypes != 0)
                 {
-                    var origin = new MethodReturnOrigin(method);
                     var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), !ShouldSuppressAnalysisWarningsForRequires(method, RequiresUnreferencedCodeAttribute), scanner._logger);
-                    scanner.RequireDynamicallyAccessedMembers(diagnosticContext, scanner.ReturnValue, methodReturnValue);
+                    scanner.RequireDynamicallyAccessedMembers(diagnosticContext, scanner.ReturnValue, methodReturnValue, new MethodReturnOrigin(method));
                 }
             }
 
@@ -186,7 +185,8 @@ namespace ILCompiler.Dataflow
                     {
                         MultiValue value = GetValueNodeForCustomAttributeArgument(arguments.FixedArguments[i].Value);
                         var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), diagnosticsEnabled: true, logger);
-                        RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue);
+                        var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger);
+                        scanner.RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue, parameterValue.ParameterOrigin);
                     }
                 }
             }
@@ -197,12 +197,14 @@ namespace ILCompiler.Dataflow
             {
                 DynamicallyAccessedMemberTypes annotation = DynamicallyAccessedMemberTypes.None;
                 MultiValue targetValues = new();
+                Origin targetContext = null;
                 if (namedArgument.Kind == CustomAttributeNamedArgumentKind.Field)
                 {
                     FieldDesc field = attributeType.GetField(namedArgument.Name);
                     if (field != null)
                     {
                         targetValues = GetFieldValue(field, annotations);
+                        targetContext = new FieldOrigin(field);
                     }
                 }
                 else
@@ -213,6 +215,7 @@ namespace ILCompiler.Dataflow
                     if (setter != null && setter.Signature.Length > 0 && !setter.Signature.IsStatic)
                     {
                         targetValues = annotations.GetMethodParameterValue(setter, 0);
+                        targetContext = new ParameterOrigin(setter, 1);
                     }
                 }
 
@@ -226,7 +229,7 @@ namespace ILCompiler.Dataflow
 
                         var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), diagnosticsEnabled: true, logger);
                         var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger);
-                        scanner.RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, targetValue);
+                        scanner.RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, targetValue, targetContext);
                         if (result == null)
                         {
                             result = scanner._reflectionMarker.Dependencies;
@@ -246,13 +249,9 @@ namespace ILCompiler.Dataflow
         {
             DynamicallyAccessedMemberTypes annotation = flowAnnotations.GetTypeAnnotation(type);
             Debug.Assert(annotation != DynamicallyAccessedMemberTypes.None);
-            var scanner = new ReflectionMethodBodyScanner(factory, flowAnnotations, logger, ScanningPurpose.GetTypeDataflow);
-            ReflectionPatternContext reflectionPatternContext = new ReflectionPatternContext(logger, reportingEnabled: true, type, new TypeOrigin(type));
-            reflectionPatternContext.AnalyzingPattern();
-            scanner.MarkTypeForDynamicallyAccessedMembers(ref reflectionPatternContext, type, annotation);
-            reflectionPatternContext.RecordHandledPattern();
-            reflectionPatternContext.Dispose();
-            return scanner._reflectionMarker.Dependencies;
+            var reflectionMarker = new ReflectionMarker(logger, factory, flowAnnotations, true);
+            reflectionMarker.MarkTypeForDynamicallyAccessedMembers(new MessageOrigin(type), type, annotation, new TypeOrigin(type));
+            return reflectionMarker.Dependencies;
         }
 
         static MultiValue GetValueNodeForCustomAttributeArgument(object argument)
@@ -288,9 +287,40 @@ namespace ILCompiler.Dataflow
             // TODO: This should use ShouldEnableReflectionPatternReporting to conditionally disable the diagnostics - but we don't have the right
             // context to do so yet.
             var diagnosticContext = new DiagnosticContext(new MessageOrigin(source), diagnosticsEnabled: true, logger);
-            scanner.RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue);
+            var origin = new GenericParameterOrigin(genericParameter);
+            scanner.RequireDynamicallyAccessedMembers(diagnosticContext, genericArgumentValue, genericParameterValue, origin);
 
             return scanner._reflectionMarker.Dependencies;
+        }
+
+        MultiValue GetTypeValueNodeFromGenericArgument(TypeDesc genericArgument)
+        {
+            if (genericArgument is GenericParameterDesc inputGenericParameter)
+            {
+                return _annotations.GetGenericParameterValue(inputGenericParameter);
+            }
+            else if (genericArgument is MetadataType genericArgumentType)
+            {
+                if (genericArgumentType.IsTypeOf(WellKnownType.System_Nullable_T))
+                {
+                    var innerGenericArgument = genericArgumentType.Instantiation.Length == 1 ? genericArgumentType.Instantiation[0] : null;
+                    switch (innerGenericArgument)
+                    {
+                        case GenericParameterDesc gp:
+                            return new NullableValueWithDynamicallyAccessedMembers(genericArgumentType,
+                                new GenericParameterValue(gp, _annotations.GetGenericParameterAnnotation(gp)));
+
+                        case TypeDesc underlyingType:
+                            return new NullableSystemTypeValue(genericArgumentType, new SystemTypeValue(underlyingType));
+                    }
+                }
+                // All values except for Nullable<T>, including Nullable<> (with no type arguments)
+                return new SystemTypeValue(genericArgumentType);
+            }
+            else
+            {
+                return UnknownValue.Instance;
+            }
         }
 
         protected override void WarnAboutInvalidILInMethod(MethodIL method, int ilOffset)
@@ -344,7 +374,7 @@ namespace ILCompiler.Dataflow
             if (field.DynamicallyAccessedMemberTypes != 0)
             {
                 var diagnosticContext = new DiagnosticContext(new MessageOrigin(methodBody, offset), !ShouldSuppressAnalysisWarningsForRequires(methodBody.OwningMethod, RequiresUnreferencedCodeAttribute), _logger);
-                RequireDynamicallyAccessedMembers(diagnosticContext, valueToStore, field);
+                RequireDynamicallyAccessedMembers(diagnosticContext, valueToStore, field, new FieldOrigin(field.Field));
             }
             CheckAndReportRequires(field, new MessageOrigin(methodBody.OwningMethod), RequiresUnreferencedCodeAttribute);
             CheckAndReportRequires(field, new MessageOrigin(methodBody.OwningMethod), RequiresDynamicCodeAttribute);
@@ -355,7 +385,7 @@ namespace ILCompiler.Dataflow
             if (parameter.DynamicallyAccessedMemberTypes != 0)
             {
                 var diagnosticContext = new DiagnosticContext(new MessageOrigin(method, offset), !ShouldSuppressAnalysisWarningsForRequires(method.OwningMethod, RequiresUnreferencedCodeAttribute), _logger);
-                RequireDynamicallyAccessedMembers(diagnosticContext, valueToStore, parameter);
+                RequireDynamicallyAccessedMembers(diagnosticContext, valueToStore, parameter, parameter.ParameterOrigin);
             }
         }
 
@@ -377,7 +407,7 @@ namespace ILCompiler.Dataflow
                     _annotations.GetReturnParameterAnnotation(calledMethod) : 0;
 
                 var diagnosticContext = new DiagnosticContext(new MessageOrigin(callingMethodBody, offset), shouldEnableReflectionWarnings, _logger);
-                var handleCallAction = new HandleCallAction(_context, _reflectionMarker, diagnosticContext, callingMethodDefinition);
+                var handleCallAction = new HandleCallAction(_annotations, _reflectionMarker, diagnosticContext, callingMethodDefinition, new MethodOrigin(calledMethod));
 
                 var intrinsicId = Intrinsics.GetIntrinsicIdForMethod(calledMethod);
                 switch (intrinsicId)
@@ -439,30 +469,42 @@ namespace ILCompiler.Dataflow
 
                     case IntrinsicId.None:
                         {
-                            if (calledMethodDefinition.IsPInvokeImpl)
+                            if (calledMethod.IsPInvoke)
                             {
                                 // Is the PInvoke dangerous?
-                                bool comDangerousMethod = IsComInterop(calledMethodDefinition.MethodReturnType, calledMethodDefinition.ReturnType);
-                                foreach (ParameterDefinition pd in calledMethodDefinition.Parameters)
+                                ParameterMetadata[] paramMetadata = calledMethod.GetParameterMetadata();
+
+                                ParameterMetadata returnParamMetadata = Array.Find(paramMetadata, m => m.Index == 0);
+
+                                bool comDangerousMethod = IsComInterop(returnParamMetadata.MarshalAsDescriptor, calledMethod.Signature.ReturnType);
+                                for (int paramIndex = 0; paramIndex < calledMethod.Signature.Length; paramIndex++)
                                 {
-                                    comDangerousMethod |= IsComInterop(pd, pd.ParameterType);
+                                    MarshalAsDescriptor marshalAsDescriptor = null;
+                                    for (int metadataIndex = 0; metadataIndex < paramMetadata.Length; metadataIndex++)
+                                    {
+                                        if (paramMetadata[metadataIndex].Index == paramIndex + 1)
+                                            marshalAsDescriptor = paramMetadata[metadataIndex].MarshalAsDescriptor;
+                                    }
+
+                                    comDangerousMethod |= IsComInterop(marshalAsDescriptor, calledMethod.Signature[paramIndex]);
                                 }
 
                                 if (comDangerousMethod)
                                 {
-                                    diagnosticContext.AddDiagnostic(DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethodDefinition.GetDisplayName());
+                                    diagnosticContext.AddDiagnostic(DiagnosticId.CorrectnessOfCOMCannotBeGuaranteed, calledMethod.GetDisplayName());
                                 }
                             }
-                            _markStep.CheckAndReportRequiresUnreferencedCode(calledMethodDefinition, _origin);
+
+                            CheckAndReportRequiresAttributes(shouldEnableReflectionWarnings, shouldEnableAotWarnings, callingMethodBody, offset, calledMethod);
 
                             var instanceValue = MultiValueLattice.Top;
                             IReadOnlyList<MultiValue> parameterValues = methodParams;
-                            if (calledMethodDefinition.HasImplicitThis())
+                            if (!calledMethod.Signature.IsStatic)
                             {
                                 instanceValue = methodParams[0];
                                 parameterValues = parameterValues.Skip(1).ToImmutableList();
                             }
-                            return handleCallAction.Invoke(calledMethodDefinition, instanceValue, parameterValues, out methodReturnValue, out _);
+                            return handleCallAction.Invoke(calledMethod, instanceValue, parameterValues, out methodReturnValue, out _);
                         }
 
                     case IntrinsicId.TypeDelegator_Ctor:
@@ -706,61 +748,6 @@ namespace ILCompiler.Dataflow
                         }
                         break;
 
-
-#if false
-                    // TODO: niche APIs that we probably shouldn't even have added
-                    //
-                    // System.Activator
-                    // 
-                    // static CreateInstance (string assemblyName, string typeName)
-                    // static CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object?[]? args, System.Globalization.CultureInfo? culture, object?[]? activationAttributes)
-                    // static CreateInstance (string assemblyName, string typeName, object?[]? activationAttributes)
-                    //
-                    case IntrinsicId.Activator_CreateInstance_AssemblyName_TypeName:
-                        ProcessCreateInstanceByName(ref reflectionContext, calledMethod, methodParams);
-                        break;
-
-                    //
-                    // System.Activator
-                    // 
-                    // static CreateInstanceFrom (string assemblyFile, string typeName)
-                    // static CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-                    // static CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
-                    //
-                    case IntrinsicId.Activator_CreateInstanceFrom:
-                        ProcessCreateInstanceByName(ref reflectionContext, calledMethod, methodParams);
-                        break;
-#endif
-
-#if false
-                    // TODO: niche APIs that we probably shouldn't even have added
-                    //
-                    // System.AppDomain
-                    //
-                    // CreateInstance (string assemblyName, string typeName)
-                    // CreateInstance (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-                    // CreateInstance (string assemblyName, string typeName, object? []? activationAttributes)
-                    //
-                    // CreateInstanceAndUnwrap (string assemblyName, string typeName)
-                    // CreateInstanceAndUnwrap (string assemblyName, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-                    // CreateInstanceAndUnwrap (string assemblyName, string typeName, object? []? activationAttributes)
-                    //
-                    // CreateInstanceFrom (string assemblyFile, string typeName)
-                    // CreateInstanceFrom (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-                    // CreateInstanceFrom (string assemblyFile, string typeName, object? []? activationAttributes)
-                    //
-                    // CreateInstanceFromAndUnwrap (string assemblyFile, string typeName)
-                    // CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, bool ignoreCase, System.Reflection.BindingFlags bindingAttr, System.Reflection.Binder? binder, object? []? args, System.Globalization.CultureInfo? culture, object? []? activationAttributes)
-                    // CreateInstanceFromAndUnwrap (string assemblyFile, string typeName, object? []? activationAttributes)
-                    //
-                    case var appDomainCreateInstance when appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstance
-                        || appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceAndUnwrap
-                        || appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFrom
-                        || appDomainCreateInstance == IntrinsicId.AppDomain_CreateInstanceFromAndUnwrap:
-                        ProcessCreateInstanceByName(ref reflectionContext, calledMethod, methodParams);
-                        break;
-#endif
-
                     //
                     // System.Reflection.MethodInfo
                     //
@@ -932,12 +919,12 @@ namespace ILCompiler.Dataflow
                 while (parameterType.IsParameterizedType)
                     parameterType = ((ParameterizedType)parameterType).ParameterType;
 
-                if (parameterType.IsWellKnownType(WellKnownType.Array))
+                if (parameterType.IsWellKnownType(Internal.TypeSystem.WellKnownType.Array))
                 {
                     // System.Array marshals as IUnknown by default
                     return true;
                 }
-                else if (parameterType.IsWellKnownType(WellKnownType.String) ||
+                else if (parameterType.IsWellKnownType(Internal.TypeSystem.WellKnownType.String) ||
                     InteropTypes.IsStringBuilder(context, parameterType))
                 {
                     // String and StringBuilder are special cased by interop
@@ -954,8 +941,8 @@ namespace ILCompiler.Dataflow
                     // Interface types marshal as COM by default
                     return true;
                 }
-                else if (parameterType.IsDelegate || parameterType.IsWellKnownType(WellKnownType.MulticastDelegate)
-                    || parameterType == context.GetWellKnownType(WellKnownType.MulticastDelegate).BaseType)
+                else if (parameterType.IsDelegate || parameterType.IsWellKnownType(Internal.TypeSystem.WellKnownType.MulticastDelegate)
+                    || parameterType == context.GetWellKnownType(Internal.TypeSystem.WellKnownType.MulticastDelegate).BaseType)
                 {
                     // Delegates are special cased by interop
                     return false;
@@ -978,6 +965,32 @@ namespace ILCompiler.Dataflow
             }
 
             return false;
+        }
+
+        void CheckAndReportRequiresAttributes(bool shouldEnableReflectionWarnings, bool shouldEnableAotWarnings, MethodIL callingMethodBody, int offset, MethodDesc calledMethod)
+        {
+            if (shouldEnableReflectionWarnings &&
+                calledMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute"))
+            {
+                string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(calledMethod, "RequiresUnreferencedCodeAttribute"));
+                string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(calledMethod, "RequiresUnreferencedCodeAttribute"));
+
+                _logger.LogWarning(callingMethodBody, offset, DiagnosticId.RequiresUnreferencedCode, calledMethod.GetDisplayName(), arg1, arg2);
+            }
+
+            if (shouldEnableAotWarnings &&
+                calledMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute"))
+            {
+                LogDynamicCodeWarning(_logger, callingMethodBody, offset, calledMethod);
+            }
+
+            static void LogDynamicCodeWarning(Logger logger, MethodIL callingMethodBody, int offset, MethodDesc calledMethod)
+            {
+                string arg1 = MessageFormat.FormatRequiresAttributeMessageArg(DiagnosticUtilities.GetRequiresAttributeMessage(calledMethod, "RequiresDynamicCodeAttribute"));
+                string arg2 = MessageFormat.FormatRequiresAttributeUrlArg(DiagnosticUtilities.GetRequiresAttributeUrl(calledMethod, "RequiresDynamicCodeAttribute"));
+
+                logger.LogWarning(callingMethodBody, offset, DiagnosticId.RequiresDynamicCode, calledMethod.GetDisplayName(), arg1, arg2);
+            }
         }
 
         private bool AnalyzeGenericInstantiationTypeArray(ValueNode arrayParam, ref ReflectionPatternContext reflectionContext, MethodDesc calledMethod, Instantiation genericParameters)
@@ -1038,605 +1051,10 @@ namespace ILCompiler.Dataflow
             return true;
         }
 
-#if false
-        void ProcessCreateInstanceByName(ref ReflectionPatternContext reflectionContext, MethodDesc calledMethod, ValueNodeList methodParams)
+        void RequireDynamicallyAccessedMembers(in DiagnosticContext diagnosticContext, in MultiValue value, ValueWithDynamicallyAccessedMembers targetValue, Origin memberWithRequirements)
         {
-            reflectionContext.AnalyzingPattern();
-
-            BindingFlags bindingFlags = BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public;
-            bool parameterlessConstructor = true;
-            if (calledMethod.Parameters.Count == 8 && calledMethod.Parameters[2].ParameterType.MetadataType == MetadataType.Boolean)
-            {
-                parameterlessConstructor = false;
-                bindingFlags = BindingFlags.Instance;
-				if (methodParams[3].AsConstInt() is int bindingFlagsInt)
-					bindingFlags |= (BindingFlags)bindingFlagsInt;
-				else
-					bindingFlags |= BindingFlags.Public | BindingFlags.NonPublic;
-            }
-
-            int methodParamsOffset = !calledMethod.Signature.IsStatic ? 1 : 0;
-
-            foreach (var assemblyNameValue in methodParams[methodParamsOffset].UniqueValues())
-            {
-                if (assemblyNameValue is KnownStringValue assemblyNameStringValue)
-                {
-                    foreach (var typeNameValue in methodParams[methodParamsOffset + 1].UniqueValues())
-                    {
-                        if (typeNameValue is KnownStringValue typeNameStringValue)
-                        {
-                            var resolvedAssembly = _context.GetLoadedAssembly(assemblyNameStringValue.Contents);
-                            if (resolvedAssembly == null)
-                            {
-                                reflectionContext.RecordUnrecognizedPattern(2061, $"The assembly name '{assemblyNameStringValue.Contents}' passed to method '{calledMethod.GetDisplayName()}' references assembly which is not available.");
-                                continue;
-                            }
-
-                            var resolvedType = _context.TypeNameResolver.ResolveTypeName(resolvedAssembly, typeNameStringValue.Contents)?.Resolve();
-                            if (resolvedType == null)
-                            {
-                                // It's not wrong to have a reference to non-existing type - the code may well expect to get an exception in this case
-                                // Note that we did find the assembly, so it's not a linker config problem, it's either intentional, or wrong versions of assemblies
-                                // but linker can't know that.
-                                reflectionContext.RecordHandledPattern();
-                                continue;
-                            }
-
-                            MarkConstructorsOnType(ref reflectionContext, resolvedType, parameterlessConstructor ? m => m.Parameters.Count == 0 : null, bindingFlags);
-                        }
-                        else
-                        {
-                            reflectionContext.RecordUnrecognizedPattern(2032, $"Unrecognized value passed to the parameter '{calledMethod.Parameters[1].Name}' of method '{calledMethod.GetDisplayName()}'. It's not possible to guarantee the availability of the target type.");
-                        }
-                    }
-                }
-                else
-                {
-                    reflectionContext.RecordUnrecognizedPattern(2032, $"Unrecognized value passed to the parameter '{calledMethod.Parameters[0].Name}' of method '{calledMethod.GetDisplayName()}'. It's not possible to guarantee the availability of the target type.");
-                }
-            }
-        }
-#endif
-
-        void ProcessGetMethodByName(
-            ref ReflectionPatternContext reflectionContext,
-            TypeDesc typeDefinition,
-            string methodName,
-            BindingFlags? bindingFlags,
-            ref ValueNode methodReturnValue)
-        {
-            bool foundAny = false;
-            foreach (var method in typeDefinition.GetMethodsOnTypeHierarchy(m => m.Name == methodName, bindingFlags))
-            {
-                MarkMethod(ref reflectionContext, method);
-                methodReturnValue = MergePointValue.MergeValues(methodReturnValue, new SystemReflectionMethodBaseValue(method));
-                foundAny = true;
-            }
-            // If there were no methods found the API will return null at runtime, so we should
-            // track the null as a return value as well.
-            // This also prevents warnings in such case, since if we don't set the return value it will be
-            // "unknown" and consumers may warn.
-            if (!foundAny)
-                methodReturnValue = MergePointValue.MergeValues(methodReturnValue, NullValue.Instance);
-        }
-
-        public static DynamicallyAccessedMemberTypes GetMissingMemberTypes(DynamicallyAccessedMemberTypes requiredMemberTypes, DynamicallyAccessedMemberTypes availableMemberTypes)
-        {
-            if (availableMemberTypes.HasFlag(requiredMemberTypes))
-                return DynamicallyAccessedMemberTypes.None;
-
-            if (requiredMemberTypes == DynamicallyAccessedMemberTypes.All)
-                return DynamicallyAccessedMemberTypes.All;
-
-            var missingMemberTypes = requiredMemberTypes & ~availableMemberTypes;
-
-            // PublicConstructors is a special case since its value is 3 - so PublicParameterlessConstructor (1) | _PublicConstructor_WithMoreThanOneParameter_ (2)
-            // The above bit logic only works for value with single bit set.
-            if (requiredMemberTypes.HasFlag(DynamicallyAccessedMemberTypes.PublicConstructors) &&
-                !availableMemberTypes.HasFlag(DynamicallyAccessedMemberTypes.PublicConstructors))
-                missingMemberTypes |= DynamicallyAccessedMemberTypes.PublicConstructors;
-
-            return missingMemberTypes;
-        }
-
-        private string GetMemberTypesString(DynamicallyAccessedMemberTypes memberTypes)
-        {
-            Debug.Assert(memberTypes != DynamicallyAccessedMemberTypes.None);
-
-            if (memberTypes == DynamicallyAccessedMemberTypes.All)
-                return $"'{nameof(DynamicallyAccessedMemberTypes)}.{nameof(DynamicallyAccessedMemberTypes.All)}'";
-
-            var memberTypesList = Enum.GetValues<DynamicallyAccessedMemberTypes>()
-                .Where(damt => (memberTypes & damt) == damt && damt != DynamicallyAccessedMemberTypes.None)
-                .ToList();
-
-            if (memberTypes.HasFlag(DynamicallyAccessedMemberTypes.PublicConstructors))
-                memberTypesList.Remove(DynamicallyAccessedMemberTypes.PublicParameterlessConstructor);
-
-            return string.Join(", ", memberTypesList.Select(mt => $"'{nameof(DynamicallyAccessedMemberTypes)}.{mt}'"));
-        }
-
-        void RequireDynamicallyAccessedMembers(ref ReflectionPatternContext reflectionContext, DynamicallyAccessedMemberTypes requiredMemberTypes, ValueNode value, Origin targetContext)
-        {
-            foreach (var uniqueValue in value.UniqueValues())
-            {
-                if (requiredMemberTypes == DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
-                    && uniqueValue is SystemTypeForGenericParameterValue genericParam
-                    && genericParam.GenericParameter.HasDefaultConstructorConstraint)
-                {
-                    // We allow a new() constraint on a generic parameter to satisfy DynamicallyAccessedMemberTypes.PublicParameterlessConstructor
-                    reflectionContext.RecordHandledPattern();
-                }
-                else if (uniqueValue is LeafValueWithDynamicallyAccessedMemberNode valueWithDynamicallyAccessedMember)
-                {
-                    var availableMemberTypes = valueWithDynamicallyAccessedMember.DynamicallyAccessedMemberTypes;
-                    var missingMemberTypesValue = GetMissingMemberTypes(requiredMemberTypes, availableMemberTypes);
-                    if (missingMemberTypesValue != DynamicallyAccessedMemberTypes.None)
-                    {
-                        var missingMemberTypes = GetMemberTypesString(missingMemberTypesValue);
-                        switch ((valueWithDynamicallyAccessedMember.SourceContext, targetContext))
-                        {
-                            case (ParameterOrigin sourceParameter, ParameterOrigin targetParameter):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsParameter).GetMessage(
-                                    DiagnosticUtilities.GetParameterNameForErrorMessage(targetParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(targetParameter.Method),
-                                    DiagnosticUtilities.GetParameterNameForErrorMessage(sourceParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(sourceParameter.Method),
-                                    missingMemberTypes));
-                                break;
-                            case (ParameterOrigin sourceParameter, MethodReturnOrigin targetMethodReturnType):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsMethodReturnType).GetMessage(
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(targetMethodReturnType.Method),
-                                    DiagnosticUtilities.GetParameterNameForErrorMessage(sourceParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(sourceParameter.Method),
-                                    missingMemberTypes));
-                                break;
-                            case (ParameterOrigin sourceParameter, FieldOrigin targetField):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsField).GetMessage(
-                                    targetField.GetDisplayName(),
-                                    DiagnosticUtilities.GetParameterNameForErrorMessage(sourceParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(sourceParameter.Method),
-                                    missingMemberTypes));
-                                break;
-                            case (ParameterOrigin sourceParameter, MethodOrigin targetMethod):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsThisParameter).GetMessage(
-                                    targetMethod.GetDisplayName(),
-                                    DiagnosticUtilities.GetParameterNameForErrorMessage(sourceParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(sourceParameter.Method),
-                                    missingMemberTypes));
-                                break;
-                            case (ParameterOrigin sourceParameter, GenericParameterOrigin targetGenericParameter):
-                                // Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsGenericParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchParameterTargetsGenericParameter).GetMessage(
-                                    targetGenericParameter.Name,
-                                    DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(targetGenericParameter),
-                                    DiagnosticUtilities.GetParameterNameForErrorMessage(sourceParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(sourceParameter.Method),
-                                    missingMemberTypes));
-                                break;
-
-                            case (MethodReturnOrigin sourceMethodReturnType, ParameterOrigin targetParameter):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsParameter).GetMessage(
-                                    DiagnosticUtilities.GetParameterNameForErrorMessage(targetParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(targetParameter.Method),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(sourceMethodReturnType.Method),
-                                    missingMemberTypes));
-                                break;
-                            case (MethodReturnOrigin sourceMethodReturnType, MethodReturnOrigin targetMethodReturnType):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsMethodReturnType).GetMessage(
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(targetMethodReturnType.Method),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(sourceMethodReturnType.Method),
-                                    missingMemberTypes));
-                                break;
-                            case (MethodReturnOrigin sourceMethodReturnType, FieldOrigin targetField):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsField).GetMessage(
-                                    targetField.GetDisplayName(),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(sourceMethodReturnType.Method),
-                                    missingMemberTypes));
-                                break;
-                            case (MethodReturnOrigin sourceMethodReturnType, MethodOrigin targetMethod):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsThisParameter).GetMessage(
-                                    targetMethod.GetDisplayName(),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(sourceMethodReturnType.Method),
-                                    missingMemberTypes));
-                                break;
-                            case (MethodReturnOrigin sourceMethodReturnType, GenericParameterOrigin targetGenericParameter):
-                                // Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsGenericParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchMethodReturnTypeTargetsGenericParameter).GetMessage(
-                                    targetGenericParameter.Name,
-                                    DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(targetGenericParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(sourceMethodReturnType.Method),
-                                    missingMemberTypes));
-                                break;
-
-                            case (FieldOrigin sourceField, ParameterOrigin targetParameter):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsParameter).GetMessage(
-                                    DiagnosticUtilities.GetParameterNameForErrorMessage(targetParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(targetParameter.Method),
-                                    sourceField.GetDisplayName(),
-                                    missingMemberTypes));
-                                break;
-                            case (FieldOrigin sourceField, MethodReturnOrigin targetMethodReturnType):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsMethodReturnType).GetMessage(
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(targetMethodReturnType.Method),
-                                    sourceField.GetDisplayName(),
-                                    missingMemberTypes));
-                                break;
-                            case (FieldOrigin sourceField, FieldOrigin targetField):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsField).GetMessage(
-                                    targetField.GetDisplayName(),
-                                    sourceField.GetDisplayName(),
-                                    missingMemberTypes));
-                                break;
-                            case (FieldOrigin sourceField, MethodOrigin targetMethod):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsThisParameter).GetMessage(
-                                    targetMethod.GetDisplayName(),
-                                    sourceField.GetDisplayName(),
-                                    missingMemberTypes));
-                                break;
-                            case (FieldOrigin sourceField, GenericParameterOrigin targetGenericParameter):
-                                // Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsGenericParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchFieldTargetsGenericParameter).GetMessage(
-                                    targetGenericParameter.Name,
-                                    DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(targetGenericParameter),
-                                    sourceField.GetDisplayName(),
-                                    missingMemberTypes));
-                                break;
-
-                            case (MethodOrigin sourceMethod, ParameterOrigin targetParameter):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsParameter).GetMessage(
-                                    DiagnosticUtilities.GetParameterNameForErrorMessage(targetParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(targetParameter.Method),
-                                    sourceMethod.GetDisplayName(),
-                                    missingMemberTypes));
-                                break;
-                            case (MethodOrigin sourceMethod, MethodReturnOrigin targetMethodReturnType):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsMethodReturnType).GetMessage(
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(targetMethodReturnType.Method),
-                                    sourceMethod.GetDisplayName(),
-                                    missingMemberTypes));
-                                break;
-                            case (MethodOrigin sourceMethod, FieldOrigin targetField):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsField).GetMessage(
-                                    targetField.GetDisplayName(),
-                                    sourceMethod.GetDisplayName(),
-                                    missingMemberTypes));
-                                break;
-                            case (MethodOrigin sourceMethod, MethodOrigin targetMethod):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsThisParameter).GetMessage(
-                                    targetMethod.GetDisplayName(),
-                                    sourceMethod.GetDisplayName(),
-                                    missingMemberTypes));
-                                break;
-                            case (MethodOrigin sourceMethod, GenericParameterOrigin targetGenericParameter):
-                                // Currently this is never generated, once ILLink supports full analysis of MakeGenericType/MakeGenericMethod this will be used
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsGenericParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchThisParameterTargetsGenericParameter).GetMessage(
-                                    targetGenericParameter.Name,
-                                    DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(targetGenericParameter),
-                                    sourceMethod.GetDisplayName(),
-                                    missingMemberTypes));
-                                break;
-
-                            case (GenericParameterOrigin sourceGenericParameter, ParameterOrigin targetParameter):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsParameter).GetMessage(
-                                    DiagnosticUtilities.GetParameterNameForErrorMessage(targetParameter),
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(targetParameter.Method),
-                                    sourceGenericParameter.Name,
-                                    DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(sourceGenericParameter),
-                                    missingMemberTypes));
-                                break;
-                            case (GenericParameterOrigin sourceGenericParameter, MethodReturnOrigin targetMethodReturnType):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsMethodReturnType).GetMessage(
-                                    DiagnosticUtilities.GetMethodSignatureDisplayName(targetMethodReturnType.Method),
-                                    sourceGenericParameter.Name,
-                                    DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(sourceGenericParameter),
-                                    missingMemberTypes));
-                                break;
-                            case (GenericParameterOrigin sourceGenericParameter, FieldOrigin targetField):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsField).GetMessage(
-                                    targetField.GetDisplayName(),
-                                    sourceGenericParameter.Name,
-                                    DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(sourceGenericParameter),
-                                    missingMemberTypes));
-                                break;
-                            case (GenericParameterOrigin sourceGenericParameter, MethodOrigin targetMethod):
-                                // Currently this is never generated, it might be possible one day if we try to validate annotations on results of reflection
-                                // For example code like this should ideally one day generate the warning
-                                // void TestMethod<T>()
-                                // {
-                                //    // This passes the T as the "this" parameter to Type.GetMethods()
-                                //    typeof(Type).GetMethod("GetMethods").Invoke(typeof(T), new object[] {});
-                                // }
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsThisParameter).GetMessage(
-                                    targetMethod.GetDisplayName(),
-                                    sourceGenericParameter.Name,
-                                    DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(sourceGenericParameter),
-                                    missingMemberTypes));
-                                break;
-                            case (GenericParameterOrigin sourceGenericParameter, GenericParameterOrigin targetGenericParameter):
-                                reflectionContext.RecordUnrecognizedPattern((int)DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter,
-                                    new DiagnosticString(DiagnosticId.DynamicallyAccessedMembersMismatchTypeArgumentTargetsGenericParameter).GetMessage(
-                                    targetGenericParameter.Name,
-                                    DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(targetGenericParameter),
-                                    sourceGenericParameter.Name,
-                                    DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(sourceGenericParameter),
-                                    missingMemberTypes));
-                                break;
-
-                            default:
-                                throw new NotImplementedException($"unsupported source context {valueWithDynamicallyAccessedMember.SourceContext} or target context {targetContext}");
-                        };
-                    }
-                    else
-                    {
-                        reflectionContext.RecordHandledPattern();
-                    }
-                }
-                else if (uniqueValue is SystemTypeValue systemTypeValue)
-                {
-                    MarkTypeForDynamicallyAccessedMembers(ref reflectionContext, systemTypeValue.TypeRepresented, requiredMemberTypes);
-                }
-                else if (uniqueValue is KnownStringValue knownStringValue)
-                {
-                    ModuleDesc callingModule = ((reflectionContext.Source as MethodDesc)?.OwningType as MetadataType)?.Module;
-
-                    if (!ILCompiler.DependencyAnalysis.ReflectionMethodBodyScanner.ResolveType(knownStringValue.Contents, callingModule, reflectionContext.Source.Context, out TypeDesc foundType, out ModuleDesc referenceModule))
-                    {
-                        // Intentionally ignore - it's not wrong for code to call Type.GetType on non-existing name, the code might expect null/exception back.
-                        reflectionContext.RecordHandledPattern();
-                    }
-                    else
-                    {
-                        // Also add module metadata in case this reference was through a type forward
-                        if (_factory.MetadataManager.CanGenerateMetadata(referenceModule.GetGlobalModuleType()))
-                            _reflectionMarker.Dependencies.Add(_factory.ModuleMetadata(referenceModule), reflectionContext.MemberWithRequirements.ToString());
-
-                        MarkType(ref reflectionContext, foundType);
-                        MarkTypeForDynamicallyAccessedMembers(ref reflectionContext, foundType, requiredMemberTypes);
-                    }
-                }
-                else if (uniqueValue == NullValue.Instance)
-                {
-                    // Ignore - probably unreachable path as it would fail at runtime anyway.
-                }
-                else
-                {
-                    switch (targetContext)
-                    {
-                        case ParameterOrigin parameterDefinition:
-                            reflectionContext.RecordUnrecognizedPattern(
-                                2062,
-                                $"Value passed to parameter '{DiagnosticUtilities.GetParameterNameForErrorMessage(parameterDefinition)}' of method '{DiagnosticUtilities.GetMethodSignatureDisplayName(parameterDefinition.Method)}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.");
-                            break;
-                        case MethodReturnOrigin methodReturnType:
-                            reflectionContext.RecordUnrecognizedPattern(
-                                2063,
-                                $"Value returned from method '{DiagnosticUtilities.GetMethodSignatureDisplayName(methodReturnType.Method)}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.");
-                            break;
-                        case FieldOrigin fieldDefinition:
-                            reflectionContext.RecordUnrecognizedPattern(
-                                2064,
-                                $"Value assigned to {fieldDefinition.GetDisplayName()} can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.");
-                            break;
-                        case MethodOrigin methodDefinition:
-                            reflectionContext.RecordUnrecognizedPattern(
-                                2065,
-                                $"Value passed to implicit 'this' parameter of method '{methodDefinition.GetDisplayName()}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.");
-                            break;
-                        case GenericParameterOrigin genericParameter:
-                            // Unknown value to generic parameter - this is possible if the generic argumnet fails to resolve
-                            reflectionContext.RecordUnrecognizedPattern(
-                                2066,
-                                $"Type passed to generic parameter '{genericParameter.Name}' of '{DiagnosticUtilities.GetGenericParameterDeclaringMemberDisplayName(genericParameter)}' can not be statically determined and may not meet 'DynamicallyAccessedMembersAttribute' requirements.");
-                            break;
-                        default: throw new NotImplementedException($"unsupported target context {targetContext.GetType()}");
-                    };
-                }
-            }
-
-            reflectionContext.RecordHandledPattern();
-        }
-
-        static BindingFlags? GetBindingFlagsFromValue(ValueNode parameter) => (BindingFlags?)parameter.AsConstInt();
-
-        static bool BindingFlagsAreUnsupported(BindingFlags? bindingFlags)
-        {
-            if (bindingFlags == null)
-                return true;
-
-            // Binding flags we understand
-            const BindingFlags UnderstoodBindingFlags =
-                BindingFlags.DeclaredOnly |
-                BindingFlags.Instance |
-                BindingFlags.Static |
-                BindingFlags.Public |
-                BindingFlags.NonPublic |
-                BindingFlags.FlattenHierarchy |
-                BindingFlags.ExactBinding;
-
-            // Binding flags that don't affect binding outside InvokeMember (that we don't analyze).
-            const BindingFlags IgnorableBindingFlags =
-                BindingFlags.InvokeMethod |
-                BindingFlags.CreateInstance |
-                BindingFlags.GetField |
-                BindingFlags.SetField |
-                BindingFlags.GetProperty |
-                BindingFlags.SetProperty;
-
-            BindingFlags flags = bindingFlags.Value;
-            return (flags & ~(UnderstoodBindingFlags | IgnorableBindingFlags)) != 0;
-        }
-
-        static bool HasBindingFlag(BindingFlags? bindingFlags, BindingFlags? search) => bindingFlags != null && (bindingFlags & search) == search;
-
-        void MarkTypeForDynamicallyAccessedMembers(ref ReflectionPatternContext reflectionContext, TypeDesc typeDefinition, DynamicallyAccessedMemberTypes requiredMemberTypes, bool declaredOnly = false)
-        {
-            foreach (var member in typeDefinition.GetDynamicallyAccessedMembers(requiredMemberTypes, declaredOnly))
-            {
-                switch (member)
-                {
-                    case MethodDesc method:
-                        MarkMethod(ref reflectionContext, method);
-                        break;
-                    case FieldDesc field:
-                        MarkField(ref reflectionContext, field);
-                        break;
-                    case MetadataType type:
-                        MarkType(ref reflectionContext, type);
-                        break;
-                    case PropertyPseudoDesc property:
-                        MarkProperty(ref reflectionContext, property);
-                        break;
-                    case EventPseudoDesc @event:
-                        MarkEvent(ref reflectionContext, @event);
-                        break;
-                    default:
-                        Debug.Fail(member.GetType().ToString());
-                        break;
-                }
-            }
-        }
-
-        void MarkType(ref ReflectionPatternContext reflectionContext, TypeDesc type)
-        {
-            RootingHelpers.TryGetDependenciesForReflectedType(ref _reflectionMarker.Dependencies, _factory, type, reflectionContext.MemberWithRequirements.ToString());
-            reflectionContext.RecordHandledPattern();
-        }
-
-        void WarnOnReflectionAccess(ref ReflectionPatternContext context, TypeSystemEntity entity)
-        {
-            if (_purpose == ScanningPurpose.GetTypeDataflow)
-            {
-                // Don't check whether the current scope is a RUC type or RUC method because these warnings
-                // are not suppressed in RUC scopes. Here the scope represents the DynamicallyAccessedMembers
-                // annotation on a type, not a callsite which uses the annotation. We always want to warn about
-                // possible reflection access indicated by these annotations.
-                _logger.LogWarning(context.Source, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers,
-                    ((TypeOrigin)context.MemberWithRequirements).GetDisplayName(), entity.GetDisplayName());
-            }
-            else
-            {
-                if (entity is FieldDesc && context.ReportingEnabled)
-                {
-                    _logger.LogWarning(context.Source, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, entity.GetDisplayName());
-                }
-                else
-                {
-                    Debug.Assert(entity is MethodDesc);
-
-                    _logger.LogWarning(context.Source, DiagnosticId.DynamicallyAccessedMembersMethodAccessedViaReflection, entity.GetDisplayName());
-                }
-            }
-        }
-
-        void MarkMethod(ref ReflectionPatternContext reflectionContext, MethodDesc method)
-        {
-            if(method.DoesMethodRequire(RequiresUnreferencedCodeAttribute, out _))
-            {
-                if (_purpose == ScanningPurpose.GetTypeDataflow)
-                {
-                    _logger.LogWarning(reflectionContext.Source, DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithRequiresUnreferencedCode,
-                        ((TypeOrigin)reflectionContext.MemberWithRequirements).GetDisplayName(), method.GetDisplayName());
-                }
-            }
-
-            if (_annotations.ShouldWarnWhenAccessedForReflection(method) && !ShouldSuppressAnalysisWarningsForRequires(method, RequiresUnreferencedCodeAttribute))
-            {
-                WarnOnReflectionAccess(ref reflectionContext, method);
-            }
-
-            RootingHelpers.TryGetDependenciesForReflectedMethod(ref _reflectionMarker.Dependencies, _factory, method, reflectionContext.MemberWithRequirements.ToString());
-            reflectionContext.RecordHandledPattern();
-        }
-
-        void MarkField(ref ReflectionPatternContext reflectionContext, FieldDesc field)
-        {
-            if (_annotations.ShouldWarnWhenAccessedForReflection(field) && !ShouldSuppressAnalysisWarningsForRequires(reflectionContext.Source, RequiresUnreferencedCodeAttribute))
-            {
-                WarnOnReflectionAccess(ref reflectionContext, field);
-            }
-
-            RootingHelpers.TryGetDependenciesForReflectedField(ref _reflectionMarker.Dependencies, _factory, field, reflectionContext.MemberWithRequirements.ToString());
-            reflectionContext.RecordHandledPattern();
-        }
-
-        void MarkProperty(ref ReflectionPatternContext reflectionContext, PropertyPseudoDesc property)
-        {
-            if (property.GetMethod != null)
-                MarkMethod(ref reflectionContext, property.GetMethod);
-            if (property.SetMethod != null)
-                MarkMethod(ref reflectionContext, property.SetMethod);
-            reflectionContext.RecordHandledPattern();
-        }
-
-        void MarkEvent(ref ReflectionPatternContext reflectionContext, EventPseudoDesc @event)
-        {
-            if (@event.AddMethod != null)
-                MarkMethod(ref reflectionContext, @event.AddMethod);
-            if (@event.RemoveMethod != null)
-                MarkMethod(ref reflectionContext, @event.RemoveMethod);
-            reflectionContext.RecordHandledPattern();
-        }
-
-        void MarkConstructorsOnType(ref ReflectionPatternContext reflectionContext, TypeDesc type, Func<MethodDesc, bool> filter, BindingFlags? bindingFlags = null)
-        {
-            foreach (var ctor in type.GetConstructorsOnType(filter, bindingFlags))
-                MarkMethod(ref reflectionContext, ctor);
-        }
-
-        void MarkFieldsOnTypeHierarchy(ref ReflectionPatternContext reflectionContext, TypeDesc type, Func<FieldDesc, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
-        {
-            foreach (var field in type.GetFieldsOnTypeHierarchy(filter, bindingFlags))
-                MarkField(ref reflectionContext, field);
-        }
-
-        MetadataType[] MarkNestedTypesOnType(ref ReflectionPatternContext reflectionContext, TypeDesc type, Func<MetadataType, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
-        {
-            var result = new ArrayBuilder<MetadataType>();
-
-            foreach (var nestedType in type.GetNestedTypesOnType(filter, bindingFlags))
-            {
-                result.Add(nestedType);
-                MarkTypeForDynamicallyAccessedMembers(ref reflectionContext, nestedType, DynamicallyAccessedMemberTypes.All);
-            }
-
-            return result.ToArray();
-        }
-
-        void MarkPropertiesOnTypeHierarchy(ref ReflectionPatternContext reflectionContext, TypeDesc type, Func<PropertyPseudoDesc, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
-        {
-            foreach (var property in type.GetPropertiesOnTypeHierarchy(filter, bindingFlags))
-                MarkProperty(ref reflectionContext, property);
-        }
-
-        void MarkEventsOnTypeHierarchy(ref ReflectionPatternContext reflectionContext, TypeDesc type, Func<EventPseudoDesc, bool> filter, BindingFlags? bindingFlags = BindingFlags.Default)
-        {
-            foreach (var @event in type.GetEventsOnTypeHierarchy(filter, bindingFlags))
-                MarkEvent(ref reflectionContext, @event);
+            var requireDynamicallyAccessedMembersAction = new RequireDynamicallyAccessedMembersAction(_reflectionMarker, diagnosticContext, memberWithRequirements);
+            requireDynamicallyAccessedMembersAction.Invoke(value, targetValue);
         }
 
         void ValidateGenericMethodInstantiation(
@@ -1661,43 +1079,5 @@ namespace ILCompiler.Dataflow
                 reflectionContext.RecordHandledPattern();
             }
         }
-
-        static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForNestedTypes(BindingFlags? bindingFlags) =>
-            (HasBindingFlag(bindingFlags, BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicNestedTypes : DynamicallyAccessedMemberTypes.None) |
-            (HasBindingFlag(bindingFlags, BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicNestedTypes : DynamicallyAccessedMemberTypes.None) |
-            (BindingFlagsAreUnsupported(bindingFlags) ? DynamicallyAccessedMemberTypes.PublicNestedTypes | DynamicallyAccessedMemberTypes.NonPublicNestedTypes : DynamicallyAccessedMemberTypes.None);
-
-        static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors(BindingFlags? bindingFlags) =>
-            (HasBindingFlag(bindingFlags, BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicConstructors : DynamicallyAccessedMemberTypes.None) |
-            (HasBindingFlag(bindingFlags, BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicConstructors : DynamicallyAccessedMemberTypes.None) |
-            (BindingFlagsAreUnsupported(bindingFlags) ? DynamicallyAccessedMemberTypes.PublicConstructors | DynamicallyAccessedMemberTypes.NonPublicConstructors : DynamicallyAccessedMemberTypes.None);
-
-        static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods(BindingFlags? bindingFlags) =>
-            (HasBindingFlag(bindingFlags, BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicMethods : DynamicallyAccessedMemberTypes.None) |
-            (HasBindingFlag(bindingFlags, BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicMethods : DynamicallyAccessedMemberTypes.None) |
-            (BindingFlagsAreUnsupported(bindingFlags) ? DynamicallyAccessedMemberTypes.PublicMethods | DynamicallyAccessedMemberTypes.NonPublicMethods : DynamicallyAccessedMemberTypes.None);
-
-        static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForFields(BindingFlags? bindingFlags) =>
-            (HasBindingFlag(bindingFlags, BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicFields : DynamicallyAccessedMemberTypes.None) |
-            (HasBindingFlag(bindingFlags, BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicFields : DynamicallyAccessedMemberTypes.None) |
-            (BindingFlagsAreUnsupported(bindingFlags) ? DynamicallyAccessedMemberTypes.PublicFields | DynamicallyAccessedMemberTypes.NonPublicFields : DynamicallyAccessedMemberTypes.None);
-
-        static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForProperties(BindingFlags? bindingFlags) =>
-            (HasBindingFlag(bindingFlags, BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicProperties : DynamicallyAccessedMemberTypes.None) |
-            (HasBindingFlag(bindingFlags, BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicProperties : DynamicallyAccessedMemberTypes.None) |
-            (BindingFlagsAreUnsupported(bindingFlags) ? DynamicallyAccessedMemberTypes.PublicProperties | DynamicallyAccessedMemberTypes.NonPublicProperties : DynamicallyAccessedMemberTypes.None);
-
-        static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForEvents(BindingFlags? bindingFlags) =>
-            (HasBindingFlag(bindingFlags, BindingFlags.Public) ? DynamicallyAccessedMemberTypes.PublicEvents : DynamicallyAccessedMemberTypes.None) |
-            (HasBindingFlag(bindingFlags, BindingFlags.NonPublic) ? DynamicallyAccessedMemberTypes.NonPublicEvents : DynamicallyAccessedMemberTypes.None) |
-            (BindingFlagsAreUnsupported(bindingFlags) ? DynamicallyAccessedMemberTypes.PublicEvents | DynamicallyAccessedMemberTypes.NonPublicEvents : DynamicallyAccessedMemberTypes.None);
-
-        static DynamicallyAccessedMemberTypes GetDynamicallyAccessedMemberTypesFromBindingFlagsForMembers(BindingFlags? bindingFlags) =>
-            GetDynamicallyAccessedMemberTypesFromBindingFlagsForConstructors(bindingFlags) |
-            GetDynamicallyAccessedMemberTypesFromBindingFlagsForEvents(bindingFlags) |
-            GetDynamicallyAccessedMemberTypesFromBindingFlagsForFields(bindingFlags) |
-            GetDynamicallyAccessedMemberTypesFromBindingFlagsForMethods(bindingFlags) |
-            GetDynamicallyAccessedMemberTypesFromBindingFlagsForProperties(bindingFlags) |
-            GetDynamicallyAccessedMemberTypesFromBindingFlagsForNestedTypes(bindingFlags);
     }
 }
