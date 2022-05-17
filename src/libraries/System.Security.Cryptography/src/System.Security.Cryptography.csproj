@@ -1719,7 +1719,6 @@
     <Compile Include="System\Security\Cryptography\CngKey.OpenHandle.cs" />
     <Compile Include="System\Security\Cryptography\CngKey.Properties.cs" />
     <Compile Include="System\Security\Cryptography\CngKey.StandardProperties.cs" />
-    <Compile Include="System\Security\Cryptography\CngKeyLite.cs" />
     <Compile Include="System\Security\Cryptography\CngPkcs8.cs" />
     <Compile Include="System\Security\Cryptography\CngSymmetricAlgorithmCore.cs" />
     <Compile Include="System\Security\Cryptography\CspKeyContainerInfo.Windows.cs" />
@@ -1746,6 +1745,7 @@
     <Compile Include="System\Security\Cryptography\HashProviderCng.cs" />
     <Compile Include="System\Security\Cryptography\HashProviderDispenser.Windows.cs" />
     <Compile Include="System\Security\Cryptography\ICngSymmetricAlgorithm.cs" />
+    <Compile Include="System\Security\Cryptography\KeyPropertyName.cs" />
     <Compile Include="System\Security\Cryptography\LiteHash.Windows.cs" />
     <Compile Include="System\Security\Cryptography\OidLookup.Windows.cs" />
     <Compile Include="System\Security\Cryptography\OpenSsl.NotSupported.cs" />

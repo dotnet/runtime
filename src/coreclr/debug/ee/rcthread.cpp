@@ -107,28 +107,6 @@ void DebuggerRCThread::CloseIPCHandles()
 }
 
 //-----------------------------------------------------------------------------
-// Helper to get the proper decorated name
-// Caller ensures that pBufSize is large enough. We'll assert just to check,
-// but no runtime failure.
-// pBuf - the output buffer to write the decorated name in
-// cBufSizeInChars - the size of the buffer in characters, including the null.
-// pPrefx - The undecorated name of the event.
-//-----------------------------------------------------------------------------
-void GetPidDecoratedName(_Out_writes_(cBufSizeInChars) WCHAR * pBuf,
-                         int cBufSizeInChars,
-                         const WCHAR * pPrefix)
-{
-    LIMITED_METHOD_CONTRACT;
-
-    DWORD pid = GetCurrentProcessId();
-
-    GetPidDecoratedName(pBuf, cBufSizeInChars, pPrefix, pid);
-}
-
-
-
-
-//-----------------------------------------------------------------------------
 // Simple wrapper to create win32 events.
 // This helps make DebuggerRCThread::Init pretty, beccause we
 // create lots of events there.
