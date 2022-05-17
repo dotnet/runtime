@@ -131,8 +131,8 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 Debug.Assert(cbDecoded >= sizeof(CERT_NAME_VALUE));
                 CERT_NAME_VALUE* pNameValue = (CERT_NAME_VALUE*)pvDecoded;
-                string? actual = Marshal.PtrToStringUni(pNameValue->Value.pbData);
-                return templateName.Equals(actual, StringComparison.OrdinalIgnoreCase);
+                ReadOnlySpan<char> actual = MemoryMarshal.CreateReadOnlySpanFromNullTerminated((char*)pNameValue->Value.pbData);
+                return actual.Equals(templateName, StringComparison.OrdinalIgnoreCase);
             }
 
             static unsafe bool DecodeV2TemplateCallback(void* pvDecoded, int cbDecoded, string templateName)
@@ -141,16 +141,11 @@ namespace System.Security.Cryptography.X509Certificates
                 CERT_TEMPLATE_EXT* pTemplateExt = (CERT_TEMPLATE_EXT*)pvDecoded;
                 string? actual = Marshal.PtrToStringAnsi(pTemplateExt->pszObjId);
 
-                string? expectedOidValue = Interop.Crypt32.FindOidInfo(
+                string expectedOidValue = Interop.Crypt32.FindOidInfo(
                     Interop.Crypt32.CryptOidInfoKeyType.CRYPT_OID_INFO_NAME_KEY,
                     templateName,
                     OidGroup.Template,
-                    fallBackToAllGroups: true).OID;
-
-                if (expectedOidValue is null)
-                {
-                    expectedOidValue = templateName;
-                }
+                    fallBackToAllGroups: true).OID ?? templateName;
 
                 return expectedOidValue.Equals(actual, StringComparison.OrdinalIgnoreCase);
             }
