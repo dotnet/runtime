@@ -64,6 +64,11 @@ namespace System.Net.Test.Common
                 stream.Dispose();
             }
 
+            foreach (QuicStream stream in _delayedStreams)
+            {
+                stream.Dispose();
+            }
+
             // We don't dispose the connection currently, because this causes races when the server connection is closed before
             // the client has received and handled all response data.
             // See discussion in https://github.com/dotnet/runtime/pull/57223#discussion_r687447832
