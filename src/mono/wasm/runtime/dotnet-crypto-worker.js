@@ -30,7 +30,6 @@ var ChannelWorker = {
 
                 // Read in request
                 var req = this._read_request();
-                // console.log("Request: " + req);
                 if (req === this.STATE_SHUTDOWN)
                     break;
 
