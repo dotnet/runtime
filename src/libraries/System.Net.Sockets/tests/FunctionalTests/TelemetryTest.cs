@@ -96,7 +96,17 @@ namespace System.Net.Sockets.Tests
                 listener.AddActivityTracking();
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
-                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                await listener.RunWithCallbackAsync(e =>
+                {
+                    events.Enqueue((e, e.ActivityId));
+
+                    if (e.EventName == "ConnectStart")
+                    {
+                        // Make sure we observe a non-zero current-outgoing-connect-attempts counter
+                        WaitForEventCountersAsync(events).GetAwaiter().GetResult();
+                    }
+                },
+                async () =>
                 {
                     using var server = new Socket(SocketType.Stream, ProtocolType.Tcp);
                     server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
