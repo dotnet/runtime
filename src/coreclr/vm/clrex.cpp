@@ -133,7 +133,7 @@ OBJECTREF CLRException::GetThrowable()
 
                 // We didn't recognize it, so use the preallocated System.Exception instance.
                 STRESS_LOG0(LF_EH, LL_INFO100, "CLRException::GetThrowable: Recursion! Translating to preallocated System.Exception.\n");
-                throwable = GetBestBaseException(); 
+                throwable = GetBestBaseException();
             }
         }
     }
@@ -795,7 +795,6 @@ void CLRException::HandlerState::CleanupTry()
 
     if (m_pThread != NULL)
     {
-        
         // If there is no frame to unwind, UnwindFrameChain call is just an expensive NOP
         // due to setting up and tear down of EH records. So we avoid it if we can.
         if (m_pThread->GetFrame() < m_pFrame)
@@ -808,7 +807,6 @@ void CLRException::HandlerState::CleanupTry()
             else
                 m_pThread->EnablePreemptiveGC();
         }
-        
     }
 
     // Make sure to call the base class's CleanupTry so it can do whatever it wants to do.
@@ -1405,16 +1403,12 @@ EETypeLoadException::EETypeLoadException(LPCUTF8 pszNameSpace, LPCUTF8 pTypeName
         m_fullName.MakeFullNamespacePath(sNameSpace, sTypeName);
     }
     else if (pTypeName)
+    {
         m_fullName.SetUTF8(pTypeName);
-    else {
-        WCHAR wszTemplate[30];
-        if (FAILED(UtilLoadStringRC(IDS_EE_NAME_UNKNOWN,
-                                    wszTemplate,
-                                    sizeof(wszTemplate)/sizeof(wszTemplate[0]),
-                                    FALSE)))
-            wszTemplate[0] = W('\0');
-        MAKE_UTF8PTR_FROMWIDE(name, wszTemplate);
-        m_fullName.SetUTF8(name);
+    }
+    else
+    {
+        m_fullName.SetUTF8("<Unknown>");
     }
 }
 
@@ -1527,18 +1521,7 @@ EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Except
     m_innerException = pInnerException ? pInnerException->DomainBoundClone() : NULL;
 
     if (m_name.IsEmpty())
-    {
-        WCHAR wszTemplate[30];
-        if (FAILED(UtilLoadStringRC(IDS_EE_NAME_UNKNOWN,
-                                    wszTemplate,
-                                    sizeof(wszTemplate)/sizeof(wszTemplate[0]),
-                                    FALSE)))
-        {
-            wszTemplate[0] = W('\0');
-        }
-
-        m_name.Set(wszTemplate);
-    }
+        m_name.Set(W("<Unknown>"));
 }
 
 

@@ -40,8 +40,6 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #define SMAKEHR(val)    val
 #define EMAKEHR(val)    val
 
-#include "mscorrc.common.rc"
-
 STRINGTABLE DISCARDABLE
 BEGIN
     CLDB_E_FILE_OLDVER                      "Version %d.%d is not a compatible version."
