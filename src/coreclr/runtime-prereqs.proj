@@ -7,11 +7,6 @@
     <AssemblyName>.NET Runtime</AssemblyName>
   </PropertyGroup>
 
-  <ItemGroup Condition="'$(TargetOS)' == 'Windows'">
-    <ProjectReference Include="tools/SOS/DacTableGen/DacTableGen.csproj" />
-    <ProjectReference Include="tools/InjectResource/InjectResource.csproj" />
-  </ItemGroup>
-
   <Import Project="$(RepositoryEngineeringDir)versioning.targets" />
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 

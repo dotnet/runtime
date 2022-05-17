@@ -29,7 +29,7 @@ namespace ILCompiler.DependencyAnalysis.ReadyToRun
                         X64UnixTransitionBlock.Instance;
 
                 case TargetArchitecture.ARM:
-                    if (target.Abi == TargetAbi.CoreRTArmel)
+                    if (target.Abi == TargetAbi.NativeAotArmel)
                     {
                         return Arm32ElTransitionBlock.Instance;
                     }

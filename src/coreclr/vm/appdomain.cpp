@@ -1754,8 +1754,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     // MethodInfo, Type or Delegate (and depending on which invoke overload is
     // being used, several different reflection classes may be involved).
 
-    g_IBCLogger.LogMethodDescAccess(pFunc);
-
     if (SystemDomain::IsReflectionInvocationMethod(pFunc))
         return SWA_CONTINUE;
 
@@ -5092,8 +5090,8 @@ HRESULT RuntimeInvokeHostAssemblyResolver(INT_PTR pManagedAssemblyLoadContextToB
                 LoaderAllocator *pParentLoaderAllocator = pBinder->GetLoaderAllocator();
                 if (pParentLoaderAllocator == NULL)
                 {
-                    // The AssemblyLoadContext for which we are resolving the the Assembly is not collectible.
-                    COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible")); 
+                    // The AssemblyLoadContext for which we are resolving the Assembly is not collectible.
+                    COMPlusThrow(kNotSupportedException, W("NotSupported_CollectibleBoundNonCollectible"));
                 }
 
                 _ASSERTE(pResultAssemblyLoaderAllocator);

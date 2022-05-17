@@ -14,6 +14,7 @@ namespace System.Text.Json.Nodes
     public abstract partial class JsonValue : JsonNode
     {
         internal const string CreateUnreferencedCodeMessage = "Creating JsonValue instances with non-primitive types is not compatible with trimming. It can result in non-primitive types being serialized, which may have their members trimmed.";
+        internal const string CreateDynamicCodeMessage = "Creating JsonValue instances with non-primitive types requires generating code at runtime.";
 
         private protected JsonValue(JsonNodeOptions? options = null) : base(options) { }
 
@@ -28,6 +29,7 @@ namespace System.Text.Json.Nodes
         /// <param name="options">Options to control the behavior.</param>
         /// <returns>The new instance of the <see cref="JsonValue"/> class that contains the specified value.</returns>
         [RequiresUnreferencedCode(CreateUnreferencedCodeMessage + " Use the overload that takes a JsonTypeInfo, or make sure all of the required types are preserved.")]
+        [RequiresDynamicCode(CreateDynamicCodeMessage)]
         public static JsonValue? Create<T>(T? value, JsonNodeOptions? options = null)
         {
             if (value == null)

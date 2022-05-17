@@ -770,7 +770,7 @@ namespace System.Net
             else
             {
                 directory = path.Substring(0, index + 1);
-                filename = path.Substring(index + 1, path.Length - (index + 1));
+                filename = path.Substring(index + 1);
             }
 
             // strip off trailing '/' on directory if present

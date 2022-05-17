@@ -4,7 +4,7 @@
     <!-- Build for NetCoreAppCurrent by default if no BuildTargetFramework is supplied or if not all configurations are built. -->
     <TargetFramework>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))-$(TargetOS)</TargetFramework>
     <!-- Filter ProjectReferences to build the best matching target framework only. -->
-    <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+    <FilterTraversalProjectReferences Condition="'$(TestTrimming)' != 'true'">true</FilterTraversalProjectReferences>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -38,6 +38,8 @@
 
     <!-- https://github.com/dotnet/runtime/issues/66647 -->
     <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn3.11.Tests.csproj" />
+
+    <HighAOTResourceRequiringProject Include="$(MSBuildThisFileDirectory)Microsoft.Extensions.Logging.Abstractions\tests\Microsoft.Extensions.Logging.Generators.Tests\Microsoft.Extensions.Logging.Generators.Roslyn4.0.Tests.csproj" />
   </ItemGroup>
 
   <!-- Samples which are too complex for CI -->
@@ -155,9 +157,6 @@
 
     <!-- https://github.com/dotnet/runtime/issues/50926 -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Diagnostics.Tracing\tests\System.Diagnostics.Tracing.Tests.csproj" />
-
-    <!-- https://github.com/dotnet/runtime/issues/49936 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Text.Json\tests\System.Text.Json.Tests\System.Text.Json.Tests.csproj" />
 
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Net.Http\tests\FunctionalTests\System.Net.Http.Functional.Tests.csproj" />
 
@@ -333,8 +332,6 @@
 
   <!-- Aggressive Trimming related failures -->
   <ItemGroup Condition="('$(TargetOS)' != 'Browser' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true') or ('$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true')">
-    <!-- Issue: https://github.com/dotnet/runtime/issues/59926 -->
-    <ProjectExclusions Include="$(MSBuildThisFileDirectory)System.Runtime.Serialization.Xml\tests\System.Runtime.Serialization.Xml.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup Condition="('$(TargetOS)' != 'Browser' and '$(RunAOTCompilation)' == 'true' and '$(MonoForceInterpreter)' != 'true') or ('$(TargetOS)' == 'Browser' and '$(BuildAOTTestsOnHelix)' == 'true' and '$(RunDisabledWasmTests)' != 'true') or ('$(TargetOS)' == 'iOS' and '$(BuildTestsOnHelix)' == 'true')">
@@ -382,6 +379,7 @@
     <!-- Run only a small randomly chosen set of passing test suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

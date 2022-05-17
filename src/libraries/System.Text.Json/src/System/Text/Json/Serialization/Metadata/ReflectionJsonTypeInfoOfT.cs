@@ -1,4 +1,4 @@
-﻿// Licensed to the .NET Foundation under one or more agreements.
+// Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
@@ -16,6 +16,7 @@ namespace System.Text.Json.Serialization.Metadata
     internal sealed class ReflectionJsonTypeInfo<T> : JsonTypeInfo<T>
     {
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal ReflectionJsonTypeInfo(JsonSerializerOptions options)
             : this(
                   GetConverter(
@@ -28,6 +29,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal ReflectionJsonTypeInfo(JsonConverter converter, JsonSerializerOptions options)
             : base(converter, options)
         {
@@ -42,7 +44,9 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",
-                Justification = "Constructor is marked as RequiresUnreferencedCode")]
+                Justification = "The ctor is marked as RequiresUnreferencedCode")]
+        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode",
+            Justification = "The ctor is marked RequiresDynamicCode.")]
         internal override void Configure()
         {
             base.Configure();
@@ -50,6 +54,7 @@ namespace System.Text.Json.Serialization.Metadata
         }
 
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private void AddPropertiesAndParametersUsingReflection()
         {
             Debug.Assert(PropertyInfoForTypeInfo.ConverterStrategy == ConverterStrategy.Object);

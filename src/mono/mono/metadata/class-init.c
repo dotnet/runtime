@@ -1342,7 +1342,7 @@ make_generic_param_class (MonoGenericParam *param)
 		klass->has_references = m_class_has_references (constraint_class);
 	}
 	/*
-	 * This makes sure the the value size of this class is equal to the size of the types the gparam is
+	 * This makes sure the value size of this class is equal to the size of the types the gparam is
 	 * constrained to, the JIT depends on this.
 	 */
 	klass->instance_size = MONO_ABI_SIZEOF (MonoObject) + mono_type_size (m_class_get_byval_arg (klass), &min_align);

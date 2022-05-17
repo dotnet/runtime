@@ -113,7 +113,7 @@ namespace Sample
             {
                 measurementIdx++;
 
-                if (Task.pattern == null || Task.pattern.Match(Task.Measurements[measurementIdx].Name).Success)
+                if (Task.pattern == null || Task.pattern.IsMatch(Task.Measurements[measurementIdx].Name))
                     return true;
             }
 

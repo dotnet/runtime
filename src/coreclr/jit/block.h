@@ -197,7 +197,7 @@ struct allMemoryKinds
 // BB2 of the corresponding handler to be an "EH successor" of BB1.  Because we
 // make the conservative assumption that control flow can jump from a try block
 // to its handler at any time, the immediate (regular control flow)
-// predecessor(s) of the the first block of a try block are also considered to
+// predecessor(s) of the first block of a try block are also considered to
 // have the first block of the handler as an EH successor.  This makes variables that
 // are "live-in" to the handler become "live-out" for these try-predecessor block,
 // so that they become live-in to the try -- which we require.

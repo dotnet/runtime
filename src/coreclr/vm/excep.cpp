@@ -6580,7 +6580,7 @@ IsDebuggerFault(EXCEPTION_RECORD *pExceptionRecord,
 
     // Is this exception really meant for the COM+ Debugger? Note: we will let the debugger have a chance if there
     // is a debugger attached to any part of the process. It is incorrect to consider whether or not the debugger
-    // is attached the the thread's current app domain at this point.
+    // is attached the thread's current app domain at this point.
 
     // Even if a debugger is not attached, we must let the debugger handle the exception in case it's coming from a
     // patch-skipper.
@@ -7063,7 +7063,7 @@ bool ShouldHandleManagedFault(
     //
     // Is this exception really meant for the COM+ Debugger? Note: we will let the debugger have a chance if there is a
     // debugger attached to any part of the process. It is incorrect to consider whether or not the debugger is attached
-    // the the thread's current app domain at this point.
+    // the thread's current app domain at this point.
 
 
     // A managed exception never comes from managed code, and we can ignore all breakpoint
@@ -9641,7 +9641,7 @@ BOOL SetupWatsonBucketsForFailFast(EXCEPTIONREF refException)
                     // Keep the UETracker clean
                     pUEWatsonBucketTracker->ClearWatsonBucketDetails();
 
-                    // Since we couldnt find the watson bucket tracker for the the inner most exception,
+                    // Since we couldnt find the watson bucket tracker for the inner most exception,
                     // try to look for the buckets in the throwable.
                     fCheckThrowableForWatsonBuckets = TRUE;
                 }
@@ -12084,7 +12084,6 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 // Throw an InvalidCastException
 //==========================================================================
 
-
 VOID GetAssemblyDetailInfo(SString    &sType,
                            SString    &sAssemblyDisplayName,
                            PEAssembly *pPEAssembly,
@@ -12092,8 +12091,10 @@ VOID GetAssemblyDetailInfo(SString    &sType,
 {
     WRAPPER_NO_CONTRACT;
 
-    InlineSString<MAX_LONGPATH> sFormat;
-    const WCHAR *pwzLoadContext = W("Default");
+    StackSString sFormat;
+    StackSString sAlcName;
+
+    pPEAssembly->GetAssemblyBinder()->GetNameForDiagnostics(sAlcName);
 
     if (pPEAssembly->GetPath().IsEmpty())
     {
@@ -12102,7 +12103,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
         sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
                                    sType.GetUnicode(),
                                    sAssemblyDisplayName.GetUnicode(),
-                                   pwzLoadContext);
+                                   sAlcName.GetUnicode());
     }
     else
     {
@@ -12111,7 +12112,7 @@ VOID GetAssemblyDetailInfo(SString    &sType,
         sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
                                    sType.GetUnicode(),
                                    sAssemblyDisplayName.GetUnicode(),
-                                   pwzLoadContext,
+                                   sAlcName.GetUnicode(),
                                    pPEAssembly->GetPath().GetUnicode());
     }
 }
@@ -12142,17 +12143,17 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);
 
-         InlineSString<MAX_LONGPATH> sAssemblyFromDisplayName;
-         InlineSString<MAX_LONGPATH> sAssemblyToDisplayName;
+         StackSString sAssemblyFromDisplayName;
+         StackSString sAssemblyToDisplayName;
 
          pPEAssemblyTypeFrom->GetDisplayName(sAssemblyFromDisplayName);
          pPEAssemblyTypeTo->GetDisplayName(sAssemblyToDisplayName);
 
          // Found the culprit case. Now format the new exception text.
-         InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastFromName;
-         InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastToName;
-         InlineSString<MAX_LONGPATH> sAssemblyDetailInfoFrom;
-         InlineSString<MAX_LONGPATH> sAssemblyDetailInfoTo;
+         StackSString strCastFromName;
+         StackSString strCastToName;
+         StackSString sAssemblyDetailInfoFrom;
+         StackSString sAssemblyDetailInfoTo;
 
          thCastFrom.GetName(strCastFromName);
          thCastTo.GetName(strCastToName);

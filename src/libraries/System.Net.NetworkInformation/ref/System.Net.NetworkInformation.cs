@@ -335,7 +335,11 @@ namespace System.Net.NetworkInformation
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]
         public NetworkChange() { }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static event System.Net.NetworkInformation.NetworkAddressChangedEventHandler? NetworkAddressChanged { add { } remove { } }
+        [System.Runtime.Versioning.UnsupportedOSPlatform("illumos")]
+        [System.Runtime.Versioning.UnsupportedOSPlatform("solaris")]
         public static event System.Net.NetworkInformation.NetworkAvailabilityChangedEventHandler? NetworkAvailabilityChanged { add { } remove { } }
         [System.ComponentModel.EditorBrowsableAttribute(System.ComponentModel.EditorBrowsableState.Never)]
         [System.ObsoleteAttribute("This API supports the .NET Framework infrastructure and is not intended to be used directly from your code.", true)]

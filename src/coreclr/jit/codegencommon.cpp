@@ -1215,15 +1215,18 @@ AGAIN:
                 break;
             }
 
-            if (op1->AsOp()->gtOp2->IsIntCnsFitsInI32() &&
-                FitsIn<INT32>(cns + op1->AsOp()->gtOp2->AsIntCon()->gtIconVal))
+            if (op1->AsOp()->gtOp2->IsIntCnsFitsInI32())
             {
-                cns += op1->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                op1 = op1->AsOp()->gtOp1;
+                GenTreeIntCon* addConst = op1->AsOp()->gtOp2->AsIntCon();
 
-                goto AGAIN;
+                if (addConst->ImmedValCanBeFolded(compiler, GT_ADD) && FitsIn<INT32>(cns + addConst->IconValue()))
+                {
+                    cns += addConst->IconValue();
+                    op1 = op1->AsOp()->gtOp1;
+
+                    goto AGAIN;
+                }
             }
-
             break;
 
         case GT_MUL:
@@ -1295,15 +1298,18 @@ AGAIN:
                 break;
             }
 
-            if (op2->AsOp()->gtOp2->IsIntCnsFitsInI32() &&
-                FitsIn<INT32>(cns + op2->AsOp()->gtOp2->AsIntCon()->gtIconVal))
+            if (op2->AsOp()->gtOp2->IsIntCnsFitsInI32())
             {
-                cns += op2->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                op2 = op2->AsOp()->gtOp1;
+                GenTreeIntCon* addConst = op2->AsOp()->gtOp2->AsIntCon();
+
+                if (addConst->ImmedValCanBeFolded(compiler, GT_ADD) && FitsIn<INT32>(cns + addConst->IconValue()))
+                {
+                    cns += addConst->IconValue();
+                    op2 = op2->AsOp()->gtOp1;
+                }
 
                 goto AGAIN;
             }
-
             break;
 
         case GT_MUL:
@@ -2233,7 +2239,7 @@ void CodeGen::genReportEH()
 
     unsigned XTnum;
 
-    bool isCoreRTABI = compiler->IsTargetAbi(CORINFO_CORERT_ABI);
+    bool isNativeAOT = compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 
     unsigned EHCount = compiler->compHndBBtabCount;
 
@@ -2243,8 +2249,8 @@ void CodeGen::genReportEH()
     unsigned duplicateClauseCount = 0;
     unsigned enclosingTryIndex;
 
-    // Duplicate clauses are not used by CoreRT ABI
-    if (!isCoreRTABI)
+    // Duplicate clauses are not used by NativeAOT ABI
+    if (!isNativeAOT)
     {
         for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
         {
@@ -2262,8 +2268,8 @@ void CodeGen::genReportEH()
 #if FEATURE_EH_CALLFINALLY_THUNKS
     unsigned clonedFinallyCount = 0;
 
-    // Duplicate clauses are not used by CoreRT ABI
-    if (!isCoreRTABI)
+    // Duplicate clauses are not used by NativeAOT ABI
+    if (!isNativeAOT)
     {
         // We don't keep track of how many cloned finally there are. So, go through and count.
         // We do a quick pass first through the EH table to see if there are any try/finally
@@ -2343,9 +2349,9 @@ void CodeGen::genReportEH()
 
         CORINFO_EH_CLAUSE_FLAGS flags = ToCORINFO_EH_CLAUSE_FLAGS(HBtab->ebdHandlerType);
 
-        if (isCoreRTABI && (XTnum > 0))
+        if (isNativeAOT && (XTnum > 0))
         {
-            // For CoreRT, CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
+            // For NativeAOT, CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
             // try block as the previous one. The runtime cannot reliably infer this information from
             // native code offsets because of different try blocks can have same offsets. Alternative
             // solution to this problem would be inserting extra nops to ensure that different try
@@ -3000,7 +3006,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // When we have a promoted struct we have two possible LclVars that can represent the incoming argument
         // in the regArgTab[], either the original TYP_STRUCT argument or the introduced lvStructField.
         // We will use the lvStructField if we have a TYPE_INDEPENDENT promoted struct field otherwise
-        // use the the original TYP_STRUCT argument.
+        // use the original TYP_STRUCT argument.
         //
         if (varDsc->lvPromoted || varDsc->lvIsStructField)
         {
@@ -6652,7 +6658,7 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
 //
 // Note:
 //    On x64 Windows the caller always creates slots (homing space) in its frame for the
-//    first 4 arguments of a callee (register passed args). So, the the variable number
+//    first 4 arguments of a callee (register passed args). So, the variable number
 //    (lclNum) for the first argument with a stack slot is always 0.
 //    For System V systems or armarch, there is no such calling convention requirement, and the code
 //    needs to find the first stack passed argument from the caller. This is done by iterating over
@@ -8563,7 +8569,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
 //                      LiveRangeDumper
 //------------------------------------------------------------------------
 //------------------------------------------------------------------------
-// resetDumper: If the the "liveRange" has its last "VariableLiveRange" closed, it makes
+// resetDumper: If the "liveRange" has its last "VariableLiveRange" closed, it makes
 //  the "LiveRangeDumper" points to end of "liveRange" (nullptr). In other case,
 //  it makes the "LiveRangeDumper" points to the last "VariableLiveRange" of
 //  "liveRange", which is opened.
