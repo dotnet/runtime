@@ -38,7 +38,7 @@ typedef gpointer MonoInterpFrameHandle;
 	MONO_EE_CALLBACK (void, get_resume_state, (const MonoJitTlsData *jit_tls, gboolean *has_resume_state, MonoInterpFrameHandle *interp_frame, gpointer *handler_ip)) \
 	MONO_EE_CALLBACK (gboolean, run_finally, (StackFrameInfo *frame, int clause_index, gpointer handler_ip, gpointer handler_ip_end)) \
 	MONO_EE_CALLBACK (gboolean, run_filter, (StackFrameInfo *frame, MonoException *ex, int clause_index, gpointer handler_ip, gpointer handler_ip_end)) \
-	MONO_EE_CALLBACK (gboolean, run_clause_with_il_state, (gpointer il_state, int clause_index, gpointer handler_ip, gpointer handler_ip_end, MonoObject *ex, gboolean *filtered, MonoExceptionEnum clause_type)) \
+	MONO_EE_CALLBACK (gboolean, run_clause_with_il_state, (gpointer il_state, int clause_index, MonoObject *ex, gboolean *filtered)) \
 	MONO_EE_CALLBACK (void, frame_iter_init, (MonoInterpStackIter *iter, gpointer interp_exit_data)) \
 	MONO_EE_CALLBACK (gboolean, frame_iter_next, (MonoInterpStackIter *iter, StackFrameInfo *frame)) \
 	MONO_EE_CALLBACK (MonoJitInfo*, find_jit_info, (MonoMethod *method)) \
