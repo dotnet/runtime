@@ -110,8 +110,9 @@ inline void ProfilingAPIUtility::LogNoInterfaceError(REFIID iidRequested, LPCSTR
     }
     CONTRACTL_END;
 
-    FormatGuid iidStr(iidRequested);
-    ProfilingAPIUtility::LogProfError(IDS_E_PROF_NO_CALLBACK_IFACE, szCLSID, iidStr.ToUtf8());
+    GuidStringUtf8 iidUtf8;
+    GuidStringUtf8::Create(iidRequested, iidUtf8);
+    ProfilingAPIUtility::LogProfError(IDS_E_PROF_NO_CALLBACK_IFACE, szCLSID, (LPCSTR)iidUtf8);
 }
 
 #ifdef _DEBUG
@@ -175,13 +176,14 @@ inline HRESULT ProfilingAPIUtility::LoadProfilerForAttach(
     CONTRACTL_END;
 
     // Inform user we're about to try attaching the profiler
-    FormatGuid clsidStr(*pClsid);
-    ProfilingAPIUtility::LogProfInfo(IDS_PROF_ATTACH_REQUEST_RECEIVED, clsidStr.ToUtf8());
+    GuidStringUtf8 clsidUtf8;
+    GuidStringUtf8::Create(*pClsid, clsidUtf8);
+    ProfilingAPIUtility::LogProfInfo(IDS_PROF_ATTACH_REQUEST_RECEIVED, (LPCSTR)clsidUtf8);
 
     return LoadProfiler(
         kAttachLoad,
         pClsid,
-        clsidStr.ToUtf8(),
+        (LPCSTR)clsidUtf8,
         wszProfilerDLL,
         pvClientData,
         cbClientData,

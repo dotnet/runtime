@@ -567,18 +567,15 @@ HRESULT ProfilingAPIUtility::ProfilerCLSIDFromString(
 
     if (FAILED(hr))
     {
+        MAKE_UTF8PTR_FROMWIDE(badClsid, wszClsid);
         LOG((
             LF_CORPROF,
             LL_INFO10,
-            "**PROF: Invalid CLSID or ProgID (%S).  hr=0x%x.\n",
-            wszClsid,
+            "**PROF: Invalid CLSID or ProgID (%s).  hr=0x%x.\n",
+            badClsid,
             hr));
 
-        // The formatter will attempt to convert no more than the maximum GUID string
-        // length. This approach does limit the amount that will be logged, but should
-        // be enough for users to determine what went wrong.
-        FormatGuid invalidGuid(wszClsid);
-        ProfilingAPIUtility::LogProfError(IDS_E_PROF_BAD_CLSID, invalidGuid.ToUtf8(), hr);
+        ProfilingAPIUtility::LogProfError(IDS_E_PROF_BAD_CLSID, badClsid, hr);
         return hr;
     }
 
@@ -705,11 +702,12 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerForStartup()
         return hr;
     }
 
-    FormatGuid clsidStr(clsid);
+    GuidStringUtf8 clsidUtf8;
+    GuidStringUtf8::Create(clsid, clsidUtf8);
     hr = LoadProfiler(
         kStartupLoad,
         &clsid,
-        clsidStr.ToUtf8(),
+        (LPCSTR)clsidUtf8,
         wszProfilerDLL,
         NULL,               // No client data for startup load
         0);                 // No client data for startup load
@@ -738,11 +736,12 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
         LOG((LF_CORPROF, LL_INFO10, "**PROF: Profiler loading from GUID/Path stored from the IPC channel."));
         CLSID *pClsid = &(item->guid);
 
-        FormatGuid clsidStr(*pClsid);
+        GuidStringUtf8 clsidUtf8;
+        GuidStringUtf8::Create(*pClsid, clsidUtf8);
         HRESULT hr = LoadProfiler(
             kStartupLoad,
             pClsid,
-            clsidStr.ToUtf8(),
+            (LPCSTR)clsidUtf8,
             item->path.GetUnicode(),
             NULL,               // No client data for startup load
             0);                 // No client data for startup load
@@ -817,11 +816,12 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
             continue;
         }
 
-        FormatGuid clsidStr(clsid);
+        GuidStringUtf8 clsidUtf8;
+        GuidStringUtf8::Create(clsid, clsidUtf8);
         hr = LoadProfiler(
             kStartupLoad,
             &clsid,
-            clsidStr.ToUtf8(),
+            (LPCSTR)clsidUtf8,
             currentPath,
             NULL,               // No client data for startup load
             0);                 // No client data for startup load

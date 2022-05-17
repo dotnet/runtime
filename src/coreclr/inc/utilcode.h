@@ -417,42 +417,50 @@ inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
     return str;
 }
 
-class FormatGuid
+template<typename T>
+class GuidString
 {
-    char _buffer[ARRAY_SIZE("{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}")];
+    T _buffer[ARRAY_SIZE("{xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx}")];
 public:
-    FormatGuid(const GUID& guid)
+    static void Create(const GUID& g, GuidString& ret);
+
+    const T* AsString() const
     {
-        // Ensure we always have a null
-        _buffer[ARRAY_SIZE(_buffer) - 1] = '\0';
-        sprintf_s(_buffer, ARRAY_SIZE(_buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
-            guid.Data1, guid.Data2, guid.Data3,
-            guid.Data4[0], guid.Data4[1],
-            guid.Data4[2], guid.Data4[3],
-            guid.Data4[4], guid.Data4[5],
-            guid.Data4[6], guid.Data4[7]);
+        return _buffer;
     }
 
-    FormatGuid(LPCWSTR guid)
-    {
-        // Ensure we always have a null
-        _buffer[ARRAY_SIZE(_buffer) - 1] = '\0';
-
-        size_t len = wcslen(guid);
-        if (len > ARRAY_SIZE(_buffer) - 1)
-            len = ARRAY_SIZE(_buffer) - 1;
-
-        // A simple downcast is possible because all UTF-16
-        // values and UTF-8 values are the same.
-        for (size_t i = 0; i < len; ++i)
-            _buffer[i] = (char)guid[i];
-    }
-
-    const char* ToUtf8() const
+    operator const T*() const
     {
         return _buffer;
     }
 };
+
+template<>
+inline void GuidString<char>::Create(const GUID& g, GuidString& ret)
+{
+    // Ensure we always have a null
+    ret._buffer[ARRAY_SIZE(ret._buffer) - 1] = '\0';
+    sprintf_s(ret._buffer, ARRAY_SIZE(ret._buffer), "{%08x-%04x-%04x-%02x%02x-%02x%02x%02x%02x%02x%02x}",
+        g.Data1, g.Data2, g.Data3,
+        g.Data4[0], g.Data4[1],
+        g.Data4[2], g.Data4[3],
+        g.Data4[4], g.Data4[5],
+        g.Data4[6], g.Data4[7]);
+}
+
+template<>
+inline void GuidString<WCHAR>::Create(const GUID& g, GuidString& ret)
+{
+    GuidString<char> tmp;
+    GuidString<char>::Create(g, tmp);
+    const char* str = tmp;
+
+    for (size_t i = 0; i < ARRAY_SIZE(ret._buffer); ++i)
+        ret._buffer[i] = (WCHAR)str[i];
+}
+
+using GuidStringUtf8 = GuidString<char>;
+using GuidStringUtf16 = GuidString<WCHAR>;
 
 inline
 LPWSTR DuplicateString(
