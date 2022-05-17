@@ -121,36 +121,44 @@ const runtimePrivateProviderDefault : ProviderConfiguration = {
 
 const sampleProfilerProviderDefault : ProviderConfiguration = {
     name: sampleProfilerProviderName,
+    keyword_mask: "0",
     level: eventLevel.Verbose,
 };
 
-export class ProvidersConfigBuilder {
+export class SessionOptionsBuilder {
+    private _rundown?: boolean;
     private _providers: ProviderConfiguration[];
-    constructor () { this._providers = []; }
-    static get Empty ():ProvidersConfigBuilder { return new ProvidersConfigBuilder(); }
-    static get Default ():ProvidersConfigBuilder {
+    constructor () {
+        this._providers = [];
+    }
+    static get Empty ():SessionOptionsBuilder { return new SessionOptionsBuilder(); }
+    static get DefaultProviders ():SessionOptionsBuilder {
         return this.Empty.addRuntimeProvider().addRuntimePrivateProvider().addSampleProfilerProvider();
     }
-    addProvider (provider: ProviderConfiguration): ProvidersConfigBuilder {
+    setRundownEnabled(enabled: boolean): SessionOptionsBuilder {
+        this._rundown = enabled;
+        return this;
+    }
+    addProvider (provider: ProviderConfiguration): SessionOptionsBuilder {
         this._providers.push(provider);
         return this;
     }
-    addRuntimeProvider (overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder {
+    addRuntimeProvider (overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
         const options = { ...runtimeProviderDefault, ...overrideOptions };
         this._providers.push (options);
         return this;
     }
-    addRuntimePrivateProvider (overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder {
+    addRuntimePrivateProvider (overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
         const options = { ...runtimePrivateProviderDefault, ...overrideOptions };
         this._providers.push (options);
         return this;
     }
-    addSampleProfilerProvider (overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder {
+    addSampleProfilerProvider (overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
         const options = { ...sampleProfilerProviderDefault, ...overrideOptions };
         this._providers.push (options);
         return this;
     }
-    build(): string {
+    build(): EventPipeSessionOptions {
         const providers = this._providers.map (p => {
             const name = p.name;
             const keyword_mask = "" + (p?.keyword_mask ?? "");
@@ -159,7 +167,10 @@ export class ProvidersConfigBuilder {
             const maybeArgs = args != "" ? `:${args}` : "";
             return `${name}:${keyword_mask}:${level}${maybeArgs}`;
         });
-        return providers.join (",");
+        return {
+            collectRundownEvents: this._rundown,
+            providers: providers.join (",")
+        };
     }
 }
 
@@ -168,7 +179,7 @@ let totalSessions = 0;
 
 function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSessionOptions | undefined, tracePath: string): false | number {
     const defaultRundownRequested = true;
-    const defaultProviders = "";
+    const defaultProviders = ""; // empty string means use the default providers
     const defaultBufferSizeInMB = 1;
 
     const rundown = options?.collectRundownEvents ?? defaultRundownRequested;
@@ -184,7 +195,7 @@ function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSess
 
 export interface Diagnostics {
     EventLevel: EventLevel;
-    ProvidersConfigBuilder: typeof ProvidersConfigBuilder;
+    SessionOptionsBuilder: typeof SessionOptionsBuilder;
 
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
 }
@@ -193,7 +204,7 @@ export interface Diagnostics {
 /// APIs for working with .NET diagnostics from JavaScript.
 export const diagnostics: Diagnostics = {
     EventLevel: eventLevel,
-    ProvidersConfigBuilder: ProvidersConfigBuilder,
+    SessionOptionsBuilder: SessionOptionsBuilder,
     /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
     /// Use the options to control the kinds of events to be collected.
     /// Multiple sessions may be created and started at the same time.

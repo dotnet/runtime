@@ -267,20 +267,22 @@ declare type UnnamedProviderConfiguration = Partial<{
 interface ProviderConfiguration extends UnnamedProviderConfiguration {
     name: string;
 }
-declare class ProvidersConfigBuilder {
+declare class SessionOptionsBuilder {
+    private _rundown?;
     private _providers;
     constructor();
-    static get Empty(): ProvidersConfigBuilder;
-    static get Default(): ProvidersConfigBuilder;
-    addProvider(provider: ProviderConfiguration): ProvidersConfigBuilder;
-    addRuntimeProvider(overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder;
-    addRuntimePrivateProvider(overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder;
-    addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): ProvidersConfigBuilder;
-    build(): string;
+    static get Empty(): SessionOptionsBuilder;
+    static get DefaultProviders(): SessionOptionsBuilder;
+    setRundownEnabled(enabled: boolean): SessionOptionsBuilder;
+    addProvider(provider: ProviderConfiguration): SessionOptionsBuilder;
+    addRuntimeProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    addRuntimePrivateProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder;
+    build(): EventPipeSessionOptions;
 }
 interface Diagnostics {
     EventLevel: EventLevel;
-    ProvidersConfigBuilder: typeof ProvidersConfigBuilder;
+    SessionOptionsBuilder: typeof SessionOptionsBuilder;
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
 }
 
