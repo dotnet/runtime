@@ -377,6 +377,7 @@ namespace Internal.TypeSystem
 
         protected ComputedInstanceFieldLayout ComputeSequentialFieldLayout(MetadataType type, int numInstanceFields)
         {
+            if (type.Name == "ObjectHandleOnStack") System.Diagnostics.Debugger.Break();
             var offsets = new FieldAndOffset[numInstanceFields];
 
             // For types inheriting from another type, field offsets continue on from where they left off
@@ -814,6 +815,7 @@ namespace Internal.TypeSystem
                 Debug.Assert(fieldType.IsPointer || fieldType.IsFunctionPointer || fieldType.IsByRef);
                 result.Size = fieldType.Context.Target.LayoutPointerSize;
                 result.Alignment = fieldType.Context.Target.LayoutPointerSize;
+                fieldTypeHasAutoLayout = fieldType.IsByRef;
             }
 
             // For non-auto layouts, we need to respect tighter packing requests for alignment.
