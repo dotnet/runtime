@@ -1496,7 +1496,7 @@ namespace System.Net.Http
 
             string message = readingHeader
                 ? SR.Format(SR.net_http_response_headers_exceeded_length, _pool.Settings._maxResponseHeadersLength * 1024L)
-                : SR.net_http_chunk_envelope_too_large;
+                : SR.net_http_chunk_too_large;
 
             throw new HttpRequestException(message);
         }
