@@ -2567,6 +2567,7 @@ namespace System
         Default = 0,
         Forced = 1,
         Optimized = 2,
+        Aggressive = 3,
     }
     public readonly partial struct GCGenerationInfo
     {

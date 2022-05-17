@@ -23,7 +23,8 @@ namespace System
     {
         Default = 0,
         Forced = 1,
-        Optimized = 2
+        Optimized = 2,
+        Aggressive = 3,
     }
 
     // !!!!!!!!!!!!!!!!!!!!!!!
@@ -35,6 +36,7 @@ namespace System
         Blocking = 0x00000002,
         Optimized = 0x00000004,
         Compacting = 0x00000008,
+        Aggressive = 0x00000010,
     }
 
     // !!!!!!!!!!!!!!!!!!!!!!!
@@ -197,7 +199,7 @@ namespace System
                 throw new ArgumentOutOfRangeException(nameof(generation), SR.ArgumentOutOfRange_GenericPositive);
             }
 
-            if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Optimized))
+            if ((mode < GCCollectionMode.Default) || (mode > GCCollectionMode.Aggressive))
             {
                 throw new ArgumentOutOfRangeException(nameof(mode), SR.ArgumentOutOfRange_Enum);
             }
@@ -208,6 +210,13 @@ namespace System
             if (mode == GCCollectionMode.Optimized)
             {
                 iInternalModes |= (int)InternalGCCollectionMode.Optimized;
+            }
+            else if (mode == GCCollectionMode.Aggressive)
+            {
+                iInternalModes |= (int)InternalGCCollectionMode.Aggressive;
+                // TODO, andrewau, someone intentionally set these flags to false should cause an exception?
+                blocking = true;
+                compacting = true;
             }
 
             if (compacting)
