@@ -2965,6 +2965,7 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         // If node is not already marked as non-interruptible, and if are about to generate code
         // that produce GC references in temporary registers not reported, then mark the block
         // as non-interruptible.
+        // Corresponding EnableGC() will be done by the caller of this method.
         node->gtBlkOpGcUnsafe = true;
         GetEmitter()->emitDisableGC();
     }
