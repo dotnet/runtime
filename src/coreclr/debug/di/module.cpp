@@ -3529,7 +3529,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
             m_pClauses[i].TryLength = pClauses[i].TryLength;
             m_pClauses[i].HandlerOffset = pClauses[i].HandlerOffset;
             m_pClauses[i].HandlerLength = pClauses[i].HandlerLength;
-            // these two fields are a union in the image, but are seperate in the struct ICorDebug returns
+            // these two fields are a union in the image, but are separate in the struct ICorDebug returns
             m_pClauses[i].ClassToken = isFilter ? 0 : pClauses[i].ClassToken;
             m_pClauses[i].FilterOffset = isFilter ? pClauses[i].FilterOffset : 0;
         }
@@ -3564,7 +3564,7 @@ HRESULT CordbReJitILCode::Init(DacSharedReJitInfo* pSharedReJitInfo)
             m_pClauses[i].TryLength = pClauses[i].TryLength;
             m_pClauses[i].HandlerOffset = pClauses[i].HandlerOffset;
             m_pClauses[i].HandlerLength = pClauses[i].HandlerLength;
-            // these two fields are a union in the image, but are seperate in the struct ICorDebug returns
+            // these two fields are a union in the image, but are separate in the struct ICorDebug returns
             m_pClauses[i].ClassToken = isFilter ? 0 : pClauses[i].ClassToken;
             m_pClauses[i].FilterOffset = isFilter ? pClauses[i].FilterOffset : 0;
         }

@@ -1162,7 +1162,7 @@ int OBJECTREF::operator==(const OBJECTREF &objref) const
     {
         // REVISIT_TODO: Weakening the contract system a little bit here. We should really
         // add a special NULLOBJECTREF which can be used for these situations and have
-        // a seperate code path for that with the correct contract protections.
+        // a separate code path for that with the correct contract protections.
         STATIC_CONTRACT_VIOLATION(ModeViolation);
 
         VALIDATEOBJECT(objref.m_asObj);
@@ -1200,7 +1200,7 @@ int OBJECTREF::operator!=(const OBJECTREF &objref) const
     {
         // REVISIT_TODO: Weakening the contract system a little bit here. We should really
         // add a special NULLOBJECTREF which can be used for these situations and have
-        // a seperate code path for that with the correct contract protections.
+        // a separate code path for that with the correct contract protections.
         STATIC_CONTRACT_VIOLATION(ModeViolation);
 
         VALIDATEOBJECT(objref.m_asObj);

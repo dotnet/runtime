@@ -5809,7 +5809,7 @@ void WriteJitHelperCountToSTRESSLOG()
             switch (jitHelperLoggingLevel)
             {
             case 1:
-                // This will print a comma seperated list:
+                // This will print a comma separated list:
                 // CORINFO_XXX_HELPER, 10
                 // CORINFO_YYYY_HELPER, 11
                 STRESS_LOG2(logFacility, logLevel, "%s, %d\n", name, count);

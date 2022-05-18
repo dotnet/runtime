@@ -525,7 +525,7 @@ namespace Internal.TypeSystem
                             unificationGroup.AddMethodRequiringSlotUnification(methodImplRequiredToRemainInEffect);
                         }
 
-                        // Add all members from the decl's unification group except for ones that have been seperated by name/sig matches
+                        // Add all members from the decl's unification group except for ones that have been separated by name/sig matches
                         // or previously processed methodimpls. NOTE: This implies that method impls are order dependent.
                         if (separatedMethods == null || !separatedMethods.Contains(addDeclGroup.DefiningMethod))
                         {

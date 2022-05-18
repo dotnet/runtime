@@ -1887,7 +1887,7 @@ public:
 
             // The enregCount only tracks the uses of integer registers
             //
-            // We could track floating point register usage seperately
+            // We could track floating point register usage separately
             // but it isn't worth the additional complexity as floating point CSEs
             // are rare and we typically have plenty of floating point register available.
             //

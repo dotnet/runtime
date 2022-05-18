@@ -3281,7 +3281,7 @@ void Debugger::getBoundaries(MethodDesc * md,
         return;
     }
 
-    // LCG methods have their own resolution scope that is seperate from a module
+    // LCG methods have their own resolution scope that is separate from a module
     // so they shouldn't have their symbols looked up in the module PDB. Right now
     // LCG methods have no symbols so we can just early out, but if they ever
     // had some symbols attached we would need a different way of getting to them.

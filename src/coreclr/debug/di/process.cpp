@@ -6406,7 +6406,7 @@ HRESULT CordbProcess::SafeWriteThreadContext(LSPTR_CONTEXT pContext, const DT_CO
 #endif
 
 // 64 bit windows puts space for the first 6 stack parameters in the CONTEXT structure so that
-// kernel to usermode transitions don't have to allocate a CONTEXT and do a seperate sub rsp
+// kernel to usermode transitions don't have to allocate a CONTEXT and do a separate sub rsp
 // to allocate stack spill space for the arguments. This means that writing to P1Home - P6Home
 // will overwrite the arguments of some function higher on the stack, very bad. Conceptually you
 // can think of these members as not being part of the context, ie they don't represent something

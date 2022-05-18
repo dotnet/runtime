@@ -1805,7 +1805,7 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     // will not be available. Thus, we should reset the severity only if its not such a thread.
     //
     // This behaviour (of debugger doing SetIP) is not allowed on 64bit since the catch clauses are implemented
-    // as a seperate funclet and it's just not allowed to set the IP across EH scopes, such as from inside a catch
+    // as a separate funclet and it's just not allowed to set the IP across EH scopes, such as from inside a catch
     // clause to outside of the catch clause.
     bool fIsDebuggerHelperThread = (g_pDebugInterface == NULL) ? false : g_pDebugInterface->ThisIsHelperThread();
 

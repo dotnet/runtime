@@ -11,6 +11,8 @@
 // ****************************************************************************
 // Putting code & #includes, #defines, etc, before the stdafx.h will
 // cause the code,etc, to be silently ignored
+//
+
 #include "stdafx.h"
 #include "openum.h"
 #include "../inc/common.h"
@@ -22,10 +24,6 @@
 const char *GetTType( TraceType tt);
 
 #define IsSingleStep(exception) ((exception) == EXCEPTION_SINGLE_STEP)
-
-
-
-
 
 // -------------------------------------------------------------------------
 //  DebuggerController routines
@@ -4574,7 +4572,7 @@ void DebuggerPatchSkip::DebuggerDetachClean()
 
 
 //
-// We have to have a whole seperate function for this because you
+// We have to have a whole separate function for this because you
 // can't use __try in a function that requires object unwinding...
 //
 
