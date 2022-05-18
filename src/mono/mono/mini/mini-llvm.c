@@ -306,7 +306,7 @@ static LLVMIntPredicate cond_to_llvm_cond [] = {
 };
 
 static LLVMRealPredicate fpcond_to_llvm_cond [] = {
-	LLVMRealUEQ,
+	LLVMRealOEQ,
 	LLVMRealUNE,
 	LLVMRealOLE,
 	LLVMRealOGE,
@@ -8144,7 +8144,7 @@ MONO_RESTORE_WARNING
 
 			switch (ins->inst_c0) {
 			case SIMD_COMP_EQ:
-				op = LLVMRealUEQ;
+				op = LLVMRealOEQ;
 				break;
 			case SIMD_COMP_LT:
 				op = LLVMRealOLT;
