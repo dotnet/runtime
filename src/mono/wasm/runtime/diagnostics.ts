@@ -32,12 +32,12 @@ enum State {
     Done,
 }
 
-function start_streaming (sessionID: EventPipeSessionIDImpl): void {
-    cwraps.mono_wasm_event_pipe_session_start_streaming (sessionID);
+function start_streaming(sessionID: EventPipeSessionIDImpl): void {
+    cwraps.mono_wasm_event_pipe_session_start_streaming(sessionID);
 }
 
-function stop_streaming (sessionID: EventPipeSessionIDImpl): void {
-    cwraps.mono_wasm_event_pipe_session_disable (sessionID);
+function stop_streaming(sessionID: EventPipeSessionIDImpl): void {
+    cwraps.mono_wasm_event_pipe_session_disable(sessionID);
 }
 
 /// An EventPipe session that saves the event data to a file in the VFS.
@@ -46,13 +46,13 @@ class EventPipeFileSession implements EventPipeSession {
     private _sessionID: EventPipeSessionIDImpl;
     private _tracePath: string; // VFS file path to the trace file
 
-    get sessionID(): bigint { return BigInt (this._sessionID); }
+    get sessionID(): bigint { return BigInt(this._sessionID); }
 
-    constructor (sessionID: EventPipeSessionIDImpl, tracePath: string) {
+    constructor(sessionID: EventPipeSessionIDImpl, tracePath: string) {
         this._state = State.Initialized;
         this._sessionID = sessionID;
         this._tracePath = tracePath;
-        console.debug (`EventPipe session ${this.sessionID} created`);
+        console.debug(`EventPipe session ${this.sessionID} created`);
     }
 
     start = () => {
@@ -60,8 +60,8 @@ class EventPipeFileSession implements EventPipeSession {
             throw new Error(`EventPipe session ${this.sessionID} already started`);
         }
         this._state = State.Started;
-        start_streaming (this._sessionID);
-        console.debug (`EventPipe session ${this.sessionID} started`);
+        start_streaming(this._sessionID);
+        console.debug(`EventPipe session ${this.sessionID} started`);
     }
 
     stop = () => {
@@ -69,13 +69,13 @@ class EventPipeFileSession implements EventPipeSession {
             throw new Error(`cannot stop an EventPipe session in state ${this._state}, not 'Started'`);
         }
         this._state = State.Done;
-        stop_streaming (this._sessionID);
-        console.debug (`EventPipe session ${this.sessionID} stopped`);
+        stop_streaming(this._sessionID);
+        console.debug(`EventPipe session ${this.sessionID} stopped`);
     }
 
     getTraceBlob = () => {
         if (this._state !== State.Done) {
-            throw new Error (`session is in state ${this._state}, not 'Done'`);
+            throw new Error(`session is in state ${this._state}, not 'Done'`);
         }
         const data = Module.FS_readFile(this._tracePath, { encoding: "binary" }) as Uint8Array;
         return new Blob([data], { type: "application/octet-stream" });
@@ -85,7 +85,7 @@ class EventPipeFileSession implements EventPipeSession {
 // a conter for the number of sessions created
 let totalSessions = 0;
 
-function createSessionWithPtrCB (sessionIdOutPtr: VoidPtr, options: EventPipeSessionOptions | undefined, tracePath: string): false | number {
+function createSessionWithPtrCB(sessionIdOutPtr: VoidPtr, options: EventPipeSessionOptions | undefined, tracePath: string): false | number {
     const defaultRundownRequested = true;
     const defaultProviders = "";
     const defaultBufferSizeInMB = 1;
@@ -96,12 +96,12 @@ function createSessionWithPtrCB (sessionIdOutPtr: VoidPtr, options: EventPipeSes
     if (!cwraps.mono_wasm_event_pipe_enable(tracePath, defaultBufferSizeInMB, defaultProviders, rundown, sessionIdOutPtr)) {
         return false;
     } else {
-        return memory.getI32 (sessionIdOutPtr);
+        return memory.getI32(sessionIdOutPtr);
     }
 }
 
 export interface Diagnostics {
-    createEventPipeSession (options?: EventPipeSessionOptions): EventPipeSession | null;
+    createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
 }
 
 /// APIs for working with .NET diagnostics from JavaScript.
@@ -112,9 +112,9 @@ export const diagnostics: Diagnostics = {
     createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null {
         // The session trace is saved to a file in the VFS. The file name doesn't matter,
         // but we'd like it to be distinct from other traces.
-        const tracePath =`/trace-${totalSessions++}.nettrace`;
+        const tracePath = `/trace-${totalSessions++}.nettrace`;
 
-        const success = memory.withStackAlloc (sizeOfInt32, createSessionWithPtrCB, options, tracePath);
+        const success = memory.withStackAlloc(sizeOfInt32, createSessionWithPtrCB, options, tracePath);
 
         if (success === false)
             return null;

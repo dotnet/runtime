@@ -117,25 +117,25 @@ export function getF64(offset: _MemOffset): number {
 }
 
 export function getCU64(offset: _MemOffset): cuint64.CUInt64 {
-    const lo = getI32 (offset);
-    const hi = getI32 (<any>offset + 4);
+    const lo = getI32(offset);
+    const hi = getI32(<any>offset + 4);
     return cuint64.pack32(lo, hi);
 }
 
 export function setCU64(offset: _MemOffset, value: cuint64.CUInt64): void {
     const [lo, hi] = cuint64.unpack32(value);
-    setI32 (offset, lo);
-    setI32 (<any>offset + 4, hi);
+    setI32(offset, lo);
+    setI32(<any>offset + 4, hi);
 }
 
 /// Allocates a new buffer of the given size on the Emscripten stack and passes a pointer to it to the callback.
 /// Returns the result of the callback.  As usual with stack allocations, the buffer is freed when the callback returns.
 /// Do not attempt to use the stack pointer after the callback is finished.
-export function withStackAlloc<TArgs extends any[], TResult> (bytesWanted: number, f : (ptr: VoidPtr, ...userargs : [...TArgs]) => TResult, ... userargs : [... TArgs]): TResult {
+export function withStackAlloc<TArgs extends any[], TResult>(bytesWanted: number, f: (ptr: VoidPtr, ...userargs: [...TArgs]) => TResult, ...userargs: [...TArgs]): TResult {
     const sp = Module.stackSave();
-    const ptr = Module.stackAlloc (bytesWanted);
+    const ptr = Module.stackAlloc(bytesWanted);
     try {
-        return f (ptr, ... userargs);
+        return f(ptr, ...userargs);
     } finally {
         Module.stackRestore(sp);
     }
