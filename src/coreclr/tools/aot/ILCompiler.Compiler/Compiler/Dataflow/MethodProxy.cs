@@ -42,11 +42,13 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters ()
 		{
-			if (!Method.HasInstantiation)
+            var methodDef = Method.GetMethodDefinition();
+
+			if (!methodDef.HasInstantiation)
 				return ImmutableArray<GenericParameterProxy>.Empty;
 
-			var builder = ImmutableArray.CreateBuilder<GenericParameterProxy> (Method.Instantiation.Length);
-			foreach (var genericParameter in Method.Instantiation) {
+			var builder = ImmutableArray.CreateBuilder<GenericParameterProxy> (methodDef.Instantiation.Length);
+			foreach (var genericParameter in methodDef.Instantiation) {
 				builder.Add (new GenericParameterProxy ((GenericParameterDesc)genericParameter));
 			}
 

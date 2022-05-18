@@ -18,11 +18,13 @@ namespace ILLink.Shared.TypeSystemProxy
 
 		internal partial ImmutableArray<GenericParameterProxy> GetGenericParameters ()
 		{
-			if (!Type.HasInstantiation)
+            var typeDef = Type.GetTypeDefinition();
+
+			if (!typeDef.HasInstantiation)
 				return ImmutableArray<GenericParameterProxy>.Empty;
 
-			var builder = ImmutableArray.CreateBuilder<GenericParameterProxy> (Type.Instantiation.Length);
-			foreach (var genericParameter in Type.Instantiation) {
+			var builder = ImmutableArray.CreateBuilder<GenericParameterProxy> (typeDef.Instantiation.Length);
+			foreach (var genericParameter in typeDef.Instantiation) {
 				builder.Add (new GenericParameterProxy ((GenericParameterDesc)genericParameter));
 			}
 
