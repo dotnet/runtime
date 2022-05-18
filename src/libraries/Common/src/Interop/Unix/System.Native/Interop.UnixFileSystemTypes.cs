@@ -1,6 +1,8 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
+using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 
@@ -152,6 +154,7 @@ internal static partial class Interop
         {
             long fstatfsResult = GetFileSystemType(fd);
             fileSystemType = (UnixFileSystemTypes)fstatfsResult;
+            Debug.Assert(Enum.IsDefined(fileSystemType) || fstatfsResult == -1, $"GetFileSystemType returned {fstatfsResult}");
             return fstatfsResult != -1;
         }
     }
