@@ -468,7 +468,7 @@ namespace System.Runtime.InteropServices.Tests
             Assert.True(ptr != null);
             Assert.True((nuint)ptr % 8 == 0);
 
-            Random.Shared.NextBytes(new Span<byte>(ptr, (int)(size + offset)));
+            new Span<byte>(ptr, (int)(size + offset)).Fill(0b10101010);
 
             NativeMemory.ZeroMemory(ptr + offset, size);
 
