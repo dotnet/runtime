@@ -2371,8 +2371,21 @@ Function:
 (no return value)
 --*/
 BOOL
-PROCCreateCrashDump(std::vector<const char*>& argv)
+PROCCreateCrashDump(
+    std::vector<const char*>& argv,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer)
 {
+    int pipe_descs[2];
+    if (pipe(pipe_descs) == -1)
+    {
+        ERROR("PROCCreateCrashDump: pipe() FAILED %d (%s)\n", errno, strerror(errno));
+        return false;
+    }
+    // [0] is read end, [1] is write end
+    int parent_pipe = pipe_descs[0];
+    int child_pipe = pipe_descs[1];
+
     // Fork the core dump child process.
     pid_t childpid = fork();
 
@@ -2380,11 +2393,21 @@ PROCCreateCrashDump(std::vector<const char*>& argv)
     if (childpid == -1)
     {
         ERROR("PROCCreateCrashDump: fork() FAILED %d (%s)\n", errno, strerror(errno));
+        close(pipe_descs[0]);
+        close(pipe_descs[1]);
         return false;
     }
     else if (childpid == 0)
     {
-        // Child process
+        // Close the read end of the pipe, the child doesn't need it
+        close(parent_pipe);
+
+        // Only dup the child's stderr if there is error buffer
+        if (errorMessageBuffer != nullptr && cbErrorMessageBuffer > 0)
+        {
+            dup2(child_pipe, STDERR_FILENO);
+        }
+        // Execute the createdump program
         if (execve(argv[0], (char**)argv.data(), palEnvironment) == -1)
         {
             ERROR("PROCCreateCrashDump: execve() FAILED %d (%s)\n", errno, strerror(errno));
@@ -2402,6 +2425,20 @@ PROCCreateCrashDump(std::vector<const char*>& argv)
             ERROR("PROCCreateCrashDump: prctl() FAILED %d (%s)\n", errno, strerror(errno));
         }
 #endif // HAVE_PRCTL_H && HAVE_PR_SET_PTRACER
+        close(child_pipe);
+
+        // Read createdump's stderr messages (if any)
+        if (errorMessageBuffer != nullptr && cbErrorMessageBuffer > 0)
+        {
+            // Read createdump's stderr
+            int count = read(parent_pipe, errorMessageBuffer, cbErrorMessageBuffer - 1);
+            if (count > 0)
+            {
+                errorMessageBuffer[count] = 0;
+            }
+        }
+        close(parent_pipe);
+
         // Parent waits until the child process is done
         int wstatus = 0;
         int result = waitpid(childpid, &wstatus, 0);
@@ -2509,7 +2546,9 @@ BOOL
 PAL_GenerateCoreDump(
     LPCSTR dumpName,
     INT dumpType,
-    ULONG32 flags)
+    ULONG32 flags,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer)
 {
     std::vector<const char*> argvCreateDump;
 
@@ -2526,7 +2565,7 @@ PAL_GenerateCoreDump(
     BOOL result = PROCBuildCreateDumpCommandLine(argvCreateDump, &program, &pidarg, dumpName, nullptr, dumpType, flags);
     if (result)
     {
-        result = PROCCreateCrashDump(argvCreateDump);
+        result = PROCCreateCrashDump(argvCreateDump, errorMessageBuffer, cbErrorMessageBuffer);
     }
     free(program);
     free(pidarg);
@@ -2578,7 +2617,7 @@ PROCCreateCrashDumpIfEnabled(int signal)
             argv.push_back(nullptr);
         }
 
-        PROCCreateCrashDump(argv);
+        PROCCreateCrashDump(argv, nullptr, 0);
 
         free(signalArg);
         free(crashThreadArg);

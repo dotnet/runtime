@@ -4101,7 +4101,10 @@ LaunchCreateDump(LPCWSTR lpCommandLine)
         if (WszCreateProcess(NULL, lpCommandLine, NULL, NULL, TRUE, 0, NULL, NULL, &StartupInfo, &processInformation))
         {
             WaitForSingleObject(processInformation.hProcess, INFINITE);
-            fSuccess = true;
+
+            DWORD exitCode = 0;
+            GetExitCodeProcess(processInformation.hProcess, &exitCode);
+            fSuccess = exitCode == 0;
         }
     }
     EX_CATCH
@@ -4176,7 +4179,9 @@ InitializeCrashDump()
 bool GenerateDump(
     LPCWSTR dumpName,
     INT dumpType,
-    ULONG32 flags)
+    ULONG32 flags,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer)
 {
 #ifdef TARGET_UNIX
     MAKE_UTF8PTR_FROMWIDE_NOTHROW (dumpNameUtf8, dumpName);
@@ -4186,7 +4191,7 @@ bool GenerateDump(
     }
     else
     {
-        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags);
+        return PAL_GenerateCoreDump(dumpNameUtf8, dumpType, flags, errorMessageBuffer, cbErrorMessageBuffer);
     }
 #else // TARGET_UNIX
     return GenerateCrashDump(dumpName, dumpType, flags & GenerateDumpFlagsLoggingEnabled);
