@@ -45,8 +45,13 @@ public class WasmAppHost
         {
             CommonConfiguration commonConfig = CommonConfiguration.FromCommandLineArguments(args);
             return !s_hostHandlers.TryGetValue(commonConfig.Host, out HostHandler? handler)
-                ? throw new Exception($"Cannot find any handler for host type {commonConfig.Host}")
+                ? throw new CommandLineException($"Cannot find any handler for host type {commonConfig.Host}")
                 : await handler(commonConfig, loggerFactory, logger, cts.Token);
+        }
+        catch (CommandLineException cle)
+        {
+            Console.WriteLine($"Error: {cle.Message}");
+            return -1;
         }
         catch (OptionException oe)
         {

@@ -45,7 +45,7 @@ internal sealed class JSEngineHost
             WasmHost.JavaScriptCore => "jsc",
             WasmHost.SpiderMonkey => "sm",
             WasmHost.NodeJS => "node",
-            _ => throw new ArgumentException($"Unsupported engine {_args.Host}")
+            _ => throw new CommandLineException($"Unsupported engine {_args.Host}")
         };
 
         if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
@@ -57,7 +57,7 @@ internal sealed class JSEngineHost
         }
 
         if (_args.CommonConfig.Debugging)
-            throw new Exception($"Debugging not supported with {_args.Host}");
+            throw new CommandLineException($"Debugging not supported with {_args.Host}");
 
         var args = new List<string>();
 
