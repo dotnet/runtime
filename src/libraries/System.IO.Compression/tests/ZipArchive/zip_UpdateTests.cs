@@ -338,5 +338,18 @@ namespace System.IO.Compression.Tests
                 Assert.Equal(0, compressionMethod); // stored => 0, deflate => 8
             }
         }
+
+        [Fact]
+        public void Update_VerifyDuplicateEntriesAreAllowed()
+        {
+            using var ms = new MemoryStream();
+            using var archive = new ZipArchive(ms, ZipArchiveMode.Update);
+
+            string entryName = "foo";
+            AddEntry(archive, entryName, contents: "xxx", DateTimeOffset.Now);
+            AddEntry(archive, entryName, contents: "yyy", DateTimeOffset.Now);
+
+            Assert.Equal(2, archive.Entries.Count);
+        }
     }
 }

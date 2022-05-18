@@ -191,6 +191,23 @@ namespace System.IO.Compression.Tests
             AssertUnicodeFileNameAndComment(ms, isUnicodeFlagExpected);
         }
 
+        [Fact]
+        public void Create_VerifyDuplicateEntriesAreAllowed()
+        {
+            using var ms = new MemoryStream();
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                string entryName = "foo";
+                AddEntry(archive, entryName, contents: "xxx", DateTimeOffset.Now);
+                AddEntry(archive, entryName, contents: "yyy", DateTimeOffset.Now);
+            }
+
+            using (var archive = new ZipArchive(ms, ZipArchiveMode.Update))
+            {
+                Assert.Equal(2, archive.Entries.Count);
+            }
+        }
+
         private static string ReadStringFromSpan(Span<byte> input)
         {
             return Text.Encoding.UTF8.GetString(input.ToArray());
