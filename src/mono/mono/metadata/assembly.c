@@ -1555,7 +1555,7 @@ mono_assembly_open_full (const char *filename, MonoImageOpenStatus *status, gboo
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_NOT_SUPPORTED;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
@@ -1866,7 +1866,7 @@ mono_assembly_load_from_full (MonoImage *image, const char*fname,
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_NOT_SUPPORTED;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
@@ -2819,7 +2819,7 @@ mono_assembly_load_full (MonoAssemblyName *aname, const char *basedir, MonoImage
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_NOT_SUPPORTED;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	MonoAssembly *res;
