@@ -1843,7 +1843,7 @@ namespace System.Text.RegularExpressions.Generator
                     // Backtrack section
                     string backtrack = ReserveName("ConditionalBackreferenceBacktrack");
                     doneLabel = backtrack;
-                    MarkLabel(backtrack);
+                    MarkLabel(backtrack, emitSemicolon: false);
 
                     // Pop from the stack the branch that was used and jump back to its backtracking location.
                     // If we're not in a loop, though, we won't have pushed it on to the stack as nothing will
@@ -3195,7 +3195,14 @@ namespace System.Text.RegularExpressions.Generator
                     return;
                 }
 
-                Debug.Assert(!rm.Analysis.IsAtomicByAncestor(node), "An atomic lazy should have had its upper bound lowered to its lower bound.");
+                // We should only be here if the lazy loop isn't atomic due to an ancestor, as the optimizer should
+                // in such a case have lowered the loop's upper bound to its lower bound, at which point it would
+                // have been handled by the above delegation to EmitLoop.  However, if the optimizer missed doing so,
+                // this loop could still be considered atomic by ancestor by its parent nodes, in which case we want
+                // to make sure the code emitted here conforms (e.g. doesn't leave any state erroneously on the stack).
+                // So, we assert it's not atomic, but still handle that case.
+                bool isAtomic = rm.Analysis.IsAtomicByAncestor(node);
+                Debug.Assert(!isAtomic, "An atomic lazy should have had its upper bound lowered to its lower bound.");
 
                 // We might loop any number of times.  In order to ensure this loop and subsequent code sees sliceStaticPos
                 // the same regardless, we always need it to contain the same value, and the easiest such value is 0.
@@ -3231,205 +3238,209 @@ namespace System.Text.RegularExpressions.Generator
                 writer.WriteLine();
 
                 // Iteration body
-                MarkLabel(body, emitSemicolon: false);
+                MarkLabel(body, emitSemicolon: isAtomic);
 
                 // In case iterations are backtracked through and unwound, we need to store the current position (so that
                 // matching can resume from that location), the current crawl position if captures are possible (so that
                 // we can uncapture back to that position), and both the starting position from the iteration we're leaving
                 // and whether we've seen an empty iteration (if iterations may be empty).  Since there can be multiple
                 // iterations, this state needs to be stored on to the backtracking stack.
-                int entriesPerIteration = 1/*pos*/ + (iterationMayBeEmpty ? 2/*startingPos+sawEmpty*/ : 0) + (expressionHasCaptures ? 1/*Crawlpos*/ : 0);
-                EmitStackPush(
-                    expressionHasCaptures && iterationMayBeEmpty ? new[] { "pos", startingPos!, sawEmpty!, "base.Crawlpos()" } :
-                    iterationMayBeEmpty ? new[] { "pos", startingPos!, sawEmpty! } :
-                    expressionHasCaptures ? new[] { "pos", "base.Crawlpos()" } :
-                    new[] { "pos" });
-
-                if (iterationMayBeEmpty)
+                if (!isAtomic)
                 {
-                    // We need to store the current pos so we can compare it against pos after the iteration, in order to
-                    // determine whether the iteration was empty.
-                    writer.WriteLine($"{startingPos} = pos;");
-                }
-
-                // Proactively increase the number of iterations.  We do this prior to the match rather than once
-                // we know it's successful, because we need to decrement it as part of a failed match when
-                // backtracking; it's thus simpler to just always decrement it as part of a failed match, even
-                // when initially greedily matching the loop, which then requires we increment it before trying.
-                writer.WriteLine($"{iterationCount}++;");
-
-                // Last but not least, we need to set the doneLabel that a failed match of the body will jump to.
-                // Such an iteration match failure may or may not fail the whole operation, depending on whether
-                // we've already matched the minimum required iterations, so we need to jump to a location that
-                // will make that determination.
-                string iterationFailedLabel = ReserveName("LazyLoopIterationNoMatch");
-                doneLabel = iterationFailedLabel;
-
-                // Finally, emit the child.
-                Debug.Assert(sliceStaticPos == 0);
-                writer.WriteLine();
-                EmitNode(child);
-                writer.WriteLine();
-                TransferSliceStaticPosToPos(); // ensure sliceStaticPos remains 0
-                if (doneLabel == iterationFailedLabel)
-                {
-                    doneLabel = originalDoneLabel;
-                }
-
-                // Loop condition.  Continue iterating if we've not yet reached the minimum.  We just successfully
-                // matched an iteration, so the only reason we'd need to forcefully loop around again is if the
-                // minimum were at least 2.
-                if (minIterations >= 2)
-                {
-                    writer.WriteLine($"// The lazy loop requires a minimum of {minIterations} iterations. If that many haven't yet matched, loop now.");
-                    using (EmitBlock(writer, $"if ({CountIsLessThan(iterationCount, minIterations)})"))
-                    {
-                        Goto(body);
-                    }
-                }
-
-                if (iterationMayBeEmpty)
-                {
-                    // If the last iteration was empty, we need to prevent further iteration from this point
-                    // unless we backtrack out of this iteration.
-                    writer.WriteLine("// If the iteration successfully matched zero-length input, record that an empty iteration was seen.");
-                    using (EmitBlock(writer, $"if (pos == {startingPos})"))
-                    {
-                        writer.WriteLine($"{sawEmpty} = 1 /* true */;");
-                    }
-                    writer.WriteLine();
-                }
-
-                // We matched the next iteration.  Jump to the subsequent code.
-                Goto(endLoop);
-                writer.WriteLine();
-
-                // Now handle what happens when an iteration fails (and since a lazy loop only executes an iteration
-                // when it's required to satisfy the loop by definition of being lazy, the loop is failing).  We need
-                // to reset state to what it was before just that iteration started.  That includes resetting pos and
-                // clearing out any captures from that iteration.
-                writer.WriteLine("// The lazy loop iteration failed to match.");
-                MarkLabel(iterationFailedLabel, emitSemicolon: false);
-                if (doneLabel != originalDoneLabel || !GotoWillExitMatch(originalDoneLabel)) // we don't need to back anything out if we're about to exit TryMatchAtCurrentPosition anyway.
-                {
-                    // Fail this loop iteration, including popping state off the backtracking stack that was pushed
-                    // on as part of the failing iteration.
-                    writer.WriteLine($"{iterationCount}--;");
-                    if (expressionHasCaptures)
-                    {
-                        EmitUncaptureUntil(StackPop());
-                    }
-                    EmitStackPop(iterationMayBeEmpty ?
-                        new[] { sawEmpty!, startingPos!, "pos" } :
+                    int entriesPerIteration = 1/*pos*/ + (iterationMayBeEmpty ? 2/*startingPos+sawEmpty*/ : 0) + (expressionHasCaptures ? 1/*Crawlpos*/ : 0);
+                    EmitStackPush(
+                        expressionHasCaptures && iterationMayBeEmpty ? new[] { "pos", startingPos!, sawEmpty!, "base.Crawlpos()" } :
+                        iterationMayBeEmpty ? new[] { "pos", startingPos!, sawEmpty! } :
+                        expressionHasCaptures ? new[] { "pos", "base.Crawlpos()" } :
                         new[] { "pos" });
-                    SliceInputSpan();
 
-                    // If the loop's child doesn't backtrack, then this loop has failed.
-                    // If the loop's child does backtrack, we need to backtrack back into the previous iteration if there was one.
-                    if (doneLabel == originalDoneLabel)
+                    if (iterationMayBeEmpty)
                     {
-                        // Since the only reason we'd end up revisiting previous iterations of the lazy loop is if the child had backtracking constructs
-                        // we'd backtrack into, and the child doesn't, the whole loop is failed and done. If we successfully processed any iterations,
-                        // we thus need to pop all of the state we pushed onto the stack for those iterations, as we're exiting out to the parent who
-                        // will expect the stack to be cleared of any child state.
-                        Debug.Assert(entriesPerIteration >= 1);
-                        writer.WriteLine(entriesPerIteration > 1 ?
-                            $"stackpos -= {iterationCount} * {entriesPerIteration};" :
-                            $"stackpos -= {iterationCount};");
+                        // We need to store the current pos so we can compare it against pos after the iteration, in order to
+                        // determine whether the iteration was empty.
+                        writer.WriteLine($"{startingPos} = pos;");
                     }
-                    else
+
+                    // Proactively increase the number of iterations.  We do this prior to the match rather than once
+                    // we know it's successful, because we need to decrement it as part of a failed match when
+                    // backtracking; it's thus simpler to just always decrement it as part of a failed match, even
+                    // when initially greedily matching the loop, which then requires we increment it before trying.
+                    writer.WriteLine($"{iterationCount}++;");
+
+                    // Last but not least, we need to set the doneLabel that a failed match of the body will jump to.
+                    // Such an iteration match failure may or may not fail the whole operation, depending on whether
+                    // we've already matched the minimum required iterations, so we need to jump to a location that
+                    // will make that determination.
+                    string iterationFailedLabel = ReserveName("LazyLoopIterationNoMatch");
+                    doneLabel = iterationFailedLabel;
+
+                    // Finally, emit the child.
+                    Debug.Assert(sliceStaticPos == 0);
+                    writer.WriteLine();
+                    EmitNode(child);
+                    writer.WriteLine();
+                    TransferSliceStaticPosToPos(); // ensure sliceStaticPos remains 0
+                    if (doneLabel == iterationFailedLabel)
                     {
-                        // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
-                        // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
-                        writer.WriteLine($"// If the lazy loop has matched any iterations, backtrack into the last one.");
-                        using (EmitBlock(writer, $"if ({iterationCount} > 0)"))
+                        doneLabel = originalDoneLabel;
+                    }
+
+                    // Loop condition.  Continue iterating if we've not yet reached the minimum.  We just successfully
+                    // matched an iteration, so the only reason we'd need to forcefully loop around again is if the
+                    // minimum were at least 2.
+                    if (minIterations >= 2)
+                    {
+                        writer.WriteLine($"// The lazy loop requires a minimum of {minIterations} iterations. If that many haven't yet matched, loop now.");
+                        using (EmitBlock(writer, $"if ({CountIsLessThan(iterationCount, minIterations)})"))
                         {
-                            Goto(doneLabel);
+                            Goto(body);
+                        }
+                    }
+
+                    if (iterationMayBeEmpty)
+                    {
+                        // If the last iteration was empty, we need to prevent further iteration from this point
+                        // unless we backtrack out of this iteration.
+                        writer.WriteLine("// If the iteration successfully matched zero-length input, record that an empty iteration was seen.");
+                        using (EmitBlock(writer, $"if (pos == {startingPos})"))
+                        {
+                            writer.WriteLine($"{sawEmpty} = 1 /* true */;");
                         }
                         writer.WriteLine();
                     }
+
+                    // We matched the next iteration.  Jump to the subsequent code.
+                    Goto(endLoop);
+                    writer.WriteLine();
+
+                    // Now handle what happens when an iteration fails (and since a lazy loop only executes an iteration
+                    // when it's required to satisfy the loop by definition of being lazy, the loop is failing).  We need
+                    // to reset state to what it was before just that iteration started.  That includes resetting pos and
+                    // clearing out any captures from that iteration.
+                    writer.WriteLine("// The lazy loop iteration failed to match.");
+                    MarkLabel(iterationFailedLabel, emitSemicolon: false);
+                    if (doneLabel != originalDoneLabel || !GotoWillExitMatch(originalDoneLabel)) // we don't need to back anything out if we're about to exit TryMatchAtCurrentPosition anyway.
+                    {
+                        // Fail this loop iteration, including popping state off the backtracking stack that was pushed
+                        // on as part of the failing iteration.
+                        writer.WriteLine($"{iterationCount}--;");
+                        if (expressionHasCaptures)
+                        {
+                            EmitUncaptureUntil(StackPop());
+                        }
+                        EmitStackPop(iterationMayBeEmpty ?
+                            new[] { sawEmpty!, startingPos!, "pos" } :
+                            new[] { "pos" });
+                        SliceInputSpan();
+
+                        // If the loop's child doesn't backtrack, then this loop has failed.
+                        // If the loop's child does backtrack, we need to backtrack back into the previous iteration if there was one.
+                        if (doneLabel == originalDoneLabel)
+                        {
+                            // Since the only reason we'd end up revisiting previous iterations of the lazy loop is if the child had backtracking constructs
+                            // we'd backtrack into, and the child doesn't, the whole loop is failed and done. If we successfully processed any iterations,
+                            // we thus need to pop all of the state we pushed onto the stack for those iterations, as we're exiting out to the parent who
+                            // will expect the stack to be cleared of any child state.
+                            Debug.Assert(entriesPerIteration >= 1);
+                            writer.WriteLine(entriesPerIteration > 1 ?
+                                $"stackpos -= {iterationCount} * {entriesPerIteration};" :
+                                $"stackpos -= {iterationCount};");
+                        }
+                        else
+                        {
+                            // The child has backtracking constructs.  If we have no successful iterations previously processed, just bail.
+                            // If we do have successful iterations previously processed, however, we need to backtrack back into the last one.
+                            writer.WriteLine($"// If the lazy loop has matched any iterations, backtrack into the last one.");
+                            using (EmitBlock(writer, $"if ({iterationCount} > 0)"))
+                            {
+                                Goto(doneLabel);
+                            }
+                            writer.WriteLine();
+                        }
+                    }
+                    Goto(originalDoneLabel);
+                    writer.WriteLine();
+
+                    MarkLabel(endLoop, emitSemicolon: false);
+
+                    // If the lazy loop is not atomic, then subsequent code may backtrack back into this lazy loop, either
+                    // causing it to add additional iterations, or backtracking into existing iterations and potentially
+                    // unwinding them.  We need to do a timeout check, and then determine whether to branch back to add more
+                    // iterations (if we haven't hit the loop's maximum iteration count and haven't seen an empty iteration)
+                    // or unwind by branching back to the last backtracking location.  Either way, we need a dedicated
+                    // backtracking section that a subsequent construct will see as its backtracking target.
+
+                    // We need to ensure that some state (e.g. iteration count) is persisted if we're backtracked to.
+                    // We also need to push the current position, so that subsequent iterations pick up at the right
+                    // point (and subsequent expressions are almost certain to have changed the current pos). However,
+                    // if we're not inside of a loop, the other local's used for this construct are sufficient, as nothing
+                    // else will overwrite them between now and when backtracking occurs.  If, however, we are inside
+                    // of another loop, then any number of iterations might have such state that needs to be stored,
+                    // and thus it needs to be pushed on to the backtracking stack.
+                    bool isInLoop = rm.Analysis.IsInLoop(node);
+                    EmitStackPush(
+                        !isInLoop ? new[] { "pos" } :
+                        iterationMayBeEmpty ? new[] { "pos", iterationCount, startingPos!, sawEmpty! } :
+                        new[] { "pos", iterationCount });
+
+                    string skipBacktrack = ReserveName("LazyLoopSkipBacktrack");
+                    Goto(skipBacktrack);
+                    writer.WriteLine();
+
+                    // Emit a backtracking section that checks the timeout, restores the loop's state, and jumps to
+                    // the appropriate label.
+                    string backtrack = ReserveName($"LazyLoopBacktrack");
+                    MarkLabel(backtrack, emitSemicolon: false);
+
+                    // We're backtracking.  Check the timeout.
+                    EmitTimeoutCheckIfNeeded(writer, rm);
+
+                    EmitStackPop(
+                        !isInLoop ? new[] { "pos" } :
+                        iterationMayBeEmpty ? new[] { sawEmpty!, startingPos!, iterationCount, "pos" } :
+                        new[] { iterationCount, "pos" });
+                    SliceInputSpan();
+
+                    // Determine where to branch, either back to the lazy loop body to add an additional iteration,
+                    // or to the last backtracking label.
+                    if (maxIterations != int.MaxValue || iterationMayBeEmpty)
+                    {
+                        FinishEmitBlock clause;
+
+                        if (maxIterations == int.MaxValue)
+                        {
+                            // If the last iteration matched empty, backtrack.
+                            writer.WriteLine("// If the last iteration matched empty, don't continue lazily iterating. Instead, backtrack.");
+                            clause = EmitBlock(writer, $"if ({sawEmpty} != 0)");
+                        }
+                        else if (iterationMayBeEmpty)
+                        {
+                            // If the last iteration matched empty or if we've reached our upper bound, backtrack.
+                            writer.WriteLine($"// If the upper bound {maxIterations} has already been reached, or if the last");
+                            writer.WriteLine($"// iteration matched empty, don't continue lazily iterating. Instead, backtrack.");
+                            clause = EmitBlock(writer, $"if ({CountIsGreaterThanOrEqualTo(iterationCount, maxIterations)} || {sawEmpty} != 0)");
+                        }
+                        else
+                        {
+                            // If we've reached our upper bound, backtrack.
+                            writer.WriteLine($"// If the upper bound {maxIterations} has already been reached,");
+                            writer.WriteLine($"// don't continue lazily iterating. Instead, backtrack.");
+                            clause = EmitBlock(writer, $"if ({CountIsGreaterThanOrEqualTo(iterationCount, maxIterations)})");
+                        }
+
+                        using (clause)
+                        {
+                            Goto(doneLabel);
+                        }
+                    }
+
+                    // Otherwise, try to match another iteration.
+                    Goto(body);
+                    writer.WriteLine();
+
+                    doneLabel = backtrack;
+                    MarkLabel(skipBacktrack);
                 }
-                Goto(originalDoneLabel);
-                writer.WriteLine();
-
-                MarkLabel(endLoop, emitSemicolon: false);
-
-                // The lazy loop is not atomic, so subsequent code may backtrack back into this lazy loop, either
-                // causing it to add additional iterations, or backtracking into existing iterations and potentially
-                // unwinding them.  We need to do a timeout check, and then determine whether to branch back to add more
-                // iterations (if we haven't hit the loop's maximum iteration count and haven't seen an empty iteration)
-                // or unwind by branching back to the last backtracking location.  Either way, we need a dedicated
-                // backtracking section that a subsequent construct will see as its backtracking target.
-
-                // We need to ensure that some state (e.g. iteration count) is persisted if we're backtracked to.
-                // We also need to push the current position, so that subsequent iterations pick up at the right
-                // point (and subsequent expressions are almost certain to have changed the current pos). However,
-                // if we're not inside of a loop, the other local's used for this construct are sufficient, as nothing
-                // else will overwrite them between now and when backtracking occurs.  If, however, we are inside
-                // of another loop, then any number of iterations might have such state that needs to be stored,
-                // and thus it needs to be pushed on to the backtracking stack.
-                EmitStackPush(
-                    !rm.Analysis.IsInLoop(node) ? new[] { "pos" } :
-                    iterationMayBeEmpty ? new[] { "pos", iterationCount, startingPos!, sawEmpty! } :
-                    new[] { "pos", iterationCount });
-
-                string skipBacktrack = ReserveName("LazyLoopSkipBacktrack");
-                Goto(skipBacktrack);
-                writer.WriteLine();
-
-                // Emit a backtracking section that checks the timeout, restores the loop's state, and jumps to
-                // the appropriate label.
-                string backtrack = ReserveName($"LazyLoopBacktrack");
-                MarkLabel(backtrack, emitSemicolon: false);
-
-                // We're backtracking.  Check the timeout.
-                EmitTimeoutCheckIfNeeded(writer, rm);
-
-                EmitStackPop(
-                    !rm.Analysis.IsInLoop(node) ? new[] { "pos" } :
-                    iterationMayBeEmpty ? new[] { sawEmpty!, startingPos!, iterationCount, "pos" } :
-                    new[] { iterationCount, "pos" });
-                SliceInputSpan();
-
-                // Determine where to branch, either back to the lazy loop body to add an additional iteration,
-                // or to the last backtracking label.
-                if (maxIterations != int.MaxValue || iterationMayBeEmpty)
-                {
-                    FinishEmitBlock clause;
-
-                    if (maxIterations == int.MaxValue)
-                    {
-                        // If the last iteration matched empty, backtrack.
-                        writer.WriteLine("// If the last iteration matched empty, don't continue lazily iterating. Instead, backtrack.");
-                        clause = EmitBlock(writer, $"if ({sawEmpty} != 0)");
-                    }
-                    else if (iterationMayBeEmpty)
-                    {
-                        // If the last iteration matched empty or if we've reached our upper bound, backtrack.
-                        writer.WriteLine($"// If the upper bound {maxIterations} has already been reached, or if the last");
-                        writer.WriteLine($"// iteration matched empty, don't continue lazily iterating. Instead, backtrack.");
-                        clause = EmitBlock(writer, $"if ({CountIsGreaterThanOrEqualTo(iterationCount, maxIterations)} || {sawEmpty} != 0)");
-                    }
-                    else
-                    {
-                        // If we've reached our upper bound, backtrack.
-                        writer.WriteLine($"// If the upper bound {maxIterations} has already been reached,");
-                        writer.WriteLine($"// don't continue lazily iterating. Instead, backtrack.");
-                        clause = EmitBlock(writer, $"if ({CountIsGreaterThanOrEqualTo(iterationCount, maxIterations)})");
-                    }
-
-                    using (clause)
-                    {
-                        Goto(doneLabel);
-                    }
-                }
-
-                // Otherwise, try to match another iteration.
-                Goto(body);
-                writer.WriteLine();
-
-                doneLabel = backtrack;
-                MarkLabel(skipBacktrack);
             }
 
             // Emits the code to handle a loop (repeater) with a fixed number of iterations.
@@ -4007,14 +4018,14 @@ namespace System.Text.RegularExpressions.Generator
                 if (isAtomic)
                 {
                     doneLabel = originalDoneLabel;
-                    MarkLabel(endLoop);
+                    MarkLabel(endLoop, emitSemicolon: startingStackpos is null);
 
                     // The loop is atomic, which means any backtracking will go around this loop.  That also means we can't leave
                     // stack polluted with state from successful iterations, so we need to remove all such state; such state will
                     // only have been pushed if minIterations > 0.
                     if (startingStackpos is not null)
                     {
-                        writer.WriteLine($"stackpos = {startingStackpos};");
+                        writer.WriteLine($"stackpos = {startingStackpos}; // Ensure any remaining backtracking state is removed.");
                     }
                 }
                 else
