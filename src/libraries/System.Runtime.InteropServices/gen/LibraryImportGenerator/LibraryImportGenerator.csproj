@@ -4,7 +4,6 @@
     <AssemblyName>Microsoft.Interop.LibraryImportGenerator</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <IsRoslynComponent>true</IsRoslynComponent>
     <RunAnalyzers>true</RunAnalyzers>

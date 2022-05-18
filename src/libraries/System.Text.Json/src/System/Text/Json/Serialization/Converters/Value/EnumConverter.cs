@@ -47,7 +47,7 @@ namespace System.Text.Json.Serialization.Converters
             _namingPolicy = namingPolicy;
             _nameCache = new ConcurrentDictionary<ulong, JsonEncodedText>();
 
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
             string[] names = Enum.GetNames<T>();
             T[] values = Enum.GetValues<T>();
 #else
@@ -65,7 +65,7 @@ namespace System.Text.Json.Serialization.Converters
                     break;
                 }
 
-#if NET6_0_OR_GREATER
+#if NETCOREAPP
                 T value = values[i];
 #else
                 T value = (T)values.GetValue(i)!;

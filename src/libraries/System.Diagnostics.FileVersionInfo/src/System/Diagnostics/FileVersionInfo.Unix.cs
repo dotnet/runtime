@@ -234,7 +234,7 @@ namespace System.Diagnostics
             for (int index = 0; index < s.Length; index++)
             {
                 char c = s[index];
-                if (c < '0' || c > '9')
+                if (!char.IsAsciiDigit(c))
                 {
                     endedEarly = true;
                     break;

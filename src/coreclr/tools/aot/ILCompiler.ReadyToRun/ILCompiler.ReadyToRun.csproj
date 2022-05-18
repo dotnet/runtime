@@ -165,8 +165,6 @@
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NewObjectFixupSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\NibbleWriter.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\PrecodeHelperImport.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ProfileDataNode.cs" />
-    <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ProfileDataSectionNode.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunHelperSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\ReadyToRunInstructionSetSupportSignature.cs" />
     <Compile Include="Compiler\DependencyAnalysis\ReadyToRun\RuntimeFunctionsGCInfoNode.cs" />
