@@ -1772,7 +1772,7 @@ namespace System.Net.Sockets.Tests
         #endregion ReceiveFrom Async/Event
 
         [Fact]
-        [PlatformSpecific(TestPlatforms.OSX)]  // ReceiveFromAsync not supported on OSX
+        [PlatformSpecific(TestPlatforms.OSX | TestPlatforms.MacCatalyst | TestPlatforms.iOS | TestPlatforms.tvOS)]  // ReceiveFromAsync not supported on Apple platforms
         public void ReceiveFromAsync_NotSupported()
         {
             using (Socket sock = new Socket(SocketType.Dgram, ProtocolType.Udp))
