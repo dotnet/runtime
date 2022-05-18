@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.X509Certificates
             return (c == ' ' || (c >= 0x09 && c <= 0x0D));
         }
 
-        private static void AppendOid(StringBuilder decodedName, string oidValue)
+        private static void AppendOid(ref ValueStringBuilder decodedName, string oidValue)
         {
             Oid oid = new Oid(oidValue);
 
