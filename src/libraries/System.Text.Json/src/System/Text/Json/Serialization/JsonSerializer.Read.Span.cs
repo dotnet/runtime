@@ -88,6 +88,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return ReadFromSpan<TValue>(utf8Json, jsonTypeInfo);
         }
 
@@ -125,6 +126,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return ReadFromSpan<object?>(utf8Json, GetTypeInfo(context, returnType));
         }
     }

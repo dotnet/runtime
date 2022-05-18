@@ -105,6 +105,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return ReadDocument<TValue>(document, jsonTypeInfo);
         }
 
@@ -159,6 +160,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return ReadDocument<object?>(document, jsonTypeInfo);
         }

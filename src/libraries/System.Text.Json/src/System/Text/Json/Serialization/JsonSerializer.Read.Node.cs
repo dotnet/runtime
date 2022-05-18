@@ -29,6 +29,7 @@ namespace System.Text.Json
         [RequiresDynamicCode(SerializationRequiresDynamicCodeMessage)]
         public static TValue? Deserialize<TValue>(this JsonNode? node, JsonSerializerOptions? options = null)
         {
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(options, typeof(TValue));
             return ReadNode<TValue>(node, jsonTypeInfo);
         }
@@ -84,6 +85,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return ReadNode<TValue>(node, jsonTypeInfo);
         }
 
@@ -130,6 +132,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return ReadNode<object?>(node, jsonTypeInfo);
         }

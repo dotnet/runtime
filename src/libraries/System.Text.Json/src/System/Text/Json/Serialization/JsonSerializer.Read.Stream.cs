@@ -8,7 +8,6 @@ using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Text.Json.Serialization;
-using System.Text.Json.Serialization.Converters;
 using System.Text.Json.Serialization.Metadata;
 using System.Threading;
 using System.Threading.Tasks;
@@ -210,6 +209,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return ReadAllAsync<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 
@@ -246,6 +246,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return ReadAll<TValue>(utf8Json, jsonTypeInfo);
         }
 
@@ -295,6 +296,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return ReadAllAsync<object>(utf8Json, GetTypeInfo(context, returnType), cancellationToken);
         }
 
@@ -340,6 +342,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return ReadAll<object>(utf8Json, GetTypeInfo(context, returnType));
         }
 
@@ -406,6 +409,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return CreateAsyncEnumerableDeserializer<TValue>(utf8Json, jsonTypeInfo, cancellationToken);
         }
 

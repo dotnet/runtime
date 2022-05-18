@@ -190,6 +190,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return WriteStreamAsync(utf8Json, value, jsonTypeInfo, cancellationToken);
         }
 
@@ -221,6 +222,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             WriteStream(utf8Json, value, jsonTypeInfo);
         }
 
@@ -259,6 +261,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             return WriteStreamAsync(
                 utf8Json,
@@ -299,6 +302,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             WriteStream(utf8Json, value!, GetTypeInfo(context, runtimeType));
         }

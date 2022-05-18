@@ -216,6 +216,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return ReadFromSpan<TValue?>(json.AsSpan(), jsonTypeInfo);
         }
 
@@ -257,6 +258,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return ReadFromSpan<TValue?>(json, jsonTypeInfo);
         }
 
@@ -310,6 +312,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return ReadFromSpan<object?>(json.AsSpan(), jsonTypeInfo);
         }
@@ -360,6 +363,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, returnType);
             return ReadFromSpan<object?>(json, jsonTypeInfo);
         }

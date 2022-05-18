@@ -77,6 +77,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return WriteElementUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
@@ -105,6 +106,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             Type type = GetRuntimeTypeAndValidateInputType(value, inputType);
             JsonTypeInfo typeInfo = GetTypeInfo(context, type);
             return WriteElementUsingGeneratedSerializer(value, typeInfo);

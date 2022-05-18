@@ -86,6 +86,7 @@ namespace System.Text.Json
         /// </remarks>
         public static string Serialize<TValue>(TValue value, JsonTypeInfo<TValue> jsonTypeInfo)
         {
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return WriteStringUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
@@ -118,6 +119,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             Type type = GetRuntimeTypeAndValidateInputType(value, inputType);
             JsonTypeInfo jsonTypeInfo = GetTypeInfo(context, type);
             return WriteStringUsingGeneratedSerializer(value, jsonTypeInfo);

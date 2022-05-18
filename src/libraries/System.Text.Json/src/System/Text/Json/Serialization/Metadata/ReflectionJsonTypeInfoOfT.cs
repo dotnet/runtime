@@ -166,6 +166,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private void CacheMember(
             Type declaringType,
             Type memberType,
@@ -197,6 +198,7 @@ namespace System.Text.Json.Serialization.Metadata
             }
         }
 
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonPropertyInfo AddProperty(
             MemberInfo memberInfo,
             Type memberType,
@@ -241,6 +243,7 @@ namespace System.Text.Json.Serialization.Metadata
         // - class type,
         // - element type (if the type is a collection),
         // - the converter (either native or custom), if one exists.
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static JsonConverter GetConverter(
             Type type,
             Type? parentClassType,

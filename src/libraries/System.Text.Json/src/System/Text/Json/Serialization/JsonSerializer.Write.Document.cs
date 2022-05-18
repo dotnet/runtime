@@ -77,6 +77,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(jsonTypeInfo));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             return WriteDocumentUsingGeneratedSerializer(value, jsonTypeInfo);
         }
 
@@ -105,6 +106,7 @@ namespace System.Text.Json
                 ThrowHelper.ThrowArgumentNullException(nameof(context));
             }
 
+            JsonSerializerOptions.IntializeConverterProviderForSourceGen();
             Type runtimeType = GetRuntimeTypeAndValidateInputType(value, inputType);
             return WriteDocumentUsingGeneratedSerializer(value, GetTypeInfo(context, runtimeType));
         }

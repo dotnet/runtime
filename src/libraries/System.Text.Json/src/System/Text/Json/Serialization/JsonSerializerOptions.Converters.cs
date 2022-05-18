@@ -28,6 +28,9 @@ namespace System.Text.Json
         // Stores the JsonTypeInfo factory, which requires unreferenced code and must be rooted by the reflection-based serializer.
         private static Func<Type, JsonSerializerOptions, JsonTypeInfo>? s_typeInfoCreationFunc;
 
+        // Retrieves JsonConverter instances on-demand during serialization or deserialization.
+        private static Func<Type, JsonSerializerOptions, JsonConverter>? s_converterRetrievalFunc;
+
         [RequiresUnreferencedCode(JsonSerializer.SerializationUnreferencedCodeMessage)]
         [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private static void RootReflectionSerializerDependencies()
@@ -38,6 +41,7 @@ namespace System.Text.Json
             {
                 s_defaultSimpleConverters = GetDefaultSimpleConverters();
                 s_defaultFactoryConverters = GetDefaultFactoryConverters();
+                s_converterRetrievalFunc = (type, options) => options.GetConverterForTypeReflection(type);
                 // Explicitly ensure that the previous fields are initialized along with this one.
                 Volatile.Write(ref s_typeInfoCreationFunc, CreateJsonTypeInfo);
             }
@@ -156,6 +160,12 @@ namespace System.Text.Json
         /// </remarks>
         public IList<JsonPolymorphicTypeConfiguration> PolymorphicTypeConfigurations => _polymorphicTypeConfigurations;
 
+        internal static void IntializeConverterProviderForSourceGen()
+        {
+            s_converterRetrievalFunc ??= (type, options) => options.GetConverterForTypeSourceGen(type);
+        }
+
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         internal JsonConverter GetConverterFromMember(Type? parentClassType, Type propertyType, MemberInfo? memberInfo)
         {
             JsonConverter converter = null!;
@@ -240,15 +250,27 @@ namespace System.Text.Json
                 return _cachingContext.GetOrAddConverter(typeToConvert);
             }
 
-            return GetConverterFromType(typeToConvert);
+            Debug.Assert(s_converterRetrievalFunc != null);
+            return s_converterRetrievalFunc(typeToConvert, this);
         }
 
-        private JsonConverter GetConverterFromType(Type typeToConvert)
+        private JsonConverter? GetConverterForTypeFromContext(Type typeToConvert)
+            => _serializerContext?.GetTypeInfo(typeToConvert)?.PropertyInfoForTypeInfo?.ConverterBase;
+
+        private JsonConverter GetConverterForTypeSourceGen(Type typeToConvert)
+        {
+            JsonConverter? converter = GetConverterForTypeFromContext(typeToConvert);
+            Debug.Assert(converter != null);
+            return converter;
+        }
+
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
+        private JsonConverter GetConverterForTypeReflection(Type typeToConvert)
         {
             Debug.Assert(typeToConvert != null);
 
             // Priority 1: If there is a JsonSerializerContext, fetch the converter from there.
-            JsonConverter? converter = _serializerContext?.GetTypeInfo(typeToConvert)?.PropertyInfoForTypeInfo?.ConverterBase;
+            JsonConverter? converter = GetConverterForTypeFromContext(typeToConvert);
 
             // Priority 2: Attempt to get custom converter added at runtime.
             // Currently there is not a way at runtime to override the [JsonConverter] when applied to a property.
@@ -327,9 +349,7 @@ namespace System.Text.Json
             return converter;
         }
 
-        // This suppression needs to be removed. https://github.com/dotnet/runtime/issues/68878
-        [UnconditionalSuppressMessage("AotAnalysis", "IL3050:RequiresDynamicCode", Justification = "The factory constructors are only invoked in the context of reflection serialization code paths " +
-            "and are marked RequiresDynamicCode")]
+        [RequiresDynamicCode(JsonSerializer.SerializationRequiresDynamicCodeMessage)]
         private JsonConverter GetConverterFromAttribute(JsonConverterAttribute converterAttribute, Type typeToConvert, Type classTypeAttributeIsOn, MemberInfo? memberInfo)
         {
             JsonConverter? converter;
