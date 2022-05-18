@@ -508,9 +508,24 @@ namespace System.Security.Cryptography.X509Certificates
 
         private static byte[] ParseRdn(Oid tagOid, ReadOnlySpan<char> chars, bool hadEscapedQuote)
         {
+            ReadOnlySpan<char> data = stackalloc char[0];
+
             if (hadEscapedQuote)
             {
-                chars = ExtractValue(chars);
+                const int MaxStackAllocSize = 256;
+                Span<char> destination = stackalloc char[MaxStackAllocSize];
+
+                if (chars.Length > MaxStackAllocSize)
+                {
+                    destination = new char[chars.Length];
+                }
+
+                int written = ExtractValue(chars, destination);
+                data = destination.Slice(0, written);
+            }
+            else
+            {
+                data = chars;
             }
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
@@ -532,7 +547,7 @@ namespace System.Security.Cryptography.X509Certificates
                     try
                     {
                         // An email address with an invalid value will throw.
-                        writer.WriteCharacterString(UniversalTagNumber.IA5String, chars);
+                        writer.WriteCharacterString(UniversalTagNumber.IA5String, data);
                     }
                     catch (EncoderFallbackException)
                     {
@@ -543,11 +558,11 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     try
                     {
-                        writer.WriteCharacterString(UniversalTagNumber.PrintableString, chars);
+                        writer.WriteCharacterString(UniversalTagNumber.PrintableString, data);
                     }
                     catch (EncoderFallbackException)
                     {
-                        writer.WriteCharacterString(UniversalTagNumber.UTF8String, chars);
+                        writer.WriteCharacterString(UniversalTagNumber.UTF8String, data);
                     }
                 }
             }
@@ -555,10 +570,12 @@ namespace System.Security.Cryptography.X509Certificates
             return writer.Encode();
         }
 
-        private static char[] ExtractValue(ReadOnlySpan<char> chars)
+        private static int ExtractValue(ReadOnlySpan<char> chars, Span<char> destination)
         {
-            var builder = new List<char>(chars.Length);
+            Debug.Assert(destination.Length >= chars.Length);
+
             bool skippedQuote = false;
+            int written = 0;
 
             foreach (char c in chars)
             {
@@ -573,10 +590,10 @@ namespace System.Security.Cryptography.X509Certificates
                 Debug.Assert(skippedQuote == (c == '"'));
 
                 skippedQuote = false;
-                builder.Add(c);
+                destination[written++] = c;
             }
 
-            return builder.ToArray();
+            return written;
         }
     }
 }
