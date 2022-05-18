@@ -343,11 +343,11 @@ namespace System.Net
             }
 
             // Check the name
-            if (string.IsNullOrEmpty(m_name)
-                || m_name.StartsWith('$')
-                || m_name.StartsWith(' ')
-                || m_name.EndsWith(' ')
-                || m_name.IndexOfAny(ReservedToName) >= 0)
+            if (string.IsNullOrEmpty(m_name) ||
+                m_name.StartsWith('$') ||
+                m_name.StartsWith(' ') ||
+                m_name.EndsWith(' ') ||
+                m_name.IndexOfAny(ReservedToName) >= 0)
             {
                 if (shouldThrow)
                 {

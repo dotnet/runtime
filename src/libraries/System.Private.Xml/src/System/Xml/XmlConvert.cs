@@ -439,10 +439,10 @@ namespace System.Xml
                 return token;
             }
 
-            if (token.StartsWith(' ')
-                || token.EndsWith(' ')
-                || token.IndexOfAny(crt) >= 0
-                || token.Contains("  "))
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -456,10 +456,10 @@ namespace System.Xml
                 return null;
             }
 
-            if (token.StartsWith(' ')
-                || token.EndsWith(' ')
-                || token.IndexOfAny(crt) >= 0
-                || token.Contains("  "))
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
             }
