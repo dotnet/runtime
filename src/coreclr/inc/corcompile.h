@@ -11,8 +11,6 @@
 *                                                                     *
 *                                                                             *
 \*****************************************************************************/
-// See code:CorProfileData for information on Hot Cold splitting using profile data.
-
 
 #ifndef _COR_COMPILE_H_
 #define _COR_COMPILE_H_
@@ -24,7 +22,6 @@
 #include <sstring.h>
 #include <shash.h>
 #include <daccess.h>
-#include <corbbtprof.h>
 #include <clrtypes.h>
 
 typedef DPTR(struct CORCOMPILE_EXCEPTION_LOOKUP_TABLE)
@@ -55,9 +52,6 @@ typedef DPTR(RUNTIME_FUNCTION) PTR_RUNTIME_FUNCTION;
 
 #endif // TARGET_X86
 
-
-typedef DPTR(struct CORCOMPILE_METHOD_PROFILE_LIST)
-    PTR_CORCOMPILE_METHOD_PROFILE_LIST;
 typedef DPTR(struct CORCOMPILE_RUNTIME_DLL_INFO)
     PTR_CORCOMPILE_RUNTIME_DLL_INFO;
 typedef DPTR(struct COR_ILMETHOD) PTR_COR_ILMETHOD;
@@ -288,167 +282,6 @@ struct CORCOMPILE_EXCEPTION_CLAUSE
         mdToken         ClassToken;
         DWORD           FilterOffset;
     };
-};
-
-
-/*********************************************************************************/
-// The layout of this struct is required to be
-// a 'next' pointer followed by a CORBBTPROF_METHOD_HEADER
-//
-struct CORCOMPILE_METHOD_PROFILE_LIST
-{
-    CORCOMPILE_METHOD_PROFILE_LIST *       next;
-//  CORBBTPROF_METHOD_HEADER               info;
-
-    CORBBTPROF_METHOD_HEADER * GetInfo()
-    { return (CORBBTPROF_METHOD_HEADER *) (this+1); }
-};
-
-class CorProfileData
-{
-public:
-    CorProfileData(void *  rawProfileData);  // really of type ZapImage::ProfileDataSection*
-
-    struct CORBBTPROF_TOKEN_INFO *  GetTokenFlagsData(SectionFormat section)
-    {
-        return this->profilingTokenFlagsData[section].data;
-    }
-
-    DWORD GetTokenFlagsCount(SectionFormat section)
-    {
-        return this->profilingTokenFlagsData[section].count;
-    }
-
-    CORBBTPROF_BLOB_ENTRY *  GetBlobStream()
-    {
-        return this->blobStream;
-    }
-
-    //
-    //  Token lookup methods
-    //
-    ULONG GetTypeProfilingFlagsOfToken(mdToken token)
-    {
-        _ASSERTE(TypeFromToken(token) == mdtTypeDef);
-        return  GetProfilingFlagsOfToken(token);
-    }
-
-    CORBBTPROF_BLOB_PARAM_SIG_ENTRY *GetBlobSigEntry(mdToken token)
-    {
-        _ASSERTE((TypeFromToken(token) == ibcTypeSpec) || (TypeFromToken(token) == ibcMethodSpec));
-
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = GetBlobEntry(token);
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        _ASSERTE(pBlobEntry->token == token);
-        _ASSERTE((pBlobEntry->type == ParamTypeSpec) || (pBlobEntry->type == ParamMethodSpec));
-
-        return (CORBBTPROF_BLOB_PARAM_SIG_ENTRY *) pBlobEntry;
-    }
-
-    CORBBTPROF_BLOB_NAMESPACE_DEF_ENTRY *GetBlobExternalNamespaceDef(mdToken token)
-    {
-        _ASSERTE(TypeFromToken(token) == ibcExternalNamespace);
-
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = GetBlobEntry(token);
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        _ASSERTE(pBlobEntry->token == token);
-        _ASSERTE(pBlobEntry->type == ExternalNamespaceDef);
-
-        return (CORBBTPROF_BLOB_NAMESPACE_DEF_ENTRY *) pBlobEntry;
-    }
-
-    CORBBTPROF_BLOB_TYPE_DEF_ENTRY *GetBlobExternalTypeDef(mdToken token)
-    {
-        _ASSERTE(TypeFromToken(token) == ibcExternalType);
-
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = GetBlobEntry(token);
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        _ASSERTE(pBlobEntry->token == token);
-        _ASSERTE(pBlobEntry->type == ExternalTypeDef);
-
-        return (CORBBTPROF_BLOB_TYPE_DEF_ENTRY *) pBlobEntry;
-    }
-
-    CORBBTPROF_BLOB_SIGNATURE_DEF_ENTRY *GetBlobExternalSignatureDef(mdToken token)
-    {
-        _ASSERTE(TypeFromToken(token) == ibcExternalSignature);
-
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = GetBlobEntry(token);
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        _ASSERTE(pBlobEntry->token == token);
-        _ASSERTE(pBlobEntry->type == ExternalSignatureDef);
-
-        return (CORBBTPROF_BLOB_SIGNATURE_DEF_ENTRY *) pBlobEntry;
-    }
-
-    CORBBTPROF_BLOB_METHOD_DEF_ENTRY *GetBlobExternalMethodDef(mdToken token)
-    {
-        _ASSERTE(TypeFromToken(token) == ibcExternalMethod);
-
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = GetBlobEntry(token);
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        _ASSERTE(pBlobEntry->token == token);
-        _ASSERTE(pBlobEntry->type == ExternalMethodDef);
-
-        return (CORBBTPROF_BLOB_METHOD_DEF_ENTRY *) pBlobEntry;
-    }
-
-private:
-    ULONG GetProfilingFlagsOfToken(mdToken token)
-    {
-        SectionFormat section = (SectionFormat)((TypeFromToken(token) >> 24) + FirstTokenFlagSection);
-
-        CORBBTPROF_TOKEN_INFO *profilingData = this->profilingTokenFlagsData[section].data;
-        DWORD cProfilingData = this->profilingTokenFlagsData[section].count;
-
-        if (profilingData != NULL)
-        {
-            for (DWORD i = 0; i < cProfilingData; i++)
-            {
-                if (profilingData[i].token == token)
-                    return profilingData[i].flags;
-            }
-        }
-        return 0;
-    }
-
-    CORBBTPROF_BLOB_ENTRY *GetBlobEntry(idTypeSpec token)
-    {
-        CORBBTPROF_BLOB_ENTRY *  pBlobEntry = this->GetBlobStream();
-        if (pBlobEntry == NULL)
-            return NULL;
-
-        while (pBlobEntry->TypeIsValid())
-        {
-            if (pBlobEntry->token == token)
-            {
-                return pBlobEntry;
-            }
-            pBlobEntry = pBlobEntry->GetNextEntry();
-        }
-
-        return NULL;
-    }
-
-private:
-    struct
-    {
-        struct CORBBTPROF_TOKEN_INFO *data;
-        DWORD   count;
-    }
-    profilingTokenFlagsData[SectionFormatCount];
-
-    CORBBTPROF_BLOB_ENTRY* blobStream;
 };
 
 /*********************************************************************************/

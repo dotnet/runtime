@@ -22,11 +22,6 @@ namespace System.Runtime.InteropServices.JavaScript
             return Interop.Runtime.InvokeJS(str);
         }
 
-        public static Function? CompileFunction(string snippet)
-        {
-            return Interop.Runtime.CompileFunction(snippet);
-        }
-
         public static object GetGlobalObject(string? str = null)
         {
             return Interop.Runtime.GetGlobalObject(str);

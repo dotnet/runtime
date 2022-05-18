@@ -341,8 +341,6 @@ void MethodDesc::PitchNativeCode()
     WRAPPER_NO_CONTRACT;
     SUPPORTS_DAC;
 
-    g_IBCLogger.LogMethodDescAccess(this);
-
     if (!IsPitchable())
         return;
 

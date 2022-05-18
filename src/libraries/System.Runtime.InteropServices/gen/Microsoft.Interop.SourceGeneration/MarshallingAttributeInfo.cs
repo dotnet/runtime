@@ -8,7 +8,6 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.InteropServices;
-using System.Runtime.InteropServices.Marshalling;
 
 namespace Microsoft.Interop
 {
@@ -99,7 +98,10 @@ namespace Microsoft.Interop
     /// <summary>
     /// The provided type was determined to be an "unmanaged" type that can be passed as-is to native code.
     /// </summary>
-    public sealed record UnmanagedBlittableMarshallingInfo : MarshallingInfo;
+    /// <param name="IsStrictlyBlittable">Indicates if the type is blittable as defined by the built-in .NET marshallers.</param>
+    public sealed record UnmanagedBlittableMarshallingInfo(
+        bool IsStrictlyBlittable
+    ) : MarshallingInfo;
 
     [Flags]
     public enum CustomTypeMarshallerPinning
@@ -147,15 +149,9 @@ namespace Microsoft.Interop
         CustomTypeMarshallerFeatures MarshallingFeatures,
         CustomTypeMarshallerPinning PinningFeatures,
         bool UseDefaultMarshalling,
+        bool IsStrictlyBlittable,
         ManagedTypeInfo? BufferElementType,
         int? BufferSize) : MarshallingInfo;
-
-    /// <summary>
-    /// User-applied System.Runtime.InteropServices.GeneratedMarshallingAttribute
-    /// on a non-blittable type in source in this compilation.
-    /// </summary>
-    public sealed record GeneratedNativeMarshallingAttributeInfo(
-        string NativeMarshallingFullyQualifiedTypeName) : MarshallingInfo;
 
     /// <summary>
     /// The type of the element is a SafeHandle-derived type with no marshalling attributes.
@@ -183,6 +179,7 @@ namespace Microsoft.Interop
             MarshallingFeatures,
             PinningFeatures,
             UseDefaultMarshalling,
+            IsStrictlyBlittable: false,
             SpecialTypeInfo.Byte,
             BufferSize
         );
@@ -330,10 +327,6 @@ namespace Microsoft.Interop
                         useSiteAttributes,
                         inspectedElements,
                         ref maxIndirectionDepthUsed);
-                }
-                else if (attributeClass.ToDisplayString() == TypeNames.GeneratedMarshallingAttribute)
-                {
-                    return type.IsConsideredBlittable() ? GetBlittableMarshallingInfo(type) : new GeneratedNativeMarshallingAttributeInfo(null! /* TODO: determine naming convention */);
                 }
             }
 
@@ -697,6 +690,7 @@ namespace Microsoft.Interop
                 customTypeMarshallerData.Features,
                 pinning,
                 useDefaultMarshalling,
+                nativeType.IsStrictlyBlittable(),
                 bufferElementTypeInfo,
                 customTypeMarshallerData.BufferSize);
         }
@@ -904,7 +898,7 @@ namespace Microsoft.Interop
             }
             else
             {
-                return new UnmanagedBlittableMarshallingInfo();
+                return new UnmanagedBlittableMarshallingInfo(type.IsStrictlyBlittable());
             }
         }
 

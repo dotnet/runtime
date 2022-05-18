@@ -1557,6 +1557,7 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         CLASS__MULTICAST_DELEGATE,
         CLASS__METHOD_INVOKER,
         CLASS__CONSTRUCTOR_INVOKER,
+        CLASS__DYNAMIC_METHOD_INVOKER
     };
 
     static bool fInited = false;
@@ -1577,13 +1578,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
             if (CoreLibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
-                return true;
-        }
-
-        // Check for dynamically generated Invoke methods.
-        if (pMeth->IsDynamicMethod())
-        {
-            if (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0)
                 return true;
         }
     }
@@ -1750,6 +1744,8 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     Frame* frame = pCf->GetFrame();
     _ASSERTE(pCf->IsFrameless() || frame);
 
+
+
     // Skipping reflection frames. We don't need to be quite as exhaustive here
     // as the security or reflection stack walking code since we know this logic
     // is only invoked for selected methods in CoreLib itself. So we're
@@ -1757,8 +1753,6 @@ StackWalkAction SystemDomain::CallersMethodCallbackWithStackMark(CrawlFrame* pCf
     // constructors, properties or events. This leaves being invoked via
     // MethodInfo, Type or Delegate (and depending on which invoke overload is
     // being used, several different reflection classes may be involved).
-
-    g_IBCLogger.LogMethodDescAccess(pFunc);
 
     if (SystemDomain::IsReflectionInvocationMethod(pFunc))
         return SWA_CONTINUE;
@@ -1823,7 +1817,9 @@ StackWalkAction SystemDomain::CallersMethodCallback(CrawlFrame* pCf, VOID* data)
         pCaller->skip--;
         return SWA_CONTINUE;
     }
+
 }
+
 
 void AppDomain::Create()
 {

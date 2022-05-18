@@ -4,7 +4,7 @@
     <!-- Build for NetCoreAppCurrent by default if no BuildTargetFramework is supplied or if not all configurations are built. -->
     <TargetFramework>$([MSBuild]::ValueOrDefault('$(BuildTargetFramework)', '$(NetCoreAppCurrent)'))-$(TargetOS)</TargetFramework>
     <!-- Filter ProjectReferences to build the best matching target framework only. -->
-    <FilterTraversalProjectReferences>true</FilterTraversalProjectReferences>
+    <FilterTraversalProjectReferences Condition="'$(TestTrimming)' != 'true'">true</FilterTraversalProjectReferences>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -384,6 +384,7 @@
     <!-- Run only a small randomly chosen set of passing test suites -->
     <ProjectExclusions Include="$(MSBuildThisFileDirectory)*\tests\**\*.Tests.csproj" />
     <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Collections\tests\System.Collections.Tests.csproj" />
+    <ProjectExclusions Remove="$(MSBuildThisFileDirectory)System.Reflection\tests\System.Reflection.Tests.csproj" />
   </ItemGroup>
 
   <ItemGroup>

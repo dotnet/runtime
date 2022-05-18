@@ -17,10 +17,8 @@ using Newtonsoft.Json.Linq;
 using System.Reflection.PortableExecutable;
 using System.Reflection.Metadata;
 using System.Reflection.Metadata.Ecma335;
-using Microsoft.CodeAnalysis.Debugging;
 using System.IO.Compression;
 using System.Reflection;
-using System.Collections.Immutable;
 using System.Diagnostics;
 using System.Text;
 
@@ -79,11 +77,6 @@ namespace Microsoft.WebAssembly.Diagnostics
         public BreakpointRequest()
         { }
 
-        public BreakpointRequest(string id, MethodInfo method)
-        {
-            Id = id;
-            Method = method;
-        }
 
         public BreakpointRequest(string id, JObject request)
         {
@@ -797,11 +790,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         internal string PdbName { get; }
         internal bool PdbInformationAvailable { get; }
         public bool TriedToLoadSymbolsOnDemand { get; set; }
+        public MethodInfo EntryPoint { get; private set; }
 
-        public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, CancellationToken token)
+        public unsafe AssemblyInfo(MonoProxy monoProxy, SessionId sessionId, string url, byte[] assembly, byte[] pdb, ILogger logger, CancellationToken token)
         {
             debugId = -1;
             this.id = Interlocked.Increment(ref next_id);
+            this.logger = logger;
             using var asmStream = new MemoryStream(assembly);
             peReader = new PEReader(asmStream);
             var entries = peReader.ReadDebugDirectory();
@@ -867,11 +862,6 @@ namespace Microsoft.WebAssembly.Diagnostics
             return true;
         }
 
-        public AssemblyInfo(ILogger logger)
-        {
-            this.logger = logger;
-        }
-
         private void PopulateEnC(MetadataReader asmMetadataReaderParm, MetadataReader pdbMetadataReaderParm)
         {
             int i = 1;
@@ -909,6 +899,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (pdbMetadataReader != null)
                 ProcessSourceLink();
 
+            MethodDefinitionHandle entryPointHandle = default;
+            if (asmMetadataReader.DebugMetadataHeader is not null)
+                entryPointHandle = asmMetadataReader.DebugMetadataHeader.EntryPoint;
+            if (pdbMetadataReader is not null && pdbMetadataReader.DebugMetadataHeader is not null)
+                entryPointHandle = pdbMetadataReader.DebugMetadataHeader.EntryPoint;
             foreach (TypeDefinitionHandle type in asmMetadataReader.TypeDefinitions)
             {
                 var typeDefinition = asmMetadataReader.GetTypeDefinition(type);
@@ -936,6 +931,11 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     source.AddMethod(methodInfo);
 
                                 typeInfo.Methods.Add(methodInfo);
+                                if (entryPointHandle.IsNil || EntryPoint is not null)
+                                    continue;
+
+                                if (method.Equals(entryPointHandle))
+                                    EntryPoint = methodInfo;
                             }
                         }
                     }
@@ -1129,8 +1129,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
                 else if (uri.Scheme == "http" || uri.Scheme == "https")
                 {
-                    using (var client = new HttpClient())
-                    using (Stream stream = await client.GetStreamAsync(uri, token))
+                    using (Stream stream = await MonoProxy.HttpClient.GetStreamAsync(uri, token))
                     {
                         await stream.CopyToAsync(mem, token).ConfigureAwait(false);
                         mem.Position = 0;
@@ -1226,19 +1225,15 @@ namespace Microsoft.WebAssembly.Diagnostics
     internal sealed class DebugStore
     {
         internal List<AssemblyInfo> assemblies = new List<AssemblyInfo>();
-        private readonly HttpClient client;
         private readonly ILogger logger;
         private readonly MonoProxy monoProxy;
+        private MethodInfo _entryPoint;
 
-        public DebugStore(MonoProxy monoProxy, ILogger logger, HttpClient client)
+        public DebugStore(MonoProxy monoProxy, ILogger logger)
         {
-            this.client = client;
             this.logger = logger;
             this.monoProxy = monoProxy;
         }
-
-        public DebugStore(MonoProxy monoProxy, ILogger logger) : this(monoProxy, logger, new HttpClient())
-        { }
 
         private sealed class DebugItem
         {
@@ -1261,7 +1256,7 @@ namespace Microsoft.WebAssembly.Diagnostics
             AssemblyInfo assembly;
             try
             {
-                assembly = new AssemblyInfo(monoProxy, id, name, assembly_data, pdb_data, token);
+                assembly = new AssemblyInfo(monoProxy, id, name, assembly_data, pdb_data, logger, token);
             }
             catch (Exception e)
             {
@@ -1309,7 +1304,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         new DebugItem
                         {
                             Url = url,
-                            Data = Task.WhenAll(client.GetByteArrayAsync(url, token), pdb != null ? client.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
+                            Data = Task.WhenAll(MonoProxy.HttpClient.GetByteArrayAsync(url, token), pdb != null ? MonoProxy.HttpClient.GetByteArrayAsync(pdb, token) : Task.FromResult<byte[]>(null))
                         });
                 }
                 catch (Exception e)
@@ -1324,7 +1319,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 try
                 {
                     byte[][] bytes = await step.Data.ConfigureAwait(false);
-                    assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], token);
+                    assembly = new AssemblyInfo(monoProxy, id, step.Url, bytes[0], bytes[1], logger, token);
                 }
                 catch (Exception e)
                 {
@@ -1350,7 +1345,13 @@ namespace Microsoft.WebAssembly.Diagnostics
         public SourceFile GetFileById(SourceId id) => AllSources().SingleOrDefault(f => f.SourceId.Equals(id));
 
         public AssemblyInfo GetAssemblyByName(string name) => assemblies.FirstOrDefault(a => a.Name.Equals(name, StringComparison.InvariantCultureIgnoreCase));
+        public MethodInfo FindEntryPoint()
+        {
+            if (_entryPoint is null)
+                _entryPoint = assemblies.Where(asm => asm.EntryPoint is not null).Select(asm => asm.EntryPoint).FirstOrDefault();
 
+            return _entryPoint;
+        }
 
         /*
         V8 uses zero based indexing for both line and column.

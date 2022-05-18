@@ -243,7 +243,7 @@ namespace System.IO
             for (int i = path.Length; --i >= 0;)
             {
                 if (i < root || PathInternal.IsDirectorySeparator(path[i]))
-                    return path.Slice(i + 1, path.Length - i - 1);
+                    return path.Slice(i + 1);
             }
 
             return path;

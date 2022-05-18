@@ -27,6 +27,7 @@ using EcmaType = Internal.TypeSystem.Ecma.EcmaType;
 using CustomAttributeHandle = System.Reflection.Metadata.CustomAttributeHandle;
 using CustomAttributeTypeProvider = Internal.TypeSystem.Ecma.CustomAttributeTypeProvider;
 using MetadataExtensions = Internal.TypeSystem.Ecma.MetadataExtensions;
+using ILCompiler.Dataflow;
 
 namespace ILCompiler
 {
@@ -671,30 +672,31 @@ namespace ILCompiler
         public override void NoteOverridingMethod(MethodDesc baseMethod, MethodDesc overridingMethod)
         {
             // We validate that the various dataflow/Requires* annotations are consistent across virtual method overrides
-
-            bool baseMethodRequiresUnreferencedCode = baseMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute");
-            bool overridingMethodRequiresUnreferencedCode = overridingMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresUnreferencedCodeAttribute");
-
-            bool baseMethodRequiresDynamicCode = baseMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute");
-            bool overridingMethodRequiresDynamicCode = overridingMethod.HasCustomAttribute("System.Diagnostics.CodeAnalysis", "RequiresDynamicCodeAttribute");
-
-            bool baseMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(baseMethod);
-            bool overridingMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(overridingMethod);
-
-            if (baseMethodRequiresUnreferencedCode != overridingMethodRequiresUnreferencedCode)
+            if (HasMismatchingAttributes(baseMethod, overridingMethod, "RequiresUnreferencedCodeAttribute"))
             {
                 Logger.LogWarning(overridingMethod, DiagnosticId.RequiresUnreferencedCodeAttributeMismatch, overridingMethod.GetDisplayName(), baseMethod.GetDisplayName());
             }
 
-            if (baseMethodRequiresDynamicCode != overridingMethodRequiresDynamicCode)
+            if (HasMismatchingAttributes(baseMethod, overridingMethod, "RequiresDynamicCodeAttribute"))
             {
                 Logger.LogWarning(overridingMethod, DiagnosticId.RequiresDynamicCodeAttributeMismatch, overridingMethod.GetDisplayName(), baseMethod.GetDisplayName());
             }
 
+            bool baseMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(baseMethod);
+            bool overridingMethodRequiresDataflow = FlowAnnotations.RequiresDataflowAnalysis(overridingMethod);
             if (baseMethodRequiresDataflow || overridingMethodRequiresDataflow)
             {
                 FlowAnnotations.ValidateMethodAnnotationsAreSame(overridingMethod, baseMethod);
             }
+        }
+
+        public static bool HasMismatchingAttributes (MethodDesc baseMethod, MethodDesc overridingMethod, string requiresAttributeName)
+        {
+            bool baseMethodCreatesRequirement = baseMethod.DoesMethodRequire(requiresAttributeName, out _);
+            bool overridingMethodCreatesRequirement = overridingMethod.DoesMethodRequire(requiresAttributeName, out _);
+            bool baseMethodFulfillsRequirement = baseMethod.IsOverrideInRequiresScope(requiresAttributeName);
+            bool overridingMethodFulfillsRequirement = overridingMethod.IsOverrideInRequiresScope(requiresAttributeName);
+            return (baseMethodCreatesRequirement && !overridingMethodFulfillsRequirement) || (overridingMethodCreatesRequirement && !baseMethodFulfillsRequirement);
         }
 
         public MetadataManager ToAnalysisBasedMetadataManager()
