@@ -44,7 +44,7 @@ provision-wasm: .stamp-wasm-install-and-select-$(EMSCRIPTEN_VERSION)
 	@echo "----------------------------------------------------------"
 	@echo "Installed emsdk into EMSDK_PATH=$(TOP)/src/mono/wasm/emsdk"
 
-MONO_OBJ_DIR=$(OBJDIR)/mono/browser.wasm.$(CONFIG)
+MONO_OBJ_DIR=$(OBJDIR)/mono/Browser.wasm.$(CONFIG)
 BUILDS_OBJ_DIR=$(MONO_OBJ_DIR)/wasm
 
 clean-emsdk:
