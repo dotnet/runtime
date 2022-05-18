@@ -3885,6 +3885,9 @@ namespace System.Numerics
         // INumberBase
         //
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Radix" />
+        static int INumberBase<BigInteger>.Radix => 2;
+
         /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static BigInteger CreateChecked<TOther>(TOther value)
@@ -4101,11 +4104,35 @@ namespace System.Numerics
             }
         }
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsCanonical(TSelf)" />
+        static bool INumberBase<BigInteger>.IsCanonical(BigInteger value) => true;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsComplexNumber(TSelf)" />
+        static bool INumberBase<BigInteger>.IsComplexNumber(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsEvenInteger(TSelf)" />
+        public static bool IsEvenInteger(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (value._bits is null)
+            {
+                return (value._sign & 1) == 0;
+            }
+            return (value._bits[0] & 1) == 0;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
         static bool INumberBase<BigInteger>.IsFinite(BigInteger value) => true;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsImaginaryNumber(TSelf)" />
+        static bool INumberBase<BigInteger>.IsImaginaryNumber(BigInteger value) => false;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
         static bool INumberBase<BigInteger>.IsInfinity(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInteger(TSelf)" />
+        static bool INumberBase<BigInteger>.IsInteger(BigInteger value) => true;
 
         /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
         static bool INumberBase<BigInteger>.IsNaN(BigInteger value) => false;
@@ -4123,11 +4150,40 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
         static bool INumberBase<BigInteger>.IsNormal(BigInteger value) => (value != 0);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsOddInteger(TSelf)" />
+        public static bool IsOddInteger(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (value._bits is null)
+            {
+                return (value._sign & 1) != 0;
+            }
+            return (value._bits[0] & 1) != 0;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositive(TSelf)" />
+        public static bool IsPositive(BigInteger value)
+        {
+            value.AssertValid();
+            return value._sign >= 0;
+        }
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
         static bool INumberBase<BigInteger>.IsPositiveInfinity(BigInteger value) => false;
 
+        /// <inheritdoc cref="INumberBase{TSelf}.IsRealNumber(TSelf)" />
+        static bool INumberBase<BigInteger>.IsRealNumber(BigInteger value) => true;
+
         /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
         static bool INumberBase<BigInteger>.IsSubnormal(BigInteger value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsZero(TSelf)" />
+        static bool INumberBase<BigInteger>.IsZero(BigInteger value)
+        {
+            value.AssertValid();
+            return value._sign == 0;
+        }
 
         /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static BigInteger MaxMagnitude(BigInteger x, BigInteger y)
