@@ -630,49 +630,28 @@ void TailCallHelp::CreateCallTargetStubSig(const TailCallInfo& info, SigBuilder*
 #endif // _DEBUG
 }
 
-// Get TypeHandle for ByReference<System.Byte>
-static TypeHandle GetByReferenceOfByteType()
+static TypeHandle GetByReferenceType()
 {
-    TypeHandle byteTH(CoreLibBinder::GetElementType(ELEMENT_TYPE_U1));
-    Instantiation byteInst(&byteTH, 1);
-    TypeHandle th = TypeHandle(CoreLibBinder::GetClass(CLASS__BYREFERENCE)).Instantiate(byteInst);
+    TypeHandle th = TypeHandle(CoreLibBinder::GetClass(CLASS__BYREFERENCE));
     return th;
 }
 
-// Get MethodDesc* for ByReference<System.Byte>::get_Value
-static MethodDesc* GetByReferenceOfByteValueGetter()
+static FieldDesc* GetByReferenceValueField()
 {
-    MethodDesc* getter = CoreLibBinder::GetMethod(METHOD__BYREFERENCE__GET_VALUE);
-    getter =
-        MethodDesc::FindOrCreateAssociatedMethodDesc(
-                getter,
-                GetByReferenceOfByteType().GetMethodTable(),
-                false,
-                Instantiation(),
-                TRUE);
-
-    return getter;
+    FieldDesc* pFD = CoreLibBinder::GetField(FIELD__BYREFERENCE__VALUE);
+    return pFD;
 }
 
-// Get MethodDesc* for ByReference<System.Byte>::.ctor
-static MethodDesc* GetByReferenceOfByteCtor()
+static MethodDesc* GetByReferenceOfCtor()
 {
-    MethodDesc* ctor = CoreLibBinder::GetMethod(METHOD__BYREFERENCE__CTOR);
-    ctor =
-        MethodDesc::FindOrCreateAssociatedMethodDesc(
-                ctor,
-                GetByReferenceOfByteType().GetMethodTable(),
-                false,
-                Instantiation(),
-                TRUE);
-
-    return ctor;
+    MethodDesc* pMD = CoreLibBinder::GetMethod(METHOD__BYREFERENCE__CTOR);
+    return pMD;
 }
 
 void TailCallHelp::EmitLoadTyHnd(ILCodeStream* stream, TypeHandle tyHnd)
 {
     if (tyHnd.IsByRef())
-        stream->EmitCALL(stream->GetToken(GetByReferenceOfByteValueGetter()), 1, 1);
+        stream->EmitLDFLD(stream->GetToken(GetByReferenceValueField()));
     else
         stream->EmitLDOBJ(stream->GetToken(tyHnd));
 }
@@ -681,8 +660,8 @@ void TailCallHelp::EmitStoreTyHnd(ILCodeStream* stream, TypeHandle tyHnd)
 {
     if (tyHnd.IsByRef())
     {
-        stream->EmitNEWOBJ(stream->GetToken(GetByReferenceOfByteCtor()), 1);
-        stream->EmitSTOBJ(stream->GetToken(GetByReferenceOfByteType()));
+        stream->EmitNEWOBJ(stream->GetToken(GetByReferenceOfCtor()), 1);
+        stream->EmitSTOBJ(stream->GetToken(GetByReferenceType()));
     }
     else
     {

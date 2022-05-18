@@ -9,7 +9,7 @@ namespace System
     [System.Runtime.Versioning.NonVersionable] // This only applies to field layout
     public ref partial struct TypedReference
     {
-        private readonly ByReference<byte> _value;
+        private readonly ref byte _value;
         private readonly IntPtr _type;
     }
 }

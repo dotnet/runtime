@@ -15,7 +15,6 @@
 #define g_ArrayClassName "System.Array"
 
 #define g_NullableName "Nullable`1"
-#define g_ByReferenceName "ByReference`1"
 
 #define g_CollectionsEnumerableItfName "System.Collections.IEnumerable"
 #define g_CollectionsEnumeratorClassName "System.Collections.IEnumerator"
