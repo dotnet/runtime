@@ -1115,6 +1115,18 @@ if (NOT HAVE_MAKEDEV_FILEH AND NOT HAVE_MAKEDEV_SYSMACROSH)
   message(FATAL_ERROR "Cannot find the makedev function on this platform.")
 endif()
 
+check_c_source_compiles(
+    "
+    #include <sys/types.h>
+    #include <grp.h>
+    int main(void)
+    {
+        void (*myFuncPoint)(int);
+        myFuncPoint = &getgrgid_r;
+    }
+    "
+    HAVE_GETGRGID_R)
+
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/Common/pal_config.h.in
     ${CMAKE_CURRENT_BINARY_DIR}/Common/pal_config.h)

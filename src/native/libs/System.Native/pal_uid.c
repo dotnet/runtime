@@ -241,6 +241,7 @@ int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
 
 char* SystemNative_GetGroupName(uint32_t gid)
 {
+#if HAVE_GETGRGID_R
     size_t bufferLength = 512;
     while (1)
     {
@@ -274,6 +275,11 @@ char* SystemNative_GetGroupName(uint32_t gid)
         }
         bufferLength = tmpBufferLength;
     }
+#else
+    (void)gid;
+    errno = ENOTSUP;
+    return NULL;
+#endif
 }
 
 char* SystemNative_GetUserName(uint32_t uid)
