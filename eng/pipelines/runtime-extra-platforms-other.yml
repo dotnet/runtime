@@ -197,7 +197,7 @@ jobs:
     jobParameters:
       testGroup: innerloop
       nameSuffix: AllSubsets_Mono
-      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true /p:MonoEnableLLVM=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
+      buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:DevTeamProvisioning=- /p:RunAOTCompilation=true $(_runSmokeTestsOnlyArg) /p:BuildTestsOnHelix=true /p:UsePortableRuntimePack=true /p:BuildDarwinFrameworks=true
       timeoutInMinutes: 180
       condition: >-
         or(
