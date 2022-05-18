@@ -924,7 +924,7 @@ void Lowering::LowerHWIntrinsic(GenTreeHWIntrinsic* node)
     NamedIntrinsic intrinsicId = node->GetHWIntrinsicId();
 
     switch (intrinsicId)
-    {   
+    {
         case NI_Vector128_ConditionalSelect:
         case NI_Vector256_ConditionalSelect:
         {
@@ -1462,11 +1462,11 @@ void Lowering::LowerHWIntrinsicCmpOp(GenTreeHWIntrinsic* node, genTreeOps cmpOp)
 //
 void Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 {
-    var_types      simdType            = node->gtType;
-    CorInfoType    simdBaseJitType     = node->GetSimdBaseJitType();
-    var_types      simdBaseType        = node->GetSimdBaseType();
-    unsigned       simdSize            = node->GetSimdSize();
-    bool           isSimdAsHWIntrinsic = node->IsSimdAsHWIntrinsic();
+    var_types   simdType            = node->gtType;
+    CorInfoType simdBaseJitType     = node->GetSimdBaseJitType();
+    var_types   simdBaseType        = node->GetSimdBaseType();
+    unsigned    simdSize            = node->GetSimdSize();
+    bool        isSimdAsHWIntrinsic = node->IsSimdAsHWIntrinsic();
 
     assert(varTypeIsSIMD(simdType));
     assert(varTypeIsArithmetic(simdBaseType));
@@ -1480,44 +1480,44 @@ void Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
     GenTree* op2 = node->Op(2);
     GenTree* op3 = node->Op(3);
 
-    // If the condition vector comes from a hardware intrinsic that 
-    // returns a per element mask (marked with HW_Flag_ReturnsPerElementMask), 
+    // If the condition vector comes from a hardware intrinsic that
+    // returns a per element mask (marked with HW_Flag_ReturnsPerElementMask),
     // we can optimize the entire conditional select to a single BlendVariable instruction
 
     // First, determine if the target architecture supports BlendVariable
-    bool supportsBlendVariable = false;
+    bool           supportsBlendVariable = false;
     NamedIntrinsic blendVariableId;
 
-    if (simdSize == 32) 
+    if (simdSize == 32)
     {
         // for Vector256, BlendVariable for floats is available on AVX, whereas other types require AVX2
-        if (varTypeIsFloating(simdBaseType)) 
+        if (varTypeIsFloating(simdBaseType))
         {
             // This should have already been confirmed
             assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
             supportsBlendVariable = true;
-            blendVariableId = NI_AVX_BlendVariable;
+            blendVariableId       = NI_AVX_BlendVariable;
         }
-        else 
+        else
         {
             supportsBlendVariable = comp->compOpportunisticallyDependsOn(InstructionSet_AVX2);
-            blendVariableId = NI_AVX2_BlendVariable;
+            blendVariableId       = NI_AVX2_BlendVariable;
         }
-    } 
-    else 
+    }
+    else
     {
         // for Vector128, BlendVariable is available on SSE41
         supportsBlendVariable = comp->compOpportunisticallyDependsOn(InstructionSet_SSE41);
-        blendVariableId = NI_SSE41_BlendVariable;
+        blendVariableId       = NI_SSE41_BlendVariable;
     }
 
     if (op1->OperIsHWIntrinsic() && supportsBlendVariable)
     {
         GenTreeHWIntrinsic* hwIntrinsic = op1->AsHWIntrinsic();
-        NamedIntrinsic id = hwIntrinsic->GetHWIntrinsicId();
+        NamedIntrinsic      id          = hwIntrinsic->GetHWIntrinsicId();
 
         // If the condition is a per-element mask, we can optimize
-        if (HWIntrinsicInfo::ReturnsPerElementMask(id)) 
+        if (HWIntrinsicInfo::ReturnsPerElementMask(id))
         {
             // result = BlendVariable op2 op3 op1
             node->ResetHWIntrinsicId(blendVariableId, comp, op2, op3, op1);
@@ -1561,7 +1561,7 @@ void Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
 
     // determine which Or intrinsic to use, depending on target architecture
     NamedIntrinsic orIntrinsic = NI_Illegal;
-    
+
     if (simdSize == 32)
     {
         assert(comp->compIsaSupportedDebugOnly(InstructionSet_AVX));
