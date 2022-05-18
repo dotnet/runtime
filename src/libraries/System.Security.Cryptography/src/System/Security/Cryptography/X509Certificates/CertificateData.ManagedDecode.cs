@@ -87,7 +87,7 @@ namespace System.Security.Cryptography.X509Certificates
             certificate.TbsCertificate.SubjectPublicKeyInfo.Encode(writer);
             SubjectPublicKeyInfo = writer.Encode();
 
-            Extensions = new List<X509Extension>();
+            Extensions = new List<X509Extension>((certificate.TbsCertificate.Extensions?.Length).GetValueOrDefault());
             if (certificate.TbsCertificate.Extensions != null)
             {
                 foreach (X509ExtensionAsn rawExtension in certificate.TbsCertificate.Extensions)
