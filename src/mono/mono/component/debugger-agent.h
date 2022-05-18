@@ -36,12 +36,12 @@ mono_wasm_save_thread_context (void);
 void
 mini_wasm_debugger_add_function_pointers (MonoComponentDebugger* fn_table);
 
+void
+mini_wasi_debugger_add_function_pointers (MonoComponentDebugger* fn_table);
+
 #if defined(HOST_WASI)
 void
 mono_wasi_suspend_current (void);
-
-void
-mini_wasi_debugger_add_function_pointers (MonoComponentDebugger* fn_table);
 
 void
 mono_debugger_agent_initialize_function_pointers (void *start_debugger_thread, void *suspend_vm, void *suspend_current);
