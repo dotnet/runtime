@@ -476,5 +476,59 @@ namespace System.Runtime.InteropServices.Tests
 
             NativeMemory.AlignedFree(ptr);
         }
+
+        [Theory]
+        [InlineData(1, 0)]
+        [InlineData(1, 1)]
+        [InlineData(1, 2)]
+        [InlineData(1, 3)]
+        [InlineData(1, 44)]
+        [InlineData(1, 367)]
+        [InlineData(2, 0)]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(8, 0)]
+        [InlineData(9, 0)]
+        [InlineData(9, 2)]
+        [InlineData(9, 111)]
+        [InlineData(9, 289)]
+        [InlineData(16, 0)]
+        [InlineData(16, 1)]
+        [InlineData(16, 3)]
+        [InlineData(16, 7)]
+        [InlineData(32, 0)]
+        [InlineData(64, 0)]
+        [InlineData(128, 0)]
+        [InlineData(256, 0)]
+        [InlineData(256, 1)]
+        [InlineData(256, 2)]
+        [InlineData(256, 3)]
+        [InlineData(256, 5)]
+        [InlineData(256, 67)]
+        [InlineData(256, 143)]
+        public void ZeroMemoryWithExactRangeTest(uint size, uint offset)
+        {
+            int headLength = offset;
+            int bodyLength = size;
+            int tailLength = 512 - headLength - bodyLength;
+            int headOffset = 0;
+            int bodyOffset = headLength;
+            int tailOffset = headLength + bodyLength;
+
+            void* ptr = NativeMemory.AlignedAlloc(512, 8);
+
+            Assert.True(ptr != null);
+            Assert.True((nuint)ptr % 8 == 0);
+
+            new Span<byte>(ptr, 512).Fill(0b10101010);
+
+            NativeMemory.ZeroMemory(ptr + bodyOffset, bodyLength);
+
+            Assert.Equal(-1, new Span<byte>(ptr + headOffset, headLength).IndexOfAnyExcept(0b10101010));
+            Assert.Equal(-1, new Span<byte>(ptr + bodyOffset, bodyLength).IndexOfAnyExcept(0));
+            Assert.Equal(-1, new Span<byte>(ptr + tailOffset, tailLength).IndexOfAnyExcept(0b10101010));
+
+            NativeMemory.AlignedFree(ptr);
+        }
     }
 }
