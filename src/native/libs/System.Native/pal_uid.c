@@ -241,16 +241,19 @@ int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
 
 char* SystemNative_GetGroupName(uint32_t gid)
 {
+    struct group* result;
+    char* name;
 #if HAVE_GETGRGID_R
     size_t bufferLength = 512;
     while (1)
     {
         char *buffer = (char*)malloc(bufferLength);
         if (buffer == NULL)
+        {
             return NULL;
+        }
 
         struct group gr;
-        struct group* result;
         if (getgrgid_r(gid, &gr, buffer, bufferLength, &result) == 0)
         {
             if (result == NULL)
@@ -261,7 +264,7 @@ char* SystemNative_GetGroupName(uint32_t gid)
             }
             else
             {
-                char* name = strdup(gr.gr_name);
+                name = strdup(gr.gr_name);
                 free(buffer);
                 return name;
             }
@@ -276,9 +279,15 @@ char* SystemNative_GetGroupName(uint32_t gid)
         bufferLength = tmpBufferLength;
     }
 #else
-    (void)gid;
-    errno = ENOTSUP;
-    return NULL;
+    // Platforms like Android API level < 24 do not have getgrgid_r available
+    // Android API level >= 24 do have getgrgid_r available but call getgrgid internally anyway
+    result = getgrgid(gid);
+    if (result == NULL)
+    {
+        return NULL;
+    }
+    name = strdup(result->gr_name);
+    return name;
 #endif
 }
 
