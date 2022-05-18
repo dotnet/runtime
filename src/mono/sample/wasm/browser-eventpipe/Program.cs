@@ -13,7 +13,7 @@ namespace Sample
     {
         public static void Main(string[] args)
         {
-            Console.WriteLine ("Hello, World!");
+            // not called.  See main.js for all the interesting bits
         }
 
         private static int iterations;
