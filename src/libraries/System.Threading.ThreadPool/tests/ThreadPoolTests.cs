@@ -827,7 +827,6 @@ namespace System.Threading.ThreadPools.Tests
             }).Dispose();
         }
 
-        // See https://github.com/dotnet/corert/pull/6822
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsThreadingSupported))]
         public static void ThreadPoolCanProcessManyWorkItemsInParallelWithoutDeadlocking()
         {

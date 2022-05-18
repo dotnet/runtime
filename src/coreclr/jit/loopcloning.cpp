@@ -2294,7 +2294,7 @@ bool Compiler::optExtractArrIndex(GenTree* tree, ArrIndex* result, unsigned lhsN
     result->rank++;
 
     // If the array element type (saved from the GT_INDEX node during morphing) is anything but
-    // TYP_REF, then it must the the final level of jagged array.
+    // TYP_REF, then it must the final level of jagged array.
     assert(arrBndsChk->gtInxType != TYP_VOID);
     *topLevelIsFinal = (arrBndsChk->gtInxType != TYP_REF);
 

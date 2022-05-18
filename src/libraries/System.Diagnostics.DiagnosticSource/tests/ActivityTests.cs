@@ -2177,6 +2177,84 @@ namespace System.Diagnostics.Tests
             }
         }
 
+        [Fact]
+        public void EnumerateLinkTagsTest()
+        {
+            ActivityLink link = new(default);
+
+            var enumerator = link.EnumerateTagObjects();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            var tags = new List<KeyValuePair<string, object?>>()
+            {
+                new KeyValuePair<string, object?>("tag1", "value1"),
+                new KeyValuePair<string, object?>("tag2", "value2"),
+            };
+
+            link = new ActivityLink(default, new ActivityTagsCollection(tags));
+
+            enumerator = link.EnumerateTagObjects();
+
+            List<KeyValuePair<string, object?>> values = new();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(tags[0], enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(tags[1], enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(tags, values);
+
+            foreach (ref readonly KeyValuePair<string, object?> tag in link.EnumerateTagObjects())
+            {
+                Assert.Equal(values[0], tag);
+                values.RemoveAt(0);
+            }
+        }
+
+        [Fact]
+        public void EnumerateEventTagsTest()
+        {
+            ActivityEvent e = new("testEvent");
+
+            var enumerator = e.EnumerateTagObjects();
+
+            Assert.False(enumerator.MoveNext());
+            Assert.False(enumerator.GetEnumerator().MoveNext());
+
+            var tags = new List<KeyValuePair<string, object?>>()
+            {
+                new KeyValuePair<string, object?>("tag1", "value1"),
+                new KeyValuePair<string, object?>("tag2", "value2"),
+            };
+
+            e = new ActivityEvent("testEvent", tags: new ActivityTagsCollection(tags));
+
+            enumerator = e.EnumerateTagObjects();
+
+            List<KeyValuePair<string, object?>> values = new();
+
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(tags[0], enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.True(enumerator.MoveNext());
+            Assert.Equal(tags[1], enumerator.Current);
+            values.Add(enumerator.Current);
+            Assert.False(enumerator.MoveNext());
+
+            Assert.Equal(tags, values);
+
+            foreach (ref readonly KeyValuePair<string, object?> tag in e.EnumerateTagObjects())
+            {
+                Assert.Equal(values[0], tag);
+                values.RemoveAt(0);
+            }
+        }
+
         public void Dispose()
         {
             Activity.Current = null;

@@ -17,7 +17,7 @@
     <Compile Include="Internal\Runtime\CompilerHelpers\LibraryInitializer.cs"/>
     <Compile Include="System\Runtime\InteropServices\MissingInteropDataException.cs" />
     <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.cs"/>
-    <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.CoreRT.cs"/>
+    <Compile Include="Internal\Runtime\CompilerHelpers\RuntimeInteropData.NativeAot.cs"/>
     <Compile Include="$(CompilerCommonPath)\Internal\Runtime\InteropConstants.cs">
       <Link>Internal\Runtime\InteropConstants.cs</Link>
     </Compile>

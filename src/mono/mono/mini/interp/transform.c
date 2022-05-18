@@ -4725,7 +4725,7 @@ generate_code (TransformData *td, MonoMethod *method, MonoMethodHeader *header, 
 				goto exit;
 
 			if (need_seq_point) {
-				//check is is a nested call and remove the MONO_INST_NONEMPTY_STACK of the last breakpoint, only for non native methods
+				// check if it is a nested call and remove the MONO_INST_NONEMPTY_STACK of the last breakpoint, only for non native methods
 				if (!(method->flags & METHOD_IMPL_ATTRIBUTE_NATIVE)) {
 					if (emitted_funccall_seq_point)	{
 						if (last_seq_point)

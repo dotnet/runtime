@@ -91,7 +91,7 @@ jobs:
       platform: Linux_arm64
       container:
         ${{ if eq(parameters.container, '') }}:
-          image: ubuntu-18.04-cross-arm64-20220426130400-6e40d49
+          image: ubuntu-18.04-cross-arm64-20220427171722-6e40d49
         ${{ if ne(parameters.container, '') }}:
           image: ${{ parameters.container }}
         registry: mcr

@@ -7558,7 +7558,7 @@ void CordbProcess::VerifyControlBlock()
     UpdateLeftSideDCBField(&(GetDCB()->m_rightSideProtocolMinSupported),
                            sizeof(GetDCB()->m_rightSideProtocolMinSupported));
 
-    // For Telesto, Dbi and Wks have a more flexible versioning allowed, as described by the Debugger
+    // Dbi and Wks have a more flexible versioning allowed, as described by the Debugger
     // Version Protocol String in DEBUGGER_PROTOCOL_STRING in DbgIpcEvents.h. This allows different build
     // numbers, but the other protocol numbers should still match.
 
@@ -12786,7 +12786,7 @@ void CordbProcess::HandleDebugEventForInteropDebugging(const DEBUG_EVENT * pEven
     }
 #endif
 
-    // This call will decide what to do w/ the the win32 event we just got. It does a lot of work.
+    // This call will decide what to do w/ the win32 event we just got. It does a lot of work.
     Reaction reaction = TriageWin32DebugEvent(pUnmanagedThread, pEvent);
 
 

@@ -986,7 +986,7 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
 #endif // FEATURE_PROFAPI_ATTACH_DETACH
 
     // Initialize internal state of our EEToProfInterfaceImpl.  This also loads the
-    // profiler itself, but does not yet call its Initalize() callback
+    // profiler itself, but does not yet call its Initialize() callback
     hr = pEEProf->Init(pProfEE, pClsid, wszClsid, wszProfilerDLL, (loadType == kAttachLoad), dwConcurrentGCWaitTimeoutInMs);
     if (FAILED(hr))
     {

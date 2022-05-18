@@ -80,7 +80,7 @@ DumpWriter::WriteDump()
         shdr.sh_size = 1;
         offset += sizeof(Shdr);
 
-        // When section header offset is present but ehdr section num = 0 then is is expected that
+        // When section header offset is present but ehdr section num = 0 then it is expected that
         // the sh_size indicates the size of the section array or 1 in our case.
         if (!WriteData(&shdr, sizeof(shdr))) {
             return false;

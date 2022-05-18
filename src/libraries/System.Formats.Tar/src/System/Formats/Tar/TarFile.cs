@@ -83,7 +83,7 @@ namespace System.Formats.Tar
         }
 
         // /// <summary>
-        // /// Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path. Can optionally include the base directory as the prefix for the the entry names.
+        // /// Asynchronously creates a tar archive from the contents of the specified directory, and outputs them into the specified path. Can optionally include the base directory as the prefix for the entry names.
         // /// </summary>
         // /// <param name="sourceDirectoryName">The path of the directory to archive.</param>
         // /// <param name="destinationFileName">The path of the destination archive file.</param>

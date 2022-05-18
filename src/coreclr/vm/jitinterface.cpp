@@ -303,7 +303,7 @@ CorInfoType CEEInfo::asCorInfoType(CorElementType eeType,
 
         // Zap the typeHnd when the type _really_ is a primitive
         // as far as verification is concerned. Returning a null class
-        // handle means it is is a primitive.
+        // handle means it is a primitive.
         //
         // Enums are exactly like primitives, even from a verification standpoint,
         // so we zap the type handle in this case.
@@ -5594,7 +5594,7 @@ bool __stdcall TrackAllocationsEnabled()
     CONTRACTL_END;
 
     return (
-        (g_IBCLogger.InstrEnabled() != FALSE)
+        FALSE
 #ifdef PROFILING_SUPPORTED
         || CORProfilerTrackAllocationsEnabled()
 #endif // PROFILING_SUPPORTED
@@ -5715,7 +5715,7 @@ CorInfoHelpFunc CEEInfo::getNewHelperStatic(MethodTable * pMT, bool * pHasSideEf
     }
 
 #ifdef FEATURE_DOUBLE_ALIGNMENT_HINT
-    // If we are use the the fast allocator we also may need the
+    // If we are use the fast allocator we also may need the
     // specialized varion for align8
     if (pMT->GetClass()->IsAlign8Candidate() &&
         (helper == CORINFO_HELP_NEWSFAST))
@@ -7325,7 +7325,7 @@ bool getILIntrinsicImplementationForRuntimeHelpers(MethodDesc * ftn,
     }
     else if (tk == CoreLibBinder::GetMethod(METHOD__RUNTIME_HELPERS__ENUM_COMPARE_TO)->GetMemberDef())
     {
-        // The the comment above on why this is is not an unconditional replacement.  This case handles
+        // The comment above on why this is not an unconditional replacement.  This case handles
         // Enums backed by 8 byte values.
 
         _ASSERTE(ftn->HasMethodInstantiation());
@@ -8648,7 +8648,7 @@ bool CEEInfo::resolveVirtualMethodHelper(CORINFO_DEVIRTUALIZATION_INFO * info)
     {
         // Virtual call devirtualization.
         //
-        // The derived class should be a subclass of the the base class.
+        // The derived class should be a subclass of the base class.
         MethodTable* pCheckMT = pObjMT;
 
         while (pCheckMT != nullptr)
@@ -8781,7 +8781,7 @@ void CEEInfo::expandRawHandleIntrinsic(
     CORINFO_GENERICHANDLE_RESULT *  pResult)
 {
     LIMITED_METHOD_CONTRACT;
-    UNREACHABLE();      // only called with CoreRT.
+    UNREACHABLE();      // only called with NativeAOT.
 }
 
 /*********************************************************************/
@@ -9126,7 +9126,7 @@ CORINFO_CLASS_HANDLE CEEInfo::getFieldClass (CORINFO_FIELD_HANDLE fieldHnd)
 }
 
 /*********************************************************************/
-// Returns the basic type of the field (not the the type that declares the field)
+// Returns the basic type of the field (not the type that declares the field)
 //
 // pTypeHnd - Optional. If not null then on return, for reference and value types,
 //            *pTypeHnd will contain the normalized type of the field.
@@ -11251,7 +11251,7 @@ void CEEJitInfo::allocUnwindInfo (
 #ifdef _DEBUG
     if (funcKind != CORJIT_FUNC_ROOT)
     {
-        // Check the the new funclet doesn't overlap any existing funclet.
+        // Check the new funclet doesn't overlap any existing funclet.
 
         for (ULONG iUnwindInfo = 0; iUnwindInfo < m_usedUnwindInfos - 1; iUnwindInfo++)
         {
@@ -13137,9 +13137,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
         {
             result = FALSE;
 
-            DefineFullyQualifiedNameForClassW();
-            wprintf(W("Type %s: expected size 0x%08x, actual size 0x%08x\n"),
-                GetFullyQualifiedNameForClassW(pMT), dwExpectedSize, dwActualSize);
+            DefineFullyQualifiedNameForClass();
+            printf("Type %s: expected size 0x%08x, actual size 0x%08x\n",
+                GetFullyQualifiedNameForClass(pMT), dwExpectedSize, dwActualSize);
         }
         else
         {
@@ -13160,9 +13160,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             {
                 result = FALSE;
 
-                DefineFullyQualifiedNameForClassW();
-                wprintf(W("Type %s: expected HFA type %08x, actual %08x\n"),
-                    GetFullyQualifiedNameForClassW(pMT), dwExpectedHFAType, dwActualHFAType);
+                DefineFullyQualifiedNameForClass();
+                printf("Type %s: expected HFA type %08x, actual %08x\n",
+                    GetFullyQualifiedNameForClass(pMT), dwExpectedHFAType, dwActualHFAType);
             }
             else
             {
@@ -13178,9 +13178,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             {
                 result = FALSE;
 
-                DefineFullyQualifiedNameForClassW();
-                wprintf(W("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n"),
-                    GetFullyQualifiedNameForClassW(pMT));
+                DefineFullyQualifiedNameForClass();
+                printf("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n",
+                    GetFullyQualifiedNameForClass(pMT));
             }
             else
             {
@@ -13207,9 +13207,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             {
                 result = FALSE;
 
-                DefineFullyQualifiedNameForClassW();
-                wprintf(W("Type %s: expected alignment 0x%08x, actual 0x%08x\n"),
-                    GetFullyQualifiedNameForClassW(pMT), dwExpectedAlignment, dwActualAlignment);
+                DefineFullyQualifiedNameForClass();
+                printf("Type %s: expected alignment 0x%08x, actual 0x%08x\n",
+                    GetFullyQualifiedNameForClass(pMT), dwExpectedAlignment, dwActualAlignment);
             }
             else
             {
@@ -13229,9 +13229,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 {
                     result = FALSE;
 
-                    DefineFullyQualifiedNameForClassW();
-                    wprintf(W("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n"),
-                        GetFullyQualifiedNameForClassW(pMT));
+                    DefineFullyQualifiedNameForClass();
+                    printf("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n",
+                        GetFullyQualifiedNameForClass(pMT));
                 }
                 else
                 {
@@ -13254,9 +13254,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 {
                     result = FALSE;
 
-                    DefineFullyQualifiedNameForClassW();
-                    wprintf(W("Type %s: GC refmap content doesn't match\n"),
-                        GetFullyQualifiedNameForClassW(pMT));
+                    DefineFullyQualifiedNameForClass();
+                    printf("Type %s: GC refmap content doesn't match\n",
+                        GetFullyQualifiedNameForClass(pMT));
                 }
                 else
                 {

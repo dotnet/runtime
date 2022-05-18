@@ -1602,7 +1602,7 @@ HMODULE ShimProcess::GetDacModule(PathString& dacModulePath)
     if (wszAccessDllPath.IsEmpty())
     {
         //
-        // Load the access DLL from the same directory as the the current CLR Debugging Services DLL.
+        // Load the access DLL from the same directory as the current CLR Debugging Services DLL.
         //
         if (GetClrModuleDirectory(wszAccessDllPath) != S_OK)
         {

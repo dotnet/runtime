@@ -226,8 +226,8 @@ namespace System.Net.Http
                 // Note that if _host is null, this is a (non-tunneled) proxy connection, and we can't cache the hostname.
                 hostHeader =
                     (_originAuthority.Port != (sslHostName == null ? DefaultHttpPort : DefaultHttpsPort)) ?
-                    $"{_originAuthority.IdnHost}:{_originAuthority.Port}" :
-                    _originAuthority.IdnHost;
+                    $"{_originAuthority.HostValue}:{_originAuthority.Port}" :
+                    _originAuthority.HostValue;
 
                 // Note the IDN hostname should always be ASCII, since it's already been IDNA encoded.
                 _hostHeaderValueBytes = Encoding.ASCII.GetBytes(hostHeader);

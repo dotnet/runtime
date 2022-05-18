@@ -363,7 +363,7 @@ public:
 #endif // _DEBUG
 
 // This entrypoint lets the caller separate the allocation of the entrypoint from the actual insertion into the hashtable. (This lets us
-// do multiple insertions without having to worry about an OOM occuring inbetween.)
+// do multiple insertions without having to worry about an OOM occurring inbetween.)
 //
 // The newEntry must have been allocated using AllocEntry. It must not be referenced by any other entity (other than a holder or tracker)
 // If this function throws, the caller is responsible for freeing the entry.
@@ -478,11 +478,6 @@ EEClassHashEntry_t *EEClassHashTable::FindItem(LPCUTF8 pszNamespace, LPCUTF8 psz
             // If (pSearch->pEncloser), we've found a nested class
             if ((IsNested != FALSE) == (pSearch->GetEncloser() != NULL))
             {
-                if (m_bCaseInsensitive)
-                    g_IBCLogger.LogClassHashTableAccess(dac_cast<PTR_EEClassHashEntry>(pSearch->GetData()));
-                else
-                    g_IBCLogger.LogClassHashTableAccess(pSearch);
-
                 return pSearch;
             }
         }

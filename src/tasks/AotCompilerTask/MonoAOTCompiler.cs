@@ -439,7 +439,7 @@ public class MonoAOTCompiler : Microsoft.Build.Utilities.Task
                 create an imbalance, like mentioned above, and we can end up
                 in a situation where one of the partitions has a job that
                 takes very long to execute, by which time other partitions
-                have completed, so some cores are idle.  But the the idle
+                have completed, so some cores are idle.  But the idle
                 ones won't get any of the remaining jobs, because they are
                 all assigned to that one partition.
 

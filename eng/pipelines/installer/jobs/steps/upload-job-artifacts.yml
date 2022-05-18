@@ -33,7 +33,7 @@ steps:
     TargetFolder: '$(Build.StagingDirectory)/BuildLogs'
     CleanTargetFolder: true
   continueOnError: true
-  condition: succeededOrFailed()
+  condition: always()
 
 - task: PublishPipelineArtifact@1
   displayName: Publish BuildLogs
@@ -41,4 +41,4 @@ steps:
     targetPath: '$(Build.StagingDirectory)/BuildLogs'
     artifactName: Installer-Logs-${{parameters.pgoType }}${{ parameters.runtimeFlavor }}-${{ parameters.runtimeVariant }}-${{ parameters.name }}-$(_BuildConfig)
   continueOnError: true
-  condition: succeededOrFailed()
+  condition: always()

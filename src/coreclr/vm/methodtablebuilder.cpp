@@ -4677,7 +4677,7 @@ BOOL MethodTableBuilder::TestOverrideForAccessibility(
         // Cross-Assembly
         else
         {
-            // If the method marks itself as check visibility the the method must be
+            // If the method marks itself as check visibility the method must be
             // public, FamORAssem, or family
             if((dwParentAttrs & mdMemberAccessMask) <= mdAssem)
             {
@@ -10468,10 +10468,6 @@ MethodTableBuilder::SetupMethodTable2(
 
 #ifdef _DEBUG
     {
-        // disable ibc logging because we can assert in ComputerPreferredZapModule for partially constructed
-        // generic types
-        IBCLoggingDisabler disableLogging;
-
         DeclaredMethodIterator it(*this);
         while (it.Next())
         {

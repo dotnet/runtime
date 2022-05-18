@@ -1575,8 +1575,6 @@ Thread::Thread()
 
     m_pPendingTypeLoad = NULL;
 
-    m_pIBCInfo = NULL;
-
     m_dwAVInRuntimeImplOkayCount = 0;
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX) // GCCOVER
@@ -2725,10 +2723,6 @@ Thread::~Thread()
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
 
-    if (m_pIBCInfo) {
-        delete m_pIBCInfo;
-    }
-
     m_tailCallTls.FreeArgBuffer();
 
 #ifdef FEATURE_EVENT_TRACE
@@ -3328,7 +3322,7 @@ DWORD MsgWaitHelper(int numWaiters, HANDLE* phEvent, BOOL bWaitAll, DWORD millis
         if (numWaiters == 1)
             bWaitAll = FALSE;
 
-        // The check that's supposed to prevent this condition from occuring, in WaitHandleNative::CorWaitMultipleNative,
+        // The check that's supposed to prevent this condition from occurring, in WaitHandleNative::CorWaitMultipleNative,
         // is unfortunately behind FEATURE_COMINTEROP instead of FEATURE_COMINTEROP_APARTMENT_SUPPORT.
         // So on CoreCLR (where FEATURE_COMINTEROP is not currently defined) we can actually reach this point.
         // We can't fix this, because it's a breaking change, so we just won't assert here.
