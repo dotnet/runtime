@@ -269,7 +269,6 @@ export const enum MarshalError {
 
 // Evaluates whether a value is nullish (same definition used as the ?? operator,
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function is_nullish (value: any): boolean {
+export function is_nullish<T> (value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
 }
