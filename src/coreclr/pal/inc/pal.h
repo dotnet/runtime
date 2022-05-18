@@ -451,7 +451,9 @@ PALAPI
 PAL_GenerateCoreDump(
     IN LPCSTR dumpName,
     IN INT dumpType,
-    IN ULONG32 flags);
+    IN ULONG32 flags,
+    LPSTR errorMessageBuffer,
+    INT cbErrorMessageBuffer);
 
 typedef VOID (*PPAL_STARTUP_CALLBACK)(
     char *modulePath,
