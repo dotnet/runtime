@@ -3280,6 +3280,12 @@ public:
         SetLclNum(lclNum);
     }
 
+    GenTree*& Data()
+    {
+        assert(OperIsLocalStore());
+        return gtOp1;
+    }
+
     unsigned GetLclNum() const
     {
         return _gtLclNum;
@@ -6600,6 +6606,12 @@ struct GenTreeIndir : public GenTreeOp
         assert(addr != nullptr);
         assert(addr->TypeIs(TYP_I_IMPL, TYP_BYREF));
         gtOp1 = addr;
+    }
+
+    GenTree*& Data()
+    {
+        assert(OperIs(GT_STOREIND) || OperIsStoreBlk());
+        return gtOp2;
     }
 
     // these methods provide an interface to the indirection node which
