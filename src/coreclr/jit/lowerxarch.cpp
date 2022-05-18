@@ -1519,8 +1519,8 @@ void Lowering::LowerHWIntrinsicCndSel(GenTreeHWIntrinsic* node)
         // If the condition is a per-element mask, we can optimize
         if (HWIntrinsicInfo::ReturnsPerElementMask(id))
         {
-            // result = BlendVariable op2 op3 op1
-            node->ResetHWIntrinsicId(blendVariableId, comp, op2, op3, op1);
+            // result = BlendVariable op3 (right) op2 (left) op1 (mask)
+            node->ResetHWIntrinsicId(blendVariableId, comp, op3, op2, op1);
             return;
         }
     }
