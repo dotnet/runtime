@@ -277,16 +277,15 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked short(Int128 value)
         {
-            if (value._upper != 0)
-            {
-                ThrowHelper.ThrowOverflowException();
-            }
-
             if (~value._upper == 0)
             {
                 long lower = (long)value._lower;
                 return checked((short)lower);
+            }
 
+            if (value._upper != 0)
+            {
+                ThrowHelper.ThrowOverflowException();
             }
             return checked((short)value._lower);
         }
@@ -302,16 +301,15 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked int(Int128 value)
         {
-            if (value._upper != 0)
-            {
-                ThrowHelper.ThrowOverflowException();
-            }
-
             if (~value._upper == 0)
             {
                 long lower = (long)value._lower;
                 return checked((int)lower);
+            }
 
+            if (value._upper != 0)
+            {
+                ThrowHelper.ThrowOverflowException();
             }
             return checked((int)value._lower);
         }
@@ -327,15 +325,15 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked long(Int128 value)
         {
-            if (value._upper != 0)
-            {
-                ThrowHelper.ThrowOverflowException();
-            }
-
             if (~value._upper == 0)
             {
                 long lower = (long)value._lower;
                 return lower;
+            }
+
+            if (value._upper != 0)
+            {
+                ThrowHelper.ThrowOverflowException();
             }
             return checked((long)value._lower);
         }
@@ -351,16 +349,15 @@ namespace System
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="Int128" />.</exception>
         public static explicit operator checked nint(Int128 value)
         {
-            if (value._upper != 0)
-            {
-                ThrowHelper.ThrowOverflowException();
-            }
-
             if (~value._upper == 0)
             {
                 long lower = (long)value._lower;
                 return checked((nint)lower);
+            }
 
+            if (value._upper != 0)
+            {
+                ThrowHelper.ThrowOverflowException();
             }
             return checked((nint)value._lower);
         }
@@ -378,16 +375,15 @@ namespace System
         [CLSCompliant(false)]
         public static explicit operator checked sbyte(Int128 value)
         {
-            if (value._upper != 0)
-            {
-                ThrowHelper.ThrowOverflowException();
-            }
-
             if (~value._upper == 0)
             {
                 long lower = (long)value._lower;
                 return checked((sbyte)lower);
+            }
 
+            if (value._upper != 0)
+            {
+                ThrowHelper.ThrowOverflowException();
             }
             return checked((sbyte)value._lower);
         }
@@ -742,9 +738,9 @@ namespace System
 
             uint sign = (uint)(left._upper >> 63);
 
-            if ((sign ^ (uint)(right._upper >> 63)) == 0)
+            if (sign == (uint)(right._upper >> 63))
             {
-                if ((sign ^ (uint)(result._upper >> 63)) != 0)
+                if (sign != (uint)(result._upper >> 63))
                 {
                     ThrowHelper.ThrowOverflowException();
                 }
@@ -1802,9 +1798,9 @@ namespace System
 
             uint sign = (uint)(left._upper >> 63);
 
-            if ((sign ^ (uint)(right._upper >> 63)) != 0)
+            if (sign != (uint)(right._upper >> 63))
             {
-                if ((sign ^ (uint)(result._upper >> 63)) != 0)
+                if (sign != (uint)(result._upper >> 63))
                 {
                     ThrowHelper.ThrowOverflowException();
                 }

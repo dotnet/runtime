@@ -502,9 +502,9 @@ namespace System
         // Explicit Conversions To UInt128
         //
 
-        /// <summary>Explicitly converts a <see cref="decimal" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Explicitly converts a <see cref="decimal" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static explicit operator UInt128(decimal value)
         {
             value = decimal.Truncate(value);
@@ -516,9 +516,9 @@ namespace System
             return new UInt128(value.High, value.Low64);
         }
 
-        /// <summary>Explicitly converts a <see cref="double" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Explicitly converts a <see cref="double" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static explicit operator UInt128(double value)
         {
             const double TwoPow128 = 340282366920938463463374607431768211456.0;
@@ -535,13 +535,16 @@ namespace System
             return ToUInt128(value);
         }
 
-        /// <summary>Explicitly converts a <see cref="double" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a <see cref="double" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
         public static explicit operator checked UInt128(double value)
         {
             const double TwoPow128 = 340282366920938463463374607431768211456.0;
+
+            // We need to convert -0.0 to 0 and not throw, so we compare
+            // value against 0 rather than checking IsNegative
 
             if ((value < 0.0) || double.IsNaN(value) || (value >= TwoPow128))
             {
@@ -584,29 +587,29 @@ namespace System
             }
         }
 
-        /// <summary>Explicitly converts a <see cref="Half" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Explicitly converts a <see cref="Half" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static explicit operator UInt128(Half value) => (UInt128)(double)(value);
 
-        /// <summary>Explicitly converts a <see cref="Half" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a <see cref="Half" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
         public static explicit operator checked UInt128(Half value) => checked((UInt128)(double)(value));
 
-        /// <summary>Explicitly converts a <see cref="short" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Explicitly converts a <see cref="short" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static explicit operator UInt128(short value)
         {
             long lower = value;
             return new UInt128((ulong)(lower >> 63), (ulong)lower);
         }
 
-        /// <summary>Explicitly converts a <see cref="short" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a <see cref="short" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
         public static explicit operator checked UInt128(short value)
         {
@@ -617,18 +620,18 @@ namespace System
             return new UInt128(0, (ushort)value);
         }
 
-        /// <summary>Explicitly converts a <see cref="int" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Explicitly converts a <see cref="int" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static explicit operator UInt128(int value)
         {
             long lower = value;
             return new UInt128((ulong)(lower >> 63), (ulong)lower);
         }
 
-        /// <summary>Explicitly converts a <see cref="int" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a <see cref="int" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
         public static explicit operator checked UInt128(int value)
         {
@@ -639,18 +642,18 @@ namespace System
             return new UInt128(0, (uint)value);
         }
 
-        /// <summary>Explicitly converts a <see cref="long" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Explicitly converts a <see cref="long" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static explicit operator UInt128(long value)
         {
             long lower = value;
             return new UInt128((ulong)(lower >> 63), (ulong)lower);
         }
 
-        /// <summary>Explicitly converts a <see cref="long" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a <see cref="long" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
         public static explicit operator checked UInt128(long value)
         {
@@ -661,18 +664,18 @@ namespace System
             return new UInt128(0, (ulong)value);
         }
 
-        /// <summary>Explicitly converts a <see cref="IntPtr" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Explicitly converts a <see cref="IntPtr" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static explicit operator UInt128(nint value)
         {
             long lower = value;
             return new UInt128((ulong)(lower >> 63), (ulong)lower);
         }
 
-        /// <summary>Explicitly converts a <see cref="IntPtr" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a <see cref="IntPtr" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
         public static explicit operator checked UInt128(nint value)
         {
@@ -683,9 +686,9 @@ namespace System
             return new UInt128(0, (nuint)value);
         }
 
-        /// <summary>Explicitly converts a <see cref="sbyte" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Explicitly converts a <see cref="sbyte" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         [CLSCompliant(false)]
         public static explicit operator UInt128(sbyte value)
         {
@@ -693,9 +696,9 @@ namespace System
             return new UInt128((ulong)(lower >> 63), (ulong)lower);
         }
 
-        /// <summary>Explicitly converts a <see cref="sbyte" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a <see cref="sbyte" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
         [CLSCompliant(false)]
         public static explicit operator checked UInt128(sbyte value)
@@ -707,14 +710,14 @@ namespace System
             return new UInt128(0, (byte)value);
         }
 
-        /// <summary>Explicitly converts a <see cref="float" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Explicitly converts a <see cref="float" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static explicit operator UInt128(float value) => (UInt128)(double)(value);
 
-        /// <summary>Explicitly converts a <see cref="float" /> value to a 128-bit signed integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
+        /// <summary>Explicitly converts a <see cref="float" /> value to a 128-bit unsigned integer, throwing an overflow exception for any values that fall outside the representable range.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         /// <exception cref="OverflowException"><paramref name="value" /> is not representable by <see cref="UInt128" />.</exception>
         public static explicit operator checked UInt128(float value) => checked((UInt128)(double)(value));
 
@@ -722,37 +725,37 @@ namespace System
         // Implicit Conversions To UInt128
         //
 
-        /// <summary>Implicitly converts a <see cref="byte" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Implicitly converts a <see cref="byte" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static implicit operator UInt128(byte value) => new UInt128(0, value);
 
-        /// <summary>Implicitly converts a <see cref="char" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Implicitly converts a <see cref="char" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         public static implicit operator UInt128(char value) => new UInt128(0, value);
 
-        /// <summary>Implicitly converts a <see cref="ushort" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Implicitly converts a <see cref="ushort" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         [CLSCompliant(false)]
         public static implicit operator UInt128(ushort value) => new UInt128(0, value);
 
-        /// <summary>Implicitly converts a <see cref="uint" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Implicitly converts a <see cref="uint" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         [CLSCompliant(false)]
         public static implicit operator UInt128(uint value) => new UInt128(0, value);
 
-        /// <summary>Implicitly converts a <see cref="ulong" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Implicitly converts a <see cref="ulong" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         [CLSCompliant(false)]
         public static implicit operator UInt128(ulong value) => new UInt128(0, value);
 
-        /// <summary>Implicitly converts a <see cref="UIntPtr" /> value to a 128-bit signed integer.</summary>
+        /// <summary>Implicitly converts a <see cref="UIntPtr" /> value to a 128-bit unsigned integer.</summary>
         /// <param name="value">The value to convert.</param>
-        /// <returns><paramref name="value" /> converted to a 128-bit signed integer.</returns>
+        /// <returns><paramref name="value" /> converted to a 128-bit unsigned integer.</returns>
         [CLSCompliant(false)]
         public static implicit operator UInt128(nuint value) => new UInt128(0, value);
 
