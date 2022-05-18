@@ -116,10 +116,6 @@
 
 #include "utilcode.h"
 
-#ifndef TARGET_UNIX
-#include "securitywrapper.h"
-#endif // !TARGET_UNIX
-
 // ----------------------------------------------------------------------------
 // CurrentProfilerStatus methods
 
