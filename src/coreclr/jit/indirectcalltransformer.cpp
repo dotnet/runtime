@@ -451,6 +451,7 @@ private:
     class GuardedDevirtualizationTransformer final : public Transformer
     {
         unsigned m_targetLclNum;
+
     public:
         GuardedDevirtualizationTransformer(Compiler* compiler, BasicBlock* block, Statement* stmt)
             : Transformer(compiler, block, stmt), m_targetLclNum(BAD_VAR_NUM), returnTemp(BAD_VAR_NUM)
@@ -539,7 +540,7 @@ private:
             checkBlock             = currBlock;
             checkBlock->bbJumpKind = BBJ_COND;
 
-            CallArg* thisArg = origCall->gtArgs.GetThisArg();
+            CallArg* thisArg  = origCall->gtArgs.GetThisArg();
             GenTree* thisTree = thisArg->GetNode();
 
             // Create temp for this if the tree is costly.
@@ -588,8 +589,7 @@ private:
                 assert(origCall->IsVirtualVtable() || origCall->IsDelegateInvoke());
                 if (origCall->IsVirtualVtable())
                 {
-                    m_targetLclNum =
-                        compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
+                    m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
                     compiler->lvaGetDesc(m_targetLclNum)->lvSingleDef = 1;
 
                     GenTree*   tarTree = compiler->fgExpandVirtualVtableCallTarget(origCall);
@@ -632,7 +632,7 @@ private:
                         m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
                         compiler->lvaGetDesc(m_targetLclNum)->lvSingleDef = 1;
 
-                        GenTree* asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
+                        GenTree*   asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
                         Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
                         compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
                         tarTree = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
@@ -943,19 +943,21 @@ private:
                     // Target was saved into a temp during check. We expand the
                     // delegate call to a CT_INDIRECT call that uses the target
                     // directly, somewhat similarly to LowerDelegateInvoke.
-                    call->gtCallType = CT_INDIRECT;
-                    call->gtCallAddr = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
+                    call->gtCallType   = CT_INDIRECT;
+                    call->gtCallAddr   = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
                     call->gtCallCookie = nullptr;
                     call->gtCallMoreFlags &= ~GTF_CALL_M_DELEGATE_INV;
 
-                    GenTree* thisOffset = compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateInstance, TYP_I_IMPL);
-                    CallArg* thisArg = call->gtArgs.GetThisArg();
+                    GenTree* thisOffset =
+                        compiler->gtNewIconNode((ssize_t)compiler->eeGetEEInfo()->offsetOfDelegateInstance, TYP_I_IMPL);
+                    CallArg* thisArg     = call->gtArgs.GetThisArg();
                     GenTree* delegateObj = thisArg->GetNode();
                     // TODO: Is it worth it to create a local for this before
                     // the check as well? In many cases it will end up unused
                     // after inlining.
                     assert(delegateObj->OperIsLocal());
-                    GenTree* newThis = compiler->gtNewOperNode(GT_ADD, TYP_BYREF, compiler->gtCloneExpr(delegateObj), thisOffset);
+                    GenTree* newThis =
+                        compiler->gtNewOperNode(GT_ADD, TYP_BYREF, compiler->gtCloneExpr(delegateObj), thisOffset);
                     newThis = compiler->gtNewIndir(TYP_REF, newThis);
 
                     thisArg->SetEarlyNode(newThis);
