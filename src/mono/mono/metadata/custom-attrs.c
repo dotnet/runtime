@@ -19,6 +19,7 @@
 #include "mono/metadata/gc-internals.h"
 #include "mono/metadata/mono-endian.h"
 #include "mono/metadata/object-internals.h"
+#include "mono/metadata/custom-attrs-types.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/sre-internals.h"
 #include "mono/metadata/reflection-internals.h"
@@ -628,13 +629,15 @@ MONO_RESTORE_WARNING
 
 /*
  * Load custrom attribute without mono allocation - invoked from AOT compiler
+ * Caller needs to deallocate memory of the return value
  */
-static void*
+static MonoCustomAttrValue*
 load_cattr_value_noalloc (MonoImage *image, MonoType *t, const char *p, const char *boundp, const char **end, MonoError *error)
 {
 	int type = t->type;
 	guint32 slen;
 	MonoClass *tklass = t->data.klass;
+	MonoCustomAttrValue* result = (MonoCustomAttrValue *)g_malloc (sizeof (MonoCustomAttrValue));
 
 	g_assert (boundp);
 	error_init (error);
@@ -650,6 +653,7 @@ load_cattr_value_noalloc (MonoImage *image, MonoType *t, const char *p, const ch
 			g_error ("Unhandled type of generic instance in load_cattr_value_noalloc: %s", m_class_get_name (cc));
 		}
 	}
+	result->type = type;
 
 handle_enum:
 	switch (type) {
@@ -661,7 +665,8 @@ handle_enum:
 			return NULL;
 		*bval = *p;
 		*end = p + 1;
-		return bval;
+		result->value.primitive = bval;
+		return result;
 	}
 	case MONO_TYPE_CHAR:
 	case MONO_TYPE_U2:
@@ -671,7 +676,8 @@ handle_enum:
 			return NULL;
 		*val = read16 (p);
 		*end = p + 2;
-		return val;
+		result->value.primitive = val;
+		return result;
 	}
 #if SIZEOF_VOID_P == 4
 	case MONO_TYPE_U:
@@ -685,7 +691,8 @@ handle_enum:
 			return NULL;
 		*val = read32 (p);
 		*end = p + 4;
-		return val;
+		result->value.primitive = val;
+		return result;
 	}
 #if SIZEOF_VOID_P == 8
 	case MONO_TYPE_U: /* error out instead? this should probably not happen */
@@ -698,7 +705,8 @@ handle_enum:
 			return NULL;
 		*val = read64 (p);
 		*end = p + 8;
-		return val;
+		result->value.primitive = val;
+		return result;
 	}
 	case MONO_TYPE_R8: {
 		double *val = (double *)g_malloc (sizeof (double));
@@ -706,7 +714,8 @@ handle_enum:
 			return NULL;
 		readr8 (p, val);
 		*end = p + 8;
-		return val;
+		result->value.primitive = val;
+		return result;
 	}
 	case MONO_TYPE_VALUETYPE:
 		if (m_class_is_enumtype (t->data.klass)) {
@@ -721,7 +730,8 @@ handle_enum:
 					return NULL;
 				*val = read64 (p);
 				*end = p + 8;
-				return val;
+				result->value.primitive = val;
+				return result;
 			}
 		}
 		g_error ("generic valutype %s not handled in custom attr value decoding", m_class_get_name (t->data.klass));
@@ -743,10 +753,12 @@ MONO_RESTORE_WARNING
 		if (slen > 0 && !bcheck_blob (p, slen - 1, boundp, error))
 			return NULL;
 		*end = p + slen;
-		return (void*)start;
+		result->value.primitive = (gpointer)start;
+		return result;
 	}
 	case MONO_TYPE_CLASS: {
-		return load_cattr_type (image, t, TRUE, p, boundp, end, error, &slen);
+		result->value.primitive = load_cattr_type (image, t, TRUE, p, boundp, end, error, &slen);;
+		return result;
 	}
 	case MONO_TYPE_OBJECT: {
 		if (!bcheck_blob (p, 0, boundp, error))
@@ -755,7 +767,8 @@ MONO_RESTORE_WARNING
 		MonoClass *subc = NULL;
 
 		if (subt == CATTR_TYPE_SYSTEM_TYPE) {
-			return load_cattr_type (image, t, FALSE, p, boundp, end, error, &slen);
+			result->value.primitive = load_cattr_type (image, t, FALSE, p, boundp, end, error, &slen);
+			return result;
 		} else if (subt == 0x0E) {
 			type = MONO_TYPE_STRING;
 			goto handle_enum;
@@ -802,10 +815,11 @@ MONO_RESTORE_WARNING
 		} else {
 			g_error ("Unknown type 0x%02x for object type encoding in custom attr", subt);
 		}
-		return load_cattr_value_noalloc (image, m_class_get_byval_arg (subc), p, boundp, end, error);
+		result->value.primitive = load_cattr_value_noalloc (image, m_class_get_byval_arg (subc), p, boundp, end, error);
+		return result;
 	}
 	case MONO_TYPE_SZARRAY: {
-		guint32 i, alen, basetype;
+		guint32 i, alen;
 
 		if (!bcheck_blob (p, 3, boundp, error))
 			return NULL;
@@ -816,92 +830,17 @@ MONO_RESTORE_WARNING
 			return NULL;
 		}
 
-		basetype = m_class_get_byval_arg (tklass)->type;
-		if (basetype == MONO_TYPE_VALUETYPE && m_class_is_enumtype (tklass))
-			basetype = mono_class_enum_basetype_internal (tklass)->type;
+		result->value.array = g_malloc (sizeof (MonoCustomAttrValueArray) + alen * sizeof (MonoCustomAttrValue));
+		result->value.array->len = alen;
 
-		if (basetype == MONO_TYPE_GENERICINST) {
-			MonoGenericClass * mgc = m_class_get_byval_arg (tklass)->data.generic_class;
-			MonoClass * cc = mgc->container_class;
-			if (m_class_is_enumtype (cc)) {
-				basetype = m_class_get_byval_arg (m_class_get_element_class (cc))->type;
-			} else {
-				g_error ("Unhandled type of generic instance in load_cattr_value_noalloc: %s[]", m_class_get_name (cc));
-			}
-		}
-
-		switch (basetype) {
-		case MONO_TYPE_U1:
-		case MONO_TYPE_I1:
-		case MONO_TYPE_BOOLEAN:
-			for (i = 0; i < alen; i++) {
-				if (!bcheck_blob (p, 0, boundp, error))
-					return NULL;
-				MonoBoolean val = *p++;
-				// TODO: add to array
-			}
-			break;
-		case MONO_TYPE_CHAR:
-		case MONO_TYPE_U2:
-		case MONO_TYPE_I2:
-			for (i = 0; i < alen; i++) {
-				if (!bcheck_blob (p, 1, boundp, error))
-					return NULL;
-				guint16 val = read16 (p);
-				// TODO: add to array
-				p += 2;
-			}
-			break;
-		case MONO_TYPE_R4:
-		case MONO_TYPE_U4:
-		case MONO_TYPE_I4:
-			for (i = 0; i < alen; i++) {
-				if (!bcheck_blob (p, 3, boundp, error))
-					return NULL;
-				guint32 val = read32 (p);
-				// TODO: add to array
-				p += 4;
-			}
-			break;
-		case MONO_TYPE_R8:
-			for (i = 0; i < alen; i++) {
-				if (!bcheck_blob (p, 7, boundp, error))
-					return NULL;
-				double val;
-				readr8 (p, &val);
-				// TODO: add to array
-				p += 8;
-			}
-			break;
-		case MONO_TYPE_U8:
-		case MONO_TYPE_I8:
-			for (i = 0; i < alen; i++) {
-				if (!bcheck_blob (p, 7, boundp, error))
-					return NULL;
-				guint64 val = read64 (p);
-				// TODO: add to array
-				p += 8;
-			}
-			break;
-		case MONO_TYPE_CLASS:
-		case MONO_TYPE_OBJECT:
-		case MONO_TYPE_STRING:
-		case MONO_TYPE_SZARRAY: {
-			for (i = 0; i < alen; i++) {
-				gpointer* dummy = load_cattr_value_noalloc (image, m_class_get_byval_arg (tklass), p, boundp, &p, error);
-				if (!is_ok (error))
-					return NULL;
-				// TODO: add to array
-			}
-			break;
-		}
-		default:
-			g_error ("Type 0x%02x not handled in custom attr array decoding", basetype);
+		for (i = 0; i < alen; i++) {
+			MonoCustomAttrValue* array_element = load_cattr_value_noalloc (image, m_class_get_byval_arg (tklass), p, boundp, &p, error);
+			if (!is_ok (error))
+				return NULL;
+			result->value.array->values[i] = *array_element;
 		}
 		*end = p;
-		
-		// TODO: return array
-		return NULL;
+		return result;
 	}
 	default:
 		g_error ("Type 0x%02x not handled in custom attr value decoding", type);
@@ -1615,7 +1554,8 @@ mono_reflection_create_custom_attr_data_args_noalloc (MonoImage *image, MonoMeth
 			arginfo [j].type = field->type;
 			arginfo [j].field = field;
 
-		    named_args [j] = load_cattr_value_noalloc (image, field->type, named, data_end, &named, error);
+			named_args [j] = load_cattr_value_noalloc (image, field->type, named, data_end, &named, error);
+
 			if (!is_ok (error)) {
 				g_free (name);
 				goto fail;
