@@ -49,7 +49,7 @@ export function setU16(offset: _MemOffset, value: number): void {
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
-export function setU32 (offset: _MemOffset, value: _NumberOrPointer) : void {
+export function setU32(offset: _MemOffset, value: _NumberOrPointer): void {
     Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 
@@ -61,7 +61,7 @@ export function setI16(offset: _MemOffset, value: number): void {
     Module.HEAP16[<any>offset >>> 1] = value;
 }
 
-export function setI32 (offset: _MemOffset, value: _NumberOrPointer) : void {
+export function setI32(offset: _MemOffset, value: _NumberOrPointer): void {
     Module.HEAP32[<any>offset >>> 2] = <number><any>value;
 }
 
@@ -117,15 +117,15 @@ export function getF64(offset: _MemOffset): number {
 }
 
 export function getCU64(offset: _MemOffset): cuint64.CUInt64 {
-    const lo = getI32(offset);
-    const hi = getI32(<any>offset + 4);
+    const lo = getU32(offset);
+    const hi = getU32(<any>offset + 4);
     return cuint64.pack32(lo, hi);
 }
 
 export function setCU64(offset: _MemOffset, value: cuint64.CUInt64): void {
     const [lo, hi] = cuint64.unpack32(value);
-    setI32(offset, lo);
-    setI32(<any>offset + 4, hi);
+    setU32(offset, lo);
+    setU32(<any>offset + 4, hi);
 }
 
 /// Allocates a new buffer of the given size on the Emscripten stack and passes a pointer to it to the callback.
