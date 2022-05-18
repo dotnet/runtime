@@ -173,7 +173,9 @@ jobs:
               - defaultpgo
               - dynamicpgo
               - fullpgo
+              - fullpgo_methodprofiling
               - fullpgo_random_gdv
+              - fullpgo_random_gdv_methodprofiling_only
               - fullpgo_random_edge
               - fullpgo_random_gdv_edge
               - jitosr

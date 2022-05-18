@@ -397,7 +397,7 @@ jobs:
           ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
             # tiered compilation isn't done on mono yet
             scenarios:
-            - normal 
+            - normal
           ${{ elseif eq(variables['Build.Reason'], 'PullRequest') }}:
             scenarios:
             - no_tiered_compilation
@@ -545,7 +545,9 @@ jobs:
           - defaultpgo
           - dynamicpgo
           - fullpgo
+          - fullpgo_methodprofiling
           - fullpgo_random_gdv
+          - fullpgo_random_gdv_methodprofiling_only
           - fullpgo_random_edge
           - fullpgo_random_gdv_edge
         ${{ if in(parameters.testGroup, 'gc-longrunning') }}:
