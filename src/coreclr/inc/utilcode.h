@@ -384,6 +384,38 @@ typedef LPSTR   LPUTF8;
 #define MAKE_ANSIPTR_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt)        \
        MAKE_MULTIBYTE_FROMWIDEN(ptrname, widestr, _nCharacters, _pCnt, CP_ACP)
 
+const SIZE_T MaxSigned32BitDecString = ARRAY_SIZE("-2147483648") - 1;
+const SIZE_T MaxUnsigned32BitDecString = ARRAY_SIZE("4294967295") - 1;
+const SIZE_T MaxIntegerDecHexString = ARRAY_SIZE("-9223372036854775808") - 1;
+
+const SIZE_T Max16BitHexString = ARRAY_SIZE("1234") - 1;
+const SIZE_T Max32BitHexString = ARRAY_SIZE("12345678") - 1;
+const SIZE_T Max64BitHexString = ARRAY_SIZE("1234567812345678") - 1;
+
+template <typename I>
+inline WCHAR* FormatInteger(WCHAR* str, size_t strCount, const char* fmt, I v)
+{
+    static_assert(std::is_integral<I>::value, "Integral type required.");
+    assert(str != NULL && fmt != NULL);
+
+    // Represents the most amount of space needed to format
+    // an integral type (i.e., %d or %llx).
+    char tmp[MaxIntegerDecHexString + 1];
+    int cnt = sprintf_s(tmp, ARRAY_SIZE(tmp), fmt, v);
+    assert(0 <= cnt);
+
+    WCHAR* end = str + strCount;
+    for (int i = 0; i < cnt; ++i)
+    {
+        if (str == end)
+            return NULL;
+
+        *str++ = (WCHAR)tmp[i];
+    }
+
+    *str = W('\0');
+    return str;
+}
 
 inline
 LPWSTR DuplicateString(
@@ -3793,6 +3825,7 @@ HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *p
 
 void TrimWhiteSpace(__inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch);
 
+void OutputDebugStringUtf8(LPCUTF8 utf8str);
 
 //*****************************************************************************
 // Convert a UTF8 string to Unicode, into a CQuickArray<WCHAR>.

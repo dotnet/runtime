@@ -145,7 +145,6 @@
     <Compile Include="BidirectionStreamingTest.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="$(NewtonsoftJsonVersion)" />
     <PackageReference Include="System.Net.TestData" Version="$(SystemNetTestDataVersion)" />
     <ProjectReference Include="..\..\src\System.Net.Http.WinHttpHandler.csproj" />
   </ItemGroup>

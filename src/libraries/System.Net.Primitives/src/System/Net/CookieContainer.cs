@@ -624,21 +624,21 @@ namespace System.Net
                     switch (part.Length)
                     {
                         case 3:
-                            if (part[2] < '0' || part[2] > '9')
+                            if (!char.IsAsciiDigit(part[2]))
                             {
                                 break;
                             }
                             goto case 2;
 
                         case 2:
-                            if (part[1] < '0' || part[1] > '9')
+                            if (!char.IsAsciiDigit(part[1]))
                             {
                                 break;
                             }
                             goto case 1;
 
                         case 1:
-                            if (part[0] < '0' || part[0] > '9')
+                            if (!char.IsAsciiDigit(part[0]))
                             {
                                 break;
                             }

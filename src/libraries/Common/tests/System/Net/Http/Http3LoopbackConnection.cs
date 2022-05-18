@@ -260,11 +260,11 @@ namespace System.Net.Test.Common
             return request;
         }
 
-        public async Task ShutdownAsync()
+        public async Task ShutdownAsync(bool failCurrentRequest = false)
         {
             try
             {
-                long firstInvalidStreamId = _currentStreamId + 4;
+                long firstInvalidStreamId = failCurrentRequest ? _currentStreamId : _currentStreamId + 4;
                 await _outboundControlStream.SendGoAwayFrameAsync(firstInvalidStreamId);
             }
             catch (QuicConnectionAbortedException abortException) when (abortException.ErrorCode == H3_NO_ERROR)

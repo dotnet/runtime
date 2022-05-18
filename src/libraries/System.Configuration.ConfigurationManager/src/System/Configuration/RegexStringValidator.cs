@@ -27,11 +27,10 @@ namespace System.Configuration
         {
             ValidatorUtils.HelperParamValidation(value, typeof(string));
 
-            if (value == null) return;
-
-            Match match = _regex.Match((string)value);
-
-            if (!match.Success) throw new ArgumentException(SR.Format(SR.Regex_validator_error, _expression));
+            if (value is string s && !_regex.IsMatch(s))
+            {
+                throw new ArgumentException(SR.Format(SR.Regex_validator_error, _expression));
+            }
         }
     }
 }

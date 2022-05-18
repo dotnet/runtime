@@ -466,14 +466,6 @@ VOID Object::Validate(BOOL bDeep, BOOL bVerifyNextHeader, BOOL bVerifySyncBlock)
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
 
-    if (g_IBCLogger.InstrEnabled() && !GCStress<cfg_any>::IsEnabled())
-    {
-        // If we are instrumenting for IBC (and GCStress is not enabled)
-        // then skip these Object::Validate() as they slow down the
-        // instrument phase by an order of magnitude
-        return;
-    }
-
     if (g_fEEShutDown & ShutDown_Phase2)
     {
         // During second phase of shutdown the code below is not guaranteed to work.
@@ -929,6 +921,7 @@ BOOL StringObject::CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR *strAChar
         // Next char
         strAChars++; strBChars++;
     }
+
 }
 
 /*============================InternalTrailByteCheck============================
@@ -1616,7 +1609,7 @@ void* Nullable::ValueAddr(MethodTable* nullableMT) {
 }
 
 //===============================================================================
-// Special logic to box a nullable<T> as a boxed<T>
+// Special Logic to box a nullable<T> as a boxed<T>
 
 OBJECTREF Nullable::Box(void* srcPtr, MethodTable* nullableMT)
 {
@@ -1633,7 +1626,7 @@ OBJECTREF Nullable::Box(void* srcPtr, MethodTable* nullableMT)
     Nullable* src = (Nullable*) srcPtr;
 
     _ASSERTE(IsNullableType(nullableMT));
-    // We better have a concrete instantiation, or our field offset asserts are not useful
+        // We better have a concrete instantiation, or our field offset asserts are not useful
     _ASSERTE(!nullableMT->ContainsGenericVariables());
 
     if (!*src->HasValueAddr(nullableMT))
@@ -1664,10 +1657,10 @@ BOOL Nullable::UnBox(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
     Nullable* dest = (Nullable*) destPtr;
     BOOL fRet = TRUE;
 
-    // We should only get here if we are unboxing a T as a Nullable<T>
+        // We should only get here if we are unboxing a T as a Nullable<T>
     _ASSERTE(IsNullableType(destMT));
 
-    // We better have a concrete instantiation, or our field offset asserts are not useful
+        // We better have a concrete instantiation, or our field offset asserts are not useful
     _ASSERTE(!destMT->ContainsGenericVariables());
 
     if (boxedVal == NULL)
@@ -1754,6 +1747,101 @@ BOOL Nullable::UnBoxNoGC(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
 }
 
 //===============================================================================
+// Special Logic to unbox a boxed T as a nullable<T> into an argument
+// specified by the argDest.
+// Does not handle type equivalence (may conservatively return FALSE)
+BOOL Nullable::UnBoxIntoArgNoGC(ArgDestination *argDest, OBJECTREF boxedVal, MethodTable* destMT)
+{
+    CONTRACTL
+    {
+        NOTHROW;
+        GC_NOTRIGGER;
+        MODE_COOPERATIVE;
+    }
+    CONTRACTL_END;
+
+#if defined(UNIX_AMD64_ABI)
+    if (argDest->IsStructPassedInRegs())
+    {
+        // We should only get here if we are unboxing a T as a Nullable<T>
+        _ASSERTE(IsNullableType(destMT));
+
+        // We better have a concrete instantiation, or our field offset asserts are not useful
+        _ASSERTE(!destMT->ContainsGenericVariables());
+
+        if (boxedVal == NULL)
+        {
+            // Logically we are doing *dest->HasValueAddr(destMT) = false;
+            // We zero out the whole structure because it may contain GC references
+            // and these need to be initialized to zero.   (could optimize in the non-GC case)
+            InitValueClassArg(argDest, destMT);
+        }
+        else
+        {
+            if (!IsNullableForTypeNoGC(destMT, boxedVal->GetMethodTable()))
+            {
+                // For safety's sake, also allow true nullables to be unboxed normally.
+                // This should not happen normally, but we want to be robust
+                if (destMT == boxedVal->GetMethodTable())
+                {
+                    CopyValueClassArg(argDest, boxedVal->GetData(), destMT, 0);
+                    return TRUE;
+                }
+                return FALSE;
+            }
+
+            Nullable* dest = (Nullable*)argDest->GetStructGenRegDestinationAddress();
+            *dest->HasValueAddr(destMT) = true;
+            int destOffset = (BYTE*)dest->ValueAddr(destMT) - (BYTE*)dest;
+            CopyValueClassArg(argDest, boxedVal->UnBox(), boxedVal->GetMethodTable(), destOffset);
+        }
+        return TRUE;
+    }
+
+#endif // UNIX_AMD64_ABI
+
+#if defined(TARGET_LOONGARCH64)
+    if (argDest->IsStructPassedInRegs())
+    {
+        // We should only get here if we are unboxing a T as a Nullable<T>
+        _ASSERTE(IsNullableType(destMT));
+
+        // We better have a concrete instantiation, or our field offset asserts are not useful
+        _ASSERTE(!destMT->ContainsGenericVariables());
+
+        if (boxedVal == NULL)
+        {
+            // Logically we are doing *dest->HasValueAddr(destMT) = false;
+            // We zero out the whole structure becasue it may contain GC references
+            // and these need to be initialized to zero.   (could optimize in the non-GC case)
+            InitValueClassArg(argDest, destMT);
+        }
+        else
+        {
+            if (!IsNullableForTypeNoGC(destMT, boxedVal->GetMethodTable()))
+            {
+                // For safety's sake, also allow true nullables to be unboxed normally.
+                // This should not happen normally, but we want to be robust
+                if (destMT == boxedVal->GetMethodTable())
+                {
+                    CopyValueClassArg(argDest, boxedVal->GetData(), destMT, 0);
+                    return TRUE;
+                }
+                return FALSE;
+            }
+
+            CopyValueClassArg(argDest, boxedVal->UnBox(), boxedVal->GetMethodTable(), 0);
+            *(UINT64*)(argDest->GetStructGenRegDestinationAddress()) = 1;
+        }
+        return TRUE;
+    }
+
+#endif
+
+    return UnBoxNoGC(argDest->GetDestinationAddress(), boxedVal, destMT);
+}
+
+//===============================================================================
 // Special Logic to unbox a boxed T as a nullable<T>
 // Does not do any type checks.
 void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* destMT)
@@ -1767,10 +1855,10 @@ void Nullable::UnBoxNoCheck(void* destPtr, OBJECTREF boxedVal, MethodTable* dest
     CONTRACTL_END;
     Nullable* dest = (Nullable*) destPtr;
 
-    // We should only get here if we are unboxing a T as a Nullable<T>
+        // We should only get here if we are unboxing a T as a Nullable<T>
     _ASSERTE(IsNullableType(destMT));
 
-    // We better have a concrete instantiation, or our field offset asserts are not useful
+        // We better have a concrete instantiation, or our field offset asserts are not useful
     _ASSERTE(!destMT->ContainsGenericVariables());
 
     if (boxedVal == NULL)

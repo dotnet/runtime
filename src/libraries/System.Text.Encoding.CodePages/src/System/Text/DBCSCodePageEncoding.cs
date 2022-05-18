@@ -135,7 +135,8 @@ namespace System.Text
                 lock (s_streamLock)
                 {
                     s_codePagesEncodingDataStream.Seek(m_firstDataWordOffset, SeekOrigin.Begin);
-                    s_codePagesEncodingDataStream.Read(buffer, 0, m_dataSize);
+                    int bytesRead = s_codePagesEncodingDataStream.Read(buffer, 0, m_dataSize);
+                    Debug.Assert(bytesRead == m_dataSize, "s_codePagesEncodingDataStream.Read should have read a full buffer.");
                 }
 
                 fixed (byte* pBuffer = buffer)
@@ -257,7 +258,8 @@ namespace System.Text
                     lock (s_streamLock)
                     {
                         s_codePagesEncodingDataStream.Seek(m_firstDataWordOffset, SeekOrigin.Begin);
-                        s_codePagesEncodingDataStream.Read(buffer, 0, m_dataSize);
+                        int bytesRead = s_codePagesEncodingDataStream.Read(buffer, 0, m_dataSize);
+                        Debug.Assert(bytesRead == m_dataSize, "s_codePagesEncodingDataStream.Read should have read a full buffer.");
                     }
 
                     fixed (byte* pBuffer = buffer)

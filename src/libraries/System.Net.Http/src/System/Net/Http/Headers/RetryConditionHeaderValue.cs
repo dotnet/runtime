@@ -126,7 +126,7 @@ namespace System.Net.Http.Headers
             // If it is a number, we have a timespan, otherwise we assume we have a date.
             char firstChar = input[current];
 
-            if ((firstChar >= '0') && (firstChar <= '9'))
+            if (char.IsAsciiDigit(firstChar))
             {
                 int deltaStartIndex = current;
                 int deltaLength = HttpRuleParser.GetNumberLength(input, current, false);

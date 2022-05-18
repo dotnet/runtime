@@ -1525,7 +1525,7 @@ namespace System.Text
                 pos++;
                 // If reached end of text then error (Unexpected end of text)
                 // or character is not a digit then error (Unexpected Character)
-                if (pos == len || (ch = format[pos]) < '0' || ch > '9') FormatError();
+                if (pos == len || !char.IsAsciiDigit(ch = format[pos])) FormatError();
                 int index = 0;
                 do
                 {
@@ -1539,7 +1539,7 @@ namespace System.Text
                     ch = format[pos];
                     // so long as character is digit and value of the index is less than 1000000 ( index limit )
                 }
-                while (ch >= '0' && ch <= '9' && index < IndexLimit);
+                while (char.IsAsciiDigit(ch) && index < IndexLimit);
 
                 // If value of index is not within the range of the arguments passed in then error (Index out of range)
                 if (index >= args.Length)
@@ -1587,7 +1587,7 @@ namespace System.Text
                     }
 
                     // If current character is not a digit then error (Unexpected character)
-                    if (ch < '0' || ch > '9')
+                    if (!char.IsAsciiDigit(ch))
                     {
                         FormatError();
                     }
@@ -1604,7 +1604,7 @@ namespace System.Text
                         ch = format[pos];
                         // So long a current character is a digit and the value of width is less than 100000 ( width limit )
                     }
-                    while (ch >= '0' && ch <= '9' && width < WidthLimit);
+                    while (char.IsAsciiDigit(ch) && width < WidthLimit);
                     // end of parsing Argument Alignment
                 }
 

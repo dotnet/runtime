@@ -187,6 +187,7 @@ namespace ILLink.Shared
         AssemblyProducedAOTWarnings = 3053,
         GenericRecursionCycle = 3054,
         CorrectnessOfAbstractDelegatesCannotBeGuaranteed = 3055,
+        RequiresDynamicCodeOnStaticConstructor = 3056,
     }
 
     public static class DiagnosticIdExtensions

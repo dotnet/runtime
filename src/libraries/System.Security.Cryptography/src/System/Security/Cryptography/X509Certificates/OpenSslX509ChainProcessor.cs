@@ -863,9 +863,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 char cur = base64[readIdx];
 
-                if ((cur >= 'A' && cur <= 'Z') ||
-                    (cur >= 'a' && cur <= 'z') ||
-                    (cur >= '0' && cur <= '9'))
+                if (char.IsAsciiLetterOrDigit(cur))
                 {
                     urlEncoded[writeIdx++] = cur;
                 }

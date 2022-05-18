@@ -1396,27 +1396,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Helper function for alphanumeric char in ascii mode.
-        /// </summary>
-        private static bool IsAciiAlphanumeric(char c)
-        {
-            return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
-        }
-
-        /// <summary>
         /// Helper function for testing mask language alphanumeric identifiers.
         /// </summary>
         private static bool IsAlphanumeric(char c)
         {
             return char.IsLetter(c) || char.IsDigit(c);
-        }
-
-        /// <summary>
-        /// Helper function for testing letter char in ascii mode.
-        /// </summary>
-        private static bool IsAsciiLetter(char c)
-        {
-            return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
         }
 
         /// <summary>
@@ -2302,7 +2286,7 @@ namespace System.ComponentModel
                         resultHint = MaskedTextResultHint.LetterExpected;
                         return false;
                     }
-                    if (!IsAsciiLetter(input) && AsciiOnly)
+                    if (!char.IsAsciiLetter(input) && AsciiOnly)
                     {
                         resultHint = MaskedTextResultHint.AsciiCharacterExpected;
                         return false;
@@ -2315,7 +2299,7 @@ namespace System.ComponentModel
                         resultHint = MaskedTextResultHint.LetterExpected;
                         return false;
                     }
-                    if (!IsAsciiLetter(input) && AsciiOnly)
+                    if (!char.IsAsciiLetter(input) && AsciiOnly)
                     {
                         resultHint = MaskedTextResultHint.AsciiCharacterExpected;
                         return false;
@@ -2344,7 +2328,7 @@ namespace System.ComponentModel
                         resultHint = MaskedTextResultHint.AlphanumericCharacterExpected;
                         return false;
                     }
-                    if (!IsAciiAlphanumeric(input) && AsciiOnly)
+                    if (!char.IsAsciiLetterOrDigit(input) && AsciiOnly)
                     {
                         resultHint = MaskedTextResultHint.AsciiCharacterExpected;
                         return false;
@@ -2357,7 +2341,7 @@ namespace System.ComponentModel
                         resultHint = MaskedTextResultHint.AlphanumericCharacterExpected;
                         return false;
                     }
-                    if (!IsAciiAlphanumeric(input) && AsciiOnly)
+                    if (!char.IsAsciiLetterOrDigit(input) && AsciiOnly)
                     {
                         resultHint = MaskedTextResultHint.AsciiCharacterExpected;
                         return false;

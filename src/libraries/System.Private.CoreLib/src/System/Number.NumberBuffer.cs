@@ -66,7 +66,7 @@ namespace System
                         break;
                     }
 
-                    Debug.Assert((digit >= '0') && (digit <= '9'), "Unexpected character found in Number");
+                    Debug.Assert(char.IsAsciiDigit((char)digit), $"Unexpected character found in Number: {digit}");
                 }
 
                 Debug.Assert(numDigits == DigitsCount, "Null terminator found in unexpected location in Number");

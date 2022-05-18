@@ -66,6 +66,10 @@ jobs:
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.MonoAOTCompiler.Task*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Sdk*.nupkg
           IntermediateArtifacts/MonoRuntimePacks/Shipping/Microsoft.NET.Runtime.WebAssembly.Templates*.nupkg
+          IntermediateArtifacts/windows_arm/Shipping/Microsoft.NETCore.App.Runtime.win-arm*.nupkg
+          IntermediateArtifacts/windows_arm64/Shipping/Microsoft.NETCore.App.Runtime.win-arm64*.nupkg
+          IntermediateArtifacts/windows_x64/Shipping/Microsoft.NETCore.App.Runtime.win-x64*.nupkg
+          IntermediateArtifacts/windows_x86/Shipping/Microsoft.NETCore.App.Runtime.win-x86*.nupkg
 
     - task: CopyFiles@2
       displayName: Flatten packages

@@ -6172,19 +6172,12 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         if (varNode != nullptr)
         {
             assert(varNode->isContained());
-            srcVarNum = varNode->GetLclNum();
-            assert(srcVarNum < compiler->lvaCount);
+            srcVarNum         = varNode->GetLclNum();
+            LclVarDsc* varDsc = compiler->lvaGetDesc(srcVarNum);
 
-            // handle promote situation
-            LclVarDsc* varDsc = compiler->lvaTable + srcVarNum;
-
-            // This struct also must live in the stack frame
-            // And it can't live in a register (SIMD)
-            assert(varDsc->lvType == TYP_STRUCT);
+            // This struct also must live in the stack frame.
+            // And it can't live in a register.
             assert(varDsc->lvOnFrame && !varDsc->lvRegister);
-
-            // We don't split HFA struct
-            assert(!varDsc->lvIsHfa());
         }
         else // addrNode is used
         {
@@ -6744,7 +6737,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
     assert(index->isUsedFromReg());
 
     // Generate the bounds check if necessary.
-    if ((node->gtFlags & GTF_INX_RNGCHK) != 0)
+    if (node->IsBoundsChecked())
     {
         GetEmitter()->emitIns_R_R_I(INS_ld_w, EA_4BYTE, REG_R21, base->GetRegNum(), node->gtLenOffset);
         // if (index >= REG_R21)

@@ -394,9 +394,16 @@ jobs:
         helixProjectArguments: '$(Build.SourcesDirectory)/src/tests/Common/helixpublishwitharcade.proj'
 
         ${{ if in(parameters.testGroup, 'innerloop', 'outerloop') }}:
-          scenarios:
-          - normal
-          - ${{ if ne(parameters.runtimeFlavor, 'mono') }}: # tiered compilation isn't done on mono yet
+          ${{ if eq(parameters.runtimeFlavor, 'mono') }}:
+            # tiered compilation isn't done on mono yet
+            scenarios:
+            - normal 
+          ${{ elseif eq(variables['Build.Reason'], 'PullRequest') }}:
+            scenarios:
+            - no_tiered_compilation
+          ${{ else }}:
+            scenarios:
+            - normal
             - no_tiered_compilation
 
         ${{ if in(parameters.testGroup, 'jitstress') }}:

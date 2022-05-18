@@ -202,7 +202,7 @@ export function mono_wasm_web_socket_close_ref(webSocket_js_handle: JSHandle, co
             const { promise, promise_control } = _create_cancelable_promise();
             ws[wasm_ws_pending_close_promises].push(promise_control);
 
-            if (js_reason) {
+            if (typeof (js_reason) === "string") {
                 ws.close(code, js_reason);
             } else {
                 ws.close(code);
@@ -219,7 +219,7 @@ export function mono_wasm_web_socket_close_ref(webSocket_js_handle: JSHandle, co
                 mono_wasm_web_socket_close_warning = true;
                 console.warn("WARNING: Web browsers do not support closing the output side of a WebSocket. CloseOutputAsync has closed the socket and discarded any incoming messages.");
             }
-            if (js_reason) {
+            if (typeof (js_reason) === "string") {
                 ws.close(code, js_reason);
             } else {
                 ws.close(code);
