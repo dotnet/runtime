@@ -435,5 +435,49 @@ namespace System.Runtime.InteropServices.Tests
 
             NativeMemory.Free(newPtr);
         }
+
+        [Theory]
+        [InlineData(1, 0)]
+        [InlineData(1, 1)]
+        [InlineData(1, 2)]
+        [InlineData(1, 3)]
+        [InlineData(2, 0)]
+        [InlineData(3, 0)]
+        [InlineData(4, 0)]
+        [InlineData(8, 0)]
+        [InlineData(9, 0)]
+        [InlineData(16, 0)]
+        [InlineData(16, 1)]
+        [InlineData(16, 3)]
+        [InlineData(16, 7)]
+        [InlineData(32, 0)]
+        [InlineData(64, 0)]
+        [InlineData(128, 0)]
+        [InlineData(256, 0)]
+        [InlineData(256, 1)]
+        [InlineData(256, 2)]
+        [InlineData(256, 3)]
+        [InlineData(256, 5)]
+        [InlineData(512, 0)]
+        [InlineData(547, 0)]
+        [InlineData(1 * 1024, 0)]
+        public void ZeroMemoryTest(uint size, uint offset)
+        {
+            void* ptr = NativeMemory.AlignedAlloc(size + offset, 8);
+
+            Assert.True(ptr != null);
+            Assert.True((nuint)ptr % 8 == 0);
+
+            Random.Shared.NextBytes(new Span<byte>(ptr, (int)(size + offset)));
+
+            NativeMemory.ZeroMemory(ptr + offset, size);
+
+            foreach (byte value in new Span<byte>(ptr + offset, size))
+            {
+                Assert.Equal(0, (int)value);
+            }
+
+            NativeMemory.AlignedFree(ptr);
+        }
     }
 }
