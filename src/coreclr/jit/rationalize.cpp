@@ -316,8 +316,8 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
     if (!op2->OperIs(GT_LSH))
         return;
 
-    GenTree* lsh  = op2;
-    GenTree* div  = lsh->gtGetOp1();
+    GenTree* lsh   = op2;
+    GenTree* div   = lsh->gtGetOp1();
     GenTree* shift = lsh->gtGetOp2();
     if (div->OperIs(GT_DIV) && shift->IsIntegralConst())
     {
