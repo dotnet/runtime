@@ -623,16 +623,16 @@ namespace System.Text.RegularExpressions.Symbolic
             if (left == builder._nothing)
                 return right;
 
-            SymbolicRegexNode<TSet> rl = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._left! : right;
-            SymbolicRegexNode<TSet> rr = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._right! : builder._nothing;
+            SymbolicRegexNode<TSet> head = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._left! : right;
+            SymbolicRegexNode<TSet> tail = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._right! : builder._nothing;
 
             // Simplify away right side if left side subsumes it
-            if (builder.Subsumes(left, rl))
-                return OrderedOr(builder, left, rr);
+            if (left.Subsumes(head))
+                return OrderedOr(builder, left, tail);
 
             // Simplify by folding right side into left side if right side subsumes the left side
-            if (ShouldTryFoldRightToLeft(builder, left, rl) && TryFold(builder, rl, left, out SymbolicRegexNode<TSet>? result))
-                return OrderedOr(builder, result, rr);
+            if (ShouldTryFold(left, head) && TryFold(builder, head, left, out SymbolicRegexNode<TSet>? result))
+                return OrderedOr(builder, result, tail);
 
             // If left is not an Or, try to avoid allocation by checking if deduplication is necessary
             if (!deduplicated && left._kind != SymbolicRegexNodeKind.OrderedOr)
@@ -709,16 +709,115 @@ namespace System.Text.RegularExpressions.Symbolic
 
             return Create(builder, SymbolicRegexNodeKind.OrderedOr, left, right, -1, -1, default, null, SymbolicRegexInfo.Alternate(left._info, right._info));
 
-            static bool ShouldTryFoldRightToLeft(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right)
+            static bool ShouldTryFold(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right)
             {
-                if (right._kind == SymbolicRegexNodeKind.Concat && right._left == builder._anyStarLazy)
+                if (right._kind == SymbolicRegexNodeKind.Concat)
                 {
                     Debug.Assert(right._left is not null && right._right is not null);
                     if (right._left._kind == SymbolicRegexNodeKind.Loop && right._left._upper - right._left._lower > 1)
                         //do not simplify the case X|.*?R that represents the top-level alternation with right = .*?R as the initial search pattern
                         return false;
                 }
-                return builder.Subsumes(right, left);
+                return right.Subsumes(left);
+            }
+        }
+
+        internal bool Subsumes(SymbolicRegexNode<TSet> other)
+        {
+            if (this == other)
+                return true;
+            if (other == _builder._nothing)
+                return true;
+
+            if (_builder._subsumptionCache.TryGetValue((this, other), out bool cached))
+            {
+                return cached;
+            }
+
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(Subsumes, other);
+            }
+
+            bool? subsumes = ApplySubsumptionRules(this, other);
+
+            if (subsumes.HasValue)
+                _builder._subsumptionCache[(this, other)] = subsumes.Value;
+            return subsumes ?? false;
+
+            static bool? ApplySubsumptionRules(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right)
+            {
+                if (left._kind == SymbolicRegexNodeKind.Effect)
+                {
+                    Debug.Assert(left._left is not null && left._right is not null);
+                    return left._left.Subsumes(right);
+                }
+
+                if (right._kind == SymbolicRegexNodeKind.Effect)
+                {
+                    Debug.Assert(right._left is not null && right._right is not null);
+                    return left.Subsumes(right._left);
+                }
+
+                if (left._kind == SymbolicRegexNodeKind.Concat && right._kind == SymbolicRegexNodeKind.Concat)
+                {
+                    Debug.Assert(right._left is not null && right._right is not null);
+                    SymbolicRegexNode<TSet> rl = right._left;
+                    if (rl._kind == SymbolicRegexNodeKind.Loop && rl._lower == 0 && rl._upper == 1 && rl.IsLazy)
+                    {
+                        Debug.Assert(rl._left is not null);
+                        if (TrySkipPrefix(left, rl._left, out SymbolicRegexNode<TSet>? tail))
+                            return tail.Subsumes(right._right);
+                    }
+                }
+
+                if (left._kind == SymbolicRegexNodeKind.Concat && right._kind == SymbolicRegexNodeKind.Concat)
+                {
+                    Debug.Assert(left._left is not null && left._right is not null);
+                    SymbolicRegexNode<TSet> ll = left._left;
+                    if (ll._kind == SymbolicRegexNodeKind.Loop && ll._lower == 0 && ll._upper == 1 && ll.IsLazy)
+                    {
+                        Debug.Assert(ll._left is not null);
+                        if (TrySkipPrefix(right, ll._left, out SymbolicRegexNode<TSet>? tail))
+                            return left._right.Subsumes(tail);
+                    }
+                }
+
+                if (left._kind == SymbolicRegexNodeKind.Concat)
+                {
+                    Debug.Assert(left._left is not null && left._right is not null);
+                    if (left._left.IsNullable)
+                    {
+                        return left._right.Subsumes(right);
+                    }
+                }
+
+                return null;
+
+                static bool TrySkipPrefix(SymbolicRegexNode<TSet> node, SymbolicRegexNode<TSet> prefix, [NotNullWhen(true)] out SymbolicRegexNode<TSet>? tail)
+                {
+                    tail = null;
+                    while (prefix._kind == SymbolicRegexNodeKind.Concat)
+                    {
+                        Debug.Assert(prefix._left is not null && prefix._right is not null);
+                        if (node._kind != SymbolicRegexNodeKind.Concat)
+                            return false;
+                        Debug.Assert(node._left is not null && node._right is not null);
+                        if (node._left != prefix._left)
+                            return false;
+                        node = node._right;
+                        prefix = prefix._right;
+                    }
+                    if (node._kind != SymbolicRegexNodeKind.Concat)
+                        return false;
+                    Debug.Assert(node._left is not null && node._right is not null);
+                    if (node._left == prefix)
+                    {
+                        tail = node._right;
+                        return true;
+                    }
+                    return false;
+                }
             }
         }
 
@@ -735,7 +834,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
         private static bool TryFold(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> low, SymbolicRegexNode<TSet> high, [NotNullWhen(true)] out SymbolicRegexNode<TSet>? result)
         {
-            Debug.Assert(builder.Subsumes(low, high));
+            Debug.Assert(low.Subsumes(high));
 
             SymbolicRegexNode<TSet> highInner = high.UnwrapEffects();
             SymbolicRegexNode<TSet> lowInner = low.UnwrapEffects();
@@ -749,7 +848,7 @@ namespace System.Text.RegularExpressions.Symbolic
             if (high._kind == SymbolicRegexNodeKind.Effect)
             {
                 Debug.Assert(high._left is not null && high._right is not null);
-                Debug.Assert(builder.Subsumes(low, high._left));
+                Debug.Assert(low.Subsumes(high._left));
                 if (TryFold(builder, low, high._left, out SymbolicRegexNode<TSet>? innerResult))
                 {
                     result = CreateEffect(builder, innerResult, high._right);
@@ -760,7 +859,7 @@ namespace System.Text.RegularExpressions.Symbolic
             if (low._kind == SymbolicRegexNodeKind.Effect)
             {
                 Debug.Assert(low._left is not null && low._right is not null);
-                Debug.Assert(builder.Subsumes(low._left, high));
+                Debug.Assert(low._left.Subsumes(high));
                 if (TryFold(builder, low._left, high, out SymbolicRegexNode<TSet>? innerResult))
                 {
                     result = CreateEffect(builder, innerResult, low._right);
@@ -790,18 +889,18 @@ namespace System.Text.RegularExpressions.Symbolic
                 while (current._kind == SymbolicRegexNodeKind.Concat)
                 {
                     Debug.Assert(current._left is not null && current._right is not null);
-                    Debug.Assert(builder.Subsumes(current, high));
+                    Debug.Assert(current.Subsumes(high));
                     if (current == high)
                     {
                         prefix = builder.CreateConcat(prefixElements);
                         return true;
                     }
-                    else if (builder.Subsumes(current._right, high))
+                    else if (current._right.Subsumes(high))
                     {
                         prefixElements.Add(current._left);
                         current = current._right;
                     }
-                    else if (builder.Subsumes(high, current))
+                    else if (high.Subsumes(current))
                     {
                         prefix = builder.CreateConcat(prefixElements);
                         return true;

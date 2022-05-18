@@ -84,6 +84,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
         internal readonly Dictionary<(SymbolicRegexNode<TSet>, uint), SymbolicRegexNode<TSet>> _pruneCache = new();
 
+        internal readonly Dictionary<(SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>), bool> _subsumptionCache = new();
+
 #if DEBUG
         internal readonly Dictionary<(TransitionRegexKind, // _kind
             TSet?,                                     // _test
@@ -340,107 +342,6 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             return length;
-        }
-
-        private Dictionary<(SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>), bool> _subsumptionCache = new();
-
-        internal bool Subsumes(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right)
-        {
-            if (left == right)
-                return true;
-            if (right == _nothing)
-                return true;
-
-            if (_subsumptionCache.TryGetValue((left, right), out bool cached))
-            {
-                return cached;
-            }
-
-            if (!StackHelper.TryEnsureSufficientExecutionStack())
-            {
-                return StackHelper.CallOnEmptyStack(Subsumes, left, right);
-            }
-
-            bool? subsumes = ApplySubsumptionRules(this, left, right);
-
-            if (subsumes.HasValue)
-                _subsumptionCache[(left, right)] = subsumes.Value;
-            return subsumes ?? false;
-
-            static bool? ApplySubsumptionRules(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right)
-            {
-                if (left._kind == SymbolicRegexNodeKind.Effect)
-                {
-                    Debug.Assert(left._left is not null && left._right is not null);
-                    return builder.Subsumes(left._left, right);
-                }
-
-                if (right._kind == SymbolicRegexNodeKind.Effect)
-                {
-                    Debug.Assert(right._left is not null && right._right is not null);
-                    return builder.Subsumes(left, right._left);
-                }
-
-                if (left._kind == SymbolicRegexNodeKind.Concat && right._kind == SymbolicRegexNodeKind.Concat)
-                {
-                    Debug.Assert(right._left is not null && right._right is not null);
-                    SymbolicRegexNode<TSet> rl = right._left;
-                    if (rl._kind == SymbolicRegexNodeKind.Loop && rl._lower == 0 && rl._upper == 1 && rl.IsLazy)
-                    {
-                        Debug.Assert(rl._left is not null);
-                        if (TrySkipPrefix(left, rl._left, out SymbolicRegexNode<TSet>? tail))
-                            return builder.Subsumes(tail, right._right);
-                    }
-                }
-
-                if (left._kind == SymbolicRegexNodeKind.Concat && right._kind == SymbolicRegexNodeKind.Concat)
-                {
-                    Debug.Assert(left._left is not null && left._right is not null);
-                    SymbolicRegexNode<TSet> ll = left._left;
-                    if (ll._kind == SymbolicRegexNodeKind.Loop && ll._lower == 0 && ll._upper == 1 && ll.IsLazy)
-                    {
-                        Debug.Assert(ll._left is not null);
-                        if (TrySkipPrefix(right, ll._left, out SymbolicRegexNode<TSet>? tail))
-                            return builder.Subsumes(left._right, tail);
-                    }
-                }
-
-                if (left._kind == SymbolicRegexNodeKind.Concat)
-                {
-                    Debug.Assert(left._left is not null && left._right is not null);
-                    if (left._left.IsNullable)
-                    {
-                        return builder.Subsumes(left._right, right);
-                    }
-                }
-
-                return null;
-
-                static bool TrySkipPrefix(SymbolicRegexNode<TSet> node, SymbolicRegexNode<TSet> prefix, [NotNullWhen(true)] out SymbolicRegexNode<TSet>? tail)
-                {
-                    tail = null;
-                    while (prefix._kind == SymbolicRegexNodeKind.Concat)
-                    {
-                        Debug.Assert(prefix._left is not null && prefix._right is not null);
-                        if (node._kind != SymbolicRegexNodeKind.Concat)
-                            return false;
-                        Debug.Assert(node._left is not null && node._right is not null);
-                        if (node._left != prefix._left)
-                            return false;
-                        node = node._right;
-                        prefix = prefix._right;
-                    }
-                    if (node._kind != SymbolicRegexNodeKind.Concat)
-                        return false;
-                    Debug.Assert(node._left is not null && node._right is not null);
-                    if (node._left == prefix)
-                    {
-                        tail = node._right;
-                        return true;
-                    }
-                    return false;
-                }
-            }
         }
 
         /// <summary>
