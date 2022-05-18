@@ -5,7 +5,7 @@ using Xunit;
 
 namespace System.Reflection.Emit.Tests
 {
-    public sealed class ILGeneratorEmit5
+    public sealed class EmitWithMods
     {
         public interface IHelper
         {
@@ -20,7 +20,7 @@ namespace System.Reflection.Emit.Tests
         [Fact]
         public void TestEmitCallFunctionWithInArgumentFromDynamicMethod()
         {
-            var methodToCall = typeof(IHelper).GetMethod("PassThrough");
+            MethodInfo methodToCall = typeof(IHelper).GetMethod("PassThrough");
 
             var dynamicMethod = new DynamicMethod("CallingPassThrough",
                 MethodAttributes.Public | MethodAttributes.Static,
@@ -31,12 +31,12 @@ namespace System.Reflection.Emit.Tests
                   typeof(IHelper),
                   typeof(int),
                 },
-                typeof(ILGeneratorEmit5),
+                typeof(EmitWithMods),
                 true);
 
-            var il = dynamicMethod.GetILGenerator();
+            ILGenerator il = dynamicMethod.GetILGenerator();
 
-            var copy = il.DeclareLocal(typeof(int), false);
+            LocalBuilder copy = il.DeclareLocal(typeof(int), false);
 
             il.Emit(OpCodes.Ldarg_1);
             il.Emit(OpCodes.Stloc, (ushort)copy.LocalIndex);
@@ -52,7 +52,7 @@ namespace System.Reflection.Emit.Tests
 
             var helperInstance = new Helper();
 
-            var sum = func(helperInstance, 888);
+            int sum = func(helperInstance, 888);
 
             Assert.Equal(888, sum);
         }
