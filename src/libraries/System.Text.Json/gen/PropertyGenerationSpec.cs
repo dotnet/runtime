@@ -14,7 +14,7 @@ namespace System.Text.Json.SourceGeneration
         /// from the <see cref="ClrName"/> because source code might be decorated
         /// with '@' for reserved keywords, e.g. public string @event { get; set; }
         /// </summary>
-        public string ExactNameSpecifiedInSourceCode { get; init; }
+        public string NameSpecifiedInSourceCode { get; init; }
 
         public string ClrName { get; init; }
 

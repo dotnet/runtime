@@ -721,7 +721,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
 
                     TypeGenerationSpec memberTypeMetadata = memberMetadata.TypeGenerationSpec;
 
-                    string clrPropertyName = memberMetadata.ExactNameSpecifiedInSourceCode;
+                    string clrPropertyName = memberMetadata.NameSpecifiedInSourceCode;
 
                     string declaringTypeCompilableName = memberMetadata.DeclaringTypeRef;
 
@@ -738,7 +738,7 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                         { DefaultIgnoreCondition: JsonIgnoreCondition.Always } => "null",
                         { CanUseGetter: true } => $"static (obj) => (({declaringTypeCompilableName})obj).{clrPropertyName}{(memberMetadata.TypeGenerationSpec.CanContainNullableReferenceAnnotations ? "!" : "")}",
                         { CanUseGetter: false, HasJsonInclude: true }
-                            => @$"static (obj) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, memberMetadata.ExactNameSpecifiedInSourceCode)}"")",
+                            => @$"static (obj) => throw new {InvalidOperationExceptionTypeRef}(""{string.Format(ExceptionMessages.InaccessibleJsonIncludePropertiesNotSupported, typeGenerationSpec.Type.Name, memberMetadata.NameSpecifiedInSourceCode)}"")",
                         _ => "null"
                     };
 
@@ -894,7 +894,7 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
                     Type propertyType = propertyTypeSpec.Type;
                     string? objectRef = castingRequiredForProps ? $"(({propertyGenSpec.DeclaringTypeRef}){ValueVarName})" : ValueVarName;
                     //string propValue = $"{objectRef}.{propertyGenSpec.ClrName}";
-                    string propValue = $"{objectRef}.{propertyGenSpec.ExactNameSpecifiedInSourceCode}";
+                    string propValue = $"{objectRef}.{propertyGenSpec.NameSpecifiedInSourceCode}";
                     string methodArgs = $"{propVarName}, {propValue}";
 
                     string? methodToCall = GetWriterMethod(propertyType);
