@@ -530,5 +530,13 @@ namespace System.Runtime.InteropServices.Tests
 
             NativeMemory.AlignedFree(ptr);
         }
+
+        [Fact]
+        public void ZeroMemoryWithNullPointerAndZeroByteCountTest()
+        {
+            NativeMemory.ZeroMemory(null, 0);
+
+            // This test method just needs to check that no exceptions are thrown
+        }
     }
 }
