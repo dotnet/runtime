@@ -37,7 +37,7 @@ namespace BrowserDebugProxy
 
         private static async Task<JObject> ReadFieldValue(MonoSDBHelper sdbHelper, MonoBinaryReader reader, FieldTypeClass field, int objectId, TypeInfoWithDebugInformation typeInfo, int fieldValueType, bool isOwn, GetObjectCommandOptions getObjectOptions, CancellationToken token)
         {
-            var fieldValue = await sdbHelper.CreateJObjectForVariableValue(
+            var fieldValue = await sdbHelper.ValueCreator.ReadAsVariableValue(
                 reader,
                 field.Name,
                 token,
@@ -253,7 +253,7 @@ namespace BrowserDebugProxy
         public static Task<GetMembersResult> GetValueTypeMemberValues(
             MonoSDBHelper sdbHelper, int valueTypeId, GetObjectCommandOptions getCommandOptions, CancellationToken token, bool sortByAccessLevel = false, bool includeStatic = false)
         {
-            return sdbHelper.valueTypes.TryGetValue(valueTypeId, out ValueTypeClass valueType)
+            return sdbHelper.ValueCreator.TryGetValueTypeById(valueTypeId, out ValueTypeClass valueType)
                 ? valueType.GetMemberValues(sdbHelper, getCommandOptions, sortByAccessLevel, includeStatic, token)
                 : throw new ArgumentException($"Could not find any valuetype with id: {valueTypeId}", nameof(valueTypeId));
         }

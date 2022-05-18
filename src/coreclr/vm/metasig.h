@@ -606,6 +606,10 @@ DEFINE_METASIG(SM(Obj_IntPtr_Bool_RetVoid, j I F, v))
 DEFINE_METASIG(SM(IntPtr_Obj_RetVoid, I j, v))
 DEFINE_METASIG_T(SM(IntPtr_Type_RetVoid, I C(TYPE), v))
 
+DEFINE_METASIG_T(IM(Str_SpanOfByte_RetVoid, s GI(g(SPAN), 1, b), v))
+DEFINE_METASIG(IM(RetPtrByte, , P(b)))
+DEFINE_METASIG(IM(VoidPtr_Int_RetVoid, P(v) i, v))
+
 // Undefine macros in case we include the file again in the compilation unit
 
 #undef  DEFINE_METASIG

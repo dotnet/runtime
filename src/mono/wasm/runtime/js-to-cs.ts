@@ -15,7 +15,7 @@ import { wrap_error_root } from "./method-calls";
 import { js_string_to_mono_string_root, js_string_to_mono_string_interned_root } from "./strings";
 import { isThenable } from "./cancelable-promise";
 import { has_backing_array_buffer } from "./buffers";
-import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol, MonoClass, MonoObjectRef } from "./types";
+import { JSHandle, MonoArray, MonoMethod, MonoObject, MonoObjectNull, wasm_type_symbol, MonoClass, MonoObjectRef, is_nullish } from "./types";
 import { setI32, setU32, setF64 } from "./memory";
 import { Int32Ptr, TypedArray } from "./types/emscripten";
 
@@ -278,7 +278,7 @@ export function mono_wasm_typed_array_to_array_ref(js_handle: JSHandle, is_excep
     const resultRoot = mono_wasm_new_external_root<MonoObject>(result_address);
     try {
         const js_obj = mono_wasm_get_jsobj_from_js_handle(js_handle);
-        if (!js_obj) {
+        if (is_nullish(js_obj)) {
             wrap_error_root(is_exception, "ERR06: Invalid JS object handle '" + js_handle + "'", resultRoot);
             return;
         }

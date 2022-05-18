@@ -949,6 +949,7 @@ namespace System.Numerics.Tests
 
         // A test for Quaternion comparison involving NaN values
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void QuaternionEqualsNaNTest()
         {
             Quaternion a = new Quaternion(float.NaN, 0, 0, 0);

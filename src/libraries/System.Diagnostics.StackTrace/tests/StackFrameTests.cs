@@ -186,8 +186,7 @@ namespace System.Diagnostics.Tests
             }
 
             // GetNativeOffset returns StackFrame.OFFSET_UNKNOWN for unknown frames.
-            // For a positive skipFrame, the GetNativeOffset return value is dependent upon the implementation of reflection
-            // Invoke() which can be native (where the value would be zero) or managed (where the value is likely non-zero).
+            // GetNativeOffset returns 0 for known frames with a positive skipFrames.
             if (skipFrames == int.MaxValue || skipFrames == int.MinValue)
             {
                 Assert.Equal(StackFrame.OFFSET_UNKNOWN, stackFrame.GetNativeOffset());
@@ -199,7 +198,7 @@ namespace System.Diagnostics.Tests
             }
             else
             {
-                Assert.True(stackFrame.GetNativeOffset() >= 0);
+                Assert.Equal(0, stackFrame.GetNativeOffset());
             }
         }
     }
