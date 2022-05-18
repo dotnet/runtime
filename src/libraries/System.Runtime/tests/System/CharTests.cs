@@ -307,22 +307,29 @@ namespace System.Tests
 
         [Fact]
         public static void IsAsciiHexDigit_Char() =>
-            IsAsciiHexDigit(new HashSet<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'a', 'b', 'c', 'd', 'e', 'f' });
+            IsAsciiHexDigit(
+                new HashSet<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'a', 'b', 'c', 'd', 'e', 'f' },
+                char.IsAsciiHexDigit);
 
         [Fact]
         public static void IsAsciiHexDigitLower_Char() =>
-            IsAsciiHexDigit(new HashSet<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' });
+            IsAsciiHexDigit(
+                new HashSet<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' },
+                char.IsAsciiHexDigitLower);
 
         [Fact]
         public static void IsAsciiHexDigitUpper_Char() =>
-            IsAsciiHexDigit(new HashSet<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' });
+            IsAsciiHexDigit(
+                new HashSet<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' },
+                char.IsAsciiHexDigitUpper);
 
-        private static void IsAsciiHexDigit(HashSet<char> hexDigits)
+        private static void IsAsciiHexDigit(HashSet<char> hexDigits, Func<char, bool> predicate)
         {
             for (int i = 0; i < 128; i++)
             {
-                Assert.Equal(hexDigits.Contains((char)i), char.IsAsciiHexDigit((char)i));
+                Assert.Equal(hexDigits.Contains((char)i), predicate((char)i));
             }
+
             foreach (char c in hexDigits)
             {
                 Assert.False(char.IsAsciiHexDigit((char)(c | 0xFF00)));
