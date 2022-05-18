@@ -300,8 +300,9 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 // We do this transformation because Lowering has a specific optimization
 // for 'a % cns1' that is not easily reduced by other means.
 //
-void Rationalizer::RewriteSubLshDiv(GenTree** use) {
-    GenTree* const node           = *use;
+void Rationalizer::RewriteSubLshDiv(GenTree** use)
+{
+    GenTree* const node = *use;
 
     if (!node->OperIs(GT_SUB))
         return;
@@ -315,7 +316,7 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use) {
     if (!op2->OperIs(GT_LSH))
         return;
 
-    GenTree* lsh = op2;
+    GenTree* lsh  = op2;
     GenTree* div  = lsh->gtGetOp1();
     GenTree* cns1 = lsh->gtGetOp2();
     if (div->OperIs(GT_DIV) && cns1->IsIntegralConst())
