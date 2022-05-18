@@ -463,7 +463,7 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(1 * 1024, 0)]
         public void ZeroMemoryTest(uint size, uint offset)
         {
-            void* ptr = NativeMemory.AlignedAlloc(size + offset, 8);
+            byte* ptr = (byte*)NativeMemory.AlignedAlloc(size + offset, 8);
 
             Assert.True(ptr != null);
             Assert.True((nuint)ptr % 8 == 0);
@@ -515,7 +515,7 @@ namespace System.Runtime.InteropServices.Tests
             int bodyOffset = headLength;
             int tailOffset = headLength + bodyLength;
 
-            void* ptr = NativeMemory.AlignedAlloc(512, 8);
+            byte* ptr = (byte*)NativeMemory.AlignedAlloc(512, 8);
 
             Assert.True(ptr != null);
             Assert.True((nuint)ptr % 8 == 0);
