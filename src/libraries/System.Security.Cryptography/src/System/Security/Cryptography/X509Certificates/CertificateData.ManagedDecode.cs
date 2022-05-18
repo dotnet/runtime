@@ -347,7 +347,8 @@ namespace System.Security.Cryptography.X509Certificates
 
                 while (sequenceReader.HasData)
                 {
-                    rdnReaders.Push(sequenceReader.ReadSetOf());
+                    // To match Windows' behavior, permit multi-value RDN SETs to not be DER sorted.
+                    rdnReaders.Push(sequenceReader.ReadSetOf(skipSortOrderValidation: true));
                 }
             }
             catch (AsnContentException e)

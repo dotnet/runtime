@@ -392,6 +392,23 @@ Wry5FNNo
         [Theory]
         [InlineData(true)]
         [InlineData(false)]
+        public static void GetNameInfo_IncorrectSetOfSorting(bool forIssuer)
+        {
+            using ECDsa key = ECDsa.Create(ECCurve.NamedCurves.nistP256);
+
+            CertificateRequest req = new CertificateRequest(
+                new X500DistinguishedName(Convert.FromHexString("301C311A300B060355040B13047A7A7A7A300B060355040B130461616161")),
+                key,
+                HashAlgorithmName.SHA256);
+
+            using X509Certificate2 cert = req.CreateSelfSigned(DateTimeOffset.Now, DateTimeOffset.Now);
+            string name = cert.GetNameInfo(X509NameType.SimpleName, forIssuer);
+            Assert.Equal("aaaa", name);
+        }
+
+        [Theory]
+        [InlineData(true)]
+        [InlineData(false)]
         public static void GetNameInfo_HandlesUtf8Encoding(bool issuer)
         {
             using (X509Certificate2 c = new X509Certificate2(TestData.CertificateWithUtf8))
