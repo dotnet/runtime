@@ -469,7 +469,9 @@ emit_xcompare_for_intrinsic (MonoCompile *cfg, MonoClass *klass, int intrinsic_i
 static MonoInst*
 emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 {
-	return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
+	MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
+	ins->inst_c0 = CMP_EQ;
+	return ins;
 }
 
 static MonoInst*
@@ -1511,7 +1513,9 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	case SN_Equals: {
 		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type)) {
 			int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-			return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
+			MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
+			ins->inst_c0 = CMP_UEQ;
+			return ins;
 		}
 		break;
 	}
@@ -1787,16 +1791,21 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		if (!(fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], type)))
 			return NULL;
 		int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-		return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
+		ins = emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
+		ins->inst_c0 = CMP_UEQ;
+		return ins;
 	}
 	case SN_op_Equality:
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
-		return emit_simd_ins (cfg, klass, OP_XEQUAL, args [0]->dreg, args [1]->dreg);
+		ins = emit_simd_ins (cfg, klass, OP_XEQUAL, args [0]->dreg, args [1]->dreg);
+		ins->inst_c0 = CMP_EQ;
+		return ins;
 	case SN_op_Inequality: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
 		ins = emit_simd_ins (cfg, klass, OP_XEQUAL, args [0]->dreg, args [1]->dreg);
+		ins->inst_c0 = CMP_EQ;
 		int sreg = ins->dreg;
 		int dreg = alloc_ireg (cfg);
 		MONO_EMIT_NEW_BIALU_IMM (cfg, OP_COMPARE_IMM, -1, sreg, 0);
@@ -2083,7 +2092,9 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type)) {
 			int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
 
-			return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
+			MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
+			ins->inst_c0 = CMP_UEQ;
+			return ins;
 		} else if (fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)) {
 			/* Per element equality */
 			return emit_xcompare (cfg, klass, etype->type, args [0], args [1]);
