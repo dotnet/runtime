@@ -893,7 +893,6 @@ private static {JsonParameterInfoValuesTypeRef}[] {typeGenerationSpec.TypeInfoPr
 
                     Type propertyType = propertyTypeSpec.Type;
                     string? objectRef = castingRequiredForProps ? $"(({propertyGenSpec.DeclaringTypeRef}){ValueVarName})" : ValueVarName;
-                    //string propValue = $"{objectRef}.{propertyGenSpec.ClrName}";
                     string propValue = $"{objectRef}.{propertyGenSpec.NameSpecifiedInSourceCode}";
                     string methodArgs = $"{propVarName}, {propValue}";
 
