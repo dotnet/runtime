@@ -306,7 +306,7 @@ static LLVMIntPredicate cond_to_llvm_cond [] = {
 };
 
 static LLVMRealPredicate fpcond_to_llvm_cond [] = {
-	LLVMRealOEQ,
+	LLVMRealUEQ,
 	LLVMRealUNE,
 	LLVMRealOLE,
 	LLVMRealOGE,
@@ -8144,7 +8144,7 @@ MONO_RESTORE_WARNING
 
 			switch (ins->inst_c0) {
 			case SIMD_COMP_EQ:
-				op = LLVMRealOEQ;
+				op = LLVMRealUEQ;
 				break;
 			case SIMD_COMP_LT:
 				op = LLVMRealOLT;
@@ -9609,7 +9609,7 @@ MONO_RESTORE_WARNING
 
 			//%c = icmp sgt <16 x i8> %a0, %a1
 			if (srcelemt == LLVMDoubleType () || srcelemt == LLVMFloatType ())
-				cmp = LLVMBuildFCmp (builder, LLVMRealOEQ, lhs, rhs, "");
+				cmp = LLVMBuildFCmp (builder, LLVMRealUEQ, lhs, rhs, "");
 			else
 				cmp = LLVMBuildICmp (builder, LLVMIntEQ, lhs, rhs, "");
 			nelems = LLVMGetVectorSize (LLVMTypeOf (cmp));

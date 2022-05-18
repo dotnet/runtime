@@ -286,7 +286,6 @@ namespace System.Numerics.Tests
 
         // A test for Plane comparison involving NaN values
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
         public void PlaneEqualsNaNTest()
         {
             Plane a = new Plane(float.NaN, 0, 0, 0);
