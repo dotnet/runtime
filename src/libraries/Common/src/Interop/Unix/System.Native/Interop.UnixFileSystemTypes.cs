@@ -18,7 +18,7 @@ internal static partial class Interop
         /// where this enum must be a subset of the GetDriveType list, with the enum
         /// values here exactly matching a string there.
         /// </remarks>
-        internal enum UnixFileSystemTypes : long
+        internal enum UnixFileSystemTypes : uint
         {
             adfs = 0xADF5,
             affs = 0xADFF,
@@ -148,14 +148,14 @@ internal static partial class Interop
         }
 
         [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_GetFileSystemType")]
-        private static partial long GetFileSystemType(SafeFileHandle fd);
+        private static partial uint GetFileSystemType(SafeFileHandle fd);
 
         internal static bool TryGetFileSystemType(SafeFileHandle fd, out UnixFileSystemTypes fileSystemType)
         {
-            long fstatfsResult = GetFileSystemType(fd);
+            uint fstatfsResult = GetFileSystemType(fd);
             fileSystemType = (UnixFileSystemTypes)fstatfsResult;
-            Debug.Assert(Enum.IsDefined(fileSystemType) || fstatfsResult == -1, $"GetFileSystemType returned {fstatfsResult}");
-            return fstatfsResult != -1;
+            Debug.Assert(Enum.IsDefined(fileSystemType) || fstatfsResult == 0, $"GetFileSystemType returned {fstatfsResult}");
+            return fstatfsResult != 0;
         }
     }
 }
