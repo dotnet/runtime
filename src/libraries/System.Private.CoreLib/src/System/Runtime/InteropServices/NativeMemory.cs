@@ -38,6 +38,15 @@ namespace System.Runtime.InteropServices
             return AllocZeroed(byteCount, elementSize: 1);
         }
 
+        /// <summary>Clears a block of memory.</summary>
+        /// <param name="ptr">A pointer to the block of memory that should be cleared.</param>
+        /// <param name="byteCount">The size, in bytes, of the block to clear.</param>
+        [CLSCompliant(false)]
+        public static unsafe void ZeroMemory(byte* ptr, nuint byteCount)
+        {
+            SpanHelpers.ClearWithoutReferences(ref *ptr, byteCount);
+        }
+
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static nuint GetByteCount(nuint elementCount, nuint elementSize)
         {
