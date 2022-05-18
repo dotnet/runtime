@@ -51,6 +51,8 @@ namespace System.Text.Json.Serialization.Tests
 
         [Theory]
         [InlineData(typeof(ClassWithPublic_InitOnlyProperty_WithJsonIgnoreProperty))]
+        [InlineData(typeof(ClassWithPublicShadowed_InitOnlyProperty_WithJsonIgnoreProperty))]
+        [InlineData(typeof(ClassWithPublicOverridden_InitOnlyProperty_WithJsonIgnoreProperty))]
         public async Task PublicInitOnlySetter_With_JsonIgnore(Type type)
         {
             // Public and ignored init-only property setter ignored.
@@ -64,6 +66,11 @@ namespace System.Text.Json.Serialization.Tests
         public class ClassWithInitOnlyProperty
         {
             public int MyInt { get; init; }
+        }
+
+        public class ClassWithVirtualInitOnlyProperty
+        {
+            public virtual int MyInt { get; init; }
         }
 
         public struct StructWithInitOnlyProperty
@@ -110,5 +117,16 @@ namespace System.Text.Json.Serialization.Tests
             public int MyInt { get; init; }
         }
 
+        public class ClassWithPublicShadowed_InitOnlyProperty_WithJsonIgnoreProperty : ClassWithInitOnlyProperty
+        {
+            [JsonIgnore]
+            public new int MyInt { get; init; }
+        }
+
+        public class ClassWithPublicOverridden_InitOnlyProperty_WithJsonIgnoreProperty : ClassWithVirtualInitOnlyProperty
+        {
+            [JsonIgnore]
+            public override int MyInt { get; init; }
+        }
     }
 }

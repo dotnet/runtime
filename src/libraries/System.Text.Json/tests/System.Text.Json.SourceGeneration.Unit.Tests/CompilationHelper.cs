@@ -363,6 +363,78 @@ namespace System.Text.Json.SourceGeneration.UnitTests
             return CreateCompilation(source);
         }
 
+        public static Compilation CreateCompilationWithOverriddenIgnoredInitOnlyProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {
+                public class Base
+                {
+                    public Base()
+                    {
+                    }
+
+                    public int Value { get; set; }
+                    public virtual string InitOnly { get; init; }
+                }
+
+                public class Derived
+                {
+                    public Base()
+                    {
+                    }
+
+                    [JsonIgnore] public override string InitOnly { get; init; }
+                }
+
+                [JsonSerializable(typeof(Derived))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
+        public static Compilation CreateCompilationWithShadowedIgnoredInitOnlyProperties()
+        {
+            string source = @"
+            using System;
+            using System.Text.Json.Serialization;
+
+            namespace HelloWorld
+            {
+                public class Base
+                {
+                    public Base()
+                    {
+                    }
+
+                    public int Value { get; set; }
+                    public string InitOnly { get; init; }
+                }
+
+                public class Derived
+                {
+                    public Base()
+                    {
+                    }
+
+                    [JsonIgnore] public new string InitOnly { get; init; }
+                }
+
+                [JsonSerializable(typeof(Derived))]
+                public partial class MyJsonContext : JsonSerializerContext
+                {
+                }
+            }";
+
+            return CreateCompilation(source);
+        }
+
         public static Compilation CreateCompilationWithMixedInitOnlyProperties()
         {
             string source = @"

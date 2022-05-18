@@ -1068,7 +1068,7 @@ namespace System.Text.Json.SourceGeneration
                                 }
 
                                 if (!hasInitOnlyProperties && spec.CanUseSetter && spec.IsInitOnlySetter &&
-                                    !(ignoredMembers?.ContainsKey(spec.ClrName) ?? false) && !PropertyIsConstructorParameter(spec, paramGenSpecArray))
+                                    spec.DefaultIgnoreCondition != JsonIgnoreCondition.Always && !PropertyIsConstructorParameter(spec, paramGenSpecArray))
                                 {
                                     _sourceGenerationContext.ReportDiagnostic(Diagnostic.Create(InitOnlyPropertyDeserializationNotSupported, memberLocation, new string[] { type.Name }));
                                     hasInitOnlyProperties = true;
