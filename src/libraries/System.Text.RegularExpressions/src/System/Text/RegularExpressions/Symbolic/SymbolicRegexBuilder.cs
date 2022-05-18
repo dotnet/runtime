@@ -82,6 +82,8 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexSet<TSet>?,
             SymbolicRegexInfo), SymbolicRegexNode<TSet>> _nodeCache = new();
 
+        internal readonly Dictionary<(SymbolicRegexNode<TSet>, uint), SymbolicRegexNode<TSet>> _pruneCache = new();
+
 #if DEBUG
         internal readonly Dictionary<(TransitionRegexKind, // _kind
             TSet?,                                     // _test

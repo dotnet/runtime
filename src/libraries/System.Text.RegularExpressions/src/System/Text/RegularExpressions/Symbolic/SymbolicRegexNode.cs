@@ -1562,41 +1562,55 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
+        /// <summary>Prune this node wrt the given context in order to maintain backtracking semantics</summary>
         private SymbolicRegexNode<TSet> Prune(uint context)
         {
+            SymbolicRegexNode<TSet>? prunedNode;
+            (SymbolicRegexNode<TSet>, uint) key = (this, context);
+            if (_builder._pruneCache.TryGetValue(key, out prunedNode))
+            {
+                return prunedNode;
+            }
+
+            if (!StackHelper.TryEnsureSufficientExecutionStack())
+            {
+                return StackHelper.CallOnEmptyStack(Prune, context);
+            }
+
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
-                    if (_left.IsNullableFor(context))
-                    {
-                        return _left.Prune(context);
-                    }
-                    return OrderedOr(_builder, _left, _right.Prune(context), deduplicated: true);
+                    prunedNode = _left.IsNullableFor(context) ? _left.Prune(context) :
+                        OrderedOr(_builder, _left, _right.Prune(context), deduplicated: true);
+                    break;
 
                 case SymbolicRegexNodeKind.Concat:
                     Debug.Assert(_left is not null && _right is not null);
-                    if (_left._kind == SymbolicRegexNodeKind.OrderedOr)
-                    {
-                        Debug.Assert(_left._left is not null && _left._right is not null);
-                        if (_left._left.IsNullableFor(context))
-                        {
-                            return CreateConcat(_builder, _left._left, _right).Prune(context);
-                        }
-                        return OrderedOr(_builder, CreateConcat(_builder, _left._left, _right), CreateConcat(_builder, _left._right, _right).Prune(context));
-                    }
-                    return CreateConcat(_builder, _left.Prune(context), _right.Prune(context));
+
+                    prunedNode = _left._kind == SymbolicRegexNodeKind.OrderedOr ?
+                        (_left._left!.IsNullableFor(context) ?
+                            CreateConcat(_builder, _left._left, _right).Prune(context) :
+                            OrderedOr(_builder, CreateConcat(_builder, _left._left, _right), CreateConcat(_builder, _left._right!, _right).Prune(context))) :
+                        CreateConcat(_builder, _left.Prune(context), _right.Prune(context));
+                    break;
 
                 case SymbolicRegexNodeKind.Loop when _info.IsLazyLoop && _lower == 0:
-                    return _builder.Epsilon;
+                    prunedNode = _builder.Epsilon;
+                    break;
 
                 case SymbolicRegexNodeKind.Effect:
                     Debug.Assert(_left is not null && _right is not null);
-                    return CreateEffect(_builder, _left.Prune(context), _right);
+                    prunedNode = CreateEffect(_builder, _left.Prune(context), _right);
+                    break;
 
                 default:
-                    return this;
+                    prunedNode = this;
+                    break;
             }
+
+            _builder._pruneCache[key] = prunedNode;
+            return prunedNode;
         }
 
 

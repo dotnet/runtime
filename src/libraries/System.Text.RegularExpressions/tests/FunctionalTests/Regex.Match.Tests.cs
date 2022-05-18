@@ -1875,12 +1875,12 @@ namespace System.Text.RegularExpressions.Tests
         {
             foreach (RegexEngine engine in RegexHelpers.AvailableEngines)
             {
-                foreach (bool suppressCaptures in new bool[] { true })
+                foreach (RegexOptions options in new RegexOptions[] { RegexOptions.None })
                 {
-                    //yield return new object[] { engine, "a", suppressCaptures, "", "aaaaa", 10, 2 };
-                    yield return new object[] { engine, @"a?", suppressCaptures, "$", "aaaaa", 5, 1 };
-                    //yield return new object[] { engine, "[a-d]?[a-e]?[a-f]?[a-g]?[a-h]?", suppressCaptures, "$", "abcda", 400, 4 };
-                    //yield return new object[] { engine, "(a|A)", suppressCaptures, "", "aAaAa", 2000, 400 };
+                    yield return new object[] { engine, "[a-z]", options, "", "abcde", 2000, 400 };
+                    yield return new object[] { engine, "[a-e]*", options, "$", "abcde", 2000, 20 };
+                    yield return new object[] { engine, "[a-d]?[a-e]?[a-f]?[a-g]?[a-h]?", options, "$", "abcda", 400, 4 };
+                    yield return new object[] { engine, "(a|A)", options, "", "aAaAa", 2000, 400 };
                 }
             }
         }
@@ -1888,7 +1888,7 @@ namespace System.Text.RegularExpressions.Tests
         //[OuterLoop("Can take over a minute")]
         [Theory]
         [MemberData(nameof(StressTestDeepNestingOfConcat_TestData))]
-        public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, bool suppressCaptures, string anchor, string input, int pattern_repetition, int input_repetition)
+        public async Task StressTestDeepNestingOfConcat(RegexEngine engine, string pattern, RegexOptions options, string anchor, string input, int pattern_repetition, int input_repetition)
         {
             //if (engine == RegexEngine.NonBacktracking)
             //{
@@ -1896,11 +1896,10 @@ namespace System.Text.RegularExpressions.Tests
             //    return;
             //}
 
-            string s = suppressCaptures ? "?:" : "";
-            string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({s}{pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
+            string fullpattern = string.Concat(string.Concat(Enumerable.Repeat($"({pattern}", pattern_repetition).Concat(Enumerable.Repeat(")", pattern_repetition))), anchor);
             string fullinput = string.Concat(Enumerable.Repeat(input, input_repetition));
 
-            Regex re = await RegexHelpers.GetRegexAsync(engine, fullpattern);
+            Regex re = await RegexHelpers.GetRegexAsync(engine, fullpattern, options);
             Assert.True(re.Match(fullinput).Success);
         }
 
