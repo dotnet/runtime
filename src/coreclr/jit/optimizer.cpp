@@ -1928,13 +1928,26 @@ private:
             // This blocks is lexically between TOP and BOTTOM, but it does not
             // participate in the flow cycle.  Check for a run of consecutive
             // such blocks.
+            //
+            // If blocks have been reordered and bbNum no longer reflects bbNext ordering
+            // (say by a call to MakeCompactAndFindExits for an earlier loop or unsuccessful
+            // attempt to find a loop), the bottom block of this loop may now appear earlier
+            // in the bbNext chain than other loop blocks. So when the previous hasn't reached bottom
+            // and block is a non-loop block, and we walk the bbNext chain, we may reach the end.
+            // If so, give up on recognition of this loop.
+            //
             BasicBlock* lastNonLoopBlock = block;
             BasicBlock* nextLoopBlock    = block->bbNext;
-            while (!loopBlocks.IsMember(nextLoopBlock->bbNum))
+            while ((nextLoopBlock != nullptr) && !loopBlocks.IsMember(nextLoopBlock->bbNum))
             {
                 lastNonLoopBlock = nextLoopBlock;
                 nextLoopBlock    = nextLoopBlock->bbNext;
-                // This loop must terminate because we know BOTTOM is in loopBlocks.
+            }
+
+            if (nextLoopBlock == nullptr)
+            {
+                JITDUMP("Did not find expected loop block when walking from " FMT_BB "\n", lastNonLoopBlock->bbNum);
+                return false;
             }
 
             // Choose an insertion point for non-loop blocks if we haven't yet done so.
