@@ -78,12 +78,12 @@ int64_t SystemNative_GetBootTimeTicks()
     assert(result == 0); // only possible errors are if the given clockId isn't supported or &ts is an invalid address
     (void)result; // suppress unused parameter warning in release builds
 
-    int64_t sinceBootTicks = (ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
+    int64_t sinceBootTicks = ((int64_t)ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
 
     result = clock_gettime(CLOCK_REALTIME_COARSE, &ts);
     assert(result == 0);
 
-    int64_t sinceEpochTicks = (ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
+    int64_t sinceEpochTicks = ((int64_t)ts.tv_sec * SecondsToTicks) + (ts.tv_nsec / TicksToNanoSeconds);
     const int64_t UnixEpochTicks = 621355968000000000;
 
     return UnixEpochTicks + sinceEpochTicks - sinceBootTicks;
