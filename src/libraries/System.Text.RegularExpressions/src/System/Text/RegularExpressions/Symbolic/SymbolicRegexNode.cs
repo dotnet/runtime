@@ -28,7 +28,6 @@ namespace System.Text.RegularExpressions.Symbolic
         internal readonly TSet? _set;
         internal readonly SymbolicRegexNode<TSet>? _left;
         internal readonly SymbolicRegexNode<TSet>? _right;
-        //depricated
         internal readonly SymbolicRegexSet<TSet>? _alts;
 
         /// <summary>
@@ -65,7 +64,6 @@ namespace System.Text.RegularExpressions.Symbolic
             _nullabilityCache = info.StartsWithSomeAnchor && info.CanBeNullable ? new byte[CharKind.ContextLimit] : null;
         }
 
-        //depricated
         private bool _isInternalizedUnion;
 
         /// <summary> Create a new node or retrieve one from the builder _nodeCache</summary>
@@ -499,30 +497,18 @@ namespace System.Text.RegularExpressions.Symbolic
             return Create(builder, SymbolicRegexNodeKind.Loop, body, null, lower, upper, default, null, SymbolicRegexInfo.Loop(body._info, lower, isLazy));
         }
 
-        /// <summary>
-        /// depricated
-        /// </summary>
         internal static SymbolicRegexNode<TSet> Or(SymbolicRegexBuilder<TSet> builder, params SymbolicRegexNode<TSet>[] disjuncts) =>
             CreateCollection(builder, SymbolicRegexNodeKind.Or, SymbolicRegexSet<TSet>.CreateMulti(builder, disjuncts, SymbolicRegexNodeKind.Or), SymbolicRegexInfo.Or(GetInfos(disjuncts)));
 
-        /// <summary>
-        /// depricated
-        /// </summary>
         internal static SymbolicRegexNode<TSet> Or(SymbolicRegexBuilder<TSet> builder, SymbolicRegexSet<TSet> disjuncts)
         {
             Debug.Assert(disjuncts._kind == SymbolicRegexNodeKind.Or || disjuncts.IsEverything);
             return CreateCollection(builder, SymbolicRegexNodeKind.Or, disjuncts, SymbolicRegexInfo.Or(GetInfos(disjuncts)));
         }
 
-        /// <summary>
-        /// depricated
-        /// </summary>
         internal static SymbolicRegexNode<TSet> And(SymbolicRegexBuilder<TSet> builder, params SymbolicRegexNode<TSet>[] conjuncts) =>
             CreateCollection(builder, SymbolicRegexNodeKind.And, SymbolicRegexSet<TSet>.CreateMulti(builder, conjuncts, SymbolicRegexNodeKind.And), SymbolicRegexInfo.And(GetInfos(conjuncts)));
 
-        /// <summary>
-        /// depricated
-        /// </summary>
         internal static SymbolicRegexNode<TSet> And(SymbolicRegexBuilder<TSet> builder, SymbolicRegexSet<TSet> conjuncts)
         {
             Debug.Assert(conjuncts.IsNothing || conjuncts._kind == SymbolicRegexNodeKind.And);
@@ -552,9 +538,6 @@ namespace System.Text.RegularExpressions.Symbolic
         internal static SymbolicRegexNode<TSet> CreateDisableBacktrackingSimulation(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> child) =>
             Create(builder, SymbolicRegexNodeKind.DisableBacktrackingSimulation, child, null, -1, -1, default, null, child._info);
 
-        /// <summary>
-        /// depricated
-        /// </summary>
         private static SymbolicRegexNode<TSet> CreateCollection(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNodeKind kind, SymbolicRegexSet<TSet> alts, SymbolicRegexInfo info) =>
             alts.IsNothing ? builder._nothing :
             alts.IsEverything ? builder._anyStar :
@@ -571,9 +554,6 @@ namespace System.Text.RegularExpressions.Symbolic
             return infos;
         }
 
-        /// <summary>
-        /// depricated
-        /// </summary>
         private static SymbolicRegexInfo[] GetInfos(SymbolicRegexSet<TSet> nodes)
         {
             var infos = new SymbolicRegexInfo[nodes.Count];

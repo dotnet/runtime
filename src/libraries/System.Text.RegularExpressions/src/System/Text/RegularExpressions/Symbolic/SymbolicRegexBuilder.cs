@@ -267,22 +267,8 @@ namespace System.Text.RegularExpressions.Symbolic
         /// intermediate epsilons, if tryCreateFixedLengthMarker and length is fixed, add a fixed length
         /// marker at the end.
         /// </summary>
-        internal SymbolicRegexNode<TSet> CreateConcat(SymbolicRegexNode<TSet>[] nodes, bool tryCreateFixedLengthMarker = false) =>
-            CreateConcatAlreadyReversed(EnumerateNodesInReverse(nodes), tryCreateFixedLengthMarker);
-
-        /// <summary>
-        /// Make a concatenation of given nodes, if any regex is nothing then return nothing, eliminate
-        /// intermediate epsilons, if tryCreateFixedLengthMarker and length is fixed, add a fixed length
-        /// marker at the end.
-        /// </summary>
         internal SymbolicRegexNode<TSet> CreateConcat(List<SymbolicRegexNode<TSet>> nodes, bool tryCreateFixedLengthMarker = false) =>
             CreateConcatAlreadyReversed(EnumerateNodesInReverse(nodes), tryCreateFixedLengthMarker);
-
-        private static IEnumerable<SymbolicRegexNode<TSet>> EnumerateNodesInReverse(SymbolicRegexNode<TSet>[] nodes)
-        {
-            for (int i = nodes.Length - 1; i >= 0; i--)
-                yield return nodes[i];
-        }
 
         private static IEnumerable<SymbolicRegexNode<TSet>> EnumerateNodesInReverse(List<SymbolicRegexNode<TSet>> nodes)
         {

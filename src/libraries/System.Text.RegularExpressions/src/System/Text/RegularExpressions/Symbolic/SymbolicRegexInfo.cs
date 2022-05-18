@@ -84,9 +84,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public bool ContainsEffect => (_info & ContainsEffectMask) != 0;
 
-        /// <summary>
-        /// Depricated
-        /// </summary>
         public static SymbolicRegexInfo Or(params SymbolicRegexInfo[] infos)
         {
             uint isLazy = IsLazyLoopMask;
@@ -118,9 +115,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 isHighPriorityNullable: left_info.IsHighPriorityNullable,
                 containsEffect: left_info.ContainsEffect || right_info.ContainsEffect);
 
-        /// <summary>
-        /// Depricated
-        /// </summary>
         public static SymbolicRegexInfo And(params SymbolicRegexInfo[] infos)
         {
             uint isLazy = IsLazyLoopMask;
@@ -190,9 +184,6 @@ namespace System.Text.RegularExpressions.Symbolic
 
         public static SymbolicRegexInfo Effect(SymbolicRegexInfo childInfo) => new SymbolicRegexInfo(childInfo._info | ContainsEffectMask);
 
-        /// <summary>
-        /// depricated
-        /// </summary>
         public static SymbolicRegexInfo Not(SymbolicRegexInfo info) =>
             // Nullability is complemented, all other properties remain the same
             // The following rules are used to determine nullability of Not(node):
