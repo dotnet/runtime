@@ -806,6 +806,8 @@ class SuperPMICollect:
                 # copy the shim next to coreclr.
                 collection_complus_env["JitPath"] = self.collection_shim_path
                 collection_complus_env["JitName"] = self.collection_shim_name
+                # Throw instead of failfast to allow us to record contexts for these.
+                collection_complus_env["JitThrowOnAssertionFailure"] = "1"
                 set_and_report_env(collection_command_env, root_env, collection_complus_env)
 
                 logging.info("Collecting using command:")
@@ -886,6 +888,8 @@ class SuperPMICollect:
                 # copy the shim next to coreclr.
                 pmi_complus_env["JitPath"] = self.collection_shim_path
                 pmi_complus_env["JitName"] = self.collection_shim_name
+                # Throw instead of failfast to allow us to record contexts for these.
+                pmi_complus_env["JitThrowOnAssertionFailure"] = "1"
 
                 if self.coreclr_args.pmi_path is not None:
                     pmi_root_env = root_env.copy()

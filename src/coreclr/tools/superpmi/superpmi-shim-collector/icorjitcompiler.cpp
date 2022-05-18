@@ -60,22 +60,61 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
         our_ICorJitInfo.mc->recGlobalContext(*g_globalContext);
     }
 
-    CorJitResult temp =
-        original_ICorJitCompiler->compileMethod(&our_ICorJitInfo, info, flags, nativeEntry, nativeSizeOfCode);
-
-    if (temp == CORJIT_OK)
+    struct CompileParams
     {
-        // capture the results of compilation
-        our_ICorJitInfo.mc->cr->recCompileMethod(nativeEntry, nativeSizeOfCode, temp);
+        ICorJitCompiler* origComp;
+        interceptor_ICJI* ourICJI;
+        struct CORINFO_METHOD_INFO* methodInfo;
+        unsigned flags;
+        uint8_t** nativeEntry;
+        uint32_t* nativeSizeOfCode;
+        CorJitResult result;
+    } compileParams;
 
-        our_ICorJitInfo.mc->cr->recAllocMemCapture();
-        our_ICorJitInfo.mc->cr->recAllocGCInfoCapture();
-        our_ICorJitInfo.mc->saveToFile(hFile);
-    }
+    compileParams.origComp = original_ICorJitCompiler;
+    compileParams.ourICJI = &our_ICorJitInfo;
+    compileParams.methodInfo = info;
+    compileParams.flags = flags;
+    compileParams.nativeEntry = nativeEntry;
+    compileParams.nativeSizeOfCode = nativeSizeOfCode;
+    compileParams.result = CORJIT_INTERNALERROR;
+
+    *nativeEntry = nullptr;
+    *nativeSizeOfCode = 0;
+
+    auto doCompile = [our_ICorJitInfo, this, &compileParams]()
+    {
+        PAL_TRY(CompileParams*, pParam, &compileParams)
+        {
+            pParam->result = pParam->origComp->compileMethod(
+                pParam->ourICJI,
+                pParam->methodInfo,
+                pParam->flags,
+                pParam->nativeEntry,
+                pParam->nativeSizeOfCode);
+        }
+        PAL_FINALLY
+        {
+            // capture the results of compilation
+            our_ICorJitInfo.mc->cr->recCompileMethod(
+                compileParams.nativeEntry, compileParams.nativeSizeOfCode, compileParams.result);
+
+            if (compileParams.result == CORJIT_OK)
+            {
+                our_ICorJitInfo.mc->cr->recAllocMemCapture();
+                our_ICorJitInfo.mc->cr->recAllocGCInfoCapture();
+            }
+
+            our_ICorJitInfo.mc->saveToFile(hFile);
+        }
+        PAL_ENDTRY;
+    };
+
+    doCompile();
 
     delete mc;
 
-    return temp;
+    return compileParams.result;
 }
 
 void interceptor_ICJC::ProcessShutdownWork(ICorStaticInfo* info)
