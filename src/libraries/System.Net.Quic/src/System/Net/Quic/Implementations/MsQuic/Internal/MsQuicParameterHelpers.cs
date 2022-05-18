@@ -11,22 +11,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 {
     internal static class MsQuicParameterHelpers
     {
-        internal static unsafe QuicAddr GetQuicAddrParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param)
-        {
-            QuicAddr value = default;
-            uint valueLen = (uint)sizeof(QuicAddr);
-
-            ThrowIfFailure(api.ApiTable->GetParam(
-                nativeObject.QuicHandle,
-                param,
-                &valueLen,
-                (byte*)&value), "GetQuicAddrParam failed");
-            Debug.Assert(valueLen == sizeof(QuicAddr));
-
-            return value;
-        }
-
-        internal static unsafe IPEndPoint GetIPEndPointParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param)
+        internal static unsafe IPEndPoint GetIPEndPointParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param, AddressFamily? addressFamilyOverride = null)
         {
             // MsQuic always uses storage size as if IPv6 was used
             uint valueLen = (uint)Internals.SocketAddress.IPv6AddressSize;
@@ -43,7 +28,7 @@ namespace System.Net.Quic.Implementations.MsQuic.Internal
 
             address = address.Slice(0, (int)valueLen);
 
-            return new Internals.SocketAddress(SocketAddressPal.GetAddressFamily(address), address).GetIPEndPoint();
+            return new Internals.SocketAddress(addressFamilyOverride ?? SocketAddressPal.GetAddressFamily(address), address).GetIPEndPoint();
         }
 
         internal static unsafe void SetIPEndPointParam(MsQuicApi api, MsQuicSafeHandle nativeObject, uint param, IPEndPoint value)

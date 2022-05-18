@@ -207,13 +207,9 @@ namespace System.Net.Quic.Implementations.MsQuic
                 throw;
             }
 
-            // return the actual bound address, including a port. Since the address family may be Unspecified,
-            // we cannot use GetIPEndPointParam. We have to manually read the port from the raw QuicAddr structure.
-            // The actual address is unchanged.
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
-            QuicAddr listenAddr = MsQuicParameterHelpers.GetQuicAddrParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS);
-            int port = BinaryPrimitives.ReadUInt16BigEndian(MemoryMarshal.AsBytes(MemoryMarshal.CreateSpan(ref listenAddr.Ipv4.sin_port, 1)));
-            return new IPEndPoint(listenEndPoint.Address, port);
+            // override the address family to the original value in case we had to use UNSPEC
+            return MsQuicParameterHelpers.GetIPEndPointParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_LISTENER_LOCAL_ADDRESS, listenEndPoint.AddressFamily);
         }
 
         private unsafe Task StopAsync()
