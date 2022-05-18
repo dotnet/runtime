@@ -317,7 +317,7 @@ internal static partial class Interop
 
 namespace Microsoft.Win32.SafeHandles
 {
-    internal sealed class SafeSslHandle : SafeHandle
+    internal sealed class SafeSslHandle : SafeDeleteSslContext
     {
         private SafeBioHandle? _readBio;
         private SafeBioHandle? _writeBio;
@@ -350,6 +350,12 @@ namespace Microsoft.Win32.SafeHandles
         internal void MarkHandshakeCompleted()
         {
             _handshakeCompleted = true;
+        }
+
+
+        public static SafeSslHandle Create(SslAuthenticationOptions sslAuthenticationOptions)
+        {
+            return Interop.OpenSsl.AllocateSslHandle(sslAuthenticationOptions);
         }
 
         public static SafeSslHandle Create(SafeSslContextHandle context, bool isServer)

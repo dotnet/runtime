@@ -150,11 +150,8 @@ internal static partial class Interop
         }
 
         // This essentially wraps SSL_CTX* aka SSL_CTX_new + setting
-        internal static unsafe SafeSslContextHandle AllocateSslContext(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions, SslProtocols protocols, bool enableResume)
+        internal static unsafe SafeSslContextHandle AllocateSslContext(SslAuthenticationOptions sslAuthenticationOptions, SslProtocols protocols, bool enableResume)
         {
-            SafeX509Handle? certHandle = credential.CertHandle;
-            SafeEvpPKeyHandle? certKeyHandle = credential.CertKeyHandle;
-
             // Always use SSLv23_method, regardless of protocols.  It supports negotiating to the highest
             // mutually supported version and can thus handle any of the set protocols, and we then use
             // SetProtocolOptions to ensure we only allow the ones requested.
@@ -225,20 +222,16 @@ internal static partial class Interop
                     Interop.Ssl.SslCtxSetAlpnSelectCb(sslCtx, &AlpnServerSelectCallback, IntPtr.Zero);
                 }
 
-                bool hasCertificateAndKey =
-                    certHandle != null && !certHandle.IsInvalid
-                    && certKeyHandle != null && !certKeyHandle.IsInvalid;
-
-                if (hasCertificateAndKey)
+                if (sslAuthenticationOptions.CertificateContext != null)
                 {
-                    SetSslCertificate(sslCtx, certHandle!, certKeyHandle!);
-                }
+                    SetSslCertificate(sslCtx, sslAuthenticationOptions.CertificateContext.Certificate);
 
-                if (sslAuthenticationOptions.CertificateContext != null && sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
-                {
-                    if (!Ssl.AddExtraChainCertificates(sslCtx, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
+                    if (sslAuthenticationOptions.CertificateContext.IntermediateCertificates.Length > 0)
                     {
-                        throw CreateSslException(SR.net_ssl_use_cert_failed);
+                        if (!Ssl.AddExtraChainCertificates(sslCtx, sslAuthenticationOptions.CertificateContext.IntermediateCertificates))
+                        {
+                           throw CreateSslException(SR.net_ssl_use_cert_failed);
+                        }
                     }
                 }
             }
@@ -291,7 +284,7 @@ internal static partial class Interop
         }
 
         // This essentially wraps SSL* SSL_new()
-        internal static SafeSslHandle AllocateSslHandle(SafeFreeSslCredentials credential, SslAuthenticationOptions sslAuthenticationOptions)
+        internal static SafeSslHandle AllocateSslHandle(SslAuthenticationOptions sslAuthenticationOptions)
         {
             SafeSslHandle? sslHandle = null;
             SafeSslContextHandle? sslCtxHandle = null;
@@ -344,7 +337,7 @@ internal static partial class Interop
             if (sslCtxHandle == null)
             {
                 // We did not get SslContext from cache
-                sslCtxHandle = newCtxHandle = AllocateSslContext(credential, sslAuthenticationOptions, protocols, cacheSslContext);
+                sslCtxHandle = newCtxHandle = AllocateSslContext(sslAuthenticationOptions, protocols, cacheSslContext);
 
                 if (cacheSslContext)
                 {
@@ -819,6 +812,42 @@ internal static partial class Interop
             }
 
             return innerError;
+        }
+
+        private static void SetSslCertificate(SafeSslContextHandle contextPtr, X509Certificate2 cert)
+        {
+            SafeEvpPKeyHandle? certKeyHandle = null;
+
+            using (RSAOpenSsl? rsa = (RSAOpenSsl?)cert.GetRSAPrivateKey())
+            {
+                if (rsa != null)
+                {
+                    certKeyHandle = rsa.DuplicateKeyHandle();
+                    Interop.Crypto.CheckValidOpenSslHandle(certKeyHandle);
+                }
+            }
+
+            if (certKeyHandle == null)
+            {
+                using (ECDsaOpenSsl? ecdsa = (ECDsaOpenSsl?)cert.GetECDsaPrivateKey())
+                {
+                    if (ecdsa != null)
+                    {
+                        certKeyHandle = ecdsa.DuplicateKeyHandle();
+                        Interop.Crypto.CheckValidOpenSslHandle(certKeyHandle);
+                    }
+                }
+            }
+
+            if (certKeyHandle == null)
+            {
+                throw new NotSupportedException(SR.net_ssl_io_no_server_cert);
+            }
+
+            using (SafeX509Handle certHandle = Interop.Crypto.X509UpRef(cert.Handle))
+            {
+                SetSslCertificate(contextPtr, certHandle, certKeyHandle);
+            }
         }
 
         private static void SetSslCertificate(SafeSslContextHandle contextPtr, SafeX509Handle certPtr, SafeEvpPKeyHandle keyPtr)
