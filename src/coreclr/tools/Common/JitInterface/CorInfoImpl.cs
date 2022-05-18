@@ -2236,11 +2236,6 @@ namespace Internal.JitInterface
         {
             int result = 0;
 
-            if (type.IsByReferenceOfT)
-            {
-                return MarkGcField(gcPtrs, CorInfoGCType.TYPE_GC_BYREF);
-            }
-
             foreach (var field in type.GetFields())
             {
                 if (field.IsStatic)
@@ -2857,15 +2852,6 @@ namespace Internal.JitInterface
             else
             {
                 type = asCorInfoType(fieldType);
-            }
-
-            Debug.Assert(!fieldDesc.OwningType.IsByReferenceOfT ||
-                fieldDesc.OwningType.GetKnownField("_value").FieldType.Category == TypeFlags.IntPtr);
-            if (type == CorInfoType.CORINFO_TYPE_NATIVEINT && fieldDesc.OwningType.IsByReferenceOfT)
-            {
-                Debug.Assert(structType == null || *structType == null);
-                Debug.Assert(fieldDesc.Offset.AsInt == 0);
-                type = CorInfoType.CORINFO_TYPE_BYREF;
             }
 
             return type;

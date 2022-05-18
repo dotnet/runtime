@@ -31,7 +31,7 @@ namespace TypeSystemTests
             MetadataType t = _testModule.GetType("Explicit", "Class1");
 
             // With 64bit, there should be 8 bytes for the System.Object EE data pointer +
-            // 10 bytes up until the offset of the char field + the char size of 2 + we 
+            // 10 bytes up until the offset of the char field + the char size of 2 + we
             // round up the whole instance size to the next pointer size (+4) = 24
             Assert.Equal(24, t.InstanceByteCount.AsInt);
 
@@ -95,7 +95,7 @@ namespace TypeSystemTests
 
                 if (f.Name == "Lol")
                 {
-                    // First field after base class, with offset 0 so it should lie on the byte count of 
+                    // First field after base class, with offset 0 so it should lie on the byte count of
                     // the base class = 20
                     Assert.Equal(20, f.Offset.AsInt);
                 }
@@ -818,11 +818,6 @@ namespace TypeSystemTests
         {
             {
                 DefType type = _context.GetWellKnownType(WellKnownType.TypedReference);
-                Assert.True(type.IsByRefLike);
-            }
-
-            {
-                DefType type = _context.GetWellKnownType(WellKnownType.ByReferenceOfT);
                 Assert.True(type.IsByRefLike);
             }
 

@@ -370,11 +370,6 @@ namespace Internal.IL
                     return;
                 }
 
-                if (method.OwningType.IsByReferenceOfT && (method.IsConstructor || method.Name == "get_Value"))
-                {
-                    return;
-                }
-
                 if (IsEETypePtrOf(method))
                 {
                     if (runtimeDeterminedMethod.IsRuntimeDeterminedExactMethod)
