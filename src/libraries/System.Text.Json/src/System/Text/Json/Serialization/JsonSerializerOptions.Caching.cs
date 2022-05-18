@@ -100,7 +100,7 @@ namespace System.Text.Json
             // Property only accessed by reflection in testing -- do not remove.
             // If changing please ensure that src/ILLink.Descriptors.LibraryBuild.xml is up-to-date.
             public int Count => _converterCache.Count + _jsonTypeInfoCache.Count;
-            public JsonConverter GetOrAddConverter(Type type) => _converterCache.GetOrAdd(type, s_converterRetrievalFunc!(type, Options));
+            public JsonConverter GetOrAddConverter(Type type) => _converterCache.GetOrAdd(type, (type) => s_converterRetrievalFunc!(type, Options));
             public JsonTypeInfo GetOrAddJsonTypeInfo(Type type) => _jsonTypeInfoCache.GetOrAdd(type, Options.GetJsonTypeInfoFromContextOrCreate);
             public bool TryGetJsonTypeInfo(Type type, [NotNullWhen(true)] out JsonTypeInfo? typeInfo) => _jsonTypeInfoCache.TryGetValue(type, out typeInfo);
             public bool IsJsonTypeInfoCached(Type type) => _jsonTypeInfoCache.ContainsKey(type);
