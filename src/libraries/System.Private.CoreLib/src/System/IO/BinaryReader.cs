@@ -544,7 +544,19 @@ namespace System.IO
                 return;
             }
 
-            _stream.ReadExactly(_buffer.AsSpan(0, numBytes));
+            if (numBytes > 0)
+            {
+                _stream.ReadExactly(_buffer.AsSpan(0, numBytes));
+            }
+            else
+            {
+                // ReadExactly doesn't allow for empty buffers, so special case numBytes == 0 to preserve existing behavior.
+                int n = _stream.Read(_buffer, 0, 0);
+                if (n == 0)
+                {
+                    ThrowHelper.ThrowEndOfFileException();
+                }
+            }
         }
 
         public int Read7BitEncodedInt()
