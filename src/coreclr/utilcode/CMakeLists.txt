@@ -61,8 +61,6 @@ if(CLR_CMAKE_TARGET_WIN32)
   list(APPEND UTILCODE_COMMON_SOURCES
     dacutil.cpp
     dlwrap.cpp
-    securitywrapper.cpp
-    securityutil.cpp
     stacktrace.cpp
   )
 endif(CLR_CMAKE_TARGET_WIN32)

@@ -1654,7 +1654,7 @@ mono_image_open_from_data_with_name (char *data, guint32 data_len, gboolean need
 {
 	if (refonly) {
 		if (status) {
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 			return NULL;
 		}
 	}
@@ -1673,7 +1673,7 @@ mono_image_open_from_data_full (char *data, guint32 data_len, gboolean need_copy
 {
 	if (refonly) {
 		if (status) {
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 			return NULL;
 		}
 	}
@@ -1758,7 +1758,7 @@ mono_image_open_full (const char *fname, MonoImageOpenStatus *status, gboolean r
 {
 	if (refonly) {
 		if (status)
-			*status = MONO_IMAGE_IMAGE_INVALID;
+			*status = MONO_IMAGE_NOT_SUPPORTED;
 		return NULL;
 	}
 	return mono_image_open_a_lot (mono_alc_get_default (), fname, status);
@@ -2343,6 +2343,8 @@ mono_image_strerror (MonoImageOpenStatus status)
 		return "File does not contain a valid CIL image";
 	case MONO_IMAGE_MISSING_ASSEMBLYREF:
 		return "An assembly was referenced, but could not be found";
+	case MONO_IMAGE_NOT_SUPPORTED:
+		return "Image operation not supported in this runtime";
 	}
 	return "Internal error";
 }
