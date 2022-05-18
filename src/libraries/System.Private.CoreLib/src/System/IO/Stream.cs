@@ -340,10 +340,10 @@ namespace System.IO
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous read operation.</returns>
         /// <exception cref="ArgumentException">
-        /// <paramref name="buffer"/> was an empty buffer.
+        /// <paramref name="buffer"/> is empty.
         /// </exception>
         /// <exception cref="EndOfStreamException">
-        /// Thrown when the end of the stream is reached before filling the <paramref name="buffer"/>.
+        /// The end of the stream is reached before filling the <paramref name="buffer"/>.
         /// </exception>
         public ValueTask ReadExactlyAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
@@ -367,14 +367,17 @@ namespace System.IO
         /// <param name="count">The number of bytes to be read from the current stream.</param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>A task that represents the asynchronous read operation.</returns>
-        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="offset"/> was outside the bounds of <paramref name="buffer"/>, or
-        /// <paramref name="count"/> was not a positive value, or the range specified by the combination of
-        /// <paramref name="offset"/> and <paramref name="count"/> exceed the length of <paramref name="buffer"/>.
+        /// <paramref name="offset"/> is outside the bounds of <paramref name="buffer"/>.
+        /// -or-
+        /// <paramref name="count"/> is not a positive value.
+        /// -or-
+        /// The range specified by the combination of <paramref name="offset"/> and <paramref name="count"/> exceeds the
+        /// length of <paramref name="buffer"/>.
         /// </exception>
         /// <exception cref="EndOfStreamException">
-        /// Thrown when the end of the stream is reached before reading <paramref name="count"/> number of bytes.
+        /// The end of the stream is reached before reading <paramref name="count"/> number of bytes.
         /// </exception>
         public ValueTask ReadExactlyAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken = default)
         {
@@ -399,18 +402,18 @@ namespace System.IO
         /// </param>
         /// <param name="cancellationToken">The token to monitor for cancellation requests.</param>
         /// <returns>
-        /// A task that represents the asynchronous read operation. The value of its Result property contains the total number of bytes read into
-        /// the buffer. This is guaranteed to be greater than or equal to <paramref name="minimumBytes"/> when <paramref name="throwOnEndOfStream"/>
-        /// is <see langword="true"/>. This will be less than <paramref name="minimumBytes"/> when the end of the stream is reached and
-        /// <paramref name="throwOnEndOfStream"/> is <see langword="false"/>. This can be less than the number of bytes allocated in the buffer if
-        /// that many bytes are not currently available.
+        /// A task that represents the asynchronous read operation. The value of its <see cref="ValueTask{TResult}.Result"/> property contains the
+        /// total number of bytes read into the buffer. This is guaranteed to be greater than or equal to <paramref name="minimumBytes"/> when
+        /// <paramref name="throwOnEndOfStream"/> is <see langword="true"/>. This will be less than <paramref name="minimumBytes"/> when the end
+        /// of the stream is reached and <paramref name="throwOnEndOfStream"/> is <see langword="false"/>. This can be less than the number of
+        /// bytes allocated in the buffer if that many bytes are not currently available.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="minimumBytes"/> was not a positive value, or greater than the length of <paramref name="buffer"/>.
+        /// <paramref name="minimumBytes"/> is not a positive value, or is greater than the length of <paramref name="buffer"/>.
         /// </exception>
         /// <exception cref="EndOfStreamException">
-        /// Thrown when <paramref name="throwOnEndOfStream"/> is <see langword="true"/> and the end of the stream is reached before reading
-        /// <paramref name="minimumBytes"/> of data.
+        /// <paramref name="throwOnEndOfStream"/> is <see langword="true"/> and the end of the stream is reached before reading
+        /// <paramref name="minimumBytes"/> bytes of data.
         /// </exception>
         public ValueTask<int> ReadAtLeastAsync(Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true, CancellationToken cancellationToken = default)
         {
@@ -820,10 +823,10 @@ namespace System.IO
         /// </summary>
         /// <param name="buffer">A region of memory. When this method returns, the contents of this region are replaced by the bytes read from the current stream.</param>
         /// <exception cref="ArgumentException">
-        /// <paramref name="buffer"/> was an empty buffer.
+        /// <paramref name="buffer"/> is empty.
         /// </exception>
         /// <exception cref="EndOfStreamException">
-        /// Thrown when the end of the stream is reached before filling the <paramref name="buffer"/>.
+        /// The end of the stream is reached before filling the <paramref name="buffer"/>.
         /// </exception>
         public void ReadExactly(Span<byte> buffer)
         {
@@ -838,17 +841,24 @@ namespace System.IO
         /// <summary>
         /// Reads <paramref name="count"/> number of bytes from the current stream and advances the position within the stream.
         /// </summary>
-        /// <param name="buffer">An array of bytes. When this method returns, the buffer contains the specified byte array with the values between offset and (offset + count - 1) replaced by the bytes read from the current stream.</param>
+        /// <param name="buffer">
+        /// An array of bytes. When this method returns, the buffer contains the specified byte array with the values
+        /// between <paramref name="offset"/> and (<paramref name="offset"/> + <paramref name="count"/> - 1) replaced
+        /// by the bytes read from the current stream.
+        /// </param>
         /// <param name="offset">The byte offset in <paramref name="buffer"/> at which to begin storing the data read from the current stream.</param>
         /// <param name="count">The number of bytes to be read from the current stream.</param>
-        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is null.</exception>
+        /// <exception cref="ArgumentNullException"><paramref name="buffer"/> is <see langword="null"/>.</exception>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="offset"/> was outside the bounds of <paramref name="buffer"/>, or
-        /// <paramref name="count"/> was not a positive value, or the range specified by the combination of
-        /// <paramref name="offset"/> and <paramref name="count"/> exceed the length of <paramref name="buffer"/>.
+        /// <paramref name="offset"/> is outside the bounds of <paramref name="buffer"/>.
+        /// -or-
+        /// <paramref name="count"/> is not a positive value.
+        /// -or-
+        /// The range specified by the combination of <paramref name="offset"/> and <paramref name="count"/> exceeds the
+        /// length of <paramref name="buffer"/>.
         /// </exception>
         /// <exception cref="EndOfStreamException">
-        /// Thrown when the end of the stream is reached before reading <paramref name="count"/> number of bytes.
+        /// The end of the stream is reached before reading <paramref name="count"/> number of bytes.
         /// </exception>
         public void ReadExactly(byte[] buffer, int offset, int count)
         {
@@ -874,11 +884,11 @@ namespace System.IO
         /// of bytes allocated in the buffer if that many bytes are not currently available.
         /// </returns>
         /// <exception cref="ArgumentOutOfRangeException">
-        /// <paramref name="minimumBytes"/> was not a positive value, or greater than the length of <paramref name="buffer"/>.
+        /// <paramref name="minimumBytes"/> is not a positive value, or is greater than the length of <paramref name="buffer"/>.
         /// </exception>
         /// <exception cref="EndOfStreamException">
-        /// Thrown when <paramref name="throwOnEndOfStream"/> is <see langword="true"/> and the end of the stream is reached before reading
-        /// <paramref name="minimumBytes"/> of data.
+        /// <paramref name="throwOnEndOfStream"/> is <see langword="true"/> and the end of the stream is reached before reading
+        /// <paramref name="minimumBytes"/> bytes of data.
         /// </exception>
         public int ReadAtLeast(Span<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true)
         {

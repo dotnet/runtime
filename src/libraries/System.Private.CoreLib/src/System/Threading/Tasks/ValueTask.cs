@@ -398,8 +398,11 @@ namespace System.Threading.Tasks
             }
         }
 
-        /// <summary>Transfers the <see cref="ValueTask{TResult}"/> to a <see cref="ValueTask"/> instance.</summary>
-        /// <remarks>The <see cref="ValueTask{TResult}"/> should not be used after calling this method.</remarks>
+        /// <summary>
+        /// Transfers the <see cref="ValueTask{TResult}"/> to a <see cref="ValueTask"/> instance.
+        ///
+        /// The <see cref="ValueTask{TResult}"/> should not be used after calling this method.
+        /// </summary>
         internal static ValueTask DangerousCreateFromTypedValueTask<TResult>(ValueTask<TResult> valueTask)
         {
             Debug.Assert(valueTask._obj is null or Task or IValueTaskSource, "If the ValueTask<>'s backing object is an IValueTaskSource<TResult>, it must also be IValueTaskSource.");
