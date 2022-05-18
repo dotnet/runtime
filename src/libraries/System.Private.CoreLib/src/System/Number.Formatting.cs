@@ -1796,8 +1796,7 @@ namespace System
                 // If the format begins with a symbol, see if it's a standard format
                 // with or without a specified number of digits.
                 c = format[0];
-                if ((uint)(c - 'A') <= 'Z' - 'A' ||
-                    (uint)(c - 'a') <= 'z' - 'a')
+                if (char.IsAsciiLetter(c))
                 {
                     // Fast path for sole symbol, e.g. "D"
                     if (format.Length == 1)
@@ -1832,7 +1831,7 @@ namespace System
                     // digits.  Further, for compat, we need to stop when we hit a null char.
                     int n = 0;
                     int i = 1;
-                    while (i < format.Length && (((uint)format[i] - '0') < 10))
+                    while ((uint)i < (uint)format.Length && char.IsAsciiDigit(format[i]))
                     {
                         int temp = ((n * 10) + format[i++] - '0');
                         if (temp < n)
@@ -1844,7 +1843,7 @@ namespace System
 
                     // If we're at the end of the digits rather than having stopped because we hit something
                     // other than a digit or overflowed, return the standard format info.
-                    if (i == format.Length || format[i] == '\0')
+                    if ((uint)i >= (uint)format.Length || format[i] == '\0')
                     {
                         digits = n;
                         return c;

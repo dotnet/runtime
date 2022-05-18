@@ -43,6 +43,11 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_charIsWhiteSpaceMethod = typeof(char).GetMethod("IsWhiteSpace", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsControlMethod = typeof(char).GetMethod("IsControl", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsLetterMethod = typeof(char).GetMethod("IsLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiLetterMethod = typeof(char).GetMethod("IsAsciiLetter", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiLetterOrDigitMethod = typeof(char).GetMethod("IsAsciiLetterOrDigit", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitMethod = typeof(char).GetMethod("IsAsciiHexDigit", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitLowerMethod = typeof(char).GetMethod("IsAsciiHexDigitLower", new Type[] { typeof(char) })!;
+        private static readonly MethodInfo s_charIsAsciiHexDigitUpperMethod = typeof(char).GetMethod("IsAsciiHexDigitUpper", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsLetterOrDigitMethod = typeof(char).GetMethod("IsLetterOrDigit", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsLowerMethod = typeof(char).GetMethod("IsLower", new Type[] { typeof(char) })!;
         private static readonly MethodInfo s_charIsUpperMethod = typeof(char).GetMethod("IsUpper", new Type[] { typeof(char) })!;
@@ -71,6 +76,9 @@ namespace System.Text.RegularExpressions
         private static readonly MethodInfo s_stringGetCharsMethod = typeof(string).GetMethod("get_Chars", new Type[] { typeof(int) })!;
         private static readonly MethodInfo s_arrayResize = typeof(Array).GetMethod("Resize")!.MakeGenericMethod(typeof(int));
         private static readonly MethodInfo s_mathMinIntInt = typeof(Math).GetMethod("Min", new Type[] { typeof(int), typeof(int) })!;
+        // Note:
+        // IsAsciiLetterLower, IsAsciiLetterUpper, IsAsciiDigit, and IsBetween aren't used here, as the IL generated for those
+        // single-range checks is as cheap as the method call, and there's no readability issue as with the source generator.
 
         /// <summary>The ILGenerator currently in use.</summary>
         protected ILGenerator? _ilg;
@@ -5174,6 +5182,41 @@ namespace System.Text.RegularExpressions
                     Call(s_charIsSymbolMethod);
                     NegateIf(charClass == RegexCharClass.NotSymbolClass);
                     return;
+
+                case RegexCharClass.AsciiLetterClass:
+                case RegexCharClass.NotAsciiLetterClass:
+                    // char.IsAsciiLetter(ch)
+                    Call(s_charIsAsciiLetterMethod);
+                    NegateIf(charClass == RegexCharClass.NotAsciiLetterClass);
+                    return;
+
+                case RegexCharClass.AsciiLetterOrDigitClass:
+                case RegexCharClass.NotAsciiLetterOrDigitClass:
+                    // char.IsAsciiLetterOrDigit(ch)
+                    Call(s_charIsAsciiLetterOrDigitMethod);
+                    NegateIf(charClass == RegexCharClass.NotAsciiLetterOrDigitClass);
+                    return;
+
+                case RegexCharClass.HexDigitClass:
+                case RegexCharClass.NotHexDigitClass:
+                    // char.IsAsciiHexDigit(ch)
+                    Call(s_charIsAsciiHexDigitMethod);
+                    NegateIf(charClass == RegexCharClass.NotHexDigitClass);
+                    return;
+
+                case RegexCharClass.HexDigitLowerClass:
+                case RegexCharClass.NotHexDigitLowerClass:
+                    // char.IsAsciiHexDigitLower(ch)
+                    Call(s_charIsAsciiHexDigitLowerMethod);
+                    NegateIf(charClass == RegexCharClass.NotHexDigitLowerClass);
+                    return;
+
+                case RegexCharClass.HexDigitUpperClass:
+                case RegexCharClass.NotHexDigitUpperClass:
+                    // char.IsAsciiHexDigitUpper(ch)
+                    Call(s_charIsAsciiHexDigitUpperMethod);
+                    NegateIf(charClass == RegexCharClass.NotHexDigitUpperClass);
+                    return;
             }
 
             // Next, handle simple sets of one range, e.g. [A-Z], [0-9], etc.  This includes some built-in classes, like ECMADigitClass.
@@ -5261,7 +5304,7 @@ namespace System.Text.RegularExpressions
                 return;
             }
 
-            // Next, handle simple sets of two ASCII letter ranges that are cased versions of each other, e.g. [A-Za-z].
+            // Next, handle simple sets of two ASCII letter ranges that are cased versions of each other, e.g. [B-Db-d].
             // This can be implemented as if it were a single range, with an additional bitwise operation.
             if (RegexCharClass.TryGetDoubleRange(charClass, out (char LowInclusive, char HighInclusive) rangeLower, out (char LowInclusive, char HighInclusive) rangeUpper) &&
                 RegexCharClass.IsAsciiLetter(rangeUpper.LowInclusive) &&
@@ -5289,7 +5332,7 @@ namespace System.Text.RegularExpressions
 
             // Next, handle sets where the high - low + 1 range is <= 64.  In that case, we can emit
             // a branchless lookup in a ulong that does not rely on loading any objects (e.g. the string-based
-            // lookup we use later).  This nicely handles common sets like [0-9A-Fa-f], [0-9a-f], [A-Za-z], etc.
+            // lookup we use later).  This nicely handles sets made up of a subset of ASCII letters, for example.
             // We skip this on 32-bit, as otherwise using 64-bit numbers in this manner is a deoptimization
             // when compared to the subsequent fallbacks.
             if (IntPtr.Size == 8 && analysis.OnlyRanges && (analysis.UpperBoundExclusiveIfOnlyRanges - analysis.LowerBoundInclusiveIfOnlyRanges) <= 64)
