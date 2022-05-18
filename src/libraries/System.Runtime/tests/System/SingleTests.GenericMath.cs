@@ -988,6 +988,12 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void RadixTest()
+        {
+            Assert.Equal(2, NumberBaseHelper<float>.Radix);
+        }
+
+        [Fact]
         public static void ZeroTest()
         {
             AssertBitwiseEqual(0.0f, NumberBaseHelper<float>.Zero);
@@ -1482,6 +1488,66 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsCanonicalTest()
+        {
+            Assert.True(NumberBaseHelper<float>.IsCanonical(float.NegativeInfinity));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(float.MinValue));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(-1.0f));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(-MinNormal));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(-MaxSubnormal));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(-float.Epsilon));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(-0.0f));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(float.NaN));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(0.0f));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(float.Epsilon));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(MaxSubnormal));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(MinNormal));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(1.0f));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(float.MaxValue));
+            Assert.True(NumberBaseHelper<float>.IsCanonical(float.PositiveInfinity));
+        }
+
+        [Fact]
+        public static void IsComplexNumberTest()
+        {
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(float.NegativeInfinity));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(float.MinValue));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(-1.0f));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(-MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(-float.Epsilon));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(-0.0f));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(float.NaN));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(0.0f));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(float.Epsilon));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(1.0f));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(float.MaxValue));
+            Assert.False(NumberBaseHelper<float>.IsComplexNumber(float.PositiveInfinity));
+        }
+
+        [Fact]
+        public static void IsEvenIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(float.NegativeInfinity));
+            Assert.True(NumberBaseHelper<float>.IsEvenInteger(float.MinValue));
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(-1.0f));
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(-MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(-float.Epsilon));
+            Assert.True(NumberBaseHelper<float>.IsEvenInteger(-0.0f));
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(float.NaN));
+            Assert.True(NumberBaseHelper<float>.IsEvenInteger(0.0f));
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(float.Epsilon));
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(1.0f));
+            Assert.True(NumberBaseHelper<float>.IsEvenInteger(float.MaxValue));
+            Assert.False(NumberBaseHelper<float>.IsEvenInteger(float.PositiveInfinity));
+        }
+
+        [Fact]
         public static void IsFiniteTest()
         {
             Assert.False(NumberBaseHelper<float>.IsFinite(float.NegativeInfinity));
@@ -1502,6 +1568,26 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsImaginaryNumberTest()
+        {
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(float.NegativeInfinity));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(float.MinValue));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(-1.0f));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(-MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(-float.Epsilon));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(-0.0f));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(float.NaN));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(0.0f));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(float.Epsilon));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(1.0f));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(float.MaxValue));
+            Assert.False(NumberBaseHelper<float>.IsImaginaryNumber(float.PositiveInfinity));
+        }
+
+        [Fact]
         public static void IsInfinityTest()
         {
             Assert.True(NumberBaseHelper<float>.IsInfinity(float.NegativeInfinity));
@@ -1519,6 +1605,26 @@ namespace System.Tests
             Assert.False(NumberBaseHelper<float>.IsInfinity(1.0f));
             Assert.False(NumberBaseHelper<float>.IsInfinity(float.MaxValue));
             Assert.True(NumberBaseHelper<float>.IsInfinity(float.PositiveInfinity));
+        }
+
+        [Fact]
+        public static void IsIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<float>.IsInteger(float.NegativeInfinity));
+            Assert.True(NumberBaseHelper<float>.IsInteger(float.MinValue));
+            Assert.True(NumberBaseHelper<float>.IsInteger(-1.0f));
+            Assert.False(NumberBaseHelper<float>.IsInteger(-MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsInteger(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsInteger(-float.Epsilon));
+            Assert.True(NumberBaseHelper<float>.IsInteger(-0.0f));
+            Assert.False(NumberBaseHelper<float>.IsInteger(float.NaN));
+            Assert.True(NumberBaseHelper<float>.IsInteger(0.0f));
+            Assert.False(NumberBaseHelper<float>.IsInteger(float.Epsilon));
+            Assert.False(NumberBaseHelper<float>.IsInteger(MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsInteger(MinNormal));
+            Assert.True(NumberBaseHelper<float>.IsInteger(1.0f));
+            Assert.True(NumberBaseHelper<float>.IsInteger(float.MaxValue));
+            Assert.False(NumberBaseHelper<float>.IsInteger(float.PositiveInfinity));
         }
 
         [Fact]
@@ -1602,6 +1708,46 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsOddIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(float.NegativeInfinity));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(float.MinValue));
+            Assert.True(NumberBaseHelper<float>.IsOddInteger(-1.0f));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(-MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(-float.Epsilon));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(-0.0f));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(float.NaN));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(0.0f));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(float.Epsilon));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(MinNormal));
+            Assert.True(NumberBaseHelper<float>.IsOddInteger(1.0f));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(float.MaxValue));
+            Assert.False(NumberBaseHelper<float>.IsOddInteger(float.PositiveInfinity));
+        }
+
+        [Fact]
+        public static void IsPositiveTest()
+        {
+            Assert.False(NumberBaseHelper<float>.IsPositive(float.NegativeInfinity));
+            Assert.False(NumberBaseHelper<float>.IsPositive(float.MinValue));
+            Assert.False(NumberBaseHelper<float>.IsPositive(-1.0f));
+            Assert.False(NumberBaseHelper<float>.IsPositive(-MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsPositive(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsPositive(-float.Epsilon));
+            Assert.False(NumberBaseHelper<float>.IsPositive(-0.0f));
+            Assert.False(NumberBaseHelper<float>.IsPositive(float.NaN));
+            Assert.True(NumberBaseHelper<float>.IsPositive(0.0f));
+            Assert.True(NumberBaseHelper<float>.IsPositive(float.Epsilon));
+            Assert.True(NumberBaseHelper<float>.IsPositive(MaxSubnormal));
+            Assert.True(NumberBaseHelper<float>.IsPositive(MinNormal));
+            Assert.True(NumberBaseHelper<float>.IsPositive(1.0f));
+            Assert.True(NumberBaseHelper<float>.IsPositive(float.MaxValue));
+            Assert.True(NumberBaseHelper<float>.IsPositive(float.PositiveInfinity));
+        }
+
+        [Fact]
         public static void IsPositiveInfinityTest()
         {
             Assert.False(NumberBaseHelper<float>.IsPositiveInfinity(float.NegativeInfinity));
@@ -1622,6 +1768,26 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsRealNumberTest()
+        {
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(float.NegativeInfinity));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(float.MinValue));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(-1.0f));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(-MinNormal));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(-MaxSubnormal));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(-float.Epsilon));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(-0.0f));
+            Assert.False(NumberBaseHelper<float>.IsRealNumber(float.NaN));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(0.0f));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(float.Epsilon));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(MaxSubnormal));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(MinNormal));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(1.0f));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(float.MaxValue));
+            Assert.True(NumberBaseHelper<float>.IsRealNumber(float.PositiveInfinity));
+        }
+
+        [Fact]
         public static void IsSubnormalTest()
         {
             Assert.False(NumberBaseHelper<float>.IsSubnormal(float.NegativeInfinity));
@@ -1639,6 +1805,26 @@ namespace System.Tests
             Assert.False(NumberBaseHelper<float>.IsSubnormal(1.0f));
             Assert.False(NumberBaseHelper<float>.IsSubnormal(float.MaxValue));
             Assert.False(NumberBaseHelper<float>.IsSubnormal(float.PositiveInfinity));
+        }
+
+        [Fact]
+        public static void IsZeroTest()
+        {
+            Assert.False(NumberBaseHelper<float>.IsZero(float.NegativeInfinity));
+            Assert.False(NumberBaseHelper<float>.IsZero(float.MinValue));
+            Assert.False(NumberBaseHelper<float>.IsZero(-1.0f));
+            Assert.False(NumberBaseHelper<float>.IsZero(-MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsZero(-MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsZero(-float.Epsilon));
+            Assert.True(NumberBaseHelper<float>.IsZero(-0.0f));
+            Assert.False(NumberBaseHelper<float>.IsZero(float.NaN));
+            Assert.True(NumberBaseHelper<float>.IsZero(0.0f));
+            Assert.False(NumberBaseHelper<float>.IsZero(float.Epsilon));
+            Assert.False(NumberBaseHelper<float>.IsZero(MaxSubnormal));
+            Assert.False(NumberBaseHelper<float>.IsZero(MinNormal));
+            Assert.False(NumberBaseHelper<float>.IsZero(1.0f));
+            Assert.False(NumberBaseHelper<float>.IsZero(float.MaxValue));
+            Assert.False(NumberBaseHelper<float>.IsZero(float.PositiveInfinity));
         }
 
         [Fact]

@@ -544,6 +544,12 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void RadixTest()
+        {
+            Assert.Equal(2, NumberBaseHelper<ulong>.Radix);
+        }
+
+        [Fact]
         public static void ZeroTest()
         {
             Assert.Equal((ulong)0x0000000000000000, NumberBaseHelper<ulong>.Zero);
@@ -956,6 +962,36 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsCanonicalTest()
+        {
+            Assert.True(NumberBaseHelper<ulong>.IsCanonical((ulong)0x0000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsCanonical((ulong)0x0000000000000001));
+            Assert.True(NumberBaseHelper<ulong>.IsCanonical((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.True(NumberBaseHelper<ulong>.IsCanonical((ulong)0x8000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsCanonical((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsComplexNumberTest()
+        {
+            Assert.False(NumberBaseHelper<ulong>.IsComplexNumber((ulong)0x0000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsComplexNumber((ulong)0x0000000000000001));
+            Assert.False(NumberBaseHelper<ulong>.IsComplexNumber((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.False(NumberBaseHelper<ulong>.IsComplexNumber((ulong)0x8000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsComplexNumber((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsEvenIntegerTest()
+        {
+            Assert.True(NumberBaseHelper<ulong>.IsEvenInteger((ulong)0x0000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsEvenInteger((ulong)0x0000000000000001));
+            Assert.False(NumberBaseHelper<ulong>.IsEvenInteger((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.True(NumberBaseHelper<ulong>.IsEvenInteger((ulong)0x8000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsEvenInteger((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
         public static void IsFiniteTest()
         {
             Assert.True(NumberBaseHelper<ulong>.IsFinite((ulong)0x0000000000000000));
@@ -966,6 +1002,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsImaginaryNumberTest()
+        {
+            Assert.False(NumberBaseHelper<ulong>.IsImaginaryNumber((ulong)0x0000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsImaginaryNumber((ulong)0x0000000000000001));
+            Assert.False(NumberBaseHelper<ulong>.IsImaginaryNumber((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.False(NumberBaseHelper<ulong>.IsImaginaryNumber((ulong)0x8000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsImaginaryNumber((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
         public static void IsInfinityTest()
         {
             Assert.False(NumberBaseHelper<ulong>.IsInfinity((ulong)0x0000000000000000));
@@ -973,6 +1019,16 @@ namespace System.Tests
             Assert.False(NumberBaseHelper<ulong>.IsInfinity((ulong)0x7FFFFFFFFFFFFFFF));
             Assert.False(NumberBaseHelper<ulong>.IsInfinity((ulong)0x8000000000000000));
             Assert.False(NumberBaseHelper<ulong>.IsInfinity((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsIntegerTest()
+        {
+            Assert.True(NumberBaseHelper<ulong>.IsInteger((ulong)0x0000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsInteger((ulong)0x0000000000000001));
+            Assert.True(NumberBaseHelper<ulong>.IsInteger((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.True(NumberBaseHelper<ulong>.IsInteger((ulong)0x8000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsInteger((ulong)0xFFFFFFFFFFFFFFFF));
         }
 
         [Fact]
@@ -1016,6 +1072,26 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsOddIntegerTest()
+        {
+            Assert.False(NumberBaseHelper<ulong>.IsOddInteger((ulong)0x0000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsOddInteger((ulong)0x0000000000000001));
+            Assert.True(NumberBaseHelper<ulong>.IsOddInteger((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.False(NumberBaseHelper<ulong>.IsOddInteger((ulong)0x8000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsOddInteger((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsPositiveTest()
+        {
+            Assert.True(NumberBaseHelper<ulong>.IsPositive((ulong)0x0000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsPositive((ulong)0x0000000000000001));
+            Assert.True(NumberBaseHelper<ulong>.IsPositive((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.True(NumberBaseHelper<ulong>.IsPositive((ulong)0x8000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsPositive((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
         public static void IsPositiveInfinityTest()
         {
             Assert.False(NumberBaseHelper<ulong>.IsPositiveInfinity((ulong)0x0000000000000000));
@@ -1026,6 +1102,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void IsRealNumberTest()
+        {
+            Assert.True(NumberBaseHelper<ulong>.IsRealNumber((ulong)0x0000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsRealNumber((ulong)0x0000000000000001));
+            Assert.True(NumberBaseHelper<ulong>.IsRealNumber((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.True(NumberBaseHelper<ulong>.IsRealNumber((ulong)0x8000000000000000));
+            Assert.True(NumberBaseHelper<ulong>.IsRealNumber((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
         public static void IsSubnormalTest()
         {
             Assert.False(NumberBaseHelper<ulong>.IsSubnormal((ulong)0x0000000000000000));
@@ -1033,6 +1119,16 @@ namespace System.Tests
             Assert.False(NumberBaseHelper<ulong>.IsSubnormal((ulong)0x7FFFFFFFFFFFFFFF));
             Assert.False(NumberBaseHelper<ulong>.IsSubnormal((ulong)0x8000000000000000));
             Assert.False(NumberBaseHelper<ulong>.IsSubnormal((ulong)0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void IsZeroTest()
+        {
+            Assert.True(NumberBaseHelper<ulong>.IsZero((ulong)0x0000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsZero((ulong)0x0000000000000001));
+            Assert.False(NumberBaseHelper<ulong>.IsZero((ulong)0x7FFFFFFFFFFFFFFF));
+            Assert.False(NumberBaseHelper<ulong>.IsZero((ulong)0x8000000000000000));
+            Assert.False(NumberBaseHelper<ulong>.IsZero((ulong)0xFFFFFFFFFFFFFFFF));
         }
 
         [Fact]
