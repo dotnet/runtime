@@ -5441,11 +5441,13 @@ protected:
     void        fgIncorporateBlockCounts();
     void        fgIncorporateEdgeCounts();
 
-    CORINFO_CLASS_HANDLE getRandomClass(ICorJitInfo::PgoInstrumentationSchema* schema,
-                                        UINT32                                 countSchemaItems,
-                                        BYTE*                                  pInstrumentationData,
-                                        int32_t                                ilOffset,
-                                        CLRRandom*                             random);
+    void getRandomGDV(ICorJitInfo::PgoInstrumentationSchema* schema,
+                      UINT32                                 countSchemaItems,
+                      BYTE*                                  pInstrumentationData,
+                      int32_t                                ilOffset,
+                      CLRRandom*                             random,
+                      CORINFO_CLASS_HANDLE*                  classGuess,
+                      CORINFO_METHOD_HANDLE*                 methodGuess);
 
 public:
     const char*                            fgPgoFailReason;

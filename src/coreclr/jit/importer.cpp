@@ -12190,12 +12190,14 @@ GenTree* Compiler::impCastClassOrIsInstToTree(
                 // Reuse the random inliner's random state.
                 CLRRandom* const random =
                     impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-                likelyClasses[0].handle =
-                    (intptr_t)getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
-                likelyClasses[0].likelihood = 100;
-                if (likelyClasses[0].handle != (intptr_t)NO_CLASS_HANDLE)
+                CORINFO_CLASS_HANDLE  clsGuess;
+                CORINFO_METHOD_HANDLE methGuess;
+                getRandomGDV(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random, &clsGuess, &methGuess);
+                if (clsGuess != NO_CLASS_HANDLE)
                 {
-                    likelyClassCount = 1;
+                    likelyClasses[0].likelihood = 100;
+                    likelyClasses[0].handle     = (intptr_t)clsGuess;
+                    likelyClassCount            = 1;
                 }
             }
             else
@@ -22400,10 +22402,15 @@ void Compiler::pickGDV(GenTreeCall*           call,
         //
         CLRRandom* const random =
             impInlineRoot()->m_inlineStrategy->GetRandom(JitConfig.JitRandomGuardedDevirtualization());
-        *classGuess = getRandomClass(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random);
+        getRandomGDV(fgPgoSchema, fgPgoSchemaCount, fgPgoData, ilOffset, random, classGuess, methodGuess);
         if (*classGuess != NO_CLASS_HANDLE)
         {
             JITDUMP("Picked random class for GDV: %p (%s)\n", *classGuess, eeGetClassName(*classGuess));
+            return;
+        }
+        if (*methodGuess != NO_METHOD_HANDLE)
+        {
+            JITDUMP("Picked random method for GDV: %p (%s)\n", *methodGuess, eeGetMethodFullName(*methodGuess));
             return;
         }
     }

@@ -305,8 +305,8 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*    
 }
 
 //------------------------------------------------------------------------
-// getRandomClass: find class profile data for an IL offset, and return
-//   one of the possible classes at random
+// getRandomGDV: find GDV profile data for an IL offset, and return
+//   one of the possible methods/classes at random
 //
 // Arguments:
 //    schema - profile schema
@@ -318,16 +318,47 @@ extern "C" DLLEXPORT UINT32 WINAPI getLikelyMethods(LikelyClassMethodRecord*    
 // Returns:
 //    Randomly observed class, or nullptr.
 //
-CORINFO_CLASS_HANDLE Compiler::getRandomClass(ICorJitInfo::PgoInstrumentationSchema* schema,
-                                              UINT32                                 countSchemaItems,
-                                              BYTE*                                  pInstrumentationData,
-                                              int32_t                                ilOffset,
-                                              CLRRandom*                             random)
+void Compiler::getRandomGDV(ICorJitInfo::PgoInstrumentationSchema* schema,
+                            UINT32                                 countSchemaItems,
+                            BYTE*                                  pInstrumentationData,
+                            int32_t                                ilOffset,
+                            CLRRandom*                             random,
+                            CORINFO_CLASS_HANDLE*                  classGuess,
+                            CORINFO_METHOD_HANDLE*                 methodGuess)
 {
+    *classGuess  = NO_CLASS_HANDLE;
+    *methodGuess = NO_METHOD_HANDLE;
+
     if (schema == nullptr)
     {
-        return NO_CLASS_HANDLE;
+        return;
     }
+
+    // We can have multiple histograms for the same IL offset. Use reservoir
+    // sampling to pick an entry at random.
+    int  numElementsSeen = 0;
+    auto addElement      = [random, classGuess, methodGuess, &numElementsSeen](intptr_t handle, bool isClass) {
+        if (ICorJitInfo::IsUnknownHandle(handle))
+        {
+            return;
+        }
+
+        numElementsSeen++;
+        bool replace = (numElementsSeen == 1) || (random->Next(numElementsSeen) == 0);
+        if (replace)
+        {
+            if (isClass)
+            {
+                *classGuess  = (CORINFO_CLASS_HANDLE)handle;
+                *methodGuess = NO_METHOD_HANDLE;
+            }
+            else
+            {
+                *classGuess  = NO_CLASS_HANDLE;
+                *methodGuess = (CORINFO_METHOD_HANDLE)handle;
+            }
+        }
+    };
 
     for (COUNT_T i = 0; i < countSchemaItems; i++)
     {
@@ -340,14 +371,8 @@ CORINFO_CLASS_HANDLE Compiler::getRandomClass(ICorJitInfo::PgoInstrumentationSch
             (schema[i].Count == 1))
         {
             INT_PTR result = *(INT_PTR*)(pInstrumentationData + schema[i].Offset);
-            if (ICorJitInfo::IsUnknownHandle(result))
-            {
-                return NO_CLASS_HANDLE;
-            }
-            else
-            {
-                return (CORINFO_CLASS_HANDLE)result;
-            }
+            addElement(result, true);
+            continue;
         }
 
         bool isHistogramCount =
@@ -355,30 +380,21 @@ CORINFO_CLASS_HANDLE Compiler::getRandomClass(ICorJitInfo::PgoInstrumentationSch
             (schema[i].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramLongCount);
 
         if (isHistogramCount && (schema[i].Count == 1) && ((i + 1) < countSchemaItems) &&
-            (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes))
+            ((schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes) ||
+             (schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramMethods)))
         {
-            // Form a histogram
+            // Form a histogram. Note that even though we use reservoir
+            // sampling we want to weigh distinct handles equally, regardless
+            // of count.
             //
             LikelyClassMethodHistogram h((INT_PTR*)(pInstrumentationData + schema[i + 1].Offset), schema[i + 1].Count);
 
-            if (h.countHistogramElements == 0)
+            bool isClass =
+                schema[i + 1].InstrumentationKind == ICorJitInfo::PgoInstrumentationKind::HandleHistogramTypes;
+            for (UINT32 i = 0; i < h.countHistogramElements; i++)
             {
-                return NO_CLASS_HANDLE;
+                addElement(h.HistogramEntryAt(i).m_handle, isClass);
             }
-
-            // Choose an entry at random.
-            //
-            unsigned                        randomEntryIndex = random->Next(0, h.countHistogramElements);
-            LikelyClassMethodHistogramEntry randomEntry      = h.HistogramEntryAt(randomEntryIndex);
-
-            if (ICorJitInfo::IsUnknownHandle(randomEntry.m_handle))
-            {
-                return NO_CLASS_HANDLE;
-            }
-
-            return (CORINFO_CLASS_HANDLE)randomEntry.m_handle;
         }
     }
-
-    return NO_CLASS_HANDLE;
 }
