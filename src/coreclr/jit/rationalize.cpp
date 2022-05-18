@@ -295,8 +295,8 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 // Arguments:
 //    use - A use of a node.
 //
-// Transform: a - (a / cns1) >> shift  =>  a % cns1
-//            where cns1 is an signed integer constant that is a power of 2.
+// Transform: a - (a / cns) >> shift  =>  a % cns1
+//            where cns is an signed integer constant that is a power of 2.
 // We do this transformation because Lowering has a specific optimization
 // for 'a % cns1' that is not easily reduced by other means.
 //
@@ -318,24 +318,24 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
 
     GenTree* lsh  = op2;
     GenTree* div  = lsh->gtGetOp1();
-    GenTree* cns1 = lsh->gtGetOp2();
-    if (div->OperIs(GT_DIV) && cns1->IsIntegralConst())
+    GenTree* shift = lsh->gtGetOp2();
+    if (div->OperIs(GT_DIV) && shift->IsIntegralConst())
     {
-        GenTree* a    = div->gtGetOp1();
-        GenTree* cns2 = div->gtGetOp2();
-        if (a->OperIs(GT_LCL_VAR) && cns2->IsIntegralConstPow2() &&
+        GenTree* a   = div->gtGetOp1();
+        GenTree* cns = div->gtGetOp2();
+        if (a->OperIs(GT_LCL_VAR) && cns->IsIntegralConstPow2() &&
             op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
         {
-            size_t cnsValue1 = cns1->AsIntConCommon()->IntegralValue();
-            size_t cnsValue2 = cns2->AsIntConCommon()->IntegralValue();
-            if ((cnsValue2 >> cnsValue1) == 1)
+            size_t shiftValue = shift->AsIntConCommon()->IntegralValue();
+            size_t cnsValue2  = cns->AsIntConCommon()->IntegralValue();
+            if ((cnsValue2 >> shiftValue) == 1)
             {
                 GenTree* const treeFirstNode  = comp->fgGetFirstNode(node);
                 GenTree* const insertionPoint = treeFirstNode->gtPrev;
                 BlockRange().Remove(treeFirstNode, node);
 
                 node->ChangeOper(GT_MOD);
-                node->AsOp()->gtOp2 = cns1;
+                node->AsOp()->gtOp2 = cns;
 
                 comp->gtSetEvalOrder(node);
                 BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(node), node));
