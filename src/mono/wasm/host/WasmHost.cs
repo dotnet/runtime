@@ -21,6 +21,8 @@ internal enum WasmHost
     /// NodeJS
     /// </summary>
     NodeJS,
-
+    /// <summary>
+    /// Browser
+    /// </summary>
     Browser
 }

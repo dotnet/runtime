@@ -5,8 +5,7 @@
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <NoWarn>$(NoWarn),CA2007</NoWarn>
     <Nullable>enable</Nullable>
-    <RollForward>LatestMajor</RollForward>
-</PropertyGroup>
+  </PropertyGroup>
 
   <ItemGroup>
     <ProjectReference Include="$(MonoProjectRoot)wasm\debugger\BrowserDebugHost\BrowserDebugHost.csproj" />

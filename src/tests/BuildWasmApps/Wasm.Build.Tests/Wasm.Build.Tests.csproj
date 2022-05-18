@@ -30,7 +30,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- <ProjectReference Include="$(MonoProjectRoot)wasm\host\WasmAppHost.csproj" ReferenceOutputAssembly="false" /> -->
     <PackageReference Include="Microsoft.Playwright" Version="1.21.0" />
     <Compile Include="$(MonoProjectRoot)wasm\debugger\DebuggerTestSuite\BrowserLocator.cs" />
 
