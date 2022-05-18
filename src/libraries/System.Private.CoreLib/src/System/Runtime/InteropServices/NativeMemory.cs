@@ -42,9 +42,9 @@ namespace System.Runtime.InteropServices
         /// <param name="ptr">A pointer to the block of memory that should be cleared.</param>
         /// <param name="byteCount">The size, in bytes, of the block to clear.</param>
         [CLSCompliant(false)]
-        public static unsafe void ZeroMemory(byte* ptr, nuint byteCount)
+        public static unsafe void ZeroMemory(void* ptr, nuint byteCount)
         {
-            SpanHelpers.ClearWithoutReferences(ref *ptr, byteCount);
+            SpanHelpers.ClearWithoutReferences(ref *(byte*)ptr, byteCount);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
