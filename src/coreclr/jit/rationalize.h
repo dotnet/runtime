@@ -59,7 +59,7 @@ private:
     void RewriteAddress(LIR::Use& use);
 
 #ifdef TARGET_ARM64
-    void RewriteSubLshDiv(GenTree** use);
+    void RewriteSubLshDiv(LIR::Use& use);
 #endif
 
     // Root visitor

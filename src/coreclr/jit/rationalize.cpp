@@ -295,14 +295,16 @@ void Rationalizer::RewriteIntrinsicAsUserCall(GenTree** use, ArrayStack<GenTree*
 // Arguments:
 //    use - A use of a node.
 //
-// Transform: a - (a / cns) >> shift  =>  a % cns1
+// Transform: a - (a / cns) >> shift  =>  a % cns
 //            where cns is an signed integer constant that is a power of 2.
 // We do this transformation because Lowering has a specific optimization
 // for 'a % cns1' that is not easily reduced by other means.
 //
-void Rationalizer::RewriteSubLshDiv(GenTree** use)
+void Rationalizer::RewriteSubLshDiv(LIR::Use& use)
 {
-    GenTree* const node = *use;
+    assert(use.IsInitialized());
+
+    GenTreeOp* node = use.Def()->AsOp();
 
     if (!node->OperIs(GT_SUB))
         return;
@@ -330,15 +332,17 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
             size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
             if ((cnsValue >> shiftValue) == 1)
             {
-                GenTree* const treeFirstNode  = comp->fgGetFirstNode(node);
-                GenTree* const insertionPoint = treeFirstNode->gtPrev;
-                BlockRange().Remove(treeFirstNode, node);
+                GenTree* newCns = comp->gtNewIconNode(cnsValue);
 
                 node->ChangeOper(GT_MOD);
-                node->AsOp()->gtOp2 = cns;
+                node->AsOp()->gtOp2 = newCns;
 
-                comp->gtSetEvalOrder(node);
-                BlockRange().InsertAfter(insertionPoint, LIR::Range(comp->fgSetTreeSeq(node), node));
+                BlockRange().Remove(cns);
+                BlockRange().Remove(a);
+                BlockRange().Remove(shift);
+                BlockRange().Remove(div);
+                BlockRange().Remove(lsh);
+                BlockRange().InsertAfter(op1, newCns);
             }
         }
     }
@@ -620,6 +624,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
         case GT_ASG:
             RewriteAssignment(use);
             break;
+
+#ifdef TARGET_ARM64
+        case GT_SUB:
+            RewriteSubLshDiv(use);
+            break;
+#endif
 
         case GT_BOX:
         case GT_ARR_ADDR:
@@ -903,13 +913,6 @@ PhaseStatus Rationalizer::DoPhase()
             {
                 m_rationalizer.RewriteIntrinsicAsUserCall(use, this->m_ancestors);
             }
-
-#ifdef TARGET_ARM64
-            if (node->OperGet() == GT_SUB)
-            {
-                m_rationalizer.RewriteSubLshDiv(use);
-            }
-#endif
 
             return Compiler::WALK_CONTINUE;
         }
