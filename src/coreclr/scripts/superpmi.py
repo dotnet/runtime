@@ -686,7 +686,7 @@ class SuperPMICollect:
         passed = False
 
         try:
-            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
+            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup, change_dir=False) as temp_location:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
