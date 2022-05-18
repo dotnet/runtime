@@ -11948,7 +11948,7 @@ namespace System.Runtime.CompilerServices
         public unsafe static void* AsPointer<T>(ref T value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe static ref T AsRef<T>(void* source) { throw null; }
-        public static ref T AsRef<T>(in T source) { throw null; }
+        public static ref T AsRef<T>(scoped in T source) { throw null; }
         [return: System.Diagnostics.CodeAnalysis.NotNullIfNotNull("o")]
         public static T? As<T>(object? o) where T : class? { throw null; }
         public static ref TTo As<TFrom, TTo>(ref TFrom source) { throw null; }

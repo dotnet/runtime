@@ -418,7 +418,7 @@ namespace System
         {
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._reference.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
             }
             else
             {
@@ -435,7 +435,7 @@ namespace System
             bool retVal = false;
             if ((uint)Length <= (uint)destination.Length)
             {
-                Buffer.Memmove(ref destination._reference.Value, ref _firstChar, (uint)Length);
+                Buffer.Memmove(ref destination._reference, ref _firstChar, (uint)Length);
                 retVal = true;
             }
             return retVal;
