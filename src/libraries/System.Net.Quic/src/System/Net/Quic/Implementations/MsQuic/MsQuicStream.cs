@@ -1114,7 +1114,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldShutdownWriteComplete = true;
                 }
 
-                state.SendState = SendState.Aborted;
+                state.SendErrorCode = (long)streamEvent.PEER_RECEIVE_ABORTED.ErrorCode;
                 // make sure the SendErrorCode above is commited to memory before we assign the state. This
                 // ensures that the code is read correctly in SetupWriteStartState when checking without lock
                 Volatile.Write(ref Unsafe.As<SendState, int>(ref state.SendState), (int)SendState.Aborted);
