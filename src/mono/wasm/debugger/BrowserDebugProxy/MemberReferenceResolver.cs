@@ -193,7 +193,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return null;
 
             JObject retObject = await ResolveAsLocalOrThisMember(parts[0]);
-            bool isRootNullSafe = parts[0][^1] == '?';
+            bool isRootNullSafe = parts[0].LastOrDefault() == '?';
             if (retObject != null && parts.Count > 1)
             {
                 // cannot resolve instance member on a primitive type,
@@ -236,7 +236,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 }
 
                 // remove null-safety, otherwise TryGet by name fails
-                if (name[^1] == '?')
+                if (name.LastOrDefault() == '?')
                     name = name.Remove(name.Length - 1);
 
                 if (scopeCache.Locals.TryGetValue(name, out JObject obj))
