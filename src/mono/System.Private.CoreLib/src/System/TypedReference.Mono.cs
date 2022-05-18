@@ -11,7 +11,7 @@ namespace System
         #region sync with object-internals.h
         #pragma warning disable CA1823 // used by runtime
         private readonly RuntimeTypeHandle type;
-        private readonly ByReference<byte> _value;
+        private readonly ref byte _value;
         private readonly IntPtr _type;
         #pragma warning restore CA1823
         #endregion

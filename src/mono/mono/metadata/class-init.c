@@ -1836,33 +1836,10 @@ class_has_ref_fields (MonoClass *klass)
 }
 
 static gboolean
-class_is_byreference (MonoClass* klass)
-{
-	const char* klass_name_space = m_class_get_name_space (klass);
-	const char* klass_name = m_class_get_name (klass);
-	MonoImage* klass_image = m_class_get_image (klass);
-	gboolean in_corlib = klass_image == mono_defaults.corlib;
-
-	if (in_corlib &&
-		!strcmp (klass_name_space, "System") &&
-		!strcmp (klass_name, "ByReference`1")) {
-		return TRUE;
-	}
-
-	return FALSE;
-}
-
-static gboolean
 type_has_ref_fields (MonoType *ftype)
 {
 	if (m_type_is_byref (ftype) || (MONO_TYPE_ISSTRUCT (ftype) && class_has_ref_fields (mono_class_from_mono_type_internal (ftype))))
 		return TRUE;
-
-	/* Check for the ByReference`1 type */
-	if (MONO_TYPE_ISSTRUCT (ftype)) {
-		MonoClass* klass = mono_class_from_mono_type_internal (ftype);
-		return class_is_byreference (klass);
-	}
 
 	return FALSE;
 }
@@ -1982,7 +1959,7 @@ validate_struct_fields_overlaps (guint8 *layout_check, int layout_size, MonoClas
 		} else {
 			int align = 0;
 			int size = mono_type_size (field->type, &align);
-			guint8 type = type_has_references (klass, ftype) ? 1 : (m_type_is_byref (ftype) || class_is_byreference (klass)) ? 2 : 3;
+			guint8 type = type_has_references (klass, ftype) ? 1 : m_type_is_byref (ftype) ? 2 : 3;
 
 			// Mark the bytes used by this fields type based on if it contains references or not.
 			// Make sure there are no overlaps between object and non-object fields.
