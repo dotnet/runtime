@@ -158,4 +158,11 @@ mini_wasi_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
 	fn_table->mono_wasm_single_step_hit = mono_wasi_single_step_hit;
 }
 
+#else // HOST_WASI
+
+void
+mini_wasi_debugger_add_function_pointers (MonoComponentDebugger* fn_table)
+{
+}
+
 #endif
