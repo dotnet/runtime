@@ -1480,7 +1480,7 @@ int64_t SystemNative_GetFileSystemType(intptr_t fd)
     // for our needs (get file system type) statfs is always enough and there is no need to use statfs64
     // which got deprecated in macOS 10.6, in favor of statfs
     while ((statfsRes = fstatfs(ToFileDescriptor(fd), &statfsArgs)) == -1 && errno == EINTR) ;
-    return statfsRes == -1 ? (int64_t)-1 : (int64_t)statfsArgs.f_type;
+    return statfsRes == -1 ? (int64_t)-1 : (int64_t)((uint64_t)statfsArgs.f_type ^ 0xFFFFFFFF00000000); // disregard the upper bytes #61175
 #elif !HAVE_NON_LEGACY_STATFS
     int statfsRes;
     struct statvfs statfsArgs;
