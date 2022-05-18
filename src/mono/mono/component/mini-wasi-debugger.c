@@ -1,9 +1,9 @@
-#ifdef HOST_WASI
 #include <glib.h>
 #include <mono/mini/debugger-agent-external.h>
 #include <mono/component/debugger-engine.h>
 #include <mono/metadata/components.h>
 
+#ifdef HOST_WASI
 static int conn_fd;
 static int log_level = 1;
 static int retry_receive_message = 100;
