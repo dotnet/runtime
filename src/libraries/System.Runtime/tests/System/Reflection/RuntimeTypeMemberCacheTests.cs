@@ -93,12 +93,12 @@ namespace System.Reflection.Tests
         public static void TypeGetConstructorsReturnsInDeclaredOrderTest()
         {
             Type t = typeof(Test);
-            ConstructorInfo constuctor3 = t.GetConstructor(new Type[] { typeof(string) });
-            Assert.NotNull(constuctor3);
+            ConstructorInfo constructor3 = t.GetConstructor(new Type[] { typeof(string) });
+            Assert.NotNull(constructor3);
             ConstructorInfo[] constuctors = t.GetConstructors();
             Assert.Equal(typeof(int), constuctors[0].GetParameters()[0].ParameterType);
             Assert.Equal(0, constuctors[1].GetParameters().Length);
-            Assert.Equal(constuctor3, constuctors[2]);
+            Assert.Equal(constructor3, constuctors[2]);
         }
 
         [Fact]
