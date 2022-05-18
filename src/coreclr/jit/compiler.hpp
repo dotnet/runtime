@@ -1008,7 +1008,7 @@ inline GenTreeCall* Compiler::gtNewHelperCallNode(
 
     if (arg4 != nullptr)
     {
-        result->gtArgs.PushFront(this, arg4);
+        result->gtArgs.PushFront(this, NewCallArg::Primitive(arg4));
         result->gtFlags |= arg4->gtFlags & GTF_ALL_EFFECT;
     }
 
