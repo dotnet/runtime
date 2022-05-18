@@ -1251,9 +1251,9 @@ public:
         // If it is 'true' then the initial value of m_preMergeOut was different than the final value that
         // we computed for bbCseOut.  When it is true we will visit every the successor of 'block'
         //
-        // This is also why we need to allocate an extra bit in our cseLivenessTrair BitVecs.
-        // We always need to visit our successor blocks once, thus we require that that the first time
-        // that we visit a block we have a bit set in m_preMergeOut that won't be set when we compute
+        // This is also why we need to allocate an extra bit in our cseLivenessTraits BitVecs.
+        // We always need to visit our successor blocks once, thus we require that the first time
+        // we visit a block we have a bit set in m_preMergeOut that won't be set when we compute
         // the new value of bbCseOut.
         //
         bool notDone = !BitVecOps::Equal(m_comp->cseLivenessTraits, block->bbCseOut, m_preMergeOut);

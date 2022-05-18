@@ -1767,7 +1767,7 @@ NOINLINE LPVOID COMPlusEndCatchWorker(Thread * pThread)
     EEToProfilerExceptionInterfaceWrapper::ExceptionCatcherLeave();
 
     // no need to set pExInfo->m_ClauseType = (DWORD)COR_PRF_CLAUSE_NONE now that the
-    // notification is done because because the ExInfo record is about to be popped off anyway
+    // notification is done because the ExInfo record is about to be popped off anyway
 
     LOG((LF_EH, LL_INFO1000, "COMPlusPEndCatch:pThread:0x%x\n",pThread));
 

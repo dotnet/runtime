@@ -5104,7 +5104,7 @@ void Debugger::SendSyncCompleteIPCEvent(bool isEESuspendedForGC)
 
     STRESS_LOG0(LF_CORDB, LL_INFO10000, "D::SSCIPCE: sync complete.\n");
 
-    // Synchronizing while in in rude shutdown should be extremely rare b/c we don't
+    // Synchronizing during the rude shutdown should be extremely rare b/c we don't
     // TART in rude shutdown. Shutdown must have started after we started to sync.
     // We know we're not on the shutdown thread here.
     // And we also know we can't block the shutdown thread (b/c it has the TSL and will
@@ -10096,7 +10096,7 @@ void Debugger::FuncEvalComplete(Thread* pThread, DebuggerEval *pDE)
     // Note: it's possible that the AppDomain has (or is about to be) unloaded, which could lead to a
     // crash when we use the DebuggerModule.  Ideally we'd only be using AppDomain IDs here.
     // We can't easily convert our ADID to an AppDomain* (SystemDomain::GetAppDomainFromId)
-    // because we can't proove that that the AppDomain* would be valid (not unloaded).
+    // because we can't proove that the AppDomain* would be valid (not unloaded).
     //
     AppDomain *pDomain = pThread->GetDomain();
     AppDomain *pResultDomain = ((pDE->m_debuggerModule == NULL) ? pDomain : pDE->m_debuggerModule->GetAppDomain());
@@ -13785,10 +13785,10 @@ void Debugger::SignalHijackStarted(void)
 }
 
 //
-// This is the function that is called when we determine that a first chance exception really belongs to the Runtime,
-// and that that exception is due to a managed->unmanaged transition. This notifies the Right Side of this and the Right
-// Side fixes up the thread's execution state from there, making sure to remember that it needs to continue to hide the
-// hijack state of the thread.
+// This function is called when we determine that a first chance exception really belongs to the Runtime,
+// and that the exception is due to a managed->unmanaged transition. This notifies the Right Side which
+// fixes up the thread's execution state from there, making sure to remember that it needs to continue
+// to hide the hijack state of the thread.
 //
 void Debugger::ExceptionForRuntimeHandoffStart(void)
 {
@@ -14977,7 +14977,7 @@ HRESULT Debugger::FuncEvalSetup(DebuggerIPCE_FuncEvalInfo *pEvalInfo,
         return CORDBG_E_FUNC_EVAL_BAD_START_POINT;
     }
 
-    // Allocate the breakpoint instruction info for the debugger info in in executable memory.
+    // Allocate the breakpoint instruction info for the debugger info in executable memory.
     DebuggerHeap *pHeap = g_pDebugger->GetInteropSafeExecutableHeap_NoThrow();
     if (pHeap == NULL)
     {

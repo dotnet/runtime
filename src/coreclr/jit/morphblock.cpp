@@ -290,7 +290,7 @@ void MorphInitBlockHelper::PrepareSrc()
 
 //------------------------------------------------------------------------
 // TrySpecialCases: check special cases that require special transformations.
-//    We don't have any for for init block.
+//    We don't have any for init block.
 //
 void MorphInitBlockHelper::TrySpecialCases()
 {

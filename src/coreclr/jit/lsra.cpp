@@ -2270,7 +2270,7 @@ void LinearScan::checkLastUses(BasicBlock* block)
 //
 // Arguments:
 //    block                 - The block for which we're selecting a predecesor.
-//    prevBlock             - The previous block in in allocation order.
+//    prevBlock             - The previous block in allocation order.
 //    pPredBlockIsAllocated - A debug-only argument that indicates whether any of the predecessors have been seen
 //                            in allocation order.
 //
@@ -10272,7 +10272,7 @@ bool LinearScan::IsResolutionMove(GenTree* node)
 //
 bool LinearScan::IsResolutionNode(LIR::Range& containingRange, GenTree* node)
 {
-    for (;;)
+    while (true)
     {
         if (IsResolutionMove(node))
         {

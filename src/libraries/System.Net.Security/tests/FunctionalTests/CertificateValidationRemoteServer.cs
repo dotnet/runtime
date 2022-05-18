@@ -59,7 +59,7 @@ namespace System.Net.Security.Tests
             }
         }
 
-        // MacOS has has special validation rules for apple.com and icloud.com
+        // MacOS has special validation rules for apple.com and icloud.com
         [ConditionalTheory]
         [OuterLoop("Uses external servers")]
         [InlineData("www.apple.com")]

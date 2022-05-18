@@ -8754,19 +8754,19 @@ private:
     }
 
     // Ensure that code will not execute if an instruction set is usable. Call only
-    // if the instruction set has previously reported as unusable, but when
-    // that that status has not yet been recorded to the AOT compiler
+    // if the instruction set has previously reported as unusable, but the status
+    // has not yet been recorded to the AOT compiler.
     void compVerifyInstructionSetUnusable(CORINFO_InstructionSet isa)
     {
-        // use compExactlyDependsOn to capture are record the use of the isa
+        // use compExactlyDependsOn to capture are record the use of the ISA.
         bool isaUsable = compExactlyDependsOn(isa);
         // Assert that the is unusable. If true, this function should never be called.
         assert(!isaUsable);
     }
 
     // Answer the question: Is a particular ISA allowed to be used implicitly by optimizations?
-    // The result of this api call will match the target machine if the result is true
-    // If the result is false, then the target machine may have support for the instruction
+    // The result of this api call will match the target machine if the result is true.
+    // If the result is false, then the target machine may have support for the instruction.
     bool compOpportunisticallyDependsOn(CORINFO_InstructionSet isa) const
     {
         if ((opts.compSupportsISA & (1ULL << isa)) != 0)

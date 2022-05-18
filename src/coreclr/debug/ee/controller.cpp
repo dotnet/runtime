@@ -126,7 +126,7 @@ LOG((LF_CORDB, LL_EVERYTHING, "DPT::SPIPL GetNextPatch passed\n"));
 
     // If we decide to reorder the list, we'll need to keep the element
     // indexed by the hash function as the (sorted)first item.  Everything else
-    // chains off this element, can can thus stay put.
+    // chains off this element, can thus stay put.
     // Thus, either the element we just added is already sorted, or else we'll
     // have to move it elsewhere in the list, meaning that we'll have to swap
     // the second item & the new item, so that the index points to the proper
@@ -383,12 +383,13 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
 
     ControllerStackInfo *i = (ControllerStackInfo *) data;
 
-    //save this info away for later use
+    // save this info away for later use.
     if (i->m_bottomFP == LEAF_MOST_FRAME)
         i->m_bottomFP = pInfo->fp;
 
-    // This is part of the targetted fix for issue 650903. (See the other
-    // parts in in code:TrackUMChain and code:DebuggerStepper::TrapStepOut.)
+    // This is part of the targetted fix for issue 650903 (see the other
+    // parts in code:TrackUMChain and code:DebuggerStepper::TrapStepOut).
+    //
     // pInfo->fIgnoreThisFrameIfSuppressingUMChainFromComPlusMethodFrameGeneric has been
     // set by TrackUMChain to help us remember that the current frame we're looking at is
     // ComPlusMethodFrameGeneric (we can't rely on looking at pInfo->frame to check
@@ -396,6 +397,7 @@ StackWalkAction ControllerStackInfo::WalkStack(FrameInfo *pInfo, void *data)
     // dude initiating this walk to remind us that our goal in life is to do a Step Out
     // during managed-only debugging. These two things together tell us we should ignore
     // this frame, rather than erroneously identifying it as the target frame.
+    //
 #ifdef FEATURE_COMINTEROP
     if(i->m_suppressUMChainFromComPlusMethodFrameGeneric &&
         (pInfo->chainReason == CHAIN_ENTER_UNMANAGED) &&
@@ -1483,9 +1485,9 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
 
         CORDbgSetInstruction((CORDB_ADDRESS_TYPE *)patch->address, patch->opcode);
 
-        //VERY IMPORTANT to zero out opcode, else we might mistake
-        //this patch for an active on on ReadMem/WriteMem (see
-        //header file comment)
+        // VERY IMPORTANT to zero out opcode, else we might mistake
+        // this patch for an active one on ReadMem/WriteMem (see
+        // header file comment).
         InitializePRD(&(patch->opcode));
 
 #if !defined(HOST_OSX) || !defined(HOST_ARM64)
@@ -1525,9 +1527,10 @@ bool DebuggerController::UnapplyPatch(DebuggerControllerPatch *patch)
         *(unsigned short *) (breakpointWriterHolder.GetRW()+1)
           = (unsigned short) patch->opcode;
 #endif //this makes no sense on anything but X86
-        //VERY IMPORTANT to zero out opcode, else we might mistake
-        //this patch for an active on on ReadMem/WriteMem (see
-        //header file comment
+
+        // VERY IMPORTANT to zero out opcode, else we might mistake
+        // this patch for an active one on ReadMem/WriteMem (see
+        // header file comment.
         InitializePRD(&(patch->opcode));
 
         if (!VirtualProtect((void *) patch->address, 2, oldProt, &oldProt))
@@ -1879,7 +1882,7 @@ BOOL DebuggerController::AddBindAndActivateILSlavePatch(DebuggerControllerPatch 
         SIZE_T masterILOffset = master->offset;
 
         // Loop through all the native offsets mapped to the given IL offset.  On x86 the mapping
-        // should be 1:1.  On WIN64, because there are funclets, we have have an 1:N mapping.
+        // should be 1:1.  On WIN64, because there are funclets, we have a 1:N mapping.
         DebuggerJitInfo::ILToNativeOffsetIterator it;
         for (dji->InitILToNativeOffsetIterator(it, masterILOffset); !it.IsAtEnd(); it.Next())
         {

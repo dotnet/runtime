@@ -3679,7 +3679,7 @@ namespace System.Xml
 
             _ps.charPos += 5;
 
-            // parsing of text declarations cannot change global stringBuidler or curNode as we may be in the middle of a text node
+            // parsing of text declarations cannot change global stringBuilder or curNode as we may be in the middle of a text node
             Debug.Assert(_stringBuilder.Length == 0 || isTextDecl);
             StringBuilder sb = isTextDecl ? new StringBuilder() : _stringBuilder;
 

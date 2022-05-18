@@ -1,18 +1,14 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // File: typedesc.cpp
-//
-
-
 //
 // This file contains definitions for methods in the code:TypeDesc class and its
 // subclasses
 //     code:ParamTypeDesc,
 //     code:TyVarTypeDesc,
 //     code:FnPtrTypeDesc
-//
-
 //
 // ============================================================================
 
@@ -861,7 +857,7 @@ void TypeVarTypeDesc::LoadConstraints(ClassLoadLevel level /* = CLASS_LOADED */)
         if (numConstraints != 0)
         {
             LoaderAllocator* pAllocator = GetModule()->GetLoaderAllocator();
-            // If there is a single class constraint we put in in element 0 of the array
+            // If there is a single class constraint we place it at index 0 of the array
             AllocMemHolder<TypeHandle> constraints
                 (pAllocator->GetLowFrequencyHeap()->AllocMem(S_SIZE_T(numConstraints) * S_SIZE_T(sizeof(TypeHandle))));
 

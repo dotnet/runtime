@@ -194,7 +194,7 @@ cont:
 	 * Scan token (scan for delimiters: s += strcspn(s, delim), sort of).
 	 * Note that delim must have one NUL; we stop if we see that, too.
 	 */
-	for (;;){
+	while (true) {
 		c = *s++;
 		spanp = (char *)delim;
 		do {

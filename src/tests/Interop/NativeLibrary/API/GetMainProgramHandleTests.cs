@@ -26,8 +26,8 @@ class GetMainProgramHandleTests
         IntPtr handle = NativeLibrary.Load(NativeLibraryToLoad.GetFullPath());
         try
         {
-            // NativeLibrary does not load symbols globally, so we shouldn't be able to discover symbols from libaries loaded
-            // with NativeLibary.Load.
+            // NativeLibrary does not load symbols globally, so we shouldn't be able to discover symbols from libraries loaded
+            // with NativeLibrary.Load.
             EXPECT(GetSymbolFromMainProgramHandle("LocallyLoadedNativeLib", TestLibrary.Utilities.IsX86 ? "_NativeSum@8" : "NativeSum"),  TestResult.ReturnFailure);
             EXPECT(GetSymbolFromMainProgramHandle("LocallyLoadedNativeLib", "NonNativeSum"), TestResult.ReturnFailure);
 

@@ -6,8 +6,6 @@
 // Definitions of a Com+ Object
 //
 
-
-
 #include "common.h"
 
 #include "vars.hpp"
@@ -877,7 +875,8 @@ BOOL StringObject::CaseInsensitiveCompHelper(_In_reads_(aLength) WCHAR *strAChar
     unsigned charA;
     unsigned charB;
 
-    for(;;) {
+    while (true)
+    {
         charA = *strAChars;
         charB = (unsigned) *strBChars;
 

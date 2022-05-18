@@ -1306,7 +1306,7 @@ done
 
 #test variance with delegates
 #generic methods
-#generic atributes
+#generic attributes
 #generic delegates
 #generic code
 #the verifier must check if the generic instantiation is valid
