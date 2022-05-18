@@ -848,9 +848,9 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 Debug.Assert(low._left is not null && low._right is not null);
                 Debug.Assert(low._left.IsNullable);
-                if (TrySplitConcatSubsumption(builder, low, high, out SymbolicRegexNode<TSet>? prefix, out SymbolicRegexNode<TSet>? tail))
+                if (TrySplitConcatSubsumption(builder, low, high, out SymbolicRegexNode<TSet>? prefix))
                 {
-                    result = builder.CreateConcat(prefix.MakeOptional(), tail);
+                    result = builder.CreateConcat(prefix.MakeOptional(), high);
                     return true;
                 }
             }
@@ -859,10 +859,9 @@ namespace System.Text.RegularExpressions.Symbolic
             return false;
 
             static bool TrySplitConcatSubsumption(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> low, SymbolicRegexNode<TSet> high,
-                [NotNullWhen(true)] out SymbolicRegexNode<TSet>? prefix, [NotNullWhen(true)] out SymbolicRegexNode<TSet>? tail)
+                [NotNullWhen(true)] out SymbolicRegexNode<TSet>? prefix)
             {
                 List<SymbolicRegexNode<TSet>> prefixElements = new();
-                tail = high;
                 SymbolicRegexNode<TSet> current = low;
                 while (current._kind == SymbolicRegexNodeKind.Concat)
                 {
@@ -871,7 +870,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     if (current == high)
                     {
                         prefix = builder.CreateConcat(prefixElements);
-                        //tail = high;
                         return true;
                     }
                     else if (builder.Subsumes(current._right, high))
@@ -879,60 +877,15 @@ namespace System.Text.RegularExpressions.Symbolic
                         prefixElements.Add(current._left);
                         current = current._right;
                     }
-                    else
+                    else if (builder.Subsumes(high, current))
                     {
-                        //if (builder.Similar(current, high))
-                        //{
-                        //    prefix = builder.CreateConcat(prefixElements);
-                        //    tail = high;
-                        //    return true;
-                        //}
-                        if (high._kind == SymbolicRegexNodeKind.Concat)
-                        {
-                            Debug.Assert(high._left is not null && high._right is not null);
-                            SymbolicRegexNode<TSet> hl = high._left;
-                            if (hl._kind == SymbolicRegexNodeKind.Loop && hl._lower == 0 && hl._upper == 1 && hl.IsLazy)
-                            {
-                                Debug.Assert(hl._left is not null);
-                                var rightToSkip = hl._left;
-                                var rightTail = high._right;
-                                while (rightToSkip._kind == SymbolicRegexNodeKind.Concat)
-                                {
-                                    Debug.Assert(rightToSkip._left is not null && rightToSkip._right is not null);
-                                    if (current._kind != SymbolicRegexNodeKind.Concat)
-                                        goto FAIL;
-                                    Debug.Assert(current._left is not null && current._right is not null);
-                                    if (current._left != rightToSkip._left)
-                                        goto FAIL;
-                                    current = current._right;
-                                    rightToSkip = rightToSkip._right;
-                                }
-                                if (current._kind != SymbolicRegexNodeKind.Concat)
-                                    goto FAIL;
-                                Debug.Assert(current._left is not null && current._right is not null);
-                                if (current._left == rightToSkip)
-                                {
-                                    if (current._right == rightTail)
-                                    {
-                                        prefix = builder.CreateConcat(prefixElements);
-                                        //tail = high;
-                                        return true;
-                                    }
-                                    else
-                                    {
-                                        current = current._right;
-                                        high = rightTail;
-                                        continue;
-                                    }
-                                }
-                            }
-                        }
-                        goto FAIL;
+                        prefix = builder.CreateConcat(prefixElements);
+                        return true;
                     }
+                    else
+                        break;
                 }
-                FAIL:
                 prefix = null;
-                tail = null;
                 return false;
             }
         }
