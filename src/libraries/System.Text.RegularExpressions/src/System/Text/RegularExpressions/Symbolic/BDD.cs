@@ -541,9 +541,11 @@ namespace System.Text.RegularExpressions.Symbolic
                 Ordinal.CompareTo(other.Ordinal);
         }
 
-        /// <summary>Gets how many characters this BDD represents</summary>
+#if DEBUG
+        /// <summary>Gets how many characters this BDD represents.</summary>
         public uint Cardinality
         {
+            //used to inspect the size of typical BDDs for character classes such as \d or \s or \w etc.
             get
             {
                 if (IsEmpty)
@@ -564,5 +566,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 return result;
             }
         }
+#endif
     }
 }

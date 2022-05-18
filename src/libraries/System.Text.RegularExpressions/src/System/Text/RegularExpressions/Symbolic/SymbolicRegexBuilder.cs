@@ -343,6 +343,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         private Dictionary<(SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>), bool> _subsumptionCache = new();
+
         internal bool Subsumes(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right)
         {
             if (left == right)

@@ -490,6 +490,7 @@ namespace System.Text.RegularExpressions.Symbolic
         internal static SymbolicRegexNode<TSet> CreateLoop(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> body, int lower, int upper, bool isLazy)
         {
             Debug.Assert(lower >= 0 && lower <= upper);
+            //avoid wrapping X? inside (X?)?, or X?? inside (X??)??
             if (lower == 0 && upper == 1 && body._kind == SymbolicRegexNodeKind.Loop && body._lower == 0 && body._upper == 1)
             {
                 Debug.Assert(body._left is not null);
@@ -672,7 +673,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Make an ordered or of given regexes, eliminate nothing regexes and treat .* as consuming element.
         /// Keep the or flat, assuming both right and left are flat.
-        /// Apply a counber subsumption/combining optimization, such that e.g. a{2,5}|a{3,10} will be combined to a{2,10}.
+        /// Apply a counter subsumption/combining optimization, such that e.g. a{2,5}|a{3,10} will be combined to a{2,10}.
         /// </summary>
         internal static SymbolicRegexNode<TSet> OrderedOr(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, bool deduplicated = false)
         {
@@ -890,16 +891,19 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        /// <summary>If left = X{0,n}Y and right = X^nXY then simplify left|right to X{0,n+1}Y</summary>
+        /// <summary>Try to simplify left|right by avoiding to create the alternation explicitly</summary>
         private static bool TryToSimplifyAlternation(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, out SymbolicRegexNode<TSet>? left_or_right)
         {
             if (right._kind == SymbolicRegexNodeKind.Concat && right._left == builder._anyStarLazy)
             {
+                //do not simplify the case X|.*?R that represents the top-level alternation with right = .*?R as the initial search pattern
                 left_or_right = null;
                 return false;
             }
             if (builder.Subsumes(right, left))
             {
+                //if right subsumes left then try to fold right into left
+                //TBD: typical example to illustrate when this kicks in
                 return TryFold(builder, right, left, out left_or_right);
             }
 
@@ -1562,9 +1566,10 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        /// <summary>Prune this node wrt the given context in order to maintain backtracking semantics</summary>
+        /// <summary>Prune this node wrt the given context in order to maintain backtracking semantics. Mimics how backtracking chooses a path.</summary>
         private SymbolicRegexNode<TSet> Prune(uint context)
         {
+            //caching pruning to avoid otherwise potential quadratic worst case behavior
             SymbolicRegexNode<TSet>? prunedNode;
             (SymbolicRegexNode<TSet>, uint) key = (this, context);
             if (_builder._pruneCache.TryGetValue(key, out prunedNode))
@@ -1581,13 +1586,20 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
+                    // The left alternative, when nullable, has priority over the right alternative
+                    // Otherwise the left alternative is still active and the right alternative is pruned
                     prunedNode = _left.IsNullableFor(context) ? _left.Prune(context) :
                         OrderedOr(_builder, _left, _right.Prune(context), deduplicated: true);
                     break;
 
                 case SymbolicRegexNodeKind.Concat:
                     Debug.Assert(_left is not null && _right is not null);
-
+                    //in a concatenation (X|Y)Z priority is given to XZ when X is nullable (XY is forgotten)
+                    //if X is not nullable then XZ is maintaned as is, and YZ is pruned
+                    //e.g. (a{0,5}?|abc|b+)c* reduces to c*
+                    //---
+                    //in a concatenation XZ where X is not an alternation, both X and Z are pruned
+                    //e.g. a{0,5}?b{0,5}? reduces to ()
                     prunedNode = _left._kind == SymbolicRegexNodeKind.OrderedOr ?
                         (_left._left!.IsNullableFor(context) ?
                             CreateConcat(_builder, _left._left, _right).Prune(context) :
@@ -1596,15 +1608,18 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
 
                 case SymbolicRegexNodeKind.Loop when _info.IsLazyLoop && _lower == 0:
+                    //lazy nullable loop reduces to (), i.e., the loop body is just forgotten
                     prunedNode = _builder.Epsilon;
                     break;
 
                 case SymbolicRegexNodeKind.Effect:
+                    //Effects are maintained and the pruning is propagated to the body of the effect
                     Debug.Assert(_left is not null && _right is not null);
                     prunedNode = CreateEffect(_builder, _left.Prune(context), _right);
                     break;
 
                 default:
+                    //In all other remaining cases no pruning takes place
                     prunedNode = this;
                     break;
             }
@@ -1614,7 +1629,7 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
 
-        /// <summary>Wraps this node into a lazy 0-1-loop, unless this node is already high priority nullable and therefore optional</summary>
+        /// <summary>Wraps this node into a lazy 0-1-loop</summary>
         internal SymbolicRegexNode<TSet> MakeOptional() => CreateLoop(_builder, this, 0, 1, true);
 
         /// <summary>
@@ -1673,6 +1688,7 @@ namespace System.Text.RegularExpressions.Symbolic
                             SymbolicRegexNode<TSet> lderiv = _left.CreateDerivativeRec(elem, context);
                             SymbolicRegexNode<TSet> lderivR = _builder.CreateConcat(lderiv, _right);
                             SymbolicRegexNode<TSet> rderiv = _right.CreateDerivativeRec(elem, context);
+                            // Create Effect node of the right derivative
                             SymbolicRegexNode<TSet> rderivE = _builder.CreateEffect(rderiv, _left);
                             // if the left alternative is high-priority-nullable then
                             // the priority is to skip left and prioritize rderiv over lderivR
@@ -1723,11 +1739,13 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
 
                 case SymbolicRegexNodeKind.Effect:
+                    //Effect nodes do not have derivatives (effects have been stripped): It is an error to reach an Effect node here
                     Debug.Fail($"{nameof(CreateDerivativeRec)}:{_kind}");
                     break;
 
                 default:
                     // The derivative of any other case is nothing
+                    // e.g. taking the derivative of () (epsilon) is [] (nothing)
                     derivative = _builder._nothing;
                     break;
             }
