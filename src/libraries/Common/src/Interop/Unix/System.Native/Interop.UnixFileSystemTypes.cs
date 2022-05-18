@@ -24,6 +24,7 @@ internal static partial class Interop
             affs = 0xADFF,
             afs = 0x5346414F,
             anoninode = 0x09041934,
+            apfs = 0x1A,
             aufs = 0x61756673,
             autofs = 0x0187,
             autofs4 = 0x6D4A556D,

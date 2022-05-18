@@ -1493,6 +1493,7 @@ uint32_t SystemNative_GetFileSystemType(intptr_t fd)
     else if (strcmp(statfsArgs.f_basetype, "affs") == 0) result = 0xADFF;
     else if (strcmp(statfsArgs.f_basetype, "afs") == 0) result = 0x5346414F;
     else if (strcmp(statfsArgs.f_basetype, "anoninode") == 0) result = 0x09041934;
+    else if (strcmp(statfsArgs.f_basetype, "apfs") == 0) result = 0x1A;
     else if (strcmp(statfsArgs.f_basetype, "aufs") == 0) result = 0x61756673;
     else if (strcmp(statfsArgs.f_basetype, "autofs") == 0) result = 0x0187;
     else if (strcmp(statfsArgs.f_basetype, "autofs4") == 0) result = 0x6D4A556D;
