@@ -2,8 +2,9 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System;
+using System.Collections.Generic;
 using System.Text;
-
+using Internal.IL;
 using Internal.TypeSystem;
 
 namespace ILCompiler.Logging
@@ -33,6 +34,29 @@ namespace ILCompiler.Logging
             MemberDefinition = memberDefinition;
             SourceLine = sourceLine;
             SourceColumn = sourceColumn;
+        }
+
+        public MessageOrigin(MethodIL origin, int ilOffset)
+        {
+            string document = null;
+            int? lineNumber = null;
+
+            IEnumerable<ILSequencePoint> sequencePoints = origin.GetDebugInfo()?.GetSequencePoints();
+            if (sequencePoints != null)
+            {
+                foreach (var sequencePoint in sequencePoints)
+                {
+                    if (sequencePoint.Offset <= ilOffset)
+                    {
+                        document = sequencePoint.Document;
+                        lineNumber = sequencePoint.LineNumber;
+                    }
+                }
+            }
+            FileName = document;
+            MemberDefinition = origin.OwningMethod;
+            SourceLine = lineNumber;
+            SourceColumn = null;
         }
 
         public override string ToString()

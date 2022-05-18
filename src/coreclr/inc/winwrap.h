@@ -1,5 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //*****************************************************************************
 // WinWrap.h
 //
@@ -201,16 +202,12 @@
 #define WszGetFileAttributes   GetFileAttributesWrapper
 #define WszGetFileAttributesEx GetFileAttributesExWrapper
 #define WszDeleteFile          DeleteFileWrapper
-#define WszFindFirstFileEx     FindFirstFileExWrapper
-#define WszFindNextFile        FindNextFileW
-#define WszMoveFileEx          MoveFileExWrapper
 
 //Can not use extended syntax
 #define WszGetFullPathName     GetFullPathNameW
 
 //Long Files will not work on these till redstone
 #define WszGetCurrentDirectory GetCurrentDirectoryWrapper
-#define WszGetTempFileName     GetTempFileNameWrapper
 #define WszGetTempPath         GetTempPathWrapper
 
 //APIS which have a buffer as an out parameter
@@ -218,16 +215,6 @@
 #define WszSearchPath          SearchPathWrapper
 #define WszGetModuleFileName   GetModuleFileNameWrapper
 
-//NOTE: IF the following API's are enabled ensure that they can work with LongFile Names
-//See the usage and implementation of above API's
-//
-//#define WszGetBinaryType       GetBinaryTypeWrapper     //Coresys does not seem to have this API
-
-#if HOST_UNIX
-#define WszFindFirstFile     FindFirstFileW
-#else
-#define WszFindFirstFile(_lpFileName_, _lpFindData_)       FindFirstFileExWrapper(_lpFileName_, FindExInfoStandard, _lpFindData_, FindExSearchNameMatch, NULL, 0)
-#endif // HOST_UNIX
 //*****************************************************************************
 // Prototypes for API's.
 //*****************************************************************************

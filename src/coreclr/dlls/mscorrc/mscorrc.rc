@@ -45,7 +45,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 STRINGTABLE DISCARDABLE
 BEGIN
     CLDB_E_FILE_OLDVER                      "Version %d.%d is not a compatible version."
-    CLDB_E_SMDUPLICATE                      "Shared memory '%hs' already exists."
+    CLDB_E_SMDUPLICATE                      "Shared memory '%s' already exists."
     CLDB_E_NO_DATA                          "No metadata was found."
 
     CLDB_E_FILE_CORRUPT                     "Database file is corrupt and may not be usable."

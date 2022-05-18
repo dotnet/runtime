@@ -63,6 +63,23 @@ Exception * Exception::GetOOMException()
     return GetOOMException();
 }
 
+#ifdef DACCESS_COMPILE
+
+extern void* AllocDbiMemory(size_t size);
+extern void DeleteDbiMemory(void* p);
+
+void * Exception::operator new(size_t size)
+{
+    return AllocDbiMemory(size);
+}
+
+void Exception::operator delete(void* ptr)
+{
+    DeleteDbiMemory(ptr);
+}
+
+#endif
+
 //------------------------------------------------------------------------------
 void Exception::Delete(Exception* pvMemory)
 {
@@ -79,7 +96,12 @@ void Exception::Delete(Exception* pvMemory)
         return;
     }
 
-    ::delete((Exception *) pvMemory);
+#ifdef DACCESS_COMPILE
+    delete pvMemory;
+#else
+    ::delete pvMemory;
+#endif
+
 }
 
 void Exception::GetMessage(SString &result)

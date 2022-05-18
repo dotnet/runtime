@@ -838,6 +838,44 @@ namespace System.Text.Json.SourceGeneration.Tests
             }
         }
 
+#if NETCOREAPP
+        [Fact]
+        public virtual void ClassWithDateOnlyAndTimeOnlyValues_Roundtrip()
+        {
+            RunTest(new ClassWithDateOnlyAndTimeOnlyValues
+            {
+                DateOnly = DateOnly.Parse("2022-05-10"),
+                NullableDateOnly = DateOnly.Parse("2022-05-10"),
+
+                TimeOnly = TimeOnly.Parse("21:51:51"),
+                NullableTimeOnly = TimeOnly.Parse("21:51:51"),
+            });
+
+            RunTest(new ClassWithDateOnlyAndTimeOnlyValues());
+
+            void RunTest(ClassWithDateOnlyAndTimeOnlyValues expected)
+            {
+                string json = JsonSerializer.Serialize(expected, DefaultContext.ClassWithDateOnlyAndTimeOnlyValues);
+                ClassWithDateOnlyAndTimeOnlyValues actual = JsonSerializer.Deserialize(json, DefaultContext.ClassWithDateOnlyAndTimeOnlyValues);
+
+                Assert.Equal(expected.DateOnly, actual.DateOnly);
+                Assert.Equal(expected.NullableDateOnly, actual.NullableDateOnly);
+
+                Assert.Equal(expected.TimeOnly, actual.TimeOnly);
+                Assert.Equal(expected.NullableTimeOnly, actual.NullableTimeOnly);
+            }
+        }
+
+        public class ClassWithDateOnlyAndTimeOnlyValues
+        {
+            public DateOnly DateOnly { get; set; }
+            public DateOnly? NullableDateOnly { get; set; }
+
+            public TimeOnly TimeOnly { get; set; }
+            public TimeOnly? NullableTimeOnly { get; set; }
+        }
+#endif
+
         public class ClassWithNullableProperties
         {
             public Uri Uri { get; set; }

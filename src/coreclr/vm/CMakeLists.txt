@@ -333,7 +333,6 @@ set(VM_SOURCES_WKS
     genanalysis.cpp
     genmeth.cpp
     hosting.cpp
-    ibclogger.cpp
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp
@@ -436,7 +435,6 @@ set(VM_HEADERS_WKS
     gcenv.ee.h
     gcenv.os.h
     gchelpers.h
-    ibclogger.h
     ilmarshalers.h
     interopconverter.h
     interoputil.h
