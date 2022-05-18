@@ -34,7 +34,7 @@
         <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
         <PostCommands>$(Python) post.py</PostCommands>
     </HelixWorkItem>
-    <HelixWorkItem Include="SOD - iOS HelloWorld Mono Zip Size $(LlvmPath)">
+    <HelixWorkItem Include="SOD - iOS HelloWorld Mono Zip Size $(LlvmPath) test">
       <PayloadDirectory>$(WorkItemDirectory)</PayloadDirectory>
       <PreCommands>cd $(ScenarioDirectory)helloios;cp -v $HELIX_CORRELATION_PAYLOAD/iosHelloWorldZip/$(LlvmPath)zip/iOSSampleApp$(LlvmPath)Archive.zip .;$(Python) pre.py --name iOSSampleApp$(LlvmPath)Archive.zip</PreCommands>
       <Command>$(Python) test.py sod --scenario-name &quot;%(Identity)&quot;</Command>
