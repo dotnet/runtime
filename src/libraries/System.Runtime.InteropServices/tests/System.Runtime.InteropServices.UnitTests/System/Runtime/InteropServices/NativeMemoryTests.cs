@@ -472,10 +472,7 @@ namespace System.Runtime.InteropServices.Tests
 
             NativeMemory.ZeroMemory(ptr + offset, size);
 
-            foreach (byte value in new Span<byte>(ptr + offset, size))
-            {
-                Assert.Equal(0, (int)value);
-            }
+            Assert.Equal(-1, new Span<byte>(ptr + offset, size).IndexOfAnyExcept(0));
 
             NativeMemory.AlignedFree(ptr);
         }
