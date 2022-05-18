@@ -198,7 +198,9 @@ function _handle_fetched_asset(asset: AssetEntry, url?: string) {
     if (ctx.tracing)
         console.log(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
 
-    const virtualName: string = asset.virtual_path || asset.name;
+    const virtualName: string = typeof (asset.virtual_path) === "string"
+        ? asset.virtual_path
+        : asset.name;
     let offset: VoidPtr | null = null;
 
     switch (asset.behavior) {
@@ -304,7 +306,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         if(!Module.disableDotnet6Compatibility && Module.exports){
             // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
-            // Useful to export IDBFS or other similar types generally exposed as 
+            // Useful to export IDBFS or other similar types generally exposed as
             // global types when emscripten is not modularized.
             for (let i = 0; i < Module.exports.length; ++i) {
                 const exportName = Module.exports[i];

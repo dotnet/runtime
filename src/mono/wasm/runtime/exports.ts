@@ -30,7 +30,7 @@ import {
     mono_wasm_debugger_attached,
 } from "./debug";
 import { ENVIRONMENT_IS_WEB, ExitStatusError, runtimeHelpers, setImportsAndExports } from "./imports";
-import { DotnetModuleConfigImports, DotnetModule } from "./types";
+import { DotnetModuleConfigImports, DotnetModule, is_nullish } from "./types";
 import {
     mono_load_runtime_and_bcl_args, mono_wasm_load_config,
     mono_wasm_setenv, mono_wasm_set_runtime_options,
@@ -47,7 +47,6 @@ import {
 import {
     call_static_method, mono_bind_static_method, mono_call_assembly_entry_point,
     mono_method_resolve,
-    mono_wasm_compile_function_ref,
     mono_wasm_get_by_index_ref, mono_wasm_get_global_object_ref, mono_wasm_get_object_property_ref,
     mono_wasm_invoke_js,
     mono_wasm_invoke_js_blazor,
@@ -259,7 +258,7 @@ function initializeImportsAndExports(
             let value: any = undefined;
             Object.defineProperty(globalThis, name, {
                 get: () => {
-                    if (!value) {
+                    if (is_nullish(value)) {
                         const stack = (new Error()).stack;
                         const nextLine = stack ? stack.substr(stack.indexOf("\n", 8) + 1) : "";
                         console.warn(`global ${name} is obsolete, please use Module.${name} instead ${nextLine}`);
@@ -347,7 +346,6 @@ export const __linker_exports: any = {
     mono_wasm_web_socket_receive,
     mono_wasm_web_socket_close_ref,
     mono_wasm_web_socket_abort,
-    mono_wasm_compile_function_ref,
 
     //  also keep in sync with pal_icushim_static.c
     mono_wasm_load_icu_data,

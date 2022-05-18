@@ -1131,9 +1131,8 @@ namespace DebuggerTests
                    );
 
                 var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false);
-               Assert.Equal(
-                    "Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.", 
-                    res.Error["exceptionDetails"]["exception"]["description"]?.Value<string>());
+                AssertEqual("Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.", 
+                    res.Error["result"]["description"]?.Value<string>(), "wrong error message");
             });
 
         [Fact]

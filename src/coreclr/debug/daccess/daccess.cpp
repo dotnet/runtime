@@ -5722,6 +5722,86 @@ ClrDataAccess::GetJitHelperName(
     return NULL;
 }
 
+// This function expects more memory than maybe needed.
+static int FormatCLRStubName(
+    _In_opt_z_ LPCWSTR stubNameMaybe,
+    _In_ TADDR stubAddr,
+    _In_ ULONG32 bufLen,
+    _Out_ ULONG32 *symbolLen,
+    _Out_writes_bytes_opt_(bufLen) WCHAR* symbolBuf)
+{
+    // Parts needed to construct a name:
+    // With stub manager name: "CLRStub[%s]@%p"
+    //   No stub manager name: "CLRStub@%p"
+    const WCHAR formatName_Prefix[] = W("CLRStub");
+    const WCHAR formatName_OpenBracket[] = W("[");
+    const WCHAR formatName_CloseBracket[] = W("]");
+    const WCHAR formatName_PrefixEnd[] = W("@");
+
+    // Compute the address as a string safely.
+    WCHAR addrString[Max64BitHexString + 1];
+    FormatInteger(addrString, ARRAY_SIZE(addrString), "%p", stubAddr);
+    size_t addStringLen = wcslen(addrString);
+
+    // Compute maximum length, include the null terminator.
+    size_t formatName_MaxLen = ARRAY_SIZE(formatName_Prefix) // Include trailing null
+                                + ARRAY_SIZE(formatName_PrefixEnd) - 1
+                                + addStringLen;
+
+    // Consider stub manager name
+    size_t stubManagedNameLen = 0;
+    if (stubNameMaybe != NULL)
+    {
+        stubManagedNameLen = wcslen(stubNameMaybe);
+        formatName_MaxLen += ARRAY_SIZE(formatName_OpenBracket) - 1;
+        formatName_MaxLen += ARRAY_SIZE(formatName_CloseBracket) - 1;
+    }
+
+    HRESULT hr = S_FALSE;
+
+    // Compute the exact length needed.
+    const size_t lenNeeded = formatName_MaxLen + stubManagedNameLen;
+    if (lenNeeded <= bufLen)
+    {
+        size_t written = 0;
+
+        // Set the prefix
+        wcscpy_s(symbolBuf, bufLen - written, formatName_Prefix);
+        written += ARRAY_SIZE(formatName_Prefix) - 1;
+
+        // Add the name
+        if (stubManagedNameLen > 0)
+        {
+            wcscat_s(symbolBuf, bufLen - written, formatName_OpenBracket);
+            written += ARRAY_SIZE(formatName_OpenBracket) - 1;
+            wcscat_s(symbolBuf, bufLen - written, stubNameMaybe);
+            written += stubManagedNameLen;
+            wcscat_s(symbolBuf, bufLen - written, formatName_CloseBracket);
+            written += ARRAY_SIZE(formatName_CloseBracket) - 1;
+        }
+
+        // Append the prefix end
+        wcscat_s(symbolBuf, bufLen - written, formatName_PrefixEnd);
+        written += ARRAY_SIZE(formatName_PrefixEnd) - 1;
+
+        // Append the address
+        wcscat_s(symbolBuf, bufLen - written, addrString);
+        written += addStringLen;
+
+        hr = S_OK;
+    }
+
+    if (symbolLen)
+    {
+        if (!FitsIn<ULONG32>(lenNeeded))
+            return COR_E_OVERFLOW;
+
+        *symbolLen = (ULONG32)lenNeeded;
+    }
+
+    return hr;
+}
+
 HRESULT
 ClrDataAccess::RawGetMethodName(
     /* [in] */ CLRDATA_ADDRESS address,
@@ -5736,7 +5816,6 @@ ClrDataAccess::RawGetMethodName(
     address &= ~THUMB_CODE;
 #endif
 
-    const UINT k_cch64BitHexFormat = ARRAY_SIZE("1234567812345678");
     HRESULT status;
 
     if (flags != 0)
@@ -5848,47 +5927,15 @@ ClrDataAccess::RawGetMethodName(
             }
         }
 
-        static WCHAR s_wszFormatNameWithStubManager[] = W("CLRStub[%s]@%I64x");
-
         LPCWSTR wszStubManagerName = pStubManager->GetStubManagerName(TO_TADDR(address));
         _ASSERTE(wszStubManagerName != NULL);
 
-        int result = _snwprintf_s(
-            symbolBuf,
+        return FormatCLRStubName(
+            wszStubManagerName,
+            TO_TADDR(address),
             bufLen,
-            _TRUNCATE,
-            s_wszFormatNameWithStubManager,
-            wszStubManagerName,                                         // Arg 1 = stub name
-            TO_TADDR(address));                                         // Arg 2 = stub hex address
-
-        if (result != -1)
-        {
-            // Printf succeeded, so we have an exact char count to return
-            if (symbolLen)
-            {
-                size_t cchSymbol = wcslen(symbolBuf) + 1;
-                if (!FitsIn<ULONG32>(cchSymbol))
-                    return COR_E_OVERFLOW;
-
-                *symbolLen = (ULONG32) cchSymbol;
-            }
-            return S_OK;
-        }
-
-        // Printf failed.  Estimate a size that will be at least big enough to hold the name
-        if (symbolLen)
-        {
-            size_t cchSymbol = ARRAY_SIZE(s_wszFormatNameWithStubManager) +
-                wcslen(wszStubManagerName) +
-                k_cch64BitHexFormat +
-                1;
-
-            if (!FitsIn<ULONG32>(cchSymbol))
-                return COR_E_OVERFLOW;
-
-            *symbolLen = (ULONG32) cchSymbol;
-        }
-        return S_FALSE;
+            symbolLen,
+            symbolBuf);
     }
 
     // Do not waste time looking up name for static helper. Debugger can get the actual name from .pdb.
@@ -5914,44 +5961,12 @@ NameFromMethodDesc:
     if (methodDesc->GetClassification() == mcDynamic &&
         !methodDesc->GetSig())
     {
-        // XXX Microsoft - Should this case have a more specific name?
-        static WCHAR s_wszFormatNameAddressOnly[] = W("CLRStub@%I64x");
-
-        int result = _snwprintf_s(
-            symbolBuf,
+        return FormatCLRStubName(
+            NULL,
+            TO_TADDR(address),
             bufLen,
-            _TRUNCATE,
-            s_wszFormatNameAddressOnly,
-            TO_TADDR(address));
-
-        if (result != -1)
-        {
-            // Printf succeeded, so we have an exact char count to return
-            if (symbolLen)
-            {
-                size_t cchSymbol = wcslen(symbolBuf) + 1;
-                if (!FitsIn<ULONG32>(cchSymbol))
-                    return COR_E_OVERFLOW;
-
-                *symbolLen = (ULONG32) cchSymbol;
-            }
-            return S_OK;
-        }
-
-        // Printf failed.  Estimate a size that will be at least big enough to hold the name
-        if (symbolLen)
-        {
-            size_t cchSymbol = ARRAY_SIZE(s_wszFormatNameAddressOnly) +
-                k_cch64BitHexFormat +
-                1;
-
-            if (!FitsIn<ULONG32>(cchSymbol))
-                return COR_E_OVERFLOW;
-
-            *symbolLen = (ULONG32) cchSymbol;
-        }
-
-        return S_FALSE;
+            symbolLen,
+            symbolBuf);
     }
 
     return GetFullMethodName(methodDesc, bufLen, symbolLen, symbolBuf);

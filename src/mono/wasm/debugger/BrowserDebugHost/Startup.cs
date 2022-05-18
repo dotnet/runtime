@@ -58,7 +58,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                                     .Select(uri => uri.ToString())
                                     .FirstOrDefault();
 
-                Console.WriteLine($"{Environment.NewLine}Debug proxy for chrome now listening on {ipAddress}. And expecting chrome at {options.DevToolsUrl}");
+                if (!options.RunningForBlazor)
+                    Console.WriteLine($"Debug proxy for chrome now listening on {ipAddress}. And expecting chrome at {options.DevToolsUrl}");
             });
 
             app.UseDeveloperExceptionPage()

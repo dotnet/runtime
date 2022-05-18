@@ -251,6 +251,7 @@ FCFuncStart(gCOMFieldHandleNewFuncs)
     FCFuncElement("GetToken", RuntimeFieldHandle::GetToken)
     FCFuncElement("GetStaticFieldForGenericType", RuntimeFieldHandle::GetStaticFieldForGenericType)
     FCFuncElement("AcquiresContextFromThis", RuntimeFieldHandle::AcquiresContextFromThis)
+    FCFuncElement("GetLoaderAllocator", RuntimeFieldHandle::GetLoaderAllocator)
 FCFuncEnd()
 
 FCFuncStart(gCOMModuleFuncs)

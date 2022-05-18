@@ -66,18 +66,16 @@ internal static partial class Interop
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslGet0AlpnSelected")]
         internal static partial void SslGetAlpnSelected(SafeSslHandle ssl, out IntPtr protocol, out int len);
 
-        internal static byte[]? SslGetAlpnSelected(SafeSslHandle ssl)
+        internal static unsafe ReadOnlySpan<byte> SslGetAlpnSelected(SafeSslHandle ssl)
         {
             IntPtr protocol;
             int len;
             SslGetAlpnSelected(ssl, out protocol, out len);
 
             if (len == 0)
-                return null;
+                return ReadOnlySpan<byte>.Empty;
 
-            byte[] result = new byte[len];
-            Marshal.Copy(protocol, result, 0, len);
-            return result;
+            return new ReadOnlySpan<byte>((void*)protocol, len);
         }
 
         [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_SslWrite", SetLastError = true)]

@@ -4087,6 +4087,8 @@ namespace System
         public bool Equals(System.RuntimeFieldHandle handle) { throw null; }
         public override int GetHashCode() { throw null; }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static System.RuntimeFieldHandle FromIntPtr(System.IntPtr value) { throw null; }
+        public static System.IntPtr ToIntPtr(System.RuntimeFieldHandle value) { throw null; }
         public static bool operator ==(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
         public static bool operator !=(System.RuntimeFieldHandle left, System.RuntimeFieldHandle right) { throw null; }
     }
@@ -4100,6 +4102,8 @@ namespace System
         public System.IntPtr GetFunctionPointer() { throw null; }
         public override int GetHashCode() { throw null; }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static System.RuntimeMethodHandle FromIntPtr(System.IntPtr value) { throw null; }
+        public static System.IntPtr ToIntPtr(System.RuntimeMethodHandle value) { throw null; }
         public static bool operator ==(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
         public static bool operator !=(System.RuntimeMethodHandle left, System.RuntimeMethodHandle right) { throw null; }
     }
@@ -4113,6 +4117,8 @@ namespace System
         public override int GetHashCode() { throw null; }
         public System.ModuleHandle GetModuleHandle() { throw null; }
         public void GetObjectData(System.Runtime.Serialization.SerializationInfo info, System.Runtime.Serialization.StreamingContext context) { }
+        public static System.RuntimeTypeHandle FromIntPtr(System.IntPtr value) { throw null; }
+        public static System.IntPtr ToIntPtr(System.RuntimeTypeHandle value) { throw null; }
         public static bool operator ==(object? left, System.RuntimeTypeHandle right) { throw null; }
         public static bool operator ==(System.RuntimeTypeHandle left, object? right) { throw null; }
         public static bool operator !=(object? left, System.RuntimeTypeHandle right) { throw null; }

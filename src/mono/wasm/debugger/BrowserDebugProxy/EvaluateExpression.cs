@@ -453,7 +453,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 newScript = script.ContinueWith(
                 string.Join("\n", replacer.variableDefinitions) + "\nreturn " + syntaxTree.ToString());
                 var state = await newScript.RunAsync(cancellationToken: token);
-                return JObject.FromObject(resolver.ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue?.GetType()));
+                return JObject.FromObject(resolver.ConvertCSharpToJSType(state.ReturnValue, state.ReturnValue.GetType()));
             }
             catch (CompilationErrorException cee)
             {
@@ -464,6 +464,24 @@ namespace Microsoft.WebAssembly.Diagnostics
             {
                 throw new Exception($"Internal Error: Unable to run {expression}, error: {ex.Message}.", ex);
             }
+        }
+
+        private static JObject ConvertCLRToJSType(object v)
+        {
+            if (v is JObject jobj)
+                return jobj;
+
+            if (v is null)
+                return JObjectValueCreator.CreateNull("<unknown>")?["value"] as JObject;
+
+            string typeName = v.GetType().ToString();
+            jobj = JObjectValueCreator.CreateFromPrimitiveType(v);
+            return jobj is not null
+                ? jobj["value"] as JObject
+                : JObjectValueCreator.Create<object>(value: null,
+                                                    type: "object",
+                                                    description: v.ToString(),
+                                                    className: typeName)?["value"] as JObject;
         }
     }
 

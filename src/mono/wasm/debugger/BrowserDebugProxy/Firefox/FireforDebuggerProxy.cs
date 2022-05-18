@@ -28,8 +28,8 @@ public class FirefoxDebuggerProxy : DebuggerProxyBase
         {
             s_tcpListener = new TcpListener(IPAddress.Parse("127.0.0.1"), proxyPort);
             s_tcpListener.Start();
-            Console.WriteLine($"{Environment.NewLine}Debug proxy for firefox now listening on tcp://{s_tcpListener.LocalEndpoint}." +
-                                (browserPort >= 0 ? $"And expecting firefox at port {browserPort}" : string.Empty));
+            Console.WriteLine($"Debug proxy for firefox now listening on tcp://{s_tcpListener.LocalEndpoint}." +
+                                (browserPort >= 0 ? $" And expecting firefox at port {browserPort} ." : string.Empty));
         }
     }
 
