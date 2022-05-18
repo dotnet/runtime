@@ -472,7 +472,7 @@ namespace System.Runtime.InteropServices.Tests
 
             NativeMemory.ZeroMemory(ptr + offset, size);
 
-            Assert.Equal(-1, new Span<byte>(ptr + offset, size).IndexOfAnyExcept(0));
+            Assert.Equal(-1, new Span<byte>(ptr + offset, (int)size).IndexOfAnyExcept(0));
 
             NativeMemory.AlignedFree(ptr);
         }
@@ -508,8 +508,8 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(256, 143)]
         public void ZeroMemoryWithExactRangeTest(uint size, uint offset)
         {
-            int headLength = offset;
-            int bodyLength = size;
+            int headLength = (int)offset;
+            int bodyLength = (int)size;
             int tailLength = 512 - headLength - bodyLength;
             int headOffset = 0;
             int bodyOffset = headLength;
@@ -522,7 +522,7 @@ namespace System.Runtime.InteropServices.Tests
 
             new Span<byte>(ptr, 512).Fill(0b10101010);
 
-            NativeMemory.ZeroMemory(ptr + bodyOffset, bodyLength);
+            NativeMemory.ZeroMemory(ptr + bodyOffset, (nuint)bodyLength);
 
             Assert.Equal(-1, new Span<byte>(ptr + headOffset, headLength).IndexOfAnyExcept(0b10101010));
             Assert.Equal(-1, new Span<byte>(ptr + bodyOffset, bodyLength).IndexOfAnyExcept(0));
