@@ -254,12 +254,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowArgumentException_BufferMustNotBeEmpty(string paramName)
-        {
-            throw new ArgumentException(SR.Arg_BufferMustNotBeEmpty, paramName);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowArgumentException_HandleNotSync(string paramName)
         {
             throw new ArgumentException(SR.Arg_HandleNotSync, paramName);
@@ -524,12 +518,6 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit()
         {
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentOutOfRangeException_NeedPosNum(string? paramName, int actualValue)
-        {
-            throw new ArgumentOutOfRangeException(paramName, actualValue, SR.ArgumentOutOfRange_NeedPosNum);
         }
 
         [DoesNotReturn]

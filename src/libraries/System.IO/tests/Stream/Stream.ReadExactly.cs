@@ -164,13 +164,16 @@ namespace System.IO.Tests
 
             byte[] emptyBuffer = Array.Empty<byte>();
 
+            // ReadExactly on an empty buffer is a no-op
             if (async)
             {
-                await Assert.ThrowsAsync<ArgumentException>(async () => await s.ReadExactlyAsync(emptyBuffer));
+                await s.ReadExactlyAsync(emptyBuffer);
+                await s.ReadExactlyAsync(emptyBuffer, 0, 0);
             }
             else
             {
-                Assert.Throws<ArgumentException>(() => s.ReadExactly(emptyBuffer));
+                s.ReadExactly(emptyBuffer);
+                s.ReadExactly(emptyBuffer, 0, 0);
             }
 
             Assert.Equal(0, readInvokedCount);
@@ -246,7 +249,6 @@ namespace System.IO.Tests
             {
                 await Assert.ThrowsAsync<ArgumentNullException>(async () => await s.ReadExactlyAsync(null, 0, 1));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadExactlyAsync(buffer, 0, -1));
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadExactlyAsync(buffer, 0, 0));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadExactlyAsync(buffer, -1, buffer.Length));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadExactlyAsync(buffer, buffer.Length, 1));
                 await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadExactlyAsync(buffer, 0, buffer.Length + 1));
@@ -256,7 +258,6 @@ namespace System.IO.Tests
             {
                 Assert.Throws<ArgumentNullException>(() => s.ReadExactly(null, 0, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadExactly(buffer, 0, -1));
-                Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadExactly(buffer, 0, 0));
                 Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadExactly(buffer, -1, buffer.Length));
                 Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadExactly(buffer, buffer.Length, 1));
                 Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadExactly(buffer, 0, buffer.Length + 1));

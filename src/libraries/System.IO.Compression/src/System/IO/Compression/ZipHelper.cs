@@ -40,9 +40,6 @@ namespace System.IO.Compression
         /// </summary>
         internal static void ReadBytes(Stream stream, byte[] buffer, int bytesToRead)
         {
-            if (bytesToRead <= 0)
-                return;
-
             int bytesRead = stream.ReadAtLeast(buffer.AsSpan(0, bytesToRead), bytesToRead, throwOnEndOfStream: false);
             if (bytesRead < bytesToRead)
             {

@@ -1715,9 +1715,7 @@ namespace System.Xml
             byte[] bytes = new byte[CalcBufferSize(input)];
 
             int bytesToRead = Math.Min(bytes.Length, 2);
-            int byteCount = bytesToRead > 0 ?
-                input.ReadAtLeast(bytes, bytesToRead, throwOnEndOfStream: false) :
-                0;
+            int byteCount = input.ReadAtLeast(bytes, bytesToRead, throwOnEndOfStream: false);
 
             // create text or binary XML reader depending on the stream first 2 bytes
             if (byteCount >= 2 && bytes[0] == 0xdf && bytes[1] == 0xff)

@@ -117,26 +117,15 @@ namespace System.IO.Tests
                 });
 
             byte[] buffer = new byte[20];
-            if (async)
-            {
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadAtLeastAsync(buffer, 0));
-            }
-            else
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadAtLeast(buffer, 0));
-            }
+
+            // ReadAtLeast minimumBytes=0 is a no-op
+            Assert.Equal(0, async ? await s.ReadAtLeastAsync(buffer, 0) : s.ReadAtLeast(buffer, 0));
             Assert.Equal(0, readInvokedCount);
 
             // now try with an empty buffer
             byte[] emptyBuffer = Array.Empty<byte>();
-            if (async)
-            {
-                await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () => await s.ReadAtLeastAsync(emptyBuffer, 0));
-            }
-            else
-            {
-                Assert.Throws<ArgumentOutOfRangeException>(() => s.ReadAtLeast(emptyBuffer, 0));
-            }
+
+            Assert.Equal(0, async ? await s.ReadAtLeastAsync(emptyBuffer, 0) : s.ReadAtLeast(emptyBuffer, 0));
             Assert.Equal(0, readInvokedCount);
         }
 

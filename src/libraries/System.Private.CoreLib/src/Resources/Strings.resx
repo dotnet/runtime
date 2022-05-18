@@ -3907,7 +3907,4 @@
   <data name="ArgumentOutOfRange_NotGreaterThanBufferLength" xml:space="preserve">
     <value>Must not be greater than the length of the buffer.</value>
   </data>
-  <data name="Arg_BufferMustNotBeEmpty" xml:space="preserve">
-    <value>Buffer must not be empty.</value>
-  </data>
 </root>

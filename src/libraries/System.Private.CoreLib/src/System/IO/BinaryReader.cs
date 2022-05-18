@@ -550,7 +550,7 @@ namespace System.IO
             }
             else
             {
-                // ReadExactly doesn't allow for empty buffers, so special case numBytes == 0 to preserve existing behavior.
+                // ReadExactly no-ops for empty buffers, so special case numBytes == 0 to preserve existing behavior.
                 int n = _stream.Read(_buffer, 0, 0);
                 if (n == 0)
                 {
