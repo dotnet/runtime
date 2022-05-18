@@ -317,9 +317,6 @@ namespace System.Text.RegularExpressions.Symbolic
                     return _nothing;
                 }
 
-                // no node may itself be a concat node in the list
-                Debug.Assert(node._kind != SymbolicRegexNodeKind.Concat);
-
                 result = SymbolicRegexNode<TSet>.CreateConcat(this, node, result);
             }
 
