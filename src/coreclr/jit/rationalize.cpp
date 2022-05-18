@@ -327,8 +327,8 @@ void Rationalizer::RewriteSubLshDiv(GenTree** use)
             op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
         {
             size_t shiftValue = shift->AsIntConCommon()->IntegralValue();
-            size_t cnsValue2  = cns->AsIntConCommon()->IntegralValue();
-            if ((cnsValue2 >> shiftValue) == 1)
+            size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
+            if ((cnsValue >> shiftValue) == 1)
             {
                 GenTree* const treeFirstNode  = comp->fgGetFirstNode(node);
                 GenTree* const insertionPoint = treeFirstNode->gtPrev;
