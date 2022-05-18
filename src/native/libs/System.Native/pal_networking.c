@@ -3192,7 +3192,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     }
 
     // Allocate a buffer
-    int bufferLength = Min(count, 80 * 1024 * sizeof(char));
+    size_t bufferLength = Min((size_t)count, 80 * 1024 * sizeof(char));
     buffer = (char*)malloc(bufferLength);
     if (buffer == NULL)
     {
@@ -3202,7 +3202,7 @@ int32_t SystemNative_SendFile(intptr_t out_fd, intptr_t in_fd, int64_t offset, i
     // Repeatedly read from the source and write to the destination
     while (count > 0)
     {
-        size_t numBytesToRead = Min(count, bufferLength);
+        size_t numBytesToRead = Min((size_t)count, bufferLength);
 
         // Read up to what will fit in our buffer.  We're done if we get back 0 bytes or read 'count' bytes
         ssize_t bytesRead;
