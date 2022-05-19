@@ -4515,12 +4515,70 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log:
             case NI_System_Math_Log2:
             case NI_System_Math_Log10:
-#ifdef TARGET_ARM64
+#if defined TARGET_ARM64 || defined TARGET_XARCH
             // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
             // TODO-XARCH-CQ: Enable this for XARCH when one of the arguments is a constant
             // so we can then emit maxss/minss and avoid NaN/-0.0 handling
             case NI_System_Math_Max:
             case NI_System_Math_Min:
+            {
+#if defined FEATURE_HW_INTRINSICS && defined TARGET_XARCH
+
+                assert(varTypeIsFloating(callType));
+
+                GenTree* op2   = impStackTop(0).val;
+                GenTree* op1 = impStackTop(1).val;
+
+                if (false && (op2->IsCnsFltOrDbl() || op1->IsCnsFltOrDbl()))
+                {
+                    op2 = impPopStack().val;
+                    op1 = impPopStack().val;
+
+                    var_types    insType;
+                    unsigned int insSimdSize;
+                    NamedIntrinsic hwintrinsicName;
+
+                    if (callType == TYP_DOUBLE)
+                    {
+                        insType     = TYP_SIMD32;
+                        insSimdSize = 32;
+                        hwintrinsicName = (ni == NI_System_Math_Max) ? NI_SSE2_Max: NI_SSE2_Min;
+                    }
+                    else
+                    {
+                        insType     = TYP_SIMD16;
+                        insSimdSize = 16;
+                        hwintrinsicName = (ni == NI_System_Math_Max) ? NI_SSE_Max : NI_SSE_Min;
+                    }
+
+                    // IEEE 754 spec requires:
+                    // 1. If both operands are 0 of either sign
+                    // 2. If either of operands is NaN handles (if both operands are NaN) too
+                    // 3. If either of operands is (-0.0) and instructions is Math.Min
+                    // 3. If either of operands is (+0.0) and instructions is Math.Max
+                    // Then op2 is returned;
+                     if ((op1->IsFloatPositiveZero() && op2->IsFloatPositiveZero()) ||
+                        (op1->IsFloatNaN() || op2->IsFloatNaN()) ||
+                        (ni == NI_System_Math_Min && (op1->IsFloatNegativeZero() || op2->IsFloatNegativeZero())) ||
+                        (ni == NI_System_Math_Max && (op1->IsFloatPositiveZero() || op2->IsFloatPositiveZero())))
+                    {
+                        retNode =
+                            gtNewSimdHWIntrinsicNode(callType, op2, NI_Vector128_ToScalar, callJitType, insSimdSize);
+                        break;
+                    }
+
+                    op2 = gtNewSimdHWIntrinsicNode(insType, op2, NI_Vector128_CreateScalarUnsafe, callJitType, insSimdSize);
+                    op1 = gtNewSimdHWIntrinsicNode(insType, op1, NI_Vector128_CreateScalarUnsafe, callJitType, insSimdSize);
+
+                    GenTree* res = gtNewSimdHWIntrinsicNode(insType, op1, op2, hwintrinsicName, callJitType, insSimdSize);
+                    retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callJitType, insSimdSize);
+                    break;
+                }
+
+                break;
+            
+#endif
+            }
 #endif
             case NI_System_Math_Pow:
             case NI_System_Math_Round:
