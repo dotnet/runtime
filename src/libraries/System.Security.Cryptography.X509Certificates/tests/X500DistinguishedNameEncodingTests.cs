@@ -134,7 +134,7 @@ namespace System.Security.Cryptography.X509Certificates.Tests
         [InlineData("OID.99.a=sun")] // Invalid OID, not numeric.
         public static void ParseWithInvalidObjectIdentifiers(string distinguishedName)
         {
-            Assert.Throws<CryptographicException>(() => new X500DistinguishedName(distinguishedName));
+            Assert.ThrowsAny<CryptographicException>(() => new X500DistinguishedName(distinguishedName));
         }
 
         private static void ProcessTestCase(SimpleEncoderTestCase testCase, X500DistinguishedName dn)
