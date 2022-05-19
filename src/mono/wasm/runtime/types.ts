@@ -179,13 +179,13 @@ export type CoverageProfilerOptions = {
 }
 
 /// Options to configure the event pipe session
+/// The recommended method is to MONO.diagnostics.SesisonOptionsBuilder to create an instance of this type
 export interface EventPipeSessionOptions {
     /// Whether to collect additional details (such as method and type names) at EventPipeSession.stop() time (default: true)
     /// This is required for some use cases, and may allow some tools to better understand the events.
     collectRundownEvents?: boolean;
-    /// [FIXME] use a structure, not a string
-    /// can be set to MONO.diagnostics.defaultProviderString + ",<provider name>:<keyword>:<level>"
-    /// see https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
+    /// The providers that will be used by this session.
+    /// See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
     providers: string;
 }
 

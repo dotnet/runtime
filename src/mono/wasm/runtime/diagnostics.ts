@@ -94,11 +94,21 @@ const eventLevel = {
 type EventLevel = typeof eventLevel;
 
 type UnnamedProviderConfiguration = Partial<{
-    keyword_mask: string | 0 ;
+    keyword_mask: string | 0;
     level: number;
     args: string;
 }>
 
+/// The configuration for an individual provider.  Each provider configuration has the name of the provider,
+/// the level of events to collect, and a string containing a 32-bit hexadecimal mask (without an "0x" prefix) of
+/// the "keywords" to filter a subset of the events. The keyword mask may be the number 0 or "" to skips the filtering.
+/// See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/well-known-event-providers for a list of known providers.
+/// Additional providers may be added by applications or libraries that implement an EventSource subclass.
+/// See https://docs.microsoft.com/en-us/dotnet/api/system.diagnostics.tracing.eventsource?view=net-6.0
+///
+/// Some providers also have an "args" string in an arbitrary format.  For example the EventSource providers that
+/// include EventCounters have a "EventCounterIntervalSec=NNN" argument that specified how often the counters of
+/// the event source should be polled.
 export interface ProviderConfiguration extends UnnamedProviderConfiguration {
     name: string;
 }
@@ -107,59 +117,74 @@ const runtimeProviderName = "Microsoft-Windows-DotNETRuntime";
 const runtimePrivateProviderName = "Microsoft-Windows-DotNETRuntimePrivate";
 const sampleProfilerProviderName = "Microsoft-DotNETCore-SampleProfiler";
 
-const runtimeProviderDefault : ProviderConfiguration = {
+const runtimeProviderDefault: ProviderConfiguration = {
     name: runtimeProviderName,
     keyword_mask: "4c14fccbd",
     level: eventLevel.Verbose,
 };
 
-const runtimePrivateProviderDefault : ProviderConfiguration = {
+const runtimePrivateProviderDefault: ProviderConfiguration = {
     name: runtimePrivateProviderName,
     keyword_mask: "4002000b",
     level: eventLevel.Verbose,
 };
 
-const sampleProfilerProviderDefault : ProviderConfiguration = {
+const sampleProfilerProviderDefault: ProviderConfiguration = {
     name: sampleProfilerProviderName,
     keyword_mask: "0",
     level: eventLevel.Verbose,
 };
 
+/// A helper class to create EventPipeSessionOptions
 export class SessionOptionsBuilder {
     private _rundown?: boolean;
     private _providers: ProviderConfiguration[];
-    constructor () {
+    /// Create  an empty builder.  Prefer to use SesssionOptionsBuilder.Empty
+    constructor() {
         this._providers = [];
     }
-    static get Empty ():SessionOptionsBuilder { return new SessionOptionsBuilder(); }
-    static get DefaultProviders ():SessionOptionsBuilder {
+    /// Gets a builder with no providers.
+    static get Empty(): SessionOptionsBuilder { return new SessionOptionsBuilder(); }
+    /// Gets a builder with default providers and rundown events enabled.
+    /// See https://docs.microsoft.com/en-us/dotnet/core/diagnostics/eventpipe#trace-using-environment-variables
+    static get DefaultProviders(): SessionOptionsBuilder {
         return this.Empty.addRuntimeProvider().addRuntimePrivateProvider().addSampleProfilerProvider();
     }
+    /// Change whether to collect rundown events.
+    /// Certain providers may need rundown events to be collected in order to provide useful diagnostic information.
     setRundownEnabled(enabled: boolean): SessionOptionsBuilder {
         this._rundown = enabled;
         return this;
     }
-    addProvider (provider: ProviderConfiguration): SessionOptionsBuilder {
+    /// Add a provider configuration to the builder.
+    addProvider(provider: ProviderConfiguration): SessionOptionsBuilder {
         this._providers.push(provider);
         return this;
     }
-    addRuntimeProvider (overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
+    /// Add the Microsoft-Windows-DotNETRuntime provider.  Use override options to change the event level or keyword mask.
+    /// The default is { keyword_mask: "4c14fccbd", level: eventLevel.Verbose }
+    addRuntimeProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
         const options = { ...runtimeProviderDefault, ...overrideOptions };
-        this._providers.push (options);
+        this._providers.push(options);
         return this;
     }
-    addRuntimePrivateProvider (overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
+    /// Add the Microsoft-Windows-DotNETRuntimePrivate provider. Use override options to change the event level or keyword mask.
+    /// The default is { keyword_mask: "4002000b", level: eventLevel.Verbose}
+    addRuntimePrivateProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
         const options = { ...runtimePrivateProviderDefault, ...overrideOptions };
-        this._providers.push (options);
+        this._providers.push(options);
         return this;
     }
-    addSampleProfilerProvider (overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
+    /// Add the Microsoft-DotNETCore-SampleProfiler. Use override options to change the event level or keyword mask.
+    // The default is { keyword_mask: 0, level: eventLevel.Verbose }
+    addSampleProfilerProvider(overrideOptions?: UnnamedProviderConfiguration): SessionOptionsBuilder {
         const options = { ...sampleProfilerProviderDefault, ...overrideOptions };
-        this._providers.push (options);
+        this._providers.push(options);
         return this;
     }
+    /// Create an EventPipeSessionOptions from the builder.
     build(): EventPipeSessionOptions {
-        const providers = this._providers.map (p => {
+        const providers = this._providers.map(p => {
             const name = p.name;
             const keyword_mask = "" + (p?.keyword_mask ?? "");
             const level = p?.level ?? eventLevel.Verbose;
@@ -169,7 +194,7 @@ export class SessionOptionsBuilder {
         });
         return {
             collectRundownEvents: this._rundown,
-            providers: providers.join (",")
+            providers: providers.join(",")
         };
     }
 }
@@ -203,7 +228,15 @@ export interface Diagnostics {
 
 /// APIs for working with .NET diagnostics from JavaScript.
 export const diagnostics: Diagnostics = {
+    /// An enumeration of the level (higher value means more detail):
+    /// LogAlways: 0,
+    /// Critical: 1,
+    /// Error: 2,
+    /// Warning: 3,
+    /// Informational: 4,
+    /// Verbose: 5,
     EventLevel: eventLevel,
+    /// A builder for creating an EventPipeSessionOptions instance.
     SessionOptionsBuilder: SessionOptionsBuilder,
     /// Creates a new EventPipe session that will collect trace events from the runtime and managed libraries.
     /// Use the options to control the kinds of events to be collected.
