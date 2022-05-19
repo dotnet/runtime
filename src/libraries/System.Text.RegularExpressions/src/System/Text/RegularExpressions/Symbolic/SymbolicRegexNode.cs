@@ -606,6 +606,17 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Keep the or flat, assuming both right and left are flat.
         /// Apply subsumption/combining optimizations, such that e.g. a?b|b will be simplified to a?b and b|a?b will be combined to a??b
         /// </summary>
+        /// <remarks>
+        /// The deduplicated argument allows skipping deduplication when it is known to be not necessary. This is
+        /// commonly the case when some transformation f is applied to an existing alternation A|B|C|... such that
+        /// for all regexes R,S it is the case that f(R)==f(S) iff R==S.
+        /// </remarks>
+        /// <param name="builder">the builder for the nodes</param>
+        /// <param name="left">the left hand side, higher priority alternative</param>
+        /// <param name="right">the right hand side, lower priority alternative</param>
+        /// <param name="deduplicated">whether to skip deduplication</param>
+        /// <param name="hintRightLikelySubsumes">if true then simplification rules succeeding when the right hand side subsumes the left hand side are tried first</param>
+        /// <returns></returns>
         internal static SymbolicRegexNode<TSet> OrderedOr(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, bool deduplicated = false, bool hintRightLikelySubsumes = false)
         {
             if (left.IsAnyStar || right == builder._nothing || left == right || (left.IsNullable && right.IsEpsilon))
@@ -613,19 +624,21 @@ namespace System.Text.RegularExpressions.Symbolic
             if (left == builder._nothing)
                 return right;
 
+            // Handle cases where right is an alternation or not uniformly. If right is R|S then the head is R and the
+            // tail is S. If right is not an alternation then the head is right and the tail is nothing.
             SymbolicRegexNode<TSet> head = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._left! : right;
             SymbolicRegexNode<TSet> tail = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._right! : builder._nothing;
 
-            // Simplify away right side if left side subsumes it
+            // Simplify away right side if left side subsumes it. For example X?Y|Y|Z would simplify to just X?Y|Z.
             if (!hintRightLikelySubsumes && left.Subsumes(head))
                 return OrderedOr(builder, left, tail);
 
-            // Simplify by folding right side into left side if right side subsumes the left side
+            // Simplify by folding right side into left side if right side subsumes the left side. For example Y|X?Y|Z
+            // would simplify to X??Y|Z.
             if (head.Subsumes(left) && TryFold(builder, head, left, out SymbolicRegexNode<TSet>? result))
                 return OrderedOr(builder, result, tail);
 
-            // Simplify away right side if left side subsumes it
-            // This is a repeat of the rule above, but for the case when the hint tells us to try reverse subsumption first.
+            // This is a repeat of a rule above, but for the case when the hint tells us to try reverse subsumption first.
             if (hintRightLikelySubsumes && left.Subsumes(head))
                 return OrderedOr(builder, left, tail);
 
@@ -705,13 +718,37 @@ namespace System.Text.RegularExpressions.Symbolic
             return Create(builder, SymbolicRegexNodeKind.OrderedOr, left, right, -1, -1, default, null, SymbolicRegexInfo.Alternate(left._info, right._info));
         }
 
+        /// <summary>
+        /// Tries to detect whether or not the language of another node is fully contained within the language of this
+        /// node. It does this by applying a set of rules, such as "RS subsumes T if R is nullable and S subsumes T",
+        /// which peels off one nullable element from a concatenation and recurses into another susumption check.
+        /// Note that differences in Effect nodes are not considered for subsumption, which is an important feature since
+        /// this allows simplifications relying on subsumption to apply in the presence of effects.
+        /// </summary>
+        /// <remarks>
+        /// Subsumption checks for regular expressions are in general difficult (equivalence and thus subsumption are
+        /// known to be PSPACE-complete). Thus this fast rule based check will never be complete. Adding rules into this
+        /// function should be directed by concrete use cases.
+        /// Some rules may be unproductive (e.g. the rule for R?S subsuming T when T is not a suffix of S), which would
+        /// result in deep recursions. Rule application depth is limited by <see cref="SubsumptionCheckDepthLimit"/> to
+        /// avoid these cases.
+        /// The function uses a caching approach where the boolean returned is only cached if it is the result of a
+        /// recursive subsumption check. The rationale is that if the answer could be produced locally then recomputing
+        /// it is better than caching.
+        /// </remarks>
+        /// <param name="other">the node to check for being subsumed</param>
+        /// <param name="depth">the current recursion depth</param>
+        /// <returns></returns>
         internal bool Subsumes(SymbolicRegexNode<TSet> other, int depth = 0)
         {
+            // A node subsumes itself
             if (this == other)
                 return true;
+            // Nothing has an empty language, which is subsumed by anything
             if (other == _builder._nothing)
                 return true;
-            if (depth > SubsumptionCheckDepthLimit)
+            // Early exit if we've gone too deep
+            if (depth >= SubsumptionCheckDepthLimit)
                 return false;
 
             if (_builder._subsumptionCache.TryGetValue((this, other), out bool cached))
@@ -724,26 +761,34 @@ namespace System.Text.RegularExpressions.Symbolic
                 return StackHelper.CallOnEmptyStack(Subsumes, other, depth);
             }
 
+            // Try to apply all subsumption rules
             bool? subsumes = ApplySubsumptionRules(this, other, depth + 1);
-
+            // Cache the result if any rule applied
             if (subsumes.HasValue)
                 _builder._subsumptionCache[(this, other)] = subsumes.Value;
+            // Return result or assume false if no rule applied
             return subsumes ?? false;
 
             static bool? ApplySubsumptionRules(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, int depth)
             {
+                // Rule: Effect(X,E) subsumes Y iff X subsumes Y
+                // Effectively this ignores any effects
                 if (left._kind == SymbolicRegexNodeKind.Effect)
                 {
                     Debug.Assert(left._left is not null && left._right is not null);
                     return left._left.Subsumes(right, depth);
                 }
 
+                // Rule: X subsumes Effect(Y,E) iff X subsumes Y
+                // Effectively this ignores any effects
                 if (right._kind == SymbolicRegexNodeKind.Effect)
                 {
                     Debug.Assert(right._left is not null && right._right is not null);
                     return left.Subsumes(right._left, depth);
                 }
 
+                // Rule: XY subsumes (X')??Y' if X equals X' and Y subsumes Y'
+                // This structure arises from a folding rule in TryFold
                 if (left._kind == SymbolicRegexNodeKind.Concat && right._kind == SymbolicRegexNodeKind.Concat)
                 {
                     Debug.Assert(right._left is not null && right._right is not null);
@@ -756,6 +801,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
                 }
 
+                // Rule: (X)??Y subsumes X'Y' if X equals X' and Y subsumes Y'
+                // This structure arises from a folding rule in TryFold
                 if (left._kind == SymbolicRegexNodeKind.Concat && right._kind == SymbolicRegexNodeKind.Concat)
                 {
                     Debug.Assert(left._left is not null && left._right is not null);
@@ -768,6 +815,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     }
                 }
 
+                // Rule: XY subsumes Y' if X is nullable and Y subsumes Y'
                 if (left._kind == SymbolicRegexNodeKind.Concat)
                 {
                     Debug.Assert(left._left is not null && left._right is not null);
@@ -779,6 +827,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 return null;
 
+                // Tries to skip over a prefix and returns the tail that's left
                 static bool TrySkipPrefix(SymbolicRegexNode<TSet> node, SymbolicRegexNode<TSet> prefix, [NotNullWhen(true)] out SymbolicRegexNode<TSet>? tail)
                 {
                     tail = null;
