@@ -608,6 +608,8 @@ class SuperPMICollect:
 
         """
 
+        self.core_root = coreclr_args.core_root
+
         if coreclr_args.host_os == "OSX":
             self.collection_shim_name = "libsuperpmi-shim-collector.dylib"
             self.corerun_tool_name = "corerun"
@@ -620,11 +622,11 @@ class SuperPMICollect:
         else:
             raise RuntimeError("Unsupported OS.")
 
+        self.collection_shim_path = os.path.join(self.core_root, self.collection_shim_name)
+
         self.jit_path = os.path.join(coreclr_args.core_root, determine_jit_name(coreclr_args))
         self.superpmi_path = determine_superpmi_tool_path(coreclr_args)
         self.mcs_path = determine_mcs_tool_path(coreclr_args)
-
-        self.core_root = coreclr_args.core_root
 
         self.collection_command = coreclr_args.collection_command
         self.collection_args = coreclr_args.collection_args
@@ -684,7 +686,7 @@ class SuperPMICollect:
         passed = False
 
         try:
-            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup) as temp_location:
+            with TempDir(self.coreclr_args.temp_dir, self.coreclr_args.skip_cleanup, change_dir=False) as temp_location:
                 # Setup all of the temp locations
                 self.base_fail_mcl_file = os.path.join(temp_location, "basefail.mcl")
                 self.base_mch_file = os.path.join(temp_location, "base.mch")
@@ -799,6 +801,10 @@ class SuperPMICollect:
 
                 collection_command_env = env_copy.copy()
                 collection_complus_env = complus_env.copy()
+                # In debug/checked builds we have the JitPath variable that the runtime will prefer.
+                # We still specify JitName for release builds, but this requires the user to manually
+                # copy the shim next to coreclr.
+                collection_complus_env["JitPath"] = self.collection_shim_path
                 collection_complus_env["JitName"] = self.collection_shim_name
                 set_and_report_env(collection_command_env, root_env, collection_complus_env)
 
@@ -875,6 +881,10 @@ class SuperPMICollect:
                 # Set environment variables.
                 pmi_command_env = env_copy.copy()
                 pmi_complus_env = complus_env.copy()
+                # In debug/checked builds we have the JitPath variable that the runtime will prefer.
+                # We still specify JitName for release builds, but this requires the user to manually
+                # copy the shim next to coreclr.
+                pmi_complus_env["JitPath"] = self.collection_shim_path
                 pmi_complus_env["JitName"] = self.collection_shim_name
 
                 if self.coreclr_args.pmi_path is not None:
