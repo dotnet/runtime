@@ -4515,49 +4515,35 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
             case NI_System_Math_Log:
             case NI_System_Math_Log2:
             case NI_System_Math_Log10:
-#if defined TARGET_ARM64 || defined TARGET_XARCH
+#if defined TARGET_ARM64
             // ARM64 has fmax/fmin which are IEEE754:2019 minimum/maximum compatible
             // TODO-XARCH-CQ: Enable this for XARCH when one of the arguments is a constant
             // so we can then emit maxss/minss and avoid NaN/-0.0 handling
             case NI_System_Math_Max:
             case NI_System_Math_Min:
-            {
-#if defined FEATURE_HW_INTRINSICS && defined TARGET_XARCH
+#endif
 
+#if defined FEATURE_HW_INTRINSICS && defined TARGET_XARCH
+            case NI_System_Math_Max:
+            case NI_System_Math_Min:
+            {
                 assert(varTypeIsFloating(callType));
 
-                GenTree* op2   = impStackTop(0).val;
-                GenTree* op1 = impStackTop(1).val;
-
-                if (false && (op2->IsCnsFltOrDbl() || op1->IsCnsFltOrDbl()))
+                if (sig->numArgs == 2 && (impStackTop().val->IsCnsFltOrDbl() || impStackTop(1).val->IsCnsFltOrDbl()))
                 {
-                    op2 = impPopStack().val;
-                    op1 = impPopStack().val;
+                    GenTree* op2 = impPopStack().val;
+                    GenTree* op1 = impPopStack().val;
 
-                    var_types    insType;
-                    unsigned int insSimdSize;
-                    NamedIntrinsic hwintrinsicName;
-
-                    if (callType == TYP_DOUBLE)
-                    {
-                        insType     = TYP_SIMD32;
-                        insSimdSize = 32;
-                        hwintrinsicName = (ni == NI_System_Math_Max) ? NI_SSE2_Max: NI_SSE2_Min;
-                    }
-                    else
-                    {
-                        insType     = TYP_SIMD16;
-                        insSimdSize = 16;
-                        hwintrinsicName = (ni == NI_System_Math_Max) ? NI_SSE_Max : NI_SSE_Min;
-                    }
+                    unsigned int insSimdSize = (callType == TYP_DOUBLE) ? 32 : 16;
 
                     // IEEE 754 spec requires:
                     // 1. If both operands are 0 of either sign
-                    // 2. If either of operands is NaN handles (if both operands are NaN) too
-                    // 3. If either of operands is (-0.0) and instructions is Math.Min
-                    // 3. If either of operands is (+0.0) and instructions is Math.Max
+                    // IsFloatPositiveZero is used for both operands, because the sign doesn't matter
+                    // 2. If either of operands is NaN (handles if both operands are NaN too)
+                    // 3. If either of operands is (-0.0) and an instruction is Math.Min
+                    // 3. If either of operands is (+0.0) and an instruction is Math.Max
                     // Then op2 is returned;
-                     if ((op1->IsFloatPositiveZero() && op2->IsFloatPositiveZero()) ||
+                    if ((op1->IsFloatPositiveZero() && op2->IsFloatPositiveZero()) ||
                         (op1->IsFloatNaN() || op2->IsFloatNaN()) ||
                         (ni == NI_System_Math_Min && (op1->IsFloatNegativeZero() || op2->IsFloatNegativeZero())) ||
                         (ni == NI_System_Math_Max && (op1->IsFloatPositiveZero() || op2->IsFloatPositiveZero())))
@@ -4567,19 +4553,16 @@ GenTree* Compiler::impIntrinsic(GenTree*                newobjThis,
                         break;
                     }
 
-                    op2 = gtNewSimdHWIntrinsicNode(insType, op2, NI_Vector128_CreateScalarUnsafe, callJitType, insSimdSize);
-                    op1 = gtNewSimdHWIntrinsicNode(insType, op1, NI_Vector128_CreateScalarUnsafe, callJitType, insSimdSize);
-
-                    GenTree* res = gtNewSimdHWIntrinsicNode(insType, op1, op2, hwintrinsicName, callJitType, insSimdSize);
-                    retNode = gtNewSimdHWIntrinsicNode(callType, res, NI_Vector128_ToScalar, callJitType, insSimdSize);
+                    // If it's any other constant then it needs to be op1 for both (Math.Min/Math.Max).
+                    retNode = gtNewSimdHWIntrinsicNode(callType, op1, NI_Vector128_ToScalar, callJitType, insSimdSize);
                     break;
                 }
 
+                // Go down to the direct Math.Min/Math.Max call
                 break;
-            
-#endif
             }
 #endif
+
             case NI_System_Math_Pow:
             case NI_System_Math_Round:
             case NI_System_Math_Sin:
