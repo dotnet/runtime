@@ -1882,7 +1882,7 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.Or:
                 case SymbolicRegexNodeKind.And:
                     Debug.Assert(_alts is not null);
-                    _alts.ToString(sb);
+                    _alts.ToStringHelper(sb);
                     return;
 
                 case SymbolicRegexNodeKind.OrderedOr:

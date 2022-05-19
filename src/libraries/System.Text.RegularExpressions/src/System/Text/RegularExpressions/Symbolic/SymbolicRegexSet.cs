@@ -359,7 +359,7 @@ namespace System.Text.RegularExpressions.Symbolic
             return true;
         }
 
-        public void ToString(StringBuilder sb)
+        public void ToStringHelper(StringBuilder sb)
         {
             // This function is mutually recursive with the one in SymbolicRegexNode, which has stack overflow avoidance
             if (IsNothing)
