@@ -114,7 +114,11 @@ struct FilterSuperPMIExceptionsParam_CaptureException
     void Initialize(PEXCEPTION_POINTERS pExceptionPointers)
     {
         exceptionCode    = pExceptionPointers->ExceptionRecord->ExceptionCode;
-        exceptionMessage = (pExceptionPointers->ExceptionRecord->NumberParameters != 1) ? nullptr : (char*)pExceptionPointers->ExceptionRecord->ExceptionInformation[0];
+        exceptionMessage = nullptr;
+        if (IsSuperPMIException(exceptionCode) && (pExceptionPointers->ExceptionRecord->NumberParameters >= 1))
+        {
+            exceptionMessage = (char*)pExceptionPointers->ExceptionRecord->ExceptionInformation[0];
+        }
     }
 };
 
