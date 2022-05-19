@@ -61,7 +61,7 @@ import {
     setI8, setI16, setI32, setI52,
     setU8, setU16, setU32, setF32, setF64,
     getI8, getI16, getI32, getI52,
-    getU8, getU16, getU32, getF32, getF64, afterUpdateGlobalBufferAndViews, getI64Big, setI64Big,
+    getU8, getU16, getU32, getF32, getF64, afterUpdateGlobalBufferAndViews, getI64Big, setI64Big, getU52, setU52, setB32, getB32,
 } from "./memory";
 import { create_weak_ref } from "./weak-ref";
 import { fetch_like, readAsync_like } from "./polyfills";
@@ -93,20 +93,24 @@ const MONO = {
     loaded_files: <string[]>[],
 
     // memory accessors
+    setB32,
     setI8,
     setI16,
     setI32,
     setI52,
+    setU52,
     setI64Big,
     setU8,
     setU16,
     setU32,
     setF32,
     setF64,
+    getB32,
     getI8,
     getI16,
     getI32,
     getI52,
+    getU52,
     getI64Big,
     getU8,
     getU16,

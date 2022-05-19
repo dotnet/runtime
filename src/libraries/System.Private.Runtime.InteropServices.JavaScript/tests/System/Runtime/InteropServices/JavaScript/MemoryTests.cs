@@ -42,6 +42,36 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
+        [InlineData(uint.MinValue)]
+        [InlineData(1L)]
+        [InlineData(0L)]
+        [InlineData(42L)]
+        [InlineData(uint.MaxValue)]
+        [InlineData(0xF_FFFF_FFFFL)]
+        [InlineData(9007199254740991L)]//MAX_SAFE_INTEGER 
+        public static unsafe void UInt52TestOK(ulong value)
+        {
+            ulong expected = value;
+            ulong actual2 = value;
+            var bagFn = new Function("ptr", "ptr2", @"
+                const value=globalThis.App.MONO.getI52(ptr);
+                globalThis.App.MONO.setU52(ptr2, value);
+                return value;");
+
+            uint ptr = (uint)Unsafe.AsPointer(ref expected);
+            uint ptr2 = (uint)Unsafe.AsPointer(ref actual2);
+
+            object o = bagFn.Call(null, ptr, ptr2);
+            if (value < int.MaxValue)
+            {
+                Assert.IsType<int>(o);
+                ulong actual = (uint)o;
+                Assert.Equal(expected, actual);
+            }
+            Assert.Equal(expected, actual2);
+        }
+
+        [Theory]
         [InlineData(double.NegativeInfinity)]
         [InlineData(double.PositiveInfinity)]
         [InlineData(double.MinValue)]
@@ -63,6 +93,25 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
                 globalThis.App.MONO.getI52(ptr);");
             var exD = Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
             Assert.Contains("Overflow: value out of Number.isSafeInteger range", ex.Message);
+        }
+
+        [Theory]
+        [InlineData(-1.0)]
+        public static unsafe void UInt52TestRange(double value)
+        {
+            long actual = 0;
+            uint ptr = (uint)Unsafe.AsPointer(ref actual);
+            var bagFn = new Function("ptr", "value", @"
+                globalThis.App.MONO.setU52(ptr, value);");
+            var ex=Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
+            Assert.Contains("Can't convert negative Number into UInt64", ex.Message);
+
+            double expectedD = value;
+            uint ptrD = (uint)Unsafe.AsPointer(ref expectedD);
+            var bagFnD = new Function("ptr", "value", @"
+                globalThis.App.MONO.getU52(ptr);");
+            var exD = Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
+            Assert.Contains("Can't convert negative Number into UInt64", ex.Message);
         }
 
         [Fact]

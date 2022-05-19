@@ -45,28 +45,45 @@ export function _release_temp_frame(): void {
 type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 
+function is_int_in_range(value: Number, min: Number, max: Number) {
+    assert(typeof value === "number", () => `Value is not integer but ${typeof value}`);
+    assert(Number.isInteger(value), "Value is not integer but float");
+    assert(value >= min && value <= max, () => `Overflow: value ${value} is out of ${min} ${max} range`);
+}
+
+export function setB32(offset: _MemOffset, value: number | boolean): void {
+    assert(typeof value === "boolean", () => `Value is not boolean but ${typeof value}`);
+    Module.HEAP32[<any>offset >>> 2] = <any>!!value;
+}
+
 export function setU8(offset: _MemOffset, value: number): void {
+    is_int_in_range(value, 0, 0xFF);
     Module.HEAPU8[<any>offset] = value;
 }
 
 export function setU16(offset: _MemOffset, value: number): void {
+    is_int_in_range(value, 0, 0xFFFF);
     Module.HEAPU16[<any>offset >>> 1] = value;
 }
 
 export function setU32(offset: _MemOffset, value: _NumberOrPointer): void {
+    is_int_in_range(<any>value, 0, 0xFFFF_FFFF);
     Module.HEAPU32[<any>offset >>> 2] = <number><any>value;
 }
 
 export function setI8(offset: _MemOffset, value: number): void {
+    is_int_in_range(value, -0x80, 0x7F);
     Module.HEAP8[<any>offset] = value;
 }
 
 export function setI16(offset: _MemOffset, value: number): void {
+    is_int_in_range(value, -0x8000, 0x7FFF);
     Module.HEAP16[<any>offset >>> 1] = value;
 }
 
-export function setI32(offset: _MemOffset, value: _NumberOrPointer): void {
-    Module.HEAP32[<any>offset >>> 2] = <number><any>value;
+export function setI32(offset: _MemOffset, value: number): void {
+    is_int_in_range(<any>value, -0x8000_0000, 0x7FFF_FFFF);
+    Module.HEAP32[<any>offset >>> 2] = value;
 }
 
 /**
@@ -91,6 +108,20 @@ export function setI52(offset: _MemOffset, value: number): void {
     Module.HEAPU32[<any>offset >>> 2] = lo;
 }
 
+/**
+ * Throws for values which are not 52 bit integer or are negative. See Number.isSafeInteger().
+ */
+export function setU52(offset: _MemOffset, value: number): void {
+    // 52 bits = 0x1F_FFFF_FFFF_FFFF
+    assert(!Number.isNaN(value), "Can't convert Number.Nan into UInt64");
+    assert(Number.isSafeInteger(value), "Overflow: value out of Number.isSafeInteger range");
+    assert(value >= 0, "Can't convert negative Number into UInt64");
+    const hi = value >>> 32;
+    const lo = value & 0xFFFF_FFFF;
+    Module.HEAPU32[1 + <any>offset >>> 2] = hi;
+    Module.HEAPU32[<any>offset >>> 2] = lo;
+}
+
 export function setI64Big(offset: _MemOffset, value: bigint): void {
     assert(is_bingint_supported, "BigInt is not supported.");
     HEAPI64[<any>offset >>> 3] = value;
@@ -104,6 +135,10 @@ export function setF64(offset: _MemOffset, value: number): void {
     Module.HEAPF64[<any>offset >>> 3] = value;
 }
 
+
+export function getB32(offset: _MemOffset): boolean {
+    return !!(Module.HEAP32[<any>offset >>> 2]);
+}
 
 export function getU8(offset: _MemOffset): number {
     return Module.HEAPU8[<any>offset];
@@ -148,6 +183,18 @@ export function getI52(offset: _MemOffset): number {
         assert(exp === 0, "Overflow: value out of Number.isSafeInteger range");
         return (hi * 0x1_0000_0000) + lo;
     }
+}
+
+/**
+ * Throws for  Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
+ */
+export function getU52(offset: _MemOffset): number {
+    // 52 bits = 0x1F_FFFF_FFFF_FFFF
+    const hi = Module.HEAPU32[1 + (<any>offset >>> 2)];
+    const lo = Module.HEAPU32[<any>offset >>> 2];
+    const exp_sign = hi & 0xFFE0_0000;
+    assert(exp_sign === 0, "Overflow: value out of Number.isSafeInteger range");
+    return (hi * 0x1_0000_0000) + lo;
 }
 
 export function getI64Big(offset: _MemOffset): bigint {
