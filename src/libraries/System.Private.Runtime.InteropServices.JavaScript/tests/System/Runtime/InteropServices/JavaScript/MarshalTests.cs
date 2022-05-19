@@ -160,6 +160,35 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             Assert.Equal(expected ?? o, HelperMarshal._object1);
         }
 
+        [Fact]
+        public static void InvokeUnboxInt()
+        {
+            Runtime.InvokeJS(@"
+                var obj = App.call_test_method (""InvokeReturnInt"");
+                var res = App.call_test_method (""InvokeObj1"", [ obj ]);
+            ");
+
+            Assert.Equal(42, HelperMarshal._object1);
+        }
+
+        [Fact]
+        public static void InvokeUnboxDouble()
+        {
+            Runtime.InvokeJS(@"
+                var obj = App.call_test_method (""InvokeReturnDouble"");
+                var res = App.call_test_method (""InvokeObj1"", [ obj ]);
+            ");
+
+            Assert.Equal(double.Pi, HelperMarshal._object1);
+        }
+
+        [Fact]
+        public static void InvokeUnboxLongFail()
+        {
+            var ex = Assert.Throws<JSException>(() => Runtime.InvokeJS(@"App.call_test_method (""InvokeReturnLong"");"));
+            Assert.Contains("int64 not available", ex.Message);
+        }
+
         [Theory]
         [InlineData(byte.MinValue, 0)]
         [InlineData(byte.MaxValue, 255)]

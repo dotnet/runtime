@@ -42,21 +42,38 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
         }
 
         [Theory]
-        [InlineData(double.NaN)]
         [InlineData(double.NegativeInfinity)]
         [InlineData(double.PositiveInfinity)]
         [InlineData(double.MinValue)]
         [InlineData(double.MaxValue)]
         [InlineData(double.Pi)]
         [InlineData(9007199254740993.0)]//MAX_SAFE_INTEGER +2
-        public static unsafe void Int52TestInvalid(double value)
+        public static unsafe void Int52TestRange(double value)
         {
             long actual = 0;
             uint ptr = (uint)Unsafe.AsPointer(ref actual);
             var bagFn = new Function("ptr", "value", @"
                 globalThis.App.MONO.setI52(ptr, value);");
             var ex=Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
-            Assert.Contains("Int64 value out of JavaScript Number safe integer range", ex.Message);
+            Assert.Contains("Overflow: value out of Number.isSafeInteger range", ex.Message);
+
+            double expectedD = value;
+            uint ptrD = (uint)Unsafe.AsPointer(ref expectedD);
+            var bagFnD = new Function("ptr", "value", @"
+                globalThis.App.MONO.getI52(ptr);");
+            var exD = Assert.Throws<JSException>(() => bagFn.Call(null, ptr, value));
+            Assert.Contains("Overflow: value out of Number.isSafeInteger range", ex.Message);
+        }
+
+        [Fact]
+        public static unsafe void Int52TestNaN()
+        {
+            long actual = 0;
+            uint ptr = (uint)Unsafe.AsPointer(ref actual);
+            var bagFn = new Function("ptr", "value", @"
+                globalThis.App.MONO.setI52(ptr, value);");
+            var ex=Assert.Throws<JSException>(() => bagFn.Call(null, ptr, double.NaN));
+            Assert.Contains("Can't convert Number.Nan into Int64", ex.Message);
         }
     }
 }

@@ -74,7 +74,8 @@ export function setI32(offset: _MemOffset, value: _NumberOrPointer): void {
  */
 export function setI52(offset: _MemOffset, value: number): void {
     // 52 bits = 0x1F_FFFF_FFFF_FFFF
-    assert(Number.isSafeInteger(value), "Int64 value out of JavaScript Number safe integer range");
+    assert(!Number.isNaN(value), "Can't convert Number.Nan into Int64");
+    assert(Number.isSafeInteger(value), "Overflow: value out of Number.isSafeInteger range");
     let hi: number;
     let lo: number;
     if (value < 0) {
@@ -129,7 +130,7 @@ export function getI32(offset: _MemOffset): number {
 }
 
 /**
- * Throws for  Number.MIN_SAFE_INTEGER < value < Number.MAX_SAFE_INTEGER
+ * Throws for  Number.MIN_SAFE_INTEGER > value > Number.MAX_SAFE_INTEGER
  */
 export function getI52(offset: _MemOffset): number {
     // 52 bits = 0x1F_FFFF_FFFF_FFFF
@@ -138,13 +139,13 @@ export function getI52(offset: _MemOffset): number {
     const sign = hi & 0x8000_0000;
     const exp = hi & 0x7FE0_0000;
     if (sign) {
-        assert(exp === 0x7FE0_0000, "Int64 value out of JavaScript Number safe integer range");
+        assert(exp === 0x7FE0_0000, "Overflow: value out of Number.isSafeInteger range");
         const nhi = (hi & 0x000F_FFFF) ^ 0x000F_FFFF;
         const nlo = lo ^ 0xFFFF_FFFF;
         return -1 - ((nhi * 0x1_0000_0000) + nlo);
     }
     else {
-        assert(exp === 0, "Int64 value out of JavaScript Number safe integer range");
+        assert(exp === 0, "Overflow: value out of Number.isSafeInteger range");
         return (hi * 0x1_0000_0000) + lo;
     }
 }
