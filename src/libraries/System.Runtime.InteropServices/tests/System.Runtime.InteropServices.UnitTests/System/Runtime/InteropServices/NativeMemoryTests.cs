@@ -506,6 +506,9 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(256, 5)]
         [InlineData(256, 67)]
         [InlineData(256, 143)]
+        [InlineData(0, 0)] // Also run some tests with a size of 0 to verify it no-ops
+        [InlineData(0, 1)]
+        [InlineData(0, 167)]
         public void ZeroMemoryWithExactRangeTest(uint size, uint offset)
         {
             int headLength = (int)offset;
