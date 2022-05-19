@@ -561,6 +561,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromInt128Test()
+        {
+            AssertBitwiseEqual(PositiveZero, NumberHelper<Half>.CreateChecked<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(PositiveOne, NumberHelper<Half>.CreateChecked<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual((Half)170141183460469231731687303715884105727.0, NumberHelper<Half>.CreateChecked<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual((Half)(-170141183460469231731687303715884105728.0f), NumberHelper<Half>.CreateChecked<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(NegativeOne, NumberHelper<Half>.CreateChecked<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+        }
+
+        [Fact]
         public static void CreateCheckedFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -619,6 +629,16 @@ namespace System.Tests
             AssertBitwiseEqual((Half)9223372036854775807.0f, NumberHelper<Half>.CreateChecked<ulong>(0x7FFFFFFFFFFFFFFF));
             AssertBitwiseEqual((Half)9223372036854775808.0f, NumberHelper<Half>.CreateChecked<ulong>(0x8000000000000000));
             AssertBitwiseEqual((Half)18446744073709551615.0f, NumberHelper<Half>.CreateChecked<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromUInt128Test()
+        {
+            AssertBitwiseEqual(PositiveZero, NumberHelper<Half>.CreateChecked<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(PositiveOne, NumberHelper<Half>.CreateChecked<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual((Half)170141183460469231731687303715884105727.0, NumberHelper<Half>.CreateChecked<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual((Half)170141183460469231731687303715884105728.0, NumberHelper<Half>.CreateChecked<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual((Half)340282366920938463463374607431768211455.0, NumberHelper<Half>.CreateChecked<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
         }
 
         [Fact]
@@ -697,6 +717,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromInt128Test()
+        {
+            AssertBitwiseEqual(PositiveZero, NumberHelper<Half>.CreateSaturating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(PositiveOne, NumberHelper<Half>.CreateSaturating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual((Half)170141183460469231731687303715884105727.0f, NumberHelper<Half>.CreateSaturating<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual((Half)(-170141183460469231731687303715884105728.0f), NumberHelper<Half>.CreateSaturating<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(NegativeOne, NumberHelper<Half>.CreateSaturating<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -755,6 +785,16 @@ namespace System.Tests
             AssertBitwiseEqual((Half)9223372036854775807.0f, NumberHelper<Half>.CreateSaturating<ulong>(0x7FFFFFFFFFFFFFFF));
             AssertBitwiseEqual((Half)9223372036854775808.0f, NumberHelper<Half>.CreateSaturating<ulong>(0x8000000000000000));
             AssertBitwiseEqual((Half)18446744073709551615.0f, NumberHelper<Half>.CreateSaturating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromUInt128Test()
+        {
+            AssertBitwiseEqual(PositiveZero, NumberHelper<Half>.CreateSaturating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(PositiveOne, NumberHelper<Half>.CreateSaturating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual((Half)170141183460469231731687303715884105727.0f, NumberHelper<Half>.CreateSaturating<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual((Half)170141183460469231731687303715884105728.0f, NumberHelper<Half>.CreateSaturating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberHelper<Half>.CreateSaturating<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
         }
 
         [Fact]
@@ -833,6 +873,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromInt128Test()
+        {
+            AssertBitwiseEqual(PositiveZero, NumberHelper<Half>.CreateTruncating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(PositiveOne, NumberHelper<Half>.CreateTruncating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual((Half)170141183460469231731687303715884105727.0f, NumberHelper<Half>.CreateTruncating<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual((Half)(-170141183460469231731687303715884105728.0f), NumberHelper<Half>.CreateTruncating<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(NegativeOne, NumberHelper<Half>.CreateTruncating<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -891,6 +941,16 @@ namespace System.Tests
             AssertBitwiseEqual((Half)9223372036854775807.0f, NumberHelper<Half>.CreateTruncating<ulong>(0x7FFFFFFFFFFFFFFF));
             AssertBitwiseEqual((Half)9223372036854775808.0f, NumberHelper<Half>.CreateTruncating<ulong>(0x8000000000000000));
             AssertBitwiseEqual((Half)18446744073709551615.0f, NumberHelper<Half>.CreateTruncating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromUInt128Test()
+        {
+            AssertBitwiseEqual(PositiveZero, NumberHelper<Half>.CreateTruncating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(PositiveOne, NumberHelper<Half>.CreateTruncating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual((Half)170141183460469231731687303715884105727.0f, NumberHelper<Half>.CreateTruncating<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual((Half)170141183460469231731687303715884105728.0f, NumberHelper<Half>.CreateTruncating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(Half.PositiveInfinity, NumberHelper<Half>.CreateTruncating<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
         }
 
         [Fact]
@@ -1087,6 +1147,27 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void TryCreateFromInt128Test()
+        {
+            Half result;
+
+            Assert.True(NumberHelper<Half>.TryCreate<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal(PositiveZero, result);
+
+            Assert.True(NumberHelper<Half>.TryCreate<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), out result));
+            Assert.Equal(PositiveOne, result);
+
+            Assert.True(NumberHelper<Half>.TryCreate<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal((Half)170141183460469231731687303715884105727.0, result);
+
+            Assert.True(NumberHelper<Half>.TryCreate<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal((Half)(-170141183460469231731687303715884105728.0), result);
+
+            Assert.True(NumberHelper<Half>.TryCreate<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal(NegativeOne, result);
+        }
+
+        [Fact]
         public static void TryCreateFromIntPtrTest()
         {
             Half result;
@@ -1209,6 +1290,27 @@ namespace System.Tests
 
             Assert.True(NumberHelper<Half>.TryCreate<ulong>(0xFFFFFFFFFFFFFFFF, out result));
             Assert.Equal((Half)18446744073709551615.0f, result);
+        }
+
+        [Fact]
+        public static void TryCreateFromUInt128Test()
+        {
+            Half result;
+
+            Assert.True(NumberHelper<Half>.TryCreate<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal(PositiveZero, result);
+
+            Assert.True(NumberHelper<Half>.TryCreate<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), out result));
+            Assert.Equal(PositiveOne, result);
+
+            Assert.True(NumberHelper<Half>.TryCreate<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal((Half)170141183460469231731687303715884105727.0f, result);
+
+            Assert.True(NumberHelper<Half>.TryCreate<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal((Half)170141183460469231731687303715884105728.0f, result);
+
+            Assert.True(NumberHelper<Half>.TryCreate<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal(Half.PositiveInfinity, result);
         }
 
         [Fact]

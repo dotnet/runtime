@@ -1073,15 +1073,19 @@ namespace System.Data.SqlTypes
                 usChar = rgwchStr[iCurChar];
                 iCurChar++;
 
-                if (usChar >= '0' && usChar <= '9')
+                if (char.IsAsciiDigit(usChar))
+                {
                     usChar -= '0';
+                }
                 else if (usChar == '.' && lDecPnt < 0)
                 {
                     lDecPnt = iData;
                     continue;
                 }
                 else
+                {
                     throw new FormatException(SQLResource.FormatMessage);
+                }
 
                 snResult.MultByULong(s_ulBase10);
                 snResult.AddULong(usChar);

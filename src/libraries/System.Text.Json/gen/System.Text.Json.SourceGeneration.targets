@@ -11,6 +11,7 @@
     <EnableDefaultEmbeddedResourceItems>false</EnableDefaultEmbeddedResourceItems>
     <UsingToolXliff>true</UsingToolXliff>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <PropertyGroup>

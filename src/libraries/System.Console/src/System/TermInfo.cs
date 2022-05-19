@@ -687,7 +687,7 @@ namespace System
                         // Stack pushing operations
                         case 'p': // Push the specified parameter (1-based) onto the stack
                             pos++;
-                            Debug.Assert(format[pos] >= '0' && format[pos] <= '9');
+                            Debug.Assert(char.IsAsciiDigit(format[pos]));
                             stack.Push(args[format[pos] - '1']);
                             break;
                         case 'l': // Pop a string and push its length
@@ -698,7 +698,7 @@ namespace System
                             int intLit = 0;
                             while (format[pos] != '}')
                             {
-                                Debug.Assert(format[pos] >= '0' && format[pos] <= '9');
+                                Debug.Assert(char.IsAsciiDigit(format[pos]));
                                 intLit = (intLit * 10) + (format[pos] - '0');
                                 pos++;
                             }
@@ -900,12 +900,12 @@ namespace System
             private static FormatParam[] GetDynamicOrStaticVariables(
                 char c, ref FormatParam[]? dynamicVars, ref FormatParam[]? staticVars, out int index)
             {
-                if (c >= 'A' && c <= 'Z')
+                if (char.IsAsciiLetterUpper(c))
                 {
                     index = c - 'A';
                     return staticVars ?? (staticVars = new FormatParam[26]); // one slot for each letter of alphabet
                 }
-                else if (c >= 'a' && c <= 'z')
+                else if (char.IsAsciiLetterLower(c))
                 {
                     index = c - 'a';
                     return dynamicVars ?? (dynamicVars = new FormatParam[26]); // one slot for each letter of alphabet

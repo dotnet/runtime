@@ -11,6 +11,7 @@
     <UsingToolXliff>true</UsingToolXliff>
     <CLSCompliant>false</CLSCompliant>
     <AnalyzerLanguage>cs</AnalyzerLanguage>
+    <RunAnalyzers>false</RunAnalyzers>
   </PropertyGroup>
 
   <ItemGroup>

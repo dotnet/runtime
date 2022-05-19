@@ -740,7 +740,7 @@ namespace System.Globalization
 
             while (i < name.Length && name[i] != '-' && name[i] != '_')
             {
-                if (name[i] >= 'A' && name[i] <= 'Z')
+                if (char.IsAsciiLetterUpper(name[i]))
                 {
                     // lowercase characters before '-'
                     normalizedName[i] = (char)(((int)name[i]) + 0x20);
@@ -761,7 +761,7 @@ namespace System.Globalization
 
             while (i < name.Length)
             {
-                if (name[i] >= 'a' && name[i] <= 'z')
+                if (char.IsAsciiLetterLower(name[i]))
                 {
                     normalizedName[i] = (char)(((int)name[i]) - 0x20);
                     changed = true;

@@ -330,6 +330,9 @@
 /* Disable Threads */
 #cmakedefine DISABLE_THREADS 1
 
+/* Disable user thread creation on WebAssembly */
+#cmakedefine DISABLE_WASM_USER_THREADS 1
+
 /* Disable MONO_LOG_DEST */
 #cmakedefine DISABLE_LOG_DEST
 

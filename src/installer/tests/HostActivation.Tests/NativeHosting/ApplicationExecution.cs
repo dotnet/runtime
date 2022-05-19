@@ -52,7 +52,7 @@ namespace Microsoft.DotNet.CoreSetup.Test.HostActivation.NativeHosting
             };
 
             sharedState.CreateNativeHostCommand(args, sharedState.DotNetRoot)
-                .Execute()
+                .Execute(fExpectedToFail: true)
                 .Should().Fail()
                 .And.InitializeContextForApp(project.AppDll)
                 .And.ExecuteApplicationWithException(sharedState.NativeHostPath, project.AppDll);
