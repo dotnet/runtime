@@ -379,23 +379,23 @@ namespace System.Text.RegularExpressions.Symbolic
                 if (!enumerator.MoveNext())
                 {
                     // The collection only has one element
-                    node.ToString(sb);
+                    node.ToStringHelper(sb);
                 }
                 else
                 {
                     // Union of two or more elements
                     sb.Append('(');
                     // Append the first two elements
-                    node.ToString(sb);
+                    node.ToStringHelper(sb);
                     // Using the operator & for intersection
                     char op = _kind == SymbolicRegexNodeKind.Or ? '|' : '&';
                     sb.Append(op);
-                    enumerator.Current.ToString(sb);
+                    enumerator.Current.ToStringHelper(sb);
                     while (enumerator.MoveNext())
                     {
                         // Append all the remaining elements
                         sb.Append(op);
-                        enumerator.Current.ToString(sb);
+                        enumerator.Current.ToStringHelper(sb);
                     }
                     sb.Append(')');
                 }

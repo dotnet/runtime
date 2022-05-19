@@ -1815,12 +1815,12 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             if (_kind == SymbolicRegexNodeKind.Singleton)
             {
-                ToString(sb);
+                ToStringHelper(sb);
             }
             else
             {
                 sb.Append('(');
-                ToString(sb);
+                ToStringHelper(sb);
                 sb.Append(')');
             }
         }
@@ -1828,16 +1828,16 @@ namespace System.Text.RegularExpressions.Symbolic
         public override string ToString()
         {
             StringBuilder sb = new();
-            ToString(sb);
+            ToStringHelper(sb);
             return sb.ToString();
         }
 
-        internal void ToString(StringBuilder sb)
+        internal void ToStringHelper(StringBuilder sb)
         {
             // Guard against stack overflow due to deep recursion
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                StackHelper.CallOnEmptyStack(ToString, sb);
+                StackHelper.CallOnEmptyStack(ToStringHelper, sb);
                 return;
             }
 
@@ -1888,9 +1888,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
                     sb.Append('(');
-                    _left.ToString(sb);
+                    _left.ToStringHelper(sb);
                     sb.Append('|');
-                    _right.ToString(sb);
+                    _right.ToStringHelper(sb);
                     sb.Append(')');
                     return;
 
@@ -1901,12 +1901,12 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         sb.Append('(');
                     }
-                    _left.ToString(sb);
+                    _left.ToStringHelper(sb);
                     if (_left.Kind == SymbolicRegexNodeKind.Concat)
                     {
                         sb.Append(')');
                     }
-                    _right.ToString(sb);
+                    _right.ToStringHelper(sb);
                     return;
 
                 case SymbolicRegexNodeKind.Singleton:
@@ -1976,9 +1976,9 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.Effect:
                     Debug.Assert(_left is not null && _right is not null);
                     sb.Append('(');
-                    _left.ToString(sb);
+                    _left.ToStringHelper(sb);
                     sb.Append('\u03BE');
-                    _right.ToString(sb);
+                    _right.ToStringHelper(sb);
                     sb.Append(')');
                     break;
 
@@ -2018,7 +2018,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
                     Debug.Assert(_left is not null);
-                    _left.ToString(sb);
+                    _left.ToStringHelper(sb);
                     return;
 
                 default:
@@ -2026,7 +2026,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(_kind == SymbolicRegexNodeKind.Not);
                     Debug.Assert(_left is not null);
                     sb.Append("~(");
-                    _left.ToString(sb);
+                    _left.ToStringHelper(sb);
                     sb.Append(')');
                     return;
             }
