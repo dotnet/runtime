@@ -411,6 +411,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\Int16.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Int32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\Int64.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\Int128.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\IntPtr.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidCastException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\InvalidOperationException.cs" />
@@ -1164,6 +1165,7 @@
     <Compile Include="$(MSBuildThisFileDirectory)System\UInt16.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UInt32.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UInt64.cs" />
+    <Compile Include="$(MSBuildThisFileDirectory)System\UInt128.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UIntPtr.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UnauthorizedAccessException.cs" />
     <Compile Include="$(MSBuildThisFileDirectory)System\UnhandledExceptionEventArgs.cs" />

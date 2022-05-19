@@ -96,11 +96,17 @@
   <data name="Overflow_Int64" xml:space="preserve">
     <value>Value was either too large or too small for an Int64.</value>
   </data>
+  <data name="Overflow_Int128" xml:space="preserve">
+    <value>Value was either too large or too small for an Int128.</value>
+  </data>
   <data name="Overflow_UInt32" xml:space="preserve">
     <value>Value was either too large or too small for a UInt32.</value>
   </data>
   <data name="Overflow_UInt64" xml:space="preserve">
     <value>Value was either too large or too small for a UInt64.</value>
+  </data>
+  <data name="Overflow_UInt128" xml:space="preserve">
+    <value>Value was either too large or too small for a UInt128.</value>
   </data>
   <data name="Overflow_Decimal" xml:space="preserve">
     <value>Value was either too large or too small for a Decimal.</value>
