@@ -565,6 +565,12 @@ Compiler::fgWalkResult Rationalizer::RewriteNode(GenTree** useEdge, Compiler::Ge
             RewriteAssignment(use);
             break;
 
+#ifdef TARGET_ARM64
+        case GT_SUB:
+            RewriteSubLshDiv(use);
+            break;
+#endif
+
         case GT_BOX:
         case GT_ARR_ADDR:
             // BOX/ARR_ADDR at this level are just NOPs.
