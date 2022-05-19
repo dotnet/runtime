@@ -24,6 +24,9 @@ public class PInvokeTableGenerator : Task
     [Output]
     public string FileWrites { get; private set; } = string.Empty;
 
+    [Output]
+    public string[]? Cookies { get; private set; }
+
     private static char[] s_charsToReplace = new[] { '.', '-', '+' };
 
     public override bool Execute()
@@ -77,6 +80,8 @@ public class PInvokeTableGenerator : Task
             EmitNativeToInterp(w, callbacks);
         }
 
+        Cookies = pinvokes.Select(BuildCookie).ToArray();
+
         if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
             Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{OutputPath}'.");
         else
@@ -84,6 +89,28 @@ public class PInvokeTableGenerator : Task
         FileWrites = OutputPath;
 
         File.Delete(tmpFileName);
+    }
+
+    private static string BuildCookie(PInvoke p)
+    {
+        static string TypeToCookie(Type t) => t.Name switch
+        {
+            "Void" => "V",
+            "Int32" => "I",
+            "Int64" => "L",
+            "Single" => "F",
+            "Double" => "D",
+            // _ => throw new NotSupportedException($"Type '{t.Name}' is not supported.")
+            _ => $"<{t.Name}>"
+        };
+
+        string result = TypeToCookie(p.Method.ReturnType).ToString();
+        foreach (var parameter in p.Method.GetParameters())
+        {
+            result += TypeToCookie(parameter.ParameterType);
+        }
+
+        return result;
     }
 
     private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, Type type)

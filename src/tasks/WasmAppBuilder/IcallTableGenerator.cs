@@ -19,12 +19,15 @@ public class IcallTableGenerator : Task
     [Required]
     public string? RuntimeIcallTableFile { get; set; }
     [Required]
-    public ITaskItem[]? Assemblies { get; set; }
+    public string[]? Assemblies { get; set; }
     [Required, NotNull]
     public string? OutputPath { get; set; }
 
     [Output]
-    public string? FileWrites { get; private set; } = "";
+    public string? FileWrites { get; private set; } = string.Empty;
+
+    [Output]
+    public string[]? Cookies { get; private set; }
 
     private List<Icall> _icalls = new List<Icall> ();
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass> ();
@@ -33,7 +36,7 @@ public class IcallTableGenerator : Task
     {
         try
         {
-            GenIcallTable(RuntimeIcallTableFile!, Assemblies!.Select(item => item.ItemSpec).ToArray());
+            GenIcallTable(RuntimeIcallTableFile!, Assemblies!);
             return !Log.HasLoggedErrors;
         }
         catch (LogAsErrorException laee)
@@ -61,6 +64,8 @@ public class IcallTableGenerator : Task
                 ProcessType(type);
         }
 
+        Cookies = _icalls.Select(BuildCookie).ToArray();
+
         string tmpFileName = Path.GetTempFileName();
         using (var w = File.CreateText(tmpFileName))
             EmitTable (w);
@@ -72,6 +77,27 @@ public class IcallTableGenerator : Task
         FileWrites = OutputPath;
 
         File.Delete(tmpFileName);
+    }
+
+    private static string BuildCookie(Icall p)
+    {
+        static char TypeToCookie(Type t) => t.Name switch
+        {
+            "Void" => 'V',
+            "Int32" => 'I',
+            "Int64" => 'L',
+            "Single" => 'F',
+            "Double" => 'D',
+            _ => throw new NotSupportedException($"Type '{t.Name}' is not supported.")
+        };
+
+        string result = TypeToCookie(p.Method!.ReturnType).ToString();
+        foreach (var parameter in p.Method.GetParameters())
+        {
+            result += TypeToCookie(parameter.ParameterType);
+        }
+
+        return result;
     }
 
     private void EmitTable (StreamWriter w)
@@ -253,18 +279,18 @@ public class IcallTableGenerator : Task
     {
         switch (t.Name)
         {
-        case "Void":
-            return "void";
-        case "Double":
-            return "double";
-        case "Single":
-            return "float";
-        case "Int64":
-            return "int64_t";
-        case "UInt64":
-            return "uint64_t";
-        default:
-            return "int";
+            case "Void":
+                return "void";
+            case "Double":
+                return "double";
+            case "Single":
+                return "float";
+            case "Int64":
+                return "int64_t";
+            case "UInt64":
+                return "uint64_t";
+            default:
+                return "int";
         }
     }
 

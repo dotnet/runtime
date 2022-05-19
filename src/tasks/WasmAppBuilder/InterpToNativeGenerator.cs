@@ -24,6 +24,8 @@ public class InterpToNativeGenerator : Task
     [Output]
     public string? FileWrites { get; private set; } = "";
 
+    public string[]? Cookies { get; set; }
+
     // Default set of signatures
     private static readonly string[] cookies = new string[] {
         "V",
@@ -245,7 +247,7 @@ public class InterpToNativeGenerator : Task
         }
     }
 
-    public static void Emit(StreamWriter w)
+    public void Emit(StreamWriter w)
     {
         w.WriteLine("/*");
         w.WriteLine("* GENERATED FILE, DON'T EDIT");
@@ -260,7 +262,7 @@ public class InterpToNativeGenerator : Task
         var added = new HashSet<string>();
 
         var l = new List<string>();
-        foreach (var c in cookies)
+        foreach (var c in Cookies ?? cookies)
         {
             l.Add(c);
             added.Add(c);
