@@ -58,20 +58,6 @@ namespace System
                     CorElementType.ELEMENT_TYPE_SZARRAY => type.MakeArrayType(),
                     _ => type.MakeArrayType(modifiers[++i])
                 };
-                {
-                    case CorElementType.ELEMENT_TYPE_PTR:
-                        type = type.MakePointerType();
-                        break;
-                    case CorElementType.ELEMENT_TYPE_BYREF:
-                        type = type.MakeByRefType();
-                        break;
-                    case CorElementType.ELEMENT_TYPE_SZARRAY:
-                        type = type.MakeArrayType();
-                        break;
-                    default:
-                        type = type.MakeArrayType(modifiers[++i]);
-                        break;
-                }
             }
 
             return type;
