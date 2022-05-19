@@ -51,7 +51,13 @@ namespace System
 
             for (int i = 0; i < modifiers.Length; i++)
             {
-                switch ((CorElementType)modifiers[i])
+                type = (CorElementType)modifiers[i] switch
+                {
+                    CorElementType.ELEMENT_TYPE_PTR => type.MakePointerType(),
+                    CorElementType.ELEMENT_TYPE_BYREF => type.MakeByRefType(),
+                    CorElementType.ELEMENT_TYPE_SZARRAY => type.MakeArrayType(),
+                    _ => type.MakeArrayType(modifiers[++i])
+                };
                 {
                     case CorElementType.ELEMENT_TYPE_PTR:
                         type = type.MakePointerType();
