@@ -4,7 +4,7 @@ macro(append_extra_cryptography_libs NativeLibsExtra)
        set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
     endif(CMAKE_STATIC_LIB_LINK)
 
-    # This is evil, bad, and wrong, but good enough to satisfy the build
+    # This is bad and wrong, but good enough to satisfy the build
     # We only care about having "enough" OpenSSL to get the native lib built
     # here, and it's on the end user to ship libssl/libcrypto from Google
     if(FORCE_ANDROID_OPENSSL)

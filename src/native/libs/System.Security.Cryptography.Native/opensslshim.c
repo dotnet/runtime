@@ -77,7 +77,7 @@ static void OpenLibraryOnce()
         DlOpen(soName);
     }
 
-#ifdef ANDROID
+#ifdef TARGET_ANDROID
     if (libssl == NULL)
     {
         // Android OpenSSL has no soname

@@ -1,6 +1,6 @@
 #!/bin/sh
-currentDirectory=$(realpath `dirname $0`)
-currentTest=$(basename $0 .sh)
+currentDirectory=$(realpath "$(dirname "$0")")
+currentTest=$(basename "$0" .sh)
 runtimeExeArg=${1:-}
 runtimeExe=${2:-}
 extraLibsArg=${3:-}
@@ -31,9 +31,9 @@ if [ "x$extraLibsArg" != "x" ]; then
 		echo "$extraLibsDir is not a valid directory"
 		exit 1
 	fi
-	export LD_LIBRARY_PATH=$extraLibsDir
+	export LD_LIBRARY_PATH="$extraLibsDir"
 fi
-_RuntimeDir=$(dirname $runtimeExe)
+_RuntimeDir="$(dirname "$runtimeExe")"
 # Consume OpenSSL as found on Helix
 if [ -d "$_RuntimeDir/openssl" ]; then
 	_thisArch=$(uname -m)
@@ -53,17 +53,17 @@ if [ -d "$_RuntimeDir/openssl" ]; then
 		*)
 		;;
 	esac
-	export LD_LIBRARY_PATH=$_RuntimeDir/openssl/prefab/modules/ssl/libs/android.$_thisArchAndroid:$_RuntimeDir/openssl/prefab/modules/crypto/libs/android.$_thisArchAndroid
+	export LD_LIBRARY_PATH="$_RuntimeDir/openssl/prefab/modules/ssl/libs/android.$_thisArchAndroid:$_RuntimeDir/openssl/prefab/modules/crypto/libs/android.$_thisArchAndroid"
 	# Since we're on Helix, we know we want to set the SSL cert dir
 	export SSL_CERT_DIR=/system/etc/security/cacerts
 fi
 # Android sets an invalid value for HOME, which we bypass on "real" Android via
 # some env var setup in the task. Since we aren't using the Android task system
 # for Bionic, we need to override the value another way
-export HOME=$currentDirectory
-cd $currentDirectory
+export HOME="$currentDirectory"
+cd "$currentDirectory" || exit 1
 # Sometimes the depsfile doesn't exist, so only conditionally try to pass it
-if [ -e ${currentTest}.deps.json ]; then
+if [ -e "${currentTest}.deps.json" ]; then
 	depsFileArg="--depsfile ${currentTest}.deps.json"
 fi
-$runtimeExe exec --runtimeconfig ${currentTest}.runtimeconfig.json ${depsFileArg} xunit.console.dll ${currentTest}.dll -xml testResults.xml -nologo -nocolor -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing
+$runtimeExe exec --runtimeconfig "${currentTest}".runtimeconfig.json ${depsFileArg} xunit.console.dll "${currentTest}".dll -xml testResults.xml -nologo -nocolor -notrait category=IgnoreForCI -notrait category=OuterLoop -notrait category=failing

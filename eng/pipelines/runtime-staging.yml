@@ -174,7 +174,7 @@ jobs:
           testRunNamePrefixSuffix: Mono_$(_BuildConfig)
 
 #
-# Build the whole product using Mono for Headless Android (Linux with Bionic libc)
+# Build the whole product using Mono for Android Linux with Bionic libc
 #
 - template: /eng/pipelines/common/platform-matrix.yml
   parameters:

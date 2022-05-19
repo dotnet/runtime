@@ -2,9 +2,9 @@
 
 . TestEnv.txt
 
-EXECUTION_DIR=$(realpath `dirname $0`)
+EXECUTION_DIR="$(realpath "$(dirname "$0")")"
 RUNTIME_PATH="$2"
-TEST_SCRIPT="$(basename $ASSEMBLY_NAME .dll).sh"
+TEST_SCRIPT="$(basename "$ASSEMBLY_NAME" .dll).sh"
 if [[ -z "$HELIX_WORKITEM_UPLOAD_ROOT" ]]; then
         XHARNESS_OUT="$EXECUTION_DIR/xharness-output"
 else
@@ -12,7 +12,7 @@ else
 fi
 
 if [[ -n "$3" ]]; then
-    ADDITIONAL_ARGS=${@:5}
+    ADDITIONAL_ARGS=${*:5}
 fi
 
 if [[ "x$1" != "x--runtime-path" ]]; then
@@ -20,9 +20,9 @@ if [[ "x$1" != "x--runtime-path" ]]; then
     exit 1
 fi
 
-RUNTIME_PATH=$(realpath $RUNTIME_PATH)
+RUNTIME_PATH="$(realpath "$RUNTIME_PATH")"
 
-cd $EXECUTION_DIR
+cd "$EXECUTION_DIR" || exit 1
 
 # it doesn't support parallel execution yet, so, here is a hand-made semaphore:
 LOCKDIR=/tmp/androidtests.lock

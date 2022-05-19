@@ -27,7 +27,7 @@
        flavor is used to decide when to build the hosts and installers. -->
   <PropertyGroup>
     <PrimaryRuntimeFlavor>CoreCLR</PrimaryRuntimeFlavor>
-    <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'armv6' or $(OutputRid.StartsWith('linux-bionic'))">Mono</PrimaryRuntimeFlavor>
+    <PrimaryRuntimeFlavor Condition="'$(TargetArchitecture)' == 's390x' or '$(TargetArchitecture)' == 'armv6' or '$(TargetsLinuxBionic)' == 'true'">Mono</PrimaryRuntimeFlavor>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -331,7 +331,7 @@
   </ItemGroup>
 
   <!-- Mono sets -->
-  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser' or '$(TargetOS)' == 'Linux-bionic'">
+  <ItemGroup Condition="$(_subset.Contains('+mono.llvm+')) or $(_subset.Contains('+mono.aotcross+')) or '$(TargetOS)' == 'iOS' or '$(TargetOS)' == 'iOSSimulator' or '$(TargetOS)' == 'tvOS' or '$(TargetOS)' == 'tvOSSimulator' or '$(TargetOS)' == 'MacCatalyst' or '$(TargetOS)' == 'Android' or '$(TargetOS)' == 'Browser' or '$(TargetsLinuxBionic)' == 'true'">
     <ProjectToBuild Include="$(MonoProjectRoot)llvm\llvm-init.proj" Category="mono" />
   </ItemGroup>
 
