@@ -5,6 +5,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Linq;
+using ILLink.Shared.DataFlow;
 using ILLink.Shared.TypeSystemProxy;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -670,16 +672,16 @@ namespace ILLink.Shared.TrimAnalysis
 		}
 
 		internal partial bool MethodRequiresDataFlowAnalysis (MethodProxy method)
-			=> _context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (method.Method);
+			=> RequiresDataFlowAnalysis (method.Method);
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 			=> new MethodReturnValue (method.Method.ReturnType.ResolveToTypeDefinition (_context), method.Method, dynamicallyAccessedMemberTypes);
 
 		internal partial MethodReturnValue GetMethodReturnValue (MethodProxy method)
-			=> GetMethodReturnValue (method, _context.Annotations.FlowAnnotations.GetReturnParameterAnnotation (method.Method));
+			=> GetMethodReturnValue (method, GetReturnParameterAnnotation (method.Method));
 
 		internal partial GenericParameterValue GetGenericParameterValue (GenericParameterProxy genericParameter)
-			=> new GenericParameterValue (genericParameter.GenericParameter, _context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (genericParameter.GenericParameter));
+			=> new GenericParameterValue (genericParameter.GenericParameter, GetGenericParameterAnnotation (genericParameter.GenericParameter));
 
 #pragma warning disable CA1822 // Mark members as static - keep this an instance method for consistency with the others
 		internal partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
@@ -687,12 +689,48 @@ namespace ILLink.Shared.TrimAnalysis
 #pragma warning restore CA1822
 
 		internal partial MethodThisParameterValue GetMethodThisParameterValue (MethodProxy method)
-			=> GetMethodThisParameterValue (method, _context.Annotations.FlowAnnotations.GetParameterAnnotation (method.Method, 0));
+			=> GetMethodThisParameterValue (method, GetParameterAnnotation (method.Method, 0));
 
 		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
 			=> new (method.Method.Parameters[parameterIndex].ParameterType.ResolveToTypeDefinition (_context), method.Method, parameterIndex, dynamicallyAccessedMemberTypes);
 
 		internal partial MethodParameterValue GetMethodParameterValue (MethodProxy method, int parameterIndex)
-			=> GetMethodParameterValue (method, parameterIndex, _context.Annotations.FlowAnnotations.GetParameterAnnotation (method.Method, parameterIndex + (method.IsStatic () ? 0 : 1)));
+			=> GetMethodParameterValue (method, parameterIndex, GetParameterAnnotation (method.Method, parameterIndex + (method.IsStatic () ? 0 : 1)));
+
+		// Linker-specific dataflow value creation. Eventually more of these should be shared.
+		internal SingleValue GetFieldValue (FieldDefinition field)
+			=> field.Name switch {
+				"EmptyTypes" when field.DeclaringType.IsTypeOf (WellKnownType.System_Type) => ArrayValue.Create (0, field.DeclaringType),
+				"Empty" when field.DeclaringType.IsTypeOf (WellKnownType.System_String) => new KnownStringValue (string.Empty),
+				_ => new FieldValue (field.FieldType.ResolveToTypeDefinition (_context), field, GetFieldAnnotation (field))
+			};
+
+		internal SingleValue GetTypeValueFromGenericArgument (TypeReference genericArgument)
+		{
+			if (genericArgument is GenericParameter inputGenericParameter) {
+				// Technically this should be a new value node type as it's not a System.Type instance representation, but just the generic parameter
+				// That said we only use it to perform the dynamically accessed members checks and for that purpose treating it as System.Type is perfectly valid.
+				return GetGenericParameterValue (inputGenericParameter);
+			} else if (genericArgument.ResolveToTypeDefinition (_context) is TypeDefinition genericArgumentType) {
+				if (genericArgumentType.IsTypeOf (WellKnownType.System_Nullable_T)) {
+					var innerGenericArgument = (genericArgument as IGenericInstance)?.GenericArguments.FirstOrDefault ();
+					switch (innerGenericArgument) {
+					case GenericParameter gp:
+						return new NullableValueWithDynamicallyAccessedMembers (genericArgumentType,
+							new GenericParameterValue (gp, _context.Annotations.FlowAnnotations.GetGenericParameterAnnotation (gp)));
+
+					case TypeReference underlyingType:
+						if (underlyingType.ResolveToTypeDefinition (_context) is TypeDefinition underlyingTypeDefinition)
+							return new NullableSystemTypeValue (genericArgumentType, new SystemTypeValue (underlyingTypeDefinition));
+						else
+							return UnknownValue.Instance;
+					}
+				}
+				// All values except for Nullable<T>, including Nullable<> (with no type arguments)
+				return new SystemTypeValue (genericArgumentType);
+			} else {
+				return UnknownValue.Instance;
+			}
+		}
 	}
 }

@@ -438,7 +438,7 @@ namespace Mono.Linker.Steps
 					}
 
 					// The action should not change from the explicit command-line action
-					Debug.Assert (Context.Annotations.GetAction (assembly) == action);
+					Debug.Assert (Annotations.GetAction (assembly) == action);
 				}
 			}
 
@@ -452,7 +452,7 @@ namespace Mono.Linker.Steps
 			var assembliesToCheck = scanReferences ? Context.GetReferencedAssemblies ().ToArray () : Context.GetAssemblies ();
 			bool markedNewAssembly = false;
 			foreach (var assembly in assembliesToCheck) {
-				var action = Context.Annotations.GetAction (assembly);
+				var action = Annotations.GetAction (assembly);
 				if (!IsFullyPreservedAction (action))
 					continue;
 				if (!Annotations.IsProcessed (assembly))
@@ -676,7 +676,7 @@ namespace Mono.Linker.Steps
 
 		void ProcessVirtualMethod (MethodDefinition method)
 		{
-			Context.Annotations.EnqueueVirtualMethod (method);
+			Annotations.EnqueueVirtualMethod (method);
 
 			var overrides = Annotations.GetOverrides (method);
 			if (overrides != null) {
@@ -841,13 +841,13 @@ namespace Mono.Linker.Steps
 
 			IMemberDefinition providerMember = (IMemberDefinition) provider; ;
 			using (ScopeStack.PushScope (new MessageOrigin (providerMember)))
-				foreach (var dynamicDependency in Context.Annotations.GetLinkerAttributes<DynamicDependency> (providerMember))
+				foreach (var dynamicDependency in Annotations.GetLinkerAttributes<DynamicDependency> (providerMember))
 					MarkDynamicDependency (dynamicDependency, providerMember);
 		}
 
 		bool IsAttributeRemoved (CustomAttribute ca, TypeDefinition attributeType)
 		{
-			foreach (var attr in Context.Annotations.GetLinkerAttributes<RemoveAttributeInstancesAttribute> (attributeType)) {
+			foreach (var attr in Annotations.GetLinkerAttributes<RemoveAttributeInstancesAttribute> (attributeType)) {
 				var args = attr.Arguments;
 				if (args.Length == 0)
 					return true;
@@ -1242,8 +1242,8 @@ namespace Mono.Linker.Steps
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca);
 
-			if (property != null && Context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
-				var scanner = new ReflectionMethodBodyScanner (Context, this, ScopeStack.CurrentScope.Origin);
+			if (property != null && Annotations.FlowAnnotations.RequiresDataFlowAnalysis (property.SetMethod)) {
+				var scanner = new AttributeDataFlow (Context, this, ScopeStack.CurrentScope.Origin);
 				scanner.ProcessAttributeDataflow (property.SetMethod, new List<CustomAttributeArgument> { namedArgument.Argument });
 			}
 		}
@@ -1279,8 +1279,8 @@ namespace Mono.Linker.Steps
 
 			MarkCustomAttributeArgument (namedArgument.Argument, ca);
 
-			if (field != null && Context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (field)) {
-				var scanner = new ReflectionMethodBodyScanner (Context, this, ScopeStack.CurrentScope.Origin);
+			if (field != null && Annotations.FlowAnnotations.RequiresDataFlowAnalysis (field)) {
+				var scanner = new AttributeDataFlow (Context, this, ScopeStack.CurrentScope.Origin);
 				scanner.ProcessAttributeDataflow (field, namedArgument.Argument);
 			}
 		}
@@ -1322,8 +1322,8 @@ namespace Mono.Linker.Steps
 				MarkCustomAttributeArgument (argument, ca);
 
 			var resolvedConstructor = Context.TryResolve (ca.Constructor);
-			if (resolvedConstructor != null && Context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (resolvedConstructor)) {
-				var scanner = new ReflectionMethodBodyScanner (Context, this, ScopeStack.CurrentScope.Origin);
+			if (resolvedConstructor != null && Annotations.FlowAnnotations.RequiresDataFlowAnalysis (resolvedConstructor)) {
+				var scanner = new AttributeDataFlow (Context, this, ScopeStack.CurrentScope.Origin);
 				scanner.ProcessAttributeDataflow (resolvedConstructor, ca.ConstructorArguments);
 			}
 		}
@@ -1387,7 +1387,7 @@ namespace Mono.Linker.Steps
 
 			MarkExportedTypesTarget.ProcessAssembly (assembly, Context);
 
-			if (ProcessReferencesStep.IsFullyPreservedAction (Context.Annotations.GetAction (assembly))) {
+			if (ProcessReferencesStep.IsFullyPreservedAction (Annotations.GetAction (assembly))) {
 				if (!Context.TryGetCustomData ("DisableMarkingOfCopyAssemblies", out string? disableMarkingOfCopyAssembliesValue) ||
 					disableMarkingOfCopyAssembliesValue != "true")
 					MarkEntireAssembly (assembly);
@@ -1635,7 +1635,7 @@ namespace Mono.Linker.Steps
 					MessageFormat.FormatRequiresAttributeMessageArg (requiresUnreferencedCodeAttribute.Url));
 			}
 
-			if (Context.Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (member)) {
+			if (Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (member)) {
 				var id = reportOnMember ? DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberWithDynamicallyAccessedMembers : DiagnosticId.DynamicallyAccessedMembersOnTypeReferencesMemberOnBaseWithDynamicallyAccessedMembers;
 				Context.LogWarning (origin, id, type.GetDisplayName (), ((MemberReference) member).GetDisplayName ());
 			}
@@ -1656,7 +1656,7 @@ namespace Mono.Linker.Steps
 
 			if (reason.Kind != DependencyKind.DynamicallyAccessedMemberOnType &&
 				Annotations.DoesFieldRequireUnreferencedCode (field, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCodeAttribute) &&
-				!ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
+				!Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
 				ReportRequiresUnreferencedCode (field.GetDisplayName (), requiresUnreferencedCodeAttribute, new DiagnosticContext (origin, diagnosticsEnabled: true, Context));
 
 			switch (reason.Kind) {
@@ -1664,8 +1664,8 @@ namespace Mono.Linker.Steps
 			case DependencyKind.DynamicDependency:
 			case DependencyKind.DynamicallyAccessedMember:
 			case DependencyKind.InteropMethodDependency:
-				if (Context.Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field) &&
-					!ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
+				if (Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (field) &&
+					!Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (origin.Provider))
 					Context.LogWarning (origin, DiagnosticId.DynamicallyAccessedMembersFieldAccessedViaReflection, field.GetDisplayName ());
 
 				break;
@@ -1854,7 +1854,7 @@ namespace Mono.Linker.Steps
 			if (type.HasMethods && ShouldMarkTypeStaticConstructor (type) && reason.Kind == DependencyKind.DeclaringTypeOfCalledMethod)
 				MarkStaticConstructor (type, new DependencyInfo (DependencyKind.TriggersCctorForCalledMethod, reason.Source), ScopeStack.CurrentScope.Origin);
 
-			if (Context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type)) {
+			if (Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (type)) {
 				// Don't warn about references from the removed attribute itself (for example the .ctor on the attribute
 				// will call MarkType on the attribute type itself).
 				// If for some reason we do keep the attribute type (could be because of previous reference which would cause IL2045
@@ -1887,8 +1887,8 @@ namespace Mono.Linker.Steps
 			MarkSecurityDeclarations (type, new DependencyInfo (DependencyKind.CustomAttribute, type));
 
 			if (Context.TryResolve (type.BaseType) is TypeDefinition baseType &&
-				!Context.Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (type) &&
-				Context.Annotations.TryGetLinkerAttribute (baseType, out RequiresUnreferencedCodeAttribute? effectiveRequiresUnreferencedCode)) {
+				!Annotations.HasLinkerAttribute<RequiresUnreferencedCodeAttribute> (type) &&
+				Annotations.TryGetLinkerAttribute (baseType, out RequiresUnreferencedCodeAttribute? effectiveRequiresUnreferencedCode)) {
 
 				var currentOrigin = ScopeStack.CurrentScope.Origin;
 
@@ -2032,7 +2032,7 @@ namespace Mono.Linker.Steps
 					continue;
 				}
 
-				if (Context.Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (resolvedAttributeType) && Annotations.GetAction (type.Module.Assembly) == AssemblyAction.Link)
+				if (Annotations.HasLinkerAttribute<RemoveAttributeInstancesAttribute> (resolvedAttributeType) && Annotations.GetAction (type.Module.Assembly) == AssemblyAction.Link)
 					continue;
 
 				switch (attrType.Name) {
@@ -2560,12 +2560,12 @@ namespace Mono.Linker.Steps
 
 				TypeDefinition? argumentTypeDef = MarkType (argument, new DependencyInfo (DependencyKind.GenericArgumentType, instance));
 
-				if (Context.Annotations.FlowAnnotations.RequiresDataFlowAnalysis (parameter)) {
+				if (Annotations.FlowAnnotations.RequiresDataFlowAnalysis (parameter)) {
 					// The only two implementations of IGenericInstance both derive from MemberReference
 					Debug.Assert (instance is MemberReference);
 
 					using var _ = ScopeStack.CurrentScope.Origin.Provider == null ? ScopeStack.PushScope (new MessageOrigin (((MemberReference) instance).Resolve ())) : null;
-					var scanner = new ReflectionMethodBodyScanner (Context, this, ScopeStack.CurrentScope.Origin);
+					var scanner = new GenericArgumentDataFlow (Context, this, ScopeStack.CurrentScope.Origin);
 					scanner.ProcessGenericArgumentDataFlow (parameter, argument);
 				}
 
@@ -2890,9 +2890,9 @@ namespace Mono.Linker.Steps
 
 			CheckAndReportRequiresUnreferencedCode (method, new DiagnosticContext (ScopeStack.CurrentScope.Origin, diagnosticsEnabled: true, Context));
 
-			if (Context.Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method)) {
+			if (Annotations.FlowAnnotations.ShouldWarnWhenAccessedForReflection (method)) {
 				// If the current scope has analysis warnings suppressed, don't generate any
-				if (ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (ScopeStack.CurrentScope.Origin.Provider))
+				if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (ScopeStack.CurrentScope.Origin.Provider))
 					return;
 
 				// ReflectionMethodBodyScanner handles more cases for data flow annotations
@@ -2910,38 +2910,11 @@ namespace Mono.Linker.Steps
 			}
 		}
 
-		internal bool ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (ICustomAttributeProvider? originMember)
-		{
-			// Check if the current scope method has RequiresUnreferencedCode on it
-			// since that attribute automatically suppresses all trim analysis warnings.
-			// Check both the immediate origin method as well as suppression context method
-			// since that will be different for compiler generated code.
-			if (originMember == null)
-				return false;
-
-			if (originMember is MethodDefinition &&
-				Annotations.IsInRequiresUnreferencedCodeScope ((MethodDefinition) originMember))
-				return true;
-
-			if (originMember is not IMemberDefinition member)
-				return false;
-
-			MethodDefinition? owningMethod;
-			while (Context.CompilerGeneratedState.TryGetOwningMethodForCompilerGeneratedMember (member, out owningMethod)) {
-				Debug.Assert (owningMethod != member);
-				if (Annotations.IsInRequiresUnreferencedCodeScope (owningMethod))
-					return true;
-				member = owningMethod;
-			}
-
-			return false;
-		}
-
 		internal void CheckAndReportRequiresUnreferencedCode (MethodDefinition method, in DiagnosticContext diagnosticContext)
 		{
 			// If the caller of a method is already marked with `RequiresUnreferencedCodeAttribute` a new warning should not
 			// be produced for the callee.
-			if (ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (diagnosticContext.Origin.Provider))
+			if (Annotations.ShouldSuppressAnalysisWarningsForRequiresUnreferencedCode (diagnosticContext.Origin.Provider))
 				return;
 
 			if (!Annotations.DoesMethodRequireUnreferencedCode (method, out RequiresUnreferencedCodeAttribute? requiresUnreferencedCode))
