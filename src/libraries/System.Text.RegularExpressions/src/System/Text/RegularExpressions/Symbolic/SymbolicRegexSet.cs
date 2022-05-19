@@ -358,7 +358,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             return true;
         }
-
+#if DEBUG
         public void ToStringHelper(StringBuilder sb)
         {
             // This function is mutually recursive with the one in SymbolicRegexNode, which has stack overflow avoidance
@@ -402,6 +402,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
+#endif
         internal SymbolicRegexSet<TNewSet> Transform<TNewSet>(SymbolicRegexBuilder<TNewSet> builderT, Func<SymbolicRegexBuilder<TNewSet>, TSet, TNewSet> setTransformer)
             where TNewSet : IComparable<TNewSet>, IEquatable<TNewSet>
         {
