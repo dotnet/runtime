@@ -3477,24 +3477,29 @@ namespace System.Numerics
             }
             else
             {
-                result += (sizeof(uint) * 8) + 1 - BitOperations.LeadingZeroCount(~bits[^1]);
+                uint part = ~bits[^1] + 1;
+
+                // We need to remove the "carry" (the +1) if any of the initial
+                // bytes are not zero. This ensures we get the correct two's complement
+                // part for the computation.
+
+                for (int index = 0; index < bits.Length - 1; index++)
+                {
+                    if (bits[index] != 0)
+                    {
+                        part -= 1;
+                        break;
+                    }
+                }
+
+                result += (sizeof(uint) * 8) + 1 - BitOperations.LeadingZeroCount(~part);
             }
 
             return result;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
-        int IBinaryInteger<BigInteger>.GetByteCount()
-        {
-            AssertValid();
-            uint[]? bits = _bits;
-
-            if (bits is null)
-            {
-                return sizeof(int);
-            }
-            return bits.Length * 4;
-        }
+        int IBinaryInteger<BigInteger>.GetByteCount() => GetGenericMathByteCount();
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
         bool IBinaryInteger<BigInteger>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
@@ -3502,7 +3507,7 @@ namespace System.Numerics
             AssertValid();
             uint[]? bits = _bits;
 
-            int byteCount = (bits is null) ? sizeof(int) : bits.Length * 4;
+            int byteCount = GetGenericMathByteCount();
 
             if (destination.Length >= byteCount)
             {
@@ -3513,10 +3518,10 @@ namespace System.Numerics
                 }
                 else if (_sign >= 0)
                 {
-                    // When the value is positive, we simply need to copy all bits as little endian
+                    // When the value is positive, we simply need to copy all bits as big endian
 
-                    ref byte address = ref MemoryMarshal.GetReference(destination);
-                    address = ref Unsafe.Add(ref address, (bits.Length - 1) * sizeof(uint));
+                    ref byte startAddress = ref MemoryMarshal.GetReference(destination);
+                    ref byte address = ref Unsafe.Add(ref startAddress, (bits.Length - 1) * sizeof(uint));
 
                     for (int i = 0; i < bits.Length; i++)
                     {
@@ -3536,14 +3541,15 @@ namespace System.Numerics
                     // When the value is negative, we need to copy the two's complement representation
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
-                    ref byte address = ref MemoryMarshal.GetReference(destination);
-                    address = ref Unsafe.Add(ref address, (bits.Length - 1) * sizeof(uint));
+                    ref byte startAddress = ref MemoryMarshal.GetReference(destination);
+                    ref byte address = ref Unsafe.Add(ref startAddress, byteCount - sizeof(uint));
 
                     int i = 0;
                     uint part;
 
                     do
                     {
+                        // first do complement and +1 as long as carry is needed
                         part = ~bits[i] + 1;
 
                         if (BitConverter.IsLittleEndian)
@@ -3560,6 +3566,7 @@ namespace System.Numerics
 
                     while (i < bits.Length)
                     {
+                        // now ones complement is sufficient
                         part = ~bits[i];
 
                         if (BitConverter.IsLittleEndian)
@@ -3571,6 +3578,18 @@ namespace System.Numerics
                         address = ref Unsafe.Subtract(ref address, sizeof(uint));
 
                         i++;
+                    }
+
+                    if (Unsafe.AreSame(ref address, ref startAddress))
+                    {
+                        // We need one extra part to represent the sign as the most
+                        // significant bit of the two's complement value was 0.
+                        Unsafe.WriteUnaligned(ref address, uint.MaxValue);
+                    }
+                    else
+                    {
+                        // Otherwise we should have been precisely one part behind address
+                        Debug.Assert(Unsafe.AreSame(ref startAddress, ref Unsafe.Add(ref address, sizeof(uint))));
                     }
                 }
 
@@ -3590,7 +3609,7 @@ namespace System.Numerics
             AssertValid();
             uint[]? bits = _bits;
 
-            int byteCount = (bits is null) ? sizeof(int) : bits.Length * 4;
+            int byteCount = GetGenericMathByteCount();
 
             if (destination.Length >= byteCount)
             {
@@ -3624,12 +3643,14 @@ namespace System.Numerics
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
                     ref byte address = ref MemoryMarshal.GetReference(destination);
+                    ref byte lastAddress = ref Unsafe.Add(ref address, byteCount - sizeof(uint));
 
                     int i = 0;
                     uint part;
 
                     do
                     {
+                        // first do complement and +1 as long as carry is needed
                         part = ~bits[i] + 1;
 
                         if (!BitConverter.IsLittleEndian)
@@ -3646,6 +3667,7 @@ namespace System.Numerics
 
                     while (i < bits.Length)
                     {
+                        // now ones complement is sufficient
                         part = ~bits[i];
 
                         if (!BitConverter.IsLittleEndian)
@@ -3658,6 +3680,18 @@ namespace System.Numerics
 
                         i++;
                     }
+
+                    if (Unsafe.AreSame(ref address, ref lastAddress))
+                    {
+                        // We need one extra part to represent the sign as the most
+                        // significant bit of the two's complement value was 0.
+                        Unsafe.WriteUnaligned(ref address, uint.MaxValue);
+                    }
+                    else
+                    {
+                        // Otherwise we should have been precisely one part ahead address
+                        Debug.Assert(Unsafe.AreSame(ref lastAddress, ref Unsafe.Add(ref address, sizeof(uint))));
+                    }
                 }
 
                 bytesWritten = byteCount;
@@ -3668,6 +3702,46 @@ namespace System.Numerics
                 bytesWritten = 0;
                 return false;
             }
+        }
+
+        private int GetGenericMathByteCount()
+        {
+            AssertValid();
+            uint[]? bits = _bits;
+
+            if (bits is null)
+            {
+                return sizeof(int);
+            }
+
+            int result = bits.Length * 4;
+
+            if (_sign < 0)
+            {
+                uint part = ~bits[^1] + 1;
+
+                // We need to remove the "carry" (the +1) if any of the initial
+                // bytes are not zero. This ensures we get the correct two's complement
+                // part for the computation.
+
+                for (int index = 0; index < bits.Length - 1; index++)
+                {
+                    if (bits[index] != 0)
+                    {
+                        part -= 1;
+                        break;
+                    }
+                }
+
+                if ((int)part >= 0)
+                {
+                    // When the most significant bit of the part is zero
+                    // we need another part to represent the value.
+                    result += sizeof(uint);
+                }
+            }
+
+            return result;
         }
 
         //
