@@ -64,7 +64,7 @@ public class IcallTableGenerator : Task
                 ProcessType(type);
         }
 
-        Cookies = _icalls.Select(BuildCookie).ToArray();
+        Cookies = _icalls.Select(p => CookieHelper.BuildCookie(p.Method!)).ToArray();
 
         string tmpFileName = Path.GetTempFileName();
         using (var w = File.CreateText(tmpFileName))
@@ -77,27 +77,6 @@ public class IcallTableGenerator : Task
         FileWrites = OutputPath;
 
         File.Delete(tmpFileName);
-    }
-
-    private static string BuildCookie(Icall p)
-    {
-        static char TypeToCookie(Type t) => t.Name switch
-        {
-            "Void" => 'V',
-            "Int32" => 'I',
-            "Int64" => 'L',
-            "Single" => 'F',
-            "Double" => 'D',
-            _ => throw new NotSupportedException($"Type '{t.Name}' is not supported.")
-        };
-
-        string result = TypeToCookie(p.Method!.ReturnType).ToString();
-        foreach (var parameter in p.Method.GetParameters())
-        {
-            result += TypeToCookie(parameter.ParameterType);
-        }
-
-        return result;
     }
 
     private void EmitTable (StreamWriter w)

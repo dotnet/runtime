@@ -17,10 +17,10 @@ using Microsoft.Build.Utilities;
 public class ManagedToNativeGenerator : Task
 {
     [Required]
-    public string? RuntimeIcallTableFile { get; set; }
+    public string[]? Assemblies { get; set; }
 
     [Required]
-    public string[]? Assemblies { get; set; }
+    public string? RuntimeIcallTableFile { get; set; }
 
     [Required, NotNull]
     public string? IcallOutputPath { get; set; }
@@ -31,6 +31,9 @@ public class ManagedToNativeGenerator : Task
     [Required, NotNull]
     public string? PInvokeOutputPath { get; set; }
 
+    [Required, NotNull]
+    public string? InterpToNativeOutputPath { get; set; }
+
     [Output]
     public string FileWrites { get; private set; } = string.Empty;
 
@@ -39,21 +42,25 @@ public class ManagedToNativeGenerator : Task
         var pinvoke = new PInvokeTableGenerator()
         {
             Assemblies = Assemblies,
-            OutputPath = PInvokeOutputPath
+            Modules = PInvokeModules,
+            OutputPath = PInvokeOutputPath,
         };
         var icall = new IcallTableGenerator()
         {
             Assemblies = Assemblies,
             RuntimeIcallTableFile = RuntimeIcallTableFile,
-            OutputPath = IcallOutputPath
+            OutputPath = IcallOutputPath,
         };
 
         if (pinvoke.Execute() && icall.Execute())
         {
             var m2n = new InterpToNativeGenerator()
             {
-                Cookies = Enumerable.Concat(pinvoke.Cookies!, icall.Cookies!).Distinct().ToArray()
+                Cookies = Enumerable.Concat(pinvoke.Cookies!, icall.Cookies!).Distinct().ToArray(),
+                OutputPath = InterpToNativeOutputPath,
             };
+
+            FileWrites = $"{pinvoke.FileWrites};{icall.FileWrites};{m2n.FileWrites}";
             return m2n.Execute();
         }
 

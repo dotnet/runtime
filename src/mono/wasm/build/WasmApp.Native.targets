@@ -335,7 +335,8 @@
       RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
       IcallOutputPath="$(_WasmICallTablePath)"
       PInvokeModules="@(_WasmPInvokeModules)"
-      PInvokeOutputPath="$(_WasmPInvokeTablePath)">
+      PInvokeOutputPath="$(_WasmPInvokeTablePath)"
+      InterpToNativeOutputPath="$(_WasmInterpToNativeTablePath)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </ManagedToNativeGenerator>
   </Target>
