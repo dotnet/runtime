@@ -506,9 +506,6 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(256, 5)]
         [InlineData(256, 67)]
         [InlineData(256, 143)]
-        [InlineData(0, 0)] // Also run some tests with a size of 0 to verify it no-ops
-        [InlineData(0, 1)]
-        [InlineData(0, 167)]
         public void ZeroMemoryWithExactRangeTest(int size, int offset)
         {
             int headLength = offset;
@@ -530,6 +527,26 @@ namespace System.Runtime.InteropServices.Tests
             Assert.Equal(-1, new Span<byte>(ptr + headOffset, headLength).IndexOfAnyExcept((byte)0b10101010));
             Assert.Equal(-1, new Span<byte>(ptr + bodyOffset, bodyLength).IndexOfAnyExcept((byte)0));
             Assert.Equal(-1, new Span<byte>(ptr + tailOffset, tailLength).IndexOfAnyExcept((byte)0b10101010));
+
+            NativeMemory.AlignedFree(ptr);
+        }
+
+        [Theory]
+        [InlineData(0)]
+        [InlineData(1)]
+        [InlineData(167)]
+        public void ZeroMemoryWithSizeEqualTo0ShouldNoOpTest(int offset)
+        {
+            byte* ptr = (byte*)NativeMemory.AlignedAlloc(512, 8);
+
+            Assert.True(ptr != null);
+            Assert.True((nuint)ptr % 8 == 0);
+
+            new Span<byte>(ptr, 512).Fill(0b10101010);
+
+            NativeMemory.ZeroMemory(ptr + offset, 0);
+
+            Assert.Equal(-1, new Span<byte>(ptr, 512).IndexOfAnyExcept((byte)0b10101010));
 
             NativeMemory.AlignedFree(ptr);
         }
