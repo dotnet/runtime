@@ -127,7 +127,12 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            Client.Connect(hostname, port);
+            if (Client == null)
+            {
+                InitializeClientSocket();
+            }
+
+            Client!.Connect(hostname, port);
             _family = Client.AddressFamily;
             _active = true;
 
