@@ -11,7 +11,7 @@ namespace System.Runtime.Intrinsics.Tests.Vectors
         [Fact]
         public unsafe void Vector128IsHardwareAcceleratedTest()
         {
-            var methodInfo = typeof(Vector128).GetMethod("get_IsHardwareAccelerated");
+            MethodInfo methodInfo = typeof(Vector128).GetMethod("get_IsHardwareAccelerated");
             Assert.Equal(Vector128.IsHardwareAccelerated, methodInfo.Invoke(null, null));
         }
 
