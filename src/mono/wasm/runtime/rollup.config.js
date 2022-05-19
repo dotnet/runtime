@@ -49,12 +49,12 @@ const name = "__dotnet_runtime";
 const inlineAssertQuotes = {
     // eslint-disable-next-line quotes
     pattern: /assert\(([^,]*), *("[^"]*")\);/g,
-    replacement: "if (!($1)) throw new Error($2); // inlined assert"
+    replacement: "if (!($1)) throw new Error(`Assert failed: ${$2}`); // inlined assert"
 };
 const inlineAssertInterpolation = {
     // eslint-disable-next-line quotes
     pattern: /assert\(([^,]*), \(\) => *(`[^`]*`)\);/g,
-    replacement: "if (!($1)) throw new Error($2); // inlined assert"
+    replacement: "if (!($1)) throw new Error(`Assert failed: ${$2}`); // inlined assert"
 };
 const iffeConfig = {
     treeshake: !isDebug,
