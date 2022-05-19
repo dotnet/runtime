@@ -241,8 +241,6 @@ int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
 
 char* SystemNative_GetGroupName(uint32_t gid)
 {
-    struct group* result;
-    char* name;
 #if HAVE_GETGRGID_R
     size_t bufferLength = 512;
     while (1)
@@ -253,6 +251,7 @@ char* SystemNative_GetGroupName(uint32_t gid)
             return NULL;
         }
 
+        struct group* result;
         struct group gr;
         if (getgrgid_r(gid, &gr, buffer, bufferLength, &result) == 0)
         {
@@ -264,7 +263,7 @@ char* SystemNative_GetGroupName(uint32_t gid)
             }
             else
             {
-                name = strdup(gr.gr_name);
+                char* name = strdup(gr.gr_name);
                 free(buffer);
                 return name;
             }
@@ -281,24 +280,27 @@ char* SystemNative_GetGroupName(uint32_t gid)
 #else
     // Platforms like Android API level < 24 do not have getgrgid_r available
     // Android API level >= 24 do have getgrgid_r available but call getgrgid internally anyway
-    result = getgrgid(gid);
+    struct group* result = getgrgid(gid);
     if (result == NULL)
     {
         return NULL;
     }
-    name = strdup(result->gr_name);
+    char* name = strdup(result->gr_name);
     return name;
 #endif
 }
 
 char* SystemNative_GetUserName(uint32_t uid)
 {
+#if HAVE_GETPWUID_R
     size_t bufferLength = 512;
     while (1)
     {
         char *buffer = (char*)malloc(bufferLength);
         if (buffer == NULL)
+        {
             return NULL;
+        }
 
         struct passwd pw;
         struct passwd* result;
@@ -326,4 +328,14 @@ char* SystemNative_GetUserName(uint32_t uid)
         }
         bufferLength = tmpBufferLength;
     }
+#else
+    // Platforms like tvOS/iOS might not have getpwuid_r available.
+    struct passwd* result = getpwuid(uid);
+    if (result == NULL)
+    {
+        return NULL;
+    }
+    char* name = strdup(result->pw_name);
+    return name;
+#endif
 }
