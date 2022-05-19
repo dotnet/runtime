@@ -174,11 +174,10 @@ LEAF_ENTRY RtlRestoreContext, _TEXT
 	mtspr 1, 12
 
 	// Restore Control Register - LR
-	ld %r12, CONTEXT_LINK(%r3)
-	mtlr %r12
+	mtlr %r0
 
-	// Load NIP into R12 and CTR registers
-	ld %r12, CONTEXT_NIP(%r3)
+	// Restore Control Register - CTR
+	ld %r12, CONTEXT_LINK(%r3)
 	mtctr %r12
 
 	// Restore R3 register
