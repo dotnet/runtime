@@ -388,7 +388,7 @@ namespace System.Threading
         }
 
         private const int ProcessorsPerAssignableWorkItemQueue = 16;
-        private static readonly int AssignableWorkItemQueueCount =
+        private static readonly int s_assignableWorkItemQueueCount =
             Environment.ProcessorCount <= 32 ? 0 :
                 (Environment.ProcessorCount + (ProcessorsPerAssignableWorkItemQueue - 1)) / ProcessorsPerAssignableWorkItemQueue;
 
@@ -403,12 +403,12 @@ namespace System.Threading
         // SOS's ThreadPool command depends on the following name. The global queue doesn't scale well beyond a point of
         // concurrency. Some additional queues may be added and assigned to a limited number of worker threads if necessary to
         // help with limiting the concurrency level.
-        internal readonly ConcurrentQueue<object>[] assignableWorkItemQueues =
-            new ConcurrentQueue<object>[AssignableWorkItemQueueCount];
+        internal readonly ConcurrentQueue<object>[] _assignableWorkItemQueues =
+            new ConcurrentQueue<object>[s_assignableWorkItemQueueCount];
 
         private readonly LowLevelLock _queueAssignmentLock = new();
         private readonly int[] _assignedWorkItemQueueThreadCounts =
-            AssignableWorkItemQueueCount > 0 ? new int[AssignableWorkItemQueueCount] : Array.Empty<int>();
+            s_assignableWorkItemQueueCount > 0 ? new int[s_assignableWorkItemQueueCount] : Array.Empty<int>();
 
         [StructLayout(LayoutKind.Sequential)]
         private struct CacheLineSeparated
@@ -424,9 +424,9 @@ namespace System.Threading
 
         public ThreadPoolWorkQueue()
         {
-            for (int i = 0; i < AssignableWorkItemQueueCount; i++)
+            for (int i = 0; i < s_assignableWorkItemQueueCount; i++)
             {
-                assignableWorkItemQueues[i] = new ConcurrentQueue<object>();
+                _assignableWorkItemQueues[i] = new ConcurrentQueue<object>();
             }
 
             RefreshLoggingEnabled();
@@ -434,7 +434,7 @@ namespace System.Threading
 
         private void AssignWorkItemQueue(ThreadPoolWorkQueueThreadLocals tl)
         {
-            Debug.Assert(AssignableWorkItemQueueCount > 0);
+            Debug.Assert(s_assignableWorkItemQueueCount > 0);
 
             _queueAssignmentLock.Acquire();
 
@@ -442,7 +442,7 @@ namespace System.Threading
             int queueIndex = -1;
             int minCount = int.MaxValue;
             int minCountQueueIndex = 0;
-            for (int i = 0; i < AssignableWorkItemQueueCount; i++)
+            for (int i = 0; i < s_assignableWorkItemQueueCount; i++)
             {
                 int count = _assignedWorkItemQueueThreadCounts[i];
                 Debug.Assert(count >= 0);
@@ -471,12 +471,12 @@ namespace System.Threading
             _queueAssignmentLock.Release();
 
             tl.queueIndex = queueIndex;
-            tl.assignedGlobalWorkItemQueue = assignableWorkItemQueues[queueIndex];
+            tl.assignedGlobalWorkItemQueue = _assignableWorkItemQueues[queueIndex];
         }
 
         private void TryReassignWorkItemQueue(ThreadPoolWorkQueueThreadLocals tl)
         {
-            Debug.Assert(AssignableWorkItemQueueCount > 0);
+            Debug.Assert(s_assignableWorkItemQueueCount > 0);
 
             int queueIndex = tl.queueIndex;
             if (queueIndex == 0)
@@ -509,12 +509,12 @@ namespace System.Threading
             _queueAssignmentLock.Release();
 
             tl.queueIndex = queueIndex;
-            tl.assignedGlobalWorkItemQueue = assignableWorkItemQueues[queueIndex];
+            tl.assignedGlobalWorkItemQueue = _assignableWorkItemQueues[queueIndex];
         }
 
         private void UnassignWorkItemQueue(ThreadPoolWorkQueueThreadLocals tl)
         {
-            Debug.Assert(AssignableWorkItemQueueCount > 0);
+            Debug.Assert(s_assignableWorkItemQueueCount > 0);
 
             int queueIndex = tl.queueIndex;
 
@@ -612,7 +612,7 @@ namespace System.Threading
             else
             {
                 ConcurrentQueue<object> queue =
-                    AssignableWorkItemQueueCount > 0 && (tl = ThreadPoolWorkQueueThreadLocals.threadLocals) != null
+                    s_assignableWorkItemQueueCount > 0 && (tl = ThreadPoolWorkQueueThreadLocals.threadLocals) != null
                         ? tl.assignedGlobalWorkItemQueue
                         : workItems;
                 queue.Enqueue(callback);
@@ -670,7 +670,7 @@ namespace System.Threading
             }
 
             // Check for work items from the assigned global queue
-            if (AssignableWorkItemQueueCount > 0 && tl.assignedGlobalWorkItemQueue.TryDequeue(out workItem))
+            if (s_assignableWorkItemQueueCount > 0 && tl.assignedGlobalWorkItemQueue.TryDequeue(out workItem))
             {
                 return workItem;
             }
@@ -683,14 +683,14 @@ namespace System.Threading
 
             // Check for work items in other assignable global queues
             uint randomValue = tl.random.NextUInt32();
-            if (AssignableWorkItemQueueCount > 0)
+            if (s_assignableWorkItemQueueCount > 0)
             {
                 int queueIndex = tl.queueIndex;
-                for (int c = AssignableWorkItemQueueCount, maxIndex = c - 1, i = (int)(randomValue % (uint)c);
+                for (int c = s_assignableWorkItemQueueCount, maxIndex = c - 1, i = (int)(randomValue % (uint)c);
                     c > 0;
                     i = i < maxIndex ? i + 1 : 0, c--)
                 {
-                    if (i != queueIndex && assignableWorkItemQueues[i].TryDequeue(out workItem))
+                    if (i != queueIndex && _assignableWorkItemQueues[i].TryDequeue(out workItem))
                     {
                         return workItem;
                     }
@@ -754,9 +754,9 @@ namespace System.Threading
             get
             {
                 long count = (long)highPriorityWorkItems.Count + workItems.Count;
-                for (int i = 0; i < AssignableWorkItemQueueCount; i++)
+                for (int i = 0; i < s_assignableWorkItemQueueCount; i++)
                 {
-                    count += assignableWorkItemQueues[i].Count;
+                    count += _assignableWorkItemQueues[i].Count;
                 }
 
                 return count;
@@ -779,7 +779,7 @@ namespace System.Threading
             ThreadPoolWorkQueue workQueue = ThreadPool.s_workQueue;
             ThreadPoolWorkQueueThreadLocals tl = workQueue.GetOrCreateThreadLocals();
 
-            if (AssignableWorkItemQueueCount > 0)
+            if (s_assignableWorkItemQueueCount > 0)
             {
                 workQueue.AssignWorkItemQueue(tl);
             }
@@ -798,8 +798,8 @@ namespace System.Threading
                 {
                     workQueue._dispatchNormalPriorityWorkFirst = !dispatchNormalPriorityWorkFirst;
                     ConcurrentQueue<object> queue =
-                        AssignableWorkItemQueueCount > 0 ? tl.assignedGlobalWorkItemQueue : workQueue.workItems;
-                    if (!queue.TryDequeue(out workItem) && AssignableWorkItemQueueCount > 0)
+                        s_assignableWorkItemQueueCount > 0 ? tl.assignedGlobalWorkItemQueue : workQueue.workItems;
+                    if (!queue.TryDequeue(out workItem) && s_assignableWorkItemQueueCount > 0)
                     {
                         workQueue.workItems.TryDequeue(out workItem);
                     }
@@ -812,7 +812,7 @@ namespace System.Threading
 
                     if (workItem == null)
                     {
-                        if (AssignableWorkItemQueueCount > 0)
+                        if (s_assignableWorkItemQueueCount > 0)
                         {
                             workQueue.UnassignWorkItemQueue(tl);
                         }
@@ -871,7 +871,7 @@ namespace System.Threading
 
                     if (workItem == null)
                     {
-                        if (AssignableWorkItemQueueCount > 0)
+                        if (s_assignableWorkItemQueueCount > 0)
                         {
                             workQueue.UnassignWorkItemQueue(tl);
                         }
@@ -940,7 +940,7 @@ namespace System.Threading
                     // processing work items.
                     tl.TransferLocalWork();
                     tl.isProcessingHighPriorityWorkItems = false;
-                    if (AssignableWorkItemQueueCount > 0)
+                    if (s_assignableWorkItemQueueCount > 0)
                     {
                         workQueue.UnassignWorkItemQueue(tl);
                     }
@@ -960,14 +960,14 @@ namespace System.Threading
                     // The runtime-specific thread pool implementation requires the Dispatch loop to return to the VM
                     // periodically to let it perform its own work
                     tl.isProcessingHighPriorityWorkItems = false;
-                    if (AssignableWorkItemQueueCount > 0)
+                    if (s_assignableWorkItemQueueCount > 0)
                     {
                         workQueue.UnassignWorkItemQueue(tl);
                     }
                     return true;
                 }
 
-                if (AssignableWorkItemQueueCount > 0)
+                if (s_assignableWorkItemQueueCount > 0)
                 {
                     // Due to hill climbing, over time arbitrary worker threads may stop working and eventually unbalance the
                     // queue assignments. Periodically try to reassign a queue to keep the assigned queues busy.
@@ -1612,7 +1612,7 @@ namespace System.Threading
             }
 
             // Enumerate assignable global queues
-            foreach (ConcurrentQueue<object> queue in s_workQueue.assignableWorkItemQueues)
+            foreach (ConcurrentQueue<object> queue in s_workQueue._assignableWorkItemQueues)
             {
                 foreach (object workItem in queue)
                 {
