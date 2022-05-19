@@ -352,12 +352,6 @@ namespace Microsoft.Win32.SafeHandles
             _handshakeCompleted = true;
         }
 
-
-        public static SafeSslHandle Create(SslAuthenticationOptions sslAuthenticationOptions)
-        {
-            return Interop.OpenSsl.AllocateSslHandle(sslAuthenticationOptions);
-        }
-
         public static SafeSslHandle Create(SafeSslContextHandle context, bool isServer)
         {
             SafeBioHandle readBio = Interop.Crypto.CreateMemoryBio();

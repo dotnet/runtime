@@ -162,7 +162,7 @@ namespace System.Net.Security
             {
                 if ((null == context) || context.IsInvalid)
                 {
-                    context = SafeSslHandle.Create(sslAuthenticationOptions);
+                    context = Interop.OpenSsl.AllocateSslHandle(sslAuthenticationOptions);
                 }
 
                 SecurityStatusPalErrorCode errorCode = Interop.OpenSsl.DoSslHandshake((SafeSslHandle)context, inputBuffer, out output, out outputSize);
