@@ -9,19 +9,76 @@ using System.Collections.Generic;
 public class Test
 {
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static ulong Shlx64bit(ulong x, int y) => x << y;
+    private static R Shlx64bit<T, R>(T x, int y)
+    {
+        switch (x)
+        {
+            case ulong a:
+                ulong resUlong = ((ulong)a) << y;
+                return (R)Convert.ChangeType(resUlong, typeof(R));
+            case uint b:
+                uint resUint = ((uint)b) << y;
+                return (R)Convert.ChangeType(resUint, typeof(R));
+            case ushort c:
+                int resInt = ((ushort)c) << y;
+                return (R)Convert.ChangeType(resInt, typeof(R));
+            default:
+                Console.WriteLine("Unsupported type.");
+                return default(R);
+        }
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static long Sarx64bit(long x, int y) => x >> y;
+    private static R Sarx64bit<T, R>(T x, int y)
+    {
+        int resInt = 0;
+        switch (x)
+        {
+            case long a:
+                long resLong = ((long)a) >> y;
+                return (R)Convert.ChangeType(resLong, typeof(R));
+            case int b:
+                resInt = ((int)b) >> y;
+                return (R)Convert.ChangeType(resInt, typeof(R));
+            case short c:
+                Console.WriteLine($"Before: {Convert.ToString((short)c, toBase: 2)}");
+                resInt = ((short)c) >> y;
+                Console.WriteLine($"After: {Convert.ToString(resInt, toBase: 2)}");
+                return (R)Convert.ChangeType(resInt, typeof(R));
+            default:
+                Console.WriteLine("Unsupported type.");
+                return default(R);
+        }
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static ulong Shrx64bit(ulong x, int y) => x >> y;
+    private static R Shrx64bit<T, R>(T x, int y)
+    {
+        switch (x)
+        {
+            case ulong a:
+                ulong resUlong = ((ulong)a) >> y;
+                return (R)Convert.ChangeType(resUlong, typeof(R));
+            case uint b:
+                uint resUint = ((uint)b) >> y;
+                return (R)Convert.ChangeType(resUint, typeof(R));
+            case ushort c:
+                int resInt = ((ushort)c) >> y;
+                return (R)Convert.ChangeType(resInt, typeof(R));
+            default:
+                Console.WriteLine("Unsupported type.");
+                return default(R);
+        }
+    }
 
     [MethodImpl(MethodImplOptions.NoInlining)]
     private static unsafe ulong ShrxRef64bit(ulong* x, int y) => *x >> y;
 
     [MethodImpl(MethodImplOptions.NoInlining)]
-    private static ulong Rorx(ulong x) => BitOperations.RotateRight(x, 2);
+    private static unsafe uint ShrxRef64bit(uint* x, int y) => *x >> y;
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static unsafe int ShrxRef64bit(ushort* x, int y) => *x >> y;
 
     public static unsafe int Main()
     {
@@ -31,32 +88,54 @@ public class Test
 
         try
         {
-            ulong valULong = 0;
-            long valLong = 0;
-            int shiftBy = 0;
-            ulong resULong = 0;
-            long resLong = 0;
-            ulong expectedULong = 0;
-            long expectedLong = 0;
-            int MOD64 = 64;
-
             //
             // Shlx64bit tests
             //
 
-            Console.WriteLine("### UnitTest: Shlx64bit ###############");
-            ulong[] valShlx64bit = new ulong[] { 0, 8, 1, 1, 0xFFFFFFFFFFFFFFFF };
-            int[] shiftByShlx64bit = new int[] { 1, 1, 63, 65, 1 };
-            for (int idx = 0; idx < valShlx64bit.Length; idx++)
+            // ulong
+            int MOD64 = 64;
+
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: Shlx64bit (ulong) ###############");
+            ulong[] valUlong = new ulong[] { 0, 8, 1, 1, 0xFFFFFFFFFFFFFFFF };
+            int[] shiftBy = new int[] { 1, 1, 63, 65, 1 };
+            for (int idx = 0; idx < valUlong.Length; idx++)
             {
-                valULong = valShlx64bit[idx];
-                shiftBy = shiftByShlx64bit[idx];
-                resULong = Shlx64bit(valULong, shiftBy);
-                if (idx == 4)
-                    expectedULong = (ulong)(valULong ^ 1);
-                else
-                    expectedULong = (ulong)(valULong * Math.Pow(2, (shiftBy % MOD64)));
-                if (!Validate<ulong>(valULong, shiftBy, resULong, expectedULong))
+                ulong resULong = (ulong)Shlx64bit<ulong, ulong>(valUlong[idx], shiftBy[idx]);
+                ulong expectedUlong = (ulong)(valUlong[idx] << (shiftBy[idx] % MOD64));
+                if (!Validate<ulong, ulong>(valUlong[idx], shiftBy[idx], resULong, expectedUlong))
+                {
+                    returnCode = FAIL;
+                }
+            }
+
+            // uint
+            int MOD32 = 32;
+
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: Shlx64bit (uint) ###############");
+            uint[] valUint = new uint[] { 0, 8, 1, 1, 0xFFFFFFFF };
+            shiftBy = new int[] { 1, 1, 32, 33, 1 };
+            for (int idx = 0; idx < valUint.Length; idx++)
+            {
+                uint resUint = (uint)Shlx64bit<uint, uint>(valUint[idx], shiftBy[idx]);
+                uint expectedUint = (uint)(valUint[idx] << (shiftBy[idx] % MOD32));
+                if (!Validate<uint, uint>(valUint[idx], shiftBy[idx], resUint, expectedUint))
+                {
+                    returnCode = FAIL;
+                }
+            }
+
+            // ushort
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: Shlx64bit (ushort) ###############");
+            ushort[] valUshort = new ushort[] { 0, 8, 1, 1, 0b_0111_0001_1000_0010 };
+            shiftBy = new int[] { 1, 1, 16, 18, 16 };
+            for (int idx = 0; idx < valUshort.Length; idx++)
+            {
+                int resInt = (int)Shlx64bit<ushort, int>(valUshort[idx], shiftBy[idx]);
+                int expectedInt = (int)(((int)valUshort[idx]) << (shiftBy[idx] % MOD32));
+                if (!Validate<ushort, int>(valUshort[idx], shiftBy[idx], resInt, expectedInt))
                 {
                     returnCode = FAIL;
                 }
@@ -66,19 +145,46 @@ public class Test
             // Sarx64bit tests
             //
 
-            Console.WriteLine("### UnitTest: Sarx64bit ###############");
-            long[] valSarx64bit = new long[] { 1, -8, -8, 0x7FFFFFFFFFFFFFFF };
-            int[] shiftBySarx64bit = new int[] { 1, 1, 65, 63 };
-            for (int idx = 0; idx < valSarx64bit.Length; idx++)
+            // long
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: Sarx64bit (long) ###############");
+            long[] valLong = new long[] { 1, -8, -8, 0x7FFFFFFFFFFFFFFF };
+            shiftBy = new int[] { 1, 1, 65, 63 };
+            for (int idx = 0; idx < valLong.Length; idx++)
             {
-                valLong = valSarx64bit[idx];
-                shiftBy = shiftBySarx64bit[idx];
-                resLong = Sarx64bit(valLong, shiftBy);
-                if (idx == 3)
-                    expectedLong = 0;
-                else
-                    expectedLong = (long)(valLong / Math.Pow(2, (shiftBy % MOD64)));
-                if (!Validate<long>(valLong, shiftBy, resLong, expectedLong))
+                long resLong = (long)Sarx64bit<long, long>(valLong[idx], shiftBy[idx]);
+                long expectedLong = (long)(valLong[idx] >> (shiftBy[idx] % MOD64));
+                if (!Validate<long, long>(valLong[idx], shiftBy[idx], resLong, expectedLong))
+                {
+                    returnCode = FAIL;
+                }
+            }
+
+            // int
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: Sarx64bit (int) ###############");
+            int[] valInt = new int[] { 1, -8, -8, 0x7FFFFFFF };
+            shiftBy = new int[] { 1, 1, 32, 33 };
+            for (int idx = 0; idx < valInt.Length; idx++)
+            {
+                int resInt = (int)Sarx64bit<int, int>(valInt[idx], shiftBy[idx]);
+                int expectedInt = (int)(valInt[idx] >> (shiftBy[idx] % MOD32));
+                if (!Validate<int, int>(valInt[idx], shiftBy[idx], resInt, expectedInt))
+                {
+                    returnCode = FAIL;
+                }
+            }
+
+            // short
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: Sarx64bit (short) ###############");
+            short[] valShort = new short[] { 1, -8, -8, 0b_0111_0001_1000_0010 };
+            shiftBy = new int[] { 1, 1, 16, 18 };
+            for (int idx = 0; idx < valShort.Length; idx++)
+            {
+                int resInt = (int)Sarx64bit<short, int>(valShort[idx], shiftBy[idx]);
+                int expectedInt = (int)valShort[idx] >> (shiftBy[idx] % MOD32);
+                if (!Validate<short, int>(valShort[idx], shiftBy[idx], resInt, expectedInt))
                 {
                     returnCode = FAIL;
                 }
@@ -88,21 +194,46 @@ public class Test
             // Shrx64bit tests
             //
 
-            Console.WriteLine("### UnitTest: Shrx64bit ###############");
-            ulong[] valShrx64bit = new ulong[] { 1, 8, 8, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF };
-            int[] shiftByShrx64bit = new int[] { 1, 2, 65, 63, 65 };
-            for (int idx = 0; idx < valShrx64bit.Length; idx++)
+            // ulong
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: Shrx64bit (ulong) ###############");
+            valUlong = new ulong[] { 1, 8, 8, 0xFFFFFFFFFFFFFFFF, 0x7FFFFFFFFFFFFFFF };
+            shiftBy = new int[] { 1, 2, 65, 63, 65 };
+            for (int idx = 0; idx < valUlong.Length; idx++)
             {
-                valULong = valShrx64bit[idx];
-                shiftBy = shiftByShrx64bit[idx];
-                resULong = Shrx64bit(valULong, shiftBy);
-                if (idx == 3)
-                    expectedULong = 1;
-                else if (idx == 4)
-                    expectedULong = 0x3FFFFFFFFFFFFFFF;
-                else
-                    expectedULong = (ulong)(valULong / Math.Pow(2, (shiftBy % MOD64)));
-                if (!Validate<ulong>(valULong, shiftBy, resULong, expectedULong))
+                ulong resULong = (ulong)Shrx64bit<ulong, ulong>(valUlong[idx], shiftBy[idx]);
+                ulong expectedUlong = (ulong)(valUlong[idx] >> (shiftBy[idx] % MOD64));
+                if (!Validate<ulong, ulong>(valUlong[idx], shiftBy[idx], resULong, expectedUlong))
+                {
+                    returnCode = FAIL;
+                }
+            }
+
+            // uint
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: Shrx64bit (uint) ###############");
+            valUint = new uint[] { 1, 8, 8, 0xFFFFFFFF };
+            shiftBy = new int[] { 1, 1, 32, 33 };
+            for (int idx = 0; idx < valUint.Length; idx++)
+            {
+                uint resUint = (uint)Shrx64bit<uint, uint>(valUint[idx], shiftBy[idx]);
+                uint expectedUint = (uint)(valUint[idx] >> (shiftBy[idx] % MOD32));
+                if (!Validate<uint, uint>(valUint[idx], shiftBy[idx], resUint, expectedUint))
+                {
+                    returnCode = FAIL;
+                }
+            }
+
+            // ushort
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: Shrx64bit (ushort) ###############");
+            valUshort = new ushort[] { 0, 8, 0b_1000_0000_0000_0000, 0b_1000_0000_0000_0000, 0b_1111_0001_1000_0010 };
+            shiftBy = new int[] { 1, 1, 15, 18, 40 };
+            for (int idx = 0; idx < valUshort.Length; idx++)
+            {
+                int resInt = (int)Shrx64bit<ushort, int>(valUshort[idx], shiftBy[idx]);
+                int expectedInt = (int)(((int)valUshort[idx]) >> (shiftBy[idx] % MOD32));
+                if (!Validate<ushort, int>(valUshort[idx], shiftBy[idx], resInt, expectedInt))
                 {
                     returnCode = FAIL;
                 }
@@ -112,26 +243,38 @@ public class Test
             // ShrxRef64bit
             //
 
-            Console.WriteLine("### UnitTest: ShrxRef64bit ###############");
-            valULong = 8;
-            shiftBy = 1;
-            resULong = ShrxRef64bit(&valULong, shiftBy);
-            expectedULong = (ulong)(valULong / Math.Pow(2, (shiftBy % MOD64)));
-            if (!Validate<ulong>(valULong, shiftBy, resULong, expectedULong))
+            // ulong
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: ShrxRef64bit (ulong) ###############");
+            ulong valUlongRef = 8;
+            int shiftByRef = 1;
+            ulong resUlongRef = ShrxRef64bit(&valUlongRef, shiftByRef);
+            ulong expectedULongRef = (ulong)(valUlongRef >> (shiftByRef % MOD64));
+            if (!Validate<ulong, ulong>(valUlongRef, shiftByRef, resUlongRef, expectedULongRef))
             {
                 returnCode = FAIL;
             }
 
-            //
-            // Rorx tests
-            //
+            // uint
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: ShrxRef64bit (uint) ###############");
+            uint valUintRef = 0xFFFFFFFF;
+            shiftByRef = 1;
+            uint resUintRef = ShrxRef64bit(&valUintRef, shiftByRef);
+            uint expectedUintRef = (uint)(valUintRef >> (shiftByRef % MOD32));
+            if (!Validate<uint, uint>(valUintRef, shiftByRef, resUintRef, expectedUintRef))
+            {
+                returnCode = FAIL;
+            }
 
-            Console.WriteLine("### UnitTest: Rorx ###############");
-            valULong = 0xFF;
-            shiftBy = 2;
-            resULong = Rorx(valULong);
-            expectedULong = 0xC00000000000003F;
-            if (!Validate<ulong>(valULong, shiftBy, resULong, expectedULong))
+            // ushort
+            Console.WriteLine();
+            Console.WriteLine("### UnitTest: ShrxRef64bit (ushort) ###############");
+            ushort valUshortRef = 0xFFFF;
+            shiftByRef = 15;
+            int resUshortRef = ShrxRef64bit(&valUshortRef, shiftByRef);
+            int expectedUshortRef = (int)((uint)valUshortRef >> (shiftByRef % MOD32));
+            if (!Validate<ushort, int>(valUshortRef, shiftByRef, resUshortRef, expectedUshortRef))
             {
                 returnCode = FAIL;
             }
@@ -142,6 +285,7 @@ public class Test
             return FAIL;
         }
 
+        Console.WriteLine();
         if (returnCode == PASS)
         {
             Console.WriteLine("PASSED.");
@@ -153,10 +297,10 @@ public class Test
         return returnCode;
     }
 
-    private static bool Validate<T>(T value, int shiftBy, T actual, T expected)
+    private static bool Validate<TValue, TResult>(TValue value, int shiftBy, TResult actual, TResult expected)
     {
         Console.Write("(value, shiftBy) ({0},{1}): {2}", value, shiftBy, actual);
-        if (EqualityComparer<T>.Default.Equals(actual, expected))
+        if (EqualityComparer<TResult>.Default.Equals(actual, expected))
         {
             Console.WriteLine(" == {0}   ==> Passed.", expected);
             return true;
