@@ -472,7 +472,7 @@ namespace System.Runtime.InteropServices.Tests
 
             NativeMemory.ZeroMemory(ptr + offset, (nuint)size);
 
-            Assert.Equal(-1, new Span<byte>(ptr + offset, size).IndexOfAnyExcept(0));
+            Assert.Equal(-1, new Span<byte>(ptr + offset, size).IndexOfAnyExcept((byte)0));
 
             NativeMemory.AlignedFree(ptr);
         }
@@ -527,9 +527,9 @@ namespace System.Runtime.InteropServices.Tests
 
             NativeMemory.ZeroMemory(ptr + bodyOffset, (nuint)bodyLength);
 
-            Assert.Equal(-1, new Span<byte>(ptr + headOffset, headLength).IndexOfAnyExcept(0b10101010));
-            Assert.Equal(-1, new Span<byte>(ptr + bodyOffset, bodyLength).IndexOfAnyExcept(0));
-            Assert.Equal(-1, new Span<byte>(ptr + tailOffset, tailLength).IndexOfAnyExcept(0b10101010));
+            Assert.Equal(-1, new Span<byte>(ptr + headOffset, headLength).IndexOfAnyExcept((byte)0b10101010));
+            Assert.Equal(-1, new Span<byte>(ptr + bodyOffset, bodyLength).IndexOfAnyExcept((byte)0));
+            Assert.Equal(-1, new Span<byte>(ptr + tailOffset, tailLength).IndexOfAnyExcept((byte)0b10101010));
 
             NativeMemory.AlignedFree(ptr);
         }
