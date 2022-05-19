@@ -52,7 +52,12 @@ public class SingleFileTestRunner : XunitTestFramework
         discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery());
         discoverySink.Finished.WaitOne();
         XunitFilters filters = new XunitFilters();
-        filters.ExcludedTraits.Add("category", new List<string> { "failing" });
+        
+        var excludeTraits = new List<string> { "failing" };
+        // CI systems will likely timeout on outer loop tests
+        if(args.Where(arg => arg.Contains("IgnoreForCI", StringComparison.OrdinalIgnoreCase)).Any())
+            excludeTraits.Add("OuterLoop");
+         filters.ExcludedTraits.Add("category", excludeTraits);
         var filteredTestCases = discoverySink.TestCases.Where(filters.Filter).ToList();
         var executor = xunitTestFx.CreateExecutor(asmName);
         executor.RunTests(filteredTestCases, resultsSink, TestFrameworkOptions.ForExecution());
