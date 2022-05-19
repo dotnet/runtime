@@ -48,13 +48,14 @@ const format = "iife";
 const name = "__dotnet_runtime";
 const inlineAssertQuotes = {
     // eslint-disable-next-line quotes
-    pattern: /assert\(([^,]*), *("[^"]*")\);/g,
-    replacement: "if (!($1)) throw new Error(`Assert failed: ${$2}`); // inlined assert"
+    pattern: /assert\(([^,]*), *"([^"]*)"\);/g,
+    // eslint-disable-next-line quotes
+    replacement: 'if (!($1)) throw new Error("Assert failed: $2"); // inlined assert'
 };
 const inlineAssertInterpolation = {
     // eslint-disable-next-line quotes
-    pattern: /assert\(([^,]*), \(\) => *(`[^`]*`)\);/g,
-    replacement: "if (!($1)) throw new Error(`Assert failed: ${$2}`); // inlined assert"
+    pattern: /assert\(([^,]*), \(\) => *`([^`]*)`\);/g,
+    replacement: "if (!($1)) throw new Error(`Assert failed: $2`); // inlined assert"
 };
 const iffeConfig = {
     treeshake: !isDebug,
