@@ -15,7 +15,6 @@
 
 #include "ex.h"
 
-class CorProfileData;
 class IMetaModelCommon;
 class MDInternalRW;
 class UTSemReadWrite;

@@ -783,7 +783,7 @@ HCIMPL2(void*, JIT_GetFieldAddr, Object *obj, FieldDesc* pFD)
         PRECONDITION(CheckPointer(pFD));
     } CONTRACTL_END;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetFieldAddr_Framed, obj, pFD);
@@ -827,7 +827,7 @@ HCIMPL2(INT8, JIT_GetField8, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT8>, obj, pFD);
@@ -843,7 +843,7 @@ HCIMPL2(INT16, JIT_GetField16, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT16>, obj, pFD);
@@ -859,7 +859,7 @@ HCIMPL2(INT32, JIT_GetField32, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT32>, obj, pFD);
@@ -875,7 +875,7 @@ HCIMPL2(INT64, JIT_GetField64, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<INT64>, obj, pFD);
@@ -891,7 +891,7 @@ HCIMPL2(FLOAT, JIT_GetFieldFloat, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<FLOAT>, obj, pFD);
@@ -908,7 +908,7 @@ HCIMPL2(DOUBLE, JIT_GetFieldDouble, Object *obj, FieldDesc *pFD)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetField_Framed<DOUBLE>, obj, pFD);
@@ -952,7 +952,7 @@ HCIMPL3(VOID, JIT_SetField8, Object *obj, FieldDesc *pFD, INT8 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT8>, obj, pFD, val);
@@ -967,7 +967,7 @@ HCIMPL3(VOID, JIT_SetField16, Object *obj, FieldDesc *pFD, INT16 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT16>, obj, pFD, val);
@@ -982,7 +982,7 @@ HCIMPL3(VOID, JIT_SetField32, Object *obj, FieldDesc *pFD, INT32 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT32>, obj, pFD, val);
@@ -997,7 +997,7 @@ HCIMPL3(VOID, JIT_SetField64, Object *obj, FieldDesc *pFD, INT64 val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<INT64>, obj, pFD, val);
@@ -1012,7 +1012,7 @@ HCIMPL3(VOID, JIT_SetFieldFloat, Object *obj, FieldDesc *pFD, FLOAT val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<FLOAT>, obj, pFD, val);
@@ -1027,7 +1027,7 @@ HCIMPL3(VOID, JIT_SetFieldDouble, Object *obj, FieldDesc *pFD, DOUBLE val)
 {
     FCALL_CONTRACT;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetField_Framed<DOUBLE>, obj, pFD, val);
@@ -1072,7 +1072,7 @@ HCIMPL2(Object*, JIT_GetFieldObj, Object *obj, FieldDesc *pFD)
         PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
     } CONTRACTL_END;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL2(JIT_GetFieldObj_Framed, obj, pFD);
@@ -1116,7 +1116,7 @@ HCIMPL3(VOID, JIT_SetFieldObj, Object *obj, FieldDesc *pFD, Object *value)
         PRECONDITION(!pFD->IsPrimitive() && !pFD->IsByValue());  // Assert that we are called only for objects
     } CONTRACTL_END;
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL3(JIT_SetFieldObj_Framed, obj, pFD, value);
@@ -1174,7 +1174,7 @@ HCIMPL4(VOID, JIT_GetFieldStruct, LPVOID retBuff, Object *obj, FieldDesc *pFD, M
 
     _ASSERTE(pFieldMT->IsValueType());
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL4(JIT_GetFieldStruct_Framed, retBuff, obj, pFD, pFieldMT);
@@ -1228,7 +1228,7 @@ HCIMPL4(VOID, JIT_SetFieldStruct, Object *obj, FieldDesc *pFD, MethodTable *pFie
 
     _ASSERTE(pFieldMT->IsValueType());
 
-    if (obj == NULL || g_IBCLogger.InstrEnabled() || pFD->IsEnCNew())
+    if (obj == NULL || pFD->IsEnCNew())
     {
         ENDFORBIDGC();
         return HCCALL4(JIT_SetFieldStruct_Framed, obj, pFD, pFieldMT, valuePtr);
@@ -3241,8 +3241,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleMethodLogging, CORINFO_METHOD_H
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
 
-    g_IBCLogger.LogMethodDescAccess(GetMethod(methodHnd));
-
     JitGenericHandleCacheKey key(NULL, methodHnd, signature);
     HashDatum res;
     if (g_pJitGenericHandleCache->GetValueSpeculative(&key,&res))
@@ -3306,8 +3304,6 @@ HCIMPL2(CORINFO_GENERIC_HANDLE, JIT_GenericHandleClassLogging, CORINFO_CLASS_HAN
         PRECONDITION(TypeHandle(classHnd).IsRestored());
         PRECONDITION(CheckPointer(signature));
     } CONTRACTL_END;
-
-    g_IBCLogger.LogMethodTableAccess((MethodTable *)classHnd);
 
     JitGenericHandleCacheKey key(classHnd, NULL, signature);
     HashDatum res;
@@ -4537,12 +4533,6 @@ HCIMPL1(void, JIT_LogMethodEnter, CORINFO_METHOD_HANDLE methHnd_)
     //
     // Record an access to this method desc
     //
-
-    HELPER_METHOD_FRAME_BEGIN_NOPOLL();
-
-    g_IBCLogger.LogMethodCodeAccess(GetMethod(methHnd_));
-
-    HELPER_METHOD_FRAME_END_POLL();
 
 HCIMPLEND
 

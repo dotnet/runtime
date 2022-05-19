@@ -90,6 +90,7 @@ namespace System.Numerics
         public static explicit operator byte (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator decimal (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator double (System.Numerics.BigInteger value) { throw null; }
+        public static explicit operator System.Int128(System.Numerics.BigInteger value) { throw null; }
         public static explicit operator short (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator int (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator long (System.Numerics.BigInteger value) { throw null; }
@@ -97,6 +98,8 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static explicit operator sbyte (System.Numerics.BigInteger value) { throw null; }
         public static explicit operator float (System.Numerics.BigInteger value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static explicit operator System.UInt128(System.Numerics.BigInteger value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static explicit operator ushort (System.Numerics.BigInteger value) { throw null; }
         [System.CLSCompliantAttribute(false)]
@@ -121,12 +124,15 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public static bool operator >=(ulong left, System.Numerics.BigInteger right) { throw null; }
         public static implicit operator System.Numerics.BigInteger (byte value) { throw null; }
+        public static implicit operator System.Numerics.BigInteger (System.Int128 value) { throw null; }
         public static implicit operator System.Numerics.BigInteger (short value) { throw null; }
         public static implicit operator System.Numerics.BigInteger (int value) { throw null; }
         public static implicit operator System.Numerics.BigInteger (long value) { throw null; }
         public static implicit operator System.Numerics.BigInteger (nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Numerics.BigInteger (sbyte value) { throw null; }
+        [System.CLSCompliantAttribute(false)]
+        public static implicit operator System.Numerics.BigInteger (System.UInt128 value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public static implicit operator System.Numerics.BigInteger (ushort value) { throw null; }
         [System.CLSCompliantAttribute(false)]

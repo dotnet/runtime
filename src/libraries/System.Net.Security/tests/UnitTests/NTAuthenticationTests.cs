@@ -108,7 +108,7 @@ namespace System.Net.Security.Tests
         }
 
         [ConditionalFact(nameof(IsNtlmInstalled))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/65678", TestPlatforms.OSX | TestPlatforms.iOS | TestPlatforms.MacCatalyst)]
         public void NtlmSignatureTest()
         {
             FakeNtlmServer fakeNtlmServer = new FakeNtlmServer(s_testCredentialRight);

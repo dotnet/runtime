@@ -23,9 +23,6 @@ namespace System.Net.Quic.Implementations.MsQuic
         private readonly bool _canRead;
         private readonly bool _canWrite;
 
-        // Backing for StreamId
-        private long _streamId = -1;
-
         private int _disposed;
 
         private sealed class State
@@ -34,6 +31,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Roots the state in GC and it won't get collected while this exist.
             // It must be kept alive until we receive SHUTDOWN_COMPLETE event
             public GCHandle StateGCHandle;
+
+            public long StreamId = -1;
 
             public MsQuicStream? Stream; // roots the stream in the pinned state to prevent GC during an async read I/O.
             public MsQuicConnection.State ConnectionState = null!; // set in ctor.
@@ -113,7 +112,7 @@ namespace System.Net.Quic.Implementations.MsQuic
             // Inbound streams are already started
             _state.StartCompletionSource.SetResult();
             _state.Handle = streamHandle;
-            _streamId = GetStreamId(); // needs _state.Handle to be set
+            _state.StreamId = GetStreamId(streamHandle);
 
             _canRead = true;
             _canWrite = !flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL);
@@ -144,7 +143,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 NetEventSource.Info(
                     _state,
                     $"{_state.Handle} Inbound {(flags.HasFlag(QUIC_STREAM_OPEN_FLAGS.UNIDIRECTIONAL) ? "uni" : "bi")}directional stream created " +
-                        $"in connection {_state.ConnectionState.Handle}.");
+                        $"in connection {_state.ConnectionState.Handle} with StreamId {_state.StreamId}.");
             }
         }
 
@@ -258,8 +257,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             get
             {
                 ThrowIfDisposed();
-                Debug.Assert(_streamId != -1);
-                return _streamId;
+                Debug.Assert(_state.StreamId != -1);
+                return _state.StreamId;
             }
         }
 
@@ -330,7 +329,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
             }
-            if (_state.SendState == SendState.Aborted)
+            // Use Volatile.Read to ensure we read the actual SendErrorCode set by the racing callback thread.
+            if ((SendState)Volatile.Read(ref Unsafe.As<SendState, int>(ref _state.SendState)) == SendState.Aborted)
             {
                 if (_state.SendErrorCode != -1)
                 {
@@ -1113,8 +1113,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldShutdownWriteComplete = true;
                 }
 
-                state.SendState = SendState.Aborted;
                 state.SendErrorCode = (long)streamEvent.PEER_RECEIVE_ABORTED.ErrorCode;
+                // make sure the SendErrorCode above is commited to memory before we assign the state. This
+                // ensures that the code is read correctly in SetupWriteStartState when checking without lock
+                Volatile.Write(ref Unsafe.As<SendState, int>(ref state.SendState), (int)SendState.Aborted);
             }
 
             if (shouldSendComplete)
@@ -1134,7 +1136,6 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         private static int HandleEventStartComplete(State state, ref QUIC_STREAM_EVENT streamEvent)
         {
-            Debug.Assert(state.Stream != null);
             int status = streamEvent.START_COMPLETE.Status;
 
             // The way we expose Open(Uni|Bi)directionalStreamAsync operations is that the stream
@@ -1144,7 +1145,8 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             if (StatusSucceeded(status))
             {
-                state.Stream._streamId = (long)streamEvent.START_COMPLETE.ID;
+                state.StreamId = (long)streamEvent.START_COMPLETE.ID;
+                if (NetEventSource.Log.IsEnabled()) NetEventSource.Info(state, $"{state.Handle} StreamId = {state.StreamId}");
 
                 if (streamEvent.START_COMPLETE.PeerAccepted != 0)
                 {
@@ -1584,9 +1586,9 @@ namespace System.Net.Quic.Implementations.MsQuic
         }
 
         // This can fail if the stream isn't started.
-        private long GetStreamId()
+        private static long GetStreamId(SafeMsQuicStreamHandle handle)
         {
-            return (long)MsQuicParameterHelpers.GetULongParam(MsQuicApi.Api, _state.Handle, QUIC_PARAM_STREAM_ID);
+            return (long)MsQuicParameterHelpers.GetULongParam(MsQuicApi.Api, handle, QUIC_PARAM_STREAM_ID);
         }
 
         private void ThrowIfDisposed()
@@ -1709,7 +1711,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             int status;
             unsafe
             {
-                _state.Stream = this;
                 status = MsQuicApi.Api.ApiTable->StreamStart(
                     _state.Handle.QuicHandle,
                     QUIC_STREAM_START_FLAGS.SHUTDOWN_ON_FAIL | QUIC_STREAM_START_FLAGS.INDICATE_PEER_ACCEPT);
@@ -1723,7 +1724,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             }
 
             await _state.StartCompletionSource.Task.ConfigureAwait(false);
-            _state.Stream = null;
         }
 
         // Read state transitions:
