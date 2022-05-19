@@ -1,4 +1,4 @@
-// Copyright (c) .NET Foundation and contributors. All rights reserved.
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
@@ -202,7 +202,7 @@ namespace Mono.Linker.Steps
 				return null;
 			case MethodAction.ConvertToStub:
 				Instruction? constant = CodeRewriterStep.CreateConstantResultInstruction (_context, method);
-				return constant == null ? null : new MethodResult (constant, true);
+				return constant == null ? null : new MethodResult (constant, !HasSideEffects (method));
 			}
 
 			if (method.IsIntrinsic () || method.NoInlining)
@@ -212,13 +212,16 @@ namespace Mono.Linker.Steps
 				return null;
 
 			var analyzer = new ConstantExpressionMethodAnalyzer (this);
-			if (analyzer.Analyze (callee, callStack)) {
+			if (analyzer.Analyze (callee, callStack))
 				return new MethodResult (analyzer.Result, analyzer.SideEffectFreeResult);
-			}
 
 			return null;
 		}
 
+		static bool HasSideEffects (MethodDefinition method)
+		{
+			return !method.DeclaringType.IsBeforeFieldInit;
+		}
 
 		//
 		// Return expression with a value when method implementation can be
@@ -457,15 +460,8 @@ namespace Mono.Linker.Steps
 						if (call_result is not MethodResult result)
 							break;
 
-						if (!result.IsSideEffectFree)
-							break;
-
-						TypeDefinition methodType = md.DeclaringType;
-						if (methodType != body.Method.DeclaringType && !methodType.IsBeforeFieldInit) {
-							//
-							// Figuring out at this point if the explicit static ctor will be used is hard
-							//
-							optimizer._context.LogMessage ($"Cannot inline result of '{md.GetDisplayName ()}' call due to presence of static constructor");
+						if (!result.IsSideEffectFree) {
+							optimizer._context.LogMessage ($"Cannot inline constant result of '{md.GetDisplayName ()}' call due to presence of side effects");
 							break;
 						}
 
@@ -1400,6 +1396,8 @@ namespace Mono.Linker.Steps
 				Instruction? jmpTarget = null;
 				Instruction? linstr;
 				object? left, right, operand;
+
+				SideEffectFreeResult = !HasSideEffects (method);
 
 				//
 				// We could implement a full-blown interpreter here but for now, it handles
