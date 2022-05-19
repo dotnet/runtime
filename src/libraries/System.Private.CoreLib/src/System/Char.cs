@@ -225,6 +225,76 @@ namespace System
         //
         // Static Methods
         //
+
+        /// <summary>Indicates whether a character is categorized as an ASCII letter.</summary>
+        /// <param name="c">The character to evaluate.</param>
+        /// <returns>true if <paramref name="c"/> is an ASCII letter; otherwise, false.</returns>
+        /// <remarks>
+        /// This determines whether the character is in the range 'A' through 'Z', inclusive,
+        /// or 'a' through 'z', inclusive.
+        /// </remarks>
+        public static bool IsAsciiLetter(char c) => (uint)((c | 0x20) - 'a') <= 'z' - 'a';
+
+        /// <summary>Indicates whether a character is categorized as a lowercase ASCII letter.</summary>
+        /// <param name="c">The character to evaluate.</param>
+        /// <returns>true if <paramref name="c"/> is a lowercase ASCII letter; otherwise, false.</returns>
+        /// <remarks>
+        /// This determines whether the character is in the range 'a' through 'z', inclusive.
+        /// </remarks>
+        public static bool IsAsciiLetterLower(char c) => IsBetween(c, 'a', 'z');
+
+        /// <summary>Indicates whether a character is categorized as an uppercase ASCII letter.</summary>
+        /// <param name="c">The character to evaluate.</param>
+        /// <returns>true if <paramref name="c"/> is a lowercase ASCII letter; otherwise, false.</returns>
+        /// <remarks>
+        /// This determines whether the character is in the range 'a' through 'z', inclusive.
+        /// </remarks>
+        public static bool IsAsciiLetterUpper(char c) => IsBetween(c, 'A', 'Z');
+
+        /// <summary>Indicates whether a character is categorized as an ASCII digit.</summary>
+        /// <param name="c">The character to evaluate.</param>
+        /// <returns>true if <paramref name="c"/> is an ASCII digit; otherwise, false.</returns>
+        /// <remarks>
+        /// This determines whether the character is in the range '0' through '9', inclusive.
+        /// </remarks>
+        public static bool IsAsciiDigit(char c) => IsBetween(c, '0', '9');
+
+        /// <summary>Indicates whether a character is categorized as an ASCII letter or digit.</summary>
+        /// <param name="c">The character to evaluate.</param>
+        /// <returns>true if <paramref name="c"/> is an ASCII letter or digit; otherwise, false.</returns>
+        /// <remarks>
+        /// This determines whether the character is in the range 'A' through 'Z', inclusive,
+        /// 'a' through 'z', inclusive, or '0' through '9', inclusive.
+        /// </remarks>
+        public static bool IsAsciiLetterOrDigit(char c) => IsAsciiLetter(c) | IsBetween(c, '0', '9');
+
+        /// <summary>Indicates whether a character is categorized as an ASCII hexademical digit.</summary>
+        /// <param name="c">The character to evaluate.</param>
+        /// <returns>true if <paramref name="c"/> is a hexademical digit; otherwise, false.</returns>
+        /// <remarks>
+        /// This determines whether the character is in the range '0' through '9', inclusive,
+        /// 'A' through 'F', inclusive, or 'a' through 'f', inclusive.
+        /// </remarks>
+        public static bool IsAsciiHexDigit(char c) => HexConverter.IsHexChar(c);
+
+        /// <summary>Indicates whether a character is categorized as an ASCII upper-case hexademical digit.</summary>
+        /// <param name="c">The character to evaluate.</param>
+        /// <returns>true if <paramref name="c"/> is a hexademical digit; otherwise, false.</returns>
+        /// <remarks>
+        /// This determines whether the character is in the range '0' through '9', inclusive,
+        /// or 'A' through 'F', inclusive.
+        /// </remarks>
+        public static bool IsAsciiHexDigitUpper(char c) => HexConverter.IsHexUpperChar(c);
+
+        /// <summary>Indicates whether a character is categorized as an ASCII lower-case hexademical digit.</summary>
+        /// <param name="c">The character to evaluate.</param>
+        /// <returns>true if <paramref name="c"/> is a lower-case hexademical digit; otherwise, false.</returns>
+        /// <remarks>
+        /// This determines whether the character is in the range '0' through '9', inclusive,
+        /// or 'a' through 'f', inclusive.
+        /// </remarks>
+        public static bool IsAsciiHexDigitLower(char c) => HexConverter.IsHexLowerChar(c);
+
         /*=================================IsDigit======================================
         **A wrapper for char.  Returns a boolean indicating whether    **
         **character c is considered to be a digit.                                    **
@@ -234,21 +304,33 @@ namespace System
         {
             if (IsLatin1(c))
             {
-                return IsInRange(c, '0', '9');
+                return IsBetween(c, '0', '9');
             }
             return CharUnicodeInfo.GetUnicodeCategory(c) == UnicodeCategory.DecimalDigitNumber;
         }
 
-        internal static bool IsInRange(char c, char min, char max) => (uint)(c - min) <= (uint)(max - min);
+        /// <summary>Indicates whether a character is within the specified inclusive range.</summary>
+        /// <param name="c">The character to evaluate.</param>
+        /// <param name="minInclusive">The lower bound, inclusive.</param>
+        /// <param name="maxInclusive">The upper bound, inclusive.</param>
+        /// <returns>true if <paramref name="c"/> is within the specified range; otherwise, false.</returns>
+        /// <remarks>
+        /// The method does not validate that <paramref name="maxInclusive"/> is greater than or equal
+        /// to <paramref name="minInclusive"/>.  If <paramref name="maxInclusive"/> is less than
+        /// <paramref name="minInclusive"/>, the behavior is undefined.
+        /// </remarks>
+        public static bool IsBetween(char c, char minInclusive, char maxInclusive) =>
+            (uint)(c - minInclusive) <= (uint)(maxInclusive - minInclusive);
 
-        private static bool IsInRange(UnicodeCategory c, UnicodeCategory min, UnicodeCategory max) => (uint)(c - min) <= (uint)(max - min);
+        private static bool IsBetween(UnicodeCategory c, UnicodeCategory min, UnicodeCategory max) =>
+            (uint)(c - min) <= (uint)(max - min);
 
         /*=================================CheckLetter=====================================
         ** Check if the specified UnicodeCategory belongs to the letter categories.
         ==============================================================================*/
         internal static bool CheckLetter(UnicodeCategory uc)
         {
-            return IsInRange(uc, UnicodeCategory.UppercaseLetter, UnicodeCategory.OtherLetter);
+            return IsBetween(uc, UnicodeCategory.UppercaseLetter, UnicodeCategory.OtherLetter);
         }
 
         /*=================================IsLetter=====================================
@@ -318,7 +400,7 @@ namespace System
 
         internal static bool CheckPunctuation(UnicodeCategory uc)
         {
-            return IsInRange(uc, UnicodeCategory.ConnectorPunctuation, UnicodeCategory.OtherPunctuation);
+            return IsBetween(uc, UnicodeCategory.ConnectorPunctuation, UnicodeCategory.OtherPunctuation);
         }
 
         /*================================IsPunctuation=================================
@@ -532,7 +614,7 @@ namespace System
             char c = s[index];
             if (IsLatin1(c))
             {
-                return IsInRange(c, '0', '9');
+                return IsBetween(c, '0', '9');
             }
 
             return CharUnicodeInfo.GetUnicodeCategoryInternal(s, index) == UnicodeCategory.DecimalDigitNumber;
@@ -606,7 +688,7 @@ namespace System
 
         internal static bool CheckNumber(UnicodeCategory uc)
         {
-            return IsInRange(uc, UnicodeCategory.DecimalDigitNumber, UnicodeCategory.OtherNumber);
+            return IsBetween(uc, UnicodeCategory.DecimalDigitNumber, UnicodeCategory.OtherNumber);
         }
 
         public static bool IsNumber(char c)
@@ -615,7 +697,7 @@ namespace System
             {
                 if (IsAscii(c))
                 {
-                    return IsInRange(c, '0', '9');
+                    return IsBetween(c, '0', '9');
                 }
                 return CheckNumber(GetLatin1UnicodeCategory(c));
             }
@@ -638,7 +720,7 @@ namespace System
             {
                 if (IsAscii(c))
                 {
-                    return IsInRange(c, '0', '9');
+                    return IsBetween(c, '0', '9');
                 }
 
                 return CheckNumber(GetLatin1UnicodeCategory(c));
@@ -681,7 +763,7 @@ namespace System
 
         internal static bool CheckSeparator(UnicodeCategory uc)
         {
-            return IsInRange(uc, UnicodeCategory.SpaceSeparator, UnicodeCategory.ParagraphSeparator);
+            return IsBetween(uc, UnicodeCategory.SpaceSeparator, UnicodeCategory.ParagraphSeparator);
         }
 
         private static bool IsSeparatorLatin1(char c)
@@ -722,7 +804,7 @@ namespace System
 
         public static bool IsSurrogate(char c)
         {
-            return IsInRange(c, CharUnicodeInfo.HIGH_SURROGATE_START, CharUnicodeInfo.LOW_SURROGATE_END);
+            return IsBetween(c, CharUnicodeInfo.HIGH_SURROGATE_START, CharUnicodeInfo.LOW_SURROGATE_END);
         }
 
         public static bool IsSurrogate(string s, int index)
@@ -745,7 +827,7 @@ namespace System
 
         internal static bool CheckSymbol(UnicodeCategory uc)
         {
-            return IsInRange(uc, UnicodeCategory.MathSymbol, UnicodeCategory.OtherSymbol);
+            return IsBetween(uc, UnicodeCategory.MathSymbol, UnicodeCategory.OtherSymbol);
         }
 
         public static bool IsSymbol(char c)
@@ -866,7 +948,7 @@ namespace System
          ==============================================================================*/
         public static bool IsHighSurrogate(char c)
         {
-            return IsInRange(c, CharUnicodeInfo.HIGH_SURROGATE_START, CharUnicodeInfo.HIGH_SURROGATE_END);
+            return IsBetween(c, CharUnicodeInfo.HIGH_SURROGATE_START, CharUnicodeInfo.HIGH_SURROGATE_END);
         }
 
         public static bool IsHighSurrogate(string s, int index)
@@ -888,7 +970,7 @@ namespace System
          ==============================================================================*/
         public static bool IsLowSurrogate(char c)
         {
-            return IsInRange(c, CharUnicodeInfo.LOW_SURROGATE_START, CharUnicodeInfo.LOW_SURROGATE_END);
+            return IsBetween(c, CharUnicodeInfo.LOW_SURROGATE_START, CharUnicodeInfo.LOW_SURROGATE_END);
         }
 
         public static bool IsLowSurrogate(string s, int index)

@@ -318,6 +318,17 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromInt128Test()
+        {
+            Assert.Equal(0.0m, NumberHelper<decimal>.CreateChecked<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            Assert.Equal(1.0m, NumberHelper<decimal>.CreateChecked<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            Assert.Equal(-1.0m, NumberHelper<decimal>.CreateChecked<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+
+            Assert.Throws<OverflowException>(() => NumberHelper<decimal>.CreateChecked<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            Assert.Throws<OverflowException>(() => NumberHelper<decimal>.CreateChecked<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+        }
+
+        [Fact]
         public static void CreateCheckedFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -376,6 +387,17 @@ namespace System.Tests
             Assert.Equal(9223372036854775807.0m, NumberHelper<decimal>.CreateChecked<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(9223372036854775808.0m, NumberHelper<decimal>.CreateChecked<ulong>(0x8000000000000000));
             Assert.Equal(18446744073709551615.0m, NumberHelper<decimal>.CreateChecked<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromUInt128Test()
+        {
+            Assert.Equal(0.0m, NumberHelper<decimal>.CreateChecked<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            Assert.Equal(1.0m, NumberHelper<decimal>.CreateChecked<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+
+            Assert.Throws<OverflowException>(() => NumberHelper<decimal>.CreateChecked<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            Assert.Throws<OverflowException>(() => NumberHelper<decimal>.CreateChecked<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            Assert.Throws<OverflowException>(() => NumberHelper<decimal>.CreateChecked<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
         }
 
         [Fact]
@@ -450,6 +472,18 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromInt128Test()
+        {
+            Assert.Equal(0.0m, NumberHelper<decimal>.CreateSaturating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+
+            Assert.Equal(+1.0m, NumberHelper<decimal>.CreateSaturating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            Assert.Equal(-1.0m, NumberHelper<decimal>.CreateSaturating<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+
+            Assert.Equal(decimal.MaxValue, NumberHelper<decimal>.CreateSaturating<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            Assert.Equal(decimal.MinValue, NumberHelper<decimal>.CreateSaturating<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -508,6 +542,18 @@ namespace System.Tests
             Assert.Equal(9223372036854775807.0m, NumberHelper<decimal>.CreateSaturating<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(9223372036854775808.0m, NumberHelper<decimal>.CreateSaturating<ulong>(0x8000000000000000));
             Assert.Equal(18446744073709551615.0m, NumberHelper<decimal>.CreateSaturating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromUInt128Test()
+        {
+            Assert.Equal(0.0m, NumberHelper<decimal>.CreateSaturating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+
+            Assert.Equal(+1.0m, NumberHelper<decimal>.CreateSaturating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            Assert.Equal(decimal.MaxValue, NumberHelper<decimal>.CreateSaturating<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+
+            Assert.Equal(decimal.MaxValue, NumberHelper<decimal>.CreateSaturating<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            Assert.Equal(decimal.MaxValue, NumberHelper<decimal>.CreateSaturating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
         }
 
         [Fact]
@@ -582,6 +628,18 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromInt128Test()
+        {
+            Assert.Equal(0.0m, NumberHelper<decimal>.CreateTruncating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+
+            Assert.Equal(+1.0m, NumberHelper<decimal>.CreateTruncating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            Assert.Equal(-1.0m, NumberHelper<decimal>.CreateTruncating<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+
+            Assert.Equal(decimal.MaxValue, NumberHelper<decimal>.CreateTruncating<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            Assert.Equal(0.0m, NumberHelper<decimal>.CreateTruncating<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -640,6 +698,18 @@ namespace System.Tests
             Assert.Equal(9223372036854775807.0m, NumberHelper<decimal>.CreateTruncating<ulong>(0x7FFFFFFFFFFFFFFF));
             Assert.Equal(9223372036854775808.0m, NumberHelper<decimal>.CreateTruncating<ulong>(0x8000000000000000));
             Assert.Equal(18446744073709551615.0m, NumberHelper<decimal>.CreateTruncating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromUInt128Test()
+        {
+            Assert.Equal(0.0m, NumberHelper<decimal>.CreateTruncating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+
+            Assert.Equal(+1.0m, NumberHelper<decimal>.CreateTruncating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            Assert.Equal(decimal.MaxValue, NumberHelper<decimal>.CreateTruncating<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+
+            Assert.Equal(decimal.MaxValue, NumberHelper<decimal>.CreateTruncating<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            Assert.Equal(0.0m, NumberHelper<decimal>.CreateTruncating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
         }
 
         [Fact]
@@ -804,6 +874,27 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void TryCreateFromInt128Test()
+        {
+            decimal result;
+
+            Assert.True(NumberHelper<decimal>.TryCreate<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal(0.0m, result);
+
+            Assert.True(NumberHelper<decimal>.TryCreate<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), out result));
+            Assert.Equal(1.0m, result);                         
+
+            Assert.True(NumberHelper<decimal>.TryCreate<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal(-1.0m, result);
+
+            Assert.False(NumberHelper<decimal>.TryCreate<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal(0.0m, result);
+
+            Assert.False(NumberHelper<decimal>.TryCreate<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal(0.0m, result);
+        }
+
+        [Fact]
         public static void TryCreateFromIntPtrTest()
         {
             decimal result;
@@ -926,6 +1017,27 @@ namespace System.Tests
 
             Assert.True(NumberHelper<decimal>.TryCreate<ulong>(0xFFFFFFFFFFFFFFFF, out result));
             Assert.Equal(18446744073709551615.0m, result);
+        }
+
+        [Fact]
+        public static void TryCreateFromUInt128Test()
+        {
+            decimal result;
+
+            Assert.True(NumberHelper<decimal>.TryCreate<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal(0.0m, result);
+
+            Assert.True(NumberHelper<decimal>.TryCreate<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), out result));
+            Assert.Equal(1.0m, result);
+
+            Assert.False(NumberHelper<decimal>.TryCreate<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal(0.0m, result);
+
+            Assert.False(NumberHelper<decimal>.TryCreate<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal(0.0m, result);
+
+            Assert.False(NumberHelper<decimal>.TryCreate<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal(0.0m, result);
         }
 
         [Fact]

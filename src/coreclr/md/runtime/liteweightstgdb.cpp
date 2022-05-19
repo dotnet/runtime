@@ -154,12 +154,6 @@ CLiteWeightStgdb<MiniMd>::InitOnMem(
             bFoundMd = true;
         }
 
-        // Found the hot meta data stream
-        else if (strcmp(pStream->GetName(), HOT_MODEL_STREAM_A) == 0)
-        {
-            Debug_ReportError("MetaData hot stream is peresent, but ngen is not supported.");
-            // Ignore the stream
-        }
         // Pick off the next stream if there is one.
         pStream = pNext;
         cbStreamBuffer = (ULONG)((LPBYTE)pData + cbData - (LPBYTE)pNext);

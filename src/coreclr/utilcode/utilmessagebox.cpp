@@ -42,24 +42,24 @@ BOOL ShouldDisplayMsgBoxOnCriticalFailure()
 }
 
 // Output printf-style formatted text to the debugger if it's present or stdout otherwise.
-static void DbgWPrintf(const LPCWSTR wszFormat, ...)
+static void DbgPrintf(const LPCSTR szFormat, ...)
 {
-    WCHAR wszBuffer[4096];
+    char szBuffer[4096];
 
     va_list args;
-    va_start(args, wszFormat);
+    va_start(args, szFormat);
 
-    _vsnwprintf_s(wszBuffer, sizeof(wszBuffer) / sizeof(WCHAR), _TRUNCATE, wszFormat, args);
+    _vsnprintf_s(szBuffer, ARRAY_SIZE(szBuffer), _TRUNCATE, szFormat, args);
 
     va_end(args);
 
     if (IsDebuggerPresent())
     {
-        OutputDebugStringW(wszBuffer);
+        OutputDebugStringUtf8(szBuffer);
     }
     else
     {
-        fwprintf(stdout, W("%s"), wszBuffer);
+        fprintf(stdout, "%s", szBuffer);
         fflush(stdout);
     }
 }
@@ -114,10 +114,15 @@ static int MessageBoxImpl(
         message = W("<null>");
     if (title == NULL)
         title = W("<null>");
-    DbgWPrintf(W("**** '%s' ****\n"), title);
-    DbgWPrintf(W("  %s\n"), message);
-    DbgWPrintf(W("********\n"));
-    DbgWPrintf(W("\n"));
+
+    MAKE_UTF8PTR_FROMWIDE_NOTHROW(titleUtf8, title);
+    MAKE_UTF8PTR_FROMWIDE_NOTHROW(messageUtf8, message);
+
+    if (titleUtf8 != NULL)
+        DbgPrintf("**** '%s' ****\n", titleUtf8);
+    if (messageUtf8 != NULL)
+        DbgPrintf("  %s", messageUtf8);
+    DbgPrintf("\n********\n\n");
 
     // Indicate to the caller that message box was not actually displayed
     SetLastError(ERROR_NOT_SUPPORTED);

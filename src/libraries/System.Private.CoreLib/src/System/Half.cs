@@ -1256,6 +1256,10 @@ namespace System
             {
                 return (Half)(long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (Half)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (Half)(long)(nint)(object)value;
@@ -1279,6 +1283,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (Half)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (Half)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1324,6 +1332,10 @@ namespace System
             {
                 return (Half)(long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (Half)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (Half)(long)(nint)(object)value;
@@ -1347,6 +1359,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (Half)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (Half)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1392,6 +1408,10 @@ namespace System
             {
                 return (Half)(long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (Half)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (Half)(long)(nint)(object)value;
@@ -1415,6 +1435,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (Half)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (Half)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1482,6 +1506,11 @@ namespace System
                 result = (Half)(long)(object)value;
                 return true;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                result = (Half)(Int128)(object)value;
+                return true;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 result = (Half)(long)(nint)(object)value;
@@ -1512,6 +1541,11 @@ namespace System
                 result = (Half)(ulong)(object)value;
                 return true;
             }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (Half)(UInt128)(object)value;
+                return true;
+            }
             else if (typeof(TOther) == typeof(nuint))
             {
                 result = (Half)(ulong)(nuint)(object)value;
@@ -1530,10 +1564,10 @@ namespace System
         //
 
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static Half INumberBase<Half>.One => new Half(PositiveOneBits);
+        public static Half One => new Half(PositiveOneBits);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static Half INumberBase<Half>.Zero => new Half(PositiveZeroBits);
+        public static Half Zero => new Half(PositiveZeroBits);
 
         //
         // IParsable
@@ -1569,7 +1603,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
-        static Half ISignedNumber<Half>.NegativeOne => new Half(NegativeOneBits);
+        public static Half NegativeOne => new Half(NegativeOneBits);
 
         //
         // ISpanParsable

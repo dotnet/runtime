@@ -96,7 +96,17 @@ namespace System.Net.Sockets.Tests
                 listener.AddActivityTracking();
 
                 var events = new ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)>();
-                await listener.RunWithCallbackAsync(e => events.Enqueue((e, e.ActivityId)), async () =>
+                await listener.RunWithCallbackAsync(e =>
+                {
+                    events.Enqueue((e, e.ActivityId));
+
+                    if (e.EventName == "ConnectStart")
+                    {
+                        // Make sure we observe a non-zero current-outgoing-connect-attempts counter
+                        WaitForEventCountersAsync(events).GetAwaiter().GetResult();
+                    }
+                },
+                async () =>
                 {
                     using var server = new Socket(SocketType.Stream, ProtocolType.Tcp);
                     server.Bind(new IPEndPoint(IPAddress.Loopback, 0));
@@ -104,21 +114,22 @@ namespace System.Net.Sockets.Tests
 
                     using var client = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
-                    Task acceptTask = GetHelperBase(acceptMethod).AcceptAsync(server);
-                    await WaitForEventAsync(events, "AcceptStart");
+                    Task connectTask = GetHelperBase(connectMethod).ConnectAsync(client, server.LocalEndPoint);
+                    await WaitForEventAsync(events, "ConnectStart");
+                    await WaitForEventCountersAsync(events); // Wait for current-outgoing-connect-attempts = 1
 
-                    await GetHelperBase(connectMethod).ConnectAsync(client, server.LocalEndPoint);
-                    await acceptTask;
+                    await GetHelperBase(acceptMethod).AcceptAsync(server);
 
                     await WaitForEventAsync(events, "AcceptStop");
                     await WaitForEventAsync(events, "ConnectStop");
+                    await connectTask;
 
                     await WaitForEventCountersAsync(events);
                 });
 
                 VerifyEvents(events, connect: true, expectedCount: 1);
                 VerifyEvents(events, connect: false, expectedCount: 1);
-                VerifyEventCounters(events, connectCount: 1);
+                VerifyEventCounters(events, connectCount: 1, hasCurrentConnectCounter: true);
             }, connectMethod, acceptMethod).Dispose();
         }
 
@@ -445,7 +456,7 @@ namespace System.Net.Sockets.Tests
             }
         }
 
-        private static void VerifyEventCounters(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int connectCount, bool connectOnly = false, bool shouldHaveTransferedBytes = false, bool shouldHaveDatagrams = false)
+        private static void VerifyEventCounters(ConcurrentQueue<(EventWrittenEventArgs Event, Guid ActivityId)> events, int connectCount, bool hasCurrentConnectCounter = false, bool connectOnly = false, bool shouldHaveTransferedBytes = false, bool shouldHaveDatagrams = false)
         {
             Dictionary<string, double[]> eventCounters = events
                 .Where(e => e.Event.EventName == "EventCounters")
@@ -458,6 +469,13 @@ namespace System.Net.Sockets.Tests
 
             Assert.True(eventCounters.TryGetValue("incoming-connections-established", out double[] incomingConnections));
             Assert.Equal(connectOnly ? 0 : connectCount, incomingConnections[^1]);
+
+            Assert.True(eventCounters.TryGetValue("current-outgoing-connect-attempts", out double[] currentOutgoingConnectAttempts));
+            if (hasCurrentConnectCounter)
+            {
+                Assert.Contains(currentOutgoingConnectAttempts, c => c > 0);
+            }
+            Assert.Equal(0, currentOutgoingConnectAttempts[^1]);
 
             Assert.True(eventCounters.TryGetValue("bytes-received", out double[] bytesReceived));
             if (shouldHaveTransferedBytes)

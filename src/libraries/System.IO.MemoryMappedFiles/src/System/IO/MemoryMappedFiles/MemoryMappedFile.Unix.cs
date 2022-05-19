@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Diagnostics;
+using System.Text;
 using Microsoft.Win32.SafeHandles;
 
 namespace System.IO.MemoryMappedFiles
@@ -201,6 +202,12 @@ namespace System.IO.MemoryMappedFiles
                         // the result of native shm_open does not work well with our subsequent call to mmap.
                         return null;
                     }
+                    else if (errorInfo.Error == Interop.Error.ENAMETOOLONG)
+                    {
+                        Debug.Fail($"shm_open failed with ENAMETOOLONG for {Encoding.UTF8.GetByteCount(mapName)} byte long name.");
+                        // in theory it should not happen anymore, but just to be extra safe we use the fallback
+                        return null;
+                    }
                     else if (errorInfo.Error != Interop.Error.EEXIST) // map with same name already existed
                     {
                         throw Interop.GetExceptionForIoErrno(errorInfo);
@@ -238,13 +245,23 @@ namespace System.IO.MemoryMappedFiles
 
             static string GenerateMapName()
             {
-                const int MaxSharedMemoryObjectNameLength = 32; // SHM_NAME_MAX on OSX ARM64, on other systems it's equal PATH_MAX (250)
-                // The POSIX shared memory object name must begin with '/'.  After that we just want something short (32) and unique.
-                return string.Create(MaxSharedMemoryObjectNameLength, 0, (span, state) =>
+                // macOS shm_open documentation says that the sys-call can fail with ENAMETOOLONG if the name exceeds SHM_NAME_MAX characters.
+                // The problem is that SHM_NAME_MAX is not defined anywhere and is not consistent amongst macOS versions (arm64 vs x64 for example).
+                // It was reported in 2008 (https://lists.apple.com/archives/xcode-users/2008/Apr/msg00523.html),
+                // but considered to be by design (http://web.archive.org/web/20140109200632/http://lists.apple.com/archives/darwin-development/2003/Mar/msg00244.html).
+                // According to https://github.com/qt/qtbase/blob/1ed449e168af133184633d174fd7339a13d1d595/src/corelib/kernel/qsharedmemory.cpp#L53-L56 the actual value is 30.
+                // Some other OSS libs use 32 (we did as well, but it was not enough) or 31, but we prefer 30 just to be extra safe.
+                const int MaxNameLength = 30;
+                // The POSIX shared memory object name must begin with '/'.  After that we just want something short (30) and unique.
+                const string NamePrefix = "/dotnet_";
+                return string.Create(MaxNameLength, 0, (span, state) =>
                 {
-                    Guid.NewGuid().TryFormat(span, out int charsWritten, "N");
-                    Debug.Assert(charsWritten == MaxSharedMemoryObjectNameLength);
-                    "/dotnet_".CopyTo(span);
+                    Span<char> guid = stackalloc char[32];
+                    Guid.NewGuid().TryFormat(guid, out int charsWritten, "N");
+                    Debug.Assert(charsWritten == 32);
+                    NamePrefix.CopyTo(span);
+                    guid.Slice(0, MaxNameLength - NamePrefix.Length).CopyTo(span.Slice(NamePrefix.Length));
+                    Debug.Assert(Encoding.UTF8.GetByteCount(span) <= MaxNameLength); // the standard uses Utf8
                 });
             }
         }

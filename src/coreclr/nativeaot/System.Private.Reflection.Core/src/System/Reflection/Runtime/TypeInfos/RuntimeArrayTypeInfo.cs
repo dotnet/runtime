@@ -71,7 +71,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         SyntheticMethodId.ArrayCtor,
                         arrayType,
                         ctorParameters,
-                        InvokerOptions.AllowNullThis | InvokerOptions.DontWrapException,
+                        InvokerOptions.AllowNullThis,
                         delegate (object _this, object[] args, Type thisType)
                         {
                             int[] lengths = new int[rank];
@@ -109,7 +109,7 @@ namespace System.Reflection.Runtime.TypeInfos
                             SyntheticMethodId.ArrayCtorJagged + parameterCount,
                             arrayType,
                             ctorParameters,
-                            InvokerOptions.AllowNullThis | InvokerOptions.DontWrapException,
+                            InvokerOptions.AllowNullThis,
                             delegate (object _this, object[] args, Type thisType)
                             {
                                 int[] lengths = new int[args.Length];
@@ -145,7 +145,7 @@ namespace System.Reflection.Runtime.TypeInfos
                         SyntheticMethodId.ArrayMultiDimCtor,
                         arrayType,
                         ctorParameters,
-                        InvokerOptions.AllowNullThis | InvokerOptions.DontWrapException,
+                        InvokerOptions.AllowNullThis,
                         delegate (object _this, object[] args, Type thisType)
                         {
                             int[] lengths = new int[rank];
