@@ -8,7 +8,6 @@ public class Runtime_67039
 {
     public static int Main()
     {
-        
         Vector128<float> left = Vector128.Create(1.0f, 2, 3, 4);
         Vector128<float> right = Vector128.Create(4.0f, 3, 2, 1);
 
@@ -23,7 +22,5 @@ public class Runtime_67039
         {
             return 0;
         }
-        
     }
-
 }
