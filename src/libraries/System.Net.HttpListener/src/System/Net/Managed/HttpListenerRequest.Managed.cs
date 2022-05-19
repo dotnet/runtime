@@ -87,10 +87,8 @@ namespace System.Net
             _method = parts[0];
             foreach (char c in _method)
             {
-                int ic = (int)c;
-
-                if ((ic >= 'A' && ic <= 'Z') ||
-                    (ic > 32 && c < 127 && c != '(' && c != ')' && c != '<' &&
+                if (char.IsAsciiLetterUpper(c) ||
+                    (c > 32 && c < 127 && c != '(' && c != ')' && c != '<' &&
                      c != '<' && c != '>' && c != '@' && c != ',' && c != ';' &&
                      c != ':' && c != '\\' && c != '"' && c != '/' && c != '[' &&
                      c != ']' && c != '?' && c != '=' && c != '{' && c != '}'))

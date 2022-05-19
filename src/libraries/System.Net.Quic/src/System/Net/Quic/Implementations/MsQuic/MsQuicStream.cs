@@ -329,7 +329,8 @@ namespace System.Net.Quic.Implementations.MsQuic
             {
                 throw new InvalidOperationException(SR.net_quic_writing_notallowed);
             }
-            if (_state.SendState == SendState.Aborted)
+            // Use Volatile.Read to ensure we read the actual SendErrorCode set by the racing callback thread.
+            if ((SendState)Volatile.Read(ref Unsafe.As<SendState, int>(ref _state.SendState)) == SendState.Aborted)
             {
                 if (_state.SendErrorCode != -1)
                 {
@@ -1112,8 +1113,10 @@ namespace System.Net.Quic.Implementations.MsQuic
                     shouldShutdownWriteComplete = true;
                 }
 
-                state.SendState = SendState.Aborted;
                 state.SendErrorCode = (long)streamEvent.PEER_RECEIVE_ABORTED.ErrorCode;
+                // make sure the SendErrorCode above is commited to memory before we assign the state. This
+                // ensures that the code is read correctly in SetupWriteStartState when checking without lock
+                Volatile.Write(ref Unsafe.As<SendState, int>(ref state.SendState), (int)SendState.Aborted);
             }
 
             if (shouldSendComplete)

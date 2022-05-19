@@ -78,7 +78,7 @@ namespace System
                 int i = 0;
                 for (; i < region.Length && region[i] <= '\u007F'; i++)
                 {
-                    regionInAscii[i] = (uint)(region[i] - 'a') <= ('z' - 'a') ? (byte)((region[i] - 'a') + 'A') : (byte)region[i];
+                    regionInAscii[i] = char.IsAsciiLetterLower(region[i]) ? (byte)((region[i] - 'a') + 'A') : (byte)region[i];
                 }
 
                 if (i >= region.Length)
