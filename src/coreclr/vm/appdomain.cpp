@@ -1523,9 +1523,18 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
 
     MethodTable* pCaller = pMeth->GetMethodTable();
 
-    // All Reflection Invocation methods are defined in CoreLib
+    // All reflection invocation methods are defined in CoreLib.
     if (!pCaller->GetModule()->IsSystem())
         return false;
+
+    // Check for dynamically generated Invoke methods.
+    if (pMeth->IsLCGMethod())
+    {
+        // Even if a user-created DynamicMethod uses the same naming convention, it will likely not
+        // get here since since DynamicMethods by default are created in a special (non-system) module.
+        // If this is not sufficient for conflict prevention, we can create a new private module.
+        return (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0);
+    }
 
     /* List of types that should be skipped to identify true caller */
     static const BinderClassID reflectionInvocationTypes[] = {
@@ -1577,13 +1586,6 @@ bool SystemDomain::IsReflectionInvocationMethod(MethodDesc* pMeth)
         for (unsigned i = 0; i < ARRAY_SIZE(reflectionInvocationTypes); i++)
         {
             if (CoreLibBinder::GetExistingClass(reflectionInvocationTypes[i]) == pCaller)
-                return true;
-        }
-
-        // Check for dynamically generated Invoke methods.
-        if (pMeth->IsDynamicMethod())
-        {
-            if (strncmp(pMeth->GetName(), "InvokeStub_", ARRAY_SIZE("InvokeStub_") - 1) == 0)
                 return true;
         }
     }
