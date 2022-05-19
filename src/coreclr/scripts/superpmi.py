@@ -1686,6 +1686,10 @@ class SuperPMIReplayAsmDiffs:
                     if current_text_diff is not None:
                         logging.info("Textual differences found in generated asm.")
 
+                        asm_diffs_location = os.path.join(asm_root_dir, "asm_diffs.diff")
+                        os.system("git diff --no-index %s %s > %s" % (base_asm_location, diff_asm_location, asm_diffs_location))
+                        logging.info("  Creating git diff file at %s", asm_diffs_location)
+
                         # Find jit-analyze on PATH, if it exists, then invoke it.
                         ran_jit_analyze = False
                         path_var = os.environ.get("PATH")
