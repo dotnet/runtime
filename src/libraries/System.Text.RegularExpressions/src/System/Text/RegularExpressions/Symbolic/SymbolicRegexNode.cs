@@ -20,6 +20,17 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>The undefined value is the default value 0</summary>
         internal const byte UndefinedByte = 0;
 
+        /// <summary>
+        /// Maximum recursion depth for subsumption rules before giving up.
+        /// </summary>
+        /// <remarks>
+        /// The subsumption check may do unproductive linear walks when subsumption doesn't hold. This depth limit helps
+        /// curb the cost of these walks at the cost of sometimes not detecting subsumption. This limit should be set
+        /// high enough that subsumption is detected in all typical cases. This limit of 50 still gives good performance
+        /// in the stress tests.
+        /// </remarks>
+        internal const int SubsumptionCheckDepthLimit = 50;
+
         internal readonly SymbolicRegexBuilder<TSet> _builder;
         internal readonly SymbolicRegexNodeKind _kind;
         internal readonly int _lower;
@@ -595,7 +606,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Keep the or flat, assuming both right and left are flat.
         /// Apply subsumption/combining optimizations, such that e.g. a?b|b will be simplified to a?b and b|a?b will be combined to a??b
         /// </summary>
-        internal static SymbolicRegexNode<TSet> OrderedOr(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, bool deduplicated = false)
+        internal static SymbolicRegexNode<TSet> OrderedOr(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, bool deduplicated = false, bool hintRightLikelySubsumes = false)
         {
             if (left.IsAnyStar || right == builder._nothing || left == right || (left.IsNullable && right.IsEpsilon))
                 return left;
@@ -606,12 +617,17 @@ namespace System.Text.RegularExpressions.Symbolic
             SymbolicRegexNode<TSet> tail = right._kind == SymbolicRegexNodeKind.OrderedOr ? right._right! : builder._nothing;
 
             // Simplify away right side if left side subsumes it
-            if (left.Subsumes(head))
+            if (!hintRightLikelySubsumes && left.Subsumes(head))
                 return OrderedOr(builder, left, tail);
 
             // Simplify by folding right side into left side if right side subsumes the left side
-            if (ShouldTryFold(left, head) && TryFold(builder, head, left, out SymbolicRegexNode<TSet>? result))
+            if (head.Subsumes(left) && TryFold(builder, head, left, out SymbolicRegexNode<TSet>? result))
                 return OrderedOr(builder, result, tail);
+
+            // Simplify away right side if left side subsumes it
+            // This is a repeat of the rule above, but for the case when the hint tells us to try reverse subsumption first.
+            if (hintRightLikelySubsumes && left.Subsumes(head))
+                return OrderedOr(builder, left, tail);
 
             // If left is not an Or, try to avoid allocation by checking if deduplication is necessary
             if (!deduplicated && left._kind != SymbolicRegexNodeKind.OrderedOr)
@@ -687,26 +703,16 @@ namespace System.Text.RegularExpressions.Symbolic
             Debug.Assert(deduplicated);
 
             return Create(builder, SymbolicRegexNodeKind.OrderedOr, left, right, -1, -1, default, null, SymbolicRegexInfo.Alternate(left._info, right._info));
-
-            static bool ShouldTryFold(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right)
-            {
-                if (right._kind == SymbolicRegexNodeKind.Concat)
-                {
-                    Debug.Assert(right._left is not null && right._right is not null);
-                    if (right._left._kind == SymbolicRegexNodeKind.Loop && right._left._upper - right._left._lower > 1)
-                        //do not simplify the case X|.*?R that represents the top-level alternation with right = .*?R as the initial search pattern
-                        return false;
-                }
-                return right.Subsumes(left);
-            }
         }
 
-        internal bool Subsumes(SymbolicRegexNode<TSet> other)
+        internal bool Subsumes(SymbolicRegexNode<TSet> other, int depth = 0)
         {
             if (this == other)
                 return true;
             if (other == _builder._nothing)
                 return true;
+            if (depth > SubsumptionCheckDepthLimit)
+                return false;
 
             if (_builder._subsumptionCache.TryGetValue((this, other), out bool cached))
             {
@@ -715,27 +721,27 @@ namespace System.Text.RegularExpressions.Symbolic
 
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                return StackHelper.CallOnEmptyStack(Subsumes, other);
+                return StackHelper.CallOnEmptyStack(Subsumes, other, depth);
             }
 
-            bool? subsumes = ApplySubsumptionRules(this, other);
+            bool? subsumes = ApplySubsumptionRules(this, other, depth + 1);
 
             if (subsumes.HasValue)
                 _builder._subsumptionCache[(this, other)] = subsumes.Value;
             return subsumes ?? false;
 
-            static bool? ApplySubsumptionRules(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right)
+            static bool? ApplySubsumptionRules(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, int depth)
             {
                 if (left._kind == SymbolicRegexNodeKind.Effect)
                 {
                     Debug.Assert(left._left is not null && left._right is not null);
-                    return left._left.Subsumes(right);
+                    return left._left.Subsumes(right, depth);
                 }
 
                 if (right._kind == SymbolicRegexNodeKind.Effect)
                 {
                     Debug.Assert(right._left is not null && right._right is not null);
-                    return left.Subsumes(right._left);
+                    return left.Subsumes(right._left, depth);
                 }
 
                 if (left._kind == SymbolicRegexNodeKind.Concat && right._kind == SymbolicRegexNodeKind.Concat)
@@ -746,7 +752,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         Debug.Assert(rl._left is not null);
                         if (TrySkipPrefix(left, rl._left, out SymbolicRegexNode<TSet>? tail))
-                            return tail.Subsumes(right._right);
+                            return tail.Subsumes(right._right, depth);
                     }
                 }
 
@@ -758,7 +764,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         Debug.Assert(ll._left is not null);
                         if (TrySkipPrefix(right, ll._left, out SymbolicRegexNode<TSet>? tail))
-                            return left._right.Subsumes(tail);
+                            return left._right.Subsumes(tail, depth);
                     }
                 }
 
@@ -767,7 +773,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(left._left is not null && left._right is not null);
                     if (left._left.IsNullable)
                     {
-                        return left._right.Subsumes(right);
+                        return left._right.Subsumes(right, depth);
                     }
                 }
 
@@ -1396,7 +1402,9 @@ namespace System.Text.RegularExpressions.Symbolic
                             // In the first case backtracking would stop after reading b
                             // In the second case backtracking would try to continue to follow (ab)* after reading b
                             // This backtracking semantics is effectively being recorded into the order of the alternatives
-                            derivative = _left.IsHighPriorityNullableFor(context) ? OrderedOr(_builder, rderivE, lderivR) : OrderedOr(_builder, lderivR, rderivE);
+                            derivative = _left.IsHighPriorityNullableFor(context) ?
+                                OrderedOr(_builder, rderivE, lderivR, hintRightLikelySubsumes: true) :
+                                OrderedOr(_builder, lderivR, rderivE);
                         }
                         break;
                     }

@@ -1877,6 +1877,7 @@ namespace System.Text.RegularExpressions.Tests
             {
                 yield return new object[] { engine, "[a-z]", "", "abcde", 2000, 400 };
                 yield return new object[] { engine, "[a-e]*", "$", "abcde", 2000, 20 };
+                yield return new object[] { engine, "[a-e]*?", "$", "abcde", 2000, 20 };
                 yield return new object[] { engine, "[a-d]?[a-e]?[a-f]?[a-g]?[a-h]?", "$", "abcda", 400, 4 };
                 yield return new object[] { engine, "(a|A)", "", "aAaAa", 2000, 400 };
             }
