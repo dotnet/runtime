@@ -7,6 +7,7 @@ import * as path from "path";
 import { createHash } from "crypto";
 import dts from "rollup-plugin-dts";
 import consts from "rollup-plugin-consts";
+import { createFilter } from "@rollup/pluginutils";
 
 const configuration = process.env.Configuration;
 const isDebug = configuration !== "Release";
@@ -45,7 +46,16 @@ const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
 const format = "iife";
 const name = "__dotnet_runtime";
-
+const inlineAssertQuotes = {
+    // eslint-disable-next-line quotes
+    pattern: /assert\(([^,]*), *("[^"]*")\);/g,
+    replacement: "if (!($1)) throw new Error($2); // inlined assert"
+};
+const inlineAssertInterpolation = {
+    // eslint-disable-next-line quotes
+    pattern: /assert\(([^,]*), \(\) => *(`[^`]*`)\);/g,
+    replacement: "if (!($1)) throw new Error($2); // inlined assert"
+};
 const iffeConfig = {
     treeshake: !isDebug,
     input: "exports.ts",
@@ -72,7 +82,7 @@ const iffeConfig = {
 
         handler(warning);
     },
-    plugins: [consts({ productVersion, configuration }), typescript()]
+    plugins: [regexReplace([inlineAssertQuotes, inlineAssertInterpolation]), consts({ productVersion, configuration }), typescript()]
 };
 const typesConfig = {
     input: "./export-types.ts",
@@ -159,4 +169,38 @@ function checkFileExists(file) {
     return fs.promises.access(file, fs.constants.F_OK)
         .then(() => true)
         .catch(() => false);
+}
+
+function regexReplace(replacements = []) {
+    const filter = createFilter("**/*.ts");
+
+    return {
+        name: "replace",
+
+        renderChunk(code, chunk) {
+            const id = chunk.fileName;
+            if (!filter(id)) return null;
+            return executeReplacement(this, code, id);
+        },
+
+        transform(code, id) {
+            if (!filter(id)) return null;
+            return executeReplacement(this, code, id);
+        }
+    };
+
+    function executeReplacement(self, code) {
+        // TODO use MagicString for sourcemap support
+        let fixed = code;
+        for (const rep of replacements) {
+            const { pattern, replacement } = rep;
+            fixed = fixed.replace(pattern, replacement);
+        }
+
+        if (fixed == code) {
+            return null;
+        }
+
+        return { code: fixed };
+    }
 }

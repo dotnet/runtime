@@ -221,14 +221,13 @@ export type DotnetModuleConfigImports = {
     url?: any;
 }
 
+// see src\mono\wasm\runtime\rollup.config.js 
+// inline this, because the lambda could allocate closure on hot path otherwise
 export function assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (!condition) {
         const message = typeof messageFactory === "string"
             ? messageFactory
             : messageFactory();
-        if (Configuration === "Debug") {
-            console.error(`Assert failed: ${message}`);
-        }
         throw new Error(`Assert failed: ${message}`);
     }
 }
