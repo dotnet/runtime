@@ -71,7 +71,7 @@ namespace Wasm.Build.Tests
 
                 Console.WriteLine ("");
                 Console.WriteLine ($"==============================================================================================");
-                Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "EMSDK")} ===============");
+                Console.WriteLine ($"=============== Running with {(s_buildEnv.IsWorkload ? "Workloads" : "No workloads")} ===============");
                 Console.WriteLine ($"==============================================================================================");
                 Console.WriteLine ("");
             }
