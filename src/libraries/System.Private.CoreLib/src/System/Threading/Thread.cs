@@ -164,7 +164,7 @@ namespace System.Threading
         internal static bool IsInternalThreadStartSupported => false;
 #endif
 
-        internal static void ThrowIfNoThreadStart(bool internalThread)
+        internal static void ThrowIfNoThreadStart(bool internalThread = false)
         {
             if (IsThreadStartSupported)
                 return;
