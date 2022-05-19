@@ -93,9 +93,7 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
                 pParam->nativeEntry,
                 pParam->nativeSizeOfCode);
         }
-        // Use PAL_EXCEPT here instead of PAL_FINALLY as it will also translate
-        // signals on non-Windows.
-        PAL_EXCEPT(EXCEPTION_EXECUTE_HANDLER)
+        PAL_FINALLY
         {
             // capture the results of compilation
             our_ICorJitInfo.mc->cr->recCompileMethod(
@@ -108,8 +106,6 @@ CorJitResult interceptor_ICJC::compileMethod(ICorJitInfo*                comp,  
             }
 
             our_ICorJitInfo.mc->saveToFile(hFile);
-
-            throw;
         }
         PAL_ENDTRY;
     };
