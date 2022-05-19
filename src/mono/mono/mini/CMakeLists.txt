@@ -12,13 +12,13 @@ include_directories(
   ${PROJECT_SOURCE_DIR}/../sgen)
 
 if(HOST_DARWIN)
-  set(OS_LIBS "-framework CoreFoundation" "-framework Foundation" "-lcompression")
+  set(OS_LIBS "-framework CoreFoundation" "-framework Foundation")
 
   if(CMAKE_SYSTEM_VARIANT STREQUAL "MacCatalyst")
     set(OS_LIBS ${OS_LIBS} "-lobjc" "-lc++")
   endif()
 elseif(HOST_IOS)
-set(OS_LIBS "-framework CoreFoundation" "-lcompression" "-lobjc" "-lc++")
+set(OS_LIBS "-framework CoreFoundation" "-lobjc" "-lc++")
 elseif(HOST_ANDROID)
 set(OS_LIBS m dl log)
 elseif(HOST_LINUX)
