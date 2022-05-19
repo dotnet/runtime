@@ -768,9 +768,8 @@ namespace System
 
             if (!BitConverter.IsLittleEndian)
             {
-                ulong tmp = lower;
-                lower = BinaryPrimitives.ReverseEndianness(upper);
-                upper = BinaryPrimitives.ReverseEndianness(tmp);
+                lower = BinaryPrimitives.ReverseEndianness(lower);
+                upper = BinaryPrimitives.ReverseEndianness(upper);
             }
 
             ref byte address = ref MemoryMarshal.GetReference(destination);
@@ -877,11 +876,10 @@ namespace System
                 ulong lower = _lower;
                 ulong upper = _upper;
 
-                if (!BitConverter.IsLittleEndian)
+                if (BitConverter.IsLittleEndian)
                 {
-                    ulong tmp = lower;
-                    lower = BinaryPrimitives.ReverseEndianness(upper);
-                    upper = BinaryPrimitives.ReverseEndianness(tmp);
+                    lower = BinaryPrimitives.ReverseEndianness(lower);
+                    upper = BinaryPrimitives.ReverseEndianness(upper);
                 }
 
                 ref byte address = ref MemoryMarshal.GetReference(destination);
