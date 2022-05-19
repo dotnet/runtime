@@ -34,7 +34,7 @@ if [ "x$extraLibsArg" != "x" ]; then
 	export LD_LIBRARY_PATH="$extraLibsDir"
 fi
 _RuntimeDir="$(dirname "$runtimeExe")"
-# Consume OpenSSL as found on Helix
+# Consume OpenSSL if we find it in the runtime folder
 if [ -d "$_RuntimeDir/openssl" ]; then
 	_thisArch=$(uname -m)
 	case "$_thisArch" in
