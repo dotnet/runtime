@@ -3690,7 +3690,7 @@ namespace System.Numerics
                     else
                     {
                         // Otherwise we should have been precisely one part ahead address
-                        Debug.Assert(Unsafe.AreSame(ref lastAddress, ref Unsafe.Add(ref address, sizeof(uint))));
+                        Debug.Assert(Unsafe.AreSame(ref lastAddress, ref Unsafe.Subtract(ref address, sizeof(uint))));
                     }
                 }
 
