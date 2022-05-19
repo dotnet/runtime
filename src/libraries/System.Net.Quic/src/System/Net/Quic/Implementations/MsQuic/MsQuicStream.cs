@@ -303,12 +303,12 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             using CancellationTokenRegistration registration = SetupWriteStartState(adapter.IsEmpty, cancellationToken);
 
-            await WriteAsyncInternal<TAdapter>(adapter, flags).ConfigureAwait(false);
+            await WriteAsyncCore<TAdapter>(adapter, flags).ConfigureAwait(false);
 
             CleanupWriteCompletedState();
         }
 
-        private unsafe ValueTask WriteAsyncInternal<TAdapter>(TAdapter adapter, QUIC_SEND_FLAGS flags) where TAdapter : ISendBufferAdapter
+        private unsafe ValueTask WriteAsyncCore<TAdapter>(TAdapter adapter, QUIC_SEND_FLAGS flags) where TAdapter : ISendBufferAdapter
         {
             if (adapter.IsEmpty)
             {

@@ -47,6 +47,8 @@ internal unsafe struct MsQuicBuffers : IDisposable
             FreeNativeMemory();
             _buffers = (QUIC_BUFFER*)NativeMemory.Alloc((nuint)count, (nuint)sizeof(QUIC_BUFFER));
         }
+
+        _count = count;
     }
 
     private void SetBuffer(int index, ReadOnlyMemory<byte> buffer)
@@ -68,7 +70,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
     public void Initialize<T>(IList<T> inputs, Func<T, ReadOnlyMemory<byte>> toBuffer)
     {
         Reserve(inputs.Count);
-        _count = inputs.Count;
 
         for (int i = 0; i < inputs.Count; ++i)
         {
@@ -85,7 +86,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
     public void Initialize(ReadOnlyMemory<byte> buffer)
     {
         Reserve(1);
-        _count = 1;
         SetBuffer(0, buffer);
     }
 
@@ -103,13 +103,10 @@ internal unsafe struct MsQuicBuffers : IDisposable
         }
 
         Reserve(count);
-        _count = count;
-        count = 0;
-
+        int i = 0;
         foreach (ReadOnlyMemory<byte> buffer in buffers)
         {
-            SetBuffer(count, buffer);
-            ++count;
+            SetBuffer(i++, buffer);
         }
     }
 
@@ -124,9 +121,10 @@ internal unsafe struct MsQuicBuffers : IDisposable
         Reserve(count);
         _count = count;
 
-        for (int i = 0; i < buffers.Length; i++)
+        ReadOnlySpan<ReadOnlyMemory<byte>> span = buffers.Span;
+        for (int i = 0; i < span.Length; i++)
         {
-            SetBuffer(i, buffers.Span[i]);
+            SetBuffer(i, span[i]);
         }
     }
 
