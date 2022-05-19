@@ -28,7 +28,7 @@ namespace System.Numerics.Tests
         [Fact]
         public unsafe void IsHardwareAcceleratedTest()
         {
-            var methodInfo = typeof(Vector).GetMethod("get_IsHardwareAccelerated");
+            MethodInfo methodInfo = typeof(Vector).GetMethod("get_IsHardwareAccelerated");
             Assert.Equal(Vector.IsHardwareAccelerated, methodInfo.Invoke(null, null));
         }
 
