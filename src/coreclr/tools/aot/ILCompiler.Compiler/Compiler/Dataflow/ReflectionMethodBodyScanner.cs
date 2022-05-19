@@ -335,9 +335,16 @@ namespace ILCompiler.Dataflow
         protected override ValueWithDynamicallyAccessedMembers GetMethodParameterValue(MethodDesc method, int parameterIndex)
             => GetMethodParameterValue(method, parameterIndex, _annotations.GetParameterAnnotation(method, parameterIndex));
 
-        // TODO: This also works for "this" parameters in the linker!
         ValueWithDynamicallyAccessedMembers GetMethodParameterValue(MethodDesc method, int parameterIndex, DynamicallyAccessedMemberTypes dynamicallyAccessedMemberTypes)
         {
+            if (!method.Signature.IsStatic)
+            {
+                if (parameterIndex == 0)
+                    return _annotations.GetMethodThisParameterValue(method, dynamicallyAccessedMemberTypes);
+
+                parameterIndex--;
+            }
+
             return _annotations.GetMethodParameterValue(method, parameterIndex, dynamicallyAccessedMemberTypes);
         }
 
