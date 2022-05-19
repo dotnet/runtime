@@ -160,7 +160,7 @@ namespace System.Threading
         internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => true;
 #else
-        internal static bool IsThreadStartSupported => false
+        internal static bool IsThreadStartSupported => false;
         internal static bool IsInternalThreadStartSupported => false;
 #endif
 
