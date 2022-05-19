@@ -8,71 +8,41 @@ namespace Microsoft.Extensions.Caching.Distributed
     /// <summary>
     /// Provides the cache options for an entry in <see cref="IDistributedCache"/>.
     /// </summary>
-    public class DistributedCacheEntryOptions
+    public struct DistributedCacheEntryOptions
     {
-        private DateTimeOffset? _absoluteExpiration;
-        private TimeSpan? _absoluteExpirationRelativeToNow;
-        private TimeSpan? _slidingExpiration;
+        public readonly DateTimeOffset? AbsoluteExpiration { get; init; }
+        public readonly TimeSpan? AbsoluteExpirationRelativeToNow { get; init; }
+        public readonly TimeSpan? SlidingExpiration { get; init; }
 
-        /// <summary>
-        /// Gets or sets an absolute expiration date for the cache entry.
-        /// </summary>
-        public DateTimeOffset? AbsoluteExpiration
+        public DistributedCacheEntryOptions(DateTimeOffset? absoluteExpiration,
+            TimeSpan? absoluteExpirationRelativeToNow, TimeSpan? slidingExpiration)
         {
-            get
+            if (absoluteExpirationRelativeToNow <= TimeSpan.Zero)
             {
-                return _absoluteExpiration;
+                throw new ArgumentOutOfRangeException(
+                    nameof(AbsoluteExpirationRelativeToNow),
+                    absoluteExpirationRelativeToNow,
+                    "The relative expiration value must be positive.");
             }
-            set
+
+            if (slidingExpiration <= TimeSpan.Zero)
             {
-                _absoluteExpiration = value;
+                throw new ArgumentOutOfRangeException(
+                    nameof(SlidingExpiration),
+                    slidingExpiration,
+                    "The sliding expiration value must be positive.");
             }
+
+            AbsoluteExpiration = absoluteExpiration;
+            AbsoluteExpirationRelativeToNow = absoluteExpirationRelativeToNow;
+            SlidingExpiration = slidingExpiration;
         }
 
-        /// <summary>
-        /// Gets or sets an absolute expiration time, relative to now.
-        /// </summary>
-        public TimeSpan? AbsoluteExpirationRelativeToNow
+        public DistributedCacheEntryOptions()
         {
-            get
-            {
-                return _absoluteExpirationRelativeToNow;
-            }
-            set
-            {
-                if (value <= TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(AbsoluteExpirationRelativeToNow),
-                        value,
-                        "The relative expiration value must be positive.");
-                }
-
-                _absoluteExpirationRelativeToNow = value;
-            }
-        }
-
-        /// <summary>
-        /// Gets or sets how long a cache entry can be inactive (e.g. not accessed) before it will be removed.
-        /// This will not extend the entry lifetime beyond the absolute expiration (if set).
-        /// </summary>
-        public TimeSpan? SlidingExpiration
-        {
-            get
-            {
-                return _slidingExpiration;
-            }
-            set
-            {
-                if (value <= TimeSpan.Zero)
-                {
-                    throw new ArgumentOutOfRangeException(
-                        nameof(SlidingExpiration),
-                        value,
-                        "The sliding expiration value must be positive.");
-                }
-                _slidingExpiration = value;
-            }
+            AbsoluteExpiration = null;
+            AbsoluteExpirationRelativeToNow = null;
+            SlidingExpiration = null;
         }
     }
 }

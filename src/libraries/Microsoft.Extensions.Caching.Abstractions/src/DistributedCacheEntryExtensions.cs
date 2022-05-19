@@ -16,8 +16,7 @@ namespace Microsoft.Extensions.Caching.Distributed
             this DistributedCacheEntryOptions options,
             TimeSpan relative)
         {
-            options.AbsoluteExpirationRelativeToNow = relative;
-            return options;
+            return new DistributedCacheEntryOptions(options.AbsoluteExpiration, relative, options.SlidingExpiration);
         }
 
         /// <summary>
@@ -29,8 +28,7 @@ namespace Microsoft.Extensions.Caching.Distributed
             this DistributedCacheEntryOptions options,
             DateTimeOffset absolute)
         {
-            options.AbsoluteExpiration = absolute;
-            return options;
+            return new DistributedCacheEntryOptions(absolute, options.AbsoluteExpirationRelativeToNow, options.SlidingExpiration);
         }
 
         /// <summary>
@@ -43,8 +41,7 @@ namespace Microsoft.Extensions.Caching.Distributed
             this DistributedCacheEntryOptions options,
             TimeSpan offset)
         {
-            options.SlidingExpiration = offset;
-            return options;
+            return new DistributedCacheEntryOptions(options.AbsoluteExpiration, options.AbsoluteExpirationRelativeToNow, offset);
         }
     }
 }

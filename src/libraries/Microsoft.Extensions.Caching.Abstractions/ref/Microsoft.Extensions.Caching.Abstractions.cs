@@ -4,6 +4,8 @@
 // Changes to this file must follow the https://aka.ms/api-review process.
 // ------------------------------------------------------------------------------
 
+using System;
+
 namespace Microsoft.Extensions.Caching.Distributed
 {
     public static partial class DistributedCacheEntryExtensions
@@ -12,12 +14,40 @@ namespace Microsoft.Extensions.Caching.Distributed
         public static Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions SetAbsoluteExpiration(this Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions options, System.TimeSpan relative) { throw null; }
         public static Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions SetSlidingExpiration(this Microsoft.Extensions.Caching.Distributed.DistributedCacheEntryOptions options, System.TimeSpan offset) { throw null; }
     }
-    public partial class DistributedCacheEntryOptions
+    public partial struct DistributedCacheEntryOptions
     {
-        public DistributedCacheEntryOptions() { }
-        public System.DateTimeOffset? AbsoluteExpiration { get { throw null; } set { } }
-        public System.TimeSpan? AbsoluteExpirationRelativeToNow { get { throw null; } set { } }
-        public System.TimeSpan? SlidingExpiration { get { throw null; } set { } }
+        public DistributedCacheEntryOptions(DateTimeOffset? absoluteExpiration,
+            TimeSpan? absoluteExpirationRelativeToNow, TimeSpan? slidingExpiration)
+        {
+            if (absoluteExpirationRelativeToNow <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(AbsoluteExpirationRelativeToNow),
+                    absoluteExpirationRelativeToNow,
+                    "The relative expiration value must be positive.");
+            }
+
+            if (slidingExpiration <= TimeSpan.Zero)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(SlidingExpiration),
+                    slidingExpiration,
+                    "The sliding expiration value must be positive.");
+            }
+
+            AbsoluteExpiration = absoluteExpiration;
+            AbsoluteExpirationRelativeToNow = absoluteExpirationRelativeToNow;
+            SlidingExpiration = slidingExpiration;
+        }
+        public DistributedCacheEntryOptions()
+        {
+            AbsoluteExpiration = null;
+            AbsoluteExpirationRelativeToNow = null;
+            SlidingExpiration = null;
+        }
+        public System.DateTimeOffset? AbsoluteExpiration { get; init; }
+        public System.TimeSpan? AbsoluteExpirationRelativeToNow { get; init; }
+        public System.TimeSpan? SlidingExpiration { get; init; }
     }
     public static partial class DistributedCacheExtensions
     {
