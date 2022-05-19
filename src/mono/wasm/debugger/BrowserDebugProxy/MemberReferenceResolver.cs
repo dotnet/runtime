@@ -189,11 +189,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return await GetValueFromObject(valueRet, token);
 
             ArraySegment<string> parts = new ArraySegment<string>(varName.Split(".", StringSplitOptions.TrimEntries));
-            if (parts.Count == 0)
-                return null;
-
-            if (string.IsNullOrEmpty(parts[0]))
-                return null;
+            if (parts.Count == 0 || string.IsNullOrEmpty(parts[0]))
+                throw new ReturnAsErrorException($"Failed to resolve expression: {varName}", "ReferenceError");
 
             JObject retObject = await ResolveAsLocalOrThisMember(parts[0]);
             bool hasNullCondition = parts[0][^1] == '?';
