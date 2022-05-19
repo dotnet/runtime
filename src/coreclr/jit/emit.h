@@ -159,8 +159,7 @@ public:
         return ig;
     }
 
-    int  GetInsNum() const;
-    void SetInsNum(int insNum);
+    int GetInsNum() const;
 
     bool operator!=(const emitLocation& other) const
     {
@@ -280,7 +279,6 @@ struct insGroup
                                   // IG, or, if this IG contains with an unconditional branch, some subsequent IG.
 #define IGF_REMOVED_ALIGN 0x0800  // IG was marked as having an alignment instruction(s), but was later unmarked
                                   // without updating the IG's size/offsets.
-#define IGF_UPD_ICOUNT 0x1000
 
 // Mask of IGF_* flags that should be propagated to new blocks when they are created.
 // This allows prologs and epilogs to be any number of IGs, but still be

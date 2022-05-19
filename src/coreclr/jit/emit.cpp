@@ -50,11 +50,6 @@ int emitLocation::GetInsNum() const
     return emitGetInsNumFromCodePos(codePos);
 }
 
-void emitLocation::SetInsNum(int insNum)
-{
-    codePos = emitGetInsNumFromCodePos(insNum) + (emitGetInsOfsFromCodePos(codePos) << 16);
-}
-
 // Get the instruction offset in the current instruction group, which must be a funclet prolog group.
 // This is used to find an instruction offset used in unwind data.
 // TODO-AMD64-Bug?: We only support a single main function prolog group, but allow for multiple funclet prolog
@@ -4173,8 +4168,6 @@ bool emitter::emitRemoveJumpToNextInst()
             previousJumpIgNum  = jmpGroup->igNum;
             previousJumpInsNum = jmp->idDebugOnlyInfo()->idNum;
 #endif
-            jmp->idjIsJmpAlways = 0; // do we even need to do this now? with a single loop we should never revist
-
             // target group is not bound yet so use the cookie to fetch it
             insGroup* targetGroup = (insGroup*)emitCodeGetCookie(jmp->idAddr()->iiaBBlabel);
 
@@ -4252,13 +4245,10 @@ bool emitter::emitRemoveJumpToNextInst()
                         previousTruncatedGroup  = jmpGroup;
                         UNATIVE_OFFSET codeSize = instructionDescriptor->idCodeSize();
 
-#if DEBUG
-                        memset((BYTE*)instructionDescriptor, 0, codeSize);
-#endif
+                        instructionDescriptor->idCodeSize(0);
 
-                        jmpGroup->igInsCnt -= 1;
                         jmpGroup->igSize -= (unsigned short)codeSize;
-                        jmpGroup->igFlags |= (IGF_UPD_ISZ | IGF_UPD_ICOUNT);
+                        jmpGroup->igFlags |= IGF_UPD_ISZ;
 
                         emitTotalCodeSize -= codeSize;
                         totalRemovedSize += codeSize;
@@ -6766,7 +6756,13 @@ unsigned emitter::emitEndCodeGen(Compiler* comp,
             }
 
 #endif
-
+            if (id->idCodeSize() == 0)
+            {
+#ifdef DEBUG
+                assert(cnt == 1);
+#endif
+                continue;
+            }
             castto(id, BYTE*) += emitIssue1Instr(ig, id, &cp);
 
 #ifdef DEBUG

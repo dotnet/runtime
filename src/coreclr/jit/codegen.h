@@ -26,7 +26,6 @@ public:
     virtual void genGenerateCode(void** codePtr, uint32_t* nativeSizeOfCode);
 
     void genGenerateMachineCode();
-    void genUpdateLiveRangesForTruncatedIGs();
     void genEmitMachineCode();
     void genEmitUnwindDebugGCandEH();
 

@@ -9001,7 +9001,9 @@ void emitter::emitDispIns(
 
     /* By now the size better be set to something */
 
-    assert(id->idCodeSize() || emitInstHasNoCode(ins));
+    assert(
+        id->idCodeSize() || emitInstHasNoCode(ins) ||
+        (id->idCodeSize() == 0 && (((instrDescJmp*)id)->idjIsJmpAlways == 1) && emitIsUncondJump((instrDescJmp*)id)));
 
     /* Figure out the operand size */
 
