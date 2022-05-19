@@ -99,6 +99,10 @@ namespace System.Net.Sockets
             {
                 _clientSocket = value;
                 _family = _clientSocket?.AddressFamily ?? AddressFamily.Unknown;
+                if (_clientSocket == null)
+                {
+                    InitializeClientSocket();
+                }
             }
         }
 
@@ -127,12 +131,7 @@ namespace System.Net.Sockets
                 throw new ArgumentOutOfRangeException(nameof(port));
             }
 
-            if (Client == null)
-            {
-                InitializeClientSocket();
-            }
-
-            Client!.Connect(hostname, port);
+            Client.Connect(hostname, port);
             _family = Client.AddressFamily;
             _active = true;
 
