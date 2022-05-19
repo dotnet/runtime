@@ -768,9 +768,8 @@ namespace System
 
             if (!BitConverter.IsLittleEndian)
             {
-                ulong tmp = lower;
-                lower = BinaryPrimitives.ReverseEndianness(upper);
-                upper = BinaryPrimitives.ReverseEndianness(tmp);
+                lower = BinaryPrimitives.ReverseEndianness(lower);
+                upper = BinaryPrimitives.ReverseEndianness(upper);
             }
 
             ref byte address = ref MemoryMarshal.GetReference(destination);
@@ -860,7 +859,7 @@ namespace System
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        long IBinaryInteger<UInt128>.GetShortestBitLength()
+        int IBinaryInteger<UInt128>.GetShortestBitLength()
         {
             UInt128 value = this;
             return (Size * 8) - BitOperations.LeadingZeroCount(value);
@@ -868,6 +867,35 @@ namespace System
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
         int IBinaryInteger<UInt128>.GetByteCount() => Size;
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<UInt128>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= Size)
+            {
+                ulong lower = _lower;
+                ulong upper = _upper;
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    lower = BinaryPrimitives.ReverseEndianness(lower);
+                    upper = BinaryPrimitives.ReverseEndianness(upper);
+                }
+
+                ref byte address = ref MemoryMarshal.GetReference(destination);
+
+                Unsafe.WriteUnaligned(ref address, upper);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(ulong)), lower);
+
+                bytesWritten = Size;
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<UInt128>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
