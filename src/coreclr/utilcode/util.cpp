@@ -1064,7 +1064,6 @@ int GetCurrentProcessCpuCount()
             }
             else
             {
-                pmask &= smask;
                 count = 0;
 
                 while (pmask)
@@ -1143,7 +1142,6 @@ DWORD_PTR GetCurrentProcessCpuMask()
     if (!GetProcessAffinityMask(GetCurrentProcess(), &pmask, &smask))
         return 1;
 
-    pmask &= smask;
     return pmask;
 #else
     return 0;

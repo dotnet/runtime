@@ -146,8 +146,6 @@ bool GCToOSInterface::Initialize()
         uintptr_t pmask, smask;
         if (!!::GetProcessAffinityMask(::GetCurrentProcess(), (PDWORD_PTR)&pmask, (PDWORD_PTR)&smask))
         {
-            pmask &= smask;
-
             for (size_t i = 0; i < 8 * sizeof(uintptr_t); i++)
             {
                 if ((pmask & ((uintptr_t)1 << i)) != 0)
