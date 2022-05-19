@@ -12,8 +12,6 @@ namespace System.IO.Compression.Tests
     public partial class ZipFile_Unix : ZipFileTestBase
     {
         [Fact]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/68293", TestPlatforms.OSX)]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60581", TestPlatforms.iOS | TestPlatforms.tvOS | TestPlatforms.MacCatalyst)]
         public void UnixCreateSetsPermissionsInExternalAttributes()
         {
             // '7600' tests that S_ISUID, S_ISGID, and S_ISVTX bits get preserved in ExternalAttributes
@@ -102,6 +100,19 @@ namespace System.IO.Compression.Tests
             File.WriteAllText(filename, "contents");
 
             Assert.Equal(0, Interop.Sys.ChMod(filename, Convert.ToInt32(permissions, 8)));
+
+            // In some environments, the file mode may be modified by the OS.
+            // See the Rationale section of https://linux.die.net/man/3/chmod.
+
+            // To workaround this, read the file mode back, and if it has changed rename the file.
+            Interop.Sys.FileStatus status;
+            Assert.Equal(0, Interop.Sys.Stat(filename, out status));
+            string updatedPermissions = Convert.ToString(status.Mode & 0xFFF, 8);
+            if (updatedPermissions != permissions)
+            {
+                string newFileName = Path.Combine(folderPath, $"{updatedPermissions}.txt");
+                File.Move(filename, newFileName);
+            }
         }
 
         private static void EnsureFilePermissions(string filename, string permissions)
