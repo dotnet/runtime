@@ -7448,12 +7448,7 @@ VOID ETW::EnumerationLog::EnumerationHelper(Module *moduleFilter, BaseDomain *do
         GC_TRIGGERS;
     } CONTRACTL_END;
 
-    // Disable IBC logging during ETW enumeration since we call a lot of functionality
-    // that does logging and causes problems in the shutdown path due to critical
-    // section access for IBC logging
-    IBCLoggingDisabler disableLogging;
-
-    if(moduleFilter)
+    if (moduleFilter)
     {
         // Iterate modules first because their number is usually smaller then the number of methods.
         // Thus hitting a timeout due to a large number of methods will not affect modules rundown.tf g

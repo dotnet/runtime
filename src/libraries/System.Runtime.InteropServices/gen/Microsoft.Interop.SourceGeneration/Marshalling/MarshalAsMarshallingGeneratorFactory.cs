@@ -9,8 +9,10 @@ namespace Microsoft.Interop
 {
     public sealed class MarshalAsMarshallingGeneratorFactory : IMarshallingGeneratorFactory
     {
-        private static readonly ByteBoolMarshaller s_byteBool = new();
-        private static readonly WinBoolMarshaller s_winBool = new();
+        private static readonly ByteBoolMarshaller s_byteBool = new(signed: false);
+        private static readonly ByteBoolMarshaller s_signed_byteBool = new(signed: true);
+        private static readonly WinBoolMarshaller s_winBool = new(signed: false);
+        private static readonly WinBoolMarshaller s_signed_winBool = new(signed: true);
         private static readonly VariantBoolMarshaller s_variantBool = new();
 
         private static readonly Utf16CharMarshaller s_utf16Char = new();
@@ -78,10 +80,14 @@ namespace Microsoft.Interop
                     {
                         NotSupportedDetails = SR.MarshallingBoolAsUndefinedNotSupported
                     };
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1 or UnmanagedType.U1, _) }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U1, _) }:
                     return s_byteBool;
-                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.U4 or UnmanagedType.Bool, _) }:
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I1, _) }:
+                    return s_signed_byteBool;
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.U4, _) }:
                     return s_winBool;
+                case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.I4 or UnmanagedType.Bool, _) }:
+                    return s_signed_winBool;
                 case { ManagedType: SpecialTypeInfo { SpecialType: SpecialType.System_Boolean }, MarshallingAttributeInfo: MarshalAsInfo(UnmanagedType.VariantBool, _) }:
                     return s_variantBool;
 

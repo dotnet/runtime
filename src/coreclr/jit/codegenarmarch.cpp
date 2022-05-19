@@ -1296,18 +1296,12 @@ void CodeGen::genPutArgSplit(GenTreePutArgSplit* treeNode)
         if (varNode != nullptr)
         {
             assert(varNode->isContained());
-            srcVarNum = varNode->GetLclNum();
-
-            // handle promote situation
+            srcVarNum         = varNode->GetLclNum();
             LclVarDsc* varDsc = compiler->lvaGetDesc(srcVarNum);
 
-            // This struct also must live in the stack frame
-            // And it can't live in a register (SIMD)
-            assert(varDsc->lvType == TYP_STRUCT);
+            // This struct also must live in the stack frame.
+            // And it can't live in a register.
             assert(varDsc->lvOnFrame && !varDsc->lvRegister);
-
-            // We don't split HFA struct
-            assert(!varDsc->lvIsHfa());
         }
         else // addrNode is used
         {
@@ -2807,14 +2801,22 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     CopyBlockUnrollHelper helper(srcOffset, dstOffset, size);
     regNumber             srcReg = srcAddrBaseReg;
 
+#ifdef DEBUG
+    bool isSrcRegAddrAlignmentKnown = false;
+    bool isDstRegAddrAlignmentKnown = false;
+#endif
+
     if (srcLclNum != BAD_VAR_NUM)
     {
         bool      fpBased;
         const int baseAddr = compiler->lvaFrameAddress(srcLclNum, &fpBased);
 
         srcReg = fpBased ? REG_FPBASE : REG_SPBASE;
-
         helper.SetSrcOffset(baseAddr + srcOffset);
+
+#ifdef DEBUG
+        isSrcRegAddrAlignmentKnown = true;
+#endif
     }
 
     regNumber dstReg = dstAddrBaseReg;
@@ -2825,8 +2827,11 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
         const int baseAddr = compiler->lvaFrameAddress(dstLclNum, &fpBased);
 
         dstReg = fpBased ? REG_FPBASE : REG_SPBASE;
-
         helper.SetDstOffset(baseAddr + dstOffset);
+
+#ifdef DEBUG
+        isDstRegAddrAlignmentKnown = true;
+#endif
     }
 
     bool canEncodeAllLoads  = true;
@@ -2937,6 +2942,18 @@ void CodeGen::genCodeForCpBlkUnroll(GenTreeBlk* node)
     else
     {
         assert(helper.CanEncodeAllOffsets(REGSIZE_BYTES));
+    }
+#endif
+
+#ifndef JIT32_GCENCODER
+    if (!node->gtBlkOpGcUnsafe && ((srcOffsetAdjustment != 0) || (dstOffsetAdjustment != 0)))
+    {
+        // If node is not already marked as non-interruptible, and if are about to generate code
+        // that produce GC references in temporary registers not reported, then mark the block
+        // as non-interruptible.
+        // Corresponding EnableGC() will be done by the caller of this method.
+        node->gtBlkOpGcUnsafe = true;
+        GetEmitter()->emitDisableGC();
     }
 #endif
 
