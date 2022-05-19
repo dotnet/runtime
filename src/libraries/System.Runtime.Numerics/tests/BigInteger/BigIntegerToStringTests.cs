@@ -1596,7 +1596,7 @@ namespace System.Numerics.Tests
             List<char> out2 = new List<char>();
             for (int i = 0; i < output.Length; i++)
             {
-                if ((output[i] >= '0') & (output[i] <= '9'))
+                if (char.IsAsciiDigit(output[i]))
                 {
                     out2.Add(output[i]);
                 }

@@ -522,6 +522,9 @@
   <data name="Arg_MustBeInt64" xml:space="preserve">
     <value>Object must be of type Int64.</value>
   </data>
+  <data name="Arg_MustBeInt128" xml:space="preserve">
+    <value>Object must be of type Int128.</value>
+  </data>
   <data name="Arg_MustBeIntPtr" xml:space="preserve">
     <value>Object must be of type IntPtr.</value>
   </data>
@@ -566,6 +569,9 @@
   </data>
   <data name="Arg_MustBeUInt64" xml:space="preserve">
     <value>Object must be of type UInt64.</value>
+  </data>
+  <data name="Arg_MustBeUInt128" xml:space="preserve">
+    <value>Object must be of type UInt128.</value>
   </data>
   <data name="Arg_MustBeUIntPtr" xml:space="preserve">
     <value>Object must be of type UIntPtr.</value>
@@ -3022,6 +3028,9 @@
   <data name="Overflow_Int64" xml:space="preserve">
     <value>Value was either too large or too small for an Int64.</value>
   </data>
+  <data name="Overflow_Int128" xml:space="preserve">
+    <value>Value was either too large or too small for an Int128.</value>
+  </data>
   <data name="Overflow_MutexReacquireCount" xml:space="preserve">
     <value>The current thread attempted to reacquire a mutex that has reached its maximum acquire count.</value>
   </data>
@@ -3048,6 +3057,9 @@
   </data>
   <data name="Overflow_UInt64" xml:space="preserve">
     <value>Value was either too large or too small for a UInt64.</value>
+  </data>
+  <data name="Overflow_UInt128" xml:space="preserve">
+    <value>Value was either too large or too small for a UInt128.</value>
   </data>
   <data name="PlatformNotSupported_ArgIterator" xml:space="preserve">
     <value>ArgIterator is not supported on this platform.</value>

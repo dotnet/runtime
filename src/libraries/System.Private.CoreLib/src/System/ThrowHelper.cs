@@ -197,6 +197,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOverflowException()
+        {
+            throw new OverflowException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowOverflowException_TimeSpanTooLong()
         {
             throw new OverflowException(SR.Overflow_TimeSpanTooLong);
