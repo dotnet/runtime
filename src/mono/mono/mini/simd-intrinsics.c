@@ -2092,7 +2092,7 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type)) {
 			int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
 
-			MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
+			ins = emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
 			ins->inst_c0 = CMP_UEQ;
 			return ins;
 		} else if (fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)) {
