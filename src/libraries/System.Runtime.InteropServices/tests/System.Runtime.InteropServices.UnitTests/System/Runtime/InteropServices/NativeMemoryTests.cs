@@ -461,18 +461,18 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(512, 0)]
         [InlineData(547, 0)]
         [InlineData(1 * 1024, 0)]
-        public void ZeroMemoryTest(uint size, uint offset)
+        public void ZeroMemoryTest(int size, int offset)
         {
-            byte* ptr = (byte*)NativeMemory.AlignedAlloc(size + offset, 8);
+            byte* ptr = (byte*)NativeMemory.AlignedAlloc((nuint)(size + offset), 8);
 
             Assert.True(ptr != null);
             Assert.True((nuint)ptr % 8 == 0);
 
-            new Span<byte>(ptr, (int)(size + offset)).Fill(0b10101010);
+            new Span<byte>(ptr, size + offset).Fill(0b10101010);
 
-            NativeMemory.ZeroMemory(ptr + offset, size);
+            NativeMemory.ZeroMemory(ptr + offset, (nuint)size);
 
-            Assert.Equal(-1, new Span<byte>(ptr + offset, (int)size).IndexOfAnyExcept(0));
+            Assert.Equal(-1, new Span<byte>(ptr + offset, size).IndexOfAnyExcept(0));
 
             NativeMemory.AlignedFree(ptr);
         }
@@ -509,10 +509,10 @@ namespace System.Runtime.InteropServices.Tests
         [InlineData(0, 0)] // Also run some tests with a size of 0 to verify it no-ops
         [InlineData(0, 1)]
         [InlineData(0, 167)]
-        public void ZeroMemoryWithExactRangeTest(uint size, uint offset)
+        public void ZeroMemoryWithExactRangeTest(int size, int offset)
         {
-            int headLength = (int)offset;
-            int bodyLength = (int)size;
+            int headLength = offset;
+            int bodyLength = size;
             int tailLength = 512 - headLength - bodyLength;
             int headOffset = 0;
             int bodyOffset = headLength;
