@@ -4900,6 +4900,7 @@ public:
     {                                   \
         try                             \
         {                               \
+            HardwareExceptionHolder     \
             tryBlock(__param);          \
         }                               \
         catch (...)                     \
