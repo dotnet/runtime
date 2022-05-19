@@ -3052,7 +3052,8 @@ namespace System
         public static System.Int128 RotateRight(System.Int128 value, int rotateAmount) { throw null; }
         public static int Sign(System.Int128 value) { throw null; }
         int System.Numerics.IBinaryInteger<System.Int128>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<System.Int128>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<System.Int128>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<System.Int128>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.Int128>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
@@ -5884,7 +5885,8 @@ namespace System
         public static System.UInt128 RotateRight(System.UInt128 value, int rotateAmount) { throw null; }
         public static int Sign(System.UInt128 value) { throw null; }
         int System.Numerics.IBinaryInteger<System.UInt128>.GetByteCount() { throw null; }
-        long System.Numerics.IBinaryInteger<System.UInt128>.GetShortestBitLength() { throw null; }
+        int System.Numerics.IBinaryInteger<System.UInt128>.GetShortestBitLength() { throw null; }
+        bool System.Numerics.IBinaryInteger<System.UInt128>.TryWriteBigEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         bool System.Numerics.IBinaryInteger<System.UInt128>.TryWriteLittleEndian(System.Span<byte> destination, out int bytesWritten) { throw null; }
         static System.UInt128 System.Numerics.INumber<System.UInt128>.Abs(System.UInt128 value) { throw null; }
         static System.UInt128 System.Numerics.INumber<System.UInt128>.CopySign(System.UInt128 value, System.UInt128 sign) { throw null; }
