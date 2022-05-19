@@ -56,6 +56,7 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/handle.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/metadata/custom-attrs-internals.h"
+#include <mono/metadata/custom-attrs-types.h>
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/loader-internals.h"
@@ -3350,6 +3351,82 @@ mono_marshal_set_callconv_from_unmanaged_callconv_attribute (MonoMethod *method,
 		mono_custom_attrs_free(cinfo);
 }
 
+static void mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignature *sig, MonoType *cmod_type, MonoError *error)
+{
+	g_assert (cmod_type->type == MONO_TYPE_CLASS);
+	MonoClass *cmod_klass = mono_class_from_mono_type_internal (cmod_type);
+	g_assert (m_class_get_image (cmod_klass) == mono_defaults.corlib);
+	g_assert (!strcmp (m_class_get_name_space (cmod_klass), "System.Runtime.CompilerServices"));
+
+	const char *name = m_class_get_name (cmod_klass);
+	g_assert (!strstr (name, "CallConv") != name);
+	name += strlen ("CallConv");
+
+	if (!strcmp (name, "Cdecl"))
+		sig->call_convention = MONO_CALL_C;
+	else if (!strcmp (name, "Stdcall"))
+		sig->call_convention = MONO_CALL_STDCALL;
+	else if (!strcmp (name, "Thiscall"))
+		sig->call_convention = MONO_CALL_THISCALL;
+	else if (!strcmp (name, "Fastcall"))
+		sig->call_convention = MONO_CALL_FASTCALL;
+	else if (!strcmp (name, "SuppressGCTransition"))
+		sig->suppress_gc_transition = 1;
+	// TODO: CallConvMemberFunction?
+}
+
+static void
+mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *method, MonoMethodSignature *csig)
+{
+	MonoClass *attr_class = mono_class_try_get_unmanaged_callers_only_attribute_class ();
+	if (!attr_class)
+		return;
+
+	ERROR_DECL (error);
+	MonoCustomAttrInfo *cinfo = mono_custom_attrs_from_method_checked (method, error);
+	if (!is_ok (error) || !cinfo) {
+		mono_error_cleanup (error);
+		return;
+	}
+
+	mono_array_size_t i;
+	MonoCustomAttrEntry *attr = NULL;
+	for (i = 0; i < cinfo->num_attrs; ++i) {
+		MonoClass *ctor_class = cinfo->attrs [i].ctor->klass;
+		if (ctor_class == attr_class) {
+			attr = &cinfo->attrs [i];
+			break;
+		}
+	}
+
+	if (attr != NULL)
+	{
+		gpointer *typed_args = NULL;
+		gpointer *named_args = NULL;
+		CattrNamedArg *named_arg_info = NULL;
+		int num_named_args = 0;
+		mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size, &typed_args, &named_args, &num_named_args, &named_arg_info, error);
+		for (int i = 0; i < num_named_args; ++i) {
+			if (named_arg_info [i].field && !strcmp (named_arg_info [i].field->name, "CallConvs")) {
+				MonoCustomAttrValue* calling_conventions_attr =  (MonoCustomAttrValue*) named_args [i];
+				g_assert(calling_conventions_attr->type == MONO_TYPE_SZARRAY);
+				
+				MonoCustomAttrValueArray* calling_conventions = (MonoCustomAttrValueArray*) calling_conventions_attr->value.array;
+				g_assert(calling_conventions->len == 1);
+
+				MonoType* calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
+				mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
+			}
+		}
+		g_free (named_args);
+		g_free (named_arg_info);
+	}
+
+	if (!cinfo->cached)
+		mono_custom_attrs_free(cinfo);
+}
+
+
 /**
  * mono_marshal_get_native_wrapper:
  * \param method The \c MonoMethod to wrap.
@@ -4045,6 +4122,8 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 
 	if (invoke)
 		mono_marshal_set_callconv_from_modopt (invoke, csig, TRUE);
+	else
+		mono_marshal_set_callconv_from_unmanaged_callers_only_attribute(method, csig);
 
 	/* The attribute is only available in Net 2.0 */
 	if (delegate_klass && mono_class_try_get_unmanaged_function_pointer_attribute_class ()) {

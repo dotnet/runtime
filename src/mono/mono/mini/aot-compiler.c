@@ -51,7 +51,6 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/custom-attrs-internals.h>
-#include <mono/metadata/custom-attrs-types.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
@@ -5202,25 +5201,6 @@ MONO_RESTORE_WARNING
 						export_name = (char *)g_malloc (slen + 1);
 						memcpy (export_name, named, slen);
 						export_name [slen] = 0;
-					}
-					if (named_arg_info [j].field && !strcmp (named_arg_info [j].field->name, "CallConvs")) {
-						MonoCustomAttrValue* arg_value =  (MonoCustomAttrValue*) named_args [j];
-						g_assert(arg_value->type == MONO_TYPE_SZARRAY);
-						
-						MonoCustomAttrValueArray* value_array = (MonoCustomAttrValueArray*) arg_value->value.array;
-						g_assert(value_array->len == 1);
-
-						MonoType* specified_type = (MonoType*)value_array->values[0].value.primitive;
-						g_assert(specified_type->type == MONO_TYPE_CLASS);
-
-						MonoClass *cmod_klass = mono_class_from_mono_type_internal (specified_type);
-						g_assert(m_class_get_image (cmod_klass) == mono_defaults.corlib);
-						g_assert(!strcmp (m_class_get_name_space (cmod_klass), "System.Runtime.CompilerServices"));
-
-						const char *name = m_class_get_name (cmod_klass);
-						g_print ("Method %s has UnmanagedCallersOnlyAttribute specified with the following calling convention: %s \n", mono_method_get_full_name (method), name);
-
-						// TODO: free
 					}
 				}
 				g_free (named_args);
