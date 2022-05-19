@@ -4,15 +4,17 @@
   <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="IcallTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="InterpToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <UsingTask TaskName="Microsoft.WebAssembly.Build.Tasks.EmccCompile" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
 
   <PropertyGroup>
     <_WasmBuildNativeCoreDependsOn>
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
-      _GenerateInterpToNative;
+      <!-- _GenerateInterpToNative;
       _GeneratePInvokeTable;
-      _GenerateICallTable;
+      _GenerateICallTable; -->
+      _GenerateManagedToNative;
       _WasmCompileNativeFiles;
       _WasmLinkDotNet;
       _CompleteWasmBuildNative
@@ -309,6 +311,33 @@
       OutputPath="$(_WasmInterpToNativeTablePath)">
       <Output TaskParameter="FileWrites" ItemName="FileWrites" />
     </InterpToNativeGenerator>
+  </Target>
+
+  <Target Name="_GenerateManagedToNative">
+    <ItemGroup>
+      <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
+
+      <_WasmPInvokeModules Include="libSystem.Native" />
+      <_WasmPInvokeModules Include="libSystem.IO.Compression.Native" />
+      <_WasmPInvokeModules Include="libSystem.Globalization.Native" />
+    </ItemGroup>
+    
+    <Error Condition="'$(_MonoAotCrossCompilerPath)' == '' or !Exists('$(_MonoAotCrossCompilerPath)')"
+           Text="Could not find AOT cross compiler at %24(_MonoAotCrossCompilerPath)=$(_MonoAotCrossCompilerPath)" />
+
+    <Exec Command='"$(_MonoAotCrossCompilerPath)" --print-icall-table > "$(_WasmRuntimeICallTablePath)"' />
+    <ItemGroup>
+      <FileWrites Include="$(_WasmRuntimeICallTablePath)" />
+    </ItemGroup>
+
+    <ManagedToNativeGenerator
+      Assemblies="@(_WasmAssembliesInternal)"
+      RuntimeIcallTableFile="$(_WasmRuntimeICallTablePath)"
+      IcallOutputPath="$(_WasmICallTablePath)"
+      PInvokeModules="@(_WasmPInvokeModules)"
+      PInvokeOutputPath="$(_WasmPInvokeTablePath)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ManagedToNativeGenerator>
   </Target>
 
   <Target Name="_WasmSelectRuntimeComponentsForLinking" Condition="'$(WasmNativeWorkload)' == 'true'" DependsOnTargets="_MonoSelectRuntimeComponents" />
