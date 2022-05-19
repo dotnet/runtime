@@ -607,7 +607,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Apply subsumption/combining optimizations, such that e.g. a?b|b will be simplified to a?b and b|a?b will be combined to a??b
         /// </summary>
         /// <remarks>
-        /// The deduplicated argument allows skipping deduplication when it is known to be not necessary. This is
+        /// The <paramref name="deduplicated"/> argument allows skipping deduplication when it is known to be not necessary. This is
         /// commonly the case when some transformation f is applied to an existing alternation A|B|C|... such that
         /// for all regexes R,S it is the case that f(R)==f(S) iff R==S.
         /// </remarks>
@@ -635,7 +635,7 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Simplify by folding right side into left side if right side subsumes the left side. For example Y|X?Y|Z
             // would simplify to X??Y|Z.
-            if (head.Subsumes(left) && TryFold(builder, head, left, out SymbolicRegexNode<TSet>? result))
+            if (head.Subsumes(left) && TryFoldAlternation(left, head, out SymbolicRegexNode<TSet>? result))
                 return OrderedOr(builder, result, tail);
 
             // This is a repeat of a rule above, but for the case when the hint tells us to try reverse subsumption first.
@@ -827,10 +827,14 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 return null;
 
-                // Tries to skip over a prefix and returns the tail that's left
+                // Given a candidate prefix P and another regex R, tries to skip over P in R to find a split R=PT.
+                // If this succeeds T is returned in tail.
+                // Note that this method currently only succeeds when both node and prefix are in right associative
+                // form (if they are concats).
                 static bool TrySkipPrefix(SymbolicRegexNode<TSet> node, SymbolicRegexNode<TSet> prefix, [NotNullWhen(true)] out SymbolicRegexNode<TSet>? tail)
                 {
                     tail = null;
+                    // Walk over the prefix and the node in lockstep
                     while (prefix._kind == SymbolicRegexNodeKind.Concat)
                     {
                         Debug.Assert(prefix._left is not null && prefix._right is not null);
@@ -842,6 +846,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         node = node._right;
                         prefix = prefix._right;
                     }
+                    // Handle the final element
                     if (node._kind != SymbolicRegexNodeKind.Concat)
                         return false;
                     Debug.Assert(node._left is not null && node._right is not null);
@@ -855,6 +860,10 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
+        /// <summary>
+        /// Unwraps Effect nodes by walking into their left children until a non-Effect node is found.
+        /// </summary>
+        /// <returns>the first non-Effect node</returns>
         private SymbolicRegexNode<TSet> UnwrapEffects()
         {
             SymbolicRegexNode<TSet> current = this;
@@ -866,82 +875,116 @@ namespace System.Text.RegularExpressions.Symbolic
             return current;
         }
 
-        private static bool TryFold(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> low, SymbolicRegexNode<TSet> high, [NotNullWhen(true)] out SymbolicRegexNode<TSet>? result)
+        /// <summary>
+        /// Tries to combine the lower priority right hand side with the higher priority left hand side in an alternation
+        /// when the right hand side is known to subsume the left hand side.
+        /// For example in abc|(xyz){0,3}abc the right hand side subsumes the left hand side. This function can be used to
+        /// eliminate the alternation by simplifying to (xyz){0,3}?abc. Note that the transformation preserves the priority
+        /// of the shorter "abc" match by making the prefix lazy.
+        /// </summary>
+        /// <param name="left">the lower priority alternative</param>
+        /// <param name="right">the higher priority alternative</param>
+        /// <param name="result">the folded regex that eliminates alternation, or null if the operation fails</param>
+        /// <param name="rightEffects">accumulated effects from the right side</param>
+        /// <returns>whether folding was successful</returns>
+        private static bool TryFoldAlternation(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, [NotNullWhen(true)] out SymbolicRegexNode<TSet>? result,
+            SymbolicRegexNode<TSet>? rightEffects = null)
         {
-            Debug.Assert(low.Subsumes(high));
+            // The rules below assume that the right side subsumes the left side
+            Debug.Assert(right.Subsumes(left));
 
-            SymbolicRegexNode<TSet> highInner = high.UnwrapEffects();
-            SymbolicRegexNode<TSet> lowInner = low.UnwrapEffects();
+            rightEffects ??= left._builder.Epsilon;
 
-            if (highInner == lowInner)
+            // If the sides are equal (ignoring effects) then just return the higher priority left side
+            if (left.UnwrapEffects() == right.UnwrapEffects())
             {
-                result = high;
+                result = left;
                 return true;
             }
 
-            if (high._kind == SymbolicRegexNodeKind.Effect)
+            // If the left side has an effect, then the folding proceeds into the actual child and the effect
+            // is kept on the top level.
+            // For example, Effect(Y,E) | X?Y folds into Effect(X??Y,E)
+            if (left._kind == SymbolicRegexNodeKind.Effect)
             {
-                Debug.Assert(high._left is not null && high._right is not null);
-                Debug.Assert(low.Subsumes(high._left));
-                if (TryFold(builder, low, high._left, out SymbolicRegexNode<TSet>? innerResult))
+                Debug.Assert(left._left is not null && left._right is not null);
+                Debug.Assert(right.Subsumes(left._left));
+                // If there are any accumulated effects we don't know how to handle them here.
+                // This shouldn't normally happen because this rule has priority over the rule
+                // for effects on the right side.
+                if (rightEffects != left._builder.Epsilon)
                 {
-                    result = CreateEffect(builder, innerResult, high._right);
+                    result = null;
+                    return false;
+                }
+                if (TryFoldAlternation(left._left, right, out SymbolicRegexNode<TSet>? innerResult, rightEffects))
+                {
+                    result = CreateEffect(left._builder, innerResult, left._right);
                     return true;
                 }
             }
 
-            if (low._kind == SymbolicRegexNodeKind.Effect)
+            // If the right side has an effect, then it has to be pushed into the optional prefix.
+            // For example, Y | Effect(X?Y,E) folds into Effect(X?,E)??Y
+            if (right._kind == SymbolicRegexNodeKind.Effect)
             {
-                Debug.Assert(low._left is not null && low._right is not null);
-                Debug.Assert(low._left.Subsumes(high));
-                if (TryFold(builder, low._left, high, out SymbolicRegexNode<TSet>? innerResult))
+                Debug.Assert(right._left is not null && right._right is not null);
+                Debug.Assert(right._left.Subsumes(left));
+                rightEffects = CreateConcat(left._builder, right._right, rightEffects);
+                return TryFoldAlternation(left, right._left, out result, rightEffects);
+            }
+
+            // If we have Y | XY then this rule will find X and fold to X??Y.
+            if (right._kind == SymbolicRegexNodeKind.Concat)
+            {
+                Debug.Assert(right._left is not null && right._right is not null);
+                if (right._left.IsNullable && TrySplitConcatSubsumption(left, right, out SymbolicRegexNode<TSet>? prefix))
                 {
-                    result = CreateEffect(builder, innerResult, low._right);
+                    prefix = CreateEffect(left._builder, prefix, rightEffects);
+                    result = left._builder.CreateConcat(CreateLoop(left._builder, prefix, 0, 1, true), left);
                     return true;
                 }
             }
 
-            if (low._kind == SymbolicRegexNodeKind.Concat)
-            {
-                Debug.Assert(low._left is not null && low._right is not null);
-                Debug.Assert(low._left.IsNullable);
-                if (TrySplitConcatSubsumption(builder, low, high, out SymbolicRegexNode<TSet>? prefix))
-                {
-                    result = builder.CreateConcat(CreateLoop(builder, prefix, 0, 1, true), high);
-                    return true;
-                }
-            }
-
+            // If no rule matched then return false for failure
             result = null;
             return false;
 
-            static bool TrySplitConcatSubsumption(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> low, SymbolicRegexNode<TSet> high,
+            // This rule tries to find a prefix P that the right side has such that right is PR and left is equivalent to R
+            static bool TrySplitConcatSubsumption(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right,
                 [NotNullWhen(true)] out SymbolicRegexNode<TSet>? prefix)
             {
                 List<SymbolicRegexNode<TSet>> prefixElements = new();
-                SymbolicRegexNode<TSet> current = low;
-                while (current._kind == SymbolicRegexNodeKind.Concat)
+                SymbolicRegexNode<TSet> suffix = right;
+                while (suffix._kind == SymbolicRegexNodeKind.Concat)
                 {
-                    Debug.Assert(current._left is not null && current._right is not null);
-                    Debug.Assert(current.Subsumes(high));
-                    if (current == high)
+                    Debug.Assert(suffix._left is not null && suffix._right is not null);
+                    // We maintain a loop invariant that the suffix subsumes the left hand side
+                    Debug.Assert(suffix.Subsumes(left));
+                    if (suffix == left)
                     {
-                        prefix = builder.CreateConcat(prefixElements);
+                        // We found a split, so store the prefix and return success
+                        prefix = left._builder.CreateConcat(prefixElements);
                         return true;
                     }
-                    else if (current._right.Subsumes(high))
+                    else if (suffix._right.Subsumes(left))
                     {
-                        prefixElements.Add(current._left);
-                        current = current._right;
+                        // The tail of the suffix still subsumes left, so we can extend the prefix
+                        prefixElements.Add(suffix._left);
+                        suffix = suffix._right;
                     }
-                    else if (high.Subsumes(current))
+                    else if (left.Subsumes(suffix))
                     {
-                        prefix = builder.CreateConcat(prefixElements);
+                        // If left subsumes the suffix, then due to the loop invariant we have equivalence
+                        prefix = left._builder.CreateConcat(prefixElements);
                         return true;
                     }
                     else
+                    {
                         break;
+                    }
                 }
+                // Return false if we failed to find a split
                 prefix = null;
                 return false;
             }
