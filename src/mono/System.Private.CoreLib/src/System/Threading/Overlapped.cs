@@ -99,8 +99,10 @@ namespace System.Threading
 
                 success = true;
 #if FEATURE_PERFTRACING
+#if !(TARGET_BROWSER && !FEATURE_WASM_THREADS)
                 if (NativeRuntimeEventSource.Log.IsEnabled())
                     NativeRuntimeEventSource.Log.ThreadPoolIOPack(pNativeOverlapped);
+#endif
 #endif
                 return _pNativeOverlapped;
             }

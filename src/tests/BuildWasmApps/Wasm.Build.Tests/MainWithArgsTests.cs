@@ -83,7 +83,7 @@ namespace Wasm.Build.Tests
             if (dotnetWasmFromRuntimePack == null)
                 dotnetWasmFromRuntimePack = !(buildArgs.AOT || buildArgs.Config == "Release");
 
-            Console.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
+            _testOutput.WriteLine ($"-- args: {buildArgs}, name: {projectName}");
 
             BuildProject(buildArgs,
                             id: id,

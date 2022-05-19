@@ -256,7 +256,7 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new DelayLoadHelperMethodImport(
                     this,
-                    DispatchImports, 
+                    DispatchImports,
                     ReadyToRunHelper.DelayLoad_Helper_Obj,
                     key.Method,
                     useVirtualCall: false,
@@ -301,11 +301,6 @@ namespace ILCompiler.DependencyAnalysis
             {
                 return new CopiedManagedResourcesNode(module);
             });
-
-            _profileDataCountsNodes = new NodeCache<MethodWithGCInfo, ProfileDataNode>(method =>
-            {
-                return new ProfileDataNode(method, Target);
-            });
         }
 
         public int CompilationCurrentPhase { get; private set; }
@@ -326,7 +321,6 @@ namespace ILCompiler.DependencyAnalysis
 
         public RuntimeFunctionsGCInfoNode RuntimeFunctionsGCInfo;
 
-        public ProfileDataSectionNode ProfileDataSection;
         public DelayLoadMethodCallThunkNodeRange DelayLoadMethodCallThunks;
 
         public InstanceEntryPointTableNode InstanceEntryPointTable;
@@ -533,7 +527,7 @@ namespace ILCompiler.DependencyAnalysis
 
             public bool Equals(VirtualResolutionFixupSignatureFixupKey other)
             {
-                return FixupKind == other.FixupKind && DeclMethod.Equals(other.DeclMethod) && ImplType == other.ImplType && 
+                return FixupKind == other.FixupKind && DeclMethod.Equals(other.DeclMethod) && ImplType == other.ImplType &&
                     ((ImplMethod == null && other.ImplMethod == null) || (ImplMethod != null && ImplMethod.Equals(other.ImplMethod)));
             }
 
@@ -617,9 +611,6 @@ namespace ILCompiler.DependencyAnalysis
 
             RuntimeFunctionsGCInfo = new RuntimeFunctionsGCInfoNode();
             graph.AddRoot(RuntimeFunctionsGCInfo, "GC info is always generated");
-
-            ProfileDataSection = new ProfileDataSectionNode();
-            Header.Add(Internal.Runtime.ReadyToRunSectionType.ProfileDataInfo, ProfileDataSection, ProfileDataSection.StartSymbol);
 
             DelayLoadMethodCallThunks = new DelayLoadMethodCallThunkNodeRange();
             Header.Add(Internal.Runtime.ReadyToRunSectionType.DelayLoadMethodCallThunks, DelayLoadMethodCallThunks, DelayLoadMethodCallThunks);
@@ -931,13 +922,6 @@ namespace ILCompiler.DependencyAnalysis
         public CopiedManagedResourcesNode CopiedManagedResources(EcmaModule module)
         {
             return _copiedManagedResources.GetOrAdd(module);
-        }
-
-        private NodeCache<MethodWithGCInfo, ProfileDataNode> _profileDataCountsNodes;
-
-        public ProfileDataNode ProfileData(MethodWithGCInfo method)
-        {
-            return _profileDataCountsNodes.GetOrAdd(method);
         }
     }
 }

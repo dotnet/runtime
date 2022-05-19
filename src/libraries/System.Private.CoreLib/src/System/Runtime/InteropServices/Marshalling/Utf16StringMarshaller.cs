@@ -25,17 +25,7 @@ namespace System.Runtime.InteropServices.Marshalling
         /// <param name="str">The string to marshal.</param>
         public Utf16StringMarshaller(string? str)
         {
-            if (str is null)
-            {
-                _nativeValue = null;
-                return;
-            }
-
-            // + 1 for null terminator
-            _nativeValue =  (ushort*)Marshal.AllocCoTaskMem((str.Length + 1) * sizeof(ushort));
-
-            str.CopyTo(new Span<char>(_nativeValue, str.Length));
-            _nativeValue[str.Length] = '\0'; // null-terminate
+            _nativeValue = (ushort*)Marshal.StringToCoTaskMemUni(str);
         }
 
         /// <summary>

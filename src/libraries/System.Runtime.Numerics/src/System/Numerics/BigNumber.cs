@@ -865,15 +865,15 @@ namespace System.Numerics
 
             int i = 0;
             char ch = format[i];
-            if (ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z')
+            if (char.IsAsciiLetter(ch))
             {
                 i++;
                 int n = -1;
 
-                if (i < format.Length && format[i] >= '0' && format[i] <= '9')
+                if (i < format.Length && char.IsAsciiDigit(format[i]))
                 {
                     n = format[i++] - '0';
-                    while (i < format.Length && format[i] >= '0' && format[i] <= '9')
+                    while (i < format.Length && char.IsAsciiDigit(format[i]))
                     {
                         int temp = n * 10 + (format[i++] - '0');
                         if (temp < n)

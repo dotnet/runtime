@@ -65,6 +65,11 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_get_type_name", "string", ["number"]],
     ["mono_wasm_get_type_aqn", "string", ["number"]],
 
+    // MONO.diagnostics
+    ["mono_wasm_event_pipe_enable", "bool", ["string", "number", "string", "bool", "number"]],
+    ["mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
+    ["mono_wasm_event_pipe_session_disable", "bool", ["number"]],
+
     //DOTNET
     ["mono_wasm_string_from_js", "number", ["string"]],
 
@@ -155,6 +160,11 @@ export interface t_Cwraps {
      * @deprecated Not GC or thread safe
      */
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
+
+    // MONO.diagnostics
+    mono_wasm_event_pipe_enable(outputPath: string, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
+    mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
+    mono_wasm_event_pipe_session_disable(sessionId: number): boolean;
 
     //DOTNET
     /**

@@ -315,7 +315,7 @@ namespace System.Globalization
             {
                 // Note that this # shouldn't ever be zero, 'cause 0 is only at end
                 // But we'll test because its registry that could be anything
-                if (win32Str[i] < '1' || win32Str[i] > '9')
+                if (!char.IsBetween(win32Str[i], '1', '9'))
                     return new int[] { 3 };
 
                 values[j] = (int)(win32Str[i] - '0');

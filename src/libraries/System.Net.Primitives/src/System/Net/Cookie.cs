@@ -561,11 +561,7 @@ namespace System.Net
             for (int i = 0; i < name.Length; ++i)
             {
                 char ch = name[i];
-                if (!((ch >= '0' && ch <= '9') ||
-                      (ch == '.' || ch == '-') ||
-                      (ch >= 'a' && ch <= 'z') ||
-                      (ch >= 'A' && ch <= 'Z') ||
-                      (ch == '_')))
+                if (!(char.IsAsciiLetterOrDigit(ch) || ch == '.' || ch == '-' || ch == '_'))
                 {
                     return false;
                 }
