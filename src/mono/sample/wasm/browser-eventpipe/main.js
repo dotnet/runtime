@@ -8,8 +8,7 @@ function wasm_exit(exit_code) {
     console.log(`WASM EXIT ${exit_code}`);
 }
 
-function downloadData(dataURL,filename)
-{
+function downloadData(dataURL, filename) {
     // make an `<a download="filename" href="data:..."/>` link and click on it to trigger a download with the given name
     const elt = document.createElement('a');
     elt.download = filename;
@@ -22,8 +21,7 @@ function downloadData(dataURL,filename)
     document.body.removeChild(elt);
 }
 
-function makeTimestamp()
-{
+function makeTimestamp() {
     // ISO date string, but with : and . replaced by -
     const t = new Date();
     const s = t.toISOString();
@@ -37,7 +35,7 @@ async function loadRuntime() {
 }
 
 
-const delay = (ms) => new Promise((resolve) => setTimeout (resolve, ms))
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
 
 async function doWork(startWork, stopWork, getIterationsDone) {
     const N = parseInt(document.getElementById("inputN").value);
@@ -99,11 +97,11 @@ function getOnClickHandler(startWork, stopWork, getIterationsDone) {
 async function main() {
     const createDotnetRuntime = await loadRuntime();
     const { MONO, BINDING, Module, RuntimeBuildInfo } = await createDotnetRuntime(() => {
-            return {
-                disableDotnet6Compatibility: true,
-                configSrc: "./mono-config.json",
-            }
-        });
+        return {
+            disableDotnet6Compatibility: true,
+            configSrc: "./mono-config.json",
+        }
+    });
     globalThis.__Module = Module;
     globalThis.MONO = MONO;
 
@@ -115,7 +113,7 @@ async function main() {
     const btn = document.getElementById("startWork");
 
     btn.style.backgroundColor = "rgb(192,255,192)";
-    btn.onclick = getOnClickHandler (startWork, stopWork, getIterationsDone);
+    btn.onclick = getOnClickHandler(startWork, stopWork, getIterationsDone);
 
 }
 
