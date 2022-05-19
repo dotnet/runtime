@@ -4,7 +4,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
-using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
 using System.Threading;
 
@@ -594,7 +593,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>
         /// Make an ordered or of given regexes, eliminate nothing regexes and treat .* as consuming element.
         /// Keep the or flat, assuming both right and left are flat.
-        /// Apply a counter subsumption/combining optimization, such that e.g. a{2,5}|a{3,10} will be combined to a{2,10}.
+        /// Apply subsumption/combining optimizations, such that e.g. a?b|b will be simplified to a?b and b|a?b will be combined to a??b
         /// </summary>
         internal static SymbolicRegexNode<TSet> OrderedOr(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, bool deduplicated = false)
         {
