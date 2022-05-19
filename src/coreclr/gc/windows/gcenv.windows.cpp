@@ -62,7 +62,7 @@ struct CPU_Group_Info
 
 static bool g_fEnableGCCPUGroups;
 static bool g_fHadSingleProcessorAtStartup;
-static DWORD  g_nGroups;
+static DWORD g_nGroups;
 static DWORD g_nProcessors;
 static CPU_Group_Info *g_CPUGroupInfoArray;
 
@@ -193,7 +193,7 @@ bool InitCPUGroupInfoArray()
     {
         g_CPUGroupInfoArray[i].nr_active   = (WORD)pRecord->Group.GroupInfo[i].ActiveProcessorCount;
         g_CPUGroupInfoArray[i].active_mask = pRecord->Group.GroupInfo[i].ActiveProcessorMask;
-        g_CPUGroupInfoArray[i].begin       = g_nProcessors;
+        g_CPUGroupInfoArray[i].begin       = (WORD)g_nProcessors;
         g_nProcessors += g_CPUGroupInfoArray[i].nr_active;
         dwWeight = LCM(dwWeight, (DWORD)g_CPUGroupInfoArray[i].nr_active);
     }
