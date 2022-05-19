@@ -65,7 +65,7 @@ namespace System.Runtime.InteropServices.JavaScript.Tests
             if (value < int.MaxValue)
             {
                 Assert.IsType<int>(o);
-                ulong actual = (uint)o;
+                ulong actual = (ulong)(long)(int)o;
                 Assert.Equal(expected, actual);
             }
             Assert.Equal(expected, actual2);

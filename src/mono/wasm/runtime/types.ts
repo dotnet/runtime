@@ -3,7 +3,6 @@
 
 import { bind_runtime_method } from "./method-binding";
 import { CharPtr, EmscriptenModule, ManagedPointer, NativePointer, VoidPtr } from "./types/emscripten";
-import Configuration from "consts:configuration";
 
 export type GCHandle = {
     __brand: "GCHandle"
