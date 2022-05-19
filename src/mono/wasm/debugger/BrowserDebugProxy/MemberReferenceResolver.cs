@@ -192,8 +192,11 @@ namespace Microsoft.WebAssembly.Diagnostics
             if (parts.Count == 0)
                 return null;
 
+            if (string.IsNullOrEmpty(parts[0]))
+                return null;
+
             JObject retObject = await ResolveAsLocalOrThisMember(parts[0]);
-            bool isRootNullSafe = parts[0].LastOrDefault() == '?';
+            bool hasNullCondition = parts[0][^1] == '?';
             if (retObject != null && parts.Count > 1)
             {
                 // cannot resolve instance member on a primitive type,
@@ -202,7 +205,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                 if (MonoSDBHelper.IsPrimitiveType(typeName))
                     return null;
 
-                retObject = await ResolveAsInstanceMember(parts[1..], retObject, isRootNullSafe);
+                retObject = await ResolveAsInstanceMember(parts[1..], retObject, hasNullCondition);
             }
 
             if (retObject == null)
@@ -217,7 +220,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     }
                     else
                     {
-                        retObject = await ResolveAsInstanceMember(remaining, retObject, isRootNullSafe);
+                        retObject = await ResolveAsInstanceMember(remaining, retObject, hasNullCondition);
                     }
                 }
             }
@@ -235,8 +238,8 @@ namespace Microsoft.WebAssembly.Diagnostics
                     localsFetched = true;
                 }
 
-                // remove null-safety, otherwise TryGet by name fails
-                if (name.LastOrDefault() == '?')
+                // remove null-condition, otherwise TryGet by name fails
+                if (name[^1] == '?')
                     name = name.Remove(name.Length - 1);
 
                 if (scopeCache.Locals.TryGetValue(name, out JObject obj))
@@ -262,10 +265,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                 return null;
             }
 
-            async Task<JObject> ResolveAsInstanceMember(ArraySegment<string> parts, JObject baseObject, bool isRootNullSafe)
+            async Task<JObject> ResolveAsInstanceMember(ArraySegment<string> parts, JObject baseObject, bool hasNullCondition)
             {
                 // if the prevPart has "?" at the end: true
-                bool isResolvedObjNullSafe = isRootNullSafe;
+                bool hasResolvedObjNullCondition = hasNullCondition;
                 bool isPrevPartNull = false;
                 JObject resolvedObject = baseObject;
                 for (int i = 0; i < parts.Count; i++)
@@ -278,7 +281,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                     if (isPrevPartNull || resolvedObject.IsNullValuedObject())
                     {
                         // trying null.$member
-                        if (!isResolvedObjNullSafe)
+                        if (!hasResolvedObjNullCondition)
                             throw new ReturnAsErrorException($"Cannot access member \"{partTrimmed}\" of a null-valued object.", "ReferenceError");
 
                         if (i == parts.Count - 1)
@@ -292,10 +295,10 @@ namespace Microsoft.WebAssembly.Diagnostics
                         isPrevPartNull = true;
                     }
 
-                    bool isCurrentPartNullSafe = partTrimmed.Last() == '?';
-                    isResolvedObjNullSafe = isCurrentPartNullSafe;
+                    bool hasCurrentPartNullCondition = partTrimmed.Last() == '?';
+                    hasResolvedObjNullCondition = hasCurrentPartNullCondition;
 
-                    // cannot resolve the members but can check if nullSafety is
+                    // cannot resolve the members but can check if null condition is
                     // correctly applied and if we should throw or return null-object
                     if (!DotnetObjectId.TryParse(resolvedObject?["objectId"]?.Value<string>(), out DotnetObjectId objectId))
                         continue;
@@ -308,7 +311,7 @@ namespace Microsoft.WebAssembly.Diagnostics
                         return null;
                     }
 
-                    if (isCurrentPartNullSafe)
+                    if (hasCurrentPartNullCondition)
                         partTrimmed = partTrimmed.Remove(partTrimmed.Length - 1);
                     JToken objRet = valueOrError.Value.FirstOrDefault(objPropAttr => objPropAttr["name"]?.Value<string>() == partTrimmed);
                     if (objRet == null)
