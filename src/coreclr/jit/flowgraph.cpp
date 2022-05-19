@@ -2944,6 +2944,57 @@ void Compiler::fgSimpleLowering()
         {
             switch (tree->OperGet())
             {
+#ifdef TARGET_ARM64
+                case GT_SUB:
+                {
+                    GenTree* node = tree;
+
+                    GenTree* op1 = node->gtGetOp1();
+                    GenTree* op2 = node->gtGetOp2();
+
+                    if (!(node->TypeIs(TYP_INT, TYP_LONG) && !node->IsUnsigned() && op1->OperIs(GT_LCL_VAR)))
+                        break;
+
+                    if (!op2->OperIs(GT_LSH))
+                        break;
+
+                    GenTree* lsh   = op2;
+                    GenTree* div   = lsh->gtGetOp1();
+                    GenTree* shift = lsh->gtGetOp2();
+                    if (div->OperIs(GT_DIV) && shift->IsIntegralConst())
+                    {
+                        GenTree* a   = div->gtGetOp1();
+                        GenTree* cns = div->gtGetOp2();
+                        if (a->OperIs(GT_LCL_VAR) && cns->IsIntegralConstPow2() &&
+                            op1->AsLclVar()->GetLclNum() == a->AsLclVar()->GetLclNum())
+                        {
+                            size_t shiftValue = shift->AsIntConCommon()->IntegralValue();
+                            size_t cnsValue   = cns->AsIntConCommon()->IntegralValue();
+                            if ((cnsValue >> shiftValue) == 1)
+                            {
+                                // Only do the optimization if the node is closed.
+                                bool isClosed = false;
+                                range.GetTreeRange(node, &isClosed);
+                                if (!isClosed)
+                                    break;
+
+                                GenTree* newCns = gtNewIconNode(cnsValue);
+
+                                node->ChangeOper(GT_MOD);
+                                node->AsOp()->gtOp2 = newCns;
+
+                                range.Remove(cns);
+                                range.Remove(a);
+                                range.Remove(shift);
+                                range.Remove(div);
+                                range.Remove(lsh);
+                                range.InsertAfter(op1, newCns);
+                            }
+                        }
+                    }
+                    break;
+                }
+#endif
                 case GT_ARR_LENGTH:
                 {
                     GenTreeArrLen* arrLen = tree->AsArrLen();
