@@ -39,6 +39,12 @@
     <OfficialBuildRID Include="linux-musl-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-bionic-x86">
+      <Platform>x86</Platform>
+    </OfficialBuildRID>
+    <OfficialBuildRID Include="linux-bionic-arm">
+      <Platform>arm</Platform>
+    </OfficialBuildRID>
     <OfficialBuildRID Include="linux-bionic-arm64">
       <Platform>arm64</Platform>
     </OfficialBuildRID>
