@@ -11,7 +11,6 @@ using System.Runtime.Serialization;
 using System.Runtime.Versioning;
 
 #pragma warning disable SA1121 // explicitly using type aliases instead of built-in types
-#pragma warning disable CA1066 // Implement IEquatable when overriding Object.Equals
 
 #if TARGET_64BIT
 using nint_t = System.Int64;
@@ -34,24 +33,24 @@ namespace System
           IMinMaxValue<nint>,
           ISignedNumber<nint>
     {
-        private readonly unsafe void* _value; // Do not rename (binary serialization)
+        private readonly nint _value;
 
         [Intrinsic]
-        public static readonly IntPtr Zero;
+        public static readonly nint Zero;
 
         [NonVersionable]
-        public unsafe IntPtr(int value)
+        public IntPtr(int value)
         {
-            _value = (void*)value;
+            _value = value;
         }
 
         [NonVersionable]
-        public unsafe IntPtr(long value)
+        public IntPtr(long value)
         {
 #if TARGET_64BIT
-            _value = (void*)value;
+            _value = (nint)value;
 #else
-            _value = (void*)checked((int)value);
+            _value = checked((nint)value);
 #endif
         }
 
@@ -59,111 +58,100 @@ namespace System
         [NonVersionable]
         public unsafe IntPtr(void* value)
         {
-            _value = value;
+            _value = (nint)value;
         }
 
-        private unsafe IntPtr(SerializationInfo info, StreamingContext context)
+        private IntPtr(SerializationInfo info, StreamingContext context)
         {
-            long l = info.GetInt64("value");
+            long value = info.GetInt64("value");
 
-            if (Size == 4 && (l > int.MaxValue || l < int.MinValue))
+#if TARGET_32BIT
+            if ((value > int.MaxValue) || (value < int.MinValue))
+            {
                 throw new ArgumentException(SR.Serialization_InvalidPtrValue);
+            }
+#endif
 
-            _value = (void*)l;
+            _value = (nint)value;
         }
 
-        unsafe void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
+        void ISerializable.GetObjectData(SerializationInfo info, StreamingContext context)
         {
             ArgumentNullException.ThrowIfNull(info);
 
-            info.AddValue("value", ToInt64());
+            long value = _value;
+            info.AddValue("value", value);
         }
 
-        public override unsafe bool Equals([NotNullWhen(true)] object? obj) =>
-            obj is IntPtr other &&
-            _value == other._value;
+        public override bool Equals([NotNullWhen(true)] object? obj) => (obj is nint other) && Equals(other);
 
-        public override unsafe int GetHashCode()
+        public override int GetHashCode()
         {
 #if TARGET_64BIT
-            long l = (long)_value;
-            return unchecked((int)l) ^ (int)(l >> 32);
-#else
-            return unchecked((int)_value);
-#endif
-        }
-
-        [NonVersionable]
-        public unsafe int ToInt32()
-        {
-#if TARGET_64BIT
-            long l = (long)_value;
-            return checked((int)l);
+            long value = _value;
+            return value.GetHashCode();
 #else
             return (int)_value;
 #endif
         }
 
         [NonVersionable]
-        public unsafe long ToInt64() =>
-            (nint)_value;
-
-        [NonVersionable]
-        public static unsafe explicit operator IntPtr(int value) =>
-            new IntPtr(value);
-
-        [NonVersionable]
-        public static unsafe explicit operator IntPtr(long value) =>
-            new IntPtr(value);
-
-        [CLSCompliant(false)]
-        [NonVersionable]
-        public static unsafe explicit operator IntPtr(void* value) =>
-            new IntPtr(value);
-
-        [CLSCompliant(false)]
-        [NonVersionable]
-        public static unsafe explicit operator void*(IntPtr value) =>
-            value._value;
-
-        [NonVersionable]
-        public static unsafe explicit operator int(IntPtr value)
+        public int ToInt32()
         {
 #if TARGET_64BIT
-            long l = (long)value._value;
-            return checked((int)l);
+            return checked((int)_value);
 #else
-            return (int)value._value;
+            return (int)_value;
 #endif
         }
 
         [NonVersionable]
-        public static unsafe explicit operator long(IntPtr value) =>
-            (nint)value._value;
+        public long ToInt64() => _value;
 
         [NonVersionable]
-        public static unsafe bool operator ==(IntPtr value1, IntPtr value2) =>
-            value1._value == value2._value;
+        public static explicit operator nint(int value) => value;
 
         [NonVersionable]
-        public static unsafe bool operator !=(IntPtr value1, IntPtr value2) =>
-            value1._value != value2._value;
+        public static explicit operator nint(long value) => checked((nint)value);
+
+        [CLSCompliant(false)]
+        [NonVersionable]
+        public static unsafe explicit operator nint(void* value) => (nint)value;
+
+        [CLSCompliant(false)]
+        [NonVersionable]
+        public static unsafe explicit operator void*(nint value) => (void*)value;
 
         [NonVersionable]
-        public static IntPtr Add(IntPtr pointer, int offset) =>
-            pointer + offset;
+        public static explicit operator int(nint value)
+        {
+#if TARGET_64BIT
+            return checked((int)value);
+#else
+            return (int)value;
+#endif
+        }
 
         [NonVersionable]
-        public static unsafe IntPtr operator +(IntPtr pointer, int offset) =>
-            (nint)pointer._value + offset;
+        public static explicit operator long(nint value) => value;
 
         [NonVersionable]
-        public static IntPtr Subtract(IntPtr pointer, int offset) =>
-            pointer - offset;
+        public static bool operator ==(nint value1, nint value2) => value1 == value2;
 
         [NonVersionable]
-        public static unsafe IntPtr operator -(IntPtr pointer, int offset) =>
-            (nint)pointer._value - offset;
+        public static bool operator !=(nint value1, nint value2) => value1 != value2;
+
+        [NonVersionable]
+        public static nint Add(nint pointer, int offset) => pointer + offset;
+
+        [NonVersionable]
+        public static nint operator +(nint pointer, int offset) => pointer + offset;
+
+        [NonVersionable]
+        public static nint Subtract(nint pointer, int offset) => pointer - offset;
+
+        [NonVersionable]
+        public static nint operator -(nint pointer, int offset) => pointer - offset;
 
         public static int Size
         {
@@ -173,93 +161,95 @@ namespace System
 
         [CLSCompliant(false)]
         [NonVersionable]
-        public unsafe void* ToPointer() => _value;
+        public unsafe void* ToPointer() => (void*)_value;
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MaxValue" />
-        public static IntPtr MaxValue
+        public static nint MaxValue
         {
             [NonVersionable]
-            get => (IntPtr)nint_t.MaxValue;
+            get => unchecked((nint)nint_t.MaxValue);
         }
 
         /// <inheritdoc cref="IMinMaxValue{TSelf}.MinValue" />
-        public static IntPtr MinValue
+        public static nint MinValue
         {
             [NonVersionable]
-            get => (IntPtr)nint_t.MinValue;
+            get => unchecked((nint)nint_t.MinValue);
         }
 
-        // Don't just delegate to nint_t.CompareTo as it needs to throw when not IntPtr
-        public unsafe int CompareTo(object? value)
+        public int CompareTo(object? value)
         {
-            if (value is null)
+            if (value is nint other)
+            {
+                return CompareTo(other);
+            }
+            else if (value is null)
             {
                 return 1;
-            }
-            if (value is nint i)
-            {
-                if ((nint)_value < i) return -1;
-                if ((nint)_value > i) return 1;
-                return 0;
             }
 
             throw new ArgumentException(SR.Arg_MustBeIntPtr);
         }
 
-        public unsafe int CompareTo(IntPtr value) => ((nint_t)_value).CompareTo((nint_t)value);
+        public int CompareTo(nint value)
+        {
+            if (_value < value) return -1;
+            if (_value > value) return 1;
+            return 0;
+        }
 
         [NonVersionable]
-        public unsafe bool Equals(IntPtr other) => (nint_t)_value == (nint_t)other;
+        public bool Equals(nint other) => _value == other;
 
-        public unsafe override string ToString() => ((nint_t)_value).ToString();
-        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ((nint_t)_value).ToString(format);
-        public unsafe string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
-        public unsafe string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
+        public override string ToString() => ((nint_t)_value).ToString();
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ((nint_t)_value).ToString(format);
+        public string ToString(IFormatProvider? provider) => ((nint_t)_value).ToString(provider);
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider) => ((nint_t)_value).ToString(format, provider);
 
-        public unsafe bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
+        public bool TryFormat(Span<char> destination, out int charsWritten, [StringSyntax(StringSyntaxAttribute.NumericFormat)] ReadOnlySpan<char> format = default, IFormatProvider? provider = null) =>
             ((nint_t)_value).TryFormat(destination, out charsWritten, format, provider);
 
-        public static IntPtr Parse(string s) => (IntPtr)nint_t.Parse(s);
-        public static IntPtr Parse(string s, NumberStyles style) => (IntPtr)nint_t.Parse(s, style);
-        public static IntPtr Parse(string s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
-        public static IntPtr Parse(string s, NumberStyles style, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, style, provider);
-        public static IntPtr Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => (IntPtr)nint_t.Parse(s, provider);
-        public static IntPtr Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (IntPtr)nint_t.Parse(s, style, provider);
+        public static nint Parse(string s) => (nint)nint_t.Parse(s);
+        public static nint Parse(string s, NumberStyles style) => (nint)nint_t.Parse(s, style);
+        public static nint Parse(string s, IFormatProvider? provider) => (nint)nint_t.Parse(s, provider);
+        public static nint Parse(string s, NumberStyles style, IFormatProvider? provider) => (nint)nint_t.Parse(s, style, provider);
+        public static nint Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => (nint)nint_t.Parse(s, provider);
+        public static nint Parse(ReadOnlySpan<char> s, NumberStyles style = NumberStyles.Integer, IFormatProvider? provider = null) => (nint)nint_t.Parse(s, style, provider);
 
-        public static bool TryParse([NotNullWhen(true)] string? s, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, out IntPtr result)
+        public static bool TryParse(ReadOnlySpan<char> s, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
-        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out IntPtr result)
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out nint result)
         {
             Unsafe.SkipInit(out result);
-            return nint_t.TryParse(s, style, provider, out Unsafe.As<IntPtr, nint_t>(ref result));
+            return nint_t.TryParse(s, style, provider, out Unsafe.As<nint, nint_t>(ref result));
         }
 
         //
@@ -302,13 +292,13 @@ namespace System
         public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        unsafe int IBinaryInteger<nint>.GetShortestBitLength()
+        int IBinaryInteger<nint>.GetShortestBitLength()
         {
-            nint value = (nint)(_value);
+            nint value = _value;
 
             if (value >= 0)
             {
-                return (sizeof(nint_t) * 8) - BitOperations.LeadingZeroCount((nuint)(value));
+                return (sizeof(nint_t) * 8) - BitOperations.LeadingZeroCount((nuint)value);
             }
             else
             {
@@ -320,11 +310,16 @@ namespace System
         int IBinaryInteger<nint>.GetByteCount() => sizeof(nint_t);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
-        unsafe bool IBinaryInteger<nint>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        bool IBinaryInteger<nint>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length >= sizeof(nint_t))
             {
-                nint_t value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((nint_t)(_value)) : (nint_t)(_value);
+                nint_t value = (nint_t)_value;
+
+                if (BitConverter.IsLittleEndian)
+                {
+                    value = BinaryPrimitives.ReverseEndianness(value);
+                }
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
 
                 bytesWritten = sizeof(nint_t);
@@ -338,11 +333,16 @@ namespace System
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
-        unsafe bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
+        bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length >= sizeof(nint_t))
             {
-                nint_t value = BitConverter.IsLittleEndian ? (nint_t)(_value) : BinaryPrimitives.ReverseEndianness((nint_t)(_value));
+                nint_t value = (nint_t)_value;
+
+                if (!BitConverter.IsLittleEndian)
+                {
+                    value = BinaryPrimitives.ReverseEndianness(value);
+                }
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
 
                 bytesWritten = sizeof(nint_t);
