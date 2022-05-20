@@ -2013,7 +2013,6 @@ void Compiler::fgComputeLifeLIR(VARSET_TP& life, BasicBlock* block, VARSET_VALAR
                     {
                         Lowering::TransformUnusedIndirection(data->AsIndir(), this, block);
                     }
-
                 }
                 break;
             }
