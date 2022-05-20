@@ -42,7 +42,7 @@ namespace System.Net
         //
 
         private static X509Certificate2? GetRemoteCertificate(
-            SafeDeleteContext securityContext,
+            SafeDeleteContext? securityContext,
             bool retrieveChainCertificates,
             ref X509Chain? chain)
         {
