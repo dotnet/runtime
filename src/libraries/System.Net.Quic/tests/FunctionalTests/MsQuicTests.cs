@@ -335,7 +335,7 @@ namespace System.Net.Quic.Tests
         }
 
         [Theory]
-        // [InlineData(true)]
+        [InlineData(true)]
         [InlineData(false)]
         public async Task ConnectWithClientCertificate(bool sendCertificate)
         {
