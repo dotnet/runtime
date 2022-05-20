@@ -255,7 +255,7 @@ namespace System.Management
             else
             {
                 string strTemp = OffsetMins.ToString(frmInt32);
-                UtcString = "-" + strTemp.Substring(1, strTemp.Length - 1).PadLeft(3, '0');
+                UtcString = "-" + strTemp.Substring(1).PadLeft(3, '0');
             }
 
             string dmtfDateTime = date.Year.ToString(frmInt32).PadLeft(4, '0');

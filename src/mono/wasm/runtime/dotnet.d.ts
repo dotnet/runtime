@@ -46,6 +46,9 @@ declare interface EmscriptenModule {
     FS_readFile(filename: string, opts: any): any;
     removeRunDependency(id: string): void;
     addRunDependency(id: string): void;
+    stackSave(): VoidPtr;
+    stackRestore(stack: VoidPtr): void;
+    stackAlloc(size: number): VoidPtr;
     ready: Promise<unknown>;
     preInit?: (() => any)[];
     preRun?: (() => any)[];
@@ -153,6 +156,7 @@ declare type MonoConfig = {
     aot_profiler_options?: AOTProfilerOptions;
     coverage_profiler_options?: CoverageProfilerOptions;
     ignore_pdb_load_errors?: boolean;
+    wait_for_debugger?: number;
 };
 declare type MonoConfigError = {
     isError: true;
@@ -204,6 +208,9 @@ declare type CoverageProfilerOptions = {
     write_at?: string;
     send_to?: string;
 };
+interface EventPipeSessionOptions {
+    collectRundownEvents?: boolean;
+}
 declare type DotnetModuleConfig = {
     disableDotnet6Compatibility?: boolean;
     config?: MonoConfig | MonoConfigError;
@@ -234,6 +241,17 @@ declare type DotnetModuleConfigImports = {
     };
     url?: any;
 };
+
+declare type EventPipeSessionID = bigint;
+interface EventPipeSession {
+    get sessionID(): EventPipeSessionID;
+    start(): void;
+    stop(): void;
+    getTraceBlob(): Blob;
+}
+interface Diagnostics {
+    createEventPipeSession(options?: EventPipeSessionOptions): EventPipeSession | null;
+}
 
 declare function mono_wasm_runtime_ready(): void;
 
@@ -343,6 +361,7 @@ declare const MONO: {
     getU32: typeof getU32;
     getF32: typeof getF32;
     getF64: typeof getF64;
+    diagnostics: Diagnostics;
 };
 declare type MONOType = typeof MONO;
 declare const BINDING: {

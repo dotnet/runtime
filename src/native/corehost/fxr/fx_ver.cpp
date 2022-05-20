@@ -386,6 +386,7 @@ bool parse_internal(const pal::string_t& ver, fx_ver_t* fx_ver, bool parse_only_
 bool fx_ver_t::parse(const pal::string_t& ver, fx_ver_t* fx_ver, bool parse_only_production)
 {
     bool valid = parse_internal(ver, fx_ver, parse_only_production);
-    assert(!valid || fx_ver->as_str() == ver);
+    // Causes a SIGABRT in free() on MacOS at least in singlefile, possibly elsewhere
+    // assert(!valid || fx_ver->as_str() == ver);
     return valid;
 }

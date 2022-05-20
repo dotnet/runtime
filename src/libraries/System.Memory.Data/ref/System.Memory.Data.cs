@@ -11,6 +11,7 @@ namespace System
         public BinaryData(byte[] data) { }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed.")]
         public BinaryData(object? jsonSerializable, System.Text.Json.JsonSerializerOptions? options = null, System.Type? type = null) { }
+        public BinaryData(object? jsonSerializable, System.Text.Json.Serialization.JsonSerializerContext context, Type? type = null) { }
         public BinaryData(System.ReadOnlyMemory<byte> data) { }
         public BinaryData(string data) { }
         public static System.BinaryData Empty { get { throw null; } }
@@ -20,6 +21,7 @@ namespace System
         public static System.BinaryData FromBytes(System.ReadOnlyMemory<byte> data) { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed.")]
         public static System.BinaryData FromObjectAsJson<T>(T jsonSerializable, System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
+        public static System.BinaryData FromObjectAsJson<T>(T jsonSerializable, System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> jsonTypeInfo) { throw null; }
         public static System.BinaryData FromStream(System.IO.Stream stream) { throw null; }
         public static System.Threading.Tasks.Task<System.BinaryData> FromStreamAsync(System.IO.Stream stream, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public static System.BinaryData FromString(string data) { throw null; }
@@ -31,6 +33,7 @@ namespace System
         public System.ReadOnlyMemory<byte> ToMemory() { throw null; }
         [System.Diagnostics.CodeAnalysis.RequiresUnreferencedCodeAttribute("JSON serialization and deserialization might require types that cannot be statically analyzed.")]
         public T? ToObjectFromJson<T>(System.Text.Json.JsonSerializerOptions? options = null) { throw null; }
+        public T? ToObjectFromJson<T>(System.Text.Json.Serialization.Metadata.JsonTypeInfo<T> jsonTypeInfo) { throw null; }
         public System.IO.Stream ToStream() { throw null; }
         public override string ToString() { throw null; }
     }

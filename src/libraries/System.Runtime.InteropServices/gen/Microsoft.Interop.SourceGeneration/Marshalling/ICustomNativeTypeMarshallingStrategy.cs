@@ -111,7 +111,7 @@ namespace Microsoft.Interop
     /// <summary>
     /// A context that redefines the 'native' identifier for a TypePositionInfo to be the marshaller identifier.
     /// </summary>
-    internal sealed class CustomNativeTypeWithToFromNativeValueContext : StubCodeContext
+    internal sealed record CustomNativeTypeWithToFromNativeValueContext : StubCodeContext
     {
         public CustomNativeTypeWithToFromNativeValueContext(StubCodeContext parentContext)
         {
@@ -481,12 +481,13 @@ namespace Microsoft.Interop
 
         public IEnumerable<StatementSyntax> GeneratePinStatements(TypePositionInfo info, StubCodeContext context)
         {
-            // fixed (<_nativeTypeSyntax> <ignoredIdentifier> = &<marshalerIdentifier>)
+            // The type of the ignored identifier isn't relevant, so we use void* for all.
+            // fixed (void* <ignoredIdentifier> = &<marshalerIdentifier>)
             //  <assignment to Value property>
             var subContext = new CustomNativeTypeWithToFromNativeValueContext(context);
             yield return FixedStatement(
                 VariableDeclaration(
-                _nativeValueType,
+                PointerType(PredefinedType(Token(SyntaxKind.VoidKeyword))),
                 SingletonSeparatedList(
                     VariableDeclarator(Identifier(context.GetAdditionalIdentifier(info, "ignored")))
                         .WithInitializer(EqualsValueClause(

@@ -25,10 +25,6 @@ namespace System
     {
         public static (TSelf Quotient, TSelf Remainder) DivRem(TSelf left, TSelf right) => TSelf.DivRem(left, right);
 
-        public static int GetByteCount(TSelf value) => value.GetByteCount();
-
-        public static long GetShortestBitLength(TSelf value) => value.GetShortestBitLength();
-
         public static TSelf LeadingZeroCount(TSelf value) => TSelf.LeadingZeroCount(value);
 
         public static TSelf PopCount(TSelf value) => TSelf.PopCount(value);
@@ -38,6 +34,12 @@ namespace System
         public static TSelf RotateRight(TSelf value, int rotateAmount) => TSelf.RotateRight(value, rotateAmount);
 
         public static TSelf TrailingZeroCount(TSelf value) => TSelf.TrailingZeroCount(value);
+
+        public static int GetByteCount(TSelf value) => value.GetByteCount();
+
+        public static int GetShortestBitLength(TSelf value) => value.GetShortestBitLength();
+
+        public static bool TryWriteBigEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteBigEndian(destination, out bytesWritten);
 
         public static bool TryWriteLittleEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteLittleEndian(destination, out bytesWritten);
     }
@@ -103,13 +105,17 @@ namespace System
     {
         public static int GetExponentByteCount(TSelf value) => value.GetExponentByteCount();
 
-        public static long GetExponentShortestBitLength(TSelf value) => value.GetExponentShortestBitLength();
+        public static int GetExponentShortestBitLength(TSelf value) => value.GetExponentShortestBitLength();
 
         public static int GetSignificandByteCount(TSelf value) => value.GetSignificandByteCount();
 
-        public static long GetSignificandBitLength(TSelf value) => value.GetSignificandBitLength();
+        public static int GetSignificandBitLength(TSelf value) => value.GetSignificandBitLength();
+
+        public static bool TryWriteExponentBigEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteExponentBigEndian(destination, out bytesWritten);
 
         public static bool TryWriteExponentLittleEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteExponentLittleEndian(destination, out bytesWritten);
+
+        public static bool TryWriteSignificandBigEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteSignificandBigEndian(destination, out bytesWritten);
 
         public static bool TryWriteSignificandLittleEndian(TSelf value, Span<byte> destination, out int bytesWritten) => value.TryWriteSignificandLittleEndian(destination, out bytesWritten);
     }

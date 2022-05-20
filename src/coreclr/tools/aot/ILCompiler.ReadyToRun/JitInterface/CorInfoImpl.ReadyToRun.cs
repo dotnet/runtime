@@ -2439,16 +2439,6 @@ namespace Internal.JitInterface
         }
 
         private byte[] _bbCounts;
-        private ProfileDataNode _profileDataNode;
-
-        partial void PublishProfileData()
-        {
-            if (_profileDataNode != null)
-            {
-                MethodIL methodIL = _compilation.GetMethodIL(MethodBeingCompiled);
-                _profileDataNode.SetProfileData(methodIL.GetILBytes().Length, _bbCounts.Length / sizeof(BlockCounts), _bbCounts);
-            }
-        }
 
         partial void findKnownBBCountBlock(ref BlockType blockType, void* location, ref int offset)
         {
@@ -2516,10 +2506,6 @@ namespace Internal.JitInterface
                 blockCounts[iSchema].ILOffset = (uint)pSchema[iSchema].ILOffset;
             }
 
-            if (_profileDataNode == null)
-            {
-                _profileDataNode = _compilation.NodeFactory.ProfileData(_methodCodeNode);
-            }
             return 0;
         }
 

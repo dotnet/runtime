@@ -1,13 +1,14 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
+    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <IsPartialFacadeAssembly>true</IsPartialFacadeAssembly>
-    <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <EnableRegexGenerator>true</EnableRegexGenerator>
   </PropertyGroup>
+
   <ItemGroup>
     <ILLinkSubstitutionsXmls Include="$(ILLinkDirectory)ILLink.Substitutions.xml" />
   </ItemGroup>
+
   <ItemGroup>
     <Compile Include="MS\Internal\Xml\Linq\ComponentModel\XComponentModel.cs" />
     <Compile Include="System\ComponentModel\ArrayConverter.cs" />
@@ -238,7 +239,9 @@
     <Compile Include="System\ComponentModel\ComponentResourceManager.cs" />
     <Compile Include="System\Security\Authentication\ExtendedProtection\ExtendedProtectionPolicyTypeConverter.cs" />
   </ItemGroup>
+
   <ItemGroup>
+    <AnalyzerReference Include="$(LibrariesProjectRoot)System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj" />
     <Reference Include="System.Collections" />
     <Reference Include="System.Collections.NonGeneric" />
     <Reference Include="System.Collections.Specialized" />

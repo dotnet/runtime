@@ -49,15 +49,9 @@ SPTR_IMPL(EEJitManager, ExecutionManager, m_pEEJitManager);
 SPTR_IMPL(ReadyToRunJitManager, ExecutionManager, m_pReadyToRunJitManager);
 #endif
 
-#ifndef DACCESS_COMPILE
-Volatile<RangeSection *> ExecutionManager::m_CodeRangeList = NULL;
-Volatile<LONG> ExecutionManager::m_dwReaderCount = 0;
-Volatile<LONG> ExecutionManager::m_dwWriterLock = 0;
-#else
-SPTR_IMPL(RangeSection, ExecutionManager, m_CodeRangeList);
-SVAL_IMPL(LONG, ExecutionManager, m_dwReaderCount);
-SVAL_IMPL(LONG, ExecutionManager, m_dwWriterLock);
-#endif
+VOLATILE_SPTR_IMPL_INIT(RangeSection, ExecutionManager, m_CodeRangeList, NULL);
+VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwReaderCount, 0);
+VOLATILE_SVAL_IMPL_INIT(LONG, ExecutionManager, m_dwWriterLock, 0);
 
 #ifndef DACCESS_COMPILE
 
@@ -1498,6 +1492,11 @@ void EEJitManager::SetCpuInfo()
             {
                 CPUCompileFlags.Set(InstructionSet_BMI2);
             }
+
+            if ((cpuidInfo[EDX] & (1 << 14)) != 0)
+            {
+                CPUCompileFlags.Set(InstructionSet_X86Serialize);                                            // SERIALIZE
+            }
         }
     }
 
@@ -1659,6 +1658,11 @@ void EEJitManager::SetCpuInfo()
     {
         CPUCompileFlags.Clear(InstructionSet_SSSE3);
     }
+
+    if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableX86Serialize))
+    {
+        CPUCompileFlags.Clear(InstructionSet_X86Serialize);
+    }
 #elif defined(TARGET_ARM64)
     if (!CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_EnableHWIntrinsic))
     {
@@ -1806,6 +1810,7 @@ CORINFO_OS getClrVmOs();
 // Parameters:
 //
 // pwzJitName        - The filename of the JIT .dll file to load. E.g., "altjit.dll".
+// pwzJitPath        - (Debug only) The full path of the JIT .dll file to load
 // phJit             - On return, *phJit is the Windows module handle of the loaded JIT dll. It will be NULL if the load failed.
 // ppICorJitCompiler - On return, *ppICorJitCompiler is the ICorJitCompiler* returned by the JIT's getJit() entrypoint.
 //                     It is NULL if the JIT returns a NULL interface pointer, or if the JIT-EE interface GUID is mismatched.
@@ -1819,7 +1824,7 @@ CORINFO_OS getClrVmOs();
 // targetOs          - Target OS for JIT
 //
 
-static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler, IN OUT JIT_LOAD_DATA* pJitLoadData, CORINFO_OS targetOs)
+static void LoadAndInitializeJIT(LPCWSTR pwzJitName DEBUGARG(LPCWSTR pwzJitPath), OUT HINSTANCE* phJit, OUT ICorJitCompiler** ppICorJitCompiler, IN OUT JIT_LOAD_DATA* pJitLoadData, CORINFO_OS targetOs)
 {
     STANDARD_VM_CONTRACT;
 
@@ -1833,39 +1838,53 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
     *phJit = NULL;
     *ppICorJitCompiler = NULL;
 
-    if (pwzJitName == nullptr)
-    {
-        pJitLoadData->jld_hr = E_FAIL;
-        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: pwzJitName is null"));
-        return;
-    }
-
     HRESULT hr = E_FAIL;
 
-    if (ValidateJitName(pwzJitName))
+#ifdef _DEBUG
+    if (pwzJitPath != NULL)
     {
-        // Load JIT from next to CoreCLR binary
-        PathString CoreClrFolderHolder;
-        if (GetClrModulePathName(CoreClrFolderHolder) && !CoreClrFolderHolder.IsEmpty())
+        *phJit = CLRLoadLibrary(pwzJitPath);
+        if (*phJit != NULL)
         {
-            SString::Iterator iter = CoreClrFolderHolder.End();
-            BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
-            if (findSep)
-            {
-                SString sJitName(pwzJitName);
-                CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
+            hr = S_OK;
+        }
+    }
+#endif
 
-                *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
-                if (*phJit != NULL)
+    if (hr == E_FAIL)
+    {
+        if (pwzJitName == nullptr)
+        {
+            pJitLoadData->jld_hr = E_FAIL;
+            LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: pwzJitName is null"));
+            return;
+        }
+
+        if (ValidateJitName(pwzJitName))
+        {
+            // Load JIT from next to CoreCLR binary
+            PathString CoreClrFolderHolder;
+            if (GetClrModulePathName(CoreClrFolderHolder) && !CoreClrFolderHolder.IsEmpty())
+            {
+                SString::Iterator iter = CoreClrFolderHolder.End();
+                BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
+                if (findSep)
                 {
-                    hr = S_OK;
+                    SString sJitName(pwzJitName);
+                    CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
+
+                    *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
+                    if (*phJit != NULL)
+                    {
+                        hr = S_OK;
+                    }
                 }
             }
         }
-    }
-    else
-    {
-        LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: invalid characters in %S\n", pwzJitName));
+        else
+        {
+            LOG((LF_JIT, LL_FATALERROR, "LoadAndInitializeJIT: invalid characters in %S\n", pwzJitName));
+        }
     }
 
     if (SUCCEEDED(hr))
@@ -1993,7 +2012,11 @@ BOOL EEJitManager::LoadJIT()
 #endif
 
     g_JitLoadData.jld_id = JIT_LOAD_MAIN;
-    LoadAndInitializeJIT(ExecutionManager::GetJitName(), &m_JITCompiler, &newJitCompiler, &g_JitLoadData, getClrVmOs());
+    LPWSTR mainJitPath = NULL;
+#ifdef _DEBUG
+    IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitPath, &mainJitPath));
+#endif
+    LoadAndInitializeJIT(ExecutionManager::GetJitName() DEBUGARG(mainJitPath), &m_JITCompiler, &newJitCompiler, &g_JitLoadData, getClrVmOs());
 #endif // !FEATURE_MERGE_JIT_AND_ENGINE
 
 #ifdef ALLOW_SXS_JIT
@@ -2042,6 +2065,11 @@ BOOL EEJitManager::LoadJIT()
 #endif // TARGET_ARM
         }
 
+#ifdef _DEBUG
+        LPWSTR altJitPath;
+        IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::INTERNAL_AltJitPath, &altJitPath));
+#endif
+
         CORINFO_OS targetOs = getClrVmOs();
         LPWSTR altJitOsConfig;
         IfFailThrow(CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_AltJitOs, &altJitOsConfig));
@@ -2066,7 +2094,7 @@ BOOL EEJitManager::LoadJIT()
             }
         }
         g_JitLoadData.jld_id = JIT_LOAD_ALTJIT;
-        LoadAndInitializeJIT(altJitName, &m_AltJITCompiler, &newAltJitCompiler, &g_JitLoadData, targetOs);
+        LoadAndInitializeJIT(altJitName DEBUGARG(altJitPath), &m_AltJITCompiler, &newAltJitCompiler, &g_JitLoadData, targetOs);
     }
 
 #endif // ALLOW_SXS_JIT
@@ -5776,15 +5804,6 @@ GCInfoToken ReadyToRunJitManager::GetGCInfoToken(const METHODTOKEN& MethodToken)
 
     PTR_RUNTIME_FUNCTION pRuntimeFunction = JitTokenToRuntimeFunction(MethodToken);
     TADDR baseAddress = JitTokenToModuleBase(MethodToken);
-
-#ifndef DACCESS_COMPILE
-    if (g_IBCLogger.InstrEnabled())
-    {
-        ReadyToRunInfo * pInfo = JitTokenToReadyToRunInfo(MethodToken);
-        MethodDesc * pMD = pInfo->GetMethodDescForEntryPoint(JitTokenToStartAddress(MethodToken));
-        g_IBCLogger.LogMethodGCInfoAccess(pMD);
-    }
-#endif
 
     SIZE_T nUnwindDataSize;
     PTR_VOID pUnwindData = GetUnwindDataBlob(baseAddress, pRuntimeFunction, &nUnwindDataSize);

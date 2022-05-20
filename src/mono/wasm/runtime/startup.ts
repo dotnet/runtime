@@ -198,7 +198,9 @@ function _handle_fetched_asset(asset: AssetEntry, url?: string) {
     if (ctx.tracing)
         console.log(`MONO_WASM: Loaded:${asset.name} as ${asset.behavior} size ${bytes.length} from ${url}`);
 
-    const virtualName: string = asset.virtual_path || asset.name;
+    const virtualName: string = typeof (asset.virtual_path) === "string"
+        ? asset.virtual_path
+        : asset.name;
     let offset: VoidPtr | null = null;
 
     switch (asset.behavior) {
@@ -304,7 +306,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
         if(!Module.disableDotnet6Compatibility && Module.exports){
             // Export emscripten defined in module through EXPORTED_RUNTIME_METHODS
-            // Useful to export IDBFS or other similar types generally exposed as 
+            // Useful to export IDBFS or other similar types generally exposed as
             // global types when emscripten is not modularized.
             for (let i = 0; i < Module.exports.length; ++i) {
                 const exportName = Module.exports[i];
@@ -324,6 +326,7 @@ function finalize_startup(config: MonoConfig | MonoConfigError | undefined): voi
 
             mono_wasm_globalization_init(config.globalization_mode!, config.diagnostic_tracing!);
             cwraps.mono_wasm_load_runtime("unused", config.debug_level || 0);
+            runtimeHelpers.wait_for_debugger = config.wait_for_debugger;
         } catch (err: any) {
             Module.printErr("MONO_WASM: mono_wasm_load_runtime () failed: " + err);
             Module.printErr("MONO_WASM: Stacktrace: \n");
@@ -490,7 +493,8 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
                 });
             }
 
-            Module.addRunDependency(asset.name);
+            const moduleDependencyId = asset.name + (asset.culture || "");
+            Module.addRunDependency(moduleDependencyId);
 
             const sourcesList = asset.load_remote ? config.remote_sources! : [""];
             let error = undefined;
@@ -561,7 +565,7 @@ async function mono_download_assets(config: MonoConfig | MonoConfigError | undef
                 if (!isOkToFail)
                     throw error;
             }
-            Module.removeRunDependency(asset.name);
+            Module.removeRunDependency(moduleDependencyId);
 
             return result;
         };

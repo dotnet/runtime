@@ -328,10 +328,28 @@ namespace System
         public static ushort TrailingZeroCount(ushort value) => (ushort)(BitOperations.TrailingZeroCount(value << 16) - 16);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        long IBinaryInteger<ushort>.GetShortestBitLength() => (sizeof(ushort) * 8) - LeadingZeroCount(m_value);
+        int IBinaryInteger<ushort>.GetShortestBitLength() => (sizeof(ushort) * 8) - LeadingZeroCount(m_value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
         int IBinaryInteger<ushort>.GetByteCount() => sizeof(ushort);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<ushort>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(ushort))
+            {
+                ushort value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(m_value) : m_value;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(ushort);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<ushort>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)

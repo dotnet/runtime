@@ -6815,7 +6815,7 @@ bool gc_heap::virtual_commit (void* address, size_t size, gc_oh_num oh, int h_nu
         check_commit_cs.Enter();
         bool exceeded_p = false;
 
-        if (heap_hard_limit_oh[soh] != 0)
+        if (heap_hard_limit_oh[oh] != 0)
         {
             if ((oh != gc_oh_num::none) && (committed_by_oh[oh] + size) > heap_hard_limit_oh[oh])
             {
@@ -17879,6 +17879,9 @@ try_again:
 gc_heap* gc_heap::balance_heaps_uoh_hard_limit_retry (alloc_context* acontext, size_t alloc_size, int generation_num)
 {
     assert (heap_hard_limit);
+#ifdef USE_REGIONS
+    return balance_heaps_uoh (acontext, alloc_size, generation_num);
+#else //USE_REGIONS
     const int home_heap = heap_select::select_heap(acontext);
     dprintf (3, ("[h%d] balance_heaps_loh_hard_limit_retry alloc_size: %d", home_heap, alloc_size));
     int start, end;
@@ -17914,6 +17917,7 @@ try_again:
     }
 
     return max_hp;
+#endif //USE_REGIONS
 }
 #endif //MULTIPLE_HEAPS
 
@@ -29428,6 +29432,13 @@ void gc_heap::plan_phase (int condemned_gen_number)
 
             for (i = 0; i < n_heaps; i++)
             {
+#ifdef USE_REGIONS
+                if (special_sweep_p)
+                {
+                    g_heaps[i]->gc_policy = policy_sweep;
+                }
+                else
+#endif //USE_REGIONS
                 if (pol_max > g_heaps[i]->gc_policy)
                     g_heaps[i]->gc_policy = pol_max;
 #ifndef USE_REGIONS
@@ -34648,6 +34659,11 @@ void gc_heap::revisit_written_pages (BOOL concurrent_p, BOOL reset_only_p)
 
                         if (!reset_only_p)
                         {
+                            // refetch the high address in case it has changed while we fetched dirty pages
+                            // this is only an issue for the page high_address is on - we may have new
+                            // objects after high_address.
+                            high_address = high_page (seg, concurrent_p);
+
                             for (unsigned i = 0; i < bcount; i++)
                             {
                                 uint8_t* page = (uint8_t*)background_written_addresses[i];

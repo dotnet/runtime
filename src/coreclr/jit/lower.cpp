@@ -2337,7 +2337,9 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
             // morph, sequence and lower, to avoid redoing that for the actual target.
             GenTree*     targetPlaceholder = comp->gtNewZeroConNode(callTarget->TypeGet());
             GenTreeCall* validate          = comp->gtNewHelperCallNode(CORINFO_HELP_VALIDATE_INDIRECT_CALL, TYP_VOID);
-            validate->gtArgs.PushFront(comp, targetPlaceholder, WellKnownArg::ValidateIndirectCallTarget);
+            NewCallArg   newArg =
+                NewCallArg::Primitive(targetPlaceholder).WellKnown(WellKnownArg::ValidateIndirectCallTarget);
+            validate->gtArgs.PushFront(comp, newArg);
 
             comp->fgMorphTree(validate);
 
@@ -2384,7 +2386,10 @@ void Lowering::LowerCFGCall(GenTreeCall* call)
 #ifdef REG_DISPATCH_INDIRECT_CALL_ADDR
             // Now insert the call target as an extra argument.
             //
-            CallArg* targetArg = call->gtArgs.PushBack(comp, nullptr, WellKnownArg::DispatchIndirectCallTarget);
+            NewCallArg callTargetNewArg =
+                NewCallArg::Primitive(callTarget).WellKnown(WellKnownArg::DispatchIndirectCallTarget);
+            CallArg* targetArg = call->gtArgs.PushBack(comp, callTargetNewArg);
+            targetArg->SetEarlyNode(nullptr);
             targetArg->SetLateNode(callTarget);
             call->gtArgs.PushLateBack(targetArg);
 
@@ -3004,7 +3009,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #endif // FEATURE_HW_INTRINSICS
                  )
 #else // TARGET_ARM64
-            op1->OperIs(GT_AND, GT_ADD, GT_SUB)
+            op1->OperIs(GT_AND, GT_ADD, GT_SUB) &&
+            // This happens in order to emit ARM64 'madd' and 'msub' instructions.
+            // We cannot combine 'adds'/'subs' and 'mul'.
+            !(op1->gtGetOp2()->OperIs(GT_MUL) && op1->gtGetOp2()->isContained())
 #endif
                 )
         {
@@ -4335,10 +4343,13 @@ void Lowering::InsertPInvokeMethodProlog()
     //     TCB = CORINFO_HELP_INIT_PINVOKE_FRAME(&symFrameStart, secretArg);
     GenTreeCall* call = comp->gtNewHelperCallNode(CORINFO_HELP_INIT_PINVOKE_FRAME, TYP_I_IMPL);
 
-    call->gtArgs.PushBack(comp, frameAddr, WellKnownArg::PInvokeFrame);
+    NewCallArg frameAddrArg = NewCallArg::Primitive(frameAddr).WellKnown(WellKnownArg::PInvokeFrame);
+    call->gtArgs.PushBack(comp, frameAddrArg);
 // for x86/arm32 don't pass the secretArg.
 #if !defined(TARGET_X86) && !defined(TARGET_ARM)
-    call->gtArgs.PushBack(comp, PhysReg(REG_SECRET_STUB_PARAM), WellKnownArg::SecretStubParam);
+    NewCallArg stubParamArg =
+        NewCallArg::Primitive(PhysReg(REG_SECRET_STUB_PARAM)).WellKnown(WellKnownArg::SecretStubParam);
+    call->gtArgs.PushBack(comp, stubParamArg);
 #endif
 
     // some sanity checks on the frame list root vardsc
@@ -5427,10 +5438,22 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #endif // TARGET_XARCH
     }
 
+#ifdef TARGET_ARM64
+    if (node->OperIs(GT_ADD))
+    {
+        GenTree* next = LowerAddForPossibleContainment(node);
+        if (next != nullptr)
+        {
+            return next;
+        }
+    }
+#endif // TARGET_ARM64
+
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
     }
+
     return nullptr;
 }
 
