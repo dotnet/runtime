@@ -40,7 +40,11 @@ namespace System
         internal static extern bool IsInstanceOfType(RuntimeType type, [NotNullWhen(true)] object? o);
 
         [RequiresUnreferencedCode("MakeGenericType cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.")]
-        internal static Type GetTypeHelper(Type typeStart, Type[]? genericArgs, IntPtr pModifiers, int cModifiers)
+        internal static Type GetTypeHelper(Type typeStart, Type[]? genericArgs, IntPtr pModifiers, int cModifiers) // called by VM
+            => GetTypeHelper(typeStart, genericArgs, new ReadOnlySpan<int>((void*)pModifiers, cModifiers));
+
+        [RequiresUnreferencedCode("MakeGenericType cannot be statically analyzed. It's not possible to guarantee the availability of requirements of the generic type.")]
+        internal static Type GetTypeHelper(Type typeStart, Type[]? genericArgs, ReadOnlySpan<int> modifiers)
         {
             Type type = typeStart;
 
@@ -49,20 +53,15 @@ namespace System
                 type = type.MakeGenericType(genericArgs);
             }
 
-            if (cModifiers > 0)
+            for (int i = 0; i < modifiers.Length; i++)
             {
-                int* arModifiers = (int*)pModifiers.ToPointer();
-                for (int i = 0; i < cModifiers; i++)
+                type = (CorElementType)modifiers[i] switch
                 {
-                    if ((CorElementType)Marshal.ReadInt32((IntPtr)arModifiers, i * sizeof(int)) == CorElementType.ELEMENT_TYPE_PTR)
-                        type = type.MakePointerType();
-                    else if ((CorElementType)Marshal.ReadInt32((IntPtr)arModifiers, i * sizeof(int)) == CorElementType.ELEMENT_TYPE_BYREF)
-                        type = type.MakeByRefType();
-                    else if ((CorElementType)Marshal.ReadInt32((IntPtr)arModifiers, i * sizeof(int)) == CorElementType.ELEMENT_TYPE_SZARRAY)
-                        type = type.MakeArrayType();
-                    else
-                        type = type.MakeArrayType(Marshal.ReadInt32((IntPtr)arModifiers, ++i * sizeof(int)));
-                }
+                    CorElementType.ELEMENT_TYPE_PTR => type.MakePointerType(),
+                    CorElementType.ELEMENT_TYPE_BYREF => type.MakeByRefType(),
+                    CorElementType.ELEMENT_TYPE_SZARRAY => type.MakeArrayType(),
+                    _ => type.MakeArrayType(modifiers[++i])
+                };
             }
 
             return type;

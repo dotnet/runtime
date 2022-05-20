@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import {
-    assert,
+    mono_assert,
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
     MonoType, MonoObjectRef, MonoStringRef
@@ -197,7 +197,7 @@ export default wrapped_c_functions;
 export function wrap_c_function(name: string): Function {
     const wf: any = wrapped_c_functions;
     const sig = fn_signatures.find(s => s[0] === name);
-    assert(sig, () => `Function ${name} not found`);
+    mono_assert(sig, () => `Function ${name} not found`);
     const fce = Module.cwrap(sig[0], sig[1], sig[2], sig[3]);
     wf[sig[0]] = fce;
     return fce;
