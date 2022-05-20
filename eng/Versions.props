@@ -51,7 +51,7 @@
     -->
     <MicrosoftNetCompilersToolsetVersion>4.3.0-2.22270.2</MicrosoftNetCompilersToolsetVersion>
     <!-- SDK dependencies -->
-    <MicrosoftDotNetCompatibilityVersion>2.0.0-alpha.1.21525.11</MicrosoftDotNetCompatibilityVersion>
+    <MicrosoftDotNetCompatibilityVersion>2.0.0-preview.4.22252.4</MicrosoftDotNetCompatibilityVersion>
     <!-- Arcade dependencies -->
     <MicrosoftDotNetApiCompatVersion>7.0.0-beta.22255.2</MicrosoftDotNetApiCompatVersion>
     <MicrosoftDotNetBuildTasksFeedVersion>7.0.0-beta.22255.2</MicrosoftDotNetBuildTasksFeedVersion>
