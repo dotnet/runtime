@@ -124,5 +124,3 @@ jobs:
         - Browser_wasm_firefox
       browser: firefox
       alwaysRun: ${{ parameters.isWasmOnlyBuild }}
-      # don't fail because firefox tests are known to be unstable right now
-      shouldContinueOnError: true

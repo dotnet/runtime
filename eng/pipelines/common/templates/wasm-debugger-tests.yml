@@ -3,7 +3,6 @@ parameters:
   isExtraPlatformsBuild: false
   browser: 'chrome'
   platforms: []
-  shouldContinueOnError: false
 
 jobs:
 
@@ -42,4 +41,3 @@ jobs:
         extraHelixArguments: /p:BrowserHost=$(_hostedOs) /p:_DebuggerHosts=${{ parameters.browser }}
         scenarios:
         - wasmdebuggertests
-        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
