@@ -131,7 +131,6 @@ jobs:
       - src/tests/BuildWasmApps/Directory.Build*
       - src/tests/BuildWasmApps/Wasm.Debugger.Tests/*
       - eng/testing/ProvisioningVersions.props
-      - eng/testing/scenarios/WasmDebuggerTestsJobsList.txt
       - src/mono/mono/*
     - subset: allwasm
       include:
