@@ -118,20 +118,20 @@ namespace System.IO.Tests
             Assert.False(di.Exists);
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void SymlinkToNewDirectoryInfo()
         {
             string path = GetTestFilePath();
             new DirectoryInfo(path).Create();
 
             string linkPath = GetRandomLinkPath();
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+            Assert.True(SymbolicLinkHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
             Assert.True(new DirectoryInfo(path).Exists);
             Assert.True(new DirectoryInfo(linkPath).Exists);
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
@@ -141,7 +141,7 @@ namespace System.IO.Tests
             var linkPathFI = new DirectoryInfo(linkPath);
 
             pathFI.Create();
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+            Assert.True(SymbolicLinkHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
             // Both the symlink and the target exist
             pathFI.Refresh();

@@ -99,7 +99,7 @@ namespace System.IO.Tests
             Assert.True(fi.Exists);
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
@@ -109,7 +109,7 @@ namespace System.IO.Tests
             var linkPathFI = new FileInfo(linkPath);
 
             pathFI.Create().Dispose();
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
+            Assert.True(SymbolicLinkHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
 
             // Both the symlink and the target exist
             pathFI.Refresh();

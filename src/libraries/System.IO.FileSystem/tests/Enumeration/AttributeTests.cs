@@ -64,7 +64,7 @@ namespace System.IO.Tests.Enumeration
                 yield return new object[] { "dir1", "file2" };
                 yield return new object[] { "file1", "file2" };
 
-                if (MountHelper.CanCreateSymbolicLinks)
+                if (PlatformDetection.CanCreateSymbolicLinks)
                 {
                     yield return new object[] { "dir1", "link2" };
                     yield return new object[] { "file1", "link2" };

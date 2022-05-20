@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- For some reason, xunit.core.props isn't excluded in VS and sets this to true. -->
@@ -39,6 +39,8 @@
 
     <Compile Include="$(CommonPath)System\Text\ValueStringBuilder.cs"
              Link="Common\System\Text\ValueStringBuilder.cs" />
+    <Compile Include="$(CommonTestPath)System\IO\SymbolicLinkHelper.cs"
+             Link="Common\System\IO\SymbolicLinkHelper.cs" />
     <!--
       Interop.Library is not designed to support runtime checks therefore we are picking the Windows
       variant from the Common folder and adding the missing members manually.

@@ -100,14 +100,14 @@ namespace System.IO.Tests
             Assert.Throws<IOException>(() => Delete(Directory.GetCurrentDirectory()));
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void DeletingSymLinkDoesntDeleteTarget()
         {
             var path = GetTestFilePath();
             var linkPath = GetRandomLinkPath();
 
             Directory.CreateDirectory(path);
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+            Assert.True(SymbolicLinkHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
             // Both the symlink and the target exist
             Assert.True(Directory.Exists(path), "path should exist");
@@ -294,7 +294,7 @@ namespace System.IO.Tests
             Assert.True(testDir.Exists);
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void RecursiveDeletingDoesntFollowLinks()
         {
             var target = GetTestFilePath();

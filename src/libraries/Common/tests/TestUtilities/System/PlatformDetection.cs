@@ -89,7 +89,6 @@ namespace System
 
         public static bool IsThreadingSupported => !IsBrowser;
         public static bool IsBinaryFormatterSupported => IsNotMobile && !IsNativeAot;
-        public static bool IsSymLinkSupported => !IsiOS && !IstvOS;
 
         public static bool IsSpeedOptimized => !IsSizeOptimized;
         public static bool IsSizeOptimized => IsBrowser || IsAndroid || IsAppleMobile;
@@ -326,6 +325,8 @@ namespace System
                 return false;
             }
         }
+
+        public static bool CanCreateSymbolicLinks => SymbolicLinkHelper.CanCreateSymbolicLinks;
 
         private static Version GetICUVersion()
         {

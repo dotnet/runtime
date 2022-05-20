@@ -63,7 +63,7 @@ namespace System.IO.Tests
             Assert.Throws<FileNotFoundException>(() => info.Length);
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void SymLinkLength()
         {
             string path = GetTestFilePath();
@@ -72,7 +72,7 @@ namespace System.IO.Tests
             const int FileSize = 2000;
             using (var tempFile = new TempFile(path, FileSize))
             {
-                Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
+                Assert.True(SymbolicLinkHelper.CreateSymbolicLink(linkPath, path, isDirectory: false));
 
                 var info = new FileInfo(path);
                 Assert.Equal(FileSize, info.Length);

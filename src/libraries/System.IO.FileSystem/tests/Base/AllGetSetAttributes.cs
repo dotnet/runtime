@@ -35,25 +35,25 @@ namespace System.IO.Tests
         }
 
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void SymLinksAreReparsePoints()
         {
             string path = CreateItem();
             string linkPath = GetRandomLinkPath();
 
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: IsDirectory));
+            Assert.True(SymbolicLinkHelper.CreateSymbolicLink(linkPath, path, isDirectory: IsDirectory));
 
             Assert.NotEqual(FileAttributes.ReparsePoint, FileAttributes.ReparsePoint & GetAttributes(path));
             Assert.Equal(FileAttributes.ReparsePoint, FileAttributes.ReparsePoint & GetAttributes(linkPath));
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void SymLinksReflectSymLinkAttributes()
         {
             string path = CreateItem();
             string linkPath = GetRandomLinkPath();
 
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: IsDirectory));
+            Assert.True(SymbolicLinkHelper.CreateSymbolicLink(linkPath, path, isDirectory: IsDirectory));
 
             SetAttributes(path, FileAttributes.ReadOnly);
             try

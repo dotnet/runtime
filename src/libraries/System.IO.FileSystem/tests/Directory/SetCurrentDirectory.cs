@@ -47,7 +47,7 @@ namespace System.IO.Tests
 
         public sealed class Directory_SetCurrentDirectory_SymLink : FileSystemTest
         {
-            private static bool CanCreateSymbolicLinksAndRemoteExecutorSupported => MountHelper.CanCreateSymbolicLinks && RemoteExecutor.IsSupported;
+            private static bool CanCreateSymbolicLinksAndRemoteExecutorSupported => PlatformDetection.CanCreateSymbolicLinks && RemoteExecutor.IsSupported;
 
             [ConditionalFact(nameof(CanCreateSymbolicLinksAndRemoteExecutorSupported))]
             public void SetToPathContainingSymLink()
@@ -58,7 +58,7 @@ namespace System.IO.Tests
                     var linkPath = GetRandomLinkPath();
 
                     Directory.CreateDirectory(path);
-                    Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+                    Assert.True(SymbolicLinkHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
                     // Both the symlink and the target exist
                     Assert.True(Directory.Exists(path), "path should exist");

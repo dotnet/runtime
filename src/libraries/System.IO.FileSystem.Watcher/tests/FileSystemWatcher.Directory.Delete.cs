@@ -63,7 +63,7 @@ namespace System.IO.Tests
             }
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void FileSystemWatcher_Directory_Delete_SymLink()
         {
             string dir = CreateTestDirectory(TestDirectory, "dir");
@@ -73,7 +73,7 @@ namespace System.IO.Tests
                 // Make the symlink in our path (to the temp folder) and make sure an event is raised
                 string symLinkPath = Path.Combine(dir, GetRandomLinkName());
                 Action action = () => Directory.Delete(symLinkPath);
-                Action cleanup = () => Assert.True(MountHelper.CreateSymbolicLink(symLinkPath, tempDir, true));
+                Action cleanup = () => Assert.True(SymbolicLinkHelper.CreateSymbolicLink(symLinkPath, tempDir, true));
                 cleanup();
 
                 ExpectEvent(watcher, WatcherChangeTypes.Deleted, action, cleanup, expectedPath: symLinkPath);

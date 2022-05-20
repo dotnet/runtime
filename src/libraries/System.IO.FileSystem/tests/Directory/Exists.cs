@@ -95,14 +95,14 @@ namespace System.IO.Tests
             });
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void SymLinksMayExistIndependentlyOfTarget()
         {
             var path = GetTestFilePath();
             var linkPath = GetRandomLinkPath();
 
             Directory.CreateDirectory(path);
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+            Assert.True(SymbolicLinkHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
             // Both the symlink and the target exist
             Assert.True(Directory.Exists(path), "path should exist");
@@ -142,14 +142,14 @@ namespace System.IO.Tests
             Assert.False(File.Exists(linkPath), "linkPath should no longer exist as a file");
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void SymlinkToNewDirectory()
         {
             string path = GetTestFilePath();
             Directory.CreateDirectory(path);
 
             string linkPath = GetRandomLinkPath();
-            Assert.True(MountHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
+            Assert.True(SymbolicLinkHelper.CreateSymbolicLink(linkPath, path, isDirectory: true));
 
             Assert.True(Directory.Exists(path));
             Assert.True(Directory.Exists(linkPath));

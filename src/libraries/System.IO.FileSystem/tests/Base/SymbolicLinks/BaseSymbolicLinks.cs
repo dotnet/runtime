@@ -12,14 +12,14 @@ namespace System.IO.Tests
     {
         public BaseSymbolicLinks()
         {
-            Assert.True(MountHelper.CanCreateSymbolicLinks);
+            Assert.True(PlatformDetection.CanCreateSymbolicLinks);
         }
 
         protected DirectoryInfo CreateDirectoryContainingSelfReferencingSymbolicLink()
         {
             DirectoryInfo testDirectory = Directory.CreateDirectory(GetRandomDirPath());
             string pathToLink = Path.Join(testDirectory.FullName, GetRandomDirName() + ".link");
-            Assert.True(MountHelper.CreateSymbolicLink(pathToLink, pathToLink, isDirectory: true)); // Create a symlink cycle
+            Assert.True(SymbolicLinkHelper.CreateSymbolicLink(pathToLink, pathToLink, isDirectory: true)); // Create a symlink cycle
             return testDirectory;
         }
 

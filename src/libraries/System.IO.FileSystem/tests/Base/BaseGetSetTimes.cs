@@ -98,7 +98,7 @@ namespace System.IO.Tests
             SettingUpdatesPropertiesCore(item);
         }
 
-        [ConditionalTheory(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         [PlatformSpecific(~TestPlatforms.Browser)] // Browser is excluded as it doesn't support symlinks
         [InlineData(false)]
         [InlineData(true)]

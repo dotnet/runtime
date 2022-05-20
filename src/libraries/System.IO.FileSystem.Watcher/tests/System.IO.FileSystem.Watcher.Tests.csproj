@@ -37,8 +37,6 @@
              Link="Common\System\IO\TempFile.cs" />
     <Compile Include="$(CommonTestPath)System\IO\TempDirectory.cs"
              Link="Common\System\IO\TempDirectory.cs" />
-    <Compile Include="$(CommonTestPath)System\IO\ReparsePointUtilities.cs"
-             Link="Common\System\IO\ReparsePointUtilities.cs" />
     <Compile Include="$(CommonTestPath)System\Threading\ThreadTestHelpers.cs"
              Link="Common\System\Threading\ThreadTestHelpers.cs" />
     <Compile Include="$(CommonTestPath)TestUtilities\System\DisableParallelization.cs"

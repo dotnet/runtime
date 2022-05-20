@@ -94,7 +94,7 @@ namespace System.Formats.Tar.Tests
             Assert.Equal(0, Directory.GetFileSystemEntries(root.Path).Count());
         }
 
-        [ConditionalFact(typeof(MountHelper), nameof(MountHelper.CanCreateSymbolicLinks))]
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.CanCreateSymbolicLinks))]
         public void Extract_SymbolicLinkEntry_TargetInsideDirectory() => Extract_LinkEntry_TargetInsideDirectory_Internal(TarEntryType.SymbolicLink);
 
         [Fact]
