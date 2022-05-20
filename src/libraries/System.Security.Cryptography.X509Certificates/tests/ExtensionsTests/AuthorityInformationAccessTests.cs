@@ -3,7 +3,6 @@
 
 using System.Formats.Asn1;
 using System.Linq;
-using Microsoft.VisualStudio.TestPlatform.ObjectModel;
 using Test.Cryptography;
 using Xunit;
 
