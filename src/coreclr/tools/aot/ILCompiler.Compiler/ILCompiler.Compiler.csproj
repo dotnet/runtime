@@ -310,6 +310,8 @@
     <Compile Include="..\..\Common\Compiler\TypeExtensions.cs" Link="Compiler\TypeExtensions.cs" />
     <Compile Include="..\..\Common\Compiler\VectorFieldLayoutAlgorithm.cs" Link="Compiler\VectorFieldLayoutAlgorithm.cs" />
     <Compile Include="..\..\Common\Compiler\Logger.cs" Link="Compiler\Logger.cs" />
+    <Compile Include="..\..\Common\Compiler\ILogWriter.cs" Link="Compiler\ILogWriter.cs" />
+    <Compile Include="..\..\Common\Compiler\TextLogWriter.cs" Link="Compiler\TextLogWriter.cs" />
 
     <Compile Include="Compiler\AnalysisBasedInteropStubManager.cs" />
     <Compile Include="Compiler\AnalysisBasedMetadataManager.cs" />
