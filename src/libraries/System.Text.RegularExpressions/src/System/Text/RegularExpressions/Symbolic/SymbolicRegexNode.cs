@@ -1296,11 +1296,11 @@ namespace System.Text.RegularExpressions.Symbolic
 #endif
 
         /// <summary>
-        /// Takes the derivative of the symbolic regex for the given element, which must be either
-        /// a minterm (i.e. a class of characters that have identical behavior for all sets in the pattern)
-        /// or a singleton set. This derivative simulates backtracking, i.e. it only considers paths that backtracking would
+        /// Create a derivative (<see cref="CreateDerivative(TSet, uint)"/> and <see cref="CreateDerivativeWrapper"/>) and then strip
+        /// effects with <see cref="StripEffects"/>.
+        /// This derivative simulates backtracking, i.e. it only considers paths that backtracking would
         /// take before accepting the empty string for this pattern and returns the pattern ordered in the order backtracking
-        /// would explore paths. For example the derivative of a*ab for a is a*ab|b, while for a*?ab it is b|a*?ab.
+        /// would explore paths. For example the derivative of a*ab places a*ab before b, while for a*?ab the order is reversed.
         /// </summary>
         /// <param name="elem">given element wrt which the derivative is taken</param>
         /// <param name="context">immediately surrounding character context that affects nullability of anchors</param>
@@ -1308,9 +1308,9 @@ namespace System.Text.RegularExpressions.Symbolic
         internal SymbolicRegexNode<TSet> CreateDerivativeWithoutEffects(TSet elem, uint context) => CreateDerivativeWrapper(elem, context).StripEffects();
 
         /// <summary>
-        /// Takes the derivative of the symbolic regex for the given element, which must be either
-        /// a minterm (i.e. a class of characters that have identical behavior for all sets in the pattern)
-        /// or a singleton set. This derivative simulates backtracking, i.e. it only considers paths that backtracking would
+        /// Create a derivative (<see cref="CreateDerivative(TSet, uint)"/> and <see cref="CreateDerivativeWrapper"/>) and then strip
+        /// and map effects for use in NFA simulation with <see cref="StripAndMapEffects"/>.
+        /// This derivative simulates backtracking, i.e. it only considers paths that backtracking would
         /// take before accepting the empty string for this pattern and returns the pattern ordered in the order backtracking
         /// would explore paths. For example the derivative of a*ab places a*ab before b, while for a*?ab the order is reversed.
         /// </summary>
@@ -1318,7 +1318,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// The differences of this to <see cref="CreateDerivativeWithoutEffects(TSet,uint)"/> are that (1) effects (e.g. capture starts and ends)
         /// are considered and (2) the different elements that would form a top level union are instead returned as separate
         /// nodes (paired with their associated effects). This function is meant to be used for NFA simulation, where top level
-        /// unions would be broken up into separate states anyway, so nodes are not combined even if they have the same effects.
+        /// unions would be broken up into separate states.
         /// </remarks>
         /// <param name="elem">given element wrt which the derivative is taken</param>
         /// <param name="context">immediately surrounding character context that affects nullability of anchors</param>
@@ -1330,36 +1330,25 @@ namespace System.Text.RegularExpressions.Symbolic
             return transitions;
         }
 
+        // This wrapper handles the shared top-level concerns of constructing derivatives. Namely:
+        // -Unwrapping and rewrapping nodes in DisableBacktrackingSimulation
+        // -When backtracking is being simulated calling into PruneLowerPriorityThanNullability
         private SymbolicRegexNode<TSet> CreateDerivativeWrapper(TSet elem, uint context)
         {
             if (this._kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation)
             {
-                //the kind can only occur at the top level and indicates that backtracking simulation is turned off
+                // This node kind can only occur at the top level and indicates that backtracking simulation is turned off
                 Debug.Assert(_left is not null);
                 SymbolicRegexNode<TSet> derivative = _left.CreateDerivative(elem, context);
-                //reinsert the marker that maintains the non-backtracking semantics
+                // Reinsert the marker that maintains the non-backtracking semantics
                 return _builder.CreateDisableBacktrackingSimulation(derivative);
             }
             else
             {
-                SymbolicRegexNode<TSet>? derivative;
-                //key for backtracking derivative
-                (SymbolicRegexNode<TSet>, TSet, uint, bool) key = (this, elem, context, true);
-                if (_builder._derivativeCache.TryGetValue(key, out derivative))
-                {
-                    return derivative;
-                }
-
-                //if this node is nullable for the given context
-                //then prune the node in order to maintain backtracking semantics
-                SymbolicRegexNode<TSet> node = this;
-                if (IsNullableFor(context))
-                {
-                    node = PruneLowerPriorityThanNullability(context);
-                }
-                derivative = node.CreateDerivative(elem, context);
-                _builder._derivativeCache[key] = derivative;
-                return derivative;
+                // If this node is nullable for the given context then prune any branches that are less preferred than
+                // just the empty match. This is done in order to maintain backtracking semantics.
+                SymbolicRegexNode<TSet> node = IsNullableFor(context) ? PruneLowerPriorityThanNullability(context) : this;
+                return node.CreateDerivative(elem, context);
             }
         }
 
@@ -1426,8 +1415,21 @@ namespace System.Text.RegularExpressions.Symbolic
         }
 
         /// <summary>
-        /// Helper function for CreateDerivative
+        /// Takes the derivative of the symbolic regex for the given element, which must be either
+        /// a minterm (i.e. a class of characters that have identical behavior for all sets in the pattern)
+        /// or a singleton set, and a context, which encodes the relevant information about the surrounding
+        /// characters for deciding the nullability of anchors.
         /// </summary>
+        /// <remarks>
+        /// This derivative differs from ones familiar from literature in several ways:
+        /// -Ordered alternations are properly handled and any choices represented as alternations are ordered in a way
+        ///  that matches the backtracking engines.
+        /// -Some nodes, namely <see cref="SymbolicRegexNodeKind.CaptureStart"/> and <see cref="SymbolicRegexNodeKind.CaptureEnd"/>,
+        ///  will produce <see cref="SymbolicRegexNodeKind.Effect"/> nodes, which indicate effects to be applied on
+        ///  transitions using this derivative. The derivative must be further post-processed with a function that strips
+        ///  and possibly interprets these effects into a conveniently executable form, such as <see cref="StripEffects"/>
+        ///  or <see cref="StripAndMapEffects"/>.
+        /// </remarks>
         /// <param name="elem">given element wrt which the derivative is taken</param>
         /// <param name="context">immediately surrounding character context that affects nullability of anchors</param>
         /// <returns>the derivative</returns>
@@ -1477,13 +1479,9 @@ namespace System.Text.RegularExpressions.Symbolic
                         }
                         else
                         {
-                            // Make sure the alternatives are ordered in the correct way
-                            SymbolicRegexNode<TSet> lderiv = _left.CreateDerivative(elem, context);
-                            SymbolicRegexNode<TSet> lderivR = _builder.CreateConcat(lderiv, _right);
-                            SymbolicRegexNode<TSet> rderiv = _right.CreateDerivative(elem, context);
-                            // Create Effect node of the right derivative
-                            SymbolicRegexNode<TSet> rderivE = _builder.CreateEffect(rderiv, _left);
-                            // if the left alternative is high-priority-nullable then
+                            SymbolicRegexNode<TSet> leftDerivative = _builder.CreateConcat(_left.CreateDerivative(elem, context), _right);
+                            SymbolicRegexNode<TSet> rightDerivative = _builder.CreateEffect(_right.CreateDerivative(elem, context), _left);
+                            // If the left alternative is high-priority-nullable then
                             // the priority is to skip left and prioritize rderiv over lderivR
                             // Two examples: suppose elem = a
                             // 1) if _left = (((ab)*)?|ac) and _right = ab then _left is high-priority-nullable
@@ -1495,8 +1493,8 @@ namespace System.Text.RegularExpressions.Symbolic
                             // In the second case backtracking would try to continue to follow (ab)* after reading b
                             // This backtracking semantics is effectively being recorded into the order of the alternatives
                             derivative = _left.IsHighPriorityNullableFor(context) ?
-                                OrderedOr(_builder, rderivE, lderivR, hintRightLikelySubsumes: true) :
-                                OrderedOr(_builder, lderivR, rderivE);
+                                OrderedOr(_builder, rightDerivative, leftDerivative, hintRightLikelySubsumes: true) :
+                                OrderedOr(_builder, leftDerivative, rightDerivative);
                         }
                         break;
                     }
@@ -1528,7 +1526,6 @@ namespace System.Text.RegularExpressions.Symbolic
                 case SymbolicRegexNodeKind.OrderedOr:
                     {
                         Debug.Assert(_left is not null && _right is not null);
-
                         derivative = OrderedOr(_builder, _left.CreateDerivative(elem, context), _right.CreateDerivative(elem, context));
                         break;
                     }
@@ -1549,6 +1546,11 @@ namespace System.Text.RegularExpressions.Symbolic
             return derivative;
         }
 
+        /// <summary>
+        /// Remove any Effect nodes from the tree, keeping just the actual pattern.
+        /// So Effect(R,E) would be simplified to just R.
+        /// </summary>
+        /// <returns>the node with all Effect nodes stripped away</returns>
         internal SymbolicRegexNode<TSet> StripEffects()
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
@@ -1556,15 +1558,16 @@ namespace System.Text.RegularExpressions.Symbolic
                 return StackHelper.CallOnEmptyStack(StripEffects);
             }
 
+            // If the node doesn't contain any Effect nodes under it we are done
             if (!_info.ContainsEffect)
-            {
                 return this;
-            }
 
+            // Recurse over the structure of the node to strip effects
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.Effect:
                     Debug.Assert(_left is not null);
+                    // This is the place where the effect (the right child) is getting ignored
                     return _left.StripEffects();
 
                 case SymbolicRegexNodeKind.Concat:
@@ -1574,6 +1577,8 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.OrderedOr:
                     Debug.Assert(_left is not null && _right is not null);
+                    // This iterative handling of nested alternations is important to avoid quadratic work in deduplicating
+                    // the elements. We don't want to omit deduplication here, since he stripping may make nodes equal.
                     List<SymbolicRegexNode<TSet>> elems = ToList(listKind: SymbolicRegexNodeKind.OrderedOr);
                     for (int i = 0; i < elems.Count; i++)
                         elems[i] = elems[i].StripEffects();
@@ -1593,7 +1598,19 @@ namespace System.Text.RegularExpressions.Symbolic
             }
         }
 
-        internal void StripAndMapEffects(uint context, List<(SymbolicRegexNode<TSet>, DerivativeEffect[])> alternativesAndEffects, List<DerivativeEffect>? currentEffects = null)
+        /// <summary>
+        /// This function maps <see cref="SymbolicRegexNodeKind.Effect"/> nodes present in the tree and maps them into
+        /// arrays of <see cref="DerivativeEffect"/>. The node is split into a list of pairs (node, effects), where the
+        /// nodes represent elements of a top level alternation and the effects are what should be applied for all
+        /// matches using that node. In effect, this function interprets effects produced during derivation into a form
+        /// suitable for use in NFA simulation. This function is similar to <see cref="StripEffects"/> in that it removes
+        /// Effect nodes as it maps them.
+        /// </summary>
+        /// <param name="context">immediately surrounding character context that affects nullability of anchors</param>
+        /// <param name="alternativesAndEffects">the list to insert the pairs of nodes and their effects into in priority order</param>
+        /// <param name="currentEffects">a helper list this function uses to accumulate effects in recursive calls</param>
+        internal void StripAndMapEffects(uint context, List<(SymbolicRegexNode<TSet>, DerivativeEffect[])> alternativesAndEffects,
+            List<DerivativeEffect>? currentEffects = null)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
@@ -1603,19 +1620,26 @@ namespace System.Text.RegularExpressions.Symbolic
 
             currentEffects ??= new List<DerivativeEffect>();
 
+            // If we've reached a node with no effects, then output that with the effects that have been accumulated
             if (!_info.ContainsEffect)
             {
-                alternativesAndEffects.Add((this, currentEffects.Count > 0 ? currentEffects.ToArray() : Array.Empty<DerivativeEffect>()));
+                alternativesAndEffects.Add((this, currentEffects.Count > 0 ?
+                    currentEffects.ToArray() :
+                    Array.Empty<DerivativeEffect>()));
                 return;
             }
 
+            // Recurse over the structure of the node to strip and map effects
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.Effect:
                     Debug.Assert(_left is not null && _right is not null);
+                    // Push any effects that should be applied in any nodes under this node
                     int oldEffectCount = currentEffects.Count;
                     _right.ApplyEffects((e, s) => s.Add(e), context, currentEffects);
+                    // Recurse into the main child
                     _left.StripAndMapEffects(context, alternativesAndEffects, currentEffects);
+                    // Pop all the effects that were pushed above
                     currentEffects.RemoveRange(oldEffectCount, currentEffects.Count - oldEffectCount);
                     return;
 
@@ -1623,6 +1647,8 @@ namespace System.Text.RegularExpressions.Symbolic
                     {
                         Debug.Assert(_left is not null && _right is not null);
                         Debug.Assert(_left._info.ContainsEffect && !_right._info.ContainsEffect);
+                        // For concat the nodes for the left hand side are added first and then fixed up by concatenating
+                        // the right side to each of them.
                         int oldAlternativesCount = alternativesAndEffects.Count;
                         _left.StripAndMapEffects(context, alternativesAndEffects, currentEffects);
                         for (int i = oldAlternativesCount; i < alternativesAndEffects.Count; i++)
@@ -1640,12 +1666,22 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
 
                 case SymbolicRegexNodeKind.Loop when _lower == 0 && _upper == 1:
+                    // Currently due to the way Effect nodes are constructed and handled in simplification rules they
+                    // should only appear inside loops that are used to make nodes "optional", i.e., ones with {0,1}
+                    // bounds. The branch that skips the loop is represented by outputting a pair (epsilon,effects).
                     Debug.Assert(_left is not null);
+                    // For lazy loops skipping is preferred, so output the epsilon first
                     if (IsLazy)
-                        alternativesAndEffects.Add((_builder.Epsilon, currentEffects.Count > 0 ? currentEffects.ToArray() : Array.Empty<DerivativeEffect>()));
+                        alternativesAndEffects.Add((_builder.Epsilon, currentEffects.Count > 0 ?
+                            currentEffects.ToArray() :
+                            Array.Empty<DerivativeEffect>()));
+                    // Recurse into the body
                     _left.StripAndMapEffects(context, alternativesAndEffects, currentEffects);
+                    // For eager loops the body is preferred, so output the epsilon last
                     if (!IsLazy)
-                        alternativesAndEffects.Add((_builder.Epsilon, currentEffects.Count > 0 ? currentEffects.ToArray() : Array.Empty<DerivativeEffect>()));
+                        alternativesAndEffects.Add((_builder.Epsilon, currentEffects.Count > 0 ?
+                            currentEffects.ToArray() :
+                            Array.Empty<DerivativeEffect>()));
                     break;
 
                 case SymbolicRegexNodeKind.DisableBacktrackingSimulation:
