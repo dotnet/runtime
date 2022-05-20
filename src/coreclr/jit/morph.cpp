@@ -12874,6 +12874,15 @@ GenTree* Compiler::fgOptimizeAddition(GenTreeOp* add)
         return op1;
     }
 
+    // Fold (~x + 1) to -x.
+    if (op1->OperIs(GT_NOT) && op2->IsIntegralConst(1))
+    {
+        op1->SetOper(GT_NEG);
+        DEBUG_DESTROY_NODE(op2);
+        DEBUG_DESTROY_NODE(add);
+        return op1;
+    }
+
     // Note that these transformations are legal for floating-point ADDs as well.
     if (opts.OptimizationEnabled())
     {
