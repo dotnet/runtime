@@ -46,7 +46,10 @@ namespace System.Net
             bool retrieveChainCertificates,
             ref X509Chain? chain)
         {
-            SafeSslHandle? sslContext = ((SafeDeleteSslContext)securityContext)?.SslContext;
+            if (securityContext == null)
+                return null;
+
+            SafeSslHandle? sslContext = ((SafeDeleteSslContext)securityContext).SslContext;
             if (sslContext == null)
                 return null;
 
