@@ -194,16 +194,16 @@ namespace ILCompiler.Dataflow
         }
 
         private static void StoreMethodLocalValue(
-            ValueBasicBlockPair[] valueCollection,
+            ValueBasicBlockPair?[] valueCollection,
             in MultiValue valueToStore,
             int index,
             int curBasicBlock)
         {
             MultiValue value;
 
-            ValueBasicBlockPair existingValue = valueCollection[index];
-            if (!existingValue.Value.IsEmpty()
-                && existingValue.BasicBlockIndex == curBasicBlock)
+            ValueBasicBlockPair? existingValue = valueCollection[index];
+            if (!existingValue.HasValue
+                || existingValue.Value.BasicBlockIndex == curBasicBlock)
             {
                 // If the previous value was stored in the current basic block, then we can safely 
                 // overwrite the previous value with the new one.
@@ -214,7 +214,7 @@ namespace ILCompiler.Dataflow
                 // If the previous value came from a previous basic block, then some other use of 
                 // the local could see the previous value, so we must merge the new value with the 
                 // old value.
-                value = MultiValueLattice.Meet(existingValue.Value, valueToStore);
+                value = MultiValueLattice.Meet(existingValue.Value.Value, valueToStore);
             }
             valueCollection[index] = new ValueBasicBlockPair(value, curBasicBlock);
         }
@@ -257,7 +257,7 @@ namespace ILCompiler.Dataflow
         {
             MethodDesc thisMethod = methodBody.OwningMethod;
 
-            ValueBasicBlockPair[] locals = new ValueBasicBlockPair[methodBody.GetLocals().Length];
+            ValueBasicBlockPair?[] locals = new ValueBasicBlockPair?[methodBody.GetLocals().Length];
 
             Dictionary<int, Stack<StackSlot>> knownStacks = new Dictionary<int, Stack<StackSlot>>();
             Stack<StackSlot>? currentStack = new Stack<StackSlot>(methodBody.MaxStack);
@@ -789,19 +789,19 @@ namespace ILCompiler.Dataflow
             ILOpcode operation,
             int index,
             Stack<StackSlot> currentStack,
-            ValueBasicBlockPair[] locals)
+            ValueBasicBlockPair?[] locals)
         {
             bool isByRef = operation == ILOpcode.ldloca || operation == ILOpcode.ldloca_s
                 || methodBody.GetLocals()[index].Type.IsByRefOrPointer();
 
-            ValueBasicBlockPair localValue = locals[index];
-            if (localValue.Value.IsEmpty())
+            ValueBasicBlockPair? localValue = locals[index];
+            if (!localValue.HasValue)
             {
                 currentStack.Push(new StackSlot(UnknownValue.Instance, isByRef));
             }
             else
             {
-                currentStack.Push(new StackSlot(localValue.Value, isByRef));
+                currentStack.Push(new StackSlot(localValue.Value.Value, isByRef));
             }
         }
 
@@ -859,7 +859,7 @@ namespace ILCompiler.Dataflow
             int offset,
             int index,
             Stack<StackSlot> currentStack,
-            ValueBasicBlockPair[] locals,
+            ValueBasicBlockPair?[] locals,
             int curBasicBlock)
         {
             StackSlot valueToStore = PopUnknown(currentStack, 1, methodBody, offset);
