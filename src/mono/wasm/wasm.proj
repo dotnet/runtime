@@ -37,42 +37,6 @@
     <PackageReference Include="System.Runtime.TimeZoneData" PrivateAssets="all" Version="$(SystemRuntimeTimeZoneDataVersion)" GeneratePathProperty="true" />
   </ItemGroup>
 
-  <UsingTask TaskName="PInvokeTableGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)"/>
-  <Target Name="BuildPInvokeTable" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
-    <PropertyGroup>
-      <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm\pinvoke-table.h</WasmPInvokeTablePath>
-    </PropertyGroup>
-
-    <ItemGroup>
-      <WasmPInvokeModule Include="libSystem.Native" />
-      <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
-      <WasmPInvokeModule Include="libSystem.Globalization.Native" />
-      <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
-    </ItemGroup>
-
-    <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
-    <MSBuild Projects="$(CoreLibProject)"
-             Targets="GetTargetPath">
-      <Output TaskParameter="TargetOutputs" ItemName="WasmPInvokeAssembly" />
-    </MSBuild>
-
-    <MakeDir Directories="$(ArtifactsObjDir)wasm" />
-    <PInvokeTableGenerator Modules="@(WasmPInvokeModule)"
-                           Assemblies="@(WasmPInvokeAssembly)"
-                           OutputPath="$(WasmPInvokeTablePath)" />
-  </Target>
-  <UsingTask TaskName="InterpToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
-  <Target Name="BuildInterpToNativeTable" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
-    <PropertyGroup>
-      <WasmInterpToNativeTablePath>$(ArtifactsObjDir)wasm\wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
-    </PropertyGroup>
-
-    <InterpToNativeGenerator
-      OutputPath="$(WasmInterpToNativeTablePath)">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </InterpToNativeGenerator>
-  </Target>
-
   <UsingTask TaskName="GenerateWasmBundle"
     AssemblyFile="$(WasmBuildTasksAssemblyPath)"/>
   <Target Name="BundleTimeZones">
