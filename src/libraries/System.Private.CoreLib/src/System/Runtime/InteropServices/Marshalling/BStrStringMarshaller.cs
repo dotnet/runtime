@@ -106,6 +106,7 @@ namespace System.Runtime.InteropServices.Marshalling
         {
             if (_ptrToFirstChar is null)
                 return null;
+
             return Marshal.PtrToStringBSTR((IntPtr)_ptrToFirstChar);
         }
 

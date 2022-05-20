@@ -2078,20 +2078,6 @@ namespace System.Runtime.InteropServices.Marshalling
         public string? ToManaged() { throw null; }
         public void FreeNative() { }
     }
-    [System.CLSCompliant(false)]
-    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
-        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
-            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
-    public unsafe ref struct BStrStringMarshaller
-    {
-        public BStrStringMarshaller(string? str) { }
-        public BStrStringMarshaller(string? str, System.Span<ushort> buffer) { }
-        public void* ToNativeValue() { throw null; }
-        public void FromNativeValue(void* value) { }
-        public string? ToManaged() { throw null; }
-        public void FreeNative() { }
-    }
     [System.CLSCompliantAttribute(false)]
     [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute.GenericPlaceholder[]),
         System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerKind.LinearCollection, BufferSize = 0x200,
@@ -2111,6 +2097,20 @@ namespace System.Runtime.InteropServices.Marshalling
         public byte* ToNativeValue() { throw null; }
         public void FromNativeValue(byte* value) { }
         public T[]? ToManaged() { throw null; }
+        public void FreeNative() { }
+    }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
+        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
+            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
+            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
+    public unsafe ref struct BStrStringMarshaller
+    {
+        public BStrStringMarshaller(string? str) { }
+        public BStrStringMarshaller(string? str, System.Span<ushort> buffer) { }
+        public void* ToNativeValue() { throw null; }
+        public void FromNativeValue(void* value) { }
+        public string? ToManaged() { throw null; }
         public void FreeNative() { }
     }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
