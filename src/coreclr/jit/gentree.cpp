@@ -252,7 +252,9 @@ void GenTree::InitNodeSize()
     }
 
     GenTree::s_gtNodeSizes[GT_CALL]          = TREE_NODE_SZ_LARGE;
+#if !defined(HOST_64BIT)
     GenTree::s_gtNodeSizes[GT_CNS_VEC]       = TREE_NODE_SZ_LARGE;
+#endif // HOST_64BIT
     GenTree::s_gtNodeSizes[GT_CAST]          = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_FTN_ADDR]      = TREE_NODE_SZ_LARGE;
     GenTree::s_gtNodeSizes[GT_BOX]           = TREE_NODE_SZ_LARGE;
@@ -2352,7 +2354,7 @@ AGAIN:
 
             case GT_CNS_VEC:
             {
-                if (op1->AsVecCon()->IsEqual(op2->AsVecCon()))
+                if (GenTreeVecCon::Equals(op1->AsVecCon(), op2->AsVecCon()))
                 {
                     return true;
                 }
@@ -2840,10 +2842,14 @@ AGAIN:
                     }
 
                     case TYP_SIMD16:
-                    case TYP_SIMD12:
                     {
                         add = genTreeHashAdd(ulo32(add), vecCon->gtSimd16Val.u32[3]);
-                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimd16Val.u32[2]);
+                        FALLTHROUGH;
+                    }
+
+                    case TYP_SIMD12:
+                    {
+                        add = genTreeHashAdd(ulo32(add), vecCon->gtSimd12Val.u32[2]);
                         FALLTHROUGH;
                     }
 
@@ -6946,27 +6952,8 @@ GenTree* Compiler::gtNewAllBitsSetConNode(var_types type)
 
 #if defined(FEATURE_SIMD)
         case TYP_SIMD8:
-        {
-            GenTreeVecCon* vecCon = gtNewVconNode(type);
-
-            vecCon->gtSimd8Val.i64[0] = -1;
-
-            allBitsSet = vecCon;
-            break;
-        }
-
         case TYP_SIMD12:
         case TYP_SIMD16:
-        {
-            GenTreeVecCon* vecCon = gtNewVconNode(type);
-
-            vecCon->gtSimd16Val.i64[0] = -1;
-            vecCon->gtSimd16Val.i64[1] = -1;
-
-            allBitsSet = vecCon;
-            break;
-        }
-
         case TYP_SIMD32:
         {
             GenTreeVecCon* vecCon = gtNewVconNode(type);
@@ -11164,15 +11151,22 @@ void Compiler::gtDispConst(GenTree* tree)
                 case TYP_SIMD8:
                 {
                     simd8_t simdVal = vecCon->gtSimd8Val;
-                    printf("<0x%016llx>", simdVal.u64[0]);
+                    printf("<0x%08x, 0x%08x>", simdVal.u32[0], simdVal.u32[1]);
                     break;
                 }
 
                 case TYP_SIMD12:
+                {
+                    simd12_t simdVal = vecCon->gtSimd12Val;
+                    printf("<0x%08x, 0x%08x, 0x%08x>", simdVal.u32[0], simdVal.u32[1], simdVal.u32[2]);
+                    break;
+                }
+
                 case TYP_SIMD16:
                 {
                     simd16_t simdVal = vecCon->gtSimd16Val;
-                    printf("<0x%016llx, 0x%016llx>", simdVal.u64[0], simdVal.u64[1]);
+                    printf("<0x%08x, 0x%08x, 0x%08x, 0x%08x>", simdVal.u32[0], simdVal.u32[1], simdVal.u32[2],
+                           simdVal.u32[3]);
                     break;
                 }
 

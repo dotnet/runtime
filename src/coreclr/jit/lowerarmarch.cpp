@@ -1281,8 +1281,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
         BlockRange().Remove(node);
 
-        LowerNode(vecCon);
-        return vecCon->gtNext;
+        return LowerNode(vecCon);
     }
     else if (argCnt == 1)
     {
@@ -1308,8 +1307,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
                                                               : NI_AdvSimd_DuplicateToVector128);
         }
 
-        LowerNode(node);
-        return node->gtNext;
+        return LowerNode(node);
     }
 
     // We have the following (where simd is simd8 or simd16):
@@ -1372,8 +1370,7 @@ GenTree* Lowering::LowerHWIntrinsicCreate(GenTreeHWIntrinsic* node)
 
     node->ResetHWIntrinsicId(NI_AdvSimd_Insert, comp, tmp1, idx, opN);
 
-    LowerNode(node);
-    return node->gtNext;
+    return LowerNode(node);
 }
 
 //----------------------------------------------------------------------------------------------

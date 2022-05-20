@@ -62,6 +62,29 @@ struct simd8_t
     }
 };
 
+struct simd12_t
+{
+    union {
+        float    f32[3];
+        int8_t   i8[12];
+        int16_t  i16[6];
+        int32_t  i32[3];
+        uint8_t  u8[12];
+        uint16_t u16[6];
+        uint32_t u32[3];
+    };
+
+    bool operator==(const simd12_t& other) const
+    {
+        return (u32[0] == other.u32[0]) && (u32[1] == other.u32[1]) && (u32[2] == other.u32[2]);
+    }
+
+    bool operator!=(const simd12_t& other) const
+    {
+        return (u32[0] != other.u32[0]) || (u32[1] != other.u32[1]) || (u32[2] != other.u32[2]);
+    }
+};
+
 struct simd16_t
 {
     union {

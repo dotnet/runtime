@@ -3107,44 +3107,45 @@ GenTree* Compiler::optVNConstantPropOnTree(BasicBlock* block, GenTree* tree)
 #if FEATURE_SIMD
         case TYP_SIMD8:
         {
-            if (!tree->OperIs(GT_LCL_VAR))
-            {
-                simd8_t value = vnStore->ConstantValue<simd8_t>(vnCns);
+            simd8_t value = vnStore->ConstantValue<simd8_t>(vnCns);
 
-                GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-                vecCon->gtSimd8Val    = value;
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
+            vecCon->gtSimd8Val    = value;
 
-                conValTree = vecCon;
-            }
+            conValTree = vecCon;
             break;
         }
 
         case TYP_SIMD12:
+        {
+            simd12_t value = vnStore->ConstantValue<simd12_t>(vnCns);
+
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
+            vecCon->gtSimd12Val   = value;
+
+            conValTree = vecCon;
+            break;
+        }
+
         case TYP_SIMD16:
         {
-            if (!tree->OperIs(GT_LCL_VAR))
-            {
-                simd16_t value = vnStore->ConstantValue<simd16_t>(vnCns);
+            simd16_t value = vnStore->ConstantValue<simd16_t>(vnCns);
 
-                GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-                vecCon->gtSimd16Val   = value;
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
+            vecCon->gtSimd16Val   = value;
 
-                conValTree = vecCon;
-            }
+            conValTree = vecCon;
             break;
         }
 
         case TYP_SIMD32:
         {
-            if (!tree->OperIs(GT_LCL_VAR))
-            {
-                simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
+            simd32_t value = vnStore->ConstantValue<simd32_t>(vnCns);
 
-                GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
-                vecCon->gtSimd32Val   = value;
+            GenTreeVecCon* vecCon = gtNewVconNode(tree->TypeGet());
+            vecCon->gtSimd32Val   = value;
 
-                conValTree = vecCon;
-            }
+            conValTree = vecCon;
             break;
         }
         break;

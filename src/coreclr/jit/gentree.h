@@ -3269,29 +3269,16 @@ struct GenTreeStrCon : public GenTree
 #endif
 };
 
-/* gtVecCon -- vector  constant (GT_CNS_VEC) */
-
+// GenTreeVecCon -- vector  constant (GT_CNS_VEC)
+//
 struct GenTreeVecCon : public GenTree
 {
     union {
         simd8_t  gtSimd8Val;
+        simd12_t gtSimd12Val;
         simd16_t gtSimd16Val;
         simd32_t gtSimd32Val;
     };
-
-    var_types GetSimdType() const
-    {
-        var_types simdType = gtType;
-
-#if defined(FEATURE_SIMD)
-        if (simdType == TYP_SIMD12)
-        {
-            simdType = TYP_SIMD16;
-        }
-#endif // FEATURE_SIMD
-
-        return gtType;
-    }
 
 #if defined(FEATURE_HW_INTRINSICS)
     static bool IsHWIntrinsicCreateConstant(GenTreeHWIntrinsic* node, simd32_t& simd32Val);
@@ -3311,6 +3298,11 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD12:
+            {
+                return (gtSimd12Val.u32[0] == 0xFFFFFFFF) && (gtSimd12Val.u32[1] == 0xFFFFFFFF) &&
+                       (gtSimd12Val.u32[2] == 0xFFFFFFFF);
+            }
+
             case TYP_SIMD16:
             {
                 return (gtSimd16Val.u64[0] == 0xFFFFFFFFFFFFFFFF) && (gtSimd16Val.u64[1] == 0xFFFFFFFFFFFFFFFF);
@@ -3330,9 +3322,11 @@ struct GenTreeVecCon : public GenTree
         }
     }
 
-    bool IsEqual(const GenTreeVecCon* other) const
+    static bool Equals(const GenTreeVecCon* left, const GenTreeVecCon* right)
     {
-        if (GetSimdType() != other->GetSimdType())
+        var_types gtType = left->TypeGet();
+
+        if (gtType != right->TypeGet())
         {
             return false;
         }
@@ -3343,22 +3337,28 @@ struct GenTreeVecCon : public GenTree
             case TYP_LONG: // TYP_SIMD8 may get retyped to TYP_LONG after lowering
             case TYP_SIMD8:
             {
-                return (gtSimd8Val.u64[0] == other->gtSimd8Val.u64[0]);
+                return (left->gtSimd8Val.u64[0] == right->gtSimd8Val.u64[0]);
             }
 
             case TYP_SIMD12:
+            {
+                return (left->gtSimd12Val.u32[0] == right->gtSimd12Val.u32[0]) &&
+                       (left->gtSimd12Val.u32[1] == right->gtSimd12Val.u32[1]) &&
+                       (left->gtSimd12Val.u32[2] == right->gtSimd12Val.u32[2]);
+            }
+
             case TYP_SIMD16:
             {
-                return (gtSimd16Val.u64[0] == other->gtSimd16Val.u64[0]) &&
-                       (gtSimd16Val.u64[1] == other->gtSimd16Val.u64[1]);
+                return (left->gtSimd16Val.u64[0] == right->gtSimd16Val.u64[0]) &&
+                       (left->gtSimd16Val.u64[1] == right->gtSimd16Val.u64[1]);
             }
 
             case TYP_SIMD32:
             {
-                return (gtSimd32Val.u64[0] == other->gtSimd32Val.u64[0]) &&
-                       (gtSimd32Val.u64[1] == other->gtSimd32Val.u64[1]) &&
-                       (gtSimd32Val.u64[2] == other->gtSimd32Val.u64[2]) &&
-                       (gtSimd32Val.u64[3] == other->gtSimd32Val.u64[3]);
+                return (left->gtSimd32Val.u64[0] == right->gtSimd32Val.u64[0]) &&
+                       (left->gtSimd32Val.u64[1] == right->gtSimd32Val.u64[1]) &&
+                       (left->gtSimd32Val.u64[2] == right->gtSimd32Val.u64[2]) &&
+                       (left->gtSimd32Val.u64[3] == right->gtSimd32Val.u64[3]);
             }
 #endif // FEATURE_SIMD
 
@@ -3381,6 +3381,11 @@ struct GenTreeVecCon : public GenTree
             }
 
             case TYP_SIMD12:
+            {
+                return (gtSimd12Val.u32[0] == 0x00000000) && (gtSimd12Val.u32[1] == 0x00000000) &&
+                       (gtSimd12Val.u32[2] == 0x00000000);
+            }
+
             case TYP_SIMD16:
             {
                 return (gtSimd16Val.u64[0] == 0x0000000000000000) && (gtSimd16Val.u64[1] == 0x0000000000000000);
@@ -8210,7 +8215,7 @@ inline bool GenTree::OperIsInitBlkOp()
     {
         src = AsBlk()->Data()->gtSkipReloadOrCopy();
     }
-    return src->OperIsInitVal() || (src->OperIsConst() && !src->IsCnsVec());
+    return src->OperIsInitVal() || src->IsIntegralConst();
 }
 
 inline bool GenTree::OperIsCopyBlkOp()
@@ -8277,14 +8282,7 @@ inline bool GenTree::IsFloatPositiveZero() const
 //
 inline bool GenTree::IsVectorZero() const
 {
-#ifdef FEATURE_SIMD
-    if (OperIs(GT_CNS_VEC))
-    {
-        return AsVecCon()->IsZero();
-    }
-#endif // FEATURE_SIMD
-
-    return false;
+    return IsCnsVec() && AsVecCon()->IsZero();
 }
 
 //-------------------------------------------------------------------

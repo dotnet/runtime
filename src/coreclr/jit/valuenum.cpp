@@ -444,6 +444,7 @@ ValueNumStore::ValueNumStore(Compiler* comp, CompAllocator alloc)
     , m_byrefCnsMap(nullptr)
 #if defined(FEATURE_SIMD)
     , m_simd8CnsMap(nullptr)
+    , m_simd12CnsMap(nullptr)
     , m_simd16CnsMap(nullptr)
     , m_simd32CnsMap(nullptr)
 #endif // FEATURE_SIMD
@@ -1685,6 +1686,12 @@ ValueNumStore::Chunk::Chunk(CompAllocator alloc, ValueNum* pNextBaseVN, var_type
                     break;
                 }
 
+                case TYP_SIMD12:
+                {
+                    m_defs = new (alloc) Alloc<TYP_SIMD12>::Type[ChunkSize];
+                    break;
+                }
+
                 case TYP_SIMD16:
                 {
                     m_defs = new (alloc) Alloc<TYP_SIMD16>::Type[ChunkSize];
@@ -1839,6 +1846,11 @@ ValueNum ValueNumStore::VNForSimd8Con(simd8_t cnsVal)
     return VnForConst(cnsVal, GetSimd8CnsMap(), TYP_SIMD8);
 }
 
+ValueNum ValueNumStore::VNForSimd12Con(simd12_t cnsVal)
+{
+    return VnForConst(cnsVal, GetSimd12CnsMap(), TYP_SIMD12);
+}
+
 ValueNum ValueNumStore::VNForSimd16Con(simd16_t cnsVal)
 {
     return VnForConst(cnsVal, GetSimd16CnsMap(), TYP_SIMD16);
@@ -1937,6 +1949,10 @@ ValueNum ValueNumStore::VNZeroForType(var_types typ)
         }
 
         case TYP_SIMD12:
+        {
+            return VNForSimd12Con({});
+        }
+
         case TYP_SIMD16:
         {
             return VNForSimd16Con({});
@@ -2996,6 +3012,16 @@ simd8_t ValueNumStore::GetConstantSimd8(ValueNum argVN)
     assert(TypeOfVN(argVN) == TYP_SIMD8);
 
     return ConstantValue<simd8_t>(argVN);
+}
+
+// Given a simd12 constant value number return its value as a simd12.
+//
+simd12_t ValueNumStore::GetConstantSimd12(ValueNum argVN)
+{
+    assert(IsVNConstant(argVN));
+    assert(TypeOfVN(argVN) == TYP_SIMD12);
+
+    return ConstantValue<simd12_t>(argVN);
 }
 
 // Given a simd16 constant value number return its value as a simd16.
@@ -6489,22 +6515,29 @@ void ValueNumStore::vnDump(Compiler* comp, ValueNum vn, bool isPtr)
             case TYP_SIMD8:
             {
                 simd8_t cnsVal = GetConstantSimd8(vn);
-                printf("Simd8Cns[0x%016llx]", cnsVal.u64[0]);
+                printf("Simd8Cns[0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1]);
                 break;
             }
 
             case TYP_SIMD12:
+            {
+                simd12_t cnsVal = GetConstantSimd12(vn);
+                printf("Simd12Cns[0x%08x, 0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1], cnsVal.u32[2]);
+                break;
+            }
+
             case TYP_SIMD16:
             {
                 simd16_t cnsVal = GetConstantSimd16(vn);
-                printf("Simd16Cns[0x%016llx, 0x%016llx]", cnsVal.u64[0], cnsVal.u64[1]);
+                printf("Simd16Cns[0x%08x, 0x%08x, 0x%08x, 0x%08x]", cnsVal.u32[0], cnsVal.u32[1], cnsVal.u32[2],
+                       cnsVal.u32[3]);
                 break;
             }
 
             case TYP_SIMD32:
             {
                 simd32_t cnsVal = GetConstantSimd32(vn);
-                printf("Simd16Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]", cnsVal.u64[0], cnsVal.u64[1],
+                printf("Simd32Cns[0x%016llx, 0x%016llx, 0x%016llx, 0x%016llx]", cnsVal.u64[0], cnsVal.u64[1],
                        cnsVal.u64[2], cnsVal.u64[3]);
                 break;
             }
@@ -8016,6 +8049,22 @@ void Compiler::fgValueNumberTreeConst(GenTree* tree)
         }
 
         case TYP_SIMD12:
+        {
+            simd12_t simd12Val;
+
+            if (tree->IsIntegralConst(0))
+            {
+                simd12Val = {};
+            }
+            else
+            {
+                simd12Val = tree->AsVecCon()->gtSimd12Val;
+            }
+
+            tree->gtVNPair.SetBoth(vnStore->VNForSimd12Con(simd12Val));
+            break;
+        }
+
         case TYP_SIMD16:
         {
             simd16_t simd16Val;

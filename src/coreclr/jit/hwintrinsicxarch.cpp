@@ -958,7 +958,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = (uint8_t)impPopStack().val->AsIntConCommon()->IntegralValue();
+                            cnsVal = static_cast<uint8_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
                             vecCon->gtSimd32Val.u8[simdLength - 1 - index] = cnsVal;
                         }
 
@@ -979,7 +979,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = (uint16_t)impPopStack().val->AsIntConCommon()->IntegralValue();
+                            cnsVal = static_cast<uint16_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
                             vecCon->gtSimd32Val.u16[simdLength - 1 - index] = cnsVal;
                         }
 
@@ -1000,7 +1000,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = (uint32_t)impPopStack().val->AsIntConCommon()->IntegralValue();
+                            cnsVal = static_cast<uint32_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
                             vecCon->gtSimd32Val.u32[simdLength - 1 - index] = cnsVal;
                         }
 
@@ -1021,7 +1021,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = (uint64_t)impPopStack().val->AsIntConCommon()->IntegralValue();
+                            cnsVal = static_cast<uint64_t>(impPopStack().val->AsIntConCommon()->IntegralValue());
                             vecCon->gtSimd32Val.u64[simdLength - 1 - index] = cnsVal;
                         }
 
@@ -1041,7 +1041,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = (float)impPopStack().val->AsDblCon()->gtDconVal;
+                            cnsVal = static_cast<float>(impPopStack().val->AsDblCon()->gtDconVal);
                             vecCon->gtSimd32Val.f32[simdLength - 1 - index] = cnsVal;
                         }
 
@@ -1061,7 +1061,7 @@ GenTree* Compiler::impBaseIntrinsic(NamedIntrinsic        intrinsic,
 
                         for (uint32_t index = 0; index < sig->numArgs; index++)
                         {
-                            cnsVal = (double)impPopStack().val->AsDblCon()->gtDconVal;
+                            cnsVal = static_cast<double>(impPopStack().val->AsDblCon()->gtDconVal);
                             vecCon->gtSimd32Val.f64[simdLength - 1 - index] = cnsVal;
                         }
 

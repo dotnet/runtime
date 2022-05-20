@@ -349,6 +349,7 @@ private:
 
 #if defined(FEATURE_SIMD)
     simd8_t GetConstantSimd8(ValueNum argVN);
+    simd12_t GetConstantSimd12(ValueNum argVN);
     simd16_t GetConstantSimd16(ValueNum argVN);
     simd32_t GetConstantSimd32(ValueNum argVN);
 #endif // FEATURE_SIMD
@@ -427,6 +428,7 @@ public:
 
 #if defined(FEATURE_SIMD)
     ValueNum VNForSimd8Con(simd8_t cnsVal);
+    ValueNum VNForSimd12Con(simd12_t cnsVal);
     ValueNum VNForSimd16Con(simd16_t cnsVal);
     ValueNum VNForSimd32Con(simd32_t cnsVal);
 #endif // FEATURE_SIMD
@@ -1424,6 +1426,36 @@ private:
         return m_simd8CnsMap;
     }
 
+    struct Simd12PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd12_t>
+    {
+        static bool Equals(simd12_t x, simd12_t y)
+        {
+            return x == y;
+        }
+
+        static unsigned GetHashCode(const simd12_t val)
+        {
+            unsigned hash = 0;
+
+            hash = static_cast<unsigned>(hash ^ val.u32[0]);
+            hash = static_cast<unsigned>(hash ^ val.u32[1]);
+            hash = static_cast<unsigned>(hash ^ val.u32[2]);
+
+            return hash;
+        }
+    };
+
+    typedef VNMap<simd12_t, Simd12PrimitiveKeyFuncs> Simd12ToValueNumMap;
+    Simd12ToValueNumMap* m_simd12CnsMap;
+    Simd12ToValueNumMap* GetSimd12CnsMap()
+    {
+        if (m_simd12CnsMap == nullptr)
+        {
+            m_simd12CnsMap = new (m_alloc) Simd12ToValueNumMap(m_alloc);
+        }
+        return m_simd12CnsMap;
+    }
+
     struct Simd16PrimitiveKeyFuncs : public JitKeyFuncsDefEquals<simd16_t>
     {
         static bool Equals(simd16_t x, simd16_t y)
@@ -1618,6 +1650,12 @@ struct ValueNumStore::VarTypConv<TYP_SIMD8>
     typedef simd8_t Lang;
 };
 template <>
+struct ValueNumStore::VarTypConv<TYP_SIMD12>
+{
+    typedef simd12_t Type;
+    typedef simd12_t Lang;
+};
+template <>
 struct ValueNumStore::VarTypConv<TYP_SIMD16>
 {
     typedef simd16_t Type;
@@ -1672,43 +1710,29 @@ FORCEINLINE T ValueNumStore::SafeGetConstantValue(Chunk* c, unsigned offset)
 template <>
 FORCEINLINE simd8_t ValueNumStore::SafeGetConstantValue<simd8_t>(Chunk* c, unsigned offset)
 {
-    if (c->m_typ == TYP_SIMD8)
-    {
-        return reinterpret_cast<VarTypConv<TYP_SIMD8>::Lang*>(c->m_defs)[offset];
-    }
-    else
-    {
-        assert(false);
-        return {};
-    }
+    assert(c->m_typ == TYP_SIMD8);
+    return reinterpret_cast<VarTypConv<TYP_SIMD8>::Lang*>(c->m_defs)[offset];
+}
+
+template <>
+FORCEINLINE simd12_t ValueNumStore::SafeGetConstantValue<simd12_t>(Chunk* c, unsigned offset)
+{
+    assert(c->m_typ == TYP_SIMD12);
+    return reinterpret_cast<VarTypConv<TYP_SIMD12>::Lang*>(c->m_defs)[offset];
 }
 
 template <>
 FORCEINLINE simd16_t ValueNumStore::SafeGetConstantValue<simd16_t>(Chunk* c, unsigned offset)
 {
-    if (c->m_typ == TYP_SIMD16)
-    {
-        return reinterpret_cast<VarTypConv<TYP_SIMD16>::Lang*>(c->m_defs)[offset];
-    }
-    else
-    {
-        assert(false);
-        return {};
-    }
+    assert(c->m_typ == TYP_SIMD16);
+    return reinterpret_cast<VarTypConv<TYP_SIMD16>::Lang*>(c->m_defs)[offset];
 }
 
 template <>
 FORCEINLINE simd32_t ValueNumStore::SafeGetConstantValue<simd32_t>(Chunk* c, unsigned offset)
 {
-    if (c->m_typ == TYP_SIMD32)
-    {
-        return reinterpret_cast<VarTypConv<TYP_SIMD32>::Lang*>(c->m_defs)[offset];
-    }
-    else
-    {
-        assert(false);
-        return {};
-    }
+    assert(c->m_typ == TYP_SIMD32);
+    return reinterpret_cast<VarTypConv<TYP_SIMD32>::Lang*>(c->m_defs)[offset];
 }
 
 template <>
@@ -1719,16 +1743,24 @@ FORCEINLINE simd8_t ValueNumStore::ConstantValueInternal<simd8_t>(ValueNum vn DE
 
     unsigned offset = ChunkOffset(vn);
 
-    if (c->m_typ == TYP_SIMD8)
-    {
-        assert(!coerce);
-        return SafeGetConstantValue<simd8_t>(c, offset);
-    }
-    else
-    {
-        assert(false);
-        return {};
-    }
+    assert(c->m_typ == TYP_SIMD8);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simd8_t>(c, offset);
+}
+
+template <>
+FORCEINLINE simd12_t ValueNumStore::ConstantValueInternal<simd12_t>(ValueNum vn DEBUGARG(bool coerce))
+{
+    Chunk* c = m_chunks.GetNoExpand(GetChunkNum(vn));
+    assert(c->m_attribs == CEA_Const);
+
+    unsigned offset = ChunkOffset(vn);
+
+    assert(c->m_typ == TYP_SIMD12);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simd12_t>(c, offset);
 }
 
 template <>
@@ -1739,16 +1771,10 @@ FORCEINLINE simd16_t ValueNumStore::ConstantValueInternal<simd16_t>(ValueNum vn 
 
     unsigned offset = ChunkOffset(vn);
 
-    if (c->m_typ == TYP_SIMD16)
-    {
-        assert(!coerce);
-        return SafeGetConstantValue<simd16_t>(c, offset);
-    }
-    else
-    {
-        assert(false);
-        return {};
-    }
+    assert(c->m_typ == TYP_SIMD16);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simd16_t>(c, offset);
 }
 
 template <>
@@ -1759,16 +1785,10 @@ FORCEINLINE simd32_t ValueNumStore::ConstantValueInternal<simd32_t>(ValueNum vn 
 
     unsigned offset = ChunkOffset(vn);
 
-    if (c->m_typ == TYP_SIMD32)
-    {
-        assert(!coerce);
-        return SafeGetConstantValue<simd32_t>(c, offset);
-    }
-    else
-    {
-        assert(false);
-        return {};
-    }
+    assert(c->m_typ == TYP_SIMD32);
+    assert(!coerce);
+
+    return SafeGetConstantValue<simd32_t>(c, offset);
 }
 #endif // FEATURE_SIMD
 

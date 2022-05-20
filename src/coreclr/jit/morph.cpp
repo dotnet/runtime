@@ -935,20 +935,10 @@ void CallArgs::ArgsComplete(Compiler* comp, GenTreeCall* call)
 #if defined(FEATURE_SIMD) && defined(TARGET_ARM64)
                 else if (isMultiRegArg && varTypeIsSIMD(argx->TypeGet()))
                 {
-                    GenTree* nodeToCheck = argx;
-
-                    if (nodeToCheck->OperIs(GT_OBJ))
-                    {
-                        nodeToCheck = nodeToCheck->AsObj()->gtOp1;
-
-                        if (nodeToCheck->OperIs(GT_ADDR))
-                        {
-                            nodeToCheck = nodeToCheck->AsOp()->gtOp1;
-                        }
-                    }
-
                     // SIMD types do not need the optimization below due to their sizes
-                    if (nodeToCheck->OperIsSimdOrHWintrinsic() || nodeToCheck->IsCnsVec())
+                    if (argx->OperIsSimdOrHWintrinsic() || argx->IsCnsVec() ||
+                        (argx->OperIs(GT_OBJ) && argx->AsObj()->gtOp1->OperIs(GT_ADDR) &&
+                         argx->AsObj()->gtOp1->AsOp()->gtOp1->OperIsSimdOrHWintrinsic()))
                     {
                         SetNeedsTemp(&arg);
                     }
@@ -12700,7 +12690,8 @@ GenTree* Compiler::fgOptimizeHWIntrinsic(GenTreeHWIntrinsic* node)
         }
 
         vecCon->gtSimd32Val = simd32Val;
-        return fgMorphTree(vecCon);
+        INDEBUG(vecCon->gtDebugFlags |= GTF_DEBUG_NODE_MORPHED);
+        return vecCon;
     }
 
     return node;

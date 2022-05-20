@@ -843,6 +843,7 @@ CodeGen::OperandDesc CodeGen::genOperandDesc(GenTree* op)
                 switch (op->TypeGet())
                 {
 #if defined(FEATURE_SIMD)
+                    case TYP_LONG: // TYP_SIMD8 may get retyped to TYP_LONG after lowering
                     case TYP_SIMD8:
                     {
                         simd8_t constValue = op->AsVecCon()->gtSimd8Val;

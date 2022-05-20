@@ -2316,6 +2316,7 @@ void CodeGen::genSetRegToConst(regNumber targetReg, var_types targetType, GenTre
             switch (tree->TypeGet())
             {
 #if defined(FEATURE_SIMD)
+                case TYP_LONG: // TYP_SIMD8 may get retyped to TYP_LONG after lowering
                 case TYP_SIMD8:
                 {
                     if (vecCon->IsAllBitsSet())
