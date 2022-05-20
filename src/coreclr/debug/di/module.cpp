@@ -2646,7 +2646,7 @@ void CordbModule::SetLoadEventContinueMarker()
 //   The comparison is done via continue counters. The counter of the load
 //   event is cached via code:CordbModule::SetLoadEventContinueMarker.
 //
-//   This state is currently stored on the RS. Alternatively, it could likely be retreived from the LS state as
+//   This state is currently stored on the RS. Alternatively, it could likely be retrieved from the LS state as
 //   well. One disadvantage of the current model is that if we detach during the load-module callback and
 //   then reattach, the RS state is flushed and we lose the fact that we can toggle the jit flags.
 HRESULT CordbModule::EnsureModuleIsInLoadCallback()

@@ -7223,7 +7223,7 @@ void Debugger::JitAttach(Thread * pThread, EXCEPTION_POINTERS * pExceptionInfo, 
 //   - Failed to spawn jit-attach debugger.
 //
 //   Ultimately, the only thing that matters at the end is whether a debugger
-//   is now attached, which is retreived via CORDebuggerAttached().
+//   is now attached, which is retrieved via CORDebuggerAttached().
 //-----------------------------------------------------------------------------
 void Debugger::EnsureDebuggerAttached(Thread * pThread, EXCEPTION_POINTERS * pExceptionInfo, BOOL willSendManagedEvent, BOOL explicitUserRequest)
 {

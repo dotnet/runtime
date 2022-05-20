@@ -1218,7 +1218,7 @@ public:
     }
 
     // At the end of the merge store results of the dataflow equations, in a postmerge state.
-    // We also handle the case where calls conditionally kill CSE availabilty.
+    // We also handle the case where calls conditionally kill CSE availability.
     //
     bool EndMerge(BasicBlock* block)
     {

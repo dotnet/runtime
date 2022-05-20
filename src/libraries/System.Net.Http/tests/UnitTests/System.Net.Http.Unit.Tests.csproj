@@ -79,6 +79,8 @@
          Link="ProductionCode\System\Net\Http\EmptyReadStream.cs" />
     <Compile Include="..\..\src\System\Net\Http\FormUrlEncodedContent.cs"
              Link="ProductionCode\System\Net\Http\FormUrlEncodedContent.cs" />
+    <Compile Include="..\..\src\System\Net\Http\GlobalHttpSettings.cs"
+             Link="ProductionCode\System\Net\Http\GlobalHttpSettings.cs"/>
     <Compile Include="..\..\src\System\Net\Http\HeaderEncodingSelector.cs"
              Link="ProductionCode\System\Net\Http\HeaderEncodingSelector.cs" />
     <Compile Include="..\..\src\System\Net\Http\Headers\AltSvcHeaderParser.cs"
@@ -207,10 +209,10 @@
              Link="ProductionCode\System\Net\Http\RequestRetryType.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRequestMessage.cs"
              Link="ProductionCode\System\Net\Http\HttpRequestMessage.cs" />
-   <Compile Include="..\..\src\System\Net\Http\HttpRequestOptions.cs"
-             Link="ProductionCode\System\Net\Http\HttpRequestOptions.cs" />
-   <Compile Include="..\..\src\System\Net\Http\HttpRequestOptionsKey.cs"
-             Link="ProductionCode\System\Net\Http\HttpRequestOptionsKey.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpRequestOptions.cs"
+              Link="ProductionCode\System\Net\Http\HttpRequestOptions.cs" />
+    <Compile Include="..\..\src\System\Net\Http\HttpRequestOptionsKey.cs"
+              Link="ProductionCode\System\Net\Http\HttpRequestOptionsKey.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpResponseMessage.cs"
              Link="ProductionCode\System\Net\Http\HttpResponseMessage.cs" />
     <Compile Include="..\..\src\System\Net\Http\HttpRuleParser.cs"

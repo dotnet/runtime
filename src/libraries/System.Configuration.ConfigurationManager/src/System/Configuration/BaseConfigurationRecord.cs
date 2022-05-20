@@ -803,7 +803,7 @@ namespace System.Configuration
                     }
                     catch
                     {
-                        // Ignore the error if we are attempting to retreive
+                        // Ignore the error if we are attempting to retrieve
                         // the last known good configuration.
                         if (!getLkg) throw;
                     }
@@ -848,7 +848,7 @@ namespace System.Configuration
                     //
                     // It WILL be common in web scenarios for there to be
                     // deep hierarchies of config files, most of which have
-                    // sparse input. Therefore we do not want to retreive a
+                    // sparse input. Therefore we do not want to retrieve a
                     // factory record if it is not necessary to do so, as
                     // it would always lead to an order N-squared operation,
                     // where N is the depth of the config hierarchy.
@@ -1075,7 +1075,7 @@ namespace System.Configuration
                 }
                 catch
                 {
-                    // Ignore the error if we are attempting to retreive
+                    // Ignore the error if we are attempting to retrieve
                     // the last known good configuration.
                     if (!getLkg) throw;
                 }
@@ -1189,7 +1189,7 @@ namespace System.Configuration
                     }
                     catch
                     {
-                        // Ignore the error if we are attempting to retreive
+                        // Ignore the error if we are attempting to retrieve
                         // the last known good configuration.
                         if (!getLkg) throw;
                     }

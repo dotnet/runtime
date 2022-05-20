@@ -588,7 +588,7 @@ bool JitInstance::callJitStartup(ICorJitHost* jithost)
     return param.result;
 }
 
-// Reset JitConfig, that stores Enviroment variables.
+// Reset JitConfig, that stores Environment variables.
 bool JitInstance::resetConfig(MethodContext* firstContext)
 {
     if (pnjitStartup == nullptr)

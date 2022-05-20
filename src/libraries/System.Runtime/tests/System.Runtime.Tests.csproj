@@ -85,6 +85,7 @@
     <Compile Include="System\Int16Tests.cs" />
     <Compile Include="System\Int32Tests.cs" />
     <Compile Include="System\Int64Tests.cs" />
+    <Compile Include="System\Int128Tests.cs" />
     <Compile Include="System\IntPtrTests.cs" />
     <Compile Include="System\InvalidCastExceptionTests.cs" />
     <Compile Include="System\InvalidOperationExceptionTests.cs" />
@@ -138,6 +139,7 @@
     <Compile Include="System\UInt16Tests.cs" />
     <Compile Include="System\UInt32Tests.cs" />
     <Compile Include="System\UInt64Tests.cs" />
+    <Compile Include="System\UInt128Tests.cs" />
     <Compile Include="System\UIntPtrTests.cs" />
     <Compile Include="System\UnitySerializationHolderTests.cs" />
     <Compile Include="System\Uri.CreateStringTests.cs" />
@@ -260,12 +262,14 @@
     <Compile Include="System\Int16Tests.GenericMath.cs" />
     <Compile Include="System\Int32Tests.GenericMath.cs" />
     <Compile Include="System\Int64Tests.GenericMath.cs" />
+    <Compile Include="System\Int128Tests.GenericMath.cs" />
     <Compile Include="System\IntPtrTests.GenericMath.cs" />
     <Compile Include="System\SByteTests.GenericMath.cs" />
     <Compile Include="System\SingleTests.GenericMath.cs" />
     <Compile Include="System\UInt16Tests.GenericMath.cs" />
     <Compile Include="System\UInt32Tests.GenericMath.cs" />
     <Compile Include="System\UInt64Tests.GenericMath.cs" />
+    <Compile Include="System\UInt128Tests.GenericMath.cs" />
     <Compile Include="System\UIntPtrTests.GenericMath.cs" />
   </ItemGroup>
 

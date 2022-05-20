@@ -925,6 +925,18 @@ int LinearScan::BuildShiftRotate(GenTree* tree)
     {
         assert(shiftBy->OperIsConst());
     }
+#if defined(TARGET_64BIT)
+    else if (tree->OperIsShift() && !tree->isContained() &&
+             compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+    {
+        // shlx (as opposed to mov+shl) instructions handles all register forms, but it does not handle contained form
+        // for memory operand. Likewise for sarx and shrx.
+        srcCount += BuildOperandUses(source, srcCandidates);
+        srcCount += BuildOperandUses(shiftBy, srcCandidates);
+        BuildDef(tree, dstCandidates);
+        return srcCount;
+    }
+#endif
     else
     {
         srcCandidates = allRegs(TYP_INT) & ~RBM_RCX;

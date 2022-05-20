@@ -4716,7 +4716,7 @@ namespace System.Management
         }
 
         /// <summary>
-        /// Function to convert a given ValueMap or BitMap name to propert enum name
+        /// Function to convert a given ValueMap or BitMap name to property enum name
         /// </summary>
         private static string ConvertValuesToName(string str)
         {

@@ -3,8 +3,6 @@
 
 /*++
 
-
-
 Module Name:
 
     context.c
@@ -13,8 +11,6 @@ Abstract:
 
     Implementation of GetThreadContext/SetThreadContext/DebugBreak.
     There are a lot of architecture specifics here.
-
-
 
 --*/
 
@@ -332,7 +328,7 @@ CONTEXT_GetThreadContext(
     }
 
     /* How to consider the case when self is different from the current
-       thread of its owner process. Machine registers values could be retreived
+       thread of its owner process. Machine registers values could be retrieved
        by a ptrace(pid, ...) call or from the "/proc/%pid/reg" file content.
        Unfortunately, these two methods only depend on process ID, not on
        thread ID. */
@@ -405,7 +401,7 @@ CONTEXT_SetThreadContext(
     }
 
     /* How to consider the case when self is different from the current
-       thread of its owner process. Machine registers values could be retreived
+       thread of its owner process. Machine registers values could be retrieved
        by a ptrace(pid, ...) call or from the "/proc/%pid/reg" file content.
        Unfortunately, these two methods only depend on process ID, not on
        thread ID. */
