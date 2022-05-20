@@ -796,7 +796,11 @@ private static {JsonPropertyInfoTypeRef}[] {propInitMethodName}({JsonSerializerC
                 return sb.ToString();
             }
 
-            private string GenerateCtorParamMetadataInitFunc(TypeGenerationSpec typeGenerationSpec)
+            private
+#if !DEBUG
+                static
+#endif
+                string GenerateCtorParamMetadataInitFunc(TypeGenerationSpec typeGenerationSpec)
             {
                 const string parametersVarName = "parameters";
 
@@ -1327,7 +1331,11 @@ private static readonly {JsonEncodedTextTypeRef} {name_varName_pair.Value} = {Js
 
             private static string FormatBool(bool value) => value ? "true" : "false";
 
-            private string GetParamDefaultValueAsString(object? value, Type type, string typeRef)
+            private
+#if !DEBUG
+                static
+#endif
+                string GetParamDefaultValueAsString(object? value, Type type, string typeRef)
             {
                 if (value == null)
                 {
