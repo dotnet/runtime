@@ -9608,9 +9608,8 @@ MONO_RESTORE_WARNING
 			LLVMTypeRef srcelemt = LLVMGetElementType (LLVMTypeOf (lhs));
 
 			//%c = icmp sgt <16 x i8> %a0, %a1
-			if (srcelemt == LLVMDoubleType () || srcelemt == LLVMFloatType ()) {
+			if (srcelemt == LLVMDoubleType () || srcelemt == LLVMFloatType ())
 				cmp = LLVMBuildFCmp (builder, LLVMRealOEQ, lhs, rhs, "");
-			}
 			else
 				cmp = LLVMBuildICmp (builder, LLVMIntEQ, lhs, rhs, "");
 			nelems = LLVMGetVectorSize (LLVMTypeOf (cmp));
