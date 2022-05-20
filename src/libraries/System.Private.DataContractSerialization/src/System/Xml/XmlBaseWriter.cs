@@ -442,7 +442,7 @@ namespace System.Xml
             {
                 text = string.Empty;
             }
-            else if (text.IndexOf("--", StringComparison.Ordinal) != -1 || (text.Length > 0 && text[text.Length - 1] == '-'))
+            else if (text.Contains("--") || text.StartsWith('-'))
             {
                 throw System.Runtime.Serialization.DiagnosticUtility.ExceptionUtility.ThrowHelperError(new ArgumentException(SR.XmlInvalidCommentChars, nameof(text)));
             }

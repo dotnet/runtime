@@ -602,8 +602,7 @@ namespace System.Net
                 commandList.Add(new PipelineEntry(FormatFtpCommand("RNFR", baseDir + requestFilename), flags));
 
                 string renameTo;
-                if (!string.IsNullOrEmpty(request.RenameTo)
-                    && request.RenameTo.StartsWith("/", StringComparison.OrdinalIgnoreCase))
+                if (request.RenameTo is not null && request.RenameTo.StartsWith('/'))
                 {
                     renameTo = request.RenameTo; // Absolute path
                 }
@@ -774,7 +773,7 @@ namespace System.Net
             }
 
             // strip off trailing '/' on directory if present
-            if (directory.Length > 1 && directory[directory.Length - 1] == '/')
+            if (directory.Length > 1 && directory.EndsWith('/'))
                 directory = directory.Substring(0, directory.Length - 1);
         }
 
@@ -954,11 +953,11 @@ namespace System.Net
             escapedFilename = escapedFilename.Replace("#", "%23");
 
             // help us out if the user forgot to add a slash to the directory name
-            string orginalPath = baseUri.AbsolutePath;
-            if (orginalPath.Length > 0 && orginalPath[orginalPath.Length - 1] != '/')
+            string originalPath = baseUri.AbsolutePath;
+            if (originalPath.Length > 0 && !originalPath.EndsWith('/'))
             {
                 UriBuilder uriBuilder = new UriBuilder(baseUri);
-                uriBuilder.Path = orginalPath + "/";
+                uriBuilder.Path = originalPath + "/";
                 baseUri = uriBuilder.Uri;
             }
 
