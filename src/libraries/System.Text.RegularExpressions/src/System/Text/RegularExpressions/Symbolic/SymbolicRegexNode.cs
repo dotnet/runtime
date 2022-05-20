@@ -2111,10 +2111,13 @@ namespace System.Text.RegularExpressions.Symbolic
 
                 case SymbolicRegexNodeKind.Effect:
                     Debug.Assert(_left is not null && _right is not null);
+                    // Note that the order of printing here is flipped, because for notation it is prettier for the
+                    // effects to appear first, but for uniformity of representation with other nodes the "main" child
+                    // should be the left one.
                     sb.Append('(');
-                    _left.ToStringHelper(sb);
-                    sb.Append('\u03BE');
                     _right.ToStringHelper(sb);
+                    sb.Append('\u03BE');
+                    _left.ToStringHelper(sb);
                     sb.Append(')');
                     break;
 
