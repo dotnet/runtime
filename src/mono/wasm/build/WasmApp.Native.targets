@@ -8,9 +8,6 @@
     <_WasmBuildNativeCoreDependsOn>
       _PrepareForWasmBuildNative;
       _GenerateDriverGenC;
-      <!-- _GenerateInterpToNative;
-      _GeneratePInvokeTable;
-      _GenerateICallTable; -->
       _GenerateManagedToNative;
       _WasmCompileNativeFiles;
       _WasmLinkDotNet;
