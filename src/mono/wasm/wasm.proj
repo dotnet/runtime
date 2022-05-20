@@ -83,6 +83,35 @@
       InputDirectory="$([MSBuild]::NormalizePath('$(PkgSystem_Runtime_TimeZoneData)', 'contentFiles', 'any', 'any', 'data'))"
       OutputFileName="$(TimeZonesDataPath)" />
   </Target>
+  
+  <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
+  <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
+    <PropertyGroup>
+      <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm\pinvoke-table.h</WasmPInvokeTablePath>
+      <WasmInterpToNativeTablePath>$(ArtifactsObjDir)wasm\wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <WasmPInvokeModule Include="libSystem.Native" />
+      <WasmPInvokeModule Include="libSystem.IO.Compression.Native" />
+      <WasmPInvokeModule Include="libSystem.Globalization.Native" />
+      <WasmPInvokeAssembly Include="@(LibrariesRuntimeFiles)" Condition="'%(Extension)' == '.dll' and '%(IsNative)' != 'true'" />
+    </ItemGroup>
+
+    <!-- Retrieve CoreLib's targetpath via GetTargetPath as it isn't binplaced yet. -->
+    <MSBuild Projects="$(CoreLibProject)"
+             Targets="GetTargetPath">
+      <Output TaskParameter="TargetOutputs" ItemName="WasmPInvokeAssembly" />
+    </MSBuild>
+    
+    <ManagedToNativeGenerator
+      Assemblies="@(WasmPInvokeAssembly)"
+      PInvokeModules="@(WasmPInvokeModule)"
+      PInvokeOutputPath="$(WasmPInvokeTablePath)"
+      InterpToNativeOutputPath="$(WasmInterpToNativeTablePath)">
+      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
+    </ManagedToNativeGenerator>
+  </Target>
 
   <Target Name="GenerateEmccPropsAndRspFiles">
 
@@ -187,7 +216,7 @@
   <!-- This is a documented target that is invoked by developers in their innerloop work. -->
   <Target Name="BuildWasmRuntimes"
           AfterTargets="Build"
-          DependsOnTargets="GenerateEmccPropsAndRspFiles;BuildPInvokeTable;BuildInterpToNativeTable;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
+          DependsOnTargets="GenerateEmccPropsAndRspFiles;GenerateManagedToNative;BundleTimeZones;InstallNpmPackages;BuildWithRollup">
 
     <ItemGroup>
       <ICULibNativeFiles Include="$(ICULibDir)/libicuuc.a;

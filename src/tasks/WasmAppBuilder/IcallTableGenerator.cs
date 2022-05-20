@@ -36,7 +36,7 @@ public class IcallTableGenerator : Task
     {
         try
         {
-            GenIcallTable(RuntimeIcallTableFile!, Assemblies!);
+            GenIcallTable(RuntimeIcallTableFile, Assemblies!);
             return !Log.HasLoggedErrors;
         }
         catch (LogAsErrorException laee)
@@ -52,9 +52,11 @@ public class IcallTableGenerator : Task
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public void GenIcallTable(string runtimeIcallTableFile, string[] assemblies)
+    public void GenIcallTable(string? runtimeIcallTableFile, string[] assemblies)
     {
-        ReadTable (runtimeIcallTableFile);
+        if (runtimeIcallTableFile != null)
+            ReadTable (runtimeIcallTableFile);
+
         var resolver = new PathAssemblyResolver(assemblies);
         using var mlc = new MetadataLoadContext(resolver, "System.Private.CoreLib");
         foreach (var aname in assemblies)
@@ -66,17 +68,20 @@ public class IcallTableGenerator : Task
 
         Cookies = _icalls.Select(p => CookieHelper.BuildCookie(p.Method!)).ToArray();
 
-        string tmpFileName = Path.GetTempFileName();
-        using (var w = File.CreateText(tmpFileName))
-            EmitTable (w);
+        if (OutputPath != null)
+        {
+            string tmpFileName = Path.GetTempFileName();
+            using (var w = File.CreateText(tmpFileName))
+                EmitTable(w);
 
-        if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
-            Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{OutputPath}'.");
-        else
-            Log.LogMessage(MessageImportance.Low, $"Icall table in {OutputPath} is unchanged.");
-        FileWrites = OutputPath;
+            if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
+                Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{OutputPath}'.");
+            else
+                Log.LogMessage(MessageImportance.Low, $"Icall table in {OutputPath} is unchanged.");
 
-        File.Delete(tmpFileName);
+            FileWrites = OutputPath;
+            File.Delete(tmpFileName);
+        }
     }
 
     private void EmitTable (StreamWriter w)
