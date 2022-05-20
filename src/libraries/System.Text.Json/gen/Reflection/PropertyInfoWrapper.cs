@@ -8,7 +8,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal class PropertyInfoWrapper : PropertyInfo
+    internal sealed class PropertyInfoWrapper : PropertyInfo
     {
         private readonly IPropertySymbol _property;
         private MetadataLoadContextInternal _metadataLoadContext;
