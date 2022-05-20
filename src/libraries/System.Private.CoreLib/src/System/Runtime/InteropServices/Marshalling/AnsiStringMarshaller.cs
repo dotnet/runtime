@@ -44,10 +44,9 @@ namespace System.Runtime.InteropServices.Marshalling
                 return;
             }
 
-            int maxBytesNeeded = checked(Marshal.SystemMaxDBCSCharSize * str.Length);
-
             // >= for null terminator
-            if (maxBytesNeeded >= buffer.Length)
+            // Use the cast to long to avoid the checked operation
+            if ((long)Marshal.SystemMaxDBCSCharSize * str.Length >= buffer.Length)
             {
                 // Calculate accurate byte count when the provided stack-allocated buffer is not sufficient
                 int exactByteCount = Marshal.GetAnsiStringByteCount(str); // Includes null terminator
