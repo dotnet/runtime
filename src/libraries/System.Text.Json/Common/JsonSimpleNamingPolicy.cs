@@ -101,7 +101,7 @@ namespace System.Text.Json
                     if (currentCategory == CharCategory.Lowercase && char.IsUpper(next) ||
                         next == '_')
                     {
-                        WriteWord(ref result, chars.Slice(first, index + 1));
+                        WriteWord(ref result, chars.Slice(first, index - first + 1));
 
                         previousCategory = CharCategory.Boundary;
                         first = index + 1;
