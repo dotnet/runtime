@@ -81,7 +81,6 @@ public class InterpToNativeGenerator
         w.WriteLine(@"#include ""pinvoke.h""");
         w.WriteLine(@"#include <stdlib.h>");
         w.WriteLine("");
-        // w.WriteLine("void mono_wasm_install_interp_to_native_invokes (void **invokes, const char **sigs, unsigned int count);");
 
         var added = new HashSet<string>();
 
