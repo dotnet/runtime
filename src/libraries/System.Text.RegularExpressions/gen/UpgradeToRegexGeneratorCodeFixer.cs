@@ -193,13 +193,13 @@ namespace System.Text.RegularExpressions.Generator
             // Try to get the pattern and RegexOptions values out from the diagnostic's property bag.
             if (operation is IObjectCreationOperation objectCreationOperation) // When using the Regex constructors
             {
-                patternValue = GetNode((objectCreationOperation).Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false, compilation);
-                regexOptionsValue = GetNode((objectCreationOperation).Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true, compilation);
+                patternValue = GetNode((objectCreationOperation).Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false, compilation, cancellationToken);
+                regexOptionsValue = GetNode((objectCreationOperation).Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true, compilation, cancellationToken);
             }
             else if (operation is IInvocationOperation invocation) // When using the Regex static methods.
             {
-                patternValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false, compilation);
-                regexOptionsValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true, compilation);
+                patternValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false, compilation, cancellationToken);
+                regexOptionsValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true, compilation, cancellationToken);
             }
 
             // Generate the new static partial method
@@ -260,7 +260,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Helper method that looks int the properties bag for the index of the passed in propertyname, and then returns that index from the args parameter.
-            static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> args, ImmutableDictionary<string, string?> properties, string propertyName, SyntaxGenerator generator, bool useOptionsMemberExpression, Compilation compilation)
+            static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> args, ImmutableDictionary<string, string?> properties, string propertyName, SyntaxGenerator generator, bool useOptionsMemberExpression, Compilation compilation, CancellationToken cancellationToken)
             {
                 int? index = TryParseInt32(properties, propertyName);
                 if (index == null)
@@ -276,7 +276,7 @@ namespace System.Text.RegularExpressions.Generator
                 {
                     RegexOptions options = (RegexOptions)(int)args[index.Value].Value.ConstantValue.Value;
                     string optionsLiteral = Literal(options);
-                    return SyntaxFactory.ParseExpression(optionsLiteral).SyntaxTree.GetRoot();
+                    return SyntaxFactory.ParseExpression(optionsLiteral).SyntaxTree.GetRoot(cancellationToken);
                 }
             }
 

@@ -34,10 +34,10 @@ namespace System.Text.RegularExpressions.Unit.Tests
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
         public static async Task VerifyAnalyzerAsync(string source, params DiagnosticResult[] expected)
-            => await VerifyAnalyzerAsync(source, ReferenceAssemblies.Net.Net70, usePreviewLanguageVersion: true, expected);
+            => await VerifyAnalyzerAsync(source, null, usePreviewLanguageVersion: true, expected);
 
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyAnalyzerAsync(string, DiagnosticResult[])"/>
-        public static async Task VerifyAnalyzerAsync(string source, ReferenceAssemblies references, bool usePreviewLanguageVersion, params DiagnosticResult[] expected)
+        public static async Task VerifyAnalyzerAsync(string source, ReferenceAssemblies? references, bool usePreviewLanguageVersion, params DiagnosticResult[] expected)
         {
             Test test = new Test(references, usePreviewLanguageVersion, numberOfIterations: 1)
             {
@@ -59,7 +59,7 @@ namespace System.Text.RegularExpressions.Unit.Tests
         /// <inheritdoc cref="CodeFixVerifier{TAnalyzer, TCodeFix, TTest, TVerifier}.VerifyCodeFixAsync(string, DiagnosticResult[], string)"/>
         public static async Task VerifyCodeFixAsync(string source, DiagnosticResult[] expected, string fixedSource, int numberOfIterations = 1)
         {
-            Test test = new Test(ReferenceAssemblies.Net.Net70, usePreviewLanguageVersion: true, numberOfIterations)
+            Test test = new Test(null, usePreviewLanguageVersion: true, numberOfIterations)
             {
                 TestCode = source,
                 FixedCode = fixedSource,
@@ -71,12 +71,22 @@ namespace System.Text.RegularExpressions.Unit.Tests
 
         public class Test : CSharpCodeFixTest<TAnalyzer, TCodeFix, XUnitVerifier>
         {
-            public Test(ReferenceAssemblies references, bool usePreviewLanguageVersion, int numberOfIterations)
+            public Test(ReferenceAssemblies? references, bool usePreviewLanguageVersion, int numberOfIterations)
             {
                 // Code Fixer generates partial methods that will need to use the source generator to be filled.
                 this.CompilerDiagnostics = CompilerDiagnostics.None;
 
-                ReferenceAssemblies = references;
+                if (references != null)
+                {
+                    ReferenceAssemblies = references;
+                }
+                else
+                {
+                    // Clear out the default reference assemblies. We explicitly add references from the live ref pack,
+                    // so we don't want the Roslyn test infrastructure to resolve/add any default reference assemblies
+                    ReferenceAssemblies = new ReferenceAssemblies(string.Empty);
+                    TestState.AdditionalReferences.AddRange(SourceGenerators.Tests.LiveReferencePack.GetMetadataReferences());
+                }
 
                 NumberOfFixAllIterations = numberOfIterations;
 

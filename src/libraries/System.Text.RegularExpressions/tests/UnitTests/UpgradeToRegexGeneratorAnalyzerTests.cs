@@ -119,7 +119,7 @@ public class Program
     }
 }";
 
-            await VerifyCS.VerifyAnalyzerAsync(test, ReferenceAssemblies.Net.Net70, usePreviewLanguageVersion: false);
+            await VerifyCS.VerifyAnalyzerAsync(test, null, usePreviewLanguageVersion: false);
         }
 
         public static IEnumerable<object[]> ConstantPatternTestData()
@@ -503,8 +503,7 @@ public partial class Program
 
             foreach (bool includeRegexOptions in new[] { true, false })
             {
-                // Can't test EnumerateMatches yet since the reference assemblies used by the test infrastructure doesn't have that API yet.
-                foreach (string methodName in new[] { "Count", /* "EnumerateMatches" ,*/ "IsMatch", "Match", "Matches", "Split" })
+                foreach (string methodName in new[] { "Count", "EnumerateMatches" , "IsMatch", "Match", "Matches", "Split" })
                 {
                     if (includeRegexOptions)
                     {
