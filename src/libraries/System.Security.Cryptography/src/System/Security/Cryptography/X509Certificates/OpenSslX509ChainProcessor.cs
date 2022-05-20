@@ -817,7 +817,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             int count = baseUri.Length + resource.Length;
 
-            if (baseUri[baseUri.Length - 1] == '/')
+            if (baseUri.EndsWith('/'))
             {
                 return string.Create(
                     count,
@@ -863,9 +863,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 char cur = base64[readIdx];
 
-                if ((cur >= 'A' && cur <= 'Z') ||
-                    (cur >= 'a' && cur <= 'z') ||
-                    (cur >= '0' && cur <= '9'))
+                if (char.IsAsciiLetterOrDigit(cur))
                 {
                     urlEncoded[writeIdx++] = cur;
                 }

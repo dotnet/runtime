@@ -59,6 +59,26 @@ namespace HostActivation.Tests
         }
 
         [Fact]
+        public void Running_Publish_Output_Standalone_EXE_with_no_DepsJson_and_no_RuntimeConfig_Local_Succeeds()
+        {
+            var fixture = sharedTestState.StandaloneAppFixture_Published
+                .Copy();
+
+            var appExe = fixture.TestProject.AppExe;
+            File.Delete(fixture.TestProject.RuntimeConfigJson);
+            File.Delete(fixture.TestProject.DepsJson);
+
+            Command.Create(appExe)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute()
+                .Should().Pass()
+                // Note that this is an exact match - we don't expect any output from the host itself
+                .And.HaveStdOut($"Hello World!{Environment.NewLine}{Environment.NewLine}.NET {sharedTestState.RepoDirectories.MicrosoftNETCoreAppVersion}{Environment.NewLine}")
+                .And.NotHaveStdErr();
+        }
+
+        [Fact]
         public void Running_Publish_Output_Standalone_EXE_with_Unbound_AppHost_Fails()
         {
             var fixture = sharedTestState.StandaloneAppFixture_Published

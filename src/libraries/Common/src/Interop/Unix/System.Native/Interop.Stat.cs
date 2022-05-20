@@ -31,7 +31,6 @@ internal static partial class Interop
             internal long BirthTime;
             internal long BirthTimeNsec;
             internal long Dev;
-            internal long RDev;
             internal long Ino;
             internal uint UserFlags;
         }

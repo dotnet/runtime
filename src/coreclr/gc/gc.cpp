@@ -17879,6 +17879,9 @@ try_again:
 gc_heap* gc_heap::balance_heaps_uoh_hard_limit_retry (alloc_context* acontext, size_t alloc_size, int generation_num)
 {
     assert (heap_hard_limit);
+#ifdef USE_REGIONS
+    return balance_heaps_uoh (acontext, alloc_size, generation_num);
+#else //USE_REGIONS
     const int home_heap = heap_select::select_heap(acontext);
     dprintf (3, ("[h%d] balance_heaps_loh_hard_limit_retry alloc_size: %d", home_heap, alloc_size));
     int start, end;
@@ -17914,6 +17917,7 @@ try_again:
     }
 
     return max_hp;
+#endif //USE_REGIONS
 }
 #endif //MULTIPLE_HEAPS
 

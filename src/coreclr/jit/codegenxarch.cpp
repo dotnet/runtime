@@ -4403,6 +4403,34 @@ void CodeGen::genCodeForShift(GenTree* tree)
             inst_RV_SH(ins, size, tree->GetRegNum(), shiftByValue);
         }
     }
+#if defined(TARGET_64BIT)
+    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+    {
+        // Try to emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.
+        switch (tree->OperGet())
+        {
+            case GT_LSH:
+                ins = INS_shlx;
+                break;
+
+            case GT_RSH:
+                ins = INS_sarx;
+                break;
+
+            case GT_RSZ:
+                ins = INS_shrx;
+                break;
+
+            default:
+                unreached();
+        }
+
+        regNumber shiftByReg = shiftBy->GetRegNum();
+        emitAttr  size       = emitTypeSize(tree);
+        // The order of operandReg and shiftByReg are swapped to follow shlx, sarx and shrx encoding spec.
+        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), shiftByReg, operandReg);
+    }
+#endif
     else
     {
         // We must have the number of bits to shift stored in ECX, since we constrained this node to

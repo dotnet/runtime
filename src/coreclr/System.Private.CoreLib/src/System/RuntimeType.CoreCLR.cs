@@ -2079,7 +2079,7 @@ namespace System
                     listType = MemberListType.CaseSensitive;
                 }
 
-                if (allowPrefixLookup && name.EndsWith("*", StringComparison.Ordinal))
+                if (allowPrefixLookup && name.EndsWith('*'))
                 {
                     // We set prefixLookup to true if name ends with a "*".
                     // We will also set listType to All so that all members are included in

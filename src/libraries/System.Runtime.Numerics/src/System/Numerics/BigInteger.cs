@@ -1114,7 +1114,7 @@ namespace System.Numerics
             if (cu == 1)
                 return _bits[0] == uu;
 
-            return NumericsHelpers.MakeUlong(_bits[1], _bits[0]) == uu;
+            return NumericsHelpers.MakeUInt64(_bits[1], _bits[0]) == uu;
         }
 
         [CLSCompliant(false)]
@@ -1132,7 +1132,7 @@ namespace System.Numerics
                 return false;
             if (cu == 1)
                 return _bits[0] == other;
-            return NumericsHelpers.MakeUlong(_bits[1], _bits[0]) == other;
+            return NumericsHelpers.MakeUInt64(_bits[1], _bits[0]) == other;
         }
 
         public bool Equals(BigInteger other)
@@ -1165,7 +1165,7 @@ namespace System.Numerics
             if ((_sign ^ other) < 0 || (cu = _bits.Length) > 2)
                 return _sign;
             ulong uu = other < 0 ? (ulong)-other : (ulong)other;
-            ulong uuTmp = cu == 2 ? NumericsHelpers.MakeUlong(_bits[1], _bits[0]) : _bits[0];
+            ulong uuTmp = cu == 2 ? NumericsHelpers.MakeUInt64(_bits[1], _bits[0]) : _bits[0];
             return _sign * uuTmp.CompareTo(uu);
         }
 
@@ -1181,7 +1181,7 @@ namespace System.Numerics
             int cu = _bits.Length;
             if (cu > 2)
                 return +1;
-            ulong uuTmp = cu == 2 ? NumericsHelpers.MakeUlong(_bits[1], _bits[0]) : _bits[0];
+            ulong uuTmp = cu == 2 ? NumericsHelpers.MakeUInt64(_bits[1], _bits[0]) : _bits[0];
             return uuTmp.CompareTo(other);
         }
 
@@ -1811,6 +1811,106 @@ namespace System.Numerics
             }
         }
 
+        public static implicit operator BigInteger(Int128 value)
+        {
+            int sign;
+            uint[]? bits;
+
+            if ((int.MinValue < value) && (value <= int.MaxValue))
+            {
+                sign = (int)value;
+                bits = null;
+            }
+            else if (value == int.MinValue)
+            {
+                return s_bnMinInt;
+            }
+            else
+            {
+                UInt128 x;
+                if (value < 0)
+                {
+                    x = unchecked((UInt128)(-value));
+                    sign = -1;
+                }
+                else
+                {
+                    x = (UInt128)value;
+                    sign = +1;
+                }
+
+                if (x <= uint.MaxValue)
+                {
+                    bits = new uint[1];
+                    bits[0] = (uint)(x >> (kcbitUint * 0));
+                }
+                else if (x <= ulong.MaxValue)
+                {
+                    bits = new uint[2];
+                    bits[0] = (uint)(x >> (kcbitUint * 0));
+                    bits[1] = (uint)(x >> (kcbitUint * 1));
+                }
+                else if (x <= new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF))
+                {
+                    bits = new uint[3];
+                    bits[0] = (uint)(x >> (kcbitUint * 0));
+                    bits[1] = (uint)(x >> (kcbitUint * 1));
+                    bits[2] = (uint)(x >> (kcbitUint * 2));
+                }
+                else
+                {
+                    bits = new uint[4];
+                    bits[0] = (uint)(x >> (kcbitUint * 0));
+                    bits[1] = (uint)(x >> (kcbitUint * 1));
+                    bits[2] = (uint)(x >> (kcbitUint * 2));
+                    bits[3] = (uint)(x >> (kcbitUint * 3));
+                }
+            }
+
+            return new BigInteger(sign, bits);
+        }
+
+        [CLSCompliant(false)]
+        public static implicit operator BigInteger(UInt128 value)
+        {
+            int sign = +1;
+            uint[]? bits;
+
+            if (value <= (uint)int.MaxValue)
+            {
+                sign = (int)value;
+                bits = null;
+            }
+            else if (value <= uint.MaxValue)
+            {
+                bits = new uint[1];
+                bits[0] = (uint)(value >> (kcbitUint * 0));
+            }
+            else if (value <= ulong.MaxValue)
+            {
+                bits = new uint[2];
+                bits[0] = (uint)(value >> (kcbitUint * 0));
+                bits[1] = (uint)(value >> (kcbitUint * 1));
+            }
+            else if (value <= new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF))
+            {
+                bits = new uint[3];
+                bits[0] = (uint)(value >> (kcbitUint * 0));
+                bits[1] = (uint)(value >> (kcbitUint * 1));
+                bits[2] = (uint)(value >> (kcbitUint * 2));
+            }
+            else
+            {
+                bits = new uint[4];
+                bits[0] = (uint)(value >> (kcbitUint * 0));
+                bits[1] = (uint)(value >> (kcbitUint * 1));
+                bits[2] = (uint)(value >> (kcbitUint * 2));
+                bits[3] = (uint)(value >> (kcbitUint * 3));
+            }
+
+            return new BigInteger(sign, bits);
+        }
+
         public static explicit operator BigInteger(float value)
         {
             return new BigInteger(value);
@@ -1907,7 +2007,7 @@ namespace System.Numerics
             ulong uu;
             if (len > 1)
             {
-                uu = NumericsHelpers.MakeUlong(value._bits[1], value._bits[0]);
+                uu = NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
             }
             else
             {
@@ -1940,7 +2040,82 @@ namespace System.Numerics
 
             if (len > 1)
             {
-                return NumericsHelpers.MakeUlong(value._bits[1], value._bits[0]);
+                return NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
+            }
+            return value._bits[0];
+        }
+
+        public static explicit operator Int128(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (value._bits is null)
+            {
+                return value._sign;
+            }
+
+            int len = value._bits.Length;
+
+            if (len > 4)
+            {
+                throw new OverflowException(SR.Overflow_Int128);
+            }
+
+            UInt128 uu;
+
+            if (len > 2)
+            {
+                uu = new UInt128(
+                    NumericsHelpers.MakeUInt64((len > 3) ? value._bits[3] : 0, value._bits[2]),
+                    NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0])
+                );
+            }
+            else if (len > 1)
+            {
+                uu = NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
+            }
+            else
+            {
+                uu = value._bits[0];
+            }
+
+            Int128 ll = (value._sign > 0) ? unchecked((Int128)uu) : unchecked(-(Int128)uu);
+
+            if (((ll > 0) && (value._sign > 0)) || ((ll < 0) && (value._sign < 0)))
+            {
+                // Signs match, no overflow
+                return ll;
+            }
+            throw new OverflowException(SR.Overflow_Int128);
+        }
+
+        [CLSCompliant(false)]
+        public static explicit operator UInt128(BigInteger value)
+        {
+            value.AssertValid();
+
+            if (value._bits is null)
+            {
+                return checked((UInt128)value._sign);
+            }
+
+            int len = value._bits.Length;
+
+            if ((len > 4) || (value._sign < 0))
+            {
+                throw new OverflowException(SR.Overflow_UInt128);
+            }
+
+            if (len > 2)
+            {
+                return new UInt128(
+                    NumericsHelpers.MakeUInt64((len > 3) ? value._bits[3] : 0, value._bits[2]),
+                    NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0])
+                );
+            }
+            else if (len > 1)
+            {
+                return NumericsHelpers.MakeUInt64(value._bits[1], value._bits[0]);
             }
             return value._bits[0];
         }
@@ -3275,7 +3450,7 @@ namespace System.Numerics
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        long IBinaryInteger<BigInteger>.GetShortestBitLength()
+        int IBinaryInteger<BigInteger>.GetShortestBitLength()
         {
             AssertValid();
             uint[]? bits = _bits;
@@ -3286,39 +3461,146 @@ namespace System.Numerics
 
                 if (value >= 0)
                 {
-                    return (sizeof(int) * 8) - int.LeadingZeroCount(value);
+                    return (sizeof(int) * 8) - BitOperations.LeadingZeroCount((uint)(value));
                 }
                 else
                 {
-                    return (sizeof(int) * 8) + 1 - int.LeadingZeroCount(~value);
+                    return (sizeof(int) * 8) + 1 - BitOperations.LeadingZeroCount((uint)(~value));
                 }
             }
 
-            long result = (bits.Length - 1) * 32;
+            int result = (bits.Length - 1) * 32;
 
             if (_sign >= 0)
             {
-                result += (sizeof(uint) * 8) - uint.LeadingZeroCount(bits[^1]);
+                result += (sizeof(uint) * 8) - BitOperations.LeadingZeroCount(bits[^1]);
             }
             else
             {
-                result += (sizeof(uint) * 8) + 1 - uint.LeadingZeroCount(~bits[^1]);
+                uint part = ~bits[^1] + 1;
+
+                // We need to remove the "carry" (the +1) if any of the initial
+                // bytes are not zero. This ensures we get the correct two's complement
+                // part for the computation.
+
+                for (int index = 0; index < bits.Length - 1; index++)
+                {
+                    if (bits[index] != 0)
+                    {
+                        part -= 1;
+                        break;
+                    }
+                }
+
+                result += (sizeof(uint) * 8) + 1 - BitOperations.LeadingZeroCount(~part);
             }
 
             return result;
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
-        int IBinaryInteger<BigInteger>.GetByteCount()
+        int IBinaryInteger<BigInteger>.GetByteCount() => GetGenericMathByteCount();
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<BigInteger>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
         {
             AssertValid();
             uint[]? bits = _bits;
 
-            if (bits is null)
+            int byteCount = GetGenericMathByteCount();
+
+            if (destination.Length >= byteCount)
             {
-                return sizeof(int);
+                if (bits is null)
+                {
+                    int value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(_sign) : _sign;
+                    Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+                }
+                else if (_sign >= 0)
+                {
+                    // When the value is positive, we simply need to copy all bits as big endian
+
+                    ref byte startAddress = ref MemoryMarshal.GetReference(destination);
+                    ref byte address = ref Unsafe.Add(ref startAddress, (bits.Length - 1) * sizeof(uint));
+
+                    for (int i = 0; i < bits.Length; i++)
+                    {
+                        uint part = bits[i];
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
+
+                        Unsafe.WriteUnaligned(ref address, part);
+                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
+                    }
+                }
+                else
+                {
+                    // When the value is negative, we need to copy the two's complement representation
+                    // We'll do this "inline" to avoid needing to unnecessarily allocate.
+
+                    ref byte startAddress = ref MemoryMarshal.GetReference(destination);
+                    ref byte address = ref Unsafe.Add(ref startAddress, byteCount - sizeof(uint));
+
+                    int i = 0;
+                    uint part;
+
+                    do
+                    {
+                        // first do complement and +1 as long as carry is needed
+                        part = ~bits[i] + 1;
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
+
+                        Unsafe.WriteUnaligned(ref address, part);
+                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
+
+                        i++;
+                    }
+                    while ((part == 0) && (i < bits.Length));
+
+                    while (i < bits.Length)
+                    {
+                        // now ones complement is sufficient
+                        part = ~bits[i];
+
+                        if (BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
+
+                        Unsafe.WriteUnaligned(ref address, part);
+                        address = ref Unsafe.Subtract(ref address, sizeof(uint));
+
+                        i++;
+                    }
+
+                    if (Unsafe.AreSame(ref address, ref startAddress))
+                    {
+                        // We need one extra part to represent the sign as the most
+                        // significant bit of the two's complement value was 0.
+                        Unsafe.WriteUnaligned(ref address, uint.MaxValue);
+                    }
+                    else
+                    {
+                        // Otherwise we should have been precisely one part behind address
+                        Debug.Assert(Unsafe.AreSame(ref startAddress, ref Unsafe.Add(ref address, sizeof(uint))));
+                    }
+                }
+
+                bytesWritten = byteCount;
+                return true;
             }
-            return bits.Length * 4;
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
@@ -3327,7 +3609,7 @@ namespace System.Numerics
             AssertValid();
             uint[]? bits = _bits;
 
-            int byteCount = (bits is null) ? sizeof(int) : bits.Length * 4;
+            int byteCount = GetGenericMathByteCount();
 
             if (destination.Length >= byteCount)
             {
@@ -3361,13 +3643,20 @@ namespace System.Numerics
                     // We'll do this "inline" to avoid needing to unnecessarily allocate.
 
                     ref byte address = ref MemoryMarshal.GetReference(destination);
+                    ref byte lastAddress = ref Unsafe.Add(ref address, byteCount - sizeof(uint));
 
                     int i = 0;
                     uint part;
 
                     do
                     {
+                        // first do complement and +1 as long as carry is needed
                         part = ~bits[i] + 1;
+
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
 
                         Unsafe.WriteUnaligned(ref address, part);
                         address = ref Unsafe.Add(ref address, sizeof(uint));
@@ -3378,12 +3667,30 @@ namespace System.Numerics
 
                     while (i < bits.Length)
                     {
+                        // now ones complement is sufficient
                         part = ~bits[i];
+
+                        if (!BitConverter.IsLittleEndian)
+                        {
+                            part = BinaryPrimitives.ReverseEndianness(part);
+                        }
 
                         Unsafe.WriteUnaligned(ref address, part);
                         address = ref Unsafe.Add(ref address, sizeof(uint));
 
                         i++;
+                    }
+
+                    if (Unsafe.AreSame(ref address, ref lastAddress))
+                    {
+                        // We need one extra part to represent the sign as the most
+                        // significant bit of the two's complement value was 0.
+                        Unsafe.WriteUnaligned(ref address, uint.MaxValue);
+                    }
+                    else
+                    {
+                        // Otherwise we should have been precisely one part ahead address
+                        Debug.Assert(Unsafe.AreSame(ref lastAddress, ref Unsafe.Subtract(ref address, sizeof(uint))));
                     }
                 }
 
@@ -3395,6 +3702,46 @@ namespace System.Numerics
                 bytesWritten = 0;
                 return false;
             }
+        }
+
+        private int GetGenericMathByteCount()
+        {
+            AssertValid();
+            uint[]? bits = _bits;
+
+            if (bits is null)
+            {
+                return sizeof(int);
+            }
+
+            int result = bits.Length * 4;
+
+            if (_sign < 0)
+            {
+                uint part = ~bits[^1] + 1;
+
+                // We need to remove the "carry" (the +1) if any of the initial
+                // bytes are not zero. This ensures we get the correct two's complement
+                // part for the computation.
+
+                for (int index = 0; index < bits.Length - 1; index++)
+                {
+                    if (bits[index] != 0)
+                    {
+                        part -= 1;
+                        break;
+                    }
+                }
+
+                if ((int)part >= 0)
+                {
+                    // When the most significant bit of the part is zero
+                    // we need another part to represent the value.
+                    result += sizeof(uint);
+                }
+            }
+
+            return result;
         }
 
         //

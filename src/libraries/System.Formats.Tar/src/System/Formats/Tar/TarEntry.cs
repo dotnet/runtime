@@ -431,7 +431,7 @@ namespace System.Formats.Tar
         {
             Debug.Assert(!Path.Exists(destinationFileName));
 
-            FileStreamOptions fileStreamOptions = new()
+            FileStreamOptions fileStreamOptions = new FileStreamOptions()
             {
                 Access = FileAccess.Write,
                 Mode = FileMode.CreateNew,

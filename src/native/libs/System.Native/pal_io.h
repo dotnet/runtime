@@ -31,7 +31,6 @@ typedef struct
     int64_t BirthTime; // time the file was created
     int64_t BirthTimeNsec; // nanosecond part
     int64_t Dev;       // ID of the device containing the file
-    int64_t RDev;      // ID of the device if it is a special file
     int64_t Ino;       // inode number of the file
     uint32_t UserFlags; // user defined flags
 } FileStatus;
@@ -544,8 +543,9 @@ PALEXPORT int32_t SystemNative_SymLink(const char* target, const char* linkPath)
 
 /**
  * Given a device ID, extracts the major and minor and components and returns them.
+ * Return 0 on success; otherwise, returns -1 and errno is set.
  */
-PALEXPORT void SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber);
+PALEXPORT int32_t SystemNative_GetDeviceIdentifiers(uint64_t dev, uint32_t* majorNumber, uint32_t* minorNumber);
 
 /**
  * Creates a special or ordinary file.

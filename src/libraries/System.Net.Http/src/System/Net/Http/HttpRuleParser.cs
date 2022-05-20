@@ -177,7 +177,7 @@ namespace System.Net.Http
             while (current < input.Length)
             {
                 c = input[current];
-                if ((c >= '0') && (c <= '9'))
+                if (char.IsAsciiDigit(c))
                 {
                     current++;
                 }

@@ -882,8 +882,11 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static Half Truncate(Half x) => (Half)MathF.Truncate((float)x);
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<Half>.GetExponentByteCount() => sizeof(sbyte);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
-        long IFloatingPoint<Half>.GetExponentShortestBitLength()
+        int IFloatingPoint<Half>.GetExponentShortestBitLength()
         {
             sbyte exponent = Exponent;
 
@@ -897,8 +900,29 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
-        int IFloatingPoint<Half>.GetExponentByteCount() => sizeof(sbyte);
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -918,11 +942,29 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
-        long IFloatingPoint<Half>.GetSignificandBitLength() => 11;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<Half>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(ushort))
+            {
+                ushort significand = Significand;
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
-        int IFloatingPoint<Half>.GetSignificandByteCount() => sizeof(ushort);
+                if (BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
+
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(ushort);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<Half>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -1214,6 +1256,10 @@ namespace System
             {
                 return (Half)(long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (Half)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (Half)(long)(nint)(object)value;
@@ -1237,6 +1283,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (Half)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (Half)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1282,6 +1332,10 @@ namespace System
             {
                 return (Half)(long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (Half)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (Half)(long)(nint)(object)value;
@@ -1305,6 +1359,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (Half)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (Half)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1350,6 +1408,10 @@ namespace System
             {
                 return (Half)(long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (Half)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (Half)(long)(nint)(object)value;
@@ -1373,6 +1435,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (Half)(ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (Half)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1440,6 +1506,11 @@ namespace System
                 result = (Half)(long)(object)value;
                 return true;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                result = (Half)(Int128)(object)value;
+                return true;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 result = (Half)(long)(nint)(object)value;
@@ -1470,6 +1541,11 @@ namespace System
                 result = (Half)(ulong)(object)value;
                 return true;
             }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (Half)(UInt128)(object)value;
+                return true;
+            }
             else if (typeof(TOther) == typeof(nuint))
             {
                 result = (Half)(ulong)(nuint)(object)value;
@@ -1488,10 +1564,10 @@ namespace System
         //
 
         /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static Half INumberBase<Half>.One => new Half(PositiveOneBits);
+        public static Half One => new Half(PositiveOneBits);
 
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static Half INumberBase<Half>.Zero => new Half(PositiveZeroBits);
+        public static Half Zero => new Half(PositiveZeroBits);
 
         //
         // IParsable
@@ -1527,7 +1603,7 @@ namespace System
         //
 
         /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
-        static Half ISignedNumber<Half>.NegativeOne => new Half(NegativeOneBits);
+        public static Half NegativeOne => new Half(NegativeOneBits);
 
         //
         // ISpanParsable
