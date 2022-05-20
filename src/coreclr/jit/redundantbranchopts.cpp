@@ -129,7 +129,7 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     //
     if (vnStore->IsVNConstant(treeNormVN))
     {
-        relopValue = vnStore->VNZeroForType(TYP_INT) ? 0 : 1;
+        relopValue = (treeNormVN == vnStore->VNZeroForType(TYP_INT)) ? 0 : 1;
     }
 
     const ValueNumStore::VN_RELATION_KIND vnRelations[] = {ValueNumStore::VN_RELATION_KIND::VRK_Same,
