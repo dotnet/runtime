@@ -1972,8 +1972,7 @@ typedef enum {
 	CMP_LT_UN,
 	CMP_GT_UN,
 	CMP_ORD,
-	CMP_UNORD,
-	CMP_UEQ
+	CMP_UNORD
 } CompRelation;
 
 typedef enum {

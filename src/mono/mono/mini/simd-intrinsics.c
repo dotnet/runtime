@@ -469,9 +469,7 @@ emit_xcompare_for_intrinsic (MonoCompile *cfg, MonoClass *klass, int intrinsic_i
 static MonoInst*
 emit_xequal (MonoCompile *cfg, MonoClass *klass, MonoInst *arg1, MonoInst *arg2)
 {
-	MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
-	ins->inst_c0 = CMP_EQ;
-	return ins;
+	return emit_simd_ins (cfg, klass, OP_XEQUAL, arg1->dreg, arg2->dreg);
 }
 
 static MonoInst*
@@ -1436,7 +1434,6 @@ emit_sri_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *fsi
 }
 
 static guint16 vector64_vector128_t_methods [] = {
-	SN_Equals,
 	SN_get_AllBitsSet,
 	SN_get_Count,
 	SN_get_IsSupported,
@@ -1509,15 +1506,6 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 	case SN_get_AllBitsSet: {
 		return emit_xones (cfg, klass);
-	}
-	case SN_Equals: {
-		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type)) {
-			int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-			MonoInst *ins = emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
-			ins->inst_c0 = CMP_UEQ;
-			return ins;
-		}
-		break;
 	}
 	case SN_op_Addition:
 	case SN_op_BitwiseAnd:
@@ -1791,16 +1779,12 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		if (!(fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], type)))
 			return NULL;
 		int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-		ins = emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
-		ins->inst_c0 = CMP_UEQ;
-		return ins;
+		return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
 	}
 	case SN_op_Equality:
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
-		ins = emit_simd_ins (cfg, klass, OP_XEQUAL, args [0]->dreg, args [1]->dreg);
-		ins->inst_c0 = CMP_EQ;
-		return ins;
+		return emit_simd_ins (cfg, klass, OP_XEQUAL, args [0]->dreg, args [1]->dreg);
 	case SN_op_Inequality: {
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
 			return NULL;
@@ -1903,7 +1887,6 @@ emit_sys_numerics_vector (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSigna
 static guint16 vector_t_methods [] = {
 	SN_ctor,
 	SN_CopyTo,
-	SN_Equals,
 	SN_GreaterThan,
 	SN_GreaterThanOrEqual,
 	SN_LessThan,
@@ -2086,18 +2069,6 @@ emit_sys_numerics_vector_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSig
 			EMIT_NEW_STORE_MEMBASE (cfg, ins, OP_STOREX_MEMBASE, ldelema_ins->dreg, 0, val_vreg);
 			ins->klass = cmethod->klass;
 			return ins;
-		}
-		break;
-	case SN_Equals:
-		if (fsig->param_count == 1 && fsig->ret->type == MONO_TYPE_BOOLEAN && mono_metadata_type_equal (fsig->params [0], type)) {
-			int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-
-			ins = emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
-			ins->inst_c0 = CMP_UEQ;
-			return ins;
-		} else if (fsig->param_count == 2 && mono_metadata_type_equal (fsig->ret, type) && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)) {
-			/* Per element equality */
-			return emit_xcompare (cfg, klass, etype->type, args [0], args [1]);
 		}
 		break;
 	case SN_op_Equality:

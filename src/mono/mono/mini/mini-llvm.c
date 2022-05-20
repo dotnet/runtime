@@ -317,8 +317,7 @@ static LLVMRealPredicate fpcond_to_llvm_cond [] = {
 	LLVMRealULT,
 	LLVMRealUGT,
 	LLVMRealORD,
-	LLVMRealUNO,
-	LLVMRealUEQ
+	LLVMRealUNO
 };
 
 /* See Table 3-1 ("Comparison Predicate for CMPPD and CMPPS Instructions") in
@@ -9610,8 +9609,7 @@ MONO_RESTORE_WARNING
 
 			//%c = icmp sgt <16 x i8> %a0, %a1
 			if (srcelemt == LLVMDoubleType () || srcelemt == LLVMFloatType ()) {
-				LLVMRealPredicate pred = fpcond_to_llvm_cond [ins->inst_c0];
-				cmp = LLVMBuildFCmp (builder, pred, lhs, rhs, "");
+				cmp = LLVMBuildFCmp (builder, LLVMRealOEQ, lhs, rhs, "");
 			}
 			else
 				cmp = LLVMBuildICmp (builder, LLVMIntEQ, lhs, rhs, "");
