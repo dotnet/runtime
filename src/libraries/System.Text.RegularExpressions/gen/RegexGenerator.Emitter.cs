@@ -2174,7 +2174,8 @@ namespace System.Text.RegularExpressions.Generator
                 }
 
                 // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
-                string startingPos = ReserveName("positivelookaround_starting_pos");
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                string startingPos = ReserveName(rtl ? "positivelookbehind_starting_pos" : "positivelookahead_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 writer.WriteLine();
                 int startingSliceStaticPos = sliceStaticPos;
@@ -2224,7 +2225,8 @@ namespace System.Text.RegularExpressions.Generator
                 string originalDoneLabel = doneLabel;
 
                 // Save off pos.  We'll need to reset this upon successful completion of the lookaround.
-                string startingPos = ReserveName("negativelookaround_starting_pos");
+                bool rtl = (node.Options & RegexOptions.RightToLeft) != 0;
+                string startingPos = ReserveName(rtl ? "negativelookbehind_starting_pos" : "negativelookahead_starting_pos");
                 writer.WriteLine($"int {startingPos} = pos;");
                 int startingSliceStaticPos = sliceStaticPos;
 
