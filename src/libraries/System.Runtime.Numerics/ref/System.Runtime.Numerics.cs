@@ -29,8 +29,8 @@ namespace System.Numerics
         public static System.Numerics.BigInteger MinusOne { get { throw null; } }
         public static System.Numerics.BigInteger One { get { throw null; } }
         public int Sign { get { throw null; } }
-        static System.Numerics.BigInteger System.Numerics.IAdditiveIdentity<System.Numerics.BigInteger, System.Numerics.BigInteger>.AdditiveIdentity { get { throw null; } }
-        static System.Numerics.BigInteger System.Numerics.IMultiplicativeIdentity<System.Numerics.BigInteger, System.Numerics.BigInteger>.MultiplicativeIdentity { get { throw null; } }
+        static System.Numerics.BigInteger System.Numerics.IAdditiveIdentity<System.Numerics.BigInteger,System.Numerics.BigInteger>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.BigInteger System.Numerics.IMultiplicativeIdentity<System.Numerics.BigInteger,System.Numerics.BigInteger>.MultiplicativeIdentity { get { throw null; } }
         static System.Numerics.BigInteger System.Numerics.ISignedNumber<System.Numerics.BigInteger>.NegativeOne { get { throw null; } }
         public static System.Numerics.BigInteger Zero { get { throw null; } }
         public static System.Numerics.BigInteger Abs(System.Numerics.BigInteger value) { throw null; }
@@ -43,9 +43,9 @@ namespace System.Numerics
         [System.CLSCompliantAttribute(false)]
         public int CompareTo(ulong other) { throw null; }
         public static System.Numerics.BigInteger CopySign(System.Numerics.BigInteger value, System.Numerics.BigInteger sign) { throw null; }
-        public static System.Numerics.BigInteger CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Numerics.BigInteger CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
-        public static System.Numerics.BigInteger CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public static System.Numerics.BigInteger CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.BigInteger CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.BigInteger CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.BigInteger Divide(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor) { throw null; }
         public static (System.Numerics.BigInteger Quotient, System.Numerics.BigInteger Remainder) DivRem(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         public static System.Numerics.BigInteger DivRem(System.Numerics.BigInteger dividend, System.Numerics.BigInteger divisor, out System.Numerics.BigInteger remainder) { throw null; }
@@ -193,6 +193,17 @@ namespace System.Numerics
         static System.Numerics.BigInteger System.Numerics.IDivisionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked /(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         static System.Numerics.BigInteger System.Numerics.IIncrementOperators<System.Numerics.BigInteger>.operator checked ++(System.Numerics.BigInteger value) { throw null; }
         static System.Numerics.BigInteger System.Numerics.IMultiplyOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked *(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsFinite(System.Numerics.BigInteger value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsInfinity(System.Numerics.BigInteger value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsNaN(System.Numerics.BigInteger value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsNegativeInfinity(System.Numerics.BigInteger value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsNormal(System.Numerics.BigInteger value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsPositiveInfinity(System.Numerics.BigInteger value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.BigInteger>.IsSubnormal(System.Numerics.BigInteger value) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.INumberBase<System.Numerics.BigInteger>.MaxMagnitudeNumber(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.INumberBase<System.Numerics.BigInteger>.MinMagnitudeNumber(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.INumber<System.Numerics.BigInteger>.MaxNumber(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
+        static System.Numerics.BigInteger System.Numerics.INumber<System.Numerics.BigInteger>.MinNumber(System.Numerics.BigInteger x, System.Numerics.BigInteger y) { throw null; }
         static int System.Numerics.INumber<System.Numerics.BigInteger>.Sign(System.Numerics.BigInteger value) { throw null; }
         static System.Numerics.BigInteger System.Numerics.ISubtractionOperators<System.Numerics.BigInteger, System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked -(System.Numerics.BigInteger left, System.Numerics.BigInteger right) { throw null; }
         static System.Numerics.BigInteger System.Numerics.IUnaryNegationOperators<System.Numerics.BigInteger, System.Numerics.BigInteger>.operator checked -(System.Numerics.BigInteger value) { throw null; }
@@ -203,7 +214,7 @@ namespace System.Numerics
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.BigInteger TrailingZeroCount(System.Numerics.BigInteger value) { throw null; }
-        public static bool TryCreate<TOther>(TOther value, out System.Numerics.BigInteger result) where TOther : System.Numerics.INumber<TOther> { throw null; }
+        public static bool TryCreate<TOther>(TOther value, out System.Numerics.BigInteger result) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> value, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
         public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Numerics.BigInteger result) { throw null; }
@@ -213,7 +224,7 @@ namespace System.Numerics
         public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? value, out System.Numerics.BigInteger result) { throw null; }
         public bool TryWriteBytes(System.Span<byte> destination, out int bytesWritten, bool isUnsigned = false, bool isBigEndian = false) { throw null; }
     }
-    public readonly partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable, System.ISpanFormattable, System.Numerics.IAdditionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IAdditiveIdentity<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IDecrementOperators<System.Numerics.Complex>, System.Numerics.IDivisionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IEqualityOperators<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IIncrementOperators<System.Numerics.Complex>, System.Numerics.IMultiplicativeIdentity<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IMultiplyOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.INumberBase<System.Numerics.Complex>, System.Numerics.ISignedNumber<System.Numerics.Complex>, System.Numerics.ISubtractionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IUnaryNegationOperators<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IUnaryPlusOperators<System.Numerics.Complex, System.Numerics.Complex>
+    public readonly partial struct Complex : System.IEquatable<System.Numerics.Complex>, System.IFormattable, System.IParsable<System.Numerics.Complex>, System.ISpanFormattable, System.ISpanParsable<System.Numerics.Complex>, System.Numerics.IAdditionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IAdditiveIdentity<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IDecrementOperators<System.Numerics.Complex>, System.Numerics.IDivisionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IEqualityOperators<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IIncrementOperators<System.Numerics.Complex>, System.Numerics.IMultiplicativeIdentity<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IMultiplyOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.INumberBase<System.Numerics.Complex>, System.Numerics.ISignedNumber<System.Numerics.Complex>, System.Numerics.ISubtractionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IUnaryNegationOperators<System.Numerics.Complex, System.Numerics.Complex>, System.Numerics.IUnaryPlusOperators<System.Numerics.Complex, System.Numerics.Complex>
     {
         private readonly int _dummyPrimitive;
         public static readonly System.Numerics.Complex ImaginaryOne;
@@ -226,8 +237,8 @@ namespace System.Numerics
         public double Magnitude { get { throw null; } }
         public double Phase { get { throw null; } }
         public double Real { get { throw null; } }
-        static System.Numerics.Complex System.Numerics.IAdditiveIdentity<System.Numerics.Complex, System.Numerics.Complex>.AdditiveIdentity { get { throw null; } }
-        static System.Numerics.Complex System.Numerics.IMultiplicativeIdentity<System.Numerics.Complex, System.Numerics.Complex>.MultiplicativeIdentity { get { throw null; } }
+        static System.Numerics.Complex System.Numerics.IAdditiveIdentity<System.Numerics.Complex,System.Numerics.Complex>.AdditiveIdentity { get { throw null; } }
+        static System.Numerics.Complex System.Numerics.IMultiplicativeIdentity<System.Numerics.Complex,System.Numerics.Complex>.MultiplicativeIdentity { get { throw null; } }
         static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.One { get { throw null; } }
         static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.Zero { get { throw null; } }
         static System.Numerics.Complex System.Numerics.ISignedNumber<System.Numerics.Complex>.NegativeOne { get { throw null; } }
@@ -241,6 +252,9 @@ namespace System.Numerics
         public static System.Numerics.Complex Conjugate(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Cos(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Cosh(System.Numerics.Complex value) { throw null; }
+        public static System.Numerics.Complex CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.Complex CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public static System.Numerics.Complex CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static System.Numerics.Complex Divide(double dividend, System.Numerics.Complex divisor) { throw null; }
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, double divisor) { throw null; }
         public static System.Numerics.Complex Divide(System.Numerics.Complex dividend, System.Numerics.Complex divisor) { throw null; }
@@ -255,6 +269,8 @@ namespace System.Numerics
         public static System.Numerics.Complex Log(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Log(System.Numerics.Complex value, double baseValue) { throw null; }
         public static System.Numerics.Complex Log10(System.Numerics.Complex value) { throw null; }
+        public static System.Numerics.Complex MaxMagnitude(System.Numerics.Complex x, System.Numerics.Complex y) { throw null; }
+        public static System.Numerics.Complex MinMagnitude(System.Numerics.Complex x, System.Numerics.Complex y) { throw null; }
         public static System.Numerics.Complex Multiply(double left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex Multiply(System.Numerics.Complex left, double right) { throw null; }
         public static System.Numerics.Complex Multiply(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
@@ -293,29 +309,45 @@ namespace System.Numerics
         public static System.Numerics.Complex operator -(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         public static System.Numerics.Complex operator -(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex operator +(System.Numerics.Complex value) { throw null; }
+        public static System.Numerics.Complex Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.Complex Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.Complex Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static System.Numerics.Complex Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Complex Pow(System.Numerics.Complex value, double power) { throw null; }
         public static System.Numerics.Complex Pow(System.Numerics.Complex value, System.Numerics.Complex power) { throw null; }
         public static System.Numerics.Complex Reciprocal(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Sin(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Sinh(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Sqrt(System.Numerics.Complex value) { throw null; }
+        public static System.Numerics.Complex Subtract(double left, System.Numerics.Complex right) { throw null; }
+        public static System.Numerics.Complex Subtract(System.Numerics.Complex left, double right) { throw null; }
+        public static System.Numerics.Complex Subtract(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         static System.Numerics.Complex System.Numerics.IAdditionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>.operator checked +(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         static System.Numerics.Complex System.Numerics.IDecrementOperators<System.Numerics.Complex>.operator checked --(System.Numerics.Complex value) { throw null; }
         static System.Numerics.Complex System.Numerics.IDivisionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>.operator checked /(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         static System.Numerics.Complex System.Numerics.IIncrementOperators<System.Numerics.Complex>.operator checked ++(System.Numerics.Complex value) { throw null; }
         static System.Numerics.Complex System.Numerics.IMultiplyOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>.operator checked *(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
+        static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.Abs(System.Numerics.Complex value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Complex>.IsNegative(System.Numerics.Complex value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Complex>.IsNegativeInfinity(System.Numerics.Complex value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Complex>.IsNormal(System.Numerics.Complex value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Complex>.IsPositiveInfinity(System.Numerics.Complex value) { throw null; }
+        static bool System.Numerics.INumberBase<System.Numerics.Complex>.IsSubnormal(System.Numerics.Complex value) { throw null; }
+        static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.MaxMagnitudeNumber(System.Numerics.Complex x, System.Numerics.Complex y) { throw null; }
+        static System.Numerics.Complex System.Numerics.INumberBase<System.Numerics.Complex>.MinMagnitudeNumber(System.Numerics.Complex x, System.Numerics.Complex y) { throw null; }
         static System.Numerics.Complex System.Numerics.ISubtractionOperators<System.Numerics.Complex, System.Numerics.Complex, System.Numerics.Complex>.operator checked -(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
         static System.Numerics.Complex System.Numerics.IUnaryNegationOperators<System.Numerics.Complex, System.Numerics.Complex>.operator checked -(System.Numerics.Complex value) { throw null; }
-        public static System.Numerics.Complex Subtract(double left, System.Numerics.Complex right) { throw null; }
-        public static System.Numerics.Complex Subtract(System.Numerics.Complex left, double right) { throw null; }
-        public static System.Numerics.Complex Subtract(System.Numerics.Complex left, System.Numerics.Complex right) { throw null; }
-        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
         public static System.Numerics.Complex Tan(System.Numerics.Complex value) { throw null; }
         public static System.Numerics.Complex Tanh(System.Numerics.Complex value) { throw null; }
-
         public override string ToString() { throw null; }
         public string ToString(System.IFormatProvider? provider) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format) { throw null; }
         public string ToString([System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] string? format, System.IFormatProvider? provider) { throw null; }
+        public static bool TryCreate<TOther>(TOther value, out System.Numerics.Complex result) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
+        public bool TryFormat(System.Span<char> destination, out int charsWritten, System.ReadOnlySpan<char> format, System.IFormatProvider? provider) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.Numerics.Complex result) { throw null; }
     }
 }

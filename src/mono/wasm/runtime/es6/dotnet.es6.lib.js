@@ -14,7 +14,7 @@ const DotnetSupportLib = {
     // Emscripten's getBinaryPromise is not async for NodeJs, but we would like to have it async, so we replace it.
     // We also replace implementation of readAsync and fetch
     $DOTNET__postset: `
-let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require};
+let __dotnet_replacements = {readAsync, fetch: globalThis.fetch, require, updateGlobalBufferAndViews};
 if (ENVIRONMENT_IS_NODE) {
     __dotnet_replacements.requirePromise = import('module').then(mod => {
         const require = mod.createRequire(import.meta.url);
@@ -52,6 +52,7 @@ let __dotnet_exportedAPI = __dotnet_runtime.__initializeImportsAndExports(
     { isESM:true, isGlobal:false, isNode:ENVIRONMENT_IS_NODE, isShell:ENVIRONMENT_IS_SHELL, isWeb:ENVIRONMENT_IS_WEB, locateFile, quit_, ExitStatus, requirePromise:__dotnet_replacements.requirePromise },
     { mono:MONO, binding:BINDING, internal:INTERNAL, module:Module },
     __dotnet_replacements);
+updateGlobalBufferAndViews = __dotnet_replacements.updateGlobalBufferAndViews;
 readAsync = __dotnet_replacements.readAsync;
 var fetch = __dotnet_replacements.fetch;
 require = __dotnet_replacements.requireOut;

@@ -1345,18 +1345,43 @@ namespace System
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        static char INumber<char>.Abs(char value) => value;
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         static char INumber<char>.Clamp(char value, char min, char max) => (char)Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         static char INumber<char>.CopySign(char value, char sign) => value;
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        static char INumber<char>.Max(char x, char y) => (char)Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        static char INumber<char>.MaxNumber(char x, char y) => (char)Math.Max(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        static char INumber<char>.Min(char x, char y) => (char)Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        static char INumber<char>.MinNumber(char x, char y) => (char)Math.Min(x, y);
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        static int INumber<char>.Sign(char value) => (value == 0) ? 0 : 1;
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static char INumberBase<char>.One => (char)1;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static char INumberBase<char>.Zero => (char)0;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        static char INumberBase<char>.Abs(char value) => value;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static char INumber<char>.CreateChecked<TOther>(TOther value)
+        static char INumberBase<char>.CreateChecked<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1421,9 +1446,9 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static char INumber<char>.CreateSaturating<TOther>(TOther value)
+        static char INumberBase<char>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1505,9 +1530,9 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static char INumber<char>.CreateTruncating<TOther>(TOther value)
+        static char INumberBase<char>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1572,27 +1597,45 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.IsNegative(TSelf)" />
-        static bool INumber<char>.IsNegative(char value) => false;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsFinite(TSelf)" />
+        static bool INumberBase<char>.IsFinite(char value) => true;
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        static char INumber<char>.Max(char x, char y) => (char)Math.Max(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsInfinity(TSelf)" />
+        static bool INumberBase<char>.IsInfinity(char value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        static char INumber<char>.MaxMagnitude(char x, char y) => (char)Math.Max(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNaN(TSelf)" />
+        static bool INumberBase<char>.IsNaN(char value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        static char INumber<char>.Min(char x, char y) => (char)Math.Min(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
+        static bool INumberBase<char>.IsNegative(char value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        static char INumber<char>.MinMagnitude(char x, char y) => (char)Math.Min(x, y);
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<char>.IsNegativeInfinity(char value) => false;
 
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        static int INumber<char>.Sign(char value) => (value == 0) ? 0 : 1;
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<char>.IsNormal(char value) => value != 0;
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<char>.IsPositiveInfinity(char value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<char>.IsSubnormal(char value) => false;
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        static char INumberBase<char>.MaxMagnitude(char x, char y) => (char)Math.Max(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static char INumberBase<char>.MaxMagnitudeNumber(char x, char y) => (char)Math.Max(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        static char INumberBase<char>.MinMagnitude(char x, char y) => (char)Math.Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static char INumberBase<char>.MinMagnitudeNumber(char x, char y) => (char)Math.Min(x, y);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static bool INumber<char>.TryCreate<TOther>(TOther value, out char result)
+        static bool INumberBase<char>.TryCreate<TOther>(TOther value, out char result)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1768,9 +1811,9 @@ namespace System
             }
         }
 
-        static char INumber<char>.Parse(string s, NumberStyles style, IFormatProvider? provider) => Parse(s);
+        static char INumberBase<char>.Parse(string s, NumberStyles style, IFormatProvider? provider) => Parse(s);
 
-        static char INumber<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+        static char INumberBase<char>.Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
         {
             if (s.Length != 1)
             {
@@ -1779,9 +1822,9 @@ namespace System
             return s[0];
         }
 
-        static bool INumber<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
+        static bool INumberBase<char>.TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out char result) => TryParse(s, out result);
 
-        static bool INumber<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result)
+        static bool INumberBase<char>.TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out char result)
         {
             if (s.Length != 1)
             {
@@ -1791,16 +1834,6 @@ namespace System
             result = s[0];
             return true;
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static char INumberBase<char>.One => (char)1;
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static char INumberBase<char>.Zero => (char)0;
 
         //
         // IParsable
