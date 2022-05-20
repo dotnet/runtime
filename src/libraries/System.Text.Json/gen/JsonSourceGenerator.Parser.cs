@@ -1525,7 +1525,7 @@ namespace System.Text.Json.SourceGeneration
                         JsonKnownNamingPolicy.KebabUpperCase => JsonNamingPolicy.KebabUpperCase,
                         _ => null,
                     };
-                    
+
                     runtimePropName = instance?.ConvertName(clrPropName) ?? clrPropName;
                 }
 
