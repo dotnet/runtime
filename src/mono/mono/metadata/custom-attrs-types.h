@@ -12,7 +12,6 @@ typedef struct _MonoCustomAttrValue {
 		gpointer primitive; /* int/enum/MonoType/string */
 		MonoCustomAttrValueArray *array;
 	} value;
-	MonoTypeEnum type : 8;
 } MonoCustomAttrValue;
 
 struct _MonoCustomAttrValueArray {
