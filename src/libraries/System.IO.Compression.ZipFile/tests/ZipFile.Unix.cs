@@ -19,17 +19,14 @@ namespace System.IO.Compression.Tests
 
             using (var tempFolder = new TempDirectory(Path.Combine(GetTestFilePath(), "testFolder")))
             {
-                foreach (string permission in testPermissions)
-                {
-                    CreateFile(tempFolder.Path, permission);
-                }
+                string[] expectedPermissions = CreateFiles(tempFolder.Path, testPermissions);
 
                 string archivePath = GetTestFilePath();
                 ZipFile.CreateFromDirectory(tempFolder.Path, archivePath);
 
                 using (ZipArchive archive = ZipFile.OpenRead(archivePath))
                 {
-                    Assert.Equal(5, archive.Entries.Count);
+                    Assert.Equal(expectedPermissions.Length, archive.Entries.Count);
 
                     foreach (ZipArchiveEntry entry in archive.Entries)
                     {
@@ -48,7 +45,7 @@ namespace System.IO.Compression.Tests
                 {
                     ZipFile.ExtractToDirectory(archivePath, extractFolder.Path);
 
-                    foreach (string permission in testPermissions)
+                    foreach (string permission in expectedPermissions)
                     {
                         string filename = Path.Combine(extractFolder.Path, permission + ".txt");
                         Assert.True(File.Exists(filename));
@@ -94,25 +91,38 @@ namespace System.IO.Compression.Tests
             }
         }
 
-        private static void CreateFile(string folderPath, string permissions)
+        private static string[] CreateFiles(string folderPath, string[] testPermissions)
         {
-            string filename = Path.Combine(folderPath, $"{permissions}.txt");
-            File.WriteAllText(filename, "contents");
+            string[] expectedPermissions = new string[testPermissions.Length];
 
-            Assert.Equal(0, Interop.Sys.ChMod(filename, Convert.ToInt32(permissions, 8)));
-
-            // In some environments, the file mode may be modified by the OS.
-            // See the Rationale section of https://linux.die.net/man/3/chmod.
-
-            // To workaround this, read the file mode back, and if it has changed rename the file.
-            Interop.Sys.FileStatus status;
-            Assert.Equal(0, Interop.Sys.Stat(filename, out status));
-            string updatedPermissions = Convert.ToString(status.Mode & 0xFFF, 8);
-            if (updatedPermissions != permissions)
+            for (int i = 0; i < testPermissions.Length; i++)
             {
-                string newFileName = Path.Combine(folderPath, $"{updatedPermissions}.txt");
-                File.Move(filename, newFileName);
+                string permissions =  testPermissions[i];
+                string filename = Path.Combine(folderPath, $"{permissions}.txt");
+                File.WriteAllText(filename, "contents");
+
+                Assert.Equal(0, Interop.Sys.ChMod(filename, Convert.ToInt32(permissions, 8)));
+
+                // In some environments, the file mode may be modified by the OS.
+                // See the Rationale section of https://linux.die.net/man/3/chmod.
+
+                // To workaround this, read the file mode back, and if it has changed, update the file name
+                // since the name is used to compare the file mode.
+                Interop.Sys.FileStatus status;
+                Assert.Equal(0, Interop.Sys.Stat(filename, out status));
+                string updatedPermissions = Convert.ToString(status.Mode & 0xFFF, 8);
+                if (updatedPermissions != permissions)
+                {
+                    string newFileName = Path.Combine(folderPath, $"{updatedPermissions}.txt");
+                    File.Move(filename, newFileName);
+
+                    permissions = updatedPermissions;
+                }
+
+                expectedPermissions[i] = permissions;
             }
+
+            return expectedPermissions;
         }
 
         private static void EnsureFilePermissions(string filename, string permissions)
