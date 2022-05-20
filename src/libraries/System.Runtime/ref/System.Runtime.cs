@@ -9493,7 +9493,13 @@ namespace System.IO
         public System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count) { throw null; }
         public virtual System.Threading.Tasks.Task<int> ReadAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken) { throw null; }
         public virtual System.Threading.Tasks.ValueTask<int> ReadAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public int ReadAtLeast(System.Span<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true) { throw null; }
+        public System.Threading.Tasks.ValueTask<int> ReadAtLeastAsync(System.Memory<byte> buffer, int minimumBytes, bool throwOnEndOfStream = true, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public virtual int ReadByte() { throw null; }
+        public void ReadExactly(byte[] buffer, int offset, int count) { }
+        public void ReadExactly(System.Span<byte> buffer) { }
+        public System.Threading.Tasks.ValueTask ReadExactlyAsync(byte[] buffer, int offset, int count, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
+        public System.Threading.Tasks.ValueTask ReadExactlyAsync(System.Memory<byte> buffer, System.Threading.CancellationToken cancellationToken = default(System.Threading.CancellationToken)) { throw null; }
         public abstract long Seek(long offset, System.IO.SeekOrigin origin);
         public abstract void SetLength(long value);
         public static System.IO.Stream Synchronized(System.IO.Stream stream) { throw null; }
