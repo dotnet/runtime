@@ -51,13 +51,28 @@ public class SingleFileTestRunner : XunitTestFramework
         var discoverer = xunitTestFx.CreateDiscoverer(asmInfo);
         discoverer.Find(false, discoverySink, TestFrameworkOptions.ForDiscovery());
         discoverySink.Finished.WaitOne();
+
         XunitFilters filters = new XunitFilters();
-        
-        var excludeTraits = new List<string> { "failing" };
-        // CI systems will likely timeout on outer loop tests
-        if(args.Where(arg => arg.Contains("IgnoreForCI", StringComparison.OrdinalIgnoreCase)).Any())
-            excludeTraits.Add("OuterLoop");
-         filters.ExcludedTraits.Add("category", excludeTraits);
+        // Quick hack wo much validation to get no traits passed
+        Dictionary<string, List<string>> noTraits = new Dictionary<string, List<string>>();
+        for(int i = 0; i < args.Length; i++)
+        {
+            if (args[i].Equals("-notrait", StringComparison.OrdinalIgnoreCase))
+            {
+                var traitKeyValue=args[i+1].Split("=", StringSplitOptions.TrimEntries);
+                if (!noTraits.ContainsKey(traitKeyValue[0]))
+                {
+                    noTraits.Add(traitKeyValue[0], new List<string>());
+                }
+                noTraits[traitKeyValue[0]].Add(traitKeyValue[1]);
+            }
+        }
+
+        foreach(string traitKey in noTraits.Keys)
+        {
+            filters.ExcludedTraits.Add(traitKey, noTraits[traitKey]);
+        }
+
         var filteredTestCases = discoverySink.TestCases.Where(filters.Filter).ToList();
         var executor = xunitTestFx.CreateExecutor(asmName);
         executor.RunTests(filteredTestCases, resultsSink, TestFrameworkOptions.ForExecution());
