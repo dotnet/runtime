@@ -98,7 +98,6 @@ jobs:
       - Browser_wasm_firefox
     browser: firefox
     alwaysRun: ${{ variables.isRollingBuild }}
-    shouldContinueOnError: true
 
 #
 # Build the whole product using Mono and run libraries tests
