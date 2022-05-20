@@ -14,7 +14,7 @@
   <Import Project="$(RepositoryEngineeringDir)nativepgo.targets" />
 
   <Target Name="BuildPrereqs" BeforeTargets="Build" DependsOnTargets="GenerateRuntimeVersionFile;GenerateNativeSourcelinkFile;OutputPgoPathForCI" />
-  <Import Project="Sdk.Targets" Sdk="Microsoft.Build.NoTargets" />
+  <Import Project="Sdk.targets" Sdk="Microsoft.Build.NoTargets" />
   <!--
     This is relatively ugly. The NoTargets SDK sets DebugType=None, but that makes it such that the sourcelink targets
     don't run, and we wouldn't generate the sourcelink file for native compilation. It would be better if we could call
