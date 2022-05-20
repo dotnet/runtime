@@ -71,10 +71,7 @@ namespace Microsoft.Interop
             if (statementsToUpdate.Count > 0)
             {
                 // Comment separating each stage
-                SyntaxTriviaList newLeadingTrivia = TriviaList(
-                    Comment($"//"),
-                    Comment($"// {context.CurrentStage}"),
-                    Comment($"//"));
+                SyntaxTriviaList newLeadingTrivia = GenerateStageTrivia(context.CurrentStage);
                 StatementSyntax firstStatementInStage = statementsToUpdate[0];
                 newLeadingTrivia = newLeadingTrivia.AddRange(firstStatementInStage.GetLeadingTrivia());
                 statementsToUpdate[0] = firstStatementInStage.WithLeadingTrivia(newLeadingTrivia);
@@ -107,6 +104,25 @@ namespace Microsoft.Interop
                         SyntaxKind.SimpleAssignmentExpression,
                         IdentifierName(context.GetIdentifiers(marshallers.NativeReturnMarshaller.TypeInfo).native),
                         invoke));
+        }
+
+        private static SyntaxTriviaList GenerateStageTrivia(StubCodeContext.Stage stage)
+        {
+            string comment = stage switch
+            {
+                StubCodeContext.Stage.Setup => "Perform required setup.",
+                StubCodeContext.Stage.Marshal => "Convert managed data to native data.",
+                StubCodeContext.Stage.Pin => "Pin data in preparation for calling the P/Invoke.",
+                StubCodeContext.Stage.Invoke => "Call the P/Invoke.",
+                StubCodeContext.Stage.Unmarshal => "Convert native data to managed data.",
+                StubCodeContext.Stage.Cleanup => "Perform required cleanup.",
+                StubCodeContext.Stage.KeepAlive => "Keep alive any managed objects that need to stay alive across the call.",
+                StubCodeContext.Stage.GuaranteedUnmarshal => "Convert native data to managed data even in the case of an exception during the non-cleanup phases.",
+                _ => throw new ArgumentOutOfRangeException(nameof(stage))
+            };
+
+            // Comment separating each stage
+            return TriviaList(Comment($"// {stage} - {comment}"));
         }
     }
 }

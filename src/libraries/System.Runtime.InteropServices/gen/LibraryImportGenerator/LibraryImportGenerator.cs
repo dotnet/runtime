@@ -412,7 +412,7 @@ namespace Microsoft.Interop
 
             ImmutableArray<AttributeSyntax> forwardedAttributes = pinvokeStub.ForwardedAttributes;
 
-            const string innerPInvokeName = "__PInvoke__";
+            const string innerPInvokeName = "__PInvoke";
 
             BlockSyntax code = stubGenerator.GeneratePInvokeBody(innerPInvokeName);
 
@@ -428,10 +428,7 @@ namespace Microsoft.Interop
                 dllImport = dllImport.AddAttributeLists(AttributeList(SeparatedList(forwardedAttributes)));
             }
 
-            dllImport = dllImport.WithLeadingTrivia(
-                Comment("//"),
-                Comment("// Local P/Invoke"),
-                Comment("//"));
+            dllImport = dllImport.WithLeadingTrivia(Comment("// Local P/Invoke"));
             code = code.AddStatements(dllImport);
 
             return (pinvokeStub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(PrintGeneratedSource(pinvokeStub.StubMethodSyntaxTemplate, pinvokeStub.SignatureContext, code)), pinvokeStub.Diagnostics.AddRange(diagnostics.Diagnostics));
@@ -514,7 +511,7 @@ namespace Microsoft.Interop
                                                     SyntaxKind.StringLiteralExpression,
                                                     Literal(libraryImportData.EntryPoint ?? stubMethodName))),
                                             AttributeArgument(
-                                                NameEquals(nameof(DllImportAttribute.ExactSpelling)),
+                                                NameEquals(nameof(DllImportAttribute.SetLastError)),
                                                 null,
                                                 LiteralExpression(
                                                     libraryImportData.SetLastError ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression))
