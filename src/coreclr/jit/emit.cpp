@@ -4173,8 +4173,9 @@ bool emitter::emitRemoveJumpToNextInst()
 
             if (targetGroup != nullptr && jmpGroup->igNext == targetGroup)
             {
-// the last instruction in the group is the jmp we're looking for
-// and it jumps to the next instruction group so we don't need it
+                // the last instruction in the group is the jmp we're looking for
+                // and it jumps to the next instruction group so we don't need it
+                CLANG_FORMAT_COMMENT_ANCHOR
 
 #ifdef DEBUG
                 unsigned instructionCount = jmpGroup->igInsCnt;
@@ -4191,6 +4192,19 @@ bool emitter::emitRemoveJumpToNextInst()
                     dataPtr = nullptr;
                 }
                 assert(instructionDescriptor != nullptr);
+                if (!(instructionDescriptor->idIns() == jmp->idIns() && jmp == instructionDescriptor))
+                {
+                    printf("about to assert, dumping context information\n");
+                    printf("method: %s\n", emitComp->impInlineRoot()->info.compMethodName);
+                    printf("  jmp: %x3: ", jmp->idDebugOnlyInfo()->idNum);
+                    emitDispIns(jmp, false, true, false, 0, nullptr, 0, jmpGroup);
+                    printf("  instructionDescriptor: %x3: ", instructionDescriptor->idDebugOnlyInfo()->idNum);
+                    emitDispIns(instructionDescriptor, false, true, false, 0, nullptr, 0, jmpGroup);
+                    printf("jump group:\n");
+                    emitDispIG(jmpGroup, nullptr, true);
+                    printf("target group:\n");
+                    emitDispIG(targetGroup, nullptr, false);
+                }
                 assert(instructionDescriptor->idIns() == jmp->idIns() && jmp == instructionDescriptor);
 #endif
 

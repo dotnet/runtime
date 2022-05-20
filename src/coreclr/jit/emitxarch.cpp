@@ -9921,6 +9921,11 @@ void emitter::emitDispIns(
             {
                 printf("L_M%03u_" FMT_BB, emitComp->compMethodID, id->idAddr()->iiaBBlabel->bbNum);
             }
+
+            if (((instrDescJmp*)id)->idjIsJmpAlways)
+            {
+                printf(" ; BB_ALWAYS");
+            }
             break;
 
         case IF_METHOD:
