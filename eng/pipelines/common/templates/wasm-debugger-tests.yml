@@ -29,7 +29,6 @@ jobs:
       nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }}
       timeoutInMinutes: 180
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       condition: >-
         or(
           eq(variables['alwaysRunVar'], true),
@@ -43,3 +42,4 @@ jobs:
         extraHelixArguments: /p:BrowserHost=$(_hostedOs) /p:_DebuggerHosts=${{ parameters.browser }}
         scenarios:
         - wasmdebuggertests
+        shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
