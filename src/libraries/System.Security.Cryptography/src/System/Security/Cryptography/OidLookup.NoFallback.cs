@@ -34,7 +34,7 @@ namespace System.Security.Cryptography
         }
 
         /// <summary>Expected size of <see cref="s_extraFriendlyNameToOid"/>.</summary>
-        private const int ExtraFriendlyNameToOidCount = 10;
+        private const int ExtraFriendlyNameToOidCount = 11;
 
         // There are places inside the framework where Oid.FromFriendlyName is called
         // (to pass in an OID group restriction for Windows) and an exception is not tolerated.
