@@ -24,11 +24,10 @@ typedef struct {
 void
 mono_install_marshal_callbacks_ilgen (MonoMarshalIlgenCallbacks *cb);
 
-#ifdef ENABLE_ILGEN
-void
-mono_marshal_ilgen_init (void);
-#endif 
 
+MONO_API void
+mono_marshal_ilgen_init (void);
+ 
 void
 mono_marshal_noilgen_init_heavyweight (void);
 

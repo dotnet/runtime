@@ -3155,6 +3155,8 @@ mono_emit_marshal (EmitMarshalContext *m, int argnum, MonoType *t,
 	/* Ensure that we have marshalling info for this param */
 	mono_marshal_load_type_info (mono_class_from_mono_type_internal (t));
 
+	
+
 	if (!m->runtime_marshalling_enabled)
 		return mono_emit_disabled_marshal (m, argnum, t, spec, conv_arg, conv_arg_type, action);
 
@@ -3307,6 +3309,8 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 	ERROR_DECL (emitted_error);
 	WrapperInfo *info;
 
+
+
 	g_assert (method != NULL);
 	g_assertf (mono_method_signature_internal (method)->pinvoke, "%s flags:%X iflags:%X param_count:%X",
 		method->name, method->flags, method->iflags, mono_method_signature_internal (method)->param_count);
@@ -3415,6 +3419,15 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		mono_mb_free (mb);
 
 		return res;
+	}
+
+	if (!strcmp (method->name, "DeflateInit2_"))
+	{
+		naricc_global_debug_set(TRUE);
+	}
+	else
+	{
+		naricc_global_debug_set(FALSE);
 	}
 
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
@@ -3543,7 +3556,9 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
 
-	/* mono_method_print_code (res); */
+	if (!strcmp (method->name, "DeflateInit2_")){
+		mono_method_print_code (res); 
+	}
 
 	return res;
 }

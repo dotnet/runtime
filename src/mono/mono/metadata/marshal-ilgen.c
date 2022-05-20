@@ -842,7 +842,6 @@ emit_marshal_ptr_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 		  MonoType **conv_arg_type, MarshalAction action)
 {
 	MonoMethodBuilder *mb = m->mb;
-
 	switch (action) {
 	case MARSHAL_ACTION_CONV_IN:
 		/* MS seems to allow this in some cases, ie. bxc #158 */
@@ -2720,8 +2719,10 @@ get_marshal_cb (void)
 {
 	if (G_UNLIKELY (!ilgen_cb_inited)) {
 #ifdef ENABLE_ILGEN
+		printf("!!!marshal-ilgen.c: get_marshal_cb: ENABLE_ILGEN\n");
 		mono_marshal_ilgen_init ();
 #else
+		printf("!!!marshal-ilgen.c: get_marshal_cb: NO ENABLE_ILGEN\n");
 		mono_marshal_noilgen_init_heavyweight ();
 #endif
 	}
@@ -2804,10 +2805,10 @@ mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 	}
 }
 
-#ifdef ENABLE_ILGEN
 void
 mono_marshal_ilgen_init (void)
 {
+	printf("!!!naricc_debug!!! mono_marshal_ilgen_init called.\n");
 	MonoMarshalIlgenCallbacks cb;
 	cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
 	cb.emit_marshal_array = emit_marshal_array_ilgen;
@@ -2828,5 +2829,5 @@ mono_marshal_ilgen_init (void)
 #endif
 	mono_install_marshal_callbacks_ilgen (&cb);
 }
-#endif // ENABLE_ILGEN
+
 
