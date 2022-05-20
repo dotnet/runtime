@@ -892,8 +892,7 @@ namespace System.Text.Json
 
             byte[] rent = ArrayPool<byte>.Shared.Rent(length);
             JsonReaderHelper.Unescape(text, rent, out int written);
-            rented = new ArraySegment<byte>(rent, 0, written);
-            return rented.AsSpan();
+            return rent.AsSpan(0, written);
         }
 
         private static void ClearAndReturn(ArraySegment<byte> rented)
