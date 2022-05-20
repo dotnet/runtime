@@ -46339,6 +46339,11 @@ void GCHeap::GetMemoryInfo(uint64_t* highMemLoadThresholdBytes,
 #endif //_DEBUG
 }
 
+int64_t GCHeap::GetTotalPauseDuration()
+{
+    return (int64_t)(gc_heap::total_suspended_time * 10);
+}
+
 uint32_t GCHeap::GetMemoryLoad()
 {
     uint32_t memory_load = 0;

@@ -2522,6 +2522,12 @@ namespace System
         public static System.GCNotificationStatus WaitForFullGCComplete(int millisecondsTimeout) { throw null; }
         public static System.GCNotificationStatus WaitForFullGCComplete(System.TimeSpan timeout) { throw null; }
         public static void WaitForPendingFinalizers() { }
+
+        /// <summary>
+        /// Gets the total amount of time paused in GC since the beginning of the process.
+        /// </summary>
+        /// <returns> The total amount of time paused in GC since the beginning of the process.</returns>
+        public static TimeSpan GetTotalPauseDuration() { return TimeSpan.Zero; }
     }
     public enum GCCollectionMode
     {
