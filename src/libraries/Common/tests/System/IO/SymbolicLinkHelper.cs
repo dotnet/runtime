@@ -69,7 +69,7 @@ public static class SymbolicLinkHelper
         Process symLinkProcess = new Process();
 
         symLinkProcess.StartInfo.FileName = "cmd";
-        symLinkProcess.StartInfo.Arguments = string.Format("/c mklink{0} \"{1}\" \"{2}\"", isDirectory ? " /D" : "", linkPath, targetPath);
+        symLinkProcess.StartInfo.Arguments = $"/c mklink{(isDirectory ? " /D" : "")} \"{linkPath}\" \"{targetPath}\"";
         symLinkProcess.StartInfo.UseShellExecute = false;
         symLinkProcess.StartInfo.RedirectStandardOutput = true;
 
