@@ -1019,18 +1019,6 @@ namespace System.Runtime.InteropServices
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ILogB(TSelf)" />
         public static int ILogB(NFloat x) => NativeType.ILogB(x._value);
 
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
-        public static NFloat MaxMagnitudeNumber(NFloat x, NFloat y) => new NFloat(NativeType.MaxMagnitudeNumber(x._value, y._value));
-
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MaxNumber(TSelf, TSelf)" />
-        public static NFloat MaxNumber(NFloat x, NFloat y) => new NFloat(NativeType.MaxNumber(x._value, y._value));
-
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
-        public static NFloat MinMagnitudeNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinMagnitudeNumber(x._value, y._value));
-
-        /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.MinNumber(TSelf, TSelf)" />
-        public static NFloat MinNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinNumber(x._value, y._value));
-
         /// <inheritdoc cref="IFloatingPointIeee754{TSelf}.ReciprocalEstimate(TSelf)" />
         public static NFloat ReciprocalEstimate(NFloat x) => new NFloat(NativeType.ReciprocalEstimate(x._value));
 
@@ -1112,19 +1100,52 @@ namespace System.Runtime.InteropServices
         // INumber
         //
 
-        /// <inheritdoc cref="INumber{TSelf}.Abs(TSelf)" />
-        public static NFloat Abs(NFloat value) => new NFloat(NativeType.Abs(value._value));
-
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
         public static NFloat Clamp(NFloat value, NFloat min, NFloat max) => new NFloat(NativeType.Clamp(value._value, min._value, max._value));
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         public static NFloat CopySign(NFloat x, NFloat y) => new NFloat(NativeType.CopySign(x._value, y._value));
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
+        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
+        public static NFloat Max(NFloat x, NFloat y) => new NFloat(NativeType.Max(x._value, y._value));
+
+        /// <inheritdoc cref="INumber{TSelf}.MaxNumber(TSelf, TSelf)" />
+        public static NFloat MaxNumber(NFloat x, NFloat y) => new NFloat(NativeType.MaxNumber(x._value, y._value));
+
+        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
+        public static NFloat Min(NFloat x, NFloat y) => new NFloat(NativeType.Min(x._value, y._value));
+
+        /// <inheritdoc cref="INumber{TSelf}.MinNumber(TSelf, TSelf)" />
+        public static NFloat MinNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinNumber(x._value, y._value));
+
+        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
+        public static int Sign(NFloat value) => NativeType.Sign(value._value);
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static NFloat INumberBase<NFloat>.One => new NFloat(NativeType.One);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static NFloat INumberBase<NFloat>.Zero => new NFloat(NativeType.Zero);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        public static NFloat Abs(NFloat value) => new NFloat(NativeType.Abs(value._value));
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NFloat CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
+        {
+            return CreateSaturating(value);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static NFloat CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1193,134 +1214,34 @@ namespace System.Runtime.InteropServices
             }
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static NFloat CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
-        {
-            return CreateChecked(value);
-        }
-
-        /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static NFloat CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
             return CreateChecked(value);
         }
 
-        /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static NFloat Max(NFloat x, NFloat y) => new NFloat(NativeType.Max(x._value, y._value));
-
-        /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
         public static NFloat MaxMagnitude(NFloat x, NFloat y) => new NFloat(NativeType.MaxMagnitude(x._value, y._value));
 
-        /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static NFloat Min(NFloat x, NFloat y) => new NFloat(NativeType.Min(x._value, y._value));
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        public static NFloat MaxMagnitudeNumber(NFloat x, NFloat y) => new NFloat(NativeType.MaxMagnitudeNumber(x._value, y._value));
 
-        /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
         public static NFloat MinMagnitude(NFloat x, NFloat y) => new NFloat(NativeType.MinMagnitude(x._value, y._value));
 
-        /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(NFloat value) => NativeType.Sign(value._value);
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        public static NFloat MinMagnitudeNumber(NFloat x, NFloat y) => new NFloat(NativeType.MinMagnitudeNumber(x._value, y._value));
 
-        /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static bool TryCreate<TOther>(TOther value, out NFloat result)
-            where TOther : INumber<TOther>
+            where TOther : INumberBase<TOther>
         {
-            if (typeof(TOther) == typeof(byte))
-            {
-                result = (byte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(char))
-            {
-                result = (char)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(decimal))
-            {
-                result = (NFloat)(decimal)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(double))
-            {
-                result = (NFloat)(double)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(short))
-            {
-                result = (short)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(int))
-            {
-                result = (int)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(long))
-            {
-                result = (long)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nint))
-            {
-                result = (nint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(sbyte))
-            {
-                result = (sbyte)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(float))
-            {
-                result = (NFloat)(float)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ushort))
-            {
-                result = (ushort)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(uint))
-            {
-                result = (uint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(ulong))
-            {
-                result = (ulong)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(nuint))
-            {
-                result = (nuint)(object)value;
-                return true;
-            }
-            else if (typeof(TOther) == typeof(NFloat))
-            {
-                result = (NFloat)(object)value;
-                return true;
-            }
-            else
-            {
-                ThrowHelper.ThrowNotSupportedException();
-                result = default;
-                return false;
-            }
+            result = CreateSaturating(value);
+            return true;
         }
-
-        //
-        // INumberBase
-        //
-
-        /// <inheritdoc cref="INumberBase{TSelf}.One" />
-        static NFloat INumberBase<NFloat>.One => new NFloat(NativeType.One);
-
-        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
-        static NFloat INumberBase<NFloat>.Zero => new NFloat(NativeType.Zero);
 
         //
         // IParsable
