@@ -603,6 +603,14 @@ namespace System.Collections.Concurrent
         public bool TryTake([MaybeNullWhen(false)] out T item, TimeSpan timeout)
         {
             ValidateTimeout(timeout);
+
+            //If the collection is completed then there is no need remove an item.
+            if (IsCompleted)
+            {
+                item = default(T);
+                return false;
+            }
+
             return TryTakeWithNoTimeValidation(out item, (int)timeout.TotalMilliseconds, CancellationToken.None, null);
         }
 
@@ -624,6 +632,14 @@ namespace System.Collections.Concurrent
         public bool TryTake([MaybeNullWhen(false)] out T item, int millisecondsTimeout)
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
+
+            //If the collection is completed then there is no need remove an item.
+            if (IsCompleted)
+            {
+                item = default(T);
+                return false;
+            }
+
             return TryTakeWithNoTimeValidation(out item, millisecondsTimeout, CancellationToken.None, null);
         }
 
@@ -649,6 +665,14 @@ namespace System.Collections.Concurrent
         public bool TryTake([MaybeNullWhen(false)] out T item, int millisecondsTimeout, CancellationToken cancellationToken)
         {
             ValidateMillisecondsTimeout(millisecondsTimeout);
+
+            //If the collection is completed then there is no need remove an item.
+            if (IsCompleted)
+            {
+                item = default(T);
+                return false;
+            }
+
             return TryTakeWithNoTimeValidation(out item, millisecondsTimeout, cancellationToken, null);
         }
 
@@ -675,11 +699,6 @@ namespace System.Collections.Concurrent
 
             cancellationToken.ThrowIfCancellationRequested();
 
-            //If the collection is completed then there is no need to wait.
-            if (IsCompleted)
-            {
-                return false;
-            }
             bool waitForSemaphoreWasSuccessful = false;
 
             // set the combined token source to the combinedToken parameter if it is not null (came from GetConsumingEnumerable)
