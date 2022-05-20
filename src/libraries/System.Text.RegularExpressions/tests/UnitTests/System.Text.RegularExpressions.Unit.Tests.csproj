@@ -12,6 +12,9 @@
   </PropertyGroup>
   <ItemGroup>
     <DefaultReferenceExclusion Include="System.Text.RegularExpressions" />
+    <!--Include Unit tests as part of code coverage since we are compiling product code into the tests assembly-->
+    <CoverageInclude Include="$(AssemblyName)"/>
+    <Compile Include="CSharpCodeFixVerifier`2.cs" />
 
     <Compile Include="RegexCharClassTests.cs" />
     <Compile Include="RegexFindOptimizationsTests.cs" />
@@ -43,8 +46,15 @@
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexTreeAnalyzer.cs" Link="Production\RegexTreeAnalyzer.cs" />
     <Compile Include="..\..\src\System\Text\RegularExpressions\RegexWriter.cs" Link="Production\RegexWriter.cs" />
     <Compile Include="..\..\src\System\Collections\HashtableExtensions.cs" Link="Production\HashtableExtensions.cs" />
+    <Compile Include="..\..\gen\UpgradeToRegexGeneratorAnalyzer.cs" Link="Production\UpgradeToRegexGeneratorAnalyzer.cs" />
+    <Compile Include="..\..\gen\UpgradeToRegexGeneratorCodeFixer.cs" Link="Production\UpgradeToRegexGeneratorCodeFixer.cs" />
 
     <!-- Code used as stubs to avoid pulling in further code from System.Text.RegularExpressions -->
     <Compile Include="Stubs.cs" />
+    <Compile Include="UpgradeToRegexGeneratorAnalyzerTests.cs" />
+
+    <!-- References required for the Analyzer tests -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_0)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.CodeFix.Testing.XUnit" Version="1.1.2-beta1.22255.1" />
   </ItemGroup>
 </Project>

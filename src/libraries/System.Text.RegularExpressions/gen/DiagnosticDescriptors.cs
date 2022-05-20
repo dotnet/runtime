@@ -64,7 +64,7 @@ namespace System.Text.RegularExpressions.Generator
             isEnabledByDefault: true);
 
         public static DiagnosticDescriptor UseRegexSourceGeneration { get; } = new DiagnosticDescriptor(
-            id: RegexAnalyzer.DiagnosticId,
+            id: "SYSLIB1046",
             title: new LocalizableResourceString(nameof(SR.UseRegexSourceGeneratorTitle), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
             messageFormat: new LocalizableResourceString(nameof(SR.UseRegexSourceGeneratorMessage), SR.ResourceManager, typeof(FxResources.System.Text.RegularExpressions.Generator.SR)),
             category: Category,

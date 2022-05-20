@@ -203,8 +203,8 @@
         <note>{Locked="Int32.MaxValue"}</note>
       </trans-unit>
       <trans-unit id="RegexMatchTimeoutException_Occurred">
-        <source>The RegEx engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
-        <target state="translated">Timeout del motore RegEx durante il tentativo di corrispondenza di un criterio a una stringa di input. Il timeout si può verificare per molti motivi, compresi gli input molto grandi o un eccessivo backtracking causato dai quantificatori annidati, backreference e altri fattori.</target>
+        <source>The Regex engine has timed out while trying to match a pattern to an input string. This can occur for many reasons, including very large inputs or excessive backtracking caused by nested quantifiers, back-references and other factors.</source>
+        <target state="needs-review-translation">Timeout del motore RegEx durante il tentativo di corrispondenza di un criterio a una stringa di input. Il timeout si può verificare per molti motivi, compresi gli input molto grandi o un eccessivo backtracking causato dai quantificatori annidati, backreference e altri fattori.</target>
         <note />
       </trans-unit>
       <trans-unit id="RegexMethodMustHaveValidSignatureMessage">
@@ -273,13 +273,13 @@
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorMessage">
-        <source>The inputs to your RegEx are known at compile-time so you could be using the source generator to boost performance.</source>
-        <target state="new">The inputs to your RegEx are known at compile-time so you could be using the source generator to boost performance.</target>
+        <source>Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</source>
+        <target state="new">Use 'RegexGeneratorAttribute' to generate the regular expression implementation at compile-time.</target>
         <note />
       </trans-unit>
       <trans-unit id="UseRegexSourceGeneratorTitle">
-        <source>Use the RegEx source generator.</source>
-        <target state="new">Use the RegEx source generator.</target>
+        <source>Convert to 'RegexGenerator'.</source>
+        <target state="new">Convert to 'RegexGenerator'.</target>
         <note />
       </trans-unit>
     </body>

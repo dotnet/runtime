@@ -21,19 +21,20 @@ using Microsoft.CodeAnalysis.Text;
 namespace System.Text.RegularExpressions.Generator
 {
     /// <summary>
-    /// Roslyn code fixer that will listen to SysLIB1046 diagnostics and will provide a code fix which onboards a particular RegEx into
+    /// Roslyn code fixer that will listen to SysLIB1046 diagnostics and will provide a code fix which onboards a particular Regex into
     /// source generation.
     /// </summary>
     [ExportCodeFixProvider(LanguageNames.CSharp)]
-    public class RegexCodeFixer : CodeFixProvider
+    public class UpgradeToRegexGeneratorCodeFixer : CodeFixProvider
     {
-        // private members
         private const string RegexTypeName = "System.Text.RegularExpressions.Regex";
         private const string RegexGeneratorTypeName = "System.Text.RegularExpressions.RegexGeneratorAttribute";
         private const string DefaultRegexMethodName = "MyRegex";
 
         /// <inheritdoc />
-        public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(RegexAnalyzer.DiagnosticId);
+        public override ImmutableArray<string> FixableDiagnosticIds => ImmutableArray.Create(DiagnosticDescriptors.UseRegexSourceGeneration.Id);
+
+        public override FixAllProvider? GetFixAllProvider() => WellKnownFixAllProviders.BatchFixer;
 
         /// <inheritdoc />
         public override async Task RegisterCodeFixesAsync(CodeFixContext context)
@@ -165,9 +166,8 @@ namespace System.Text.RegularExpressions.Generator
                 // Parse the idices for where to get the arguments from.
                 int?[] indices = new[]
                 {
-                    TryParseInt32(properties, RegexAnalyzer.PatternIndexName),
-                    TryParseInt32(properties, RegexAnalyzer.RegexOptionsIndexName),
-                    TryParseInt32(properties, RegexAnalyzer.RegexTimeoutIndexName),
+                    TryParseInt32(properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName),
+                    TryParseInt32(properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName)
                 };
 
                 foreach (int? index in indices.Where(value => value != null).OrderByDescending(value => value))
@@ -189,31 +189,17 @@ namespace System.Text.RegularExpressions.Generator
             // Initialize the inputs for the RegexGenerator attribute.
             SyntaxNode? patternValue = null;
             SyntaxNode? regexOptionsValue = null;
-            SyntaxNode? timeoutValue = null;
-
-            // Try to get the timeout from the diagnostic's property bag. It will only be present if the original callsite used a timeout.
-            int? timeout = TryParseInt32(properties, RegexAnalyzer.RegexTimeoutName);
-            if (timeout is not null)
-            {
-                timeoutValue = generator.LiteralExpression(timeout.Value);
-            }
 
             // Try to get the pattern and RegexOptions values out from the diagnostic's property bag.
             if (operation is IObjectCreationOperation objectCreationOperation) // When using the Regex constructors
             {
-                patternValue = GetNode((objectCreationOperation).Arguments, properties, RegexAnalyzer.PatternIndexName);
-                regexOptionsValue = GetNode((objectCreationOperation).Arguments, properties, RegexAnalyzer.RegexOptionsIndexName);
+                patternValue = GetNode((objectCreationOperation).Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false, compilation);
+                regexOptionsValue = GetNode((objectCreationOperation).Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true, compilation);
             }
             else if (operation is IInvocationOperation invocation) // When using the Regex static methods.
             {
-                patternValue = GetNode(invocation.Arguments, properties, RegexAnalyzer.PatternIndexName);
-                regexOptionsValue = GetNode(invocation.Arguments, properties, RegexAnalyzer.RegexOptionsIndexName);
-            }
-
-            // If the property bag had a timeout but not RegexOptions value, then we default to RegexOptions.None
-            if (timeoutValue is not null && regexOptionsValue is null)
-            {
-                regexOptionsValue = generator.MemberAccessExpression(generator.TypeExpression(compilation.GetTypeByMetadataName("System.Text.RegularExpressions.RegexOptions")!), "None");
+                patternValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.PatternIndexName, generator, useOptionsMemberExpression: false, compilation);
+                regexOptionsValue = GetNode(invocation.Arguments, properties, UpgradeToRegexGeneratorAnalyzer.RegexOptionsIndexName, generator, useOptionsMemberExpression: true, compilation);
             }
 
             // Generate the new static partial method
@@ -227,11 +213,10 @@ namespace System.Text.RegularExpressions.Generator
             newMethod = newMethod.ReplaceToken(newMethod.Identifier, SyntaxFactory.Identifier(methodName).WithAdditionalAnnotations(RenameAnnotation.Create()));
 
             // Generate the RegexGenerator attribute syntax node with the specified parameters.
-            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(regexGeneratorAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue, timeoutValue) switch
+            SyntaxNode attributes = generator.Attribute(generator.TypeExpression(regexGeneratorAttributeSymbol), attributeArguments: (patternValue, regexOptionsValue) switch
             {
-                ({ }, null, null) => new[] { patternValue },
-                ({ }, { }, null) => new[] { patternValue, regexOptionsValue },
-                ({ }, { }, { }) => new[] { patternValue, regexOptionsValue, SyntaxFactory.AttributeArgument((ExpressionSyntax)timeoutValue).WithNameColon(SyntaxFactory.NameColon(SyntaxFactory.IdentifierName("matchTimeoutMilliseconds"))) },
+                ({ }, null) => new[] { patternValue },
+                ({ }, { }) => new[] { patternValue, regexOptionsValue },
                 _ => Array.Empty<SyntaxNode>(),
             });
 
@@ -275,7 +260,7 @@ namespace System.Text.RegularExpressions.Generator
             }
 
             // Helper method that looks int the properties bag for the index of the passed in propertyname, and then returns that index from the args parameter.
-            static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> args, ImmutableDictionary<string, string?> properties, string propertyName)
+            static SyntaxNode? GetNode(ImmutableArray<IArgumentOperation> args, ImmutableDictionary<string, string?> properties, string propertyName, SyntaxGenerator generator, bool useOptionsMemberExpression, Compilation compilation)
             {
                 int? index = TryParseInt32(properties, propertyName);
                 if (index == null)
@@ -283,7 +268,37 @@ namespace System.Text.RegularExpressions.Generator
                     return null;
                 }
 
-                return args[index.Value].Value.Syntax;
+                if (!useOptionsMemberExpression)
+                {
+                    return generator.LiteralExpression(args[index.Value].Value.ConstantValue.Value);
+                }
+                else
+                {
+                    RegexOptions options = (RegexOptions)(int)args[index.Value].Value.ConstantValue.Value;
+                    string optionsLiteral = Literal(options);
+                    return SyntaxFactory.ParseExpression(optionsLiteral).SyntaxTree.GetRoot();
+                }
+            }
+
+            static string Literal(RegexOptions options)
+            {
+                string s = options.ToString();
+                if (int.TryParse(s, NumberStyles.Integer, CultureInfo.InvariantCulture, out _))
+                {
+                    // The options were formatted as an int, which means the runtime couldn't
+                    // produce a textual representation.  So just output casting the value as an int.
+                    Debug.Fail("This shouldn't happen, as we should only get to the point of emitting code if RegexOptions was valid.");
+                    return $"(RegexOptions)({(int)options})";
+                }
+
+                // Parse the runtime-generated "Option1, Option2" into each piece and then concat
+                // them back together.
+                string[] parts = s.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    parts[i] = "RegexOptions." + parts[i].Trim();
+                }
+                return string.Join(" | ", parts);
             }
         }
     }
