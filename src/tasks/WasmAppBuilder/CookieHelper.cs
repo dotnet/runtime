@@ -10,57 +10,56 @@ using System.Threading.Tasks;
 
 internal static class CookieHelper
 {
-    public static string BuildCookie(MethodInfo method)
+    private static string TypeToChar(Type t)
     {
-        static string TypeToCookie(Type t)
+        string? c = t.Name switch
         {
-            string? c = t.Name switch
-            {
-                nameof(String) => "I",
-                nameof(Boolean) => "I",
-                nameof(Char) => "I",
-                nameof(Byte) => "I",
-                nameof(Int16) => "I",
-                nameof(UInt16) => "I",
-                nameof(Int32) => "I",
-                nameof(UInt32) => "I",
-                nameof(IntPtr) => "I",
-                nameof(UIntPtr) => "I",
-                nameof(Int64) => "L",
-                nameof(UInt64) => "L",
-                nameof(Single) => "F",
-                nameof(Double) => "D",
-                "Void" => "V",
-                _ => null
-            };
+            nameof(String) => "I",
+            nameof(Boolean) => "I",
+            nameof(Char) => "I",
+            nameof(Byte) => "I",
+            nameof(Int16) => "I",
+            nameof(UInt16) => "I",
+            nameof(Int32) => "I",
+            nameof(UInt32) => "I",
+            nameof(IntPtr) => "I",
+            nameof(UIntPtr) => "I",
+            nameof(Int64) => "L",
+            nameof(UInt64) => "L",
+            nameof(Single) => "F",
+            nameof(Double) => "D",
+            "Void" => "V",
+            _ => null
+        };
 
-            if (c == null)
-            {
-                if (t.IsArray)
-                    c = "I";
-                else if (t.IsClass)
-                    c = "I";
-                else if (t.IsInterface)
-                    c = "I";
-                else if (t.IsEnum)
-                    c = TypeToCookie(t.GetEnumUnderlyingType());
-                else if (t.IsValueType)
-                    c = "I";
-            }
-
-            if (c == null)
-            {
-                //throw new NotSupportedException($"Type '{t.Name}' is not supported.")
-                c = $"<{t.Name}>";
-            }
-
-            return c;
+        if (c == null)
+        {
+            if (t.IsArray)
+                c = "I";
+            else if (t.IsClass)
+                c = "I";
+            else if (t.IsInterface)
+                c = "I";
+            else if (t.IsEnum)
+                c = TypeToChar(t.GetEnumUnderlyingType());
+            else if (t.IsValueType)
+                c = "I";
         }
 
-        string result = TypeToCookie(method.ReturnType).ToString();
+        if (c == null)
+        {
+            throw new NotSupportedException($"Type '{t.Name}' is not supported.");
+        }
+
+        return c;
+    }
+
+    public static string BuildCookie(MethodInfo method)
+    {
+        string result = TypeToChar(method.ReturnType);
         foreach (var parameter in method.GetParameters())
         {
-            result += TypeToCookie(parameter.ParameterType);
+            result += TypeToChar(parameter.ParameterType);
         }
 
         return result;

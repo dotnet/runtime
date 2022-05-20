@@ -19,10 +19,8 @@ public class ManagedToNativeGenerator : Task
     [Required]
     public string[]? Assemblies { get; set; }
 
-    [Required]
     public string? RuntimeIcallTableFile { get; set; }
 
-    [Required, NotNull]
     public string? IcallOutputPath { get; set; }
 
     [Required, NotNull]
@@ -39,13 +37,13 @@ public class ManagedToNativeGenerator : Task
 
     public override bool Execute()
     {
-        var pinvoke = new PInvokeTableGenerator()
+        var pinvoke = new PInvokeTableGenerator(Log)
         {
             Assemblies = Assemblies,
             Modules = PInvokeModules,
             OutputPath = PInvokeOutputPath,
         };
-        var icall = new IcallTableGenerator()
+        var icall = new IcallTableGenerator(Log)
         {
             Assemblies = Assemblies,
             RuntimeIcallTableFile = RuntimeIcallTableFile,
@@ -54,7 +52,7 @@ public class ManagedToNativeGenerator : Task
 
         if (pinvoke.Execute() && icall.Execute())
         {
-            var m2n = new InterpToNativeGenerator()
+            var m2n = new InterpToNativeGenerator(Log)
             {
                 Cookies = Enumerable.Concat(pinvoke.Cookies!, icall.Cookies!).Distinct().ToArray(),
                 OutputPath = InterpToNativeOutputPath,

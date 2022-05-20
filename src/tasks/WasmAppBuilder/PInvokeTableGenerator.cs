@@ -11,7 +11,7 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class PInvokeTableGenerator : Task
+public class PInvokeTableGenerator
 {
     [Required, NotNull]
     public string[]? Modules { get; set; }
@@ -29,7 +29,11 @@ public class PInvokeTableGenerator : Task
 
     private static char[] s_charsToReplace = new[] { '.', '-', '+' };
 
-    public override bool Execute()
+    public TaskLoggingHelper Log { get; set; }
+
+    public PInvokeTableGenerator(TaskLoggingHelper log) => Log = log;
+
+    public bool Execute()
     {
         if (Assemblies.Length == 0)
         {

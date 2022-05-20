@@ -16,7 +16,7 @@ using System.Diagnostics.CodeAnalysis;
 // It should be kept in sync with mono_wasm_interp_to_native_trampoline () in the runtime.
 //
 
-public class InterpToNativeGenerator : Task
+public class InterpToNativeGenerator
 {
     [Required, NotNull]
     public string? OutputPath { get; set; }
@@ -26,185 +26,9 @@ public class InterpToNativeGenerator : Task
 
     public string[]? Cookies { get; set; }
 
-    // Default set of signatures
-    private static readonly string[] cookies = new string[] {
-        "V",
-        "VI",
-        "VII",
-        "VIII",
-        "VIIII",
-        "VIIIII",
-        "VIIIIII",
-        "VIIIIIII",
-        "VIIIIIIII",
-        "VIIIIIIIII",
-        "VIIIIIIIIII",
-        "VIIIIIIIIIII",
-        "VIIIIIIIIIIII",
-        "VIIIIIIIIIIIII",
-        "VIIIIIIIIIIIIII",
-        "VIIIIIIIIIIIIIII",
-        "I",
-        "II",
-        "III",
-        "IIII",
-        "IIIII",
-        "IIIIIDII",
-        "IIIIII",
-        "IIIIIII",
-        "IIIIIIII",
-        "IIIIIIIII",
-        "IIIIIIIIII",
-        "IIIIIIIIIII",
-        "IIIIIIIIIIII",
-        "IIIIIIIIIIIII",
-        "IIIIIIIIIIIIII",
-        "IILIIII",
-        "IIIL",
-        "IF",
-        "ID",
-        "IIF",
-        "IIFI",
-        "IIFF",
-        "IFFII",
-        "IIFII",
-        "IIFFI",
-        "IIFFF",
-        "IIFFFF",
-        "IIFFFI",
-        "IIFFII",
-        "IIFIII",
-        "IIFFFFI",
-        "IIFFFFII",
-        "IIIF",
-        "IIIFI",
-        "IIIFII",
-        "IIIFIII",
-        "IIIIF",
-        "IIIIFI",
-        "IIIIFII",
-        "IIIIFIII",
-        "IIIFFFF",
-        "IIIFFFFF",
-        "IIFFFFFF",
-        "IIIFFFFFF",
-        "IIIIIIIF",
-        "IIIIIIIFF",
-        "IIFFFFFFFF",
-        "IIIFFFFFFFF",
-        "IIIIIIFII",
-        "IIIFFFFFFFFIII",
-        "IIIIIFFFFIIII",
-        "IFFFFFFI",
-        "IIFFIII",
-        "ILI",
-        "IILLI",
-        "L",
-        "LL",
-        "LI",
-        "LIL",
-        "LILI",
-        "LILII",
-        "DD",
-        "DDI",
-        "DDD",
-        "DDDD",
-        "VF",
-        "VFF",
-        "VFFF",
-        "VFFFF",
-        "VFFFFF",
-        "VFFFFFF",
-        "VFFFFFFF",
-        "VFFFFFFFF",
-        "VFI",
-        "VIF",
-        "VIFF",
-        "VIFFFF",
-        "VIFFFFF",
-        "VIFFFFFF",
-        "VIFFFFFI",
-        "VIIFFI",
-        "VIIF",
-        "VIIFFF",
-        "VIIFI",
-        "FF",
-        "FFI",
-        "FFF",
-        "FFFF",
-        "DI",
-        "FI",
-        "IIL",
-        "IILI",
-        "IILIIIL",
-        "IILLLI",
-        "IDIII",
-        "LII",
-        "VID",
-        "VILLI",
-        "DID",
-        "DIDD",
-        "FIF",
-        "FIFF",
-        "LILL",
-        "VL",
-        "VIL",
-        "VIIL",
-        "FIFFF",
-        "FII",
-        "FIII",
-        "FIIIIII",
-        "IFFFFIIII",
-        "IFFI",
-        "IFFIF",
-        "IFFIFI",
-        "IFI",
-        "IFIII",
-        "IIFIFIIIII",
-        "IIFIFIIIIII",
-        "IIFIIIII",
-        "IIFIIIIII",
-        "IIIFFFII",
-        "IIIFFIFFFII",
-        "IIIFFIFFII",
-        "IIIFFII",
-        "IIIFFIIIII",
-        "IIIIIF",
-        "IIIIIFII",
-        "IIIIIFIII",
-        "IIIIIIFFI",
-        "IIIIIIIFFI",
-        "VIFFF",
-        "VIFFFFI",
-        "VIFFFI",
-        "VIFFFIIFF",
-        "VIFFI",
-        "VIFI",
-        "VIIFF",
-        "VIIFFFF",
-        "VIIFFII",
-        "VIIIF",
-        "VIIIFFII",
-        "VIIIFFIII",
-        "VIIIFI",
-        "VIIIFII",
-        "VIIIFIII",
-        "VIIIIF",
-        "IFFFFIII",
-        "IFFIII",
-        "VIIIIFFII",
-        "IIILIIII",
-        "IIILLI",
-        "IL",
-        "IFF",
-        "IFFF",
-        "IFFFF",
-        "VLII",
-        "IIIIL",
-        "LIIII",
-        "LIIIL",
-        "IILL",
-    };
+    public TaskLoggingHelper Log { get; set; }
+
+    public InterpToNativeGenerator(TaskLoggingHelper log) => Log = log;
 
     private static string TypeToSigType(char c)
     {
@@ -220,7 +44,7 @@ public class InterpToNativeGenerator : Task
         }
     }
 
-    public override bool Execute()
+    public bool Execute()
     {
         try
         {
@@ -262,10 +86,12 @@ public class InterpToNativeGenerator : Task
         var added = new HashSet<string>();
 
         var l = new List<string>();
-        foreach (var c in Cookies ?? cookies)
+        foreach (var c in Cookies!)
         {
             l.Add(c);
             added.Add(c);
+
+            //Log.LogMessage(MessageImportance.High, $"Add cookie '{c}'");
         }
         var signatures = l.ToArray();
 

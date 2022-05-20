@@ -14,13 +14,13 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
-public class IcallTableGenerator : Task
+public class IcallTableGenerator
 {
-    [Required]
     public string? RuntimeIcallTableFile { get; set; }
+
     [Required]
     public string[]? Assemblies { get; set; }
-    [Required, NotNull]
+
     public string? OutputPath { get; set; }
 
     [Output]
@@ -32,7 +32,11 @@ public class IcallTableGenerator : Task
     private List<Icall> _icalls = new List<Icall> ();
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass> ();
 
-    public override bool Execute()
+    public TaskLoggingHelper Log { get; set; }
+
+    public IcallTableGenerator(TaskLoggingHelper log) => Log = log;
+
+    public bool Execute()
     {
         try
         {
