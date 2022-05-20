@@ -3409,11 +3409,11 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 		for (int i = 0; i < num_named_args; ++i) {
 			if (named_arg_info [i].field && !strcmp (named_arg_info [i].field->name, "CallConvs")) {
 				MonoCustomAttrValue* calling_conventions_attr =  (MonoCustomAttrValue*) named_args [i];
-				g_assert(calling_conventions_attr->type == MONO_TYPE_SZARRAY);
+				g_assertf(named_arg_info [i].field->type->type == MONO_TYPE_SZARRAY, "UnmanagedCallersOnlyAttribute parameter %s must be an array, specified for method %s", named_arg_info [i].field->name, method->name);
 				
 				MonoCustomAttrValueArray* calling_conventions = (MonoCustomAttrValueArray*) calling_conventions_attr->value.array;
-				g_assert(calling_conventions->len == 1);
-
+				g_assertf(calling_conventions->len == 1, "Only a single calling convention is supported for UnmanagedCallersOnlyAttribute parameter %s, specified for method %s", named_arg_info [i].field->name, method->name);
+				
 				MonoType* calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
 				mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
 			}
