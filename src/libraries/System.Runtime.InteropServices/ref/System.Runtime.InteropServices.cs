@@ -2103,6 +2103,20 @@ namespace System.Runtime.InteropServices.Marshalling
         public T[]? ToManaged() { throw null; }
         public void FreeNative() { }
     }
+    [System.CLSCompliant(false)]
+    [System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerAttribute(typeof(string), BufferSize = 0x100,
+        Features = System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.UnmanagedResources
+            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.CallerAllocatedBuffer
+            | System.Runtime.InteropServices.Marshalling.CustomTypeMarshallerFeatures.TwoStageMarshalling )]
+    public unsafe ref struct BStrStringMarshaller
+    {
+        public BStrStringMarshaller(string? str) { }
+        public BStrStringMarshaller(string? str, System.Span<ushort> buffer) { }
+        public void* ToNativeValue() { throw null; }
+        public void FromNativeValue(void* value) { }
+        public string? ToManaged() { throw null; }
+        public void FreeNative() { }
+    }
     [System.AttributeUsageAttribute(System.AttributeTargets.Struct)]
     public sealed partial class CustomTypeMarshallerAttribute : System.Attribute
     {
@@ -2197,8 +2211,8 @@ namespace System.Runtime.InteropServices.Marshalling
     public unsafe ref struct Utf16StringMarshaller
     {
         public Utf16StringMarshaller(string? str) { }
-        public ushort* ToNativeValue() { throw null; }
-        public void FromNativeValue(ushort* value) { }
+        public void* ToNativeValue() { throw null; }
+        public void FromNativeValue(void* value) { }
         public string? ToManaged() { throw null; }
         public void FreeNative() { }
     }
