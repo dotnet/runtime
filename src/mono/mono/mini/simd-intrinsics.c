@@ -1462,7 +1462,6 @@ emit_vector64_vector128_t (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSign
 	}
 
 	MonoClass *klass = cmethod->klass;
-	MonoType *type = m_class_get_byval_arg (klass);
 	MonoType *etype = mono_class_get_context (klass)->class_inst->type_argv [0];
 	int size = mono_class_value_size (klass, NULL);
 	int esize = mono_class_value_size (mono_class_from_mono_type_internal (etype), NULL);
