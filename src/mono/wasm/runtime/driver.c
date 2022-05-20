@@ -568,11 +568,8 @@ mono_wasm_load_runtime (const char *unused, int debug_level)
 #endif
 #ifdef NEED_INTERP
 	mono_ee_interp_init (interp_opts);
-
 	mono_marshal_lightweight_init ();
 	mono_marshal_ilgen_init();
-
-
 	mono_method_builder_ilgen_init ();
 	mono_sgen_mono_ilgen_init ();
 #endif

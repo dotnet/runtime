@@ -3421,15 +3421,6 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		return res;
 	}
 
-	if (!strcmp (method->name, "DeflateInit2_"))
-	{
-		naricc_global_debug_set(TRUE);
-	}
-	else
-	{
-		naricc_global_debug_set(FALSE);
-	}
-
 	mb = mono_mb_new (method->klass, method->name, MONO_WRAPPER_MANAGED_TO_NATIVE);
 
 	mb->method->save_lmf = 1;
@@ -3555,11 +3546,7 @@ mono_marshal_get_native_wrapper (MonoMethod *method, gboolean check_exceptions, 
 		if (mspecs [i])
 			mono_metadata_free_marshal_spec (mspecs [i]);
 	g_free (mspecs);
-
-	if (!strcmp (method->name, "DeflateInit2_")){
-		mono_method_print_code (res); 
-	}
-
+	
 	return res;
 }
 

@@ -2719,10 +2719,8 @@ get_marshal_cb (void)
 {
 	if (G_UNLIKELY (!ilgen_cb_inited)) {
 #ifdef ENABLE_ILGEN
-		printf("!!!marshal-ilgen.c: get_marshal_cb: ENABLE_ILGEN\n");
 		mono_marshal_ilgen_init ();
 #else
-		printf("!!!marshal-ilgen.c: get_marshal_cb: NO ENABLE_ILGEN\n");
 		mono_marshal_noilgen_init_heavyweight ();
 #endif
 	}
@@ -2808,7 +2806,6 @@ mono_emit_marshal_ilgen (EmitMarshalContext *m, int argnum, MonoType *t,
 void
 mono_marshal_ilgen_init (void)
 {
-	printf("!!!naricc_debug!!! mono_marshal_ilgen_init called.\n");
 	MonoMarshalIlgenCallbacks cb;
 	cb.version = MONO_MARSHAL_CALLBACKS_VERSION;
 	cb.emit_marshal_array = emit_marshal_array_ilgen;

@@ -928,10 +928,6 @@ emit_native_wrapper_ilgen (MonoImage *image, MonoMethodBuilder *mb, MonoMethodSi
 	m.orig_conv_args = g_newa (int, sig->param_count + 1);
 
 	for (i = 0; i < sig->param_count; i ++) {
-		if (naricc_global_debug_get())
-		{
-			printf("!!!naricc_debug!!!: mono_emit_marshal params: i: %d, param_shift: %d\n", i, param_shift);
-		}
 		tmp_locals [i] = mono_emit_marshal (&m, i + param_shift, sig->params [i], mspecs [i + 1], 0, &csig->params [i], MARSHAL_ACTION_CONV_IN);
 	}
 
