@@ -1212,7 +1212,12 @@ namespace System.Text.Json.SourceGeneration
                     out bool setterIsVirtual,
                     out bool setterIsInitOnly);
 
-                var propInfoWrapper = memberInfo as PropertyInfoWrapper;
+                bool needsAtSign = memberInfo switch
+                {
+                    PropertyInfoWrapper prop => prop.NeedsAtSign,
+                    FieldInfoWrapper field => field.NeedsAtSign,
+                    _ => false
+                };
 
                 string clrName = memberInfo.Name;
                 string runtimePropertyName = DetermineRuntimePropName(clrName, jsonPropertyName, _currentContextNamingPolicy);
@@ -1220,7 +1225,7 @@ namespace System.Text.Json.SourceGeneration
 
                 return new PropertyGenerationSpec
                 {
-                    NameSpecifiedInSourceCode = propInfoWrapper?.NeedsAtSign == true ? "@" + memberInfo.Name : memberInfo.Name,
+                    NameSpecifiedInSourceCode = needsAtSign ? "@" + memberInfo.Name : memberInfo.Name,
                     ClrName = memberInfo.Name,
                     IsProperty = memberInfo.MemberType == MemberTypes.Property,
                     IsPublic = isPublic,

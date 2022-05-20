@@ -2,6 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using System.Globalization;
@@ -16,6 +17,11 @@ namespace System.Text.Json.Reflection
         {
             _field = parameter;
             _metadataLoadContext = metadataLoadContext;
+
+            ImmutableArray<SymbolDisplayPart> parts = _field.ToDisplayParts();
+            SymbolDisplayPart fieldName = parts.Length > 0 ? parts[parts.Length - 1] : parts[0];
+
+            NeedsAtSign = fieldName.ToString()[0] == '@';
         }
 
         private FieldAttributes? _attributes;
@@ -63,6 +69,8 @@ namespace System.Text.Json.Reflection
         public override Type DeclaringType => _field.ContainingType.AsType(_metadataLoadContext);
 
         public override string Name => _field.Name;
+
+        public bool NeedsAtSign { get; }
 
         public override Type ReflectedType => throw new NotImplementedException();
 
