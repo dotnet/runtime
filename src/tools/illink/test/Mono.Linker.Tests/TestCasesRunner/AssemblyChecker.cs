@@ -490,6 +490,11 @@ namespace Mono.Linker.Tests.TestCasesRunner
 				if (instr.Operand is Instruction target)
 					return $"{instr.OpCode.ToString ()} il_{target.Offset.ToString ("x")}";
 
+				if (instr.Operand is Instruction[] targets) {
+					string stargets = string.Join (", ", targets.Select (l => $"il_{l.Offset.ToString ("x")}"));
+					return $"{instr.OpCode.ToString ()} ({stargets})";
+				}
+
 				break;
 			}
 

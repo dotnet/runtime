@@ -107,8 +107,19 @@ namespace Mono.Linker
 		{
 			foreach (var instr in Instructions) {
 				switch (instr.OpCode.FlowControl) {
-				case FlowControl.Branch:
 				case FlowControl.Cond_Branch:
+					if (instr.Operand is Instruction?[] instructions) {
+						for (int i = 0; i < instructions.Length; ++i) {
+							if (instructions[i] == oldTarget)
+								instructions[i] = newTarget;
+						}
+
+						break;
+					}
+
+					goto case FlowControl.Branch;
+
+				case FlowControl.Branch:
 					if (instr.Operand == oldTarget)
 						instr.Operand = newTarget;
 					break;
