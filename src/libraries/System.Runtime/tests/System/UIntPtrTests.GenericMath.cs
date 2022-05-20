@@ -1672,7 +1672,7 @@ namespace System.Tests
             }
             else
             {
-                Assert.True(NumberBaseHelper<nuint>.IsNormal((nuint)0x00000000));
+                Assert.False(NumberBaseHelper<nuint>.IsNormal((nuint)0x00000000));
                 Assert.True(NumberBaseHelper<nuint>.IsNormal((nuint)0x00000001));
                 Assert.True(NumberBaseHelper<nuint>.IsNormal((nuint)0x7FFFFFFF));
                 Assert.True(NumberBaseHelper<nuint>.IsNormal((nuint)0x80000000));
