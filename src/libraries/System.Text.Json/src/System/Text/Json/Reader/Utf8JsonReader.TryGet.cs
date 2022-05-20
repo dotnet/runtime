@@ -105,7 +105,7 @@ namespace System.Text.Json
         /// <seealso cref="TokenType" />
         /// It will also throw when the JSON string contains invalid UTF-8 bytes, or invalid UTF-16 surrogates.
         /// </exception>
-        /// <exception cref="ArgumentException">Thrown if the destination buffer is too small to hold the unescaped value.</exception>
+        /// <exception cref="ArgumentException">The destination buffer is too small to hold the unescaped value.</exception>
         public readonly int CopyString(Span<char> destination)
         {
             if (_tokenType is not (JsonTokenType.String or JsonTokenType.PropertyName))
