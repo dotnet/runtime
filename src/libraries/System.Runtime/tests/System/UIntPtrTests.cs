@@ -151,7 +151,8 @@ namespace System.Tests
             Assert.Equal(value, (nuint)opExplicitFromPointer.Invoke(null, new object[] { Pointer.Box(v, typeof(void*)) }));
 
             value = unchecked((nuint)0x7fffffffffffffff);
-            Assert.Throws<OverflowException>(() => opExplicitToUInt32.Invoke(null, new object[] { value }));
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => opExplicitToUInt32.Invoke(null, new object[] { value }));
+            Assert.IsType<OverflowException>(ex.InnerException);
         }
 
         [ConditionalFact(nameof(Is64Bit))]

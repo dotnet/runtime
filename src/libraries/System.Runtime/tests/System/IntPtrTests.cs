@@ -130,30 +130,31 @@ namespace System.Tests
         {
             nint value = 42;
 
-            MethodInfo[] methods = typeof(nuint).GetMethods();
+            MethodInfo[] methods = typeof(nint).GetMethods();
 
-            MethodInfo opExplicitFromInt32 = typeof(nuint).GetMethod("op_Explicit", new Type[] { typeof(int) });
+            MethodInfo opExplicitFromInt32 = typeof(nint).GetMethod("op_Explicit", new Type[] { typeof(int) });
             MethodInfo opExplicitToInt32 = methods.Single((methodInfo) => (methodInfo.Name == "op_Explicit") && (methodInfo.ReturnType == typeof(int)));
 
             int i = (int)opExplicitToInt32.Invoke(null, new object[] { value });
             Assert.Equal(42, i);
             Assert.Equal(value, (nint)opExplicitFromInt32.Invoke(null, new object[] { i }));
 
-            MethodInfo opExplicitFromInt64 = typeof(nuint).GetMethod("op_Explicit", new Type[] { typeof(long) });
+            MethodInfo opExplicitFromInt64 = typeof(nint).GetMethod("op_Explicit", new Type[] { typeof(long) });
             MethodInfo opExplicitToInt64 = methods.Single((methodInfo) => (methodInfo.Name == "op_Explicit") && (methodInfo.ReturnType == typeof(long)));
 
             long l = (long)opExplicitToInt64.Invoke(null, new object[] { value });
             Assert.Equal(42u, l);
             Assert.Equal(value, (nint)opExplicitFromInt64.Invoke(null, new object[] { l }));
 
-            MethodInfo opExplicitFromPointer = typeof(nuint).GetMethod("op_Explicit", new Type[] { typeof(void*) });
+            MethodInfo opExplicitFromPointer = typeof(nint).GetMethod("op_Explicit", new Type[] { typeof(void*) });
             MethodInfo opExplicitToPointer = methods.Single((methodInfo) => (methodInfo.Name == "op_Explicit") && (methodInfo.ReturnType == typeof(void*)));
 
             void* v = Pointer.Unbox(opExplicitToPointer.Invoke(null, new object[] { value }));
             Assert.Equal(value, (nint)opExplicitFromPointer.Invoke(null, new object[] { Pointer.Box(v, typeof(void*)) }));
 
             value = unchecked((nint)0x7fffffffffffffff);
-            Assert.Throws<OverflowException>(() => opExplicitToInt32.Invoke(null, new object[] { value }));
+            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => opExplicitToInt32.Invoke(null, new object[] { value }));
+            Assert.IsType<OverflowException>(ex.InnerException);
         }
 
         [ConditionalFact(nameof(Is64Bit))]
