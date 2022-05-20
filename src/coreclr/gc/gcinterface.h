@@ -924,7 +924,6 @@ public:
     virtual unsigned int GetGenerationWithRange(Object* object, uint8_t** ppStart, uint8_t** ppAllocated, uint8_t** ppReserved) = 0;
 
     IGCHeap() {}
-    virtual ~IGCHeap() {}
 
     // Get the total paused duration
     virtual int64_t GetTotalPauseDuration() = 0;
