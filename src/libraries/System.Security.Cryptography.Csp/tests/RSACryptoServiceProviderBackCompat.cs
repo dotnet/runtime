@@ -156,24 +156,26 @@ namespace System.Security.Cryptography.Csp.Tests
 
         public static IEnumerable<object[]> AlgorithmIdentifiers()
         {
-            return new[]
+            yield return new object[] { "MD5", MD5.Create() };
+            yield return new object[] { "MD5", typeof(MD5) };
+            yield return new object[] { "MD5", "1.2.840.113549.2.5" };
+
+            if (RSAFactory.SupportsSha1Signatures)
             {
-                new object[] { "MD5", MD5.Create() },
-                new object[] { "MD5", typeof(MD5) },
-                new object[] { "MD5", "1.2.840.113549.2.5" },
-                new object[] { "SHA1", SHA1.Create() },
-                new object[] { "SHA1", typeof(SHA1) },
-                new object[] { "SHA1", "1.3.14.3.2.26" },
-                new object[] { "SHA256", SHA256.Create() },
-                new object[] { "SHA256", typeof(SHA256) },
-                new object[] { "SHA256", "2.16.840.1.101.3.4.2.1" },
-                new object[] { "SHA384", SHA384.Create() },
-                new object[] { "SHA384", typeof(SHA384) },
-                new object[] { "SHA384", "2.16.840.1.101.3.4.2.2" },
-                new object[] { "SHA512", SHA512.Create() },
-                new object[] { "SHA512", typeof(SHA512) },
-                new object[] { "SHA512", "2.16.840.1.101.3.4.2.3" },
-            };
+                yield return new object[] { "SHA1", SHA1.Create() };
+                yield return new object[] { "SHA1", typeof(SHA1) };
+                yield return new object[] { "SHA1", "1.3.14.3.2.26" };
+            }
+
+            yield return new object[] { "SHA256", SHA256.Create() };
+            yield return new object[] { "SHA256", typeof(SHA256) };
+            yield return new object[] { "SHA256", "2.16.840.1.101.3.4.2.1" };
+            yield return new object[] { "SHA384", SHA384.Create() };
+            yield return new object[] { "SHA384", typeof(SHA384) };
+            yield return new object[] { "SHA384", "2.16.840.1.101.3.4.2.2" };
+            yield return new object[] { "SHA512", SHA512.Create() };
+            yield return new object[] { "SHA512", typeof(SHA512) };
+            yield return new object[] { "SHA512", "2.16.840.1.101.3.4.2.3" };
         }
     }
 }

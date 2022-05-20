@@ -518,7 +518,7 @@ namespace System.Net.Http.Headers
             }
 
             string encodingString = input.Substring(0, quoteIndex);
-            string dataString = input.Substring(lastQuoteIndex + 1, input.Length - (lastQuoteIndex + 1));
+            string dataString = input.Substring(lastQuoteIndex + 1);
 
             StringBuilder decoded = new StringBuilder();
             try

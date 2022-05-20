@@ -4143,7 +4143,7 @@ done
 ./make_delegate_compat_test.sh delegate_method_ptr_arg_1 unverifiable int32 int32 "method int32 *(float64)" "method int32 *(float64)"
 #no way do say this is invalid
 ./make_delegate_compat_test.sh delegate_method_ptr_arg_2 unverifiable int32 int32 "method int32 *(float64)" "method int32 *(int32)"
-#and that is is valid
+#and that it is valid
 ./make_delegate_compat_test.sh delegate_method_ptr_arg_2 unverifiable int32 int32 "method int32 *(string)" "method int32 *(object)"
 
 
@@ -4214,7 +4214,7 @@ done
 ./make_delegate_compat_test.sh delegate_method_ptr_arg_1 unverifiable "method int32 *(float64)" "method int32 *(float64)" int32 int32
 #no way do say this is invalid
 ./make_delegate_compat_test.sh delegate_method_ptr_arg_2 unverifiable "method int32 *(float64)" "method int32 *(int32)" int32 int32
-#and that is is valid
+#and that it is valid
 ./make_delegate_compat_test.sh delegate_method_ptr_arg_2 unverifiable "method int32 *(object)" "method int32 *(string)" int32 int32
 
 #TODO: 7,8,9 generic related.

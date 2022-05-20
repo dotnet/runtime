@@ -65,10 +65,10 @@ internal static partial class Interop
     [SuppressUnmanagedCodeSecurityAttribute]
     internal static partial class Kernel32
     {
-        [GeneratedDllImport(nameof(Kernel32))]
+        [LibraryImport(nameof(Kernel32))]
         internal static partial int GetCurrentThreadId();
 
-        [GeneratedDllImport(nameof(Kernel32))]
+        [LibraryImport(nameof(Kernel32))]
         internal static partial uint GetCurrentProcessId();
     }
 }

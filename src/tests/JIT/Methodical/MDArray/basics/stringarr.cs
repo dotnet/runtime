@@ -4,6 +4,7 @@
 //Simple arithmatic manipulation of one 2D array elements
 
 using System;
+using Xunit;
 
 public class string1
 {
@@ -132,7 +133,8 @@ public class string1
             }
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool pass = false;
 

@@ -85,12 +85,12 @@ namespace System.Net.Mail
             }
         }
 
-        internal LineInfo[] EndReadLines(IAsyncResult result)
+        internal static LineInfo[] EndReadLines(IAsyncResult result)
         {
             return ReadLinesAsyncResult.End(result);
         }
 
-        internal LineInfo EndReadLine(IAsyncResult result)
+        internal static LineInfo EndReadLine(IAsyncResult result)
         {
             LineInfo[] info = ReadLinesAsyncResult.End(result);
             if (info != null && info.Length > 0)

@@ -144,7 +144,6 @@ mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 {
 	int i;
 	MonoClass *klass;
-	MonoObject *o;
 	MonoMethodSignature *sig;
 	char *fname;
 	MonoGenericSharingContext *gsctx = NULL;
@@ -254,7 +253,7 @@ mono_trace_enter_method (MonoMethod *method, MonoJitInfo *ji, MonoProfilerCallCo
 		}
 		case MONO_TYPE_CLASS:
 		case MONO_TYPE_OBJECT: {
-			o = *arg_in_stack_slot(buf, MonoObject *);
+			MonoObject *o = *arg_in_stack_slot(buf, MonoObject *);
 			if (o) {
 				klass = o->vtable->klass;
 

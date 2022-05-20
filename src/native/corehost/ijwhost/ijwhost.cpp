@@ -2,14 +2,14 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 #include "ijwhost.h"
-#include "hostfxr.h"
-#include "fxr_resolver.h"
-#include "pal.h"
-#include "trace.h"
-#include "error_codes.h"
-#include "utils.h"
+#include <coreclr_delegates.h>
+#include <hostfxr.h>
+#include <fxr_resolver.h>
+#include <pal.h>
+#include <trace.h>
+#include <error_codes.h>
+#include <utils.h>
 #include "bootstrap_thunk.h"
-
 
 #if defined(_WIN32)
 // IJW entry points are defined without the __declspec(dllexport) attribute.
@@ -22,8 +22,9 @@
 
 pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_memory_assembly_fn* delegate)
 {
-    return load_fxr_and_get_delegate(
-        hostfxr_delegate_type::hdt_load_in_memory_assembly,
+    get_function_pointer_fn get_function_pointer;
+    int status = load_fxr_and_get_delegate(
+        hostfxr_delegate_type::hdt_get_function_pointer,
         [handle](const pal::string_t& host_path, pal::string_t* config_path_out)
         {
             pal::string_t mod_path;
@@ -39,8 +40,18 @@ pal::hresult_t get_load_in_memory_assembly_delegate(pal::dll_t handle, load_in_m
 
             return StatusCode::Success;
         },
-        delegate
+        &get_function_pointer
     );
+    if (status != StatusCode::Success)
+        return status;
+
+    return get_function_pointer(
+        _X("Internal.Runtime.InteropServices.InMemoryAssemblyLoader, System.Private.CoreLib"),
+        _X("LoadInMemoryAssemblyInContext"),
+        UNMANAGEDCALLERSONLY_METHOD,
+        nullptr, // load context
+        nullptr, // reserved
+        (void**)delegate);
 }
 
 IJW_API BOOL STDMETHODCALLTYPE _CorDllMain(HINSTANCE hInst,

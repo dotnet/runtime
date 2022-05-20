@@ -14,10 +14,12 @@ namespace System
         internal const int DoubleNumberBufferLength = 767 + 1 + 1;  // 767 for the longest input + 1 for rounding: 4.9406564584124654E-324
         internal const int Int32NumberBufferLength = 10 + 1;    // 10 for the longest input: 2,147,483,647
         internal const int Int64NumberBufferLength = 19 + 1;    // 19 for the longest input: 9,223,372,036,854,775,807
+        internal const int Int128NumberBufferLength = 39 + 1;    // 39 for the longest input: 170,141,183,460,469,231,731,687,303,715,884,105,727
         internal const int SingleNumberBufferLength = 112 + 1 + 1;  // 112 for the longest input + 1 for rounding: 1.40129846E-45
         internal const int HalfNumberBufferLength = 21; // 19 for the longest input + 1 for rounding (+1 for the null terminator)
         internal const int UInt32NumberBufferLength = 10 + 1;   // 10 for the longest input: 4,294,967,295
         internal const int UInt64NumberBufferLength = 20 + 1;   // 20 for the longest input: 18,446,744,073,709,551,615
+        internal const int UInt128NumberBufferLength = 39 + 1; // 39 for the longest input: 340,282,366,920,938,463,463,374,607,431,768,211,455
 
         internal unsafe ref struct NumberBuffer
         {
@@ -48,6 +50,7 @@ namespace System
                 CheckConsistency();
             }
 
+#pragma warning disable CA1822
             [Conditional("DEBUG")]
             public void CheckConsistency()
             {
@@ -65,7 +68,7 @@ namespace System
                         break;
                     }
 
-                    Debug.Assert((digit >= '0') && (digit <= '9'), "Unexpected character found in Number");
+                    Debug.Assert(char.IsAsciiDigit((char)digit), $"Unexpected character found in Number: {digit}");
                 }
 
                 Debug.Assert(numDigits == DigitsCount, "Null terminator found in unexpected location in Number");
@@ -73,6 +76,7 @@ namespace System
 
 #endif // DEBUG
             }
+#pragma warning restore CA1822
 
             public byte* GetDigitsPointer()
             {

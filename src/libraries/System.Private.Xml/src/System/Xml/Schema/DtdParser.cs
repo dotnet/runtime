@@ -3430,7 +3430,7 @@ namespace System.Xml
             }
         }
 
-        private bool IsAttributeValueType(Token token)
+        private static bool IsAttributeValueType(Token token)
         {
             return (int)token >= (int)Token.CDATA && (int)token <= (int)Token.NOTATION;
         }

@@ -17,7 +17,7 @@ namespace System.Dynamic
         /// <param name="explicit">true if the conversion should consider explicit conversions; otherwise, false.</param>
         protected ConvertBinder(Type type, bool @explicit)
         {
-            ContractUtils.RequiresNotNull(type, nameof(type));
+            ArgumentNullException.ThrowIfNull(type);
 
             Type = type;
             Explicit = @explicit;
@@ -59,7 +59,7 @@ namespace System.Dynamic
         /// <returns>The <see cref="DynamicMetaObject"/> representing the result of the binding.</returns>
         public sealed override DynamicMetaObject Bind(DynamicMetaObject target, DynamicMetaObject[]? args)
         {
-            ContractUtils.RequiresNotNull(target, nameof(target));
+            ArgumentNullException.ThrowIfNull(target);
             ContractUtils.Requires(args == null || args.Length == 0, nameof(args));
 
             return target.BindConvert(this);

@@ -61,6 +61,7 @@
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass\System.Reflection.Metadata.ApplyUpdate.Test.AddNestedClass.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda\System.Reflection.Metadata.ApplyUpdate.Test.AddStaticLambda.csproj" />
     <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression\System.Reflection.Metadata.ApplyUpdate.Test.StaticLambdaRegression.csproj" />
+    <ProjectReference Include="ApplyUpdate\System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType\System.Reflection.Metadata.ApplyUpdate.Test.ReflectionAddNewType.csproj" />
   </ItemGroup>
   <ItemGroup Condition="'$(TargetOS)' == 'Browser'">
     <WasmFilesToIncludeFromPublishDir Include="$(AssemblyName).dll" />

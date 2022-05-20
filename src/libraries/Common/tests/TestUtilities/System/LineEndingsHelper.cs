@@ -19,7 +19,7 @@ namespace System
             if (s_consistentNewlines)
                 return expected;
 
-            return expected.Replace(CompiledNewline, Environment.NewLine);
+            return expected.Replace("\r\n", "\n").Replace("\n", Environment.NewLine);
         }
     }
 }

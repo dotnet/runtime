@@ -18,17 +18,6 @@ WARNING:   When setting properties based on their current state (for example:
 -->
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
 
-  <!-- This is here because of this bug: https://docs.microsoft.com/en-us/archive/blogs/msbuild/well-known-limitation-dynamic-items-and-properties-not-emitted-until-target-execution-completes -->
-  <Target Name="FetchExternalProperties">
-    <!--Call GetExecuteCmdFullPath to get ToRunProject cmd file Path  -->
-    <MSBuild Projects="$(CLRTestProjectToRun)"
-             Targets="GetExecuteCmdFullPath"
-             Properties="GenerateRunScript=True"
-             Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'">
-      <Output TaskParameter="TargetOutputs" PropertyName="_CLRTestToRunFileFullPath"/>
-    </MSBuild>
-  </Target>
-
   <!--
     Target: GetExecuteCmdFullPath
     Return Executed Cmd Relative Full Path
@@ -38,14 +27,14 @@ WARNING:   When setting properties based on their current state (for example:
     Name="GetExecuteCmdFullPath"
     Returns="$(ExecuteCmdFullPath)">
     <PropertyGroup Condition="$(GenerateRunScript)">
-        <ExecuteCmdFullPath>$(OutputPath)$(MSBuildProjectName).cmd</ExecuteCmdFullPath>
+        <ExecuteCmdFullPath>$(OutputPath)$(AssemblyName).cmd</ExecuteCmdFullPath>
     </PropertyGroup>
     <!-- In order to avoid the overhead of calling MSBuild (as it may result in chains of MSBuild calls) I am assuming the extension in this circumstance. -->
     <PropertyGroup Condition="$(CLRTestProjectToRun) != '' AND $(GenerateRunScript)">
       <ExecuteCmdFullPath>$(OutputPath)$([System.IO.Path]::GetFilenameWithoutExtension(&quot;$(CLRTestProjectToRun)&quot;)).dll</ExecuteCmdFullPath>
     </PropertyGroup>
     <PropertyGroup Condition="!$(GenerateRunScript)">
-        <ExecuteCmdFullPath>$(OutputPath)$(MSBuildProjectName).$(OutputType.ToLower())</ExecuteCmdFullPath>
+        <ExecuteCmdFullPath>$(OutputPath)$(AssemblyName).$(OutputType.ToLower())</ExecuteCmdFullPath>
     </PropertyGroup>
   </Target>
 
@@ -62,8 +51,8 @@ WARNING:   When setting properties based on their current state (for example:
   -->
   <Target Name="GenerateBatchExecutionScript"
     Inputs="$(MSBuildProjectFullPath)"
-    Outputs="$(OutputPath)\$(MSBuildProjectName).cmd"
-    DependsOnTargets="FetchExternalProperties;$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript">
+    Outputs="$(OutputPath)\$(AssemblyName).cmd"
+    DependsOnTargets="$(BatchScriptSnippetGen);GetIlasmRoundTripBatchScript">
 
     <Message Text="Project depends on $(_CLRTestToRunFileFullPath)." Condition="'$(_CLRTestNeedsProjectToRun)' == 'True'" />
 
@@ -179,7 +168,7 @@ Exit /b 0
     </PropertyGroup>
 
     <ItemGroup Condition="$(_CLRTestNeedsToRun)">
-      <Clean Include="$(OutputPath)\$(MSBuildProjectName).cmd"/>
+      <Clean Include="$(OutputPath)\$(AssemblyName).cmd"/>
 
       <BatchCLRTestExecutionScriptArgument Include="debug">
         <HasParam>true</HasParam>
@@ -221,7 +210,7 @@ Exit /b 0
     </ItemGroup>
 
       <PropertyGroup>
-          <ReflectionRootsXml>$(MSBuildProjectName).reflect.xml</ReflectionRootsXml>
+          <ReflectionRootsXml>$(AssemblyName).reflect.xml</ReflectionRootsXml>
           <BatchLinkerTestLaunchCmds><![CDATA[
 REM Linker commands
 
@@ -447,6 +436,7 @@ $(IlasmRoundTripBatchScript)
 
 REM Allow precommands to override the ExePath
 set ExePath=$(InputAssemblyName)
+set TestExclusionListPath=%CORE_ROOT%\TestExclusionList.txt
 
 REM Precommands
 $(CLRTestBatchPreCommands)
@@ -459,7 +449,7 @@ $(BatchCLRTestExitCodeCheck)
     </PropertyGroup>
     <!-- Write the file -->
     <WriteLinesToFile
-      File="$(OutputPath)\$(MSBuildProjectName).cmd"
+      File="$(OutputPath)\$(AssemblyName).cmd"
       Lines="$(_CLRTestExecutionScriptText)"
       Overwrite="true" />
   </Target>

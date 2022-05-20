@@ -8,7 +8,7 @@ namespace System.Xml.Xsl.XsltOld
     using System.Xml;
     using System.Xml.XPath;
 
-    internal class CommentAction : ContainerAction
+    internal sealed class CommentAction : ContainerAction
     {
         internal override void Compile(Compiler compiler)
         {

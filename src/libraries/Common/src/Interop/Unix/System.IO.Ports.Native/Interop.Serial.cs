@@ -10,13 +10,13 @@ internal static partial class Interop
 {
     internal static partial class Serial
     {
-        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortOpen", StringMarshalling = StringMarshalling.Utf8, SetLastError = true)]
-        internal static partial SafeSerialDeviceHandle SerialPortOpen(string name);
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortOpen", SetLastError = true)]
+        internal static partial SafeSerialDeviceHandle SerialPortOpen([MarshalAs(UnmanagedType.LPUTF8Str)] string name);
 
-        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortClose", SetLastError = true)]
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_SerialPortClose", SetLastError = true)]
         internal static partial int SerialPortClose(IntPtr handle);
 
-        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Shutdown")]
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Shutdown")]
         internal static partial Error Shutdown(IntPtr socket, SocketShutdown how);
 
         /// <summary>
@@ -29,7 +29,7 @@ internal static partial class Interop
         /// Returns the number of bytes read on success; otherwise, -1 is returned
         /// Note - on fail. the position of the stream may change depending on the platform; consult man 2 read for more info
         /// </returns>
-        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Read", SetLastError = true)]
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Read", SetLastError = true)]
         internal static unsafe partial int Read(SafeHandle fd, byte* buffer, int count);
 
         /// <summary>
@@ -41,7 +41,7 @@ internal static partial class Interop
         /// <returns>
         /// Returns the number of bytes written on success; otherwise, returns -1 and sets errno
         /// </returns>
-        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Write", SetLastError = true)]
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Write", SetLastError = true)]
         internal static unsafe partial int Write(SafeHandle fd, byte* buffer, int bufferSize);
 
         /// <summary>
@@ -52,7 +52,7 @@ internal static partial class Interop
         /// <param name="timeout">The amount of time to wait; -1 for infinite, 0 for immediate return, and a positive number is the number of milliseconds</param>
         /// <param name="triggered">The number of events triggered (i.e. the number of entries in pollEvents with a non-zero TriggeredEvents). May be zero in the event of a timeout.</param>
         /// <returns>An error or Error.SUCCESS.</returns>
-        [GeneratedDllImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Poll")]
+        [LibraryImport(Libraries.IOPortsNative, EntryPoint = "SystemIoPortsNative_Poll")]
         private static unsafe partial Error Poll(PollEvent* pollEvents, uint eventCount, int timeout, uint* triggered);
 
         /// <summary>

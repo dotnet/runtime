@@ -1077,7 +1077,7 @@ bool GCToOSInterface::GetProcessorForHeap(uint16_t heap_number, uint16_t* proc_n
     bool success = false;
 
     // Locate heap_number-th available processor
-    uint16_t procIndex;
+    uint16_t procIndex = 0;
     size_t cnt = heap_number;
     for (uint16_t i = 0; i < MAX_SUPPORTED_CPUS; i++)
     {
@@ -1171,12 +1171,25 @@ bool GCToOSInterface::ParseGCHeapAffinitizeRangesEntry(const char** config_strin
         return false;
     }
 
+    // If the user passes in 0 as the CPU group and they don't have > 64 cores,
+    // honor the affinitized range passed in by bypassing the check.
+    bool bypass_cpu_range_check = !CanEnableGCCPUGroups() && group_number == 0;
+
     WORD group_begin;
     WORD group_size;
     if (!CPUGroupInfo::GetCPUGroupRange((WORD)group_number, &group_begin, &group_size))
     {
-        // group number out of range
-        return false;
+        if (!bypass_cpu_range_check)
+        {
+            // group number out of range
+            return false;
+        }
+        else
+        {
+            // the offset in this case where we bypass this check should be from 0 till the # of Processors.
+            group_begin = 0;
+            group_size = (WORD)GetTotalProcessorCount();
+        }
     }
 
     index_offset = group_begin;

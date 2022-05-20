@@ -10,7 +10,7 @@ internal static partial class Interop
 {
     internal static partial class SspiCli
     {
-        [GeneratedDllImport(Libraries.SspiCli)]
+        [LibraryImport(Libraries.SspiCli)]
         internal static partial int LsaLogonUser(
             SafeLsaHandle LsaHandle,
             in Advapi32.LSA_STRING OriginName,

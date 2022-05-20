@@ -51,12 +51,17 @@ namespace System.Security.Cryptography.Pkcs
         public SignerInfoEnumerator GetEnumerator() => new SignerInfoEnumerator(this);
         IEnumerator IEnumerable.GetEnumerator() => new SignerInfoEnumerator(this);
 
-        public void CopyTo(Array array!!, int index)
+        public void CopyTo(Array array, int index)
         {
+            if (array is null)
+            {
+                throw new ArgumentNullException(nameof(array));
+            }
+
             if (array.Rank != 1)
                 throw new ArgumentException(SR.Arg_RankMultiDimNotSupported, nameof(array));
             if (index < 0 || index >= array.Length)
-                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_Index);
+                throw new ArgumentOutOfRangeException(nameof(index), SR.ArgumentOutOfRange_IndexMustBeLess);
             if (index + Count > array.Length)
                 throw new ArgumentException(SR.Argument_InvalidOffLen);
 

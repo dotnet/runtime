@@ -44,6 +44,8 @@ instructionset     ,X86   ,Popcnt    ,        ,15 ,POPCNT   ,popcnt
 instructionset     ,X86   ,          ,        ,   ,Vector128,
 instructionset     ,X86   ,          ,        ,   ,Vector256,
 instructionset     ,X86   ,AvxVnni   ,        ,25 ,AVXVNNI  ,avxvnni
+instructionset     ,X86   ,Movbe     ,        ,27 ,MOVBE    ,movbe
+instructionset     ,X86   ,X86Serialize ,     ,28 ,X86Serialize  ,serialize
 
 instructionset64bit,X86   ,X86Base
 instructionset64bit,X86   ,SSE
@@ -62,6 +64,8 @@ instructionset64bit,X86   ,LZCNT
 instructionset64bit,X86   ,PCLMULQDQ
 instructionset64bit,X86   ,POPCNT
 instructionset64bit,X86   ,AVXVNNI
+instructionset64bit,X86   ,MOVBE
+instructionset64bit,X86   ,X86Serialize
 
 vectorinstructionset,X86  ,Vector128
 vectorinstructionset,X86  ,Vector256
@@ -84,6 +88,8 @@ implication        ,X86   ,POPCNT    ,SSE42
 implication        ,X86   ,Vector128 ,SSE
 implication        ,X86   ,Vector256 ,AVX
 implication        ,X86   ,AVXVNNI   ,AVX2
+implication        ,X86   ,MOVBE     ,SSE42
+implication        ,X86   ,X86Serialize, X86Base
 
 ; Definition of X64 instruction sets
 definearch         ,X64   ,64Bit     ,X64
@@ -105,6 +111,7 @@ instructionset     ,ARM64 ,          ,Atomics ,21 ,Atomics  ,lse
 instructionset     ,ARM64 ,          ,        ,   ,Vector64 ,
 instructionset     ,ARM64 ,          ,        ,   ,Vector128,
 instructionset     ,ARM64 ,          ,        ,   ,Dczva    ,
+instructionset     ,ARM64 ,          ,Rcpc    ,26 ,Rcpc     ,rcpc
 
 instructionset64bit,ARM64 ,ArmBase
 instructionset64bit,ARM64 ,AdvSimd

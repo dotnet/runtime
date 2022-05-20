@@ -15,6 +15,11 @@ namespace System
     {
         private IntPtr _value;
 
+        private RuntimeFieldHandle(IntPtr value)
+        {
+            _value = value;
+        }
+
         public IntPtr Value => _value;
 
         public override bool Equals(object? obj)
@@ -43,7 +48,7 @@ namespace System
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private int _rotl(int value, int shift)
+        private static int _rotl(int value, int shift)
         {
             return (int)(((uint)value << shift) | ((uint)value >> (32 - shift)));
         }
@@ -60,6 +65,10 @@ namespace System
             int hashcode = declaringType.GetHashCode();
             return (hashcode + _rotl(hashcode, 13)) ^ fieldName.GetHashCode();
         }
+
+        public static RuntimeFieldHandle FromIntPtr(IntPtr value) => new RuntimeFieldHandle(value);
+
+        public static IntPtr ToIntPtr(RuntimeFieldHandle value) => value.Value;
 
         public static bool operator ==(RuntimeFieldHandle left, RuntimeFieldHandle right)
         {

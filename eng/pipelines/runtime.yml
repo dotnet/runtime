@@ -12,15 +12,12 @@ trigger:
     - '*'
     - docs/manpages/*
     exclude:
+    - /**/*.md
     - eng/Version.Details.xml
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
 schedules:
@@ -41,15 +38,12 @@ pr:
     - '*'
     - docs/manpages/*
     exclude:
+    - /**/*.md
     - eng/Version.Details.xml
     - .github/*
     - docs/*
-    - CODE-OF-CONDUCT.md
-    - CONTRIBUTING.md
     - LICENSE.TXT
     - PATENTS.TXT
-    - README.md
-    - SECURITY.md
     - THIRD-PARTY-NOTICES.TXT
 
 variables:
@@ -756,7 +750,6 @@ jobs:
 # Only do this on PR builds since we use the Release builds for these test runs in CI
 # and those are already built above
 #
-
 - ${{ if eq(variables['isRollingBuild'], false) }}:
   - template: /eng/pipelines/common/platform-matrix.yml
     parameters:
@@ -940,6 +933,7 @@ jobs:
     runtimeFlavor: mono
     platforms:
     - OSX_x64
+    - windows_x64
     helixQueueGroup: pr
     helixQueuesTemplate: /eng/pipelines/coreclr/templates/helix-queues-setup.yml
     jobParameters:

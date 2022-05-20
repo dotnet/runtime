@@ -3,6 +3,9 @@
 
 using System;
 using System.Runtime.InteropServices;
+#if NET7_0_OR_GREATER
+using System.Runtime.InteropServices.Marshalling;
+#endif
 using System.Text;
 
 internal static partial class Interop
@@ -259,6 +262,7 @@ internal static partial class Interop
             [MarshalAs(UnmanagedType.Bool)]
             public bool AutoLoginIfChallenged;
 #if NET7_0_OR_GREATER
+            [CustomTypeMarshaller(typeof(WINHTTP_AUTOPROXY_OPTIONS), Features = CustomTypeMarshallerFeatures.UnmanagedResources)]
             public struct Native
             {
                 private uint Flags;

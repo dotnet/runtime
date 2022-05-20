@@ -25,7 +25,6 @@ namespace System.Configuration
         private SettingsLoadedEventHandler _onSettingsLoaded;
         private SettingsSavingEventHandler _onSettingsSaving;
         private string _settingsKey = string.Empty;
-        private bool _firstLoad = true;
         private bool _initialized;
 
         /// <summary>
@@ -55,8 +54,13 @@ namespace System.Configuration
         /// <summary>
         /// Convenience overload that takes the owner component and settings key.
         /// </summary>
-        protected ApplicationSettingsBase(IComponent owner!!, string settingsKey) : this(settingsKey)
+        protected ApplicationSettingsBase(IComponent owner, string settingsKey) : this(settingsKey)
         {
+            if (owner is null)
+            {
+                throw new ArgumentNullException(nameof(owner));
+            }
+
             _owner = owner;
 
             if (owner.Site != null)
@@ -708,18 +712,6 @@ namespace System.Configuration
         {
             if (PropertyValues[propertyName] == null)
             {
-
-                // If this is our first load and we are part of a Clickonce app, call Upgrade.
-                if (_firstLoad)
-                {
-                    _firstLoad = false;
-
-                    if (IsFirstRunOfClickOnceApp())
-                    {
-                        Upgrade();
-                    }
-                }
-
                 // we query the value first so that we initialize all values from value providers and so that we don't end up
                 // on an infinite recursion when calling Properties[propertyName] as that calls this.
                 _ = base[propertyName];
@@ -742,16 +734,6 @@ namespace System.Configuration
         }
 
         /// <summary>
-        /// Returns true if this is a clickonce deployed app and this is the first run of the app
-        /// since deployment or last upgrade.
-        /// </summary>
-        private bool IsFirstRunOfClickOnceApp()
-        {
-            // Always false for .NET Core
-            return false;
-        }
-
-        /// <summary>
         /// Returns true if this is a clickonce deployed app.
         /// </summary>
         internal static bool IsClickOnceDeployed(AppDomain appDomain)
@@ -764,7 +746,7 @@ namespace System.Configuration
         /// Only those settings class properties that have a SettingAttribute on them are
         /// treated as settings. This routine filters out other properties.
         /// </summary>
-        private PropertyInfo[] SettingsFilter(PropertyInfo[] allProps)
+        private static PropertyInfo[] SettingsFilter(PropertyInfo[] allProps)
         {
             var settingProps = new List<PropertyInfo>();
             object[] attributes;

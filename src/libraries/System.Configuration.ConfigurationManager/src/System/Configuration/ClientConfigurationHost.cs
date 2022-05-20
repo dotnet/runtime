@@ -122,7 +122,7 @@ namespace System.Configuration
         }
 
         // Return true if the config path is for a user.config file, false otherwise.
-        private bool IsUserConfig(string configPath)
+        private static bool IsUserConfig(string configPath)
         {
             return StringUtil.EqualsIgnoreCase(configPath, RoamingUserConfigPath) ||
                 StringUtil.EqualsIgnoreCase(configPath, LocalUserConfigPath);
@@ -396,7 +396,7 @@ namespace System.Configuration
             return new ExeContext(GetUserLevel(configPath), ConfigPaths.ApplicationUri);
         }
 
-        private ConfigurationUserLevel GetUserLevel(string configPath)
+        private static ConfigurationUserLevel GetUserLevel(string configPath)
         {
             ConfigurationUserLevel level;
 

@@ -14,7 +14,7 @@ internal static partial class Interop
             CRYPT_DECRYPT_RSA_NO_PADDING_CHECK = 0x00000020
         }
 
-        [GeneratedDllImport(Libraries.Advapi32, SetLastError = true)]
+        [LibraryImport(Libraries.Advapi32, SetLastError = true)]
         [return: MarshalAs(UnmanagedType.Bool)]
         public static partial bool CryptDecrypt(
             SafeCapiKeyHandle hKey,

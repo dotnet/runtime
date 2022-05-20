@@ -216,7 +216,7 @@ namespace System.Data.Odbc
             return ParameterName;
         }
 
-        private byte ValuePrecisionCore(object? value)
+        private static byte ValuePrecisionCore(object? value)
         {
             if (value is decimal)
             {
@@ -225,7 +225,7 @@ namespace System.Data.Odbc
             return 0;
         }
 
-        private byte ValueScaleCore(object? value)
+        private static byte ValueScaleCore(object? value)
         {
             if (value is decimal)
             {
@@ -234,7 +234,7 @@ namespace System.Data.Odbc
             return 0;
         }
 
-        private int ValueSizeCore(object? value)
+        private static int ValueSizeCore(object? value)
         {
             if (!ADP.IsNull(value))
             {

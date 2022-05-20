@@ -233,4 +233,6 @@ ICALL_EXPORT void mono_dummy_jit_icall (void);
 
 ICALL_EXPORT void mono_dummy_jit_icall_val (gpointer ptr);
 
+ICALL_EXPORT void mini_init_method_rgctx (MonoMethodRuntimeGenericContext *mrgctx, MonoGSharedMethodInfo *info);
+
 #endif /* __MONO_JIT_ICALLS_H__ */

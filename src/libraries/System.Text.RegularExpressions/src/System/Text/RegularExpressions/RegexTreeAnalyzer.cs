@@ -13,18 +13,25 @@ namespace System.Text.RegularExpressions
         public static AnalysisResults Analyze(RegexTree regexTree)
         {
             var results = new AnalysisResults(regexTree);
-            results._complete = TryAnalyze(regexTree.Root, results, isAtomicByAncestor: true);
+            results._complete = TryAnalyze(regexTree.Root, results, isAtomicByAncestor: true, isInLoop: false);
             return results;
 
-            static bool TryAnalyze(RegexNode node, AnalysisResults results, bool isAtomicByAncestor)
+            static bool TryAnalyze(RegexNode node, AnalysisResults results, bool isAtomicByAncestor, bool isInLoop)
             {
                 if (!StackHelper.TryEnsureSufficientExecutionStack())
                 {
                     return false;
                 }
 
-                // Track whether we've seen any node with IgnoreCase set.
+                // Track whether we've seen any nodes with various options set.
                 results._hasIgnoreCase |= (node.Options & RegexOptions.IgnoreCase) != 0;
+                results._hasRightToLeft |= (node.Options & RegexOptions.RightToLeft) != 0;
+
+                // Track whether this node is inside of a loop.
+                if (isInLoop)
+                {
+                    (results._inLoops ??= new HashSet<RegexNode>()).Add(node);
+                }
 
                 if (isAtomicByAncestor)
                 {
@@ -42,7 +49,7 @@ namespace System.Text.RegularExpressions
                         case RegexNodeKind.Alternate:
                         case RegexNodeKind.Loop or RegexNodeKind.Lazyloop when node.M != node.N:
                         case RegexNodeKind.Oneloop or RegexNodeKind.Notoneloop or RegexNodeKind.Setloop or RegexNodeKind.Onelazy or RegexNodeKind.Notonelazy or RegexNodeKind.Setlazy when node.M != node.N:
-                            (results._mayBacktrack ??= new()).Add(node);
+                            (results._mayBacktrack ??= new HashSet<RegexNode>()).Add(node);
                             break;
                     }
                 }
@@ -62,6 +69,12 @@ namespace System.Text.RegularExpressions
                     // Track any nodes that are themselves captures.
                     case RegexNodeKind.Capture:
                         results._containsCapture.Add(node);
+                        break;
+
+                    // Track whether we've recurred into a loop
+                    case RegexNodeKind.Loop:
+                    case RegexNodeKind.Lazyloop:
+                        isInLoop = true;
                         break;
                 }
 
@@ -102,7 +115,7 @@ namespace System.Text.RegularExpressions
                     };
 
                     // Now analyze the child.
-                    if (!TryAnalyze(child, results, treatChildAsAtomic))
+                    if (!TryAnalyze(child, results, treatChildAsAtomic, isInLoop))
                     {
                         return false;
                     }
@@ -119,7 +132,7 @@ namespace System.Text.RegularExpressions
                     // will be visible from this node to it.
                     if (!isAtomicBySelf && (results._mayBacktrack?.Contains(child) == true))
                     {
-                        (results._mayBacktrack ??= new()).Add(node);
+                        (results._mayBacktrack ??= new HashSet<RegexNode>()).Add(node);
                     }
                 }
 
@@ -147,8 +160,12 @@ namespace System.Text.RegularExpressions
         internal readonly HashSet<RegexNode> _containsCapture = new(); // the root is a capture, so this will always contain at least the root node
         /// <summary>Set of nodes that directly or indirectly contain backtracking constructs that aren't hidden internaly by atomic constructs.</summary>
         internal HashSet<RegexNode>? _mayBacktrack;
+        /// <summary>Set of nodes contained inside loops.</summary>
+        internal HashSet<RegexNode>? _inLoops;
         /// <summary>Whether any node has <see cref="RegexOptions.IgnoreCase"/> set.</summary>
         internal bool _hasIgnoreCase;
+        /// <summary>Whether any node has <see cref="RegexOptions.RightToLeft"/> set.</summary>
+        internal bool _hasRightToLeft;
 
         /// <summary>Initializes the instance.</summary>
         /// <param name="regexTree">The code being analyzed.</param>
@@ -158,9 +175,19 @@ namespace System.Text.RegularExpressions
         public RegexTree RegexTree { get; }
 
         /// <summary>Gets whether a node is considered atomic based on its ancestry.</summary>
+        /// <remarks>
+        /// If the whole tree couldn't be examined, this returns false.  That could lead to additional
+        /// code being output as nodes that could have been made atomic aren't, but functionally it's
+        /// the safe choice.
+        /// </remarks>
         public bool IsAtomicByAncestor(RegexNode node) => _isAtomicByAncestor.Contains(node);
 
         /// <summary>Gets whether a node directly or indirectly contains captures.</summary>
+        /// <remarks>
+        /// If the whole tree couldn't be examined, this returns true.  That could lead to additional
+        /// code being emitted to deal with captures that can't occur, but functionally it's the
+        /// safe choice.
+        /// </remarks>
         public bool MayContainCapture(RegexNode node) => !_complete || _containsCapture.Contains(node);
 
         /// <summary>Gets whether a node is or directory or indirectly contains a backtracking construct that isn't hidden by an internal atomic construct.</summary>
@@ -168,13 +195,48 @@ namespace System.Text.RegularExpressions
         /// In most code generation situations, we only need to know after we emit the child code whether
         /// the child may backtrack, and that we can see with 100% certainty.  This method is useful in situations
         /// where we need to predict without traversing the child at code generation time whether it may
-        /// incur backtracking.  This method may have (few) false positives, but won't have any false negatives,
+        /// incur backtracking.  This method may have (few) false positives (return true when it could have
+        /// returned false), but won't have any false negatives (return false when it should have returned true),
         /// meaning it might claim a node requires backtracking even if it doesn't, but it will always return
-        /// true for any node that requires backtracking.
+        /// true for any node that requires backtracking. In that vein, if the whole tree couldn't be examined,
+        /// this returns true.
         /// </remarks>
         public bool MayBacktrack(RegexNode node) => !_complete || (_mayBacktrack?.Contains(node) ?? false);
 
+        /// <summary>Gets whether a node may be contained inside of one or more loops.</summary>
+        /// <remarks>
+        /// Constructs sometimes need to maintain state about their execution such that if they're backtracked
+        /// to, they have the necessary context to make a different choice and continue execution.  Such state
+        /// can often be maintained in locals dedicated to that construct.  If, however, the construct is inside
+        /// of a loop, an additional iteration of that outerloop could invoke the inner construct and cause those
+        /// locals to have their state overwritten.  In such situations, the constructs can't rely on the locals
+        /// maintaining the state and instead need to push the state on to a stack.  That pushing/popping has
+        /// additional cost, however, both in terms of run-time overheads and in terms of the additional code
+        /// required to handle it.  Code generators then can consult this <see cref="IsInLoop"/> to determine
+        /// whether locals are sufficient to maintain the state or whether the state needs to be pushed on to a stack.
+        ///
+        /// Loops are not considered to be "in" themselves.  This will only return true for a loop node if it's
+        /// nested inside of another loop node.
+        ///
+        /// If the whole tree couldn't be examined, this returns true.  That could lead to additional
+        /// backtracking-related code being emitted, but it's functionally the safe choice.
+        /// </remarks>
+        public bool IsInLoop(RegexNode node) => !_complete || (_inLoops?.Contains(node) ?? false);
+
         /// <summary>Gets whether a node might have <see cref="RegexOptions.IgnoreCase"/> set.</summary>
-        public bool HasIgnoreCase => _complete && _hasIgnoreCase;
+        /// <remarks>
+        /// If the whole tree couldn't be examined, this returns true.  That could lead to additional
+        /// code being emitted to support case-insensitivity in expressions that don't actually need
+        /// it, but functionally it's the safe choice.
+        /// </remarks>
+        public bool HasIgnoreCase => !_complete || _hasIgnoreCase;
+
+        /// <summary>Gets whether a node might have <see cref="RegexOptions.RightToLeft"/> set.</summary>
+        /// <remarks>
+        /// If the whole tree couldn't be examined, this returns true.  That could lead to additional
+        /// code being emitted to support expressions that don't actually contain any RightToLeft
+        /// nodes, but functionally it's the safe choice.
+        /// </remarks>
+        public bool HasRightToLeft => !_complete || _hasRightToLeft;
     }
 }

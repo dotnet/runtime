@@ -19,17 +19,6 @@ namespace System.Text.RegularExpressions
         /// <summary>Returns the position in the original string where the first character of captured substring was found.</summary>
         public int Index { get; private protected set; }
 
-        /// <summary>
-        /// This method should only be called when the text for matching was sliced with a different beginning, so the resulting index of
-        /// the match is not from the start of the text, but instead the start of the slice. This method will add back that extra indices
-        /// to account for the original text beginning.
-        /// </summary>
-        /// <param name="beginning">The original text's beginning offset.</param>
-        internal void AddBeginningToIndex(int beginning)
-        {
-            Index += beginning;
-        }
-
         /// <summary>Returns the length of the captured substring.</summary>
         public int Length { get; private protected set; }
 

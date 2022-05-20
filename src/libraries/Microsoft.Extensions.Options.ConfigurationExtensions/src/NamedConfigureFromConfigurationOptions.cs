@@ -32,9 +32,10 @@ namespace Microsoft.Extensions.Options
         /// <param name="config">The <see cref="IConfiguration"/> instance.</param>
         /// <param name="configureBinder">Used to configure the <see cref="BinderOptions"/>.</param>
         [RequiresUnreferencedCode(OptionsBuilderConfigurationExtensions.TrimmingRequiredUnreferencedCodeMessage)]
-        public NamedConfigureFromConfigurationOptions(string? name, IConfiguration config!!, Action<BinderOptions>? configureBinder)
+        public NamedConfigureFromConfigurationOptions(string? name, IConfiguration config, Action<BinderOptions>? configureBinder)
             : base(name, options => BindFromOptions(options, config, configureBinder))
         {
+            ThrowHelper.ThrowIfNull(config);
         }
 
         [UnconditionalSuppressMessage("ReflectionAnalysis", "IL2026:RequiresUnreferencedCode",

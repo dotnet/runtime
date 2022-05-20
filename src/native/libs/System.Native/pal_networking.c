@@ -1501,7 +1501,7 @@ int32_t SystemNative_Accept(intptr_t socket, uint8_t* socketAddress, int32_t* so
 
     socklen_t addrLen = (socklen_t)*socketAddressLen;
     int accepted;
-#if defined(HAVE_ACCEPT4) && defined(SOCK_CLOEXEC)
+#if HAVE_ACCEPT4 && defined(SOCK_CLOEXEC)
     while ((accepted = accept4(fd, (struct sockaddr*)socketAddress, &addrLen, SOCK_CLOEXEC)) < 0 && errno == EINTR);
 #else
     while ((accepted = accept(fd, (struct sockaddr*)socketAddress, &addrLen)) < 0 && errno == EINTR);

@@ -35,8 +35,12 @@ namespace System.Runtime.CompilerServices
         /// <summary>
         /// Indicates that this version of runtime supports virtual static members of interfaces.
         /// </summary>
-        [RequiresPreviewFeatures(Number.PreviewFeatureMessage, Url = Number.PreviewFeatureUrl)]
         public const string VirtualStaticsInInterfaces = nameof(VirtualStaticsInInterfaces);
+
+        /// <summary>
+        /// Indicates that this version of runtime supports <see cref="System.IntPtr" /> and <see cref="System.UIntPtr" /> as numeric types.
+        /// </summary>
+        public const string NumericIntPtr = nameof(NumericIntPtr);
 
         /// <summary>
         /// Checks whether a certain feature is supported by the Runtime.
@@ -50,9 +54,8 @@ namespace System.Runtime.CompilerServices
                 case ByRefFields:
                 case UnmanagedSignatureCallingConvention:
                 case DefaultImplementationsOfInterfaces:
-#pragma warning disable CA2252
                 case VirtualStaticsInInterfaces:
-#pragma warning restore CA2252
+                case NumericIntPtr:
                     return true;
                 case nameof(IsDynamicCodeSupported):
                     return IsDynamicCodeSupported;

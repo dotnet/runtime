@@ -13,16 +13,17 @@ namespace LibraryImportGenerator.UnitTests
 {
     public class AdditionalAttributesOnStub
     {
-        [ConditionalFact]
+        [Fact]
         public async Task SkipLocalsInitAdded()
         {
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method();
 }
 
@@ -31,6 +32,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -45,14 +47,14 @@ struct Native
             Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SkipLocalsInitNotAddedOnForwardingStub()
         {
             string source = @"
 using System.Runtime.InteropServices;
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial void Method();
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -64,16 +66,17 @@ partial class C
             Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GeneratedCodeAdded()
         {
             string source = @"
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 [assembly:DisableRuntimeMarshalling]
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method();
 }
 
@@ -82,6 +85,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -96,14 +100,14 @@ struct Native
             Assert.Contains(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(System.CodeDom.Compiler.GeneratedCodeAttribute).FullName);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task GeneratedCodeNotAddedOnForwardingStub()
         {
             string source = @"
 using System.Runtime.InteropServices;
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial void Method();
 }";
             Compilation comp = await TestUtils.CreateCompilation(source);
@@ -125,16 +129,17 @@ partial class C
             yield return new object[] { TestTargetFramework.Framework, false };
         }
 
-        [ConditionalTheory]
+        [Theory]
         [MemberData(nameof(GetDownlevelTargetFrameworks))]
+        [OuterLoop("Uses the network for downlevel ref packs")]
         public async Task SkipLocalsInitOnDownlevelTargetFrameworks(TestTargetFramework targetFramework, bool expectSkipLocalsInit)
         {
             string source = $@"
 using System.Runtime.InteropServices;
-{CodeSnippets.GeneratedDllImportAttributeDeclaration}
+{CodeSnippets.LibraryImportAttributeDeclaration}
 partial class C
 {{
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     [return: MarshalAs(UnmanagedType.Bool)]
     public static partial bool Method();
 }}";
@@ -154,16 +159,17 @@ partial class C
             }
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SkipLocalsInitNotAddedWhenDefinedAtModuleLevel()
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.CompilerServices;
 [module:SkipLocalsInit]
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method();
 }
 
@@ -172,6 +178,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -186,16 +193,17 @@ struct Native
             Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SkipLocalsInitNotAddedWhenDefinedAtClassLevel()
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.CompilerServices;
 [SkipLocalsInit]
 partial class C
 {
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method();
 }
 
@@ -204,6 +212,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }
@@ -218,16 +227,17 @@ struct Native
             Assert.DoesNotContain(stubMethod.GetAttributes(), attr => attr.AttributeClass!.ToDisplayString() == typeof(SkipLocalsInitAttribute).FullName);
         }
 
-        [ConditionalFact]
+        [Fact]
         public async Task SkipLocalsInitNotAddedWhenDefinedOnMethodByUser()
         {
             string source = @"
 using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 using System.Runtime.CompilerServices;
 partial class C
 {
     [SkipLocalsInit]
-    [GeneratedDllImportAttribute(""DoesNotExist"")]
+    [LibraryImportAttribute(""DoesNotExist"")]
     public static partial S Method();
 }
 
@@ -236,6 +246,7 @@ struct S
 {
 }
 
+[CustomTypeMarshaller(typeof(S))]
 struct Native
 {
     public Native(S s) { }

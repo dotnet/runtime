@@ -13,13 +13,13 @@ internal static partial class Interop
         {
             internal static readonly bool CanGetSetPipeSz = (FcntlCanGetSetPipeSz() != 0);
 
-            [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlGetPipeSz", SetLastError=true)]
+            [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlGetPipeSz", SetLastError=true)]
             internal static partial int GetPipeSz(SafePipeHandle fd);
 
-            [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetPipeSz", SetLastError=true)]
+            [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlSetPipeSz", SetLastError=true)]
             internal static partial int SetPipeSz(SafePipeHandle fd, int size);
 
-            [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlCanGetSetPipeSz")]
+            [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_FcntlCanGetSetPipeSz")]
             [SuppressGCTransition]
             private static partial int FcntlCanGetSetPipeSz();
         }

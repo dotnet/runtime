@@ -12,8 +12,10 @@ namespace System.Security.Cryptography
 {
     internal static class XmlKeyHelper
     {
-        internal static ParseState ParseDocument(string xmlString!!)
+        internal static ParseState ParseDocument(string xmlString)
         {
+            ArgumentNullException.ThrowIfNull(xmlString);
+
             try
             {
                 return ParseState.ParseDocument(xmlString);
@@ -115,7 +117,7 @@ namespace System.Security.Cryptography
                 start++;
             }
 
-            WriteCryptoBinary(name, valBuf.Slice(start, valBuf.Length - start), builder);
+            WriteCryptoBinary(name, valBuf.Slice(start), builder);
         }
 
         internal static void WriteCryptoBinary(string name, ReadOnlySpan<byte> value, StringBuilder builder)

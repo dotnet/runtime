@@ -4,14 +4,14 @@
 using System;
 using System.Runtime.InteropServices;
 #if NET7_0_OR_GREATER
-using System.Runtime.InteropServices.GeneratedMarshalling;
+using System.Runtime.InteropServices.Marshalling;
 #endif
 
 internal static partial class Interop
 {
     internal static partial class Shell32
     {
-        [GeneratedDllImport(Libraries.Shell32, EntryPoint = "ExtractAssociatedIconW")]
+        [LibraryImport(Libraries.Shell32, EntryPoint = "ExtractAssociatedIconW")]
         internal static unsafe partial IntPtr ExtractAssociatedIcon(
 #if NET7_0_OR_GREATER
             [MarshalUsing(typeof(HandleRefMarshaller))]

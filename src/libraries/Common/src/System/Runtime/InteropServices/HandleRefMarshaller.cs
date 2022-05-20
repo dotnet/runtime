@@ -3,9 +3,9 @@
 
 #nullable enable
 
-
-namespace System.Runtime.InteropServices.GeneratedMarshalling
+namespace System.Runtime.InteropServices.Marshalling
 {
+    [CustomTypeMarshaller(typeof(HandleRef), Direction = CustomTypeMarshallerDirection.In, Features = CustomTypeMarshallerFeatures.UnmanagedResources | CustomTypeMarshallerFeatures.TwoStageMarshalling)]
     internal struct HandleRefMarshaller
     {
         private HandleRef _handle;
@@ -15,7 +15,7 @@ namespace System.Runtime.InteropServices.GeneratedMarshalling
             _handle = handle;
         }
 
-        public IntPtr Value => _handle.Handle;
+        public IntPtr ToNativeValue() => _handle.Handle;
 
         public void FreeNative() => GC.KeepAlive(_handle.Wrapper);
     }

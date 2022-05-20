@@ -36,18 +36,14 @@ G_EXTERN_C void mini_llvmonly_throw_nullref_exception (void);
 
 G_EXTERN_C void mini_llvmonly_throw_aot_failed_exception (const char *name);
 
-G_EXTERN_C void mini_llvmonly_pop_lmf (MonoLMF *lmf);
-
 G_EXTERN_C void mini_llvmonly_interp_entry_gsharedvt (gpointer imethod, gpointer res, gpointer *args);
 
 /* These are implemented in mini-exceptions.c */
 G_EXTERN_C void mini_llvmonly_throw_exception       (MonoObject *ex);
 G_EXTERN_C void mini_llvmonly_rethrow_exception     (MonoObject *ex);
 G_EXTERN_C void mini_llvmonly_throw_corlib_exception (guint32 ex_token_index);
-G_EXTERN_C void mini_llvmonly_resume_exception      (void);
 G_EXTERN_C void mini_llvmonly_resume_exception_il_state (MonoLMF *lmf, gpointer info);
 G_EXTERN_C MonoObject *mini_llvmonly_load_exception (void);
 G_EXTERN_C void mini_llvmonly_clear_exception       (void);
-G_EXTERN_C gint32 mini_llvmonly_match_exception     (MonoJitInfo *jinfo, guint32 region_start, guint32 region_end, gpointer rgctx, MonoObject *this_obj);
 
 #endif

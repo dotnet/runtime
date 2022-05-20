@@ -51,7 +51,7 @@ namespace BasicEventSourceTests
 
                     string message = _event.PayloadString(0, "message");
                     // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_Bad_Type_ByteArray: Unsupported type Byte[] in event source. "
-                    Assert.Matches("Unsupported type", message);
+                    Assert.Contains("Unsupported type", message);
                 }
             }
             finally
@@ -126,7 +126,7 @@ namespace BasicEventSourceTests
             Debug.WriteLine(string.Format("Message=\"{0}\"", message));
             // expected message: "ERROR: Exception in Command Processing for EventSource BadEventSource_MismatchedIds: Event Event2 was assigned event ID 2 but 1 was passed to WriteEvent. "
             if (!PlatformDetection.IsNetFramework) // .NET Framework has typo
-                Assert.Matches("Event Event2 was assigned event ID 2 but 1 was passed to WriteEvent", message);
+                Assert.Contains("Event Event2 was assigned event ID 2 but 1 was passed to WriteEvent", message);
 
             // Validate the details of the EventWrittenEventArgs object
             if (_event is EventListenerListener.EventListenerEvent elEvent)
@@ -158,46 +158,28 @@ namespace BasicEventSourceTests
 #if true
             Debug.WriteLine("Test disabled because the fix it tests is not in CoreCLR yet.");
 #else
-            BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter bes = null;
-            EventListenerListener listener = null;
-            try
+            Guid oldGuid;
+            Guid newGuid = Guid.NewGuid();
+            Guid newGuid2 = Guid.NewGuid();
+            EventSource.SetCurrentThreadActivityId(newGuid, out oldGuid);
+
+            using (var bes = new BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter())
+            using (var listener = new EventListenerListener())
             {
-                Guid oldGuid;
-                Guid newGuid = Guid.NewGuid();
-                Guid newGuid2 = Guid.NewGuid();
-                EventSource.SetCurrentThreadActivityId(newGuid, out oldGuid);
+                var events = new List<Event>();
+                listener.OnEvent = delegate (Event data) { events.Add(data); };
 
-                bes = new BadEventSource_IncorrectWriteRelatedActivityIDFirstParameter();
+                listener.EventSourceCommand(bes.Name, EventCommand.Enable);
 
-                using (var listener = new EventListenerListener())
-                {
-                    var events = new List<Event>();
-                    listener.OnEvent = delegate (Event data) { events.Add(data); };
+                bes.RelatedActivity(newGuid2, "Hello", 42, "AA", "BB");
 
-                    listener.EventSourceCommand(bes.Name, EventCommand.Enable);
-
-                    bes.RelatedActivity(newGuid2, "Hello", 42, "AA", "BB");
-
-                    // Confirm that we get exactly one event from this whole process, that has the error message we expect.
-                    Assert.Equal(1, events.Count);
-                    Event _event = events[0];
-                    Assert.Equal("EventSourceMessage", _event.EventName);
-                    string message = _event.PayloadString(0, "message");
-                    // expected message: "EventSource expects the first parameter of the Event method to be of type Guid and to be named "relatedActivityId" when calling WriteEventWithRelatedActivityId."
-                    Assert.True(Regex.IsMatch(message, "EventSource expects the first parameter of the Event method to be of type Guid and to be named \"relatedActivityId\" when calling WriteEventWithRelatedActivityId."));
-                }
-            }
-            finally
-            {
-                if (bes != null)
-                {
-                    bes.Dispose();
-                }
-
-                if (listener != null)
-                {
-                    listener.Dispose();
-                }
+                // Confirm that we get exactly one event from this whole process, that has the error message we expect.
+                Assert.Equal(1, events.Count);
+                Event _event = events[0];
+                Assert.Equal("EventSourceMessage", _event.EventName);
+                string message = _event.PayloadString(0, "message");
+                // expected message: "EventSource expects the first parameter of the Event method to be of type Guid and to be named "relatedActivityId" when calling WriteEventWithRelatedActivityId."
+                Assert.Contains("EventSource expects the first parameter of the Event method to be of type Guid and to be named \"relatedActivityId\" when calling WriteEventWithRelatedActivityId.", message);
             }
 #endif
         }

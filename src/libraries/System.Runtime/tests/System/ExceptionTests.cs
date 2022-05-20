@@ -78,7 +78,7 @@ namespace System.Tests
 
             Assert.True(caught);
         }
-        
+
         static void RethrowException()
         {
             try
@@ -136,7 +136,7 @@ namespace System.Tests
             }
         }
 
-        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))] 
+        [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotArm64Process))]
         // [ActiveIssue(https://github.com/dotnet/runtime/issues/1871)] can't use ActiveIssue for archs
         [ActiveIssue("https://github.com/mono/mono/issues/15141", TestRuntimes.Mono)]
         public static void ThrowStatementDoesNotResetExceptionStackLineOtherMethod()
@@ -198,7 +198,7 @@ namespace System.Tests
                     var match = Regex.Match(frame, frameParserRegex);
                     Assert.True(match.Success);
                     Assert.Equal(expectedStackFrame.CallerMemberName, match.Groups["memberName"].Value);
-                    
+
                     if (PlatformDetection.IsLineNumbersSupported)
                     {
                         Assert.Equal(expectedStackFrame.SourceFilePath, match.Groups["filePath"].Value);

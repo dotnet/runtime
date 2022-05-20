@@ -1735,15 +1735,18 @@ CLR_ENGINE_METRICS g_CLREngineMetrics = {
     CorDebugVersion_4_0,
     &g_hContinueStartupEvent};
 
-#define StartupNotifyEventNamePrefix W("TelestoStartupEvent_")
-const int cchEventNameBufferSize = sizeof(StartupNotifyEventNamePrefix)/sizeof(WCHAR) + 8; // + hex DWORD (8).  NULL terminator is included in sizeof(StartupNotifyEventNamePrefix)
 HANDLE OpenStartupNotificationEvent()
 {
-    DWORD debuggeePID = GetCurrentProcessId();
-    WCHAR szEventName[cchEventNameBufferSize];
-    swprintf_s(szEventName, cchEventNameBufferSize, StartupNotifyEventNamePrefix W("%08x"), debuggeePID);
+    // "Telesto" is the legacy name for the start up event. Changing this name
+    // would impact multiple repos and not worth the effort at present.
+    // This event is used by https://github.com/dotnet/diagnostics/blob/main/src/dbgshim/dbgshim.cpp
+    WCHAR prefix[] = W("TelestoStartupEvent_");
+    WCHAR eventName[ARRAY_SIZE(prefix) + Max32BitHexString] = { W('\0') };
+    wcscat_s(eventName, ARRAY_SIZE(eventName), prefix);
 
-    return WszOpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, szEventName);
+    DWORD debuggeePID = GetCurrentProcessId();
+    FormatInteger(eventName + ARRAY_SIZE(prefix) - 1, ARRAY_SIZE(eventName) - ARRAY_SIZE(prefix), "%08x", debuggeePID);
+    return WszOpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, eventName);
 }
 
 void NotifyDebuggerOfStartup()
@@ -2665,37 +2668,37 @@ DebuggerJitInfo *Debugger::GetJitInfo(MethodDesc *fd, const BYTE *pbAddr, Debugg
 // Internal worker to GetJitInfo. Doesn't validate parameters.
 DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, DebuggerMethodInfo **pMethInfo)
 {
+    CONTRACTL
+    {
+        THROWS;
+        GC_NOTRIGGER;
+        PRECONDITION(!g_pDebugger->HasDebuggerDataLock());
+    }
+    CONTRACTL_END;
 
     DebuggerMethodInfo *dmi = NULL;
     DebuggerJitInfo *dji = NULL;
 
-    // If we have a null MethodDesc - we're not going to get a jit-info. Do this check once at the top
-    // rather than littered throughout the rest of this function.
-    if (fd == NULL)
-    {
-        LOG((LF_CORDB, LL_EVERYTHING, "Debugger::GetJitInfo, addr=0x%p - null fd - returning null\n", pbAddr));
-        return NULL;
-    }
-    else
-    {
-        CONSISTENCY_CHECK_MSGF(!fd->IsWrapperStub(), ("Can't get Jit-info for wrapper MDesc,'%s'", fd->m_pszDebugMethodName));
-    }
-
-    // The debugger doesn't track Lightweight-codegen methods b/c they have no metadata.
-    if (fd->IsDynamicMethod())
-    {
-        return NULL;
-    }
-
-
-    // initialize our out param
     if (pMethInfo)
     {
         *pMethInfo = NULL;
     }
 
-    LOG((LF_CORDB, LL_EVERYTHING, "Debugger::GetJitInfo called\n"));
-    //    CHECK_DJI_TABLE_DEBUGGER;
+    // If we have a null MethodDesc - we're not going to get a jit-info. Do this check once at the top
+    // rather than littered throughout the rest of this function.
+    if (fd == NULL)
+    {
+        LOG((LF_CORDB, LL_EVERYTHING, "D::GJIW: addr=0x%p - null fd - returning null\n", pbAddr));
+        return NULL;
+    }
+
+    CONSISTENCY_CHECK_MSGF(!fd->IsWrapperStub(), ("Can't get Jit-info for wrapper MDesc,'%s'", fd->m_pszDebugMethodName));
+
+    // The debugger doesn't track dynamic methods b/c they have no metadata.
+    if (fd->IsDynamicMethod())
+    {
+        return NULL;
+    }
 
     // Find the DJI via the DMI
     //
@@ -2704,80 +2707,56 @@ DebuggerJitInfo *Debugger::GetJitInfoWorker(MethodDesc *fd, const BYTE *pbAddr, 
     // struct.  After all, we never want to have a MethodInfo in the table without an
     // associated JitInfo, and this should bring us back very close to the old situation
     // in terms of perf.  But correctness comes first, and perf later...
-    //        CHECK_DMI_TABLE;
     dmi = GetOrCreateMethodInfo(fd->GetModule(), fd->GetMemberDef());
-
     if (dmi == NULL)
     {
         // If we can't create the DMI, we won't be able to create the DJI.
         return NULL;
     }
 
-    // TODO: Currently, this method does not handle code versioning properly (at least in some profiler scenarios), it may need
-    // to take pbAddr into account and lazily create a DJI for that particular version of the method.
-
-    // This may take the lock and lazily create an entry, so we do it up front.
-    dji = dmi->GetLatestJitInfo(fd);
-
-
-    DebuggerDataLockHolder debuggerDataLockHolder(this);
-
-    // Note the call to GetLatestJitInfo() will lazily create the first DJI if we don't already have one.
-    for (; dji != NULL; dji = dji->m_prevJitInfo)
+    if (pbAddr == NULL)
     {
-        if (PTR_TO_TADDR(dji->m_nativeCodeVersion.GetMethodDesc()) == PTR_HOST_TO_TADDR(fd))
-        {
-            break;
-        }
+        dji = dmi->GetLatestJitInfo(fd);
     }
-
-    LOG((LF_CORDB, LL_INFO1000, "D::GJI: for md:0x%p (%s::%s), got dmi:0x%p, dji:0x%p, latest dji:0x%p, latest fd:0x%p, prev dji:0x%p\n",
-        fd, fd->m_pszDebugClassName, fd->m_pszDebugMethodName,
-        dmi, dji, (dmi ? dmi->GetLatestJitInfo_NoCreate() : 0),
-        ((dmi && dmi->GetLatestJitInfo_NoCreate()) ? dmi->GetLatestJitInfo_NoCreate()->m_nativeCodeVersion.GetMethodDesc():0),
-        (dji?dji->m_prevJitInfo:0)));
-
-    if ((dji != NULL) && (pbAddr != NULL))
-    {
-        dji = dji->GetJitInfoByAddress(pbAddr);
-
-        // XXX Microsoft - dac doesn't support stub tracing
-        // so this just results in not-impl exceptions.
 #ifndef DACCESS_COMPILE
-        if (dji == NULL) //may have been given address of a thunk
+    else
+    {
+        PCODE startAddr = g_pEEInterface->GetNativeCodeStartAddress((PCODE)pbAddr);
+        if (startAddr == NULL)
         {
-            LOG((LF_CORDB,LL_INFO1000,"Couldn't find a DJI by address 0x%p, "
+            LOG((LF_CORDB,LL_INFO1000,"D::GJIW: Couldn't find a DJI by address 0x%p, "
                 "so it might be a stub or thunk\n", pbAddr));
+
+            // if the address wasn't in jitted code we'll also check to see if it is a stub that leads to jitted code
             TraceDestination trace;
-
-            g_pEEInterface->TraceStub((const BYTE *)pbAddr, &trace);
-
-            if ((trace.GetTraceType() == TRACE_MANAGED) && (pbAddr != (const BYTE *)trace.GetAddress()))
+            (void)g_pEEInterface->TraceStub(pbAddr, &trace);
+            if(trace.GetTraceType() == TRACE_MANAGED && (PCODE)pbAddr != trace.GetAddress())
             {
-                LOG((LF_CORDB,LL_INFO1000,"Address thru thunk"
-                    ": 0x%p\n", trace.GetAddress()));
-                dji = GetJitInfo(fd, dac_cast<PTR_CBYTE>(trace.GetAddress()));
+                startAddr = trace.GetAddress();
+                LOG((LF_CORDB,LL_INFO1000,"D::GJIW: Address thru thunk: 0x%p\n", startAddr));
             }
 #ifdef LOGGING
             else
             {
-                _ASSERTE(trace.GetTraceType() != TRACE_UNJITTED_METHOD ||
-                    (fd == trace.GetMethodDesc()));
-                LOG((LF_CORDB,LL_INFO1000,"Address not thunked - "
+                _ASSERTE(trace.GetTraceType() != TRACE_UNJITTED_METHOD || (fd == trace.GetMethodDesc()));
+                LOG((LF_CORDB,LL_INFO1000,"D::GJIW: Address not thunked - "
                     "must be to unJITted method, or normal managed "
                     "method lacking a DJI!\n"));
             }
-#endif //LOGGING
+#endif // LOGGING
         }
-#endif // #ifndef DACCESS_COMPILE
+
+        if (startAddr != NULL)
+        {
+            dji = dmi->FindOrCreateInitAndAddJitInfo(fd, startAddr);
+        }
     }
+#endif // !DACCESS_COMPILE
 
     if (pMethInfo)
     {
         *pMethInfo = dmi;
     }
-
-    // DebuggerDataLockHolder out of scope - release implied
 
     return dji;
 }
@@ -2813,7 +2792,7 @@ DebuggerMethodInfo *Debugger::GetOrCreateMethodInfo(Module *pModule, mdMethodDef
     {
         info = CreateMethodInfo(pModule, token);
 
-        LOG((LF_CORDB, LL_INFO1000, "D::GOCMI: created DMI for mdToken:0x%x, dmi:0x%x\n",
+        LOG((LF_CORDB, LL_INFO1000, "D::GOCMI: created DMI for mdToken:0x%x, dmi:0x%p\n",
             token, info));
     }
 #endif // #ifndef DACCESS_COMPILE
@@ -3093,12 +3072,12 @@ CodeRegionInfo CodeRegionInfo::GetCodeRegionInfo(DebuggerJitInfo *dji, MethodDes
 
     if (dji && dji->m_addrOfCode)
     {
-        LOG((LF_CORDB, LL_EVERYTHING, "CRI::GCRI: simple case\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: simple case: CodeRegionInfo* 0x%p\n", &dji->m_codeRegionInfo));
         return dji->m_codeRegionInfo;
     }
     else
     {
-        LOG((LF_CORDB, LL_EVERYTHING, "CRI::GCRI: more complex case\n"));
+        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: more complex case\n"));
         CodeRegionInfo codeRegionInfo;
 
         // Use method desc from dji if present
@@ -3119,6 +3098,7 @@ CodeRegionInfo CodeRegionInfo::GetCodeRegionInfo(DebuggerJitInfo *dji, MethodDes
                      (addr == dac_cast<PTR_CORDB_ADDRESS_TYPE>(g_pEEInterface->GetFunctionAddress(md))));
         }
 
+        LOG((LF_CORDB, LL_INFO10000, "CRI::GCRI: Initializing CodeRegionInfo from 0x%p, md=0x%p\n", addr, md));
         if (addr)
         {
             PCODE pCode = PINSTRToPCODE(dac_cast<TADDR>(addr));
@@ -4064,11 +4044,13 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
     mdSignature mdLocalSig = (decoderOldIL.GetLocalVarSigTok()) ? (decoderOldIL.GetLocalVarSigTok()):
                                                                   (mdSignatureNil);
 
+    PCCOR_SIGNATURE pLocalSig = NULL;
+    ULONG cbLocalSigSize = 0;
+
     PCCOR_SIGNATURE pCallSig;
     DWORD cbCallSigSize;
 
     pMD->GetSig(&pCallSig, &cbCallSigSize);
-
     if (pCallSig != NULL)
     {
         // Yes, we do need to pass in the text because this might be generic function!
@@ -4102,18 +4084,15 @@ GetSetFrameHelper::Init(MethodDesc *pMD)
     }
 
     // allocation of pArgSig succeeded
-    ULONG cbSig;
-    PCCOR_SIGNATURE pLocalSig;
-    pLocalSig = NULL;
     if (mdLocalSig != mdSignatureNil)
     {
-        IfFailGo(pMD->GetModule()->GetMDImport()->GetSigFromToken(mdLocalSig, &cbSig, &pLocalSig));
+        IfFailGo(pMD->GetModule()->GetMDImport()->GetSigFromToken(mdLocalSig, &cbLocalSigSize, &pLocalSig));
     }
     if (pLocalSig != NULL)
     {
         SigTypeContext tmpContext(pMD);
         pLocSig = new (interopsafe, nothrow) MetaSig(pLocalSig,
-                                                     cbSig,
+                                                     cbLocalSigSize,
                                                      pMD->GetModule(),
                                                      &tmpContext,
                                                      MetaSig::sigLocalVars);
@@ -5647,7 +5626,7 @@ void Debugger::TraceCall(const BYTE *code)
         EX_TRY
         {
             // Since we have a try catch and the debugger code can deal properly with
-            // faults occuring inside DebuggerController::DispatchTraceCall, we can safely
+            // faults occurring inside DebuggerController::DispatchTraceCall, we can safely
             // establish a FAULT_NOT_FATAL region. This is required since some callers can't
             // tolerate faults.
             FAULT_NOT_FATAL();
@@ -6653,6 +6632,8 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM64;
+#elif defined(TARGET_LOONGARCH64)
+    s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unknown processor.
 #endif
@@ -6887,8 +6868,6 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
 
     StackSString strDbgCommand;
     const WCHAR * wszDbgCommand = NULL;
-    SString strCurrentDir;
-    const WCHAR * wszCurrentDir = NULL;
 
     EX_TRY
     {
@@ -6901,9 +6880,6 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
             _ASSERTE(wszDbgCommand != NULL); // would have thrown on oom.
 
             LOG((LF_CORDB, LL_INFO10000, "D::EDA: launching with command [%S]\n", wszDbgCommand));
-
-            ClrGetCurrentDirectory(strCurrentDir);
-            wszCurrentDir = strCurrentDir.GetUnicode();
         }
     }
     EX_CATCH
@@ -6925,7 +6901,8 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
                                NULL, NULL,
                                TRUE,
                                CREATE_NEW_CONSOLE,
-                               NULL, wszCurrentDir,
+                               NULL,
+                               NULL,
                                &startupInfo,
                                pProcessInfo);
         errCreate = GetLastError();
@@ -6969,6 +6946,18 @@ BOOL Debugger::PreJitAttach(BOOL willSendManagedEvent, BOOL willLaunchDebugger, 
     CONTRACTL_END;
 
     LOG( (LF_CORDB, LL_INFO10000, "D::PreJA: Entering\n") );
+
+    if (m_fShutdownMode)
+    {
+        // Trying to JitAttach because of some failure at shutdown is likely to block because we
+        // would suspend any thread that isn't the finalizer or debugger helper thread when it tries to
+        // take the debugger lock below. By bailing out here we won't do the JitAttach as we normally
+        // would, but at least the app should exit with an unhandled exception or FailFast rather
+        // entering a hung state. We believe this is very rare scenario so mitigating the problem in
+        // this way is sufficient.
+        LOG( (LF_CORDB, LL_INFO10000, "D::PreJA: Leaving - shutdown case\n") );
+        return FALSE;
+    }
 
     // Multiple threads may be calling this, so need to take the lock.
     if(!m_jitAttachInProgress)
@@ -8945,7 +8934,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
     }
     else if (dbgAction == ATTACH_TERMINATE)
     {
-        // ATTACH_TERMINATE indicates the the user wants to terminate the app.
+        // ATTACH_TERMINATE indicates the user wants to terminate the app.
         LOG((LF_CORDB, LL_INFO10000, "D::SUB: terminating this process due to user request\n"));
 
         // Should this go through the host?
@@ -10533,7 +10522,7 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                 // If we haven't been either JITted or EnC'd yet, then
                 // we'll put a patch in by offset, implicitly relative
                 // to the first version of the code.
-
+                fSuccess = FALSE;
                 pDebuggerBP = new (interopsafe, nothrow) DebuggerBreakpoint(pModule,
                                                                             pEvent->BreakpointData.funcMetadataToken,
                                                                             pEvent->vmAppDomain.GetRawPtr(),
@@ -11134,12 +11123,14 @@ bool Debugger::HandleIPCEvent(DebuggerIPCEvent * pEvent)
                         objectHandle = pAppDomain->CreatePinningHandle(objref);
                         break;
                     default:
+                        objectHandle = NULL;
                         pEvent->hr = E_INVALIDARG;
                     }
-                 }
-                 if (SUCCEEDED(pEvent->hr))
-                 {
-                    pEvent->CreateHandleResult.vmObjectHandle.SetRawPtr(objectHandle);
+
+                    if (SUCCEEDED(pEvent->hr))
+                    {
+                        pEvent->CreateHandleResult.vmObjectHandle.SetRawPtr(objectHandle);
+                    }
                  }
              }
 
@@ -13533,6 +13524,9 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp,
         pContext->EFlags));
+#elif defined(TARGET_LOONGARCH64)
+    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p\n",
+        tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp));
 #endif
 
     // This memory is used as IPC during the hijack. We will place a pointer to this in
@@ -13949,7 +13943,7 @@ DWORD Debugger::GetHelperThreadID(void )
 
 
 // HRESULT Debugger::InsertToMethodInfoList():  Make sure
-//  that there's only one head of the the list of DebuggerMethodInfos
+//  that there's only one head of the list of DebuggerMethodInfos
 //  for the (implicitly) given MethodDef/Module pair.
 HRESULT
 Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
@@ -13961,7 +13955,7 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
     }
     CONTRACTL_END;
 
-    LOG((LF_CORDB,LL_INFO10000,"D:IAHOL DMI: dmi:0x%08x\n", dmi));
+    LOG((LF_CORDB,LL_INFO10000,"D:IAHOL DMI: dmi:0x%p\n", dmi));
 
     HRESULT hr = S_OK;
 
@@ -13981,7 +13975,7 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
 
     _ASSERTE((dmiPrev == NULL) || ((dmi->m_token == dmiPrev->m_token) && (dmi->m_module == dmiPrev->m_module)));
 
-    LOG((LF_CORDB,LL_INFO10000,"D:IAHOL: current head of dmi list:0x%08x\n",dmiPrev));
+    LOG((LF_CORDB,LL_INFO10000,"D:IAHOL: current head of dmi list:0x%p\n",dmiPrev));
 
     if (dmiPrev != NULL)
     {
@@ -14006,7 +14000,7 @@ Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
     }
 #ifdef _DEBUG
     dmiPrev = m_pMethodInfos->GetMethodInfo(dmi->m_module, dmi->m_token);
-    LOG((LF_CORDB,LL_INFO10000,"D:IAHOL: new head of dmi list:0x%08x\n",
+    LOG((LF_CORDB,LL_INFO10000,"D:IAHOL: new head of dmi list:0x%p\n",
         dmiPrev));
 #endif //_DEBUG
 
@@ -14137,7 +14131,7 @@ void Debugger::SendMDANotification(
     DebuggerIPCControlBlock *pDCB = m_pRCThread->GetDCB();
 
 
-    // If the MDA is ocuring very early in startup before the DCB is setup, then bail.
+    // If the MDA is occurring very early in startup before the DCB is setup, then bail.
     if (pDCB == NULL)
     {
         return;
@@ -14255,7 +14249,7 @@ void Debugger::SendLogMessage(int iLevel,
     LOG((LF_CORDB, LL_INFO10000, "D::SLM: Sending log message.\n"));
 
     // Send the message only if the debugger is attached to this appdomain.
-    // Note the the debugger may detach at any time, so we'll have to check
+    // Note the debugger may detach at any time, so we'll have to check
     // this again after we get the lock.
     AppDomain *pAppDomain = g_pEEInterface->GetThread()->GetDomain();
 
@@ -14406,7 +14400,7 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
     LOG((LF_CORDB, LL_INFO10000, "D::SLM: Sending log message.\n"));
 
     // Send the message only if the debugger is attached to this appdomain.
-    // Note the the debugger may detach at any time, so we'll have to check
+    // Note the debugger may detach at any time, so we'll have to check
     // this again after we get the lock.
     if (!CORDebuggerAttached())
     {
@@ -16563,10 +16557,15 @@ void DebuggerHeap::Free(void *pMem)
 }
 
 #ifndef DACCESS_COMPILE
-
-
-// Undef this so we can call them from the EE versions.
-#undef UtilMessageBoxVA
+// forward declare for specific type needed.
+int UtilMessageBoxVA(
+        HWND hWnd,        // Handle to Owner Window
+        UINT uText,       // Resource Identifier for Text message
+        UINT uCaption,    // Resource Identifier for Caption
+        UINT uType,       // Style of MessageBox
+        BOOL displayForNonInteractive,    // Display even if the process is running non interactive
+        BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
+        va_list args);    // Additional Arguments
 
 // Message box API for the left side of the debugger. This API handles calls from the
 // debugger helper thread as well as from normal EE threads. It is the only one that
@@ -16601,9 +16600,6 @@ int Debugger::MessageBox(
 
     return result;
 }
-
-// Redefine this to an error just in case code is added after this point in the file.
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
 
 #else // DACCESS_COMPILE
 void

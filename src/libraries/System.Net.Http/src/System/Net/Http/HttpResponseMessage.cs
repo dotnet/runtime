@@ -207,7 +207,7 @@ namespace System.Net.Http
             return sb.ToString();
         }
 
-        private bool ContainsNewLineCharacter(string value)
+        private static bool ContainsNewLineCharacter(string value)
         {
             foreach (char character in value)
             {

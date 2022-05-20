@@ -7,12 +7,10 @@ set(BINDER_COMMON_SOURCES
     applicationcontext.cpp
     assembly.cpp
     assemblybindercommon.cpp
-    assemblyidentitycache.cpp
     assemblyname.cpp
     bindertracing.cpp
     defaultassemblybinder.cpp
     failurecache.cpp
-    stringlexer.cpp
     textualidentityparser.cpp
     utils.cpp
 )
@@ -26,7 +24,6 @@ set(BINDER_COMMON_HEADERS
     inc/assemblyentry.hpp
     inc/assemblyhashtraits.hpp
     inc/assemblyidentity.hpp
-    inc/assemblyidentitycache.hpp
     inc/assemblyname.hpp
     inc/assemblyname.inl
     inc/assemblyversion.hpp
@@ -40,8 +37,6 @@ set(BINDER_COMMON_HEADERS
     inc/failurecachehashtraits.hpp
     inc/loadcontext.hpp
     inc/loadcontext.inl
-    inc/stringlexer.hpp
-    inc/stringlexer.inl
     inc/textualidentityparser.hpp
     inc/utils.hpp
 )

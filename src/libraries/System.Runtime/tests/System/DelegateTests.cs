@@ -163,7 +163,7 @@ namespace System.Tests
         }
 
         [Theory]
-        [InlineData(7, (short)7)] // uint -> int
+        [InlineData(7, (short)7)] // short -> int
         [InlineData(7, IntEnum.Seven)] // Enum (int) -> int
         [InlineData(7, ShortEnum.Seven)] // Enum (short) -> int
         public static void DynamicInvoke_ValuePreservingPrimitiveWidening_Succeeds(object o1, object o2)

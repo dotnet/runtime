@@ -30,7 +30,7 @@ namespace System
         // We also need to invalidate these values when certain signals occur.
         // We don't want to take the lock in the signal handling thread for this.
         // Instead, we set a flag. Before reading a cached value, a call to CheckTerminalSettingsInvalidated
-        // will invalidate the cached values if a signal has occured.
+        // will invalidate the cached values if a signal has occurred.
         private static int s_cursorVersion; // Gets incremented each time the cursor position changed.
                                             // Used to synchronize between lock (Console.Out) blocks.
         private static int s_cursorLeft;    // Cached CursorLeft, -1 when invalid.
@@ -506,9 +506,9 @@ namespace System
                     StdInReader r = StdInReader.Inner;
                     int escPos, bracketPos, semiPos, rPos;
                     if (!AppendToStdInReaderUntil(Esc, r, readBytes, ref readBytesPos, out escPos) ||
-                        !BufferUntil((byte)'[', r, ref readBytes, ref readBytesPos, out bracketPos) ||
-                        !BufferUntil((byte)';', r, ref readBytes, ref readBytesPos, out semiPos) ||
-                        !BufferUntil((byte)'R', r, ref readBytes, ref readBytesPos, out rPos))
+                        !BufferUntil((byte)'[', ref readBytes, ref readBytesPos, out bracketPos) ||
+                        !BufferUntil((byte)';', ref readBytes, ref readBytesPos, out semiPos) ||
+                        !BufferUntil((byte)'R', ref readBytes, ref readBytesPos, out rPos))
                     {
                         // We were unable to read everything from stdin, e.g. a timeout occurred.
                         // Since we couldn't get the complete CPR, transfer any bytes we did read
@@ -562,14 +562,14 @@ namespace System
                     s_firstCursorPositionRequest = false;
                 }
 
-                static unsafe bool BufferUntil(byte toFind, StdInReader src, ref Span<byte> dst, ref int dstPos, out int foundPos)
+                static unsafe bool BufferUntil(byte toFind, ref Span<byte> dst, ref int dstPos, out int foundPos)
                 {
                     // Loop until we find the target byte.
                     while (true)
                     {
                         // Read the next byte from stdin.
                         byte b;
-                        if (src.ReadStdin(&b, 1) != 1)
+                        if (System.IO.StdInReader.ReadStdin(&b, 1) != 1)
                         {
                             foundPos = -1;
                             return false;
@@ -602,7 +602,7 @@ namespace System
                     {
                         // Read the next byte from stdin.
                         byte b;
-                        if (reader.ReadStdin(&b, 1) != 1)
+                        if (System.IO.StdInReader.ReadStdin(&b, 1) != 1)
                         {
                             foundPos = -1;
                             return false;
@@ -629,7 +629,7 @@ namespace System
                     for (int i = startExclusive + 1; i < endExclusive; i++)
                     {
                         byte b = source[i];
-                        if (IsDigit(b))
+                        if (char.IsAsciiDigit((char)b))
                         {
                             try
                             {
@@ -674,9 +674,6 @@ namespace System
         {
             throw new PlatformNotSupportedException();
         }
-
-        /// <summary>Gets whether the specified character is a digit 0-9.</summary>
-        private static bool IsDigit(byte c) => c >= '0' && c <= '9';
 
         /// <summary>
         /// Gets whether the specified file descriptor was redirected.

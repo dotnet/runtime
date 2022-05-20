@@ -8,7 +8,7 @@ internal static partial class Interop
 {
     internal static partial class Gdi32
     {
-        [GeneratedDllImport(Libraries.Gdi32)]
+        [LibraryImport(Libraries.Gdi32)]
         public static partial int SaveDC(IntPtr hdc);
 
         public static int SaveDC(HandleRef hdc)

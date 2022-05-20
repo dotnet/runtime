@@ -155,8 +155,6 @@ unsigned Compiler::getSIMDInitTempVarNum(var_types simdType)
 //         product.
 CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeHnd, unsigned* sizeBytes /*= nullptr */)
 {
-    assert(supportSIMDTypes());
-
     if (m_simdHandleCache == nullptr)
     {
         if (impInlineInfo == nullptr)
@@ -299,8 +297,9 @@ CorInfoType Compiler::getBaseJitTypeAndSizeOfSIMDType(CORINFO_CLASS_HANDLE typeH
             WCHAR  className[256] = {0};
             WCHAR* pbuf           = &className[0];
             int    len            = ArrLen(className);
-            info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, true, false, false);
-            noway_assert(pbuf < &className[256]);
+            int    outlen = info.compCompHnd->appendClassName((char16_t**)&pbuf, &len, typeHnd, true, false, false);
+            noway_assert(outlen >= 0);
+            noway_assert((size_t)(outlen + 1) <= ArrLen(className));
             JITDUMP("SIMD Candidate Type %S\n", className);
 
             if (wcsncmp(className, W("System.Numerics."), 16) == 0)
@@ -950,7 +949,6 @@ const SIMDIntrinsicInfo* Compiler::getSIMDIntrinsicInfo(CORINFO_CLASS_HANDLE* in
                                                         CorInfoType*          simdBaseJitType,
                                                         unsigned*             sizeBytes)
 {
-    assert(featureSIMD);
     assert(simdBaseJitType != nullptr);
     assert(sizeBytes != nullptr);
 
@@ -1488,7 +1486,7 @@ SIMDIntrinsicID Compiler::impSIMDRelOp(SIMDIntrinsicID      relOpIntrinsicId,
 //
 // Arguments:
 //    opcode     - the opcode being handled (needed to identify the CEE_NEWOBJ case)
-//    newobjThis - For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitalized object.
+//    newobjThis - For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitialized object.
 //    clsHnd    - The handle of the class of the method.
 //
 // Return Value:
@@ -1798,7 +1796,7 @@ GenTree* Compiler::createAddressNodeForSIMDInit(GenTree* tree, unsigned simdSize
 
 void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
 {
-    if (!featureSIMD || opts.OptimizationDisabled())
+    if (opts.OptimizationDisabled())
     {
         return;
     }
@@ -1872,7 +1870,7 @@ void Compiler::impMarkContiguousSIMDFieldAssignments(Statement* stmt)
 //
 // Arguments:
 //    opcode     - the opcode being handled (needed to identify the CEE_NEWOBJ case)
-//    newobjThis - For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitalized object.
+//    newobjThis - For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitialized object.
 //    clsHnd     - The handle of the class of the method.
 //    method     - The handle of the method.
 //    sig        - The call signature for the method.
@@ -1891,8 +1889,6 @@ GenTree* Compiler::impSIMDIntrinsic(OPCODE                opcode,
                                     unsigned              methodFlags,
                                     int                   memberRef)
 {
-    assert(featureSIMD);
-
     // Exit early if we are not in one of the SIMD types.
     if (!isSIMDClass(clsHnd))
     {

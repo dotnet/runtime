@@ -154,9 +154,9 @@ namespace System.Globalization
                         }
 
                         // uppercase both chars - notice that we need just one compare per char
-                        if ((uint)(valueChar - 'a') <= ('z' - 'a'))
+                        if (char.IsAsciiLetterLower(valueChar))
                             valueChar = (char)(valueChar - 0x20);
-                        if ((uint)(targetChar - 'a') <= ('z' - 'a'))
+                        if (char.IsAsciiLetterLower(targetChar))
                             targetChar = (char)(targetChar - 0x20);
 
                         if (valueChar == targetChar)
@@ -362,14 +362,17 @@ namespace System.Globalization
 
                 if (source.Length < prefix.Length)
                 {
-                    if (*b >= 0x80)
+                    int charB = *b;
+
+                    if (charB >= 0x80 || HighCharTable[charB])
                         goto InteropCall;
                     return false;
                 }
 
                 if (source.Length > prefix.Length)
                 {
-                    if (*a >= 0x80)
+                    int charA = *a;
+                    if (charA >= 0x80  || HighCharTable[charA])
                         goto InteropCall;
                 }
 
@@ -426,14 +429,18 @@ namespace System.Globalization
 
                 if (source.Length < prefix.Length)
                 {
-                    if (*b >= 0x80)
+                    int charB = *b;
+
+                    if (charB >= 0x80 || HighCharTable[charB])
                         goto InteropCall;
                     return false;
                 }
 
                 if (source.Length > prefix.Length)
                 {
-                    if (*a >= 0x80)
+                    int charA = *a;
+
+                    if (charA >= 0x80 || HighCharTable[charA])
                         goto InteropCall;
                 }
 
@@ -527,14 +534,18 @@ namespace System.Globalization
 
                 if (source.Length < suffix.Length)
                 {
-                    if (*b >= 0x80)
+                    int charB = *b;
+
+                    if (charB >= 0x80 || HighCharTable[charB])
                         goto InteropCall;
                     return false;
                 }
 
                 if (source.Length > suffix.Length)
                 {
-                    if (*a >= 0x80)
+                    int charA = *a;
+
+                    if (charA >= 0x80 || HighCharTable[charA])
                         goto InteropCall;
                 }
 
@@ -591,14 +602,18 @@ namespace System.Globalization
 
                 if (source.Length < suffix.Length)
                 {
-                    if (*b >= 0x80)
+                    int charB = *b;
+
+                    if (charB >= 0x80 || HighCharTable[charB])
                         goto InteropCall;
                     return false;
                 }
 
                 if (source.Length > suffix.Length)
                 {
-                    if (*a >= 0x80)
+                    int charA = *a;
+
+                    if (charA >= 0x80 || HighCharTable[charA])
                         goto InteropCall;
                 }
 
@@ -613,8 +628,10 @@ namespace System.Globalization
             }
         }
 
-        private unsafe SortKey IcuCreateSortKey(string source!!, CompareOptions options)
+        private unsafe SortKey IcuCreateSortKey(string source, CompareOptions options)
         {
+            ArgumentNullException.ThrowIfNull(source);
+
             Debug.Assert(!GlobalizationMode.Invariant);
             Debug.Assert(!GlobalizationMode.UseNls);
 

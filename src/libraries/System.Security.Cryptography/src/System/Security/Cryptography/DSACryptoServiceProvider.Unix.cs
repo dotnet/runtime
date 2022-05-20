@@ -226,8 +226,10 @@ namespace System.Security.Cryptography
         }
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Security", "CA5351", Justification = "This is the implementation of DSACryptoServiceProvider")]
-        public byte[] SignHash(byte[] rgbHash!!, string str)
+        public byte[] SignHash(byte[] rgbHash, string str)
         {
+            ArgumentNullException.ThrowIfNull(rgbHash);
+
             if (PublicOnly)
                 throw new CryptographicException(SR.Cryptography_CSP_NoPrivateKey);
             if (rgbHash.Length != SHA1_HASHSIZE)
@@ -243,8 +245,11 @@ namespace System.Security.Cryptography
         public bool VerifyData(byte[] rgbData, byte[] rgbSignature) =>
             _impl.VerifyData(rgbData, rgbSignature, HashAlgorithmName.SHA1);
 
-        public bool VerifyHash(byte[] rgbHash!!, string str, byte[] rgbSignature!!)
+        public bool VerifyHash(byte[] rgbHash, string str, byte[] rgbSignature)
         {
+            ArgumentNullException.ThrowIfNull(rgbHash);
+            ArgumentNullException.ThrowIfNull(rgbSignature);
+
             // For compat with Windows, no check for rgbHash.Length != SHA1_HASHSIZE
 
             // Only SHA1 allowed; the default value is SHA1
@@ -290,8 +295,10 @@ namespace System.Security.Cryptography
         /// <summary>
         /// Find whether a DSS key blob is public.
         /// </summary>
-        private static bool IsPublic(byte[] keyBlob!!)
+        private static bool IsPublic(byte[] keyBlob)
         {
+            ArgumentNullException.ThrowIfNull(keyBlob);
+
             // The CAPI DSS public key representation consists of the following sequence:
             //  - BLOBHEADER (the first byte is bType)
             //  - DSSPUBKEY or DSSPUBKEY_VER3 (the first field is the magic field)

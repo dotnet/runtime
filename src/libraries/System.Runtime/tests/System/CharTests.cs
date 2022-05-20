@@ -207,6 +207,47 @@ namespace System.Tests
             Assert.False(char.IsAscii('\x0080'));
             Assert.False(char.IsAscii(char.MaxValue));
         }
+        [Fact]
+        public static void IsAsciiDigit_Char() =>
+            IsAsciiCategory(
+                char.IsAsciiDigit,
+                UnicodeCategory.DecimalDigitNumber);
+
+        [Fact]
+        public static void IsAsciiLetter_Char() =>
+            IsAsciiCategory(
+                char.IsAsciiLetter,
+                UnicodeCategory.UppercaseLetter,
+                UnicodeCategory.LowercaseLetter);
+
+        [Fact]
+        public static void IsAsciiLetterLower_Char() =>
+            IsAsciiCategory(
+                char.IsAsciiLetterLower,
+                UnicodeCategory.LowercaseLetter);
+
+        [Fact]
+        public static void IsAsciiLetterUpper_Char() =>
+            IsAsciiCategory(
+                char.IsAsciiLetterUpper,
+                UnicodeCategory.UppercaseLetter);
+
+        [Fact]
+        public static void IsAsciiLetterOrDigit_Char() =>
+            IsAsciiCategory(
+                char.IsAsciiLetterOrDigit,
+                UnicodeCategory.UppercaseLetter,
+                UnicodeCategory.LowercaseLetter,
+                UnicodeCategory.DecimalDigitNumber);
+
+        private static void IsAsciiCategory(Func<char, bool> predicate, params UnicodeCategory[] categories)
+        {
+            foreach (char c in GetTestChars(categories))
+                Assert.Equal(char.IsAscii(c), predicate(c));
+
+            foreach (char c in GetTestCharsNotInCategory(categories))
+                Assert.False(predicate(c));
+        }
 
         [Fact]
         public static void IsControl_Char()
@@ -262,6 +303,65 @@ namespace System.Tests
             AssertExtensions.Throws<ArgumentNullException>("s", () => char.IsDigit(null, 0)); // String is null
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => char.IsDigit("abc", -1)); // Index < 0
             AssertExtensions.Throws<ArgumentOutOfRangeException>("index", () => char.IsDigit("abc", 3)); // Index >= string.Length
+        }
+
+        [Fact]
+        public static void IsAsciiHexDigit_Char() =>
+            IsAsciiHexDigit(
+                new HashSet<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'a', 'b', 'c', 'd', 'e', 'f' },
+                char.IsAsciiHexDigit);
+
+        [Fact]
+        public static void IsAsciiHexDigitLower_Char() =>
+            IsAsciiHexDigit(
+                new HashSet<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'a', 'b', 'c', 'd', 'e', 'f' },
+                char.IsAsciiHexDigitLower);
+
+        [Fact]
+        public static void IsAsciiHexDigitUpper_Char() =>
+            IsAsciiHexDigit(
+                new HashSet<char>() { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' },
+                char.IsAsciiHexDigitUpper);
+
+        private static void IsAsciiHexDigit(HashSet<char> hexDigits, Func<char, bool> predicate)
+        {
+            for (int i = 0; i < 128; i++)
+            {
+                Assert.Equal(hexDigits.Contains((char)i), predicate((char)i));
+            }
+
+            foreach (char c in hexDigits)
+            {
+                Assert.False(char.IsAsciiHexDigit((char)(c | 0xFF00)));
+            }
+        }
+
+        [Theory]
+        [InlineData('a', 'a', 'a', true)]
+        [InlineData((char)('a' - 1), 'a', 'a', false)]
+        [InlineData((char)('a' + 1), 'a', 'a', false)]
+        [InlineData('a', 'a', 'b', true)]
+        [InlineData('b', 'a', 'b', true)]
+        [InlineData((char)('a' - 1), 'a', 'b', false)]
+        [InlineData((char)('b' + 1), 'a', 'b', false)]
+        [InlineData('a', 'a', 'z', true)]
+        [InlineData('m', 'a', 'z', true)]
+        [InlineData('z', 'a', 'z', true)]
+        [InlineData((char)('a' - 1), 'a', 'z', false)]
+        [InlineData((char)('z' + 1), 'a', 'z', false)]
+        [InlineData('\0', '\0', '\uFFFF', true)]
+        [InlineData('\u1234', '\0', '\uFFFF', true)]
+        [InlineData('\uFFFF', '\0', '\uFFFF', true)]
+        [InlineData('\u1234', '\u0123', '\u2345', true)]
+        [InlineData('\u1234', '\u2345', '\uFFFF', false)]
+        [InlineData('\u1234', '\u0123', '\u1233', false)]
+        [InlineData('\u1234', '\u0123', '\u1234', true)]
+        [InlineData('\u1234', '\u1235', '\u1231', false)]
+        [InlineData('b', 'c', 'd', false)]
+        [InlineData('b', 'd', 'c', true)]
+        public static void IsBetween_Char(char c, char minInclusive, char maxExclusive, bool expected)
+        {
+            Assert.Equal(expected, char.IsBetween(c, minInclusive, maxExclusive));
         }
 
         [Fact]
@@ -1038,7 +1138,7 @@ namespace System.Tests
         new char[] {'\u17db','\u20a2','\u20a5','\u20a8','\u20ab','\u20ae','\u20b1','\u20b4','\ufe69','\uffe1'}, // UnicodeCategory.CurrencySymbol
         new char[] {'\u02c5','\u02da','\u02e8','\u02f3','\u02fc','\u1fc0','\u1fee','\ua703','\ua70c','\ua715'}, // UnicodeCategory.ModifierSymbol
         new char[] {'\u0bf3','\u2316','\u24ac','\u25b2','\u26af','\u285c','\u2e8f','\u2f8c','\u3292','\u3392'}, // UnicodeCategory.OtherSymbol
-        new char[] {'\u09c6','\u0dfa','\u2e5c'}, // UnicodeCategory.OtherNotAssigned
+        new char[] {'\u09c6','\u0dfa'}, // UnicodeCategory.OtherNotAssigned
         };
 
         private static char[] s_highSurrogates = new char[] { '\ud800', '\udaaa', '\udbff' }; // Range from '\ud800' to '\udbff'
@@ -1090,7 +1190,7 @@ namespace System.Tests
             if (PlatformDetection.IsNotInvariantGlobalization)
             {
                 // Android has issues w/ tr-TR, see https://github.com/dotnet/runtime/issues/37069
-                if (!PlatformDetection.IsAndroid)
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
                 {
                     yield return new object[] { '\u0131', 'I', "tr-TR" };
                     yield return new object[] { 'i', '\u0130', "tr-TR" };

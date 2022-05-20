@@ -12,8 +12,10 @@ namespace System.Security.Cryptography
         public abstract void SetKey(AsymmetricAlgorithm key);
         public abstract void SetHashAlgorithm(string strName);
 
-        public virtual bool VerifySignature(HashAlgorithm hash!!, byte[] rgbSignature)
+        public virtual bool VerifySignature(HashAlgorithm hash, byte[] rgbSignature)
         {
+            ArgumentNullException.ThrowIfNull(hash);
+
             SetHashAlgorithm(hash.ToAlgorithmName()!);
             Debug.Assert(hash.Hash != null);
             return VerifySignature(hash.Hash, rgbSignature);

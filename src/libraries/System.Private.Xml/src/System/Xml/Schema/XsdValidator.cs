@@ -1012,7 +1012,7 @@ namespace System.Xml.Schema
             }
         }
 
-        private object? UnWrapUnion(object? typedValue)
+        private static object? UnWrapUnion(object? typedValue)
         {
             XsdSimpleValue? simpleValue = typedValue as XsdSimpleValue;
             if (simpleValue != null)
@@ -1087,7 +1087,7 @@ namespace System.Xml.Schema
                                 else if (constraints[i].qualifiedTable!.Contains(ks))
                                 {
                                     // unique or key checking value confliction
-                                    // for redundant key, reporting both occurings
+                                    // for redundant key, reporting both occurrings
                                     // doesn't work... how can i retrieve value out??
                                     SendValidationEvent(new XmlSchemaException(SR.Sch_DuplicateKey,
                                         new string[2] { ks.ToString(), constraints[i].constraint.name.ToString() },

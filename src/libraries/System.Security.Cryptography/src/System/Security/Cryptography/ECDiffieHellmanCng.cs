@@ -20,8 +20,10 @@ namespace System.Security.Cryptography
         private byte[]? _seed;
 
         [SupportedOSPlatform("windows")]
-        public ECDiffieHellmanCng(CngKey key!!)
+        public ECDiffieHellmanCng(CngKey key)
         {
+            ArgumentNullException.ThrowIfNull(key);
+
             if (key.AlgorithmGroup != CngAlgorithmGroup.ECDiffieHellman)
                 throw new ArgumentException(SR.Cryptography_ArgECDHRequiresECDHKey, nameof(key));
 

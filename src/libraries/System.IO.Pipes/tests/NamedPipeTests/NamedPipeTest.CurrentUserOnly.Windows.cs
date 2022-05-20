@@ -162,12 +162,14 @@ namespace System.IO.Pipes.Tests
         }
 
         [OuterLoop]
-        [ConditionalFact(nameof(IsAdminOnSupportedWindowsVersions))]
-        public void Allow_Connection_UnderDifferentUsers_ForClientReading()
+        [ConditionalTheory(nameof(IsAdminOnSupportedWindowsVersions))]
+        [InlineData(false)]
+        [InlineData(true)]
+        public void Allow_Connection_UnderDifferentUsers_ForClientReading(bool useTimeSpan)
         {
             string name = PipeStreamConformanceTests.GetUniquePipeName();
             using (var server = new NamedPipeServerStream(
-                name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
+                       name, PipeDirection.InOut, 1, PipeTransmissionMode.Byte, PipeOptions.Asynchronous))
             {
                 Task serverTask = server.WaitForConnectionAsync(CancellationToken.None);
 
@@ -175,7 +177,14 @@ namespace System.IO.Pipes.Tests
                 {
                     using (var client = new NamedPipeClientStream(".", name, PipeDirection.In))
                     {
-                        client.Connect(10_000);
+                        if (useTimeSpan)
+                        {
+                            client.Connect(TimeSpan.FromMilliseconds(10_000));
+                        }
+                        else
+                        {
+                            client.Connect(10_000);
+                        }
                     }
                 });
 

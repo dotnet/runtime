@@ -30,7 +30,9 @@ namespace System.Text.Encodings.Web
             // This member shouldn't be accessed from browser-based code paths.
             // All call sites should be trimmed away, which will also trim this member
             // and the type hierarchy it links to.
+#pragma warning disable CA1822
             internal Vector128<byte> AsVector => throw new PlatformNotSupportedException();
+#pragma warning restore CA1822
 #endif
 #endif
 

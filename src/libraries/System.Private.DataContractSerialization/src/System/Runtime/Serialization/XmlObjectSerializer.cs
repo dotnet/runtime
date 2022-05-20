@@ -24,34 +24,44 @@ namespace System.Runtime.Serialization
         public abstract void WriteEndObject(XmlDictionaryWriter writer);
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public virtual void WriteObject(Stream stream!!, object? graph)
+        public virtual void WriteObject(Stream stream, object? graph)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             XmlDictionaryWriter writer = XmlDictionaryWriter.CreateTextWriter(stream, Encoding.UTF8, false /*ownsStream*/);
             WriteObject(writer, graph);
             writer.Flush();
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public virtual void WriteObject(XmlWriter writer!!, object? graph)
+        public virtual void WriteObject(XmlWriter writer, object? graph)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             WriteObject(XmlDictionaryWriter.CreateDictionaryWriter(writer), graph);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public virtual void WriteStartObject(XmlWriter writer!!, object? graph)
+        public virtual void WriteStartObject(XmlWriter writer, object? graph)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             WriteStartObject(XmlDictionaryWriter.CreateDictionaryWriter(writer), graph);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public virtual void WriteObjectContent(XmlWriter writer!!, object? graph)
+        public virtual void WriteObjectContent(XmlWriter writer, object? graph)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             WriteObjectContent(XmlDictionaryWriter.CreateDictionaryWriter(writer), graph);
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public virtual void WriteEndObject(XmlWriter writer!!)
+        public virtual void WriteEndObject(XmlWriter writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             WriteEndObject(XmlDictionaryWriter.CreateDictionaryWriter(writer));
         }
 
@@ -68,8 +78,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal void WriteObjectHandleExceptions(XmlWriterDelegator writer!!, object? graph, DataContractResolver? dataContractResolver)
+        internal void WriteObjectHandleExceptions(XmlWriterDelegator writer, object? graph, DataContractResolver? dataContractResolver)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             try
             {
                 InternalWriteObject(writer, graph, dataContractResolver);
@@ -127,8 +139,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal void WriteStartObjectHandleExceptions(XmlWriterDelegator writer!!, object? graph)
+        internal void WriteStartObjectHandleExceptions(XmlWriterDelegator writer, object? graph)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             try
             {
                 InternalWriteStartObject(writer, graph);
@@ -144,8 +158,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal void WriteObjectContentHandleExceptions(XmlWriterDelegator writer!!, object? graph)
+        internal void WriteObjectContentHandleExceptions(XmlWriterDelegator writer, object? graph)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             try
             {
                 if (writer.WriteState != WriteState.Element)
@@ -163,8 +179,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal void WriteEndObjectHandleExceptions(XmlWriterDelegator writer!!)
+        internal void WriteEndObjectHandleExceptions(XmlWriterDelegator writer)
         {
+            ArgumentNullException.ThrowIfNull(writer);
+
             try
             {
                 InternalWriteEndObject(writer);
@@ -179,7 +197,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal void WriteRootElement(XmlWriterDelegator writer, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns, bool needsContractNsAtRoot)
+        internal static void WriteRootElement(XmlWriterDelegator writer, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns, bool needsContractNsAtRoot)
         {
             if (name == null) // root name not set explicitly
             {
@@ -197,7 +215,7 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal bool CheckIfNeedsContractNsAtRoot(XmlDictionaryString? name, XmlDictionaryString? ns, DataContract contract)
+        internal static bool CheckIfNeedsContractNsAtRoot(XmlDictionaryString? name, XmlDictionaryString? ns, DataContract contract)
         {
             if (name == null)
                 return false;
@@ -226,14 +244,18 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public virtual object? ReadObject(Stream stream!!)
+        public virtual object? ReadObject(Stream stream)
         {
+            ArgumentNullException.ThrowIfNull(stream);
+
             return ReadObject(XmlDictionaryReader.CreateTextReader(stream, XmlDictionaryReaderQuotas.Max));
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public virtual object? ReadObject(XmlReader reader!!)
+        public virtual object? ReadObject(XmlReader reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             return ReadObject(XmlDictionaryReader.CreateDictionaryReader(reader));
         }
 
@@ -244,8 +266,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public virtual object? ReadObject(XmlReader reader!!, bool verifyObjectName)
+        public virtual object? ReadObject(XmlReader reader, bool verifyObjectName)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             return ReadObject(XmlDictionaryReader.CreateDictionaryReader(reader), verifyObjectName);
         }
 
@@ -253,8 +277,10 @@ namespace System.Runtime.Serialization
         public abstract object? ReadObject(XmlDictionaryReader reader, bool verifyObjectName);
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        public virtual bool IsStartObject(XmlReader reader!!)
+        public virtual bool IsStartObject(XmlReader reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             return IsStartObject(XmlDictionaryReader.CreateDictionaryReader(reader));
         }
 
@@ -287,8 +313,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal object? ReadObjectHandleExceptions(XmlReaderDelegator reader!!, bool verifyObjectName, DataContractResolver? dataContractResolver)
+        internal object? ReadObjectHandleExceptions(XmlReaderDelegator reader, bool verifyObjectName, DataContractResolver? dataContractResolver)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             try
             {
                 return InternalReadObject(reader, verifyObjectName, dataContractResolver);
@@ -304,8 +332,10 @@ namespace System.Runtime.Serialization
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal bool IsStartObjectHandleExceptions(XmlReaderDelegator reader!!)
+        internal bool IsStartObjectHandleExceptions(XmlReaderDelegator reader)
         {
+            ArgumentNullException.ThrowIfNull(reader);
+
             try
             {
                 return InternalIsStartObject(reader);
@@ -320,18 +350,18 @@ namespace System.Runtime.Serialization
             }
         }
 
-        internal bool IsRootXmlAny(XmlDictionaryString? rootName, DataContract contract)
+        internal static bool IsRootXmlAny(XmlDictionaryString? rootName, DataContract contract)
         {
             return (rootName == null) && !contract.HasRoot;
         }
 
-        internal bool IsStartElement(XmlReaderDelegator reader)
+        internal static bool IsStartElement(XmlReaderDelegator reader)
         {
             return (reader.MoveToElement() || reader.IsStartElement());
         }
 
         [RequiresUnreferencedCode(DataContract.SerializerTrimmerWarning)]
-        internal bool IsRootElement(XmlReaderDelegator reader, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns)
+        internal static bool IsRootElement(XmlReaderDelegator reader, DataContract contract, XmlDictionaryString? name, XmlDictionaryString? ns)
         {
             reader.MoveToElement();
             if (name != null) // root name set explicitly

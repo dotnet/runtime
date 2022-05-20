@@ -1216,7 +1216,8 @@ namespace System.Numerics.Tests
 
         // A test for Vector3f comparison involving NaN values
         [Fact]
-        public void Vector3EqualsNanTest()
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/69424", TestPlatforms.iOS | TestPlatforms.tvOS)]
+        public void Vector3EqualsNaNTest()
         {
             Vector3 a = new Vector3(float.NaN, 0, 0);
             Vector3 b = new Vector3(0, float.NaN, 0);
@@ -1234,10 +1235,9 @@ namespace System.Numerics.Tests
             Assert.False(b.Equals(Vector3.Zero));
             Assert.False(c.Equals(Vector3.Zero));
 
-            // Counterintuitive result - IEEE rules for NaN comparison are weird!
-            Assert.False(a.Equals(a));
-            Assert.False(b.Equals(b));
-            Assert.False(c.Equals(c));
+            Assert.True(a.Equals(a));
+            Assert.True(b.Equals(b));
+            Assert.True(c.Equals(c));
         }
 
         [Fact]

@@ -93,7 +93,7 @@ namespace ILCompiler.DependencyAnalysis
         private class DispatchCellComparer : IComparer<InterfaceDispatchCellNode>
         {
             private readonly NodeFactory _factory;
-            private readonly TypeSystemComparer _comparer = new TypeSystemComparer();
+            private readonly TypeSystemComparer _comparer = TypeSystemComparer.Instance;
 
             public DispatchCellComparer(NodeFactory factory)
             {

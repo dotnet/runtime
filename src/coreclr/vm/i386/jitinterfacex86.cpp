@@ -1054,10 +1054,10 @@ void InitJITHelpers1()
         int reg = c_rgWriteBarrierRegs[iBarrier];
 
         BYTE * pBufRW = pBuf;
-        ExecutableWriterHolder<BYTE> barrierWriterHolder;
+        ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
         if (IsWriteBarrierCopyEnabled())
         {
-            barrierWriterHolder = ExecutableWriterHolder<BYTE>(pBuf, 34);
+            barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 34);
             pBufRW = barrierWriterHolder.GetRW();
         }
 
@@ -1206,10 +1206,10 @@ int StompWriteBarrierEphemeral(bool /* isRuntimeSuspended */)
         BYTE * pBuf = GetWriteBarrierCodeLocation((BYTE *)c_rgWriteBarriers[iBarrier]);
 
         BYTE * pBufRW = pBuf;
-        ExecutableWriterHolder<BYTE> barrierWriterHolder;
+        ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
         if (IsWriteBarrierCopyEnabled())
         {
-            barrierWriterHolder = ExecutableWriterHolder<BYTE>(pBuf, 42);
+            barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
             pBufRW = barrierWriterHolder.GetRW();
         }
 
@@ -1275,10 +1275,10 @@ int StompWriteBarrierResize(bool isRuntimeSuspended, bool bReqUpperBoundsCheck)
         size_t *pfunc;
 
         BYTE * pBufRW = pBuf;
-        ExecutableWriterHolder<BYTE> barrierWriterHolder;
+        ExecutableWriterHolderNoLog<BYTE> barrierWriterHolder;
         if (IsWriteBarrierCopyEnabled())
         {
-            barrierWriterHolder = ExecutableWriterHolder<BYTE>(pBuf, 42);
+            barrierWriterHolder.AssignExecutableWriterHolder(pBuf, 42);
             pBufRW = barrierWriterHolder.GetRW();
         }
 

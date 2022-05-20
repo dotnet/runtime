@@ -71,8 +71,7 @@ HRESULT Attribute::ParseCaType(
         }
         else
         {
-            MAKE_WIDEPTR_FROMUTF8N(pWideStr, pCaType->szEnumName, pCaType->cEnumName)
-            IfFailGo(PostError(META_E_CA_UNEXPECTED_TYPE, wcslen(pWideStr), pWideStr));
+            IfFailGo(PostError(META_E_CA_UNEXPECTED_TYPE, pCaType->cEnumName, pCaType->szEnumName));
         }
     }
 
@@ -442,8 +441,7 @@ HRESULT Attribute::ParseCaNamedArgs(
 
                 if (namedArg.type.enumType != pNamedParam->type.enumType)
                 {
-                    MAKE_WIDEPTR_FROMUTF8N(pWideStr, pNamedParam->type.szEnumName, pNamedParam->type.cEnumName)
-                    IfFailGo(PostError(META_E_CA_UNEXPECTED_TYPE, wcslen(pWideStr), pWideStr));
+                    IfFailGo(PostError(META_E_CA_UNEXPECTED_TYPE, pNamedParam->type.cEnumName, pNamedParam->type.szEnumName));
                 }
 
                 // TODO: For now assume the property\field array size is correct - later we should verify this
@@ -456,15 +454,13 @@ HRESULT Attribute::ParseCaNamedArgs(
         // Better have found an argument.
         if (ixParam == cNamedParams)
         {
-            MAKE_WIDEPTR_FROMUTF8N(pWideStr, namedArg.szName, namedArg.cName)
-            IfFailGo(PostError(META_E_CA_UNKNOWN_ARGUMENT, wcslen(pWideStr), pWideStr));
+            IfFailGo(PostError(META_E_CA_UNKNOWN_ARGUMENT, namedArg.cName, namedArg.szName));
         }
 
         // Argument had better not have been seen already.
         if (pNamedParams[ixParam].val.type.tag != SERIALIZATION_TYPE_UNDEFINED)
         {
-            MAKE_WIDEPTR_FROMUTF8N(pWideStr, namedArg.szName, namedArg.cName)
-            IfFailGo(PostError(META_E_CA_REPEATED_ARG, wcslen(pWideStr), pWideStr));
+            IfFailGo(PostError(META_E_CA_REPEATED_ARG, namedArg.cName, namedArg.szName));
         }
 
         IfFailGo(Attribute::ParseCaValue(ca, &pNamedParams[ixParam].val, &namedArg.type, pCaValueArrayFactory, pDomainAssembly));

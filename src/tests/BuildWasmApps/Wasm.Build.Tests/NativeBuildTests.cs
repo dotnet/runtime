@@ -121,7 +121,7 @@ namespace Wasm.Build.Tests
                                         atTheEnd: target);
 
             string publishLogPath = Path.Combine(s_buildEnv.LogRootPath, id, $"{id}.binlog");
-            CommandResult res = new DotNetCommand(s_buildEnv)
+            CommandResult res = new DotNetCommand(s_buildEnv, _testOutput)
                                         .WithWorkingDirectory(_projectDir!)
                                         .ExecuteWithCapturedOutput("publish",
                                                                    $"-bl:{publishLogPath}",

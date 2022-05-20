@@ -21,6 +21,7 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerRequireEncryption_ClientRequireEncryption_ConnectWithEncryption()
         {
             (NetworkStream clientStream, NetworkStream serverStream) = TestHelper.GetConnectedTcpStreams();
@@ -43,13 +44,16 @@ namespace System.Net.Security.Tests
         }
 
         [Fact]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/68206", TestPlatforms.Android)]
         public async Task ServerRequireEncryption_ClientAllowNoEncryption_ConnectWithEncryption()
         {
             (NetworkStream clientStream, NetworkStream serverStream) = TestHelper.GetConnectedTcpStreams();
             using (clientStream)
             using (serverStream)
             {
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 using (var client = new SslStream(clientStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.AllowNoEncryption))
+#pragma warning restore SYSLIB0040
                 using (var server = new SslStream(serverStream))
                 {
                     await TestConfiguration.WhenAllOrAnyFailedWithTimeout(
@@ -71,7 +75,9 @@ namespace System.Net.Security.Tests
             using (clientStream)
             using (serverStream)
             {
+#pragma warning disable SYSLIB0040 // NoEncryption and AllowNoEncryption are obsolete
                 using (var client = new SslStream(clientStream, false, TestHelper.AllowAnyServerCertificate, null, EncryptionPolicy.NoEncryption))
+#pragma warning restore SYSLIB0040
                 using (var server = new SslStream(serverStream))
                 {
                     Task serverTask = server.AuthenticateAsServerAsync(TestConfiguration.ServerCertificate);

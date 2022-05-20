@@ -875,7 +875,7 @@ namespace System.Net.WebSockets
             }
         }
 
-        private void ResetFlagAndTakeLock(object lockObject, ref bool thisLockTaken)
+        private static void ResetFlagAndTakeLock(object lockObject, ref bool thisLockTaken)
         {
             Debug.Assert(lockObject != null, "'lockObject' MUST NOT be NULL.");
             thisLockTaken = false;
@@ -1458,13 +1458,13 @@ namespace System.Net.WebSockets
                                                 {
                                                     // If an exception is thrown we know that the locks have been released,
                                                     // because we enforce IWebSocketStream.CloseNetworkConnectionAsync to yield
-                                                    _webSocket.ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
+                                                    ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
                                                     throw;
                                                 }
 
                                                 if (callCompleteOnCloseCompleted)
                                                 {
-                                                    _webSocket.ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
+                                                    ResetFlagAndTakeLock(_webSocket._thisLock, ref thisLockTaken);
                                                     _webSocket.FinishOnCloseCompleted();
                                                 }
                                             }
@@ -1978,25 +1978,23 @@ namespace System.Net.WebSockets
             {
                 private static readonly TimerCallback s_KeepAliveTimerElapsedCallback = new TimerCallback(OnKeepAlive);
                 private readonly TimeSpan _keepAliveInterval;
-                private readonly Stopwatch _lastSendActivity;
-                private readonly Stopwatch _lastReceiveActivity;
+                private long _lastSendActivityTimestamp;
+                private long _lastReceiveActivityTimestamp;
                 private Timer? _keepAliveTimer;
 
                 public DefaultKeepAliveTracker(TimeSpan keepAliveInterval)
                 {
                     _keepAliveInterval = keepAliveInterval;
-                    _lastSendActivity = new Stopwatch();
-                    _lastReceiveActivity = new Stopwatch();
                 }
 
                 public override void OnDataReceived()
                 {
-                    _lastReceiveActivity.Restart();
+                    _lastReceiveActivityTimestamp = Stopwatch.GetTimestamp();
                 }
 
                 public override void OnDataSent()
                 {
-                    _lastSendActivity.Restart();
+                    _lastSendActivityTimestamp = Stopwatch.GetTimestamp();
                 }
 
                 public override void ResetTimer()
@@ -2046,8 +2044,8 @@ namespace System.Net.WebSockets
 
                 private TimeSpan GetIdleTime()
                 {
-                    TimeSpan sinceLastSendActivity = GetTimeElapsed(_lastSendActivity);
-                    TimeSpan sinceLastReceiveActivity = GetTimeElapsed(_lastReceiveActivity);
+                    TimeSpan sinceLastSendActivity = GetTimeElapsed(_lastSendActivityTimestamp);
+                    TimeSpan sinceLastReceiveActivity = GetTimeElapsed(_lastReceiveActivityTimestamp);
 
                     if (sinceLastReceiveActivity < sinceLastSendActivity)
                     {
@@ -2057,15 +2055,9 @@ namespace System.Net.WebSockets
                     return sinceLastSendActivity;
                 }
 
-                private TimeSpan GetTimeElapsed(Stopwatch watch)
-                {
-                    if (watch.IsRunning)
-                    {
-                        return watch.Elapsed;
-                    }
-
-                    return _keepAliveInterval;
-                }
+                private TimeSpan GetTimeElapsed(long timestamp) => timestamp != 0 ?
+                    Stopwatch.GetElapsedTime(timestamp) :
+                    _keepAliveInterval;
             }
         }
 

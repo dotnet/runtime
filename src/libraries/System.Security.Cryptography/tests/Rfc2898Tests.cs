@@ -21,41 +21,51 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Ctor_NullPasswordBytes()
         {
-            Assert.Throws<NullReferenceException>(() => new Rfc2898DeriveBytes((byte[])null, s_testSalt, DefaultIterationCount));
+            Assert.Throws<NullReferenceException>(() =>
+                new Rfc2898DeriveBytes((byte[])null, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1));
         }
 
         [Fact]
         public static void Ctor_NullPasswordString()
         {
-            Assert.Throws<ArgumentNullException>(() => new Rfc2898DeriveBytes((string)null, s_testSalt, DefaultIterationCount));
+            Assert.Throws<ArgumentNullException>(() =>
+                new Rfc2898DeriveBytes((string)null, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1));
         }
 
         [Fact]
         public static void Ctor_NullSalt()
         {
-            Assert.Throws<ArgumentNullException>(() => new Rfc2898DeriveBytes(TestPassword, null, DefaultIterationCount));
+            AssertExtensions.Throws<ArgumentNullException>("salt", () =>
+                new Rfc2898DeriveBytes(TestPassword, null, DefaultIterationCount, HashAlgorithmName.SHA1));
         }
 
         [Fact]
         public static void Ctor_GenerateNegativeSalt()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, int.MinValue));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, int.MinValue / 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("saltSize", () =>
+                new Rfc2898DeriveBytes(TestPassword, -1, DefaultIterationCount, HashAlgorithmName.SHA1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("saltSize", () =>
+                new Rfc2898DeriveBytes(TestPassword, int.MinValue, DefaultIterationCount, HashAlgorithmName.SHA1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("saltSize", () =>
+                new Rfc2898DeriveBytes(TestPassword, int.MinValue / 2, DefaultIterationCount, HashAlgorithmName.SHA1));
         }
 
         [Fact]
         public static void Ctor_TooFewIterations()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, s_testSalt, 0));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("iterations", () =>
+                new Rfc2898DeriveBytes(TestPassword, s_testSalt, 0, HashAlgorithmName.SHA1));
         }
 
         [Fact]
         public static void Ctor_NegativeIterations()
         {
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, s_testSalt, -1));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, s_testSalt, int.MinValue));
-            Assert.Throws<ArgumentOutOfRangeException>(() => new Rfc2898DeriveBytes(TestPassword, s_testSalt, int.MinValue / 2));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("iterations", () =>
+                new Rfc2898DeriveBytes(TestPassword, s_testSalt, -1, HashAlgorithmName.SHA1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("iterations", () =>
+                new Rfc2898DeriveBytes(TestPassword, s_testSalt, int.MinValue, HashAlgorithmName.SHA1));
+            AssertExtensions.Throws<ArgumentOutOfRangeException>("iterations", () =>
+                new Rfc2898DeriveBytes(TestPassword, s_testSalt, int.MinValue / 2, HashAlgorithmName.SHA1));
         }
 
         [Fact]
@@ -90,7 +100,7 @@ namespace System.Security.Cryptography
         {
             byte[] saltIn = (byte[])s_testSalt.Clone();
 
-            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, saltIn, DefaultIterationCount))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, saltIn, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 byte[] saltOut = deriveBytes.Salt;
 
@@ -110,7 +120,9 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Ctor_DefaultIterations()
         {
+#pragma warning disable SYSLIB0041 // Rfc2898DeriveBytes insecure constructor defaults
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
+#pragma warning restore SYSLIB0041
             {
                 Assert.Equal(DefaultIterationCount, deriveBytes.IterationCount);
             }
@@ -119,7 +131,7 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Ctor_GenerateEmptySalt()
         {
-            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, 0, 1))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, 0, 1, HashAlgorithmName.SHA1))
             {
                 Assert.Empty(deriveBytes.Salt);
             }
@@ -128,7 +140,7 @@ namespace System.Security.Cryptography
         [Fact]
         public static void Ctor_IterationsRespected()
         {
-            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, 1))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, 1, HashAlgorithmName.SHA1))
             {
                 Assert.Equal(1, deriveBytes.IterationCount);
             }
@@ -140,7 +152,7 @@ namespace System.Security.Cryptography
             byte[] first;
             byte[] second;
 
-            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 first = deriveBytes.Salt;
                 second = deriveBytes.Salt;
@@ -155,7 +167,7 @@ namespace System.Security.Cryptography
         {
             byte[] output;
 
-            using (var deriveBytes = new Rfc2898DeriveBytes("", Array.Empty<byte>(), 1))
+            using (var deriveBytes = new Rfc2898DeriveBytes("", Array.Empty<byte>(), 1, HashAlgorithmName.SHA1))
             {
                 output = deriveBytes.GetBytes(1);
                 Assert.Empty(deriveBytes.Salt);
@@ -168,7 +180,7 @@ namespace System.Security.Cryptography
         [Fact]
         public static void GetBytes_ZeroLength()
         {
-            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(0));
             }
@@ -177,7 +189,7 @@ namespace System.Security.Cryptography
         [Fact]
         public static void GetBytes_NegativeLength()
         {
-            Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt);
+            Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1);
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(-1));
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(int.MinValue));
             Assert.Throws<ArgumentOutOfRangeException>(() => deriveBytes.GetBytes(int.MinValue / 2));
@@ -189,7 +201,7 @@ namespace System.Security.Cryptography
             byte[] first;
             byte[] second;
 
-            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 first = deriveBytes.GetBytes(32);
                 second = deriveBytes.GetBytes(32);
@@ -212,7 +224,7 @@ namespace System.Security.Cryptography
         {
             byte[] first;
 
-            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 first = deriveBytes.GetBytes(size);
             }
@@ -220,7 +232,7 @@ namespace System.Security.Cryptography
             byte[] second = new byte[first.Length];
 
             // Reset
-            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 byte[] secondFirstHalf = deriveBytes.GetBytes(first.Length / 2);
                 byte[] secondSecondHalf = deriveBytes.GetBytes(first.Length - secondFirstHalf.Length);
@@ -246,7 +258,7 @@ namespace System.Security.Cryptography
         {
             byte[] first;
 
-            using (var deriveBytes = new Rfc2898DeriveBytes(TestPasswordB, s_testSaltB))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPasswordB, s_testSaltB, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 first = deriveBytes.GetBytes(size);
             }
@@ -254,7 +266,7 @@ namespace System.Security.Cryptography
             byte[] second = new byte[first.Length];
 
             // Reset
-            using (var deriveBytes = new Rfc2898DeriveBytes(TestPasswordB, s_testSaltB))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPasswordB, s_testSaltB, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 for (int i = 0; i < second.Length; i++)
                 {
@@ -367,11 +379,13 @@ namespace System.Security.Cryptography
         [Fact]
         public static void CryptDeriveKey_NotSupported()
         {
+#pragma warning disable SYSLIB0041 // Rfc2898DeriveBytes insecure constructor defaults
+#pragma warning disable SYSLIB0033 // Rfc2898DeriveBytes.CryptDeriveKey is obsolete
             using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
             {
-#pragma warning disable SYSLIB0033 // Rfc2898DeriveBytes.CryptDeriveKey is obsolete
                 Assert.Throws<PlatformNotSupportedException>(() => deriveBytes.CryptDeriveKey("RC2", "SHA1", 128, new byte[8]));
 #pragma warning restore SYSLIB0033
+#pragma warning restore SYSLIB0041
             }
         }
 
@@ -381,7 +395,7 @@ namespace System.Security.Cryptography
             FieldInfo blockField = typeof(Rfc2898DeriveBytes).GetField("_block", BindingFlags.NonPublic | BindingFlags.Instance);
             Assert.NotNull(blockField);
 
-            using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt))
+            using (var deriveBytes = new Rfc2898DeriveBytes(TestPassword, s_testSalt, 1, HashAlgorithmName.SHA1))
             {
                 // Set the internal block counter to be on the last possible block. This should succeed.
                 blockField.SetValue(deriveBytes, uint.MaxValue - 1);
@@ -398,12 +412,12 @@ namespace System.Security.Cryptography
             byte[] passwordBytes = Encoding.UTF8.GetBytes(TestPassword);
             byte[] derived;
 
-            using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(passwordBytes, s_testSaltB, DefaultIterationCount))
+            using (var deriveBytes = new Rfc2898DeriveBytes(passwordBytes, s_testSaltB, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 derived = deriveBytes.GetBytes(64);
             }
 
-            using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(passwordBytes, s_testSaltB, DefaultIterationCount))
+            using (var deriveBytes = new Rfc2898DeriveBytes(passwordBytes, s_testSaltB, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 passwordBytes[0] ^= 0xFF; // Flipping a byte after the object is constructed should not be observed.
 
@@ -418,7 +432,7 @@ namespace System.Security.Cryptography
             byte[] passwordBytes = Encoding.UTF8.GetBytes(TestPassword);
             byte[] passwordBytesOriginal = passwordBytes.AsSpan().ToArray();
 
-            using (Rfc2898DeriveBytes deriveBytes = new Rfc2898DeriveBytes(passwordBytes, s_testSaltB, DefaultIterationCount))
+            using (var deriveBytes = new Rfc2898DeriveBytes(passwordBytes, s_testSaltB, DefaultIterationCount, HashAlgorithmName.SHA1))
             {
                 Assert.Equal(passwordBytesOriginal, passwordBytes);
             }
@@ -428,7 +442,7 @@ namespace System.Security.Cryptography
         {
             byte[] output;
 
-            using (var deriveBytes = new Rfc2898DeriveBytes(password, salt, iterationCount))
+            using (var deriveBytes = new Rfc2898DeriveBytes(password, salt, iterationCount, HashAlgorithmName.SHA1))
             {
                 output = deriveBytes.GetBytes(expected.Length);
             }

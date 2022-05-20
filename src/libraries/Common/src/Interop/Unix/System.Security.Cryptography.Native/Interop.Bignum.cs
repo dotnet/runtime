@@ -10,16 +10,16 @@ internal static partial class Interop
 {
     internal static partial class Crypto
     {
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumDestroy")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumDestroy")]
         internal static partial void BigNumDestroy(IntPtr a);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumFromBinary")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumFromBinary")]
         private static unsafe partial IntPtr BigNumFromBinary(byte* s, int len);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumToBinary")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_BigNumToBinary")]
         private static unsafe partial int BigNumToBinary(SafeBignumHandle a, byte* to);
 
-        [GeneratedDllImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetBigNumBytes")]
+        [LibraryImport(Libraries.CryptoNative, EntryPoint = "CryptoNative_GetBigNumBytes")]
         private static partial int GetBigNumBytes(SafeBignumHandle a);
 
         private static unsafe IntPtr CreateBignumPtr(ReadOnlySpan<byte> bigEndianValue)

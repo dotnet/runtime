@@ -70,8 +70,13 @@ namespace System.Reflection.PortableExecutable
         /// <exception cref="ArgumentException">The stream doesn't support seek operations.</exception>
         /// <exception cref="ArgumentNullException"><paramref name="peStream"/> is null.</exception>
         /// <exception cref="ArgumentOutOfRangeException">Size is negative or extends past the end of the stream.</exception>
-        public PEHeaders(Stream peStream!!, int size, bool isLoadedImage)
+        public PEHeaders(Stream peStream, int size, bool isLoadedImage)
         {
+            if (peStream is null)
+            {
+                Throw.ArgumentNull(nameof(peStream));
+            }
+
             if (!peStream.CanRead || !peStream.CanSeek)
             {
                 throw new ArgumentException(SR.StreamMustSupportReadAndSeek, nameof(peStream));
@@ -241,7 +246,7 @@ namespace System.Reflection.PortableExecutable
             return true;
         }
 
-        private void SkipDosHeader(ref PEBinaryReader reader, out bool isCOFFOnly)
+        private static void SkipDosHeader(ref PEBinaryReader reader, out bool isCOFFOnly)
         {
             // Look for DOS Signature "MZ"
             ushort dosSig = reader.ReadUInt16();

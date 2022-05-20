@@ -45,7 +45,7 @@ case "$CPUName" in
         arch=x64
         ;;
 
-    armv7l)
+    armv7l|armv8l)
         if (NAME=""; . /etc/os-release; test "$NAME" = "Tizen"); then
             arch=armel
         else

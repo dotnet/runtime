@@ -17,8 +17,4 @@
     <Compile Include="PlaneTests.cs" />
     <Compile Include="QuaternionTests.cs" />
   </ItemGroup>
-  <ItemGroup>
-    <!-- it's a reference assembly, but the project system doesn't know that - include it during compilation, but don't publish it -->
-    <ProjectReference Include="$(LibrariesProjectRoot)System.Runtime.Experimental\ref\System.Runtime.Experimental.csproj" IncludeAssets="compile" Private="false" />
-  </ItemGroup>
 </Project>

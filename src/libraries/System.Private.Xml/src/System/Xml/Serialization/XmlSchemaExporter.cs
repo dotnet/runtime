@@ -340,7 +340,7 @@ namespace System.Xml.Serialization
             return false;
         }
 
-        private XmlSchemaImport? FindImport(XmlSchema schema, string? ns)
+        private static XmlSchemaImport? FindImport(XmlSchema schema, string? ns)
         {
             foreach (object item in schema.Includes)
             {
@@ -1199,7 +1199,7 @@ namespace System.Xml.Serialization
             return dataType;
         }
 
-        private void AddXmlnsAnnotation(XmlSchemaComplexType type, string xmlnsMemberName)
+        private static void AddXmlnsAnnotation(XmlSchemaComplexType type, string xmlnsMemberName)
         {
             XmlSchemaAnnotation annotation = new XmlSchemaAnnotation();
             XmlSchemaAppInfo appinfo = new XmlSchemaAppInfo();

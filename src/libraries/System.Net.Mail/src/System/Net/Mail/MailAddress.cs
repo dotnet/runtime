@@ -141,9 +141,9 @@ namespace System.Net.Mail
                     return false;
                 }
 
-                if (displayName.Length >= 2 && displayName[0] == '\"' && displayName[^1] == '\"')
+                if (displayName.Length >= 2 && displayName.StartsWith('\"') && displayName.EndsWith('\"'))
                 {
-                    // Peal bounding quotes, they'll get re-added later.
+                    // Peel bounding quotes, they'll get re-added later.
                     displayName = displayName.Substring(1, displayName.Length - 2);
                 }
             }
@@ -276,8 +276,6 @@ namespace System.Net.Mail
             return StringComparer.InvariantCultureIgnoreCase.GetHashCode(ToString());
         }
 
-        private static readonly EncodedStreamFactory s_encoderFactory = new EncodedStreamFactory();
-
         // Encodes the full email address, folding as needed
         internal string Encode(int charsConsumed, bool allowUnicode)
         {
@@ -300,7 +298,7 @@ namespace System.Net.Mail
                 else
                 {
                     //encode the displayname since it's non-ascii
-                    encoder = s_encoderFactory.GetEncoderForHeader(_displayNameEncoding, false, charsConsumed);
+                    encoder = EncodedStreamFactory.GetEncoderForHeader(_displayNameEncoding, false, charsConsumed);
                     encoder.EncodeString(_displayName, _displayNameEncoding);
                     encodedAddress = encoder.GetEncodedString();
                 }

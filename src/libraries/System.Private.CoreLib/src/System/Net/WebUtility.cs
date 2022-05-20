@@ -62,8 +62,10 @@ namespace System.Net
             return sb.ToString();
         }
 
-        public static void HtmlEncode(string? value, TextWriter output!!)
+        public static void HtmlEncode(string? value, TextWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             if (string.IsNullOrEmpty(value))
             {
                 output.Write(value);
@@ -201,8 +203,10 @@ namespace System.Net
             return sb.ToString();
         }
 
-        public static void HtmlDecode(string? value, TextWriter output!!)
+        public static void HtmlDecode(string? value, TextWriter output)
         {
+            ArgumentNullException.ThrowIfNull(output);
+
             if (string.IsNullOrEmpty(value))
             {
                 output.Write(value);
@@ -675,13 +679,9 @@ namespace System.Net
                 1 << ((int)'-' - 0x20) | // 0x2D
                 1 << ((int)'.' - 0x20); // 0x2E
 
-            unchecked
-            {
-                return ((uint)(code - 'a') <= (uint)('z' - 'a')) ||
-                       ((uint)(code - 'A') <= (uint)('Z' - 'A')) ||
-                       ((uint)(code - 0x20) <= (uint)('9' - 0x20) && ((1 << (code - 0x20)) & safeSpecialCharMask) != 0) ||
-                       (code == (int)'_');
-            }
+            return char.IsAsciiLetter(ch) ||
+                   ((uint)(code - 0x20) <= (uint)('9' - 0x20) && ((1 << (code - 0x20)) & safeSpecialCharMask) != 0) ||
+                   (code == (int)'_');
         }
 
         private static bool ValidateUrlEncodingParameters(byte[]? bytes, int offset, int count)

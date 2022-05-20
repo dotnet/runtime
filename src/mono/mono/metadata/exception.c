@@ -1079,7 +1079,7 @@ append_frame_and_continue (MonoMethod *method, gpointer ip, size_t native_offset
 	if (data->prefix)
 		g_string_append (data->text, data->prefix);
 	if (method) {
-		char *msg = mono_debug_print_stack_frame (method, native_offset, NULL);
+		char *msg = mono_debug_print_stack_frame (method, (uint32_t)native_offset, NULL);
 		g_string_append_printf (data->text, "%s\n", msg);
 		g_free (msg);
 	} else {

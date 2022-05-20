@@ -212,7 +212,7 @@ namespace System.Security.Cryptography
                 // is invalid.
                 // If it is a space or hyphen, and the previous character was
                 // also not a labelchar (another hyphen or space), then we have
-                // two consecutive spaces or hyphens which is is invalid.
+                // two consecutive spaces or hyphens which is invalid.
                 if (!isSpaceOrHyphen || !previousIsLabelChar)
                 {
                     return false;
@@ -295,16 +295,14 @@ namespace System.Security.Cryptography
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsBase64Character(char ch)
         {
-            uint c = (uint)ch;
-            return c == '+' || c == '/' ||
-                   c - '0' < 10 || c - 'A' < 26 || c - 'a' < 26;
+            return char.IsAsciiLetterOrDigit(ch) || ch is '+' or '/';
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static bool IsWhiteSpaceCharacter(char ch)
         {
             // Match white space characters from Convert.Base64
-            return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
+            return ch is ' ' or '\t' or '\n' or '\r';
         }
 
         /// <summary>

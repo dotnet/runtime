@@ -106,7 +106,7 @@ namespace ILCompiler
             {
                 if (Logger.IsVerbose)
                 {
-                    Logger.Writer.WriteLine($"Compiling {methodCodeNodeNeedingCode.Method}...");
+                    Logger.Writer.WriteLine($"Scanning {methodCodeNodeNeedingCode.Method}...");
                 }
 
                 CompileSingleMethod(methodCodeNodeNeedingCode);

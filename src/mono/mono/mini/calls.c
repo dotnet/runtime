@@ -661,7 +661,7 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	static MonoMethodSignature *helper_sig_llvmonly_imt_trampoline = NULL;
 	MonoInst *icall_args [16];
 	MonoInst *call_target, *ins, *vtable_ins;
-	int arg_reg, this_reg, vtable_reg;
+	int this_reg, vtable_reg;
 	gboolean is_iface = mono_class_is_interface (cmethod->klass);
 	gboolean is_gsharedvt = cfg->gsharedvt && mini_is_gsharedvt_variable_signature (fsig);
 	gboolean variant_iface = FALSE;
@@ -883,7 +883,7 @@ mini_emit_llvmonly_virtual_call (MonoCompile *cfg, MonoMethod *cmethod, MonoMeth
 	icall_args [2] = mini_emit_get_rgctx_method (cfg, context_used,
 												 cmethod, MONO_RGCTX_INFO_METHOD);
 
-	arg_reg = alloc_preg (cfg);
+	int arg_reg = alloc_preg (cfg);
 	MONO_EMIT_NEW_PCONST (cfg, arg_reg, NULL);
 	EMIT_NEW_VARLOADA_VREG (cfg, icall_args [3], arg_reg, mono_get_int_type ());
 

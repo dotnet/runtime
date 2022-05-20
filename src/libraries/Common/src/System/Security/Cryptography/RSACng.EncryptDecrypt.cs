@@ -34,8 +34,11 @@ namespace System.Security.Cryptography
 
         // Conveniently, Encrypt() and Decrypt() are identical save for the actual P/Invoke call to CNG. Thus, both
         // array-based APIs invoke this common helper with the "encrypt" parameter determining whether encryption or decryption is done.
-        private unsafe byte[] EncryptOrDecrypt(byte[] data!!, RSAEncryptionPadding padding!!, bool encrypt)
+        private unsafe byte[] EncryptOrDecrypt(byte[] data, RSAEncryptionPadding padding, bool encrypt)
         {
+            ArgumentNullException.ThrowIfNull(data);
+            ArgumentNullException.ThrowIfNull(padding);
+
             int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
 
             if (!encrypt && data.Length != modulusSizeInBytes)
@@ -66,10 +69,7 @@ namespace System.Security.Cryptography
                         }
                         else if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
                         {
-                            RsaPaddingProcessor processor =
-                                RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-
-                            processor.PadOaep(data, paddedMessage);
+                            RsaPaddingProcessor.PadOaep(padding.OaepHashAlgorithm, data, paddedMessage);
                         }
                         else
                         {
@@ -117,8 +117,10 @@ namespace System.Security.Cryptography
 
         // Conveniently, Encrypt() and Decrypt() are identical save for the actual P/Invoke call to CNG. Thus, both
         // span-based APIs invoke this common helper with the "encrypt" parameter determining whether encryption or decryption is done.
-        private unsafe bool TryEncryptOrDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding!!, bool encrypt, out int bytesWritten)
+        private unsafe bool TryEncryptOrDecrypt(ReadOnlySpan<byte> data, Span<byte> destination, RSAEncryptionPadding padding, bool encrypt, out int bytesWritten)
         {
+            ArgumentNullException.ThrowIfNull(padding);
+
             int modulusSizeInBytes = RsaPaddingProcessor.BytesRequiredForBitCount(KeySize);
 
             if (!encrypt && data.Length != modulusSizeInBytes)
@@ -149,10 +151,7 @@ namespace System.Security.Cryptography
                         }
                         else if (padding.Mode == RSAEncryptionPaddingMode.Oaep)
                         {
-                            RsaPaddingProcessor processor =
-                                RsaPaddingProcessor.OpenProcessor(padding.OaepHashAlgorithm);
-
-                            processor.PadOaep(data, paddedMessage);
+                            RsaPaddingProcessor.PadOaep(padding.OaepHashAlgorithm, data, paddedMessage);
                         }
                         else
                         {
@@ -253,7 +252,7 @@ namespace System.Security.Cryptography
         }
 
         // Now that the padding mode and information have been marshaled to their native counterparts, perform the encryption or decryption.
-        private unsafe bool TryEncryptOrDecrypt(SafeNCryptKeyHandle key, ReadOnlySpan<byte> input, Span<byte> output, AsymmetricPaddingMode paddingMode, void* paddingInfo, bool encrypt, out int bytesWritten)
+        private static unsafe bool TryEncryptOrDecrypt(SafeNCryptKeyHandle key, ReadOnlySpan<byte> input, Span<byte> output, AsymmetricPaddingMode paddingMode, void* paddingInfo, bool encrypt, out int bytesWritten)
         {
             for (int i = 0; i <= StatusUnsuccessfulRetryCount; i++)
             {

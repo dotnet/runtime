@@ -955,28 +955,32 @@ namespace System.Text.RegularExpressions.Tests
             {
                 regex = await RegexHelpers.GetRegexAsync(engine, pattern, options);
             }
-            catch (NotSupportedException) when (RegexHelpers.IsNonBacktracking(engine))
+            catch (Exception e) when (e is NotSupportedException or ArgumentOutOfRangeException && RegexHelpers.IsNonBacktracking(engine))
             {
                 // Some constructs are not supported in NonBacktracking mode, such as: if-then-else, lookaround, and backreferences
                 return;
             }
 
-            Match match = regex.Match(input);
-
-            Assert.True(match.Success);
-            Assert.Equal(expectedGroups[0], match.Value);
-
-            Assert.Equal(expectedGroups.Length, match.Groups.Count);
-
-            int[] groupNumbers = regex.GetGroupNumbers();
-            string[] groupNames = regex.GetGroupNames();
-            for (int i = 0; i < expectedGroups.Length; i++)
+            foreach (string prefix in new[] { "", "IGNORETHIS" })
             {
-                Assert.Equal(expectedGroups[i], match.Groups[groupNumbers[i]].Value);
-                Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
+                Match match = prefix.Length == 0 ?
+                    regex.Match(input) : // validate the original input
+                    regex.Match(prefix + input, prefix.Length, input.Length); // validate we handle groups and beginning/length correctly
 
-                Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
-                Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
+                Assert.True(match.Success);
+                Assert.Equal(expectedGroups[0], match.Value);
+                Assert.Equal(expectedGroups.Length, match.Groups.Count);
+
+                int[] groupNumbers = regex.GetGroupNumbers();
+                string[] groupNames = regex.GetGroupNames();
+                for (int i = 0; i < expectedGroups.Length; i++)
+                {
+                    Assert.Equal(expectedGroups[i], match.Groups[groupNumbers[i]].Value);
+                    Assert.Equal(match.Groups[groupNumbers[i]], match.Groups[groupNames[i]]);
+
+                    Assert.Equal(groupNumbers[i], regex.GroupNumberFromName(groupNames[i]));
+                    Assert.Equal(groupNames[i], regex.GroupNameFromNumber(groupNumbers[i]));
+                }
             }
         }
 

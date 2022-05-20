@@ -286,14 +286,9 @@ public:
             //
             GenTreeFlags oldUseFlags = m_useFlags;
 
-            if (m_callAncestor->gtCallThisArg != nullptr)
+            for (CallArg& arg : m_callAncestor->gtArgs.Args())
             {
-                m_useFlags |= (m_callAncestor->gtCallThisArg->GetNode()->gtFlags & GTF_GLOB_EFFECT);
-            }
-
-            for (GenTreeCall::Use& use : m_callAncestor->Args())
-            {
-                m_useFlags |= (use.GetNode()->gtFlags & GTF_GLOB_EFFECT);
+                m_useFlags |= (arg.GetNode()->gtFlags & GTF_GLOB_EFFECT);
             }
 
             if (oldUseFlags != m_useFlags)
@@ -636,7 +631,7 @@ bool Compiler::fgForwardSubStatement(Statement* stmt)
     // If fwdSubNode is an address-exposed local, forwarding it may lose optimizations.
     // (maybe similar for dner?)
     //
-    if (fwdSubNode->IsLocal())
+    if (fwdSubNode->OperIs(GT_LCL_VAR))
     {
         unsigned const   fwdLclNum = fwdSubNode->AsLclVarCommon()->GetLclNum();
         LclVarDsc* const fwdVarDsc = lvaGetDesc(fwdLclNum);

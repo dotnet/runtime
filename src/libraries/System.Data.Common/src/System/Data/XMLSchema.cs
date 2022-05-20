@@ -513,7 +513,7 @@ namespace System.Data
             }
         }
 
-        private bool HasAttributes(XmlSchemaObjectCollection attributes)
+        private static bool HasAttributes(XmlSchemaObjectCollection attributes)
         {
             foreach (XmlSchemaObject so in attributes)
             {
@@ -574,7 +574,7 @@ namespace System.Data
             return true;
         }
 
-        private int DatasetElementCount(XmlSchemaObjectCollection elements)
+        private static int DatasetElementCount(XmlSchemaObjectCollection elements)
         {
             int nCount = 0;
             foreach (XmlSchemaElement XmlElement in elements)
@@ -1144,7 +1144,7 @@ namespace System.Data
             _complexTypes.Remove(ct);
         }
 
-        internal XmlSchemaParticle? GetParticle(XmlSchemaComplexType ct)
+        internal static XmlSchemaParticle? GetParticle(XmlSchemaComplexType ct)
         {
             if (ct.ContentModel != null)
             {
@@ -1173,7 +1173,7 @@ namespace System.Data
             }
         }
 
-        internal DataColumn FindField(DataTable table, string field)
+        internal static DataColumn FindField(DataTable table, string field)
         {
             bool attribute = false;
             string colName = field;
@@ -1200,7 +1200,7 @@ namespace System.Data
             return col;
         }
 
-        internal DataColumn[] BuildKey(XmlSchemaIdentityConstraint keyNode, DataTable table)
+        internal static DataColumn[] BuildKey(XmlSchemaIdentityConstraint keyNode, DataTable table)
         {
             ArrayList keyColumns = new ArrayList();
 
@@ -1215,7 +1215,7 @@ namespace System.Data
             return key;
         }
 
-        internal bool GetBooleanAttribute(XmlSchemaAnnotated element, string attrName, bool defVal)
+        internal static bool GetBooleanAttribute(XmlSchemaAnnotated element, string attrName, bool defVal)
         {
             string? value = GetMsdataAttribute(element, attrName);
             if (value == null || value.Length == 0)
@@ -1234,7 +1234,7 @@ namespace System.Data
             throw ExceptionBuilder.InvalidAttributeValue(attrName, value);
         }
 
-        internal string GetStringAttribute(XmlSchemaAnnotated element, string attrName, string defVal)
+        internal static string GetStringAttribute(XmlSchemaAnnotated element, string attrName, string defVal)
         {
             string? value = GetMsdataAttribute(element, attrName);
             if (value == null || value.Length == 0)
@@ -1533,7 +1533,7 @@ namespace System.Data
         }
 
 
-        internal string GetInstanceName(XmlSchemaAnnotated node)
+        internal static string GetInstanceName(XmlSchemaAnnotated node)
         {
             string? instanceName = null;
 
@@ -2790,7 +2790,7 @@ namespace System.Data
             return GetNamespaceFromPrefix(prefix);
         }
 
-        private string GetTableName(XmlSchemaIdentityConstraint key)
+        private static string GetTableName(XmlSchemaIdentityConstraint key)
         {
             string xpath = key.Selector!.XPath!;
             string[] split = xpath.Split('/', ':');

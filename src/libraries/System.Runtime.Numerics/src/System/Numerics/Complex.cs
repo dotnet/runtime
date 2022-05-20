@@ -3,6 +3,8 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
+using System.Runtime.CompilerServices;
 
 namespace System.Numerics
 {
@@ -11,8 +13,12 @@ namespace System.Numerics
     /// are real numbers, and i is the imaginary unit, with the property i2= -1.
     /// </summary>
     [Serializable]
-    [System.Runtime.CompilerServices.TypeForwardedFrom("System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
-    public readonly struct Complex : IEquatable<Complex>, IFormattable
+    [TypeForwardedFrom("System.Numerics, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089")]
+    public readonly struct Complex
+        : IEquatable<Complex>,
+          IFormattable,
+          INumberBase<Complex>,
+          ISignedNumber<Complex>
     {
         public static readonly Complex Zero = new Complex(0.0, 0.0);
         public static readonly Complex One = new Complex(1.0, 0.0);
@@ -314,7 +320,6 @@ namespace System.Numerics
 
         }
 
-
         private static double Log1P(double x)
         {
             // Compute log(1 + x) without loss of accuracy when x is small.
@@ -389,11 +394,11 @@ namespace System.Numerics
 
         public override string ToString() => $"({m_real}, {m_imaginary})";
 
-        public string ToString(string? format) => ToString(format, null);
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ToString(format, null);
 
         public string ToString(IFormatProvider? provider) => ToString(null, provider);
 
-        public string ToString(string? format, IFormatProvider? provider)
+        public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
             return string.Format(provider, "({0}, {1})", m_real.ToString(format, provider), m_imaginary.ToString(format, provider));
         }
@@ -849,5 +854,145 @@ namespace System.Numerics
         {
             return new Complex((double)value, 0.0);
         }
+
+        //
+        // IAdditionOperators
+        //
+
+        /// <inheritdoc cref="IAdditionOperators{TSelf, TOther, TResult}.op_Addition(TSelf, TOther)" />
+        static Complex IAdditionOperators<Complex, Complex, Complex>.operator checked +(Complex left, Complex right) => left + right;
+
+        //
+        // IAdditiveIdentity
+        //
+
+        /// <inheritdoc cref="IAdditiveIdentity{TSelf, TResult}.AdditiveIdentity" />
+        static Complex IAdditiveIdentity<Complex, Complex>.AdditiveIdentity => new Complex(0.0, 0.0);
+
+        //
+        // IDecrementOperators
+        //
+
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        public static Complex operator --(Complex value) => value - One;
+
+        /// <inheritdoc cref="IDecrementOperators{TSelf}.op_Decrement(TSelf)" />
+        static Complex IDecrementOperators<Complex>.operator checked --(Complex value) => --value;
+
+        //
+        // IDivisionOperators
+        //
+
+        /// <inheritdoc cref="IDivisionOperators{TSelf, TOther, TResult}.op_CheckedDivision(TSelf, TOther)" />
+        static Complex IDivisionOperators<Complex, Complex, Complex>.operator checked /(Complex left, Complex right) => left / right;
+
+        //
+        // IIncrementOperators
+        //
+
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_Increment(TSelf)" />
+        public static Complex operator ++(Complex value) => value + One;
+
+        /// <inheritdoc cref="IIncrementOperators{TSelf}.op_CheckedIncrement(TSelf)" />
+        static Complex IIncrementOperators<Complex>.operator checked ++(Complex value) => ++value;
+
+        //
+        // IMultiplicativeIdentity
+        //
+
+        /// <inheritdoc cref="IMultiplicativeIdentity{TSelf, TResult}.MultiplicativeIdentity" />
+        static Complex IMultiplicativeIdentity<Complex, Complex>.MultiplicativeIdentity => new Complex(1.0, 0.0);
+
+        //
+        // IMultiplyOperators
+        //
+
+        /// <inheritdoc cref="IMultiplyOperators{TSelf, TOther, TResult}.op_CheckedMultiply(TSelf, TOther)" />
+        static Complex IMultiplyOperators<Complex, Complex, Complex>.operator checked *(Complex left, Complex right) => left * right;
+
+        //
+        // INumberBase
+        //
+
+        /// <inheritdoc cref="INumberBase{TSelf}.One" />
+        static Complex INumberBase<Complex>.One => new Complex(1.0, 0.0);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
+        static Complex INumberBase<Complex>.Zero => new Complex(0.0, 0.0);
+
+        //
+        // ISignedNumber
+        //
+
+        /// <inheritdoc cref="ISignedNumber{TSelf}.NegativeOne" />
+        static Complex ISignedNumber<Complex>.NegativeOne => new Complex(-1.0, 0.0);
+
+        //
+        // ISpanFormattable
+        //
+
+        /// <inheritdoc cref="ISpanFormattable.TryFormat(Span{char}, out int, ReadOnlySpan{char}, IFormatProvider?)" />
+        public bool TryFormat(Span<char> destination, out int charsWritten, ReadOnlySpan<char> format, IFormatProvider? provider)
+        {
+            int charsWrittenSoFar = 0;
+
+            // We have at least 6 more characters for: (0, 0)
+            if (destination.Length < 6)
+            {
+                charsWritten = charsWrittenSoFar;
+                return false;
+            }
+
+            destination[charsWrittenSoFar++] = '(';
+
+            bool tryFormatSucceeded = m_real.TryFormat(destination.Slice(charsWrittenSoFar), out int tryFormatCharsWritten, format, provider);
+            charsWrittenSoFar += tryFormatCharsWritten;
+
+            // We have at least 4 more characters for: , 0)
+            if (!tryFormatSucceeded || (destination.Length < (charsWrittenSoFar + 4)))
+            {
+                charsWritten = charsWrittenSoFar;
+                return false;
+            }
+
+            destination[charsWrittenSoFar++] = ',';
+            destination[charsWrittenSoFar++] = ' ';
+
+            tryFormatSucceeded = m_imaginary.TryFormat(destination.Slice(charsWrittenSoFar), out tryFormatCharsWritten, format, provider);
+            charsWrittenSoFar += tryFormatCharsWritten;
+
+            // We have at least 1 more character for: )
+            if (!tryFormatSucceeded || (destination.Length < (charsWrittenSoFar + 1)))
+            {
+                charsWritten = charsWrittenSoFar;
+                return false;
+            }
+
+            destination[charsWrittenSoFar++] = ')';
+
+            charsWritten = charsWrittenSoFar;
+            return true;
+        }
+
+        //
+        // ISubtractionOperators
+        //
+
+        /// <inheritdoc cref="ISubtractionOperators{TSelf, TOther, TResult}.op_CheckedSubtraction(TSelf, TOther)" />
+        static Complex ISubtractionOperators<Complex, Complex, Complex>.operator checked -(Complex left, Complex right) => left - right;
+
+        //
+        // IUnaryNegationOperators
+        //
+
+        /// <inheritdoc cref="IUnaryNegationOperators{TSelf, TResult}.op_CheckedUnaryNegation(TSelf)" />
+        static Complex IUnaryNegationOperators<Complex, Complex>.operator checked -(Complex value) => -value;
+
+        //
+        // IUnaryPlusOperators
+        //
+
+        /// <inheritdoc cref="IUnaryPlusOperators{TSelf, TResult}.op_UnaryPlus(TSelf)" />
+        public static Complex operator +(Complex value) => value;
     }
 }

@@ -882,8 +882,10 @@ namespace System.ComponentModel
         /// The MaskedTextResultHint out param gives a hint about the operation result reason.
         /// Returns true on success, false otherwise.
         /// </summary>
-        public bool Add(string input!!, out int testPosition, out MaskedTextResultHint resultHint)
+        public bool Add(string input, out int testPosition, out MaskedTextResultHint resultHint)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             testPosition = LastAssignedPosition + 1;
 
             if (input.Length == 0) // nothing to add.
@@ -1253,8 +1255,10 @@ namespace System.ComponentModel
         /// The MaskedTextResultHint out param gives more information about the operation result.
         /// Returns true on success, false otherwise.
         /// </summary>
-        public bool InsertAt(string input!!, int position, out int testPosition, out MaskedTextResultHint resultHint)
+        public bool InsertAt(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             if (position < 0 || position >= _testString.Length)
             {
                 testPosition = position;
@@ -1392,27 +1396,11 @@ namespace System.ComponentModel
         }
 
         /// <summary>
-        /// Helper function for alphanumeric char in ascii mode.
-        /// </summary>
-        private static bool IsAciiAlphanumeric(char c)
-        {
-            return (c >= '0' && c <= '9') || (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
-        }
-
-        /// <summary>
         /// Helper function for testing mask language alphanumeric identifiers.
         /// </summary>
         private static bool IsAlphanumeric(char c)
         {
             return char.IsLetter(c) || char.IsDigit(c);
-        }
-
-        /// <summary>
-        /// Helper function for testing letter char in ascii mode.
-        /// </summary>
-        private static bool IsAsciiLetter(char c)
-        {
-            return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z');
         }
 
         /// <summary>
@@ -1809,8 +1797,10 @@ namespace System.ComponentModel
         /// The MaskedTextResultHint out param gives more information about the operation result.
         /// Returns true on success, false otherwise.
         /// </summary>
-        public bool Replace(string input!!, int position, out int testPosition, out MaskedTextResultHint resultHint)
+        public bool Replace(string input, int position, out int testPosition, out MaskedTextResultHint resultHint)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             if (position < 0 || position >= _testString.Length)
             {
                 testPosition = position;
@@ -1843,8 +1833,10 @@ namespace System.ComponentModel
         /// The MaskedTextResultHint out param gives more information about the operation result.
         /// Returns true on success, false otherwise.
         /// </summary>
-        public bool Replace(string input!!, int startPosition, int endPosition, out int testPosition, out MaskedTextResultHint resultHint)
+        public bool Replace(string input, int startPosition, int endPosition, out int testPosition, out MaskedTextResultHint resultHint)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             if (endPosition >= _testString.Length)
             {
                 testPosition = endPosition;
@@ -2024,8 +2016,10 @@ namespace System.ComponentModel
         /// The MaskedTextResultHint out param gives more information about the operation result.
         /// If passwordChar is assigned, it is rendered in the output string instead of the user-supplied values.
         /// </summary>
-        public bool Set(string input!!, out int testPosition, out MaskedTextResultHint resultHint)
+        public bool Set(string input, out int testPosition, out MaskedTextResultHint resultHint)
         {
+            ArgumentNullException.ThrowIfNull(input);
+
             testPosition = 0;
 
             if (input.Length == 0) // Clearing the input text.
@@ -2292,7 +2286,7 @@ namespace System.ComponentModel
                         resultHint = MaskedTextResultHint.LetterExpected;
                         return false;
                     }
-                    if (!IsAsciiLetter(input) && AsciiOnly)
+                    if (!char.IsAsciiLetter(input) && AsciiOnly)
                     {
                         resultHint = MaskedTextResultHint.AsciiCharacterExpected;
                         return false;
@@ -2305,7 +2299,7 @@ namespace System.ComponentModel
                         resultHint = MaskedTextResultHint.LetterExpected;
                         return false;
                     }
-                    if (!IsAsciiLetter(input) && AsciiOnly)
+                    if (!char.IsAsciiLetter(input) && AsciiOnly)
                     {
                         resultHint = MaskedTextResultHint.AsciiCharacterExpected;
                         return false;
@@ -2334,7 +2328,7 @@ namespace System.ComponentModel
                         resultHint = MaskedTextResultHint.AlphanumericCharacterExpected;
                         return false;
                     }
-                    if (!IsAciiAlphanumeric(input) && AsciiOnly)
+                    if (!char.IsAsciiLetterOrDigit(input) && AsciiOnly)
                     {
                         resultHint = MaskedTextResultHint.AsciiCharacterExpected;
                         return false;
@@ -2347,7 +2341,7 @@ namespace System.ComponentModel
                         resultHint = MaskedTextResultHint.AlphanumericCharacterExpected;
                         return false;
                     }
-                    if (!IsAciiAlphanumeric(input) && AsciiOnly)
+                    if (!char.IsAsciiLetterOrDigit(input) && AsciiOnly)
                     {
                         resultHint = MaskedTextResultHint.AsciiCharacterExpected;
                         return false;

@@ -27,16 +27,26 @@ namespace System.CodeDom.Compiler
 
         public int Add(CompilerError value) => List.Add(value);
 
-        public void AddRange(CompilerError[] value!!)
+        public void AddRange(CompilerError[] value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             for (int i = 0; i < value.Length; i++)
             {
                 Add(value[i]);
             }
         }
 
-        public void AddRange(CompilerErrorCollection value!!)
+        public void AddRange(CompilerErrorCollection value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             int currentCount = value.Count;
             for (int i = 0; i < currentCount; i++)
             {

@@ -47,7 +47,7 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_SecKeyVerifySignature(
             SafeSecKeyRefHandle publicKey,
             byte* pbDataHash,
@@ -79,7 +79,7 @@ internal static partial class Interop
             }
         }
 
-        [GeneratedDllImport(Libraries.AppleCryptoNative)]
+        [LibraryImport(Libraries.AppleCryptoNative)]
         private static unsafe partial int AppleCryptoNative_SecKeyCreateSignature(
             SafeSecKeyRefHandle privateKey,
             byte* pbDataHash,

@@ -1,7 +1,7 @@
 # Framework version resolution
 
 This document describes .NET Core 3.0 version resolution behavior when the host resolves framework references for framework dependent apps.
-It's just a part of the overall framework resolution scenario described in [multilevel-sharedfx-lookup](multilevel-sharedfx-lookup.md).
+It's just a part of the overall framework resolution scenario described in [sharedfx-lookup](sharedfx-lookup.md).
 
 ## Framework references
 Application defines its framework dependencies in its `.runtimeconfig.json` file. Each framework then defines its dependencies in its copy of `.runtimeconfig.json`. Each dependency is expressed as a framework reference. Together these form a graph. The host must resolve the references by finding the actual frameworks which are available on the machine. It must also unify references if there are multi references to the same framework.

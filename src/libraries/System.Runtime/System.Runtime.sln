@@ -41,6 +41,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Permissions
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Security.Permissions", "..\System.Security.Permissions\src\System.Security.Permissions.csproj", "{F6A8185B-07C6-401D-9B40-3C560239E05F}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Text.RegularExpressions.Generator", "..\System.Text.RegularExpressions\gen\System.Text.RegularExpressions.Generator.csproj", "{EC777939-BE30-4ED9-9FE1-451DD7472467}"
+EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.AccessControl", "..\System.Threading.AccessControl\ref\System.Threading.AccessControl.csproj", "{25E8AB9D-2D10-44F5-9F83-5A5134526771}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "System.Threading.AccessControl", "..\System.Threading.AccessControl\src\System.Threading.AccessControl.csproj", "{9CF6C6E6-0E9F-4A95-84B5-6083EAB6FA13}"
@@ -448,6 +450,24 @@ Global
 		{F6A8185B-07C6-401D-9B40-3C560239E05F}.Checked|x64.Build.0 = Debug|Any CPU
 		{F6A8185B-07C6-401D-9B40-3C560239E05F}.Checked|x86.ActiveCfg = Debug|Any CPU
 		{F6A8185B-07C6-401D-9B40-3C560239E05F}.Checked|x86.Build.0 = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Debug|x64.Build.0 = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Debug|x86.Build.0 = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Release|x64.ActiveCfg = Release|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Release|x64.Build.0 = Release|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Release|x86.ActiveCfg = Release|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Release|x86.Build.0 = Release|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Checked|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Checked|Any CPU.Build.0 = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Checked|x64.ActiveCfg = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Checked|x64.Build.0 = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Checked|x86.ActiveCfg = Debug|Any CPU
+		{EC777939-BE30-4ED9-9FE1-451DD7472467}.Checked|x86.Build.0 = Debug|Any CPU
 		{25E8AB9D-2D10-44F5-9F83-5A5134526771}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{25E8AB9D-2D10-44F5-9F83-5A5134526771}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{25E8AB9D-2D10-44F5-9F83-5A5134526771}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -550,6 +570,7 @@ Global
 		{CF79B5AE-38CB-4B80-BF92-CF634C0B7EC3} = {F362E63A-2B1A-445B-B198-3071D7DDE8CF}
 		{4FA4A9A6-1D38-414B-96F0-3CFB63C687C9} = {F362E63A-2B1A-445B-B198-3071D7DDE8CF}
 		{A7B7DE04-7261-4D4C-AA78-9F2D9B5A1C37} = {F362E63A-2B1A-445B-B198-3071D7DDE8CF}
+		{EC777939-BE30-4ED9-9FE1-451DD7472467} = {F362E63A-2B1A-445B-B198-3071D7DDE8CF}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {19706846-1F47-42ED-B649-B0982EE96E6B}

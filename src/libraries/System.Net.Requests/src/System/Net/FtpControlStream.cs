@@ -76,7 +76,7 @@ namespace System.Net
         private static readonly AsyncCallback s_connectCallbackDelegate = new AsyncCallback(ConnectCallback);
         private static readonly AsyncCallback s_SSLHandshakeCallback = new AsyncCallback(SSLHandshakeCallback);
 
-        internal FtpControlStream(TcpClient client)
+        internal FtpControlStream(NetworkStream client)
             : base(client)
         {
         }
@@ -602,8 +602,7 @@ namespace System.Net
                 commandList.Add(new PipelineEntry(FormatFtpCommand("RNFR", baseDir + requestFilename), flags));
 
                 string renameTo;
-                if (!string.IsNullOrEmpty(request.RenameTo)
-                    && request.RenameTo.StartsWith("/", StringComparison.OrdinalIgnoreCase))
+                if (request.RenameTo is not null && request.RenameTo.StartsWith('/'))
                 {
                     renameTo = request.RenameTo; // Absolute path
                 }
@@ -770,11 +769,11 @@ namespace System.Net
             else
             {
                 directory = path.Substring(0, index + 1);
-                filename = path.Substring(index + 1, path.Length - (index + 1));
+                filename = path.Substring(index + 1);
             }
 
             // strip off trailing '/' on directory if present
-            if (directory.Length > 1 && directory[directory.Length - 1] == '/')
+            if (directory.Length > 1 && directory.EndsWith('/'))
                 directory = directory.Substring(0, directory.Length - 1);
         }
 
@@ -782,7 +781,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Formats an IP address (contained in a UInt32) to a FTP style command string</para>
         /// </summary>
-        private string FormatAddress(IPAddress address, int Port)
+        private static string FormatAddress(IPAddress address, int Port)
         {
             byte[] localAddressInBytes = address.GetAddressBytes();
 
@@ -805,7 +804,7 @@ namespace System.Net
         ///    Looks something in this form: |2|1080::8:800:200C:417A|5282| </para>
         ///    |2|4567::0123:5678:0123:5678|0123|
         /// </summary>
-        private string FormatAddressV6(IPAddress address, int port)
+        private static string FormatAddressV6(IPAddress address, int port)
         {
             return
                 "|2|" +
@@ -875,7 +874,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Parses a response string for content length</para>
         /// </summary>
-        private long GetContentLengthFrom213Response(string responseString)
+        private static long GetContentLengthFrom213Response(string responseString)
         {
             string[] parsedList = responseString.Split(' ');
             if (parsedList.Length < 2)
@@ -954,11 +953,11 @@ namespace System.Net
             escapedFilename = escapedFilename.Replace("#", "%23");
 
             // help us out if the user forgot to add a slash to the directory name
-            string orginalPath = baseUri.AbsolutePath;
-            if (orginalPath.Length > 0 && orginalPath[orginalPath.Length - 1] != '/')
+            string originalPath = baseUri.AbsolutePath;
+            if (originalPath.Length > 0 && !originalPath.EndsWith('/'))
             {
                 UriBuilder uriBuilder = new UriBuilder(baseUri);
-                uriBuilder.Path = orginalPath + "/";
+                uriBuilder.Path = originalPath + "/";
                 baseUri = uriBuilder.Uri;
             }
 
@@ -1007,7 +1006,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Parses a response string for our login dir in " "</para>
         /// </summary>
-        private string GetLoginDirectory(string str)
+        private static string GetLoginDirectory(string str)
         {
             int firstQuote = str.IndexOf('"');
             int lastQuote = str.LastIndexOf('"');
@@ -1024,7 +1023,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Parses a response string for a port number</para>
         /// </summary>
-        private int GetPortV4(string responseString)
+        private static int GetPortV4(string responseString)
         {
             string[] parsedList = responseString.Split(new char[] { ' ', '(', ',', ')' });
 
@@ -1049,7 +1048,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Parses a response string for a port number</para>
         /// </summary>
-        private int GetPortV6(string responseString)
+        private static int GetPortV6(string responseString)
         {
             int pos1 = responseString.LastIndexOf('(');
             int pos2 = responseString.LastIndexOf(')');
@@ -1118,7 +1117,7 @@ namespace System.Net
         /// <summary>
         ///    <para>Formats a simple FTP command + parameter in correct pre-wire format</para>
         /// </summary>
-        private string FormatFtpCommand(string command, string? parameter)
+        private static string FormatFtpCommand(string command, string? parameter)
         {
             return string.IsNullOrEmpty(parameter) ?
                 command + "\r\n" :
@@ -1130,7 +1129,7 @@ namespace System.Net
         ///     This will handle either connecting to a port or listening for one
         ///    </para>
         /// </summary>
-        private Socket CreateFtpDataSocket(FtpWebRequest request, Socket templateSocket)
+        private static Socket CreateFtpDataSocket(FtpWebRequest request, Socket templateSocket)
         {
             // Safe to be called under an Assert.
             Socket socket = new Socket(templateSocket.AddressFamily, templateSocket.SocketType, templateSocket.ProtocolType);

@@ -175,7 +175,7 @@ namespace System.Runtime.Serialization.Json
                 return _ilg;
             }
 
-            private void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
+            private static void BeginMethod(CodeGenerator ilg, string methodName, Type delegateType, bool allowPrivateMemberAccess)
             {
                 MethodInfo signature = JsonFormatWriterGenerator.GetInvokeMethod(delegateType);
                 ParameterInfo[] parameters = signature.GetParameters();
@@ -257,7 +257,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
-            private bool HasFactoryMethod(ClassDataContract classContract)
+            private static bool HasFactoryMethod(ClassDataContract classContract)
             {
                 return Globals.TypeOfIObjectReference.IsAssignableFrom(classContract.UnderlyingType);
             }
@@ -431,7 +431,7 @@ namespace System.Runtime.Serialization.Json
                 return memberCount;
             }
 
-            private void SetExpectedElements(BitFlagsGenerator expectedElements, int startIndex)
+            private static void SetExpectedElements(BitFlagsGenerator expectedElements, int startIndex)
             {
                 int memberCount = expectedElements.GetBitCount();
                 for (int i = startIndex; i < memberCount; i++)
@@ -440,7 +440,7 @@ namespace System.Runtime.Serialization.Json
                 }
             }
 
-            private void ResetExpectedElements(BitFlagsGenerator expectedElements, int index)
+            private static void ResetExpectedElements(BitFlagsGenerator expectedElements, int index)
             {
                 expectedElements.Store(index, false);
             }

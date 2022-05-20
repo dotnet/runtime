@@ -16,7 +16,7 @@ internal static partial class Interop
         /// 2) if no children are terminated, 0 is returned
         /// 3) on error, -1 is returned
         /// </returns>
-        [GeneratedDllImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitIdAnyExitedNoHangNoWait", SetLastError = true)]
+        [LibraryImport(Libraries.SystemNative, EntryPoint = "SystemNative_WaitIdAnyExitedNoHangNoWait", SetLastError = true)]
         internal static partial int WaitIdAnyExitedNoHangNoWait();
     }
 }

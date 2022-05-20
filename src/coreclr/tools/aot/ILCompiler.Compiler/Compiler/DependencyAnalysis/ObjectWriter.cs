@@ -71,7 +71,7 @@ namespace ILCompiler.DependencyAnalysis
         private readonly bool _isSingleFileCompilation;
 
         // Unix section containing LSDA data, like EH Info and GC Info
-        public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".corert_eh_table", SectionType.ReadOnly);
+        public static readonly ObjectNodeSection LsdaSection = new ObjectNodeSection(".dotnet_eh_table", SectionType.ReadOnly);
 
         private UserDefinedTypeDescriptor _userDefinedTypeDescriptor;
 
@@ -80,7 +80,7 @@ namespace ILCompiler.DependencyAnalysis
 #endif
 
         [DllImport(NativeObjectWriterFileName)]
-        private static extern IntPtr InitObjWriter(string objectFilePath, string triple = null);
+        private static extern IntPtr InitObjWriter([MarshalAs(UnmanagedType.LPUTF8Str)] string objectFilePath, string triple = null);
 
         [DllImport(NativeObjectWriterFileName)]
         private static extern void FinishObjWriter(IntPtr objWriter);

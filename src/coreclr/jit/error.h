@@ -100,9 +100,6 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
 
 #ifdef DEBUG
 
-#define NO_WAY(msg) (debugError(msg, __FILE__, __LINE__), noWay())
-// Used for fallback stress mode
-#define NO_WAY_NOASSERT(msg) noWay()
 #define BADCODE(msg) (debugError(msg, __FILE__, __LINE__), badCode())
 #define BADCODE3(msg, msg2, arg) badCode3(msg, msg2, arg, __FILE__, __LINE__)
 // Used for an assert that we want to convert into BADCODE to force minopts, or in minopts to force codegen.
@@ -116,7 +113,9 @@ extern void RecordNowayAssertGlobal(const char* filename, unsigned line, const c
         }                                                                                                              \
     } while (0)
 #define unreached() noWayAssertBody("unreached", __FILE__, __LINE__)
-
+#define NO_WAY(msg) noWayAssertBody(msg, __FILE__, __LINE__)
+// Used for fallback stress mode
+#define NO_WAY_NOASSERT(msg) noWay()
 #define NOWAY_MSG(msg) noWayAssertBodyConditional(msg, __FILE__, __LINE__)
 #define NOWAY_MSG_FILE_AND_LINE(msg, file, line) noWayAssertBodyConditional(msg, file, line)
 
@@ -174,6 +173,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_X86(msg)    do { } while (0)
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) do { } while (0)
 
 #elif defined(TARGET_X86)
 
@@ -181,6 +181,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_X86(msg)    NYIRAW("NYI_X86: " msg)
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) do { } while (0)
 
 #elif defined(TARGET_ARM)
 
@@ -188,6 +189,7 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_X86(msg)    do { } while (0)
 #define NYI_ARM(msg)    NYIRAW("NYI_ARM: " msg)
 #define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) do { } while (0)
 
 #elif defined(TARGET_ARM64)
 
@@ -195,10 +197,18 @@ extern void notYetImplemented(const char* msg, const char* file, unsigned line);
 #define NYI_X86(msg)    do { } while (0)
 #define NYI_ARM(msg)    do { } while (0)
 #define NYI_ARM64(msg)  NYIRAW("NYI_ARM64: " msg)
+#define NYI_LOONGARCH64(msg) do { } while (0)
+
+#elif defined(TARGET_LOONGARCH64)
+#define NYI_AMD64(msg)  do { } while (0)
+#define NYI_X86(msg)    do { } while (0)
+#define NYI_ARM(msg)    do { } while (0)
+#define NYI_ARM64(msg)  do { } while (0)
+#define NYI_LOONGARCH64(msg) NYIRAW("NYI_LOONGARCH64: " msg)
 
 #else
 
-#error "Unknown platform, not x86, ARM, or AMD64?"
+#error "Unknown platform, not x86, ARM, LOONGARCH64 or AMD64?"
 
 #endif
 

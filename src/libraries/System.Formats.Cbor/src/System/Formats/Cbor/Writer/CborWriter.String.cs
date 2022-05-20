@@ -17,23 +17,28 @@ namespace System.Formats.Cbor
         /// <summary>Writes a buffer as a byte string encoding (major type 2).</summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="ArgumentNullException">The provided value cannot be <see langword="null" />.</exception>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
-        public void WriteByteString(byte[] value!!)
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
+        public void WriteByteString(byte[] value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             WriteByteString(value.AsSpan());
         }
 
         /// <summary>Writes a buffer as a byte string encoding (major type 2).</summary>
         /// <param name="value">The value to write.</param>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteByteString(ReadOnlySpan<byte> value)
         {
             WriteUnsignedInteger(CborMajorType.ByteString, (ulong)value.Length);
@@ -54,11 +59,11 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Writes the start of an indefinite-length byte string (major type 2).</summary>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         /// <remarks>
         /// Pushes a context where definite-length chunks of the same major type can be written.
         /// In canonical conformance modes, the writer will reject indefinite-length writes unless
@@ -96,24 +101,29 @@ namespace System.Formats.Cbor
         /// <param name="value">The value to write.</param>
         /// <exception cref="ArgumentNullException">The provided value cannot be <see langword="null" />.</exception>
         /// <exception cref="ArgumentException">The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.</exception>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
-        public void WriteTextString(string value!!)
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
+        public void WriteTextString(string value)
         {
+            if (value is null)
+            {
+                throw new ArgumentNullException(nameof(value));
+            }
+
             WriteTextString(value.AsSpan());
         }
 
         /// <summary>Writes a buffer as a UTF-8 string encoding (major type 3).</summary>
         /// <param name="value">The value to write.</param>
         /// <exception cref="ArgumentException">The supplied string is not a valid UTF-8 encoding, which is not permitted under the current conformance mode.</exception>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         public void WriteTextString(ReadOnlySpan<char> value)
         {
             Encoding utf8Encoding = CborConformanceModeHelpers.GetUtf8Encoding(ConformanceMode);
@@ -146,11 +156,11 @@ namespace System.Formats.Cbor
         }
 
         /// <summary>Writes the start of an indefinite-length UTF-8 string (major type 3).</summary>
-        /// <exception cref="InvalidOperationException">Writing a new value exceeds the definite length of the parent data item.
-        /// -or-
-        /// The major type of the encoded value is not permitted in the parent data item.
-        /// -or-
-        /// The written data is not accepted under the current conformance mode.</exception>
+        /// <exception cref="InvalidOperationException"><para>Writing a new value exceeds the definite length of the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The major type of the encoded value is not permitted in the parent data item.</para>
+        /// <para>-or-</para>
+        /// <para>The written data is not accepted under the current conformance mode.</para></exception>
         /// <remarks>
         /// Pushes a context where definite-length chunks of the same major type can be written.
         /// In canonical conformance modes, the writer will reject indefinite-length writes unless

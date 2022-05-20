@@ -192,8 +192,8 @@ namespace System.Net.Http
                 {
                     // Remove at most a single set of quotes.
                     if (charset.Length > 2 &&
-                        charset[0] == '\"' &&
-                        charset[charset.Length - 1] == '\"')
+                        charset.StartsWith('\"') &&
+                        charset.EndsWith('\"'))
                     {
                         encoding = Encoding.GetEncoding(charset.Substring(1, charset.Length - 2));
                     }

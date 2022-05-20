@@ -232,10 +232,10 @@ typedef struct MonoCompileArch {
 
 #define PPC_CALL_REG ppc_r12
 
-#if defined(HAVE_WORKING_SIGALTSTACK) && !defined(__APPLE__)
+#if defined(ENABLE_SIGALTSTACK) && !defined(__APPLE__)
 #define MONO_ARCH_SIGSEGV_ON_ALTSTACK 1
 #define MONO_ARCH_SIGNAL_STACK_SIZE (12 * 1024)
-#endif /* HAVE_WORKING_SIGALTSTACK */
+#endif /* ENABLE_SIGALTSTACK */
 
 #define MONO_ARCH_IMT_REG ppc_r11
 

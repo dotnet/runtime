@@ -29,7 +29,7 @@
       <NativeCompiler Condition="'$(NativeCompiler)' == ''">clang</NativeCompiler>
     </PropertyGroup>
 
-    <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &quot;$(RepositoryEngineeringDir)/common/native&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $CC'"
+    <Exec Command="bash -c 'source &quot;$(RepositoryEngineeringDir)/common/native/init-compiler.sh&quot; &quot;$(RepositoryEngineeringDir)/common/native&quot; $(TargetArchitecture) $(NativeCompiler) &amp;&amp; echo $CC' 2>/dev/null"
           EchoOff="true"
           ConsoleToMsBuild="true"
           StandardOutputImportance="Low">
@@ -73,7 +73,7 @@
     </PropertyGroup>
     <PropertyGroup Condition="'$(TargetOS)' == 'OSX'">
       <TargetTriple Condition="'$(TargetArchitecture)' == 'arm64'">arm64-apple-macos11</TargetTriple>
-      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.13</TargetTriple>
+      <TargetTriple Condition="'$(TargetArchitecture)' == 'x64'">x86_64-apple-macos10.14</TargetTriple>
       <XCodeSdkName>macosx</XCodeSdkName>
     </PropertyGroup>
 

@@ -21,9 +21,9 @@
 }
 .assembly extern xunit.core {}
 // MVID: {FBE787B7-6007-478A-AA78-9465C2020C0C}
-.namespace TestCase
+.namespace TestCase_i8u8_il
 {
-  .class private auto ansi Test
+  .class public auto ansi Test
          extends ['mscorlib']System.Object
   {
     .method private hidebysig static int32 
@@ -57,7 +57,7 @@
       IL_0015:  ret
     } // end of method 'Test::compare'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -69,7 +69,7 @@
       .locals (int32 V_0)
       IL_0000:  ldc.i8 1
       IL_0002:  ldc.i8 -1
-      IL_0004:  call       int32 TestCase.Test::compare(unsigned int64,
+      IL_0004:  call       int32 TestCase_i8u8_il.Test::compare(unsigned int64,
                                                         unsigned int64)
       IL_0009:  ldc.i4.0
       IL_000a:  blt.s      IL_001a
@@ -102,6 +102,6 @@
 
   } // end of class 'Test'
 
-} // end of namespace 'TestCase'
+} // end of namespace 'TestCase_i8u8_il'
 
 //*********** DISASSEMBLY COMPLETE ***********************

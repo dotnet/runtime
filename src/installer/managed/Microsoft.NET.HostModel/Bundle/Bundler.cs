@@ -169,7 +169,7 @@ namespace Microsoft.NET.HostModel.Bundle
             }
         }
 
-        private bool IsAssembly(string path, out bool isPE)
+        private static bool IsAssembly(string path, out bool isPE)
         {
             isPE = false;
 
@@ -235,7 +235,7 @@ namespace Microsoft.NET.HostModel.Bundle
         /// This doesn't include unbundled files that should be dropped, and not publised as output.
         /// </param>
         /// <returns>
-        /// The full path the the generated bundle file
+        /// The full path the generated bundle file
         /// </returns>
         /// <exceptions>
         /// ArgumentException if input is invalid

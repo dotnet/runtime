@@ -70,7 +70,7 @@ namespace System.ComponentModel.Composition.Hosting
         /// <exception cref="CompositionException">
         ///     An error occurred during previewing and <paramref name="atomicComposition"/> is null.
         ///     <see cref="CompositionException.Errors"/> will contain a collection of errors that occurred.
-        ///     The pre-existing composition is in an unknown state, depending on the errors that occured.
+        ///     The pre-existing composition is in an unknown state, depending on the errors that occurred.
         /// </exception>
         /// <exception cref="ChangeRejectedException">
         ///     An error occurred during the previewing and <paramref name="atomicComposition"/> is not null.
@@ -396,7 +396,7 @@ namespace System.ComponentModel.Composition.Hosting
                         }
                 }
 
-                // if an error occured while doing a state transition
+                // if an error occurred while doing a state transition
                 if (!result.Succeeded)
                 {
                     // revert to the previous state and return the error
@@ -407,8 +407,10 @@ namespace System.ComponentModel.Composition.Hosting
             return result;
         }
 
-        private CompositionResult TrySatisfyImports(PartManager partManager, ComposablePart part!!, bool shouldTrackImports)
+        private CompositionResult TrySatisfyImports(PartManager partManager, ComposablePart part, bool shouldTrackImports)
         {
+            ArgumentNullException.ThrowIfNull(part);
+
             var result = CompositionResult.SucceededResult;
 
             // get out if the part is already composed
@@ -682,8 +684,10 @@ namespace System.ComponentModel.Composition.Hosting
             return partManager;
         }
 
-        private EngineContext GetEngineContext(AtomicComposition atomicComposition!!)
+        private EngineContext GetEngineContext(AtomicComposition atomicComposition)
         {
+            ArgumentNullException.ThrowIfNull(atomicComposition);
+
             if (!atomicComposition.TryGetValue(this, true, out EngineContext? engineContext))
             {
                 atomicComposition.TryGetValue(this, false, out EngineContext? parentContext);

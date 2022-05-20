@@ -27,14 +27,13 @@ namespace Microsoft.Interop
             return target is TargetFramework.Net && version.Major >= 7;
         }
 
-        public ArgumentSyntax AsArgument(TypePositionInfo info, StubCodeContext context)
+        public ValueBoundaryBehavior GetValueBoundaryBehavior(TypePositionInfo info, StubCodeContext context)
         {
             if (IsPinningPathSupported(info, context))
             {
-                string identifier = context.GetIdentifiers(info).native;
-                return Argument(CastExpression(AsNativeType(info), IdentifierName(identifier)));
+                return ValueBoundaryBehavior.NativeIdentifier;
             }
-            return _manualMarshallingGenerator.AsArgument(info, context);
+            return _manualMarshallingGenerator.GetValueBoundaryBehavior(info, context);
         }
 
         public TypeSyntax AsNativeType(TypePositionInfo info)
@@ -42,9 +41,9 @@ namespace Microsoft.Interop
             return _manualMarshallingGenerator.AsNativeType(info);
         }
 
-        public ParameterSyntax AsParameter(TypePositionInfo info)
+        public SignatureBehavior GetNativeSignatureBehavior(TypePositionInfo info)
         {
-            return _manualMarshallingGenerator.AsParameter(info);
+            return _manualMarshallingGenerator.GetNativeSignatureBehavior(info);
         }
 
         public IEnumerable<StatementSyntax> Generate(TypePositionInfo info, StubCodeContext context)
@@ -83,7 +82,11 @@ namespace Microsoft.Interop
         {
             (string managedIdentifer, string nativeIdentifier) = context.GetIdentifiers(info);
             string byRefIdentifier = $"__byref_{managedIdentifer}";
-            TypeSyntax arrayElementType = _elementType;
+
+            // The element type here is used only for refs/pointers. In the pointer array case, we use byte as the basic placeholder type,
+            // since we can't use pointer types in generic type parameters.
+            bool isPointerArray = info.ManagedType is SzArrayType arrayType && arrayType.ElementTypeInfo is PointerTypeInfo;
+            TypeSyntax arrayElementType = isPointerArray ? PredefinedType(Token(SyntaxKind.ByteKeyword)) : _elementType;
             if (context.CurrentStage == StubCodeContext.Stage.Marshal)
             {
                 // [COMPAT] We use explicit byref calculations here instead of just using a fixed statement
@@ -128,21 +131,31 @@ namespace Microsoft.Interop
             }
             if (context.CurrentStage == StubCodeContext.Stage.Pin)
             {
-                // fixed (<nativeType> <nativeIdentifier> = &Unsafe.As<elementType, byte>(ref <byrefIdentifier>))
+                TypeSyntax nativeType = AsNativeType(info);
+
+                // We skip the Unsafe.As if the element type and native element type are equivalent (ignoring trivia differences)
+                // &<byrefIdentifier>
+                // or
+                // &Unsafe.As<elementType, nativeElementType>(ref <byrefIdentifier>)
+                TypeSyntax nativeElementType = nativeType is PointerTypeSyntax pointerType ? pointerType.ElementType : nativeType;
+                var initializer = arrayElementType.IsEquivalentTo(nativeElementType, topLevel: true)
+                    ? PrefixUnaryExpression(SyntaxKind.AddressOfExpression, IdentifierName(byRefIdentifier))
+                    : PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
+                        InvocationExpression(
+                            MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                ParseTypeName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                                GenericName("As").AddTypeArgumentListArguments(
+                                    arrayElementType,
+                                    nativeElementType)))
+                            .AddArgumentListArguments(
+                                Argument(IdentifierName(byRefIdentifier))
+                                    .WithRefKindKeyword(Token(SyntaxKind.RefKeyword))));
+
+                // fixed (<nativeType> <nativeIdentifier> = <initializer>)
                 yield return FixedStatement(
-                    VariableDeclaration(AsNativeType(info), SingletonSeparatedList(
+                    VariableDeclaration(nativeType, SingletonSeparatedList(
                         VariableDeclarator(nativeIdentifier)
-                            .WithInitializer(EqualsValueClause(
-                                PrefixUnaryExpression(SyntaxKind.AddressOfExpression,
-                                InvocationExpression(
-                                    MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
-                                        ParseTypeName(TypeNames.System_Runtime_CompilerServices_Unsafe),
-                                        GenericName("As").AddTypeArgumentListArguments(
-                                            arrayElementType,
-                                            PredefinedType(Token(SyntaxKind.ByteKeyword)))))
-                                .AddArgumentListArguments(
-                                    Argument(IdentifierName(byRefIdentifier))
-                                        .WithRefKindKeyword(Token(SyntaxKind.RefKeyword)))))))),
+                            .WithInitializer(EqualsValueClause(initializer)))),
                     EmptyStatement());
             }
         }
