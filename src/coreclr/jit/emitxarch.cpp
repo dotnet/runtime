@@ -749,6 +749,9 @@ bool emitter::TakesRexWPrefix(instruction ins, emitAttr attr)
             case INS_pdep:
             case INS_pext:
             case INS_rorx:
+            case INS_shlx:
+            case INS_sarx:
+            case INS_shrx:
                 return true;
             default:
                 return false;
@@ -987,17 +990,32 @@ unsigned emitter::emitOutputRexOrVexPrefixIfNeeded(instruction ins, BYTE* dst, c
                                 case INS_rorx:
                                 case INS_pdep:
                                 case INS_mulx:
+// TODO: Unblock when enabled for x86
+#ifdef TARGET_AMD64
+                                case INS_shrx:
+#endif
                                 {
                                     vexPrefix |= 0x03;
                                     break;
                                 }
 
                                 case INS_pext:
+// TODO: Unblock when enabled for x86
+#ifdef TARGET_AMD64
+                                case INS_sarx:
+#endif
                                 {
                                     vexPrefix |= 0x02;
                                     break;
                                 }
-
+// TODO: Unblock when enabled for x86
+#ifdef TARGET_AMD64
+                                case INS_shlx:
+                                {
+                                    vexPrefix |= 0x01;
+                                    break;
+                                }
+#endif
                                 default:
                                 {
                                     vexPrefix |= 0x00;
@@ -1484,6 +1502,11 @@ bool emitter::emitInsCanOnlyWriteSSE2OrAVXReg(instrDesc* id)
         case INS_pextrw:
         case INS_pextrw_sse41:
         case INS_rorx:
+#ifdef TARGET_AMD64
+        case INS_shlx:
+        case INS_sarx:
+        case INS_shrx:
+#endif
         {
             // These SSE instructions write to a general purpose integer register.
             return false;
@@ -9519,9 +9542,13 @@ void emitter::emitDispIns(
             assert(IsThreeOperandAVXInstruction(ins));
             regNumber reg2 = id->idReg2();
             regNumber reg3 = id->idReg3();
-            if (ins == INS_bextr || ins == INS_bzhi)
+            if (ins == INS_bextr || ins == INS_bzhi
+#ifdef TARGET_AMD64
+                || ins == INS_shrx || ins == INS_shlx || ins == INS_sarx
+#endif
+                )
             {
-                // BMI bextr and bzhi encodes the reg2 in VEX.vvvv and reg3 in modRM,
+                // BMI bextr,bzhi, shrx, shlx and sarx encode the reg2 in VEX.vvvv and reg3 in modRM,
                 // which is different from most of other instructions
                 regNumber tmp = reg2;
                 reg2          = reg3;
@@ -16323,6 +16350,16 @@ emitter::insExecutionCharacteristics emitter::getInsExecutionCharacteristics(ins
             break;
         }
 
+#ifdef TARGET_AMD64
+        case INS_shlx:
+        case INS_sarx:
+        case INS_shrx:
+        {
+            result.insLatency += PERFSCORE_LATENCY_1C;
+            result.insThroughput = PERFSCORE_THROUGHPUT_2X;
+            break;
+        }
+#endif
         default:
             // unhandled instruction insFmt combination
             perfScoreUnhandledInstruction(id, &result);
