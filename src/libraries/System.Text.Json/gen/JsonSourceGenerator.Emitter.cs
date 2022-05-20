@@ -1167,9 +1167,19 @@ public {contextTypeName}({JsonSerializerOptionsTypeRef} {OptionsLocalVariableNam
             {
                 JsonSourceGenerationOptionsAttribute options = _currentContext.GenerationOptions;
 
-                string? namingPolicyInit = options.PropertyNamingPolicy == JsonKnownNamingPolicy.CamelCase
+                string? namingPolicyName = options.PropertyNamingPolicy switch
+                {
+                    JsonKnownNamingPolicy.CamelCase => "CamelCase",
+                    JsonKnownNamingPolicy.SnakeLowerCase => "SnakeLowerCase",
+                    JsonKnownNamingPolicy.SnakeUpperCase => "SnakeUpperCase",
+                    JsonKnownNamingPolicy.KebabLowerCase => "KebabLowerCase",
+                    JsonKnownNamingPolicy.KebabUpperCase => "KebabUpperCase",
+                    _ => null,
+                };
+
+                string? namingPolicyInit = namingPolicyName != null
                     ? $@"
-            PropertyNamingPolicy = {JsonNamingPolicyTypeRef}.CamelCase"
+            PropertyNamingPolicy = {JsonNamingPolicyTypeRef}.{namingPolicyName}"
                     : null;
 
                 return $@"

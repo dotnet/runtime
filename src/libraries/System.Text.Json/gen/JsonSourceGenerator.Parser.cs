@@ -1514,13 +1514,19 @@ namespace System.Text.Json.SourceGeneration
                 {
                     runtimePropName = jsonPropName;
                 }
-                else if (namingPolicy == JsonKnownNamingPolicy.CamelCase)
-                {
-                    runtimePropName = JsonNamingPolicy.CamelCase.ConvertName(clrPropName);
-                }
                 else
                 {
-                    runtimePropName = clrPropName;
+                    JsonNamingPolicy? instance = namingPolicy switch
+                    {
+                        JsonKnownNamingPolicy.CamelCase => JsonNamingPolicy.CamelCase,
+                        JsonKnownNamingPolicy.SnakeLowerCase => JsonNamingPolicy.SnakeLowerCase,
+                        JsonKnownNamingPolicy.SnakeUpperCase => JsonNamingPolicy.SnakeUpperCase,
+                        JsonKnownNamingPolicy.KebabLowerCase => JsonNamingPolicy.KebabLowerCase,
+                        JsonKnownNamingPolicy.KebabUpperCase => JsonNamingPolicy.KebabUpperCase,
+                        _ => null,
+                    };
+                    
+                    runtimePropName = instance?.ConvertName(clrPropName) ?? clrPropName;
                 }
 
                 return runtimePropName;
