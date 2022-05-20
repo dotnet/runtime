@@ -46,17 +46,19 @@ const banner_dts = banner + "//!\n//! This is generated file, see src/mono/wasm/
 // emcc doesn't know how to load ES6 module, that's why we need the whole rollup.js
 const format = "iife";
 const name = "__dotnet_runtime";
-const inlineAssertQuotes = {
-    // eslint-disable-next-line quotes
-    pattern: /assert\(([^,]*), *"([^"]*)"\);/g,
-    // eslint-disable-next-line quotes
-    replacement: 'if (!($1)) throw new Error("Assert failed: $2"); // inlined assert'
-};
-const inlineAssertInterpolation = {
-    // eslint-disable-next-line quotes
-    pattern: /assert\(([^,]*), \(\) => *`([^`]*)`\);/g,
-    replacement: "if (!($1)) throw new Error(`Assert failed: $2`); // inlined assert"
-};
+const inlineAssert = [
+    {
+        pattern: /mono_assert\(([^,]*), *"([^"]*)"\);/gm,
+        // eslint-disable-next-line quotes
+        replacement: 'if (!($1)) throw new Error("Assert failed: $2"); // inlined mono_assert'
+    },
+    {
+        pattern: /mono_assert\(([^,]*), \(\) => *`([^`]*)`\);/gm,
+        replacement: "if (!($1)) throw new Error(`Assert failed: $2`); // inlined mono_assert"
+    }, {
+        pattern: /^\s*mono_assert/gm,
+        failure: "previous regexp didn't inline all mono_assert statements"
+    }];
 const iffeConfig = {
     treeshake: !isDebug,
     input: "exports.ts",
@@ -83,7 +85,7 @@ const iffeConfig = {
 
         handler(warning);
     },
-    plugins: [regexReplace([inlineAssertQuotes, inlineAssertInterpolation]), consts({ productVersion, configuration }), typescript()]
+    plugins: [regexReplace(inlineAssert), consts({ productVersion, configuration }), typescript()]
 };
 const typesConfig = {
     input: "./export-types.ts",
@@ -190,12 +192,21 @@ function regexReplace(replacements = []) {
         }
     };
 
-    function executeReplacement(self, code) {
+    function executeReplacement(self, code, id) {
         // TODO use MagicString for sourcemap support
         let fixed = code;
         for (const rep of replacements) {
-            const { pattern, replacement } = rep;
-            fixed = fixed.replace(pattern, replacement);
+            const { pattern, replacement, failure } = rep;
+            if (failure) {
+                const match = pattern.test(fixed);
+                if (match) {
+                    self.error(failure + " " + id, pattern.lastIndex);
+                    return null;
+                }
+            }
+            else {
+                fixed = fixed.replace(pattern, replacement);
+            }
         }
 
         if (fixed == code) {

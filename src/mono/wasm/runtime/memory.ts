@@ -1,5 +1,5 @@
 import { Module } from "./imports";
-import { assert } from "./types";
+import { mono_assert } from "./types";
 import { VoidPtr, NativePointer, ManagedPointer } from "./types/emscripten";
 import * as cuint64 from "./cuint64";
 
@@ -46,13 +46,13 @@ type _MemOffset = number | VoidPtr | NativePointer | ManagedPointer;
 type _NumberOrPointer = number | VoidPtr | NativePointer | ManagedPointer;
 
 function is_int_in_range(value: Number, min: Number, max: Number) {
-    assert(typeof value === "number", () => `Value is not integer but ${typeof value}`);
-    assert(Number.isInteger(value), "Value is not integer but float");
-    assert(value >= min && value <= max, () => `Overflow: value ${value} is out of ${min} ${max} range`);
+    mono_assert(typeof value === "number", () => `Value is not integer but ${typeof value}`);
+    mono_assert(Number.isInteger(value), "Value is not integer but float");
+    mono_assert(value >= min && value <= max, () => `Overflow: value ${value} is out of ${min} ${max} range`);
 }
 
 export function setB32(offset: _MemOffset, value: number | boolean): void {
-    assert(typeof value === "boolean", () => `Value is not boolean but ${typeof value}`);
+    mono_assert(typeof value === "boolean", () => `Value is not boolean but ${typeof value}`);
     Module.HEAP32[<any>offset >>> 2] = <any>!!value;
 }
 
@@ -91,8 +91,8 @@ export function setI32(offset: _MemOffset, value: number): void {
  */
 export function setI52(offset: _MemOffset, value: number): void {
     // 52 bits = 0x1F_FFFF_FFFF_FFFF
-    assert(!Number.isNaN(value), "Can't convert Number.Nan into Int64");
-    assert(Number.isSafeInteger(value), "Overflow: value out of Number.isSafeInteger range");
+    mono_assert(!Number.isNaN(value), "Can't convert Number.Nan into Int64");
+    mono_assert(Number.isSafeInteger(value), "Overflow: value out of Number.isSafeInteger range");
     let hi: number;
     let lo: number;
     if (value < 0) {
@@ -113,9 +113,9 @@ export function setI52(offset: _MemOffset, value: number): void {
  */
 export function setU52(offset: _MemOffset, value: number): void {
     // 52 bits = 0x1F_FFFF_FFFF_FFFF
-    assert(!Number.isNaN(value), "Can't convert Number.Nan into UInt64");
-    assert(Number.isSafeInteger(value), "Overflow: value out of Number.isSafeInteger range");
-    assert(value >= 0, "Can't convert negative Number into UInt64");
+    mono_assert(!Number.isNaN(value), "Can't convert Number.Nan into UInt64");
+    mono_assert(Number.isSafeInteger(value), "Overflow: value out of Number.isSafeInteger range");
+    mono_assert(value >= 0, "Can't convert negative Number into UInt64");
     const hi = value >>> 32;
     const lo = value & 0xFFFF_FFFF;
     Module.HEAPU32[1 + <any>offset >>> 2] = hi;
@@ -123,7 +123,7 @@ export function setU52(offset: _MemOffset, value: number): void {
 }
 
 export function setI64Big(offset: _MemOffset, value: bigint): void {
-    assert(is_bingint_supported, "BigInt is not supported.");
+    mono_assert(is_bingint_supported, "BigInt is not supported.");
     HEAPI64[<any>offset >>> 3] = value;
 }
 
@@ -174,13 +174,13 @@ export function getI52(offset: _MemOffset): number {
     const sign = hi & 0x8000_0000;
     const exp = hi & 0x7FE0_0000;
     if (sign) {
-        assert(exp === 0x7FE0_0000, "Overflow: value out of Number.isSafeInteger range");
+        mono_assert(exp === 0x7FE0_0000, "Overflow: value out of Number.isSafeInteger range");
         const nhi = (hi & 0x000F_FFFF) ^ 0x000F_FFFF;
         const nlo = lo ^ 0xFFFF_FFFF;
         return -1 - ((nhi * 0x1_0000_0000) + nlo);
     }
     else {
-        assert(exp === 0, "Overflow: value out of Number.isSafeInteger range");
+        mono_assert(exp === 0, "Overflow: value out of Number.isSafeInteger range");
         return (hi * 0x1_0000_0000) + lo;
     }
 }
@@ -193,12 +193,12 @@ export function getU52(offset: _MemOffset): number {
     const hi = Module.HEAPU32[1 + (<any>offset >>> 2)];
     const lo = Module.HEAPU32[<any>offset >>> 2];
     const exp_sign = hi & 0xFFE0_0000;
-    assert(exp_sign === 0, "Overflow: value out of Number.isSafeInteger range");
+    mono_assert(exp_sign === 0, "Overflow: value out of Number.isSafeInteger range");
     return (hi * 0x1_0000_0000) + lo;
 }
 
 export function getI64Big(offset: _MemOffset): bigint {
-    assert(is_bingint_supported, "BigInt is not supported.");
+    mono_assert(is_bingint_supported, "BigInt is not supported.");
     return HEAPI64[<any>offset >>> 3];
 }
 

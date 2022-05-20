@@ -222,7 +222,7 @@ export type DotnetModuleConfigImports = {
 
 // see src\mono\wasm\runtime\rollup.config.js 
 // inline this, because the lambda could allocate closure on hot path otherwise
-export function assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
+export function mono_assert(condition: unknown, messageFactory: string | (() => string)): asserts condition {
     if (!condition) {
         const message = typeof messageFactory === "string"
             ? messageFactory
