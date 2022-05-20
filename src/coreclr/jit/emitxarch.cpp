@@ -13197,7 +13197,6 @@ BYTE* emitter::emitOutputIV(BYTE* dst, instrDesc* id)
  *  This function also handles non-jumps that have jump-like characteristics, like RIP-relative LEA of a label that
  *  needs to get bound to an actual address and processed by branch shortening.
  */
-
 BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
 {
     unsigned srcOffs;
@@ -13250,6 +13249,11 @@ BYTE* emitter::emitOutputLJ(insGroup* ig, BYTE* dst, instrDesc* i)
             jmp       = false;
             relAddr   = false;
             break;
+    }
+
+    if (jmp && id->idjIsJmpAlways == 1 && id->idCodeSize() == 0)
+    {
+        return dst;
     }
 
     // Figure out the distance to the target
@@ -13674,7 +13678,8 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
         case IF_RWR_LABEL:
         case IF_SWR_LABEL:
             assert(id->idGCref() == GCT_NONE);
-            assert(id->idIsBound());
+            assert(id->idIsBound() ||
+                   (emitIsUncondJump(id) && id->idCodeSize() == 0 && ((instrDescJmp*)id)->idjIsJmpAlways == 1));
 
             // TODO-XArch-Cleanup: handle IF_RWR_LABEL in emitOutputLJ() or change it to emitOutputAM()?
             dst = emitOutputLJ(ig, dst, id);
@@ -14694,10 +14699,11 @@ size_t emitter::emitOutputInstr(insGroup* ig, instrDesc* id, BYTE** dp)
 
     assert((int)emitCurStackLvl >= 0);
 
-    // Only epilog "instructions" and some pseudo-instrs
+    // Only epilog "instructions", some pseudo-instrs and block ending jumps
     // are allowed not to generate any code
 
-    assert(*dp != dst || emitInstHasNoCode(ins));
+    assert(*dp != dst || (emitInstHasNoCode(ins) ||
+                          (emitIsUncondJump(id) && id->idCodeSize() == 0 && ((instrDescJmp*)id)->idjIsJmpAlways == 1)));
 
 #ifdef DEBUG
     if (emitComp->opts.disAsm || emitComp->verbose)
