@@ -15,12 +15,12 @@ namespace System.Text.Json
 
         public override string ConvertName(string name)
         {
-            var bufferLength = name.Length * 2;
-            var buffer = bufferLength > 512
+            int bufferLength = name.Length * 2;
+            char[]? buffer = bufferLength > 512
                 ? ArrayPool<char>.Shared.Rent(bufferLength)
                 : null;
 
-            var resultLength = 0;
+            int resultLength = 0;
             Span<char> result = buffer is null
                 ? stackalloc char[512]
                 : buffer;
@@ -30,14 +30,14 @@ namespace System.Text.Json
                 if (word.IsEmpty)
                     return;
 
-                var required = result.IsEmpty
+                int required = result.IsEmpty
                     ? word.Length
                     : word.Length + 1;
 
                 if (required >= result.Length)
                 {
-                    var bufferLength = result.Length * 2;
-                    var bufferNew = ArrayPool<char>.Shared.Rent(bufferLength);
+                    int bufferLength = result.Length * 2;
+                    char[] bufferNew = ArrayPool<char>.Shared.Rent(bufferLength);
 
                     result.CopyTo(bufferNew);
 
@@ -53,7 +53,8 @@ namespace System.Text.Json
                     resultLength += 1;
                 }
 
-                var destination = result.Slice(resultLength);
+                Span<char> destination = result.Slice(resultLength);
+
                 if (_lowercase)
                 {
                     word.ToLowerInvariant(destination);
@@ -67,12 +68,14 @@ namespace System.Text.Json
             }
 
             int first = 0;
-            var chars = name.AsSpan();
-            var previousCategory = CharCategory.Boundary;
+            ReadOnlySpan<char> chars = name.AsSpan();
+            CharCategory previousCategory = CharCategory.Boundary;
+
             for (int index = 0; index < chars.Length; index++)
             {
-                var current = chars[index];
-                var currentCategoryUnicode = char.GetUnicodeCategory(current);
+                char current = chars[index];
+                UnicodeCategory currentCategoryUnicode = char.GetUnicodeCategory(current);
+
                 if (currentCategoryUnicode == UnicodeCategory.SpaceSeparator ||
                     currentCategoryUnicode >= UnicodeCategory.ConnectorPunctuation &&
                     currentCategoryUnicode <= UnicodeCategory.OtherPunctuation)
@@ -87,8 +90,8 @@ namespace System.Text.Json
 
                 if (index + 1 < chars.Length)
                 {
-                    var next = chars[index + 1];
-                    var currentCategory = currentCategoryUnicode switch
+                    char next = chars[index + 1];
+                    CharCategory currentCategory = currentCategoryUnicode switch
                     {
                         UnicodeCategory.LowercaseLetter => CharCategory.Lowercase,
                         UnicodeCategory.UppercaseLetter => CharCategory.Uppercase,
