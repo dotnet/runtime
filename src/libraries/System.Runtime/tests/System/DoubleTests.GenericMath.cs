@@ -543,6 +543,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateCheckedFromInt128Test()
+        {
+            AssertBitwiseEqual(0.0, NumberHelper<double>.CreateChecked<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(1.0, NumberHelper<double>.CreateChecked<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual(170141183460469231731687303715884105727.0, NumberHelper<double>.CreateChecked<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual(-170141183460469231731687303715884105728.0, NumberHelper<double>.CreateChecked<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(-1.0, NumberHelper<double>.CreateChecked<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+        }
+
+        [Fact]
         public static void CreateCheckedFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -601,6 +611,16 @@ namespace System.Tests
             AssertBitwiseEqual(9223372036854775807.0, NumberHelper<double>.CreateChecked<ulong>(0x7FFFFFFFFFFFFFFF));
             AssertBitwiseEqual(9223372036854775808.0, NumberHelper<double>.CreateChecked<ulong>(0x8000000000000000));
             AssertBitwiseEqual(18446744073709551615.0, NumberHelper<double>.CreateChecked<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateCheckedFromUInt128Test()
+        {
+            AssertBitwiseEqual(0.0, NumberHelper<double>.CreateChecked<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(1.0, NumberHelper<double>.CreateChecked<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual(170141183460469231731687303715884105727.0, NumberHelper<double>.CreateChecked<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual(170141183460469231731687303715884105728.0, NumberHelper<double>.CreateChecked<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(340282366920938463463374607431768211455.0, NumberHelper<double>.CreateChecked<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
         }
 
         [Fact]
@@ -679,6 +699,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateSaturatingFromInt128Test()
+        {
+            AssertBitwiseEqual(0.0, NumberHelper<double>.CreateSaturating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(1.0, NumberHelper<double>.CreateSaturating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual(170141183460469231731687303715884105727.0, NumberHelper<double>.CreateSaturating<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual(-170141183460469231731687303715884105728.0, NumberHelper<double>.CreateSaturating<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(-1.0, NumberHelper<double>.CreateSaturating<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+        }
+
+        [Fact]
         public static void CreateSaturatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -737,6 +767,16 @@ namespace System.Tests
             AssertBitwiseEqual(9223372036854775807.0, NumberHelper<double>.CreateSaturating<ulong>(0x7FFFFFFFFFFFFFFF));
             AssertBitwiseEqual(9223372036854775808.0, NumberHelper<double>.CreateSaturating<ulong>(0x8000000000000000));
             AssertBitwiseEqual(18446744073709551615.0, NumberHelper<double>.CreateSaturating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateSaturatingFromUInt128Test()
+        {
+            AssertBitwiseEqual(0.0, NumberHelper<double>.CreateSaturating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(1.0, NumberHelper<double>.CreateSaturating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual(170141183460469231731687303715884105727.0, NumberHelper<double>.CreateSaturating<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual(170141183460469231731687303715884105728.0, NumberHelper<double>.CreateSaturating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(340282366920938463463374607431768211455.0, NumberHelper<double>.CreateSaturating<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
         }
 
         [Fact]
@@ -815,6 +855,16 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void CreateTruncatingFromInt128Test()
+        {
+            AssertBitwiseEqual(0.0, NumberHelper<double>.CreateTruncating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(1.0, NumberHelper<double>.CreateTruncating<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual(170141183460469231731687303715884105727.0, NumberHelper<double>.CreateTruncating<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual(-170141183460469231731687303715884105728.0, NumberHelper<double>.CreateTruncating<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(-1.0, NumberHelper<double>.CreateTruncating<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+        }
+
+        [Fact]
         public static void CreateTruncatingFromIntPtrTest()
         {
             if (Environment.Is64BitProcess)
@@ -873,6 +923,16 @@ namespace System.Tests
             AssertBitwiseEqual(9223372036854775807.0, NumberHelper<double>.CreateTruncating<ulong>(0x7FFFFFFFFFFFFFFF));
             AssertBitwiseEqual(9223372036854775808.0, NumberHelper<double>.CreateTruncating<ulong>(0x8000000000000000));
             AssertBitwiseEqual(18446744073709551615.0, NumberHelper<double>.CreateTruncating<ulong>(0xFFFFFFFFFFFFFFFF));
+        }
+
+        [Fact]
+        public static void CreateTruncatingFromUInt128Test()
+        {
+            AssertBitwiseEqual(0.0, NumberHelper<double>.CreateTruncating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(1.0, NumberHelper<double>.CreateTruncating<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001)));
+            AssertBitwiseEqual(170141183460469231731687303715884105727.0, NumberHelper<double>.CreateTruncating<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
+            AssertBitwiseEqual(170141183460469231731687303715884105728.0, NumberHelper<double>.CreateTruncating<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000)));
+            AssertBitwiseEqual(340282366920938463463374607431768211455.0, NumberHelper<double>.CreateTruncating<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)));
         }
 
         [Fact]
@@ -1069,6 +1129,27 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void TryCreateFromInt128Test()
+        {
+            double result;
+
+            Assert.True(NumberHelper<double>.TryCreate<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal(0.0, result);
+
+            Assert.True(NumberHelper<double>.TryCreate<Int128>(new Int128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), out result));
+            Assert.Equal(1.0, result);
+
+            Assert.True(NumberHelper<double>.TryCreate<Int128>(new Int128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal(170141183460469231731687303715884105727.0, result);
+
+            Assert.True(NumberHelper<double>.TryCreate<Int128>(new Int128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal(-170141183460469231731687303715884105728.0, result);
+
+            Assert.True(NumberHelper<double>.TryCreate<Int128>(new Int128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal(-1.0, result);
+        }
+
+        [Fact]
         public static void TryCreateFromIntPtrTest()
         {
             double result;
@@ -1191,6 +1272,27 @@ namespace System.Tests
 
             Assert.True(NumberHelper<double>.TryCreate<ulong>(0xFFFFFFFFFFFFFFFF, out result));
             Assert.Equal(18446744073709551615.0, result);
+        }
+
+        [Fact]
+        public static void TryCreateFromUInt128Test()
+        {
+            double result;
+
+            Assert.True(NumberHelper<double>.TryCreate<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal(0.0, result);
+
+            Assert.True(NumberHelper<double>.TryCreate<UInt128>(new UInt128(0x0000_0000_0000_0000, 0x0000_0000_0000_0001), out result));
+            Assert.Equal(1.0, result);
+
+            Assert.True(NumberHelper<double>.TryCreate<UInt128>(new UInt128(0x7FFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal(170141183460469231731687303715884105727.0, result);
+
+            Assert.True(NumberHelper<double>.TryCreate<UInt128>(new UInt128(0x8000_0000_0000_0000, 0x0000_0000_0000_0000), out result));
+            Assert.Equal(170141183460469231731687303715884105728.0, result);
+
+            Assert.True(NumberHelper<double>.TryCreate<UInt128>(new UInt128(0xFFFF_FFFF_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF), out result));
+            Assert.Equal(340282366920938463463374607431768211456.0, result);
         }
 
         [Fact]
@@ -1317,6 +1419,77 @@ namespace System.Tests
         }
 
         [Fact]
+        public static void TryWriteExponentBigEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[2];
+            int bytesWritten = 0;
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.NegativeInfinity, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x04, 0x00 }, destination.ToArray()); // +1024
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.MinValue, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x03, 0xFF }, destination.ToArray()); // +1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(-1.0, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray()); // +0
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(-MinNormal, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFC, 0x02 }, destination.ToArray()); // -1022
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(-MaxSubnormal, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(-double.Epsilon, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(-0.0, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.NaN, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x04, 0x00 }, destination.ToArray()); // +1024
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(0.0, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.Epsilon, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(MaxSubnormal, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFC, 0x01 }, destination.ToArray()); // -1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(MinNormal, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0xFC, 0x02 }, destination.ToArray()); // -1022
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(1.0, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00 }, destination.ToArray()); // +0
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.MaxValue, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x03, 0xff }, destination.ToArray()); // +1023
+
+            Assert.True(FloatingPointHelper<double>.TryWriteExponentBigEndian(double.PositiveInfinity, destination, out bytesWritten));
+            Assert.Equal(2, bytesWritten);
+            Assert.Equal(new byte[] { 0x04, 0x00 }, destination.ToArray()); // +1024
+
+            Assert.False(FloatingPointHelper<double>.TryWriteExponentBigEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0x04, 0x00 }, destination.ToArray());
+        }
+
+        [Fact]
         public static void TryWriteExponentLittleEndianTest()
         {
             Span<byte> destination = stackalloc byte[2];
@@ -1385,6 +1558,77 @@ namespace System.Tests
             Assert.False(FloatingPointHelper<double>.TryWriteExponentLittleEndian(default, Span<byte>.Empty, out bytesWritten));
             Assert.Equal(0, bytesWritten);
             Assert.Equal(new byte[] { 0x00, 0x04 }, destination.ToArray());
+        }
+
+        [Fact]
+        public static void TryWriteSignificandBigEndianTest()
+        {
+            Span<byte> destination = stackalloc byte[8];
+            int bytesWritten = 0;
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.NegativeInfinity, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.MinValue, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x1F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(-1.0, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(-MinNormal, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(-MaxSubnormal, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(-double.Epsilon, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(-0.0, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.NaN, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(0.0, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.Epsilon, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(MaxSubnormal, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x0F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(MinNormal, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(1.0, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.MaxValue, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x1F, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF }, destination.ToArray());
+
+            Assert.True(FloatingPointHelper<double>.TryWriteSignificandBigEndian(double.PositiveInfinity, destination, out bytesWritten));
+            Assert.Equal(8, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
+
+            Assert.False(FloatingPointHelper<double>.TryWriteSignificandBigEndian(default, Span<byte>.Empty, out bytesWritten));
+            Assert.Equal(0, bytesWritten);
+            Assert.Equal(new byte[] { 0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 }, destination.ToArray());
         }
 
         [Fact]

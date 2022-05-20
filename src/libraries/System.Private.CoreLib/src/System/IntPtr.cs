@@ -302,32 +302,50 @@ namespace System
         public static nint TrailingZeroCount(nint value) => BitOperations.TrailingZeroCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        unsafe long IBinaryInteger<nint>.GetShortestBitLength()
+        unsafe int IBinaryInteger<nint>.GetShortestBitLength()
         {
-            nint value = (nint)_value;
+            nint value = (nint)(_value);
 
             if (value >= 0)
             {
-                return (sizeof(nint) * 8) - BitOperations.LeadingZeroCount((nuint)value);
+                return (sizeof(nint_t) * 8) - BitOperations.LeadingZeroCount((nuint)(value));
             }
             else
             {
-                return (sizeof(nint) * 8) + 1 - BitOperations.LeadingZeroCount((nuint)(~value));
+                return (sizeof(nint_t) * 8) + 1 - BitOperations.LeadingZeroCount((nuint)(~value));
             }
         }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
-        unsafe int IBinaryInteger<nint>.GetByteCount() => sizeof(nint);
+        int IBinaryInteger<nint>.GetByteCount() => sizeof(nint_t);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        unsafe bool IBinaryInteger<nint>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(nint_t))
+            {
+                nint_t value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness((nint_t)(_value)) : (nint_t)(_value);
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(nint_t);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         unsafe bool IBinaryInteger<nint>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
         {
-            if (destination.Length >= sizeof(nint))
+            if (destination.Length >= sizeof(nint_t))
             {
-                nint value = BitConverter.IsLittleEndian ? (nint)_value : (nint)BinaryPrimitives.ReverseEndianness((nint)_value);
+                nint_t value = BitConverter.IsLittleEndian ? (nint_t)(_value) : BinaryPrimitives.ReverseEndianness((nint_t)(_value));
                 Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
 
-                bytesWritten = sizeof(nint);
+                bytesWritten = sizeof(nint_t);
                 return true;
             }
             else

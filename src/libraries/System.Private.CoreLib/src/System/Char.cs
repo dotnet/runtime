@@ -1166,28 +1166,46 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.DivRem(TSelf, TSelf)" />
-        public static (char Quotient, char Remainder) DivRem(char left, char right) => ((char, char))Math.DivRem(left, right);
+        static (char Quotient, char Remainder) IBinaryInteger<char>.DivRem(char left, char right) => ((char, char))Math.DivRem(left, right);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.LeadingZeroCount(TSelf)" />
-        public static char LeadingZeroCount(char value) => (char)(BitOperations.LeadingZeroCount(value) - 16);
+        static char IBinaryInteger<char>.LeadingZeroCount(char value) => (char)(BitOperations.LeadingZeroCount(value) - 16);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.PopCount(TSelf)" />
-        public static char PopCount(char value) => (char)BitOperations.PopCount(value);
+        static char IBinaryInteger<char>.PopCount(char value) => (char)BitOperations.PopCount(value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateLeft(TSelf, int)" />
-        public static char RotateLeft(char value, int rotateAmount) => (char)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
+        static char IBinaryInteger<char>.RotateLeft(char value, int rotateAmount) => (char)((value << (rotateAmount & 15)) | (value >> ((16 - rotateAmount) & 15)));
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.RotateRight(TSelf, int)" />
-        public static char RotateRight(char value, int rotateAmount) => (char)((value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
+        static char IBinaryInteger<char>.RotateRight(char value, int rotateAmount) => (char)((value >> (rotateAmount & 15)) | (value << ((16 - rotateAmount) & 15)));
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TrailingZeroCount(TSelf)" />
-        public static char TrailingZeroCount(char value) => (char)(BitOperations.TrailingZeroCount(value << 16) - 16);
+        static char IBinaryInteger<char>.TrailingZeroCount(char value) => (char)(BitOperations.TrailingZeroCount(value << 16) - 16);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetShortestBitLength()" />
-        long IBinaryInteger<char>.GetShortestBitLength() => (sizeof(char) * 8) - LeadingZeroCount(m_value);
+        int IBinaryInteger<char>.GetShortestBitLength() => (sizeof(char) * 8) - ushort.LeadingZeroCount(m_value);
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.GetByteCount()" />
         int IBinaryInteger<char>.GetByteCount() => sizeof(char);
+
+        /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteBigEndian(Span{byte}, out int)" />
+        bool IBinaryInteger<char>.TryWriteBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(char))
+            {
+                ushort value = BitConverter.IsLittleEndian ? BinaryPrimitives.ReverseEndianness(m_value) : m_value;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), value);
+
+                bytesWritten = sizeof(char);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IBinaryInteger{TSelf}.TryWriteLittleEndian(Span{byte}, out int)" />
         bool IBinaryInteger<char>.TryWriteLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -1212,10 +1230,10 @@ namespace System
         //
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.IsPow2(TSelf)" />
-        public static bool IsPow2(char value) => BitOperations.IsPow2((uint)value);
+        static bool IBinaryNumber<char>.IsPow2(char value) => ushort.IsPow2(value);
 
         /// <inheritdoc cref="IBinaryNumber{TSelf}.Log2(TSelf)" />
-        public static char Log2(char value) => (char)BitOperations.Log2(value);
+        static char IBinaryNumber<char>.Log2(char value) => (char)(ushort.Log2(value));
 
         //
         // IBitwiseOperators
@@ -1331,15 +1349,14 @@ namespace System
         static char INumber<char>.Abs(char value) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.Clamp(TSelf, TSelf, TSelf)" />
-        public static char Clamp(char value, char min, char max) => (char)Math.Clamp(value, min, max);
+        static char INumber<char>.Clamp(char value, char min, char max) => (char)Math.Clamp(value, min, max);
 
         /// <inheritdoc cref="INumber{TSelf}.CopySign(TSelf, TSelf)" />
         static char INumber<char>.CopySign(char value, char sign) => value;
 
         /// <inheritdoc cref="INumber{TSelf}.CreateChecked{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static char CreateChecked<TOther>(TOther value)
-            where TOther : INumber<TOther>
+        static char INumber<char>.CreateChecked<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1406,8 +1423,7 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.CreateSaturating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static char CreateSaturating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+        static char INumber<char>.CreateSaturating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1491,8 +1507,7 @@ namespace System
 
         /// <inheritdoc cref="INumber{TSelf}.CreateTruncating{TOther}(TOther)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static char CreateTruncating<TOther>(TOther value)
-            where TOther : INumber<TOther>
+        static char INumber<char>.CreateTruncating<TOther>(TOther value)
         {
             if (typeof(TOther) == typeof(byte))
             {
@@ -1561,24 +1576,23 @@ namespace System
         static bool INumber<char>.IsNegative(char value) => false;
 
         /// <inheritdoc cref="INumber{TSelf}.Max(TSelf, TSelf)" />
-        public static char Max(char x, char y) => (char)Math.Max(x, y);
+        static char INumber<char>.Max(char x, char y) => (char)Math.Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MaxMagnitude(TSelf, TSelf)" />
-        static char INumber<char>.MaxMagnitude(char x, char y) => Max(x, y);
+        static char INumber<char>.MaxMagnitude(char x, char y) => (char)Math.Max(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Min(TSelf, TSelf)" />
-        public static char Min(char x, char y) => (char)Math.Min(x, y);
+        static char INumber<char>.Min(char x, char y) => (char)Math.Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.MinMagnitude(TSelf, TSelf)" />
-        static char INumber<char>.MinMagnitude(char x, char y) => Min(x, y);
+        static char INumber<char>.MinMagnitude(char x, char y) => (char)Math.Min(x, y);
 
         /// <inheritdoc cref="INumber{TSelf}.Sign(TSelf)" />
-        public static int Sign(char value) => (value == 0) ? 0 : 1;
+        static int INumber<char>.Sign(char value) => (value == 0) ? 0 : 1;
 
         /// <inheritdoc cref="INumber{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static bool TryCreate<TOther>(TOther value, out char result)
-            where TOther : INumber<TOther>
+        static bool INumber<char>.TryCreate<TOther>(TOther value, out char result)
         {
             if (typeof(TOther) == typeof(byte))
             {

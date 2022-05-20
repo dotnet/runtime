@@ -87,7 +87,7 @@ namespace System.Text.RegularExpressions.Generator
             int? matchTimeout = null;
             foreach (AttributeData attributeData in boundAttributes)
             {
-                if (attributeData.AttributeClass?.Equals(regexGeneratorAttributeSymbol) != true)
+                if (!SymbolEqualityComparer.Default.Equals(attributeData.AttributeClass, regexGeneratorAttributeSymbol))
                 {
                     continue;
                 }
@@ -134,7 +134,7 @@ namespace System.Text.RegularExpressions.Generator
                 regexMethodSymbol.IsAbstract ||
                 regexMethodSymbol.Parameters.Length != 0 ||
                 regexMethodSymbol.Arity != 0 ||
-                !regexMethodSymbol.ReturnType.Equals(regexSymbol))
+                !SymbolEqualityComparer.Default.Equals(regexMethodSymbol.ReturnType, regexSymbol))
             {
                 return Diagnostic.Create(DiagnosticDescriptors.RegexMethodMustHaveValidSignature, methodSyntax.GetLocation());
             }

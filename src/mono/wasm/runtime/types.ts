@@ -178,6 +178,13 @@ export type CoverageProfilerOptions = {
     send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
 }
 
+/// Options to configure the event pipe session
+export interface EventPipeSessionOptions {
+    /// Whether to collect additional details (such as method and type names) at EventPipeSession.stop() time (default: true)
+    /// This is required for some use cases, and may allow some tools to better understand the events.
+    collectRundownEvents?: boolean;
+}
+
 // how we extended emscripten Module
 export type DotnetModule = EmscriptenModule & DotnetModuleConfig;
 

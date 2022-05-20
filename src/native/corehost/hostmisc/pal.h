@@ -83,6 +83,8 @@
 #define FALLBACK_HOST_RID _X("solaris")
 #elif defined(TARGET_LINUX_MUSL)
 #define FALLBACK_HOST_RID _X("linux-musl")
+#elif defined(TARGET_ANDROID)
+#define FALLBACK_HOST_RID _X("linux-bionic")
 #else
 #define FALLBACK_HOST_RID _X("linux")
 #endif
