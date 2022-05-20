@@ -1555,7 +1555,6 @@ static guint16 vector2_methods[] = {
 	SN_Abs,
 	SN_CopyTo,
 	SN_Dot,
-	SN_Equals,
 	SN_GetElement,
 	SN_Max,
 	SN_Min,
@@ -1774,12 +1773,6 @@ emit_vector_2_3_4 (MonoCompile *cfg, MonoMethod *cmethod, MonoMethodSignature *f
 		ins->inst_c0 = OP_FMAX;
 		ins->inst_c1 = MONO_TYPE_R4;
 		return ins;
-	}
-	case SN_Equals: {
-		if (!(fsig->param_count == 1 && mono_metadata_type_equal (fsig->params [0], type)))
-			return NULL;
-		int sreg1 = load_simd_vreg (cfg, cmethod, args [0], NULL);
-		return emit_simd_ins (cfg, klass, OP_XEQUAL, sreg1, args [1]->dreg);
 	}
 	case SN_op_Equality:
 		if (!(fsig->param_count == 2 && mono_metadata_type_equal (fsig->params [0], type) && mono_metadata_type_equal (fsig->params [1], type)))
