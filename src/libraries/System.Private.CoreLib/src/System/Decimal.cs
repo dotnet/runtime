@@ -1150,15 +1150,39 @@ namespace System
         // IFloatingPoint
         //
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
-        long IFloatingPoint<decimal>.GetExponentShortestBitLength()
+        int IFloatingPoint<decimal>.GetExponentShortestBitLength()
         {
             sbyte exponent = Exponent;
             return (sizeof(sbyte) * 8) - sbyte.LeadingZeroCount(exponent);
         }
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
-        int IFloatingPoint<decimal>.GetExponentByteCount() => sizeof(sbyte);
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<decimal>.GetSignificandByteCount() => sizeof(ulong) + sizeof(uint);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<decimal>.GetSignificandBitLength() => 96;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<decimal>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -1178,19 +1202,42 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
-        long IFloatingPoint<decimal>.GetSignificandBitLength() => 96;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<decimal>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= (sizeof(uint) + sizeof(ulong)))
+            {
+                uint hi32 = _hi32;
+                ulong lo64 = _lo64;
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
-        int IFloatingPoint<decimal>.GetSignificandByteCount() => sizeof(ulong) + sizeof(uint);
+                if (BitConverter.IsLittleEndian)
+                {
+                    hi32 = BinaryPrimitives.ReverseEndianness(hi32);
+                    lo64 = BinaryPrimitives.ReverseEndianness(lo64);
+                }
+
+                ref byte address = ref MemoryMarshal.GetReference(destination);
+
+                Unsafe.WriteUnaligned(ref address, hi32);
+                Unsafe.WriteUnaligned(ref Unsafe.AddByteOffset(ref address, sizeof(uint)), lo64);
+
+                bytesWritten = sizeof(uint) + sizeof(ulong);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<decimal>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
         {
             if (destination.Length >= (sizeof(ulong) + sizeof(uint)))
             {
-                var lo64 = _lo64;
-                var hi32 = _hi32;
+                ulong lo64 = _lo64;
+                uint hi32 = _hi32;
 
                 if (!BitConverter.IsLittleEndian)
                 {
@@ -1296,6 +1343,10 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (decimal)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1319,6 +1370,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (decimal)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1364,6 +1419,12 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                var actualValue = (Int128)(object)value;
+                return (actualValue > new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? MaxValue :
+                       (actualValue < new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)) ? MinValue : (decimal)actualValue;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1387,6 +1448,11 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                var actualValue = (UInt128)(object)value;
+                return (actualValue > new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) ? MaxValue : (decimal)actualValue;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1432,6 +1498,21 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                var actualValue = (Int128)(object)value;
+
+                if (Int128.IsNegative(actualValue))
+                {
+                    actualValue = (-actualValue) & new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+                    return -(decimal)actualValue;
+                }
+                else
+                {
+                    actualValue &= new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+                    return (decimal)actualValue;
+                }
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1455,6 +1536,12 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                var actualValue = (UInt128)(object)value;
+                actualValue &= new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF);
+                return (decimal)actualValue;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1531,6 +1618,19 @@ namespace System
                 result = (long)(object)value;
                 return true;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                var actualValue = (Int128)(object)value;
+
+                if ((actualValue > new Int128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF)) || (actualValue < new Int128(0xFFFF_FFFF_0000_0000, 0x0000_0000_0000_0001)))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (decimal)actualValue;
+                return true;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 result = (nint)(object)value;
@@ -1559,6 +1659,19 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 result = (ulong)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                var actualValue = (UInt128)(object)value;
+
+                if (actualValue > new UInt128(0x0000_0000_FFFF_FFFF, 0xFFFF_FFFF_FFFF_FFFF))
+                {
+                    result = default;
+                    return false;
+                }
+
+                result = (decimal)actualValue;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))

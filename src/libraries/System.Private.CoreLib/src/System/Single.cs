@@ -656,8 +656,11 @@ namespace System
         /// <inheritdoc cref="IFloatingPoint{TSelf}.Truncate(TSelf)" />
         public static float Truncate(float x) => MathF.Truncate(x);
 
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
+        int IFloatingPoint<float>.GetExponentByteCount() => sizeof(sbyte);
+
         /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentShortestBitLength()" />
-        long IFloatingPoint<float>.GetExponentShortestBitLength()
+        int IFloatingPoint<float>.GetExponentShortestBitLength()
         {
             sbyte exponent = Exponent;
 
@@ -671,8 +674,29 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetExponentByteCount()" />
-        int IFloatingPoint<float>.GetExponentByteCount() => sizeof(sbyte);
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
+        int IFloatingPoint<float>.GetSignificandByteCount() => sizeof(uint);
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
+        int IFloatingPoint<float>.GetSignificandBitLength() => 24;
+
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<float>.TryWriteExponentBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(sbyte))
+            {
+                sbyte exponent = Exponent;
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), exponent);
+
+                bytesWritten = sizeof(sbyte);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteExponentLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<float>.TryWriteExponentLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -692,11 +716,29 @@ namespace System
             }
         }
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandBitLength()" />
-        long IFloatingPoint<float>.GetSignificandBitLength() => 24;
+        /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandBigEndian(Span{byte}, out int)" />
+        bool IFloatingPoint<float>.TryWriteSignificandBigEndian(Span<byte> destination, out int bytesWritten)
+        {
+            if (destination.Length >= sizeof(uint))
+            {
+                uint significand = Significand;
 
-        /// <inheritdoc cref="IFloatingPoint{TSelf}.GetSignificandByteCount()" />
-        int IFloatingPoint<float>.GetSignificandByteCount() => sizeof(uint);
+                if (BitConverter.IsLittleEndian)
+                {
+                    significand = BinaryPrimitives.ReverseEndianness(significand);
+                }
+
+                Unsafe.WriteUnaligned(ref MemoryMarshal.GetReference(destination), significand);
+
+                bytesWritten = sizeof(uint);
+                return true;
+            }
+            else
+            {
+                bytesWritten = 0;
+                return false;
+            }
+        }
 
         /// <inheritdoc cref="IFloatingPoint{TSelf}.TryWriteSignificandLittleEndian(Span{byte}, out int)" />
         bool IFloatingPoint<float>.TryWriteSignificandLittleEndian(Span<byte> destination, out int bytesWritten)
@@ -1005,6 +1047,10 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (float)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1028,6 +1074,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (float)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1073,6 +1123,10 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (float)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1096,6 +1150,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (float)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1141,6 +1199,10 @@ namespace System
             {
                 return (long)(object)value;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                return (float)(Int128)(object)value;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 return (nint)(object)value;
@@ -1164,6 +1226,10 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                return (float)(UInt128)(object)value;
             }
             else if (typeof(TOther) == typeof(nuint))
             {
@@ -1231,6 +1297,11 @@ namespace System
                 result = (long)(object)value;
                 return true;
             }
+            else if (typeof(TOther) == typeof(Int128))
+            {
+                result = (float)(Int128)(object)value;
+                return true;
+            }
             else if (typeof(TOther) == typeof(nint))
             {
                 result = (nint)(object)value;
@@ -1259,6 +1330,11 @@ namespace System
             else if (typeof(TOther) == typeof(ulong))
             {
                 result = (ulong)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(UInt128))
+            {
+                result = (float)(UInt128)(object)value;
                 return true;
             }
             else if (typeof(TOther) == typeof(nuint))

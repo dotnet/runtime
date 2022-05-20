@@ -116,10 +116,6 @@
 
 #include "utilcode.h"
 
-#ifndef TARGET_UNIX
-#include "securitywrapper.h"
-#endif // !TARGET_UNIX
-
 // ----------------------------------------------------------------------------
 // CurrentProfilerStatus methods
 
@@ -760,14 +756,6 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
 HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
 {
     HRESULT hr = S_OK;
-    DWORD dwEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS);
-    if (dwEnabled == 0)
-    {
-        // Profiler list explicitly disabled, bail
-        LogProfInfo(IDS_E_PROF_NOTIFICATION_DISABLED);
-        return S_OK;
-    }
-
     NewArrayHolder<WCHAR> wszProfilerList(NULL);
 
 #if defined(TARGET_ARM64)
@@ -791,6 +779,14 @@ HRESULT ProfilingAPIUtility::AttemptLoadProfilerList()
                 return S_OK;
             }
         }
+    }
+
+    DWORD dwEnabled = CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_CORECLR_ENABLE_NOTIFICATION_PROFILERS);
+    if (dwEnabled == 0)
+    {
+        // Profiler list explicitly disabled, bail
+        LogProfInfo(IDS_E_PROF_NOTIFICATION_DISABLED);
+        return S_OK;
     }
 
     WCHAR *pOuter = NULL;

@@ -1114,10 +1114,10 @@ namespace DebuggerTests
                    ("test.GetString(null)", TString(null)),
                    ("test.GetStringNullable()", TString("1.23")),
 
-                   ("test.GetSingle()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
-                   ("test.GetDouble()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
-                   ("test.GetSingleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
-                   ("test.GetDoubleNullable()", JObject.FromObject( new { type = "number", value = 1.23, description = "1.23" })),
+                   ("test.GetSingle()", TNumber("1.23", isDecimal: true)),
+                   ("test.GetDouble()",  TNumber("1.23", isDecimal: true)),
+                   ("test.GetSingleNullable()",  TNumber("1.23", isDecimal: true)),
+                   ("test.GetDoubleNullable()",  TNumber("1.23", isDecimal: true)),
 
                    ("test.GetBool()", TBool(true)),
                    ("test.GetBoolNullable()", TBool(true)),
@@ -1159,8 +1159,6 @@ namespace DebuggerTests
                     ("test.propUint.ToString()", TString("12")),
                     ("test.propLong.ToString()", TString("12")),
                     ("test.propUlong.ToString()", TString("12")),
-                //    ("test.propFloat.ToString()", TString("1.2345678")), // is comma, should be dot, fixed in PR #66979
-                //    ("test.propDouble.ToString()", TString("1.2345678910111213")), // is comma, should be dot
                     ("test.propBool.ToString()", TString("True")),
                     ("test.propChar.ToString()", TString("X")),
                     ("test.propString.ToString()", TString("s_t_r")),
@@ -1171,8 +1169,6 @@ namespace DebuggerTests
                     ("localUint.ToString()", TString("2")),
                     ("localLong.ToString()", TString("2")),
                     ("localUlong.ToString()", TString("2")),
-                //    ("localFloat.ToString()", TString("0.2345678")), // is comma, should be dot
-                //    ("localDouble.ToString()", TString("0.2345678910111213")), // is comma, should be dot
                     ("localBool.ToString()", TString("False")),
                     ("localBool.GetHashCode()", TNumber(0)),
                     ("localBool.GetTypeCode()", TObject("System.TypeCode", "Boolean")),
@@ -1181,6 +1177,29 @@ namespace DebuggerTests
                     ("localString.Split('*', 3, System.StringSplitOptions.TrimEntries)", TObject("System.String[]")),
                     ("localString.EndsWith('r')", TBool(false)),
                     ("localString.StartsWith('S')", TBool(true)));
+             });
+
+        [Fact]
+        public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitivesCultureDependant() =>  
+            await CheckInspectLocalsAtBreakpointSite(
+            "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "Evaluate",
+            "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.PrimitiveTypeMethods:Evaluate'); })",
+            wait_for_event_fn: async (pause_location) =>
+            {
+                var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
+                var (floatMemberVal, _) = await EvaluateOnCallFrame(id, "test.propFloat");
+                var (doubleMemberVal, _) = await EvaluateOnCallFrame(id, "test.propDouble");
+                var (floatLocalVal, _) = await EvaluateOnCallFrame(id, "localFloat");
+                var (doubleLocalVal, _) = await EvaluateOnCallFrame(id, "localDouble");
+
+                // expected value depends on the debugger's user culture and is equal to 
+                // description of the number that also respects user's culture settings
+                await EvaluateOnCallFrameAndCheck(id,
+                    ("test.propFloat.ToString()", TString(floatMemberVal["description"]?.Value<string>())),
+                    ("test.propDouble.ToString()", TString(doubleMemberVal["description"]?.Value<string>())),
+
+                    ("localFloat.ToString()", TString(floatLocalVal["description"]?.Value<string>())),
+                    ("localDouble.ToString()", TString(doubleLocalVal["description"]?.Value<string>())));
              });
     }
 }
