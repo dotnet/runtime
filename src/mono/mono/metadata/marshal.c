@@ -3372,7 +3372,10 @@ static void mono_marshal_set_signature_callconv_from_attribute(MonoMethodSignatu
 		sig->call_convention = MONO_CALL_FASTCALL;
 	else if (!strcmp (name, "SuppressGCTransition"))
 		sig->suppress_gc_transition = 1;
-	// TODO: CallConvMemberFunction?
+	// TODO: Support CallConvMemberFunction?
+	// TODO: Support multiple calling convetions?
+	//		 - Switch MonoCallConvention enum values to powers of 2
+	//		 - Adjust the code above with 'anding' the attribute parameter value
 }
 
 static void
@@ -3416,6 +3419,8 @@ mono_marshal_set_callconv_from_unmanaged_callers_only_attribute (MonoMethod *met
 				
 				MonoType* calling_convention = (MonoType*)calling_conventions->values[0].value.primitive;
 				mono_marshal_set_signature_callconv_from_attribute (csig, calling_convention, error);
+				
+				g_free(calling_conventions);
 			}
 		}
 		g_free (named_args);
