@@ -416,7 +416,7 @@ namespace Microsoft.Interop
 
             BlockSyntax code = stubGenerator.GeneratePInvokeBody(innerPInvokeName);
 
-            LocalFunctionStatementSyntax dllImport = CreateTargetFunctionAsLocalStatement(
+            LocalFunctionStatementSyntax dllImport = CreateTargetDllImportAsLocalStatement(
                 stubGenerator,
                 options,
                 pinvokeStub.LibraryImportData,
@@ -469,14 +469,14 @@ namespace Microsoft.Interop
                 .AddAttributeLists(
                     AttributeList(
                         SingletonSeparatedList(
-                            CreateDllImportAttributeFromLibraryImportAttributeData(pinvokeData))));
+                            CreateForwarderDllImport(pinvokeData))));
 
             MemberDeclarationSyntax toPrint = stub.ContainingSyntaxContext.WrapMemberInContainingSyntaxWithUnsafeModifier(stubMethod);
 
             return toPrint;
         }
 
-        private static LocalFunctionStatementSyntax CreateTargetFunctionAsLocalStatement(
+        private static LocalFunctionStatementSyntax CreateTargetDllImportAsLocalStatement(
             PInvokeStubCodeGenerator stubGenerator,
             LibraryImportGeneratorOptions options,
             LibraryImportData libraryImportData,
@@ -488,8 +488,8 @@ namespace Microsoft.Interop
             (ParameterListSyntax parameterList, TypeSyntax returnType, AttributeListSyntax returnTypeAttributes) = stubGenerator.GenerateTargetMethodSignatureData();
             LocalFunctionStatementSyntax localDllImport = LocalFunctionStatement(returnType, stubTargetName)
                 .AddModifiers(
-                    Token(SyntaxKind.ExternKeyword),
                     Token(SyntaxKind.StaticKeyword),
+                    Token(SyntaxKind.ExternKeyword),
                     Token(SyntaxKind.UnsafeKeyword))
                 .WithSemicolonToken(Token(SyntaxKind.SemicolonToken))
                 .WithAttributeLists(
@@ -511,10 +511,9 @@ namespace Microsoft.Interop
                                                     SyntaxKind.StringLiteralExpression,
                                                     Literal(libraryImportData.EntryPoint ?? stubMethodName))),
                                             AttributeArgument(
-                                                NameEquals(nameof(DllImportAttribute.SetLastError)),
+                                                NameEquals(nameof(DllImportAttribute.ExactSpelling)),
                                                 null,
-                                                LiteralExpression(
-                                                    libraryImportData.SetLastError ? SyntaxKind.TrueLiteralExpression : SyntaxKind.FalseLiteralExpression))
+                                                LiteralExpression(SyntaxKind.TrueLiteralExpression))
                                         }
                                         )))))))
                 .WithParameterList(parameterList);
@@ -525,7 +524,7 @@ namespace Microsoft.Interop
             return localDllImport;
         }
 
-        private static AttributeSyntax CreateDllImportAttributeFromLibraryImportAttributeData(LibraryImportData target)
+        private static AttributeSyntax CreateForwarderDllImport(LibraryImportData target)
         {
             var newAttributeArgs = new List<AttributeArgumentSyntax>
             {
@@ -539,7 +538,7 @@ namespace Microsoft.Interop
                 AttributeArgument(
                     NameEquals(nameof(DllImportAttribute.ExactSpelling)),
                     null,
-                    CreateBoolExpressionSyntax(true))
+                    LiteralExpression(SyntaxKind.TrueLiteralExpression))
             };
 
             if (target.IsUserDefined.HasFlag(InteropAttributeMember.StringMarshalling))
@@ -549,6 +548,7 @@ namespace Microsoft.Interop
                 ExpressionSyntax value = CreateEnumExpressionSyntax(CharSet.Unicode);
                 newAttributeArgs.Add(AttributeArgument(name, null, value));
             }
+
             if (target.IsUserDefined.HasFlag(InteropAttributeMember.SetLastError))
             {
                 NameEqualsSyntax name = NameEquals(nameof(DllImportAttribute.SetLastError));
