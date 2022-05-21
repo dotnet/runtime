@@ -695,7 +695,6 @@ namespace System.Collections.Concurrent
         private bool TryTakeWithNoTimeValidation([MaybeNullWhen(false)] out T item, int millisecondsTimeout, CancellationToken cancellationToken, CancellationTokenSource? combinedTokenSource)
         {
             Debug.Assert(!_isDisposed);
-            Debug.Assert(!IsCompleted);
             item = default(T)!;
 
             cancellationToken.ThrowIfCancellationRequested();
