@@ -21,7 +21,7 @@
 #define USE_GROUPLIST_LOCK
 #endif
 
-#ifdef USE_GROUPLIST_LOCK
+#if defined(USE_GROUPLIST_LOCK) || !HAVE_GETGRGID_R || !HAVE_GETPWUID_R
 #include <pthread.h>
 #endif
 
@@ -239,6 +239,11 @@ int32_t SystemNative_GetGroups(int32_t ngroups, uint32_t* groups)
     return getgroups(ngroups, groups);
 }
 
+#if !HAVE_GETGRGID_R
+// Need to call getgrgid which is not thread-safe, and protect it with a mutex
+static pthread_mutex_t s_getgrgid_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
 char* SystemNative_GetGroupName(uint32_t gid)
 {
 #if HAVE_GETGRGID_R
@@ -279,16 +284,23 @@ char* SystemNative_GetGroupName(uint32_t gid)
     }
 #else
     // Platforms like Android API level < 24 do not have getgrgid_r available
-    // Android API level >= 24 do have getgrgid_r available but call getgrgid internally anyway
+	pthread_mutex_lock(&s_getgrgid_lock);
     struct group* result = getgrgid(gid);
     if (result == NULL)
     {
+	    pthread_mutex_unlock(&s_getgrgid_lock);
         return NULL;
     }
     char* name = strdup(result->gr_name);
+    pthread_mutex_unlock(&s_getgrgid_lock);
     return name;
 #endif
 }
+
+#if !HAVE_GETPWUID_R
+// Need to call getpwuid which is not thread-safe, and protect it with a mutex
+static pthread_mutex_t s_getpwuid_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 
 char* SystemNative_GetUserName(uint32_t uid)
 {
@@ -329,13 +341,15 @@ char* SystemNative_GetUserName(uint32_t uid)
         bufferLength = tmpBufferLength;
     }
 #else
-    // Platforms like tvOS/iOS might not have getpwuid_r available.
+	pthread_mutex_lock(&s_getpwuid_lock);
     struct passwd* result = getpwuid(uid);
     if (result == NULL)
     {
+		pthread_mutex_unlock(&s_getpwuid_lock);
         return NULL;
     }
-    char* name = strdup(result->pw_name);
+    char* name = strdup(result->pw_name); 
+    pthread_mutex_unlock(&s_getpwuid_lock);
     return name;
 #endif
 }
