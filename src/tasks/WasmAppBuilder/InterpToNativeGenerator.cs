@@ -69,7 +69,7 @@ public class InterpToNativeGenerator
         foreach (var c in signatures)
         {
             w.WriteLine("static void");
-            w.WriteLine($"wasm_invoke_{c.ToLower(CultureInfo.InvariantCulture)} (void *target_func, InterpMethodArguments *margs)");
+            w.WriteLine($"wasm_invoke_{c.ToLower(CultureInfo.InvariantCulture)} (void *target_func, MonoInterpMethodArguments *margs)");
             w.WriteLine("{");
 
             w.Write($"\ttypedef {TypeToSigType(c[0])} (*T)(");

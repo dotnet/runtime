@@ -32,23 +32,21 @@ typedef void* (*MonoWasmNativeToInterpCallback) (char * cookie);
 void
 mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb);
 
-typedef struct {
-	
-} InterpMethodArguments;
+typedef struct _MonoInterpMethodArguments MonoInterpMethodArguments;
 
 int 
-mono_wasm_interp_method_args_get_iarg (InterpMethodArguments *margs, int i);
+mono_wasm_interp_method_args_get_iarg (MonoInterpMethodArguments *margs, int i);
 
 int64_t
-mono_wasm_interp_method_args_get_larg (InterpMethodArguments *margs, int i);
+mono_wasm_interp_method_args_get_larg (MonoInterpMethodArguments *margs, int i);
 
 float
-mono_wasm_interp_method_args_get_farg (InterpMethodArguments *margs, int i);
+mono_wasm_interp_method_args_get_farg (MonoInterpMethodArguments *margs, int i);
 
 double
-mono_wasm_interp_method_args_get_darg (InterpMethodArguments *margs, int i);
+mono_wasm_interp_method_args_get_darg (MonoInterpMethodArguments *margs, int i);
 
 void*
-mono_wasm_interp_method_args_get_retval  (InterpMethodArguments *margs);
+mono_wasm_interp_method_args_get_retval  (MonoInterpMethodArguments *margs);
 
 #endif

@@ -85,37 +85,37 @@ get_long_arg (InterpMethodArguments *margs, int idx)
 
 static MonoWasmNativeToInterpCallback mono_wasm_interp_to_native_callback;
 
-MONO_API void
+void
 mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb)
 {
 	mono_wasm_interp_to_native_callback = cb;
 }
 
-MONO_API int
+int
 mono_wasm_interp_method_args_get_iarg (InterpMethodArguments *margs, int i)
 {
 	return (int)(gssize)margs->iargs[i];
 }
 
-MONO_API gint64
+gint64
 mono_wasm_interp_method_args_get_larg (InterpMethodArguments *margs, int i)
 {
 	return get_long_arg (margs, i);
 }
 
-MONO_API float
+float
 mono_wasm_interp_method_args_get_farg (InterpMethodArguments *margs, int i)
 {
 	return *(float*)&margs->fargs [FIDX (i)];
 }
 
-MONO_API double
+double
 mono_wasm_interp_method_args_get_darg (InterpMethodArguments *margs, int i)
 {
 	return margs->fargs [FIDX (i)];
 }
 
-MONO_API gpointer*
+gpointer*
 mono_wasm_interp_method_args_get_retval (InterpMethodArguments *margs)
 {
 	return margs->retval;
