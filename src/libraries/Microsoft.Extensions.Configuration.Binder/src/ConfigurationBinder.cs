@@ -443,9 +443,9 @@ namespace Microsoft.Extensions.Configuration
                 ConstructorInfo constructor = constructors[0];
                 ParameterInfo[] parameters = constructor.GetParameters();
 
-                if (!CanBindToTheseConstructorParameters(parameters, out string invalidPropertyName))
+                if (!CanBindToTheseConstructorParameters(parameters, out string nameOfInvalidParameter))
                 {
-                    throw new InvalidOperationException(SR.Format(SR.Error_CannotBindToConstructorParameter, type, invalidPropertyName));
+                    throw new InvalidOperationException(SR.Format(SR.Error_CannotBindToConstructorParameter, type, nameOfInvalidParameter));
                 }
 
                 object?[] parameterValues = new object?[parameters.Length];
@@ -471,14 +471,14 @@ namespace Microsoft.Extensions.Configuration
             return instance ?? throw new InvalidOperationException(SR.Format(SR.Error_FailedToActivate, type));
         }
 
-        private static bool CanBindToTheseConstructorParameters(ParameterInfo[] constructorParameters, out string reason)
+        private static bool CanBindToTheseConstructorParameters(ParameterInfo[] constructorParameters, out string nameOfInvalidParameter)
         {
-            reason = string.Empty;
+            nameOfInvalidParameter = string.Empty;
             foreach (ParameterInfo p in constructorParameters)
             {
                 if (p.IsOut || p.IsIn || p.ParameterType.IsByRef)
                 {
-                    reason = p.ParameterType.ToString();
+                    nameOfInvalidParameter = p.Name!; // never null as we're not passed return value parameters: https://docs.microsoft.com/en-us/dotnet/api/system.reflection.parameterinfo.name?view=net-6.0#remarks
                     return false;
                 }
             }

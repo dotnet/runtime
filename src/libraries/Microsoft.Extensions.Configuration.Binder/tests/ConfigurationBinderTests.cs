@@ -1229,7 +1229,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithInParameter", "System.String&");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithInParameter", "string1");
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithInParameter>());
 
@@ -1252,7 +1252,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithRefParameter", "System.Int32&");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithRefParameter", "int1");
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithRefParameter>());
 
@@ -1275,7 +1275,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithOutParameter", "System.Decimal&");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithOutParameter", "int2");
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithOutParameter>());
 
