@@ -251,10 +251,9 @@ GetLastErrorString()
         result.append(" ");
     }
 #endif
-    result.append("(");
     char buffer[64];
-    result.append(_itoa(error, buffer, 10));
-    result.append(")");
+    sprintf(buffer, "(%d)", error);
+    result.append(buffer);
     return result;
 }
 

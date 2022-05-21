@@ -2433,7 +2433,7 @@ PROCCreateCrashDump(
             // Read createdump's stderr
             int bytesRead = 0;
             int count = 0;
-            while (count = read(parent_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead) != 0)
+            while ((count = read(parent_pipe, errorMessageBuffer + bytesRead, cbErrorMessageBuffer - bytesRead)) != 0)
             {
                 if (count < 0)
                 {
