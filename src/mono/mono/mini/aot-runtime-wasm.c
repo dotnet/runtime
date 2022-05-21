@@ -176,7 +176,7 @@ mono_wasm_install_get_native_to_interp_tramp (MonoWasmGetNativeToInterpTramp cb)
 }
 
 void
-mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb) {
+mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb)
 {
 	g_assert_not_reached ();
 }
