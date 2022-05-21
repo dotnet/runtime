@@ -1138,6 +1138,8 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
+        [InlineData("", "")]
+        [InlineData("1", "1")]
         [InlineData("this is a string without escaping", "this is a string without escaping")]
         [InlineData(@"this is\t a string with escaping\n", "this is\t a string with escaping\n")]
         [InlineData(@"\n\r\""\\\/\t\b\f\u0061", "\n\r\"\\/\t\b\fa")]
@@ -1158,6 +1160,8 @@ namespace System.Text.Json.Tests
         }
 
         [Theory]
+        [InlineData("", "")]
+        [InlineData("1", "1")]
         [InlineData("this is a string without escaping", "this is a string without escaping")]
         [InlineData(@"this is\t a string with escaping\n", "this is\t a string with escaping\n")]
         [InlineData(@"\n\r\""\\\/\t\b\f\u0061", "\n\r\"\\/\t\b\fa")]
