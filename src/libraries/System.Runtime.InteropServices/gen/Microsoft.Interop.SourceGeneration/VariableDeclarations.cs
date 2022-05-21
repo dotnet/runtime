@@ -29,14 +29,33 @@ namespace Microsoft.Interop
 
                 if (info.RefKind == RefKind.Out)
                 {
-                    // Assign out params to default
-                    initializations.Add(ExpressionStatement(
-                        AssignmentExpression(
-                            SyntaxKind.SimpleAssignmentExpression,
-                            IdentifierName(info.InstanceIdentifier),
-                            LiteralExpression(
-                                SyntaxKind.DefaultLiteralExpression,
-                                Token(SyntaxKind.DefaultKeyword)))));
+                    (TargetFramework fmk, _) = context.GetTargetFramework();
+                    if (info.ManagedType is not PointerTypeInfo
+                        && fmk is TargetFramework.Net)
+                    {
+                        // Use the Unsafe.SkipInit API when available and
+                        // the managed type is not a pointer.
+                        initializations.Add(ExpressionStatement(
+                            InvocationExpression(
+                                MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
+                                    ParseName(TypeNames.System_Runtime_CompilerServices_Unsafe),
+                                    IdentifierName("SkipInit")))
+                            .WithArgumentList(
+                                ArgumentList(SingletonSeparatedList(
+                                    Argument(IdentifierName(info.InstanceIdentifier))
+                                    .WithRefOrOutKeyword(Token(SyntaxKind.OutKeyword)))))));
+                    }
+                    else
+                    {
+                        // Assign out params to default when Unsafe.SkipInit API is unavailable.
+                        initializations.Add(ExpressionStatement(
+                            AssignmentExpression(
+                                SyntaxKind.SimpleAssignmentExpression,
+                                IdentifierName(info.InstanceIdentifier),
+                                LiteralExpression(
+                                    SyntaxKind.DefaultLiteralExpression,
+                                    Token(SyntaxKind.DefaultKeyword)))));
+                    }
                 }
 
                 // Declare variables for parameters
