@@ -115,6 +115,27 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         public record RecordTypeOptions(string Color, int Length);
 
         public record struct RecordStructTypeOptions(string Color, int Length);
+
+
+        public class ClassWithMatchingParametersAndProperties
+        {
+            private readonly string _color;
+
+            public ClassWithMatchingParametersAndProperties(string Color, int Length)
+            {
+                _color = Color;
+                this.Length = Length;
+            }
+
+            public int Length { get; set; }
+
+            public string Color
+            {
+                get => _color;
+                init => _color = "the color is " + value;
+            }
+        }
+
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
         public class ContainerWithNestedImmutableObject
@@ -1392,6 +1413,23 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var options = config.Get<RecordStructTypeOptions>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
+        }
+
+        [Fact]
+        public void CanBindOnParametersAndProperties_PropertiesAreSetAfterTheConstructor()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<ClassWithMatchingParametersAndProperties>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("the color is Green", options.Color);
         }
 
         [Fact]
