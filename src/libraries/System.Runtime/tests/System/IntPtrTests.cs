@@ -153,8 +153,15 @@ namespace System.Tests
             Assert.Equal(value, (nint)opExplicitFromPointer.Invoke(null, new object[] { Pointer.Box(v, typeof(void*)) }));
 
             value = unchecked((nint)0x7fffffffffffffff);
-            TargetInvocationException ex = Assert.Throws<TargetInvocationException>(() => opExplicitToInt32.Invoke(null, new object[] { value }));
-            Assert.IsType<OverflowException>(ex.InnerException);
+            Exception ex = Assert.Throws<Exception>(() => opExplicitToInt32.Invoke(null, new object[] { value }));
+
+            if (ex is TargetInvocationException)
+            {
+                // RyuJIT throws TargetInvocationException wrapping an OverflowException
+                // while Mono directly throws the OverflowException
+                ex = ex.InnerException;
+            }
+            Assert.IsType<OverflowException>(ex);
         }
 
         [ConditionalFact(nameof(Is64Bit))]
