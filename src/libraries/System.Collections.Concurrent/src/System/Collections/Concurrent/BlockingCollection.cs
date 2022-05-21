@@ -694,7 +694,8 @@ namespace System.Collections.Concurrent
         /// <exception cref="System.ObjectDisposedException">If the collection has been disposed.</exception>
         private bool TryTakeWithNoTimeValidation([MaybeNullWhen(false)] out T item, int millisecondsTimeout, CancellationToken cancellationToken, CancellationTokenSource? combinedTokenSource)
         {
-            CheckDisposed();
+            Debug.Assert(!_isDisposed);
+            Debug.Assert(!IsCompleted);
             item = default(T)!;
 
             cancellationToken.ThrowIfCancellationRequested();
