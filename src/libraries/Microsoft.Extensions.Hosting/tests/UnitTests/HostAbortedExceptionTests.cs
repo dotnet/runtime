@@ -37,10 +37,12 @@ namespace Microsoft.Extensions.Hosting.Unit.Tests
             Assert.Equal(message, thrownException.Message);
         }
 
-        [Fact]
-        public void TestSerialization()
+        [Theory]
+        [InlineData("Test Message")]
+        [InlineData(null)]
+        public void TestSerialization(string? message)
         {
-            var exception = new HostAbortedException();
+            var exception = new HostAbortedException(message);
             using var serializationStream = new MemoryStream();
 
             var formatter = new BinaryFormatter();

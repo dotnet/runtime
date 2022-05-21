@@ -17,7 +17,7 @@ namespace Microsoft.Extensions.Hosting
         /// Initializes a new instance of the <see cref="HostAbortedException"/> class
         /// with a system-supplied error message.
         /// </summary>
-        public HostAbortedException() { }
+        public HostAbortedException() : base(SR.HostAbortedExceptionMessage) { }
 
         /// <summary>
         /// Initializes a new instance of the <see cref="HostAbortedException"/> class
@@ -43,8 +43,6 @@ namespace Microsoft.Extensions.Hosting
         /// </param>
         /// <param name="innerException">
         /// The exception that is the cause of the current exception.
-        /// If <paramref name="innerException"/> is not <see langword="null"/>, the current exception
-        /// is raised in a <see langword="catch"/> block that handles the inner exception.
         /// </param>
         /// <remarks>
         /// The content of <paramref name="message"/> is intended to be understood by humans.
