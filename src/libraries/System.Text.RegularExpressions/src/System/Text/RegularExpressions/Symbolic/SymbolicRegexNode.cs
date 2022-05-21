@@ -531,13 +531,16 @@ namespace System.Text.RegularExpressions.Symbolic
         {
             if (effectNode == builder.Epsilon)
                 return node;
+
             if (node == builder._nothing)
                 return builder._nothing;
+
             if (node._kind == SymbolicRegexNodeKind.Effect)
             {
                 Debug.Assert(node._left is not null && node._right is not null);
                 return CreateEffect(builder, node._left, CreateConcat(builder, effectNode, node._right));
             }
+
             return Create(builder, SymbolicRegexNodeKind.Effect, node, effectNode, -1, -1, default, null, SymbolicRegexInfo.Effect(node._info));
         }
 
@@ -746,9 +749,11 @@ namespace System.Text.RegularExpressions.Symbolic
             // A node subsumes itself
             if (this == other)
                 return true;
+
             // Nothing has an empty language, which is subsumed by anything
             if (other == _builder._nothing)
                 return true;
+
             // Early exit if we've gone too deep
             if (depth >= SubsumptionCheckDepthLimit)
                 return false;
@@ -765,11 +770,15 @@ namespace System.Text.RegularExpressions.Symbolic
 
             // Try to apply all subsumption rules
             bool? subsumes = ApplySubsumptionRules(this, other, depth + 1);
-            // Cache the result if any rule applied
+
+            // Cache and return the result if any rule applied
             if (subsumes.HasValue)
-                _builder._subsumptionCache[(this, other)] = subsumes.Value;
-            // Return result or assume false if no rule applied
-            return subsumes ?? false;
+            {
+                return (_builder._subsumptionCache[(this, other)] = subsumes.Value);
+            }
+
+            // Assume false if no rule applied
+            return false;
 
             static bool? ApplySubsumptionRules(SymbolicRegexNode<TSet> left, SymbolicRegexNode<TSet> right, int depth)
             {
@@ -842,21 +851,26 @@ namespace System.Text.RegularExpressions.Symbolic
                         Debug.Assert(prefix._left is not null && prefix._right is not null);
                         if (node._kind != SymbolicRegexNodeKind.Concat)
                             return false;
+
                         Debug.Assert(node._left is not null && node._right is not null);
                         if (node._left != prefix._left)
                             return false;
+
                         node = node._right;
                         prefix = prefix._right;
                     }
+
                     // Handle the final element
                     if (node._kind != SymbolicRegexNodeKind.Concat)
                         return false;
+
                     Debug.Assert(node._left is not null && node._right is not null);
                     if (node._left == prefix)
                     {
                         tail = node._right;
                         return true;
                     }
+
                     return false;
                 }
             }
@@ -911,6 +925,7 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 Debug.Assert(left._left is not null && left._right is not null);
                 Debug.Assert(right.Subsumes(left._left));
+
                 // If there are any accumulated effects we don't know how to handle them here.
                 // This shouldn't normally happen because this rule has priority over the rule
                 // for effects on the right side.
@@ -919,6 +934,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     result = null;
                     return false;
                 }
+
                 if (TryFoldAlternation(left._left, right, out SymbolicRegexNode<TSet>? innerResult, rightEffects))
                 {
                     result = CreateEffect(left._builder, innerResult, left._right);
@@ -986,6 +1002,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         break;
                     }
                 }
+
                 // Return false if we failed to find a split
                 prefix = null;
                 return false;

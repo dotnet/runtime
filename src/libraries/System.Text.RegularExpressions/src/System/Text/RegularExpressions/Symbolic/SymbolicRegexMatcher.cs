@@ -950,14 +950,17 @@ namespace System.Text.RegularExpressions.Symbolic
                 while (node.Kind is SymbolicRegexNodeKind.OrderedOr)
                 {
                     Debug.Assert(node._left is not null && node._right is not null);
+
                     // Re-wrap the element nodes in DisableBacktrackingSimulation if the top level node was too
                     SymbolicRegexNode<TSet> element = dfaMatchingState.Node.Kind == SymbolicRegexNodeKind.DisableBacktrackingSimulation ?
                         Builder.CreateDisableBacktrackingSimulation(node._left) : node._left;
+
                     // Create (possibly new) NFA states for all the members.
                     // Add their IDs to the current set of NFA states and into the list.
                     NfaStateSet.Add(Builder.CreateNfaState(element, dfaMatchingState.PrevCharKind), out _);
                     node = node._right;
                 }
+
                 // Finally, just add an NFA state for the singular DFA state or last element of a union.
                 NfaStateSet.Add(Builder.CreateNfaState(node, dfaMatchingState.PrevCharKind), out _);
             }

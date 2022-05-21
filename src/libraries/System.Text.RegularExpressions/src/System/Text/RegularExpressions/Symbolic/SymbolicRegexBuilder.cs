@@ -236,27 +236,29 @@ namespace System.Text.RegularExpressions.Symbolic
         internal SymbolicRegexNode<TSet> OrderedOr(List<SymbolicRegexNode<TSet>> nodes)
         {
             HashSet<SymbolicRegexNode<TSet>> seenElems = new();
-            // Keep track of if any elements from the right side need to be eliminated
+
+            // Keep track of any elements from the right side that need to be eliminated.
             for (int i = 0; i < nodes.Count; i++)
             {
-                if (!seenElems.Contains(nodes[i]))
+                if (!seenElems.Add(nodes[i]))
                 {
-                    seenElems.Add(nodes[i]);
-                }
-                else
                 {
                     // Nothing will be eliminated in the next step
                     nodes[i] = _nothing;
                 }
             }
-            SymbolicRegexNode<TSet> or = _nothing;
+
             // Iterate backwards to avoid quadratic rebuilding of the Or nodes, which are always simplified to
             // right associative form. Concretely:
             // In (a|(b|c)) | d -> (a|(b|(c|d)) the first argument is not a subtree of the result.
             // In a | (b|(c|d)) -> (a|(b|(c|d)) the second argument is a subtree of the result.
             // The first case performs linear work for each element, leading to a quadratic blowup.
+            SymbolicRegexNode<TSet> or = _nothing;
             for (int i = nodes.Count - 1; i >= 0; --i)
-                or = SymbolicRegexNode<TSet>.OrderedOr(this, nodes[i], or, true);
+            {
+                or = SymbolicRegexNode<TSet>.OrderedOr(this, nodes[i], or, deduplicated: true);
+            }
+
             return or;
         }
 
