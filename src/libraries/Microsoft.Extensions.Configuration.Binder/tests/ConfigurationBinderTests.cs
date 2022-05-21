@@ -1272,7 +1272,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         }
 
         // If the immutable type has a parameterised constructors, then throw
-        // that constructor has a 'ref' parameter
+        // if the constructor has an 'out' parameter
         [Fact]
         public void CanBindImmutableClass_ThrowsOnParameterisedConstructorWithAnOutParameter()
         {
