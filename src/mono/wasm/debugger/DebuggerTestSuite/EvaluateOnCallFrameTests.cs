@@ -507,13 +507,13 @@ namespace DebuggerTests
 
                var (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethodWrong()", expect_ok: false );
                Assert.Equal(
-                    $"Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'", 
+                    $"Method 'MyMethodWrong' not found in type 'DebuggerTests.EvaluateMethodTestsClass.ParmToTest'",
                     res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.objToTest.MyMethod(1)", expect_ok: false);
-                Assert.Equal(
-                    "Unable to evaluate method 'MyMethod'. Too many arguments passed.", 
-                    res.Error["result"]?["description"]?.Value<string>());
+               Assert.Equal(
+                   "Unable to evaluate method 'MyMethod'. Too many arguments passed.",
+                   res.Error["result"]?["description"]?.Value<string>());
 
                (_, res) = await EvaluateOnCallFrame(id, "this.CallMethodWithParm(\"1\")", expect_ok: false );
                Assert.Contains("Unable to evaluate method 'this.CallMethodWithParm(\"1\")'", res.Error["message"]?.Value<string>());
@@ -523,7 +523,7 @@ namespace DebuggerTests
 
                (_, res) = await EvaluateOnCallFrame(id, "this.ParmToTestObjException.MyMethod()", expect_ok: false );
                Assert.Contains(
-                    "Cannot evaluate '(this.ParmToTestObjException.MyMethod()\n)'", 
+                    "Cannot evaluate '(this.ParmToTestObjException.MyMethod()\n)'",
                     res.Error["result"]?["description"]?.Value<string>());
            });
 
@@ -1131,9 +1131,9 @@ namespace DebuggerTests
                    );
 
                 var (_, res) = await EvaluateOnCallFrame(id, "test.GetDefaultAndRequiredParamMixedTypes(\"a\", 23, true, 1.23f)", expect_ok: false);
-               Assert.Equal(
-                    "Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.", 
-                    res.Error["exceptionDetails"]["exception"]["description"]?.Value<string>());
+                Assert.Equal(
+                     "Unable to evaluate method 'GetDefaultAndRequiredParamMixedTypes'. Too many arguments passed.",
+                     res.Error["exceptionDetails"]["exception"]["description"]?.Value<string>());
             });
 
         [Fact]
@@ -1160,10 +1160,12 @@ namespace DebuggerTests
                 // so we return the last non-null class name
                 await EvaluateOnCallFrameAndCheck(id,
                    ("list.Count", TNumber(1)),
+                   ("list!.Count", TNumber(1)),
                    ("list?.Count", TNumber(1)),
                    ("listNull", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("listNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("tc?.memberList?.Count", TNumber(2)),
+                   ("tc!.memberList?.Count", TNumber(2)),
                    ("tc?.memberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("tc.memberListNull?.Count", TObject("System.Collections.Generic.List<int>", is_null: true)),
                    ("tcNull?.memberListNull?.Count", TObject("DebuggerTests.EvaluateNullableProperties.TestClass", is_null: true)));
@@ -1177,27 +1179,30 @@ namespace DebuggerTests
             {
                 var id = pause_location["callFrames"][0]["callFrameId"].Value<string>();
                 var (_, res) = await EvaluateOnCallFrame(id, "listNull.Count", expect_ok: false);
-                AssertEqual("Cannot access member \"Count\" of a null-valued object.", 
+                AssertEqual("Cannot access member \"Count\" of a null-valued object.",
+                    res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
+                (_, res) = await EvaluateOnCallFrame(id, "listNull!.Count", expect_ok: false);
+                AssertEqual("Cannot access member \"Count\" of a null-valued object.",
                     res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
                 (_, res) = await EvaluateOnCallFrame(id, "tcNull.memberListNull.Count", expect_ok: false);
-                AssertEqual("Cannot access member \"memberListNull\" of a null-valued object.", 
+                AssertEqual("Cannot access member \"memberListNull\" of a null-valued object.",
                     res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
                 (_, res) = await EvaluateOnCallFrame(id, "tc.memberListNull.Count", expect_ok: false);
-                AssertEqual("Cannot access member \"Count\" of a null-valued object.", 
+                AssertEqual("Cannot access member \"Count\" of a null-valued object.",
                     res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
                 (_, res) = await EvaluateOnCallFrame(id, "tcNull?.memberListNull.Count", expect_ok: false);
-                AssertEqual("Cannot access member \"Count\" of a null-valued object.", 
+                AssertEqual("Cannot access member \"Count\" of a null-valued object.",
                     res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
                 (_, res) = await EvaluateOnCallFrame(id, "listNull?.Count.NonExistingProperty", expect_ok: false);
-                AssertEqual("Cannot access member \"NonExistingProperty\" of a null-valued object.", 
+                AssertEqual("Cannot access member \"NonExistingProperty\" of a null-valued object.",
                     res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
                 (_, res) = await EvaluateOnCallFrame(id, "listNull?", expect_ok: false);
-                AssertEqual("Expected expression.", 
+                AssertEqual("Expected expression.",
                     res.Error["result"]?["description"]?.Value<string>(), "wrong error message");
             });
 
         [Fact]
-        public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitives() =>  await CheckInspectLocalsAtBreakpointSite(
+        public async Task EvaluateMethodsOnPrimitiveTypesReturningPrimitives() => await CheckInspectLocalsAtBreakpointSite(
             "DebuggerTests.PrimitiveTypeMethods", "Evaluate", 11, "Evaluate",
             "window.setTimeout(function() { invoke_static_method ('[debugger-test] DebuggerTests.PrimitiveTypeMethods:Evaluate'); })",
             wait_for_event_fn: async (pause_location) =>
@@ -1230,6 +1235,6 @@ namespace DebuggerTests
                     ("localString.Split('*', 3, System.StringSplitOptions.TrimEntries)", TObject("System.String[]")),
                     ("localString.EndsWith('r')", TBool(false)),
                     ("localString.StartsWith('S')", TBool(true)));
-             });
+            });
     }
 }
