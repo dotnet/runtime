@@ -175,9 +175,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Int2 { get; }
         }
 
-        public class ImmutableClassWithOneParameterisedConstructorButWithInParameter
+        public class ImmutableClassWithOneParameterizedConstructorButWithInParameter
         {
-            public ImmutableClassWithOneParameterisedConstructorButWithInParameter(in string string1, int int1, string string2, int int2)
+            public ImmutableClassWithOneParameterizedConstructorButWithInParameter(in string string1, int int1, string string2, int int2)
             {
                 String1 = string1;
                 Int1 = int1;
@@ -191,9 +191,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Int2 { get; }
         }
 
-        public class ImmutableClassWithOneParameterisedConstructorButWithRefParameter
+        public class ImmutableClassWithOneParameterizedConstructorButWithRefParameter
         {
-            public ImmutableClassWithOneParameterisedConstructorButWithRefParameter(string string1, ref int int1, string string2, int int2)
+            public ImmutableClassWithOneParameterizedConstructorButWithRefParameter(string string1, ref int int1, string string2, int int2)
             {
                 String1 = string1;
                 Int1 = int1;
@@ -207,9 +207,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Int2 { get; }
         }
 
-        public class ImmutableClassWithOneParameterisedConstructorButWithOutParameter
+        public class ImmutableClassWithOneParameterizedConstructorButWithOutParameter
         {
-            public ImmutableClassWithOneParameterisedConstructorButWithOutParameter(string string1, int int1,
+            public ImmutableClassWithOneParameterizedConstructorButWithOutParameter(string string1, int int1,
                 string string2, out decimal int2)
             {
                 String1 = string1;
@@ -224,22 +224,22 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Int2 { get; }
         }
 
-        public class ImmutableClassWithMultipleParameterisedConstructors
+        public class ImmutableClassWithMultipleParameterizedConstructors
         {
-            public ImmutableClassWithMultipleParameterisedConstructors(string string1, int int1)
+            public ImmutableClassWithMultipleParameterizedConstructors(string string1, int int1)
             {
                 String1 = string1;
                 Int1 = int1;
             }
 
-            public ImmutableClassWithMultipleParameterisedConstructors(string string1, int int1, string string2)
+            public ImmutableClassWithMultipleParameterizedConstructors(string string1, int int1, string string2)
             {
                 String1 = string1;
                 Int1 = int1;
                 String2 = string2;
             }
 
-            public ImmutableClassWithMultipleParameterisedConstructors(string string1, int int1, string string2, int int2)
+            public ImmutableClassWithMultipleParameterizedConstructors(string string1, int int1, string string2, int int2)
             {
                 String1 = string1;
                 Int1 = int1;
@@ -247,7 +247,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
                 Int2 = int2;
             }
 
-            public ImmutableClassWithMultipleParameterisedConstructors(string string1)
+            public ImmutableClassWithMultipleParameterizedConstructors(string string1)
             {
                 String1 = string1;
             }
@@ -1202,10 +1202,10 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal("Green", options.LengthAndColor.Color);
         }
 
-        // If the immutable type has multiple public parameterised constructors, then throw
+        // If the immutable type has multiple public parameterized constructors, then throw
         // an exception.
         [Fact]
-        public void CanBindImmutableClass_ThrowsOnMultipleParameterisedConstructors()
+        public void CanBindImmutableClass_ThrowsOnMultipleParameterizedConstructors()
         {
             var dic = new Dictionary<string, string>
             {
@@ -1218,17 +1218,17 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_MultipleParameterizedConstructors, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithMultipleParameterisedConstructors");
+            string expectedMessage = SR.Format(SR.Error_MultipleParameterizedConstructors, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithMultipleParameterizedConstructors");
 
-            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithMultipleParameterisedConstructors>());
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithMultipleParameterizedConstructors>());
 
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        // If the immutable type has a parameterised constructor, then throw
+        // If the immutable type has a parameterized constructor, then throw
         // that constructor has an 'in' parameter
         [Fact]
-        public void CanBindImmutableClass_ThrowsOnParameterisedConstructorWithAnInParameter()
+        public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnInParameter()
         {
             var dic = new Dictionary<string, string>
             {
@@ -1241,17 +1241,17 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterisedConstructorButWithInParameter", "System.String&");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithInParameter", "System.String&");
 
-            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterisedConstructorButWithInParameter>());
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithInParameter>());
 
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        // If the immutable type has a parameterised constructors, then throw
+        // If the immutable type has a parameterized constructors, then throw
         // that constructor has a 'ref' parameter
         [Fact]
-        public void CanBindImmutableClass_ThrowsOnParameterisedConstructorWithARefParameter()
+        public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithARefParameter()
         {
             var dic = new Dictionary<string, string>
             {
@@ -1264,17 +1264,17 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterisedConstructorButWithRefParameter", "System.Int32&");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithRefParameter", "System.Int32&");
 
-            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterisedConstructorButWithRefParameter>());
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithRefParameter>());
 
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        // If the immutable type has a parameterised constructors, then throw
+        // If the immutable type has a parameterized constructors, then throw
         // if the constructor has an 'out' parameter
         [Fact]
-        public void CanBindImmutableClass_ThrowsOnParameterisedConstructorWithAnOutParameter()
+        public void CanBindImmutableClass_ThrowsOnParameterizedConstructorWithAnOutParameter()
         {
             var dic = new Dictionary<string, string>
             {
@@ -1287,17 +1287,17 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterisedConstructorButWithOutParameter", "System.Decimal&");
+            string expectedMessage = SR.Format(SR.Error_CannotBindToConstructorParameter, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithOneParameterizedConstructorButWithOutParameter", "System.Decimal&");
 
-            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterisedConstructorButWithOutParameter>());
+            var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithOneParameterizedConstructorButWithOutParameter>());
 
             Assert.Equal(expectedMessage, ex.Message);
         }
 
-        // If the immutable type has a public parameterised constructor,
+        // If the immutable type has a public parameterized constructor,
         // then pick it.
         [Fact]
-        public void CanBindImmutableClass_PicksParameterisedConstructorIfNoParameterlessConstructorExists()
+        public void CanBindImmutableClass_PicksParameterizedConstructorIfNoParameterlessConstructorExists()
         {
             var dic = new Dictionary<string, string>
             {
