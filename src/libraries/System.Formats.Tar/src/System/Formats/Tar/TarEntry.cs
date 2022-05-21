@@ -286,26 +286,18 @@ namespace System.Formats.Tar
                 Directory.CreateDirectory(Path.GetDirectoryName(fileDestinationPath)!);
                 ExtractToFileInternal(fileDestinationPath, linkTargetPath, overwrite);
             }
+        }
 
-            // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, throws.
-            static string GetSanitizedFullPath(string destinationDirectoryFullPath, string path, string exceptionMessage)
-            {
-                string actualPath = Path.Join(Path.GetDirectoryName(path), ArchivingUtils.SanitizeEntryFilePath(Path.GetFileName(path)));
+        // If the path can be extracted in the specified destination directory, returns the full path with sanitized file name. Otherwise, throws.
+        private static string GetSanitizedFullPath(string destinationDirectoryFullPath, string path, string exceptionMessage)
+        {
+            string actualPath = Path.IsPathFullyQualified(path) ? path : Path.Combine(destinationDirectoryFullPath, path);
+            actualPath = Path.Join(Path.GetDirectoryName(actualPath), ArchivingUtils.SanitizeEntryFilePath(Path.GetFileName(actualPath)));
+            actualPath = Path.GetFullPath(actualPath); // Normalizes relative segments
 
-                if (!Path.IsPathFullyQualified(actualPath))
-                {
-                    actualPath = Path.Combine(destinationDirectoryFullPath, actualPath);
-                }
-
-                actualPath = Path.GetFullPath(actualPath);
-
-                if (!actualPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison))
-                {
-                    throw new IOException(string.Format(exceptionMessage, path, destinationDirectoryFullPath));
-                }
-
-                return actualPath;
-            }
+            return actualPath.StartsWith(destinationDirectoryFullPath, PathInternal.StringComparison) ?
+                actualPath :
+                throw new IOException(string.Format(exceptionMessage, path, destinationDirectoryFullPath));
         }
 
         // Extracts the current entry into the filesystem, regardless of the entry type.
