@@ -1095,14 +1095,8 @@ namespace System.Text.Json.Tests
                 Assert.Equal(JsonTokenType.String, json.TokenType);
 
                 JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.GetString());
-
-                var byteBuffer = new byte[6 * jsonString.Length];
-                JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(byteBuffer));
-                Assert.All(byteBuffer, static b => Assert.Equal(0, b));
-
-                var charBuffer = new char[6 * jsonString.Length];
-                JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(charBuffer));
-                Assert.All(charBuffer, static c => Assert.Equal(0, c));
+                JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new byte[6 * jsonString.Length]));
+                JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new char[6 * jsonString.Length]));
             }
         }
 
@@ -1133,15 +1127,11 @@ namespace System.Text.Json.Tests
                         InvalidOperationException ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.GetString());
                         Assert.IsType<DecoderFallbackException>(ex.InnerException);
 
-                        var byteBuffer = new byte[length];
-                        ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(byteBuffer));
+                        ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new byte[length]));
                         Assert.IsType<DecoderFallbackException>(ex.InnerException);
-                        Assert.All(byteBuffer, static b => Assert.Equal(0, b));
 
-                        var charBuffer = new char[length];
-                        ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(charBuffer));
+                        ex = JsonTestHelper.AssertThrows<InvalidOperationException>(ref json, (ref Utf8JsonReader json) => json.CopyString(new char[length]));
                         Assert.IsType<DecoderFallbackException>(ex.InnerException);
-                        Assert.All(charBuffer, static c => Assert.Equal(0, c));
                     }
                 }
             }

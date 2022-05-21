@@ -237,7 +237,7 @@ namespace System.Text.Json
             }
         }
 
-        public static int TranscodeHelperWithCleanupOnFailure(ReadOnlySpan<byte> utf8Unescaped, Span<char> destination)
+        public static int TranscodeHelper(ReadOnlySpan<byte> utf8Unescaped, Span<char> destination)
         {
             try
             {
@@ -256,8 +256,6 @@ namespace System.Text.Json
             }
             catch (DecoderFallbackException dfe)
             {
-                destination.Clear();
-
                 // We want to be consistent with the exception being thrown
                 // so the user only has to catch a single exception.
                 // Since we already throw InvalidOperationException for mismatch token type,
@@ -273,7 +271,7 @@ namespace System.Text.Json
             }
         }
 
-        public static void ValidateUtf8WithCleanupOnFailure(Span<byte> utf8Buffer)
+        public static void ValidateUtf8(ReadOnlySpan<byte> utf8Buffer)
         {
             try
             {
@@ -291,8 +289,6 @@ namespace System.Text.Json
             }
             catch (DecoderFallbackException ex)
             {
-                utf8Buffer.Clear();
-
                 // We want to be consistent with the exception being thrown
                 // so the user only has to catch a single exception.
                 // Since we already throw InvalidOperationException for mismatch token type,
@@ -393,7 +389,7 @@ namespace System.Text.Json
             int idx = source.IndexOf(JsonConstants.BackSlash);
             Debug.Assert(idx >= 0);
 
-            bool result = TryUnescape(source, destination, idx, out written, clearBufferOnFailure: false);
+            bool result = TryUnescape(source, destination, idx, out written);
             Debug.Assert(result);
         }
 
@@ -403,25 +399,25 @@ namespace System.Text.Json
             Debug.Assert(source[idx] == JsonConstants.BackSlash);
             Debug.Assert(destination.Length >= source.Length);
 
-            bool result = TryUnescape(source, destination, idx, out written, clearBufferOnFailure: false);
+            bool result = TryUnescape(source, destination, idx, out written);
             Debug.Assert(result);
         }
 
         /// <summary>
         /// Used when writing to buffers not guaranteed to fit the unescaped result.
         /// </summary>
-        internal static bool TryUnescape(ReadOnlySpan<byte> source, Span<byte> destination, out int written, bool clearBufferOnFailure)
+        internal static bool TryUnescape(ReadOnlySpan<byte> source, Span<byte> destination, out int written)
         {
             int idx = source.IndexOf(JsonConstants.BackSlash);
             Debug.Assert(idx >= 0);
 
-            return TryUnescape(source, destination, idx, out written, clearBufferOnFailure);
+            return TryUnescape(source, destination, idx, out written);
         }
 
         /// <summary>
         /// Used when writing to buffers not guaranteed to fit the unescaped result.
         /// </summary>
-        private static bool TryUnescape(ReadOnlySpan<byte> source, Span<byte> destination, int idx, out int written, bool clearBufferOnFailure)
+        private static bool TryUnescape(ReadOnlySpan<byte> source, Span<byte> destination, int idx, out int written)
         {
             Debug.Assert(idx >= 0 && idx < source.Length);
             Debug.Assert(source[idx] == JsonConstants.BackSlash);
@@ -492,7 +488,6 @@ namespace System.Text.Json
                         // The first hex value cannot be a low surrogate.
                         if (scalar >= JsonConstants.LowSurrogateStartValue)
                         {
-                            HandleBufferClearing(clearBufferOnFailure, destination, written);
                             ThrowHelper.ThrowInvalidOperationException_ReadInvalidUTF16(scalar);
                         }
 
@@ -501,7 +496,6 @@ namespace System.Text.Json
                         // We must have a low surrogate following a high surrogate.
                         if (source.Length < idx + 7 || source[idx + 1] != '\\' || source[idx + 2] != 'u')
                         {
-                            HandleBufferClearing(clearBufferOnFailure, destination, written);
                             ThrowHelper.ThrowInvalidOperationException_ReadIncompleteUTF16();
                         }
 
@@ -515,7 +509,6 @@ namespace System.Text.Json
                         // If the first hex value is a high surrogate, the next one must be a low surrogate.
                         if (!JsonHelpers.IsInRangeInclusive((uint)lowSurrogate, JsonConstants.LowSurrogateStartValue, JsonConstants.LowSurrogateEndValue))
                         {
-                            HandleBufferClearing(clearBufferOnFailure, destination, written);
                             ThrowHelper.ThrowInvalidOperationException_ReadInvalidUTF16(lowSurrogate);
                         }
 
@@ -595,16 +588,7 @@ namespace System.Text.Json
             return true;
 
         DestinationTooShort:
-            HandleBufferClearing(clearBufferOnFailure, destination, written);
             return false;
-
-            static void HandleBufferClearing(bool clearBufferOnFailure, Span<byte> destination, int written)
-            {
-                if (clearBufferOnFailure)
-                {
-                    destination.Slice(0, written).Clear();
-                }
-            }
         }
 
 #if !BUILDING_INBOX_LIBRARY

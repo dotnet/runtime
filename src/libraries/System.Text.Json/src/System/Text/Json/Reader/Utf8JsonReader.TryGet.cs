@@ -71,7 +71,11 @@ namespace System.Text.Json
 
             if (ValueIsEscaped)
             {
-                bytesWritten = CopyStringWithEscaping(utf8Destination, isUserProvidedBuffer: true);
+                if (!TryCopyEscapedString(utf8Destination, out bytesWritten))
+                {
+                    utf8Destination.Slice(0, bytesWritten).Clear();
+                    ThrowHelper.ThrowArgumentException_DestinationTooShort();
+                }
             }
             else
             {
@@ -89,7 +93,7 @@ namespace System.Text.Json
                 }
             }
 
-            JsonReaderHelper.ValidateUtf8WithCleanupOnFailure(utf8Destination.Slice(0, bytesWritten));
+            JsonReaderHelper.ValidateUtf8(utf8Destination.Slice(0, bytesWritten));
             return bytesWritten;
         }
 
@@ -125,20 +129,22 @@ namespace System.Text.Json
                     stackalloc byte[JsonConstants.StackallocByteThreshold] :
                     (rentedBuffer = ArrayPool<byte>.Shared.Rent(valueLength));
 
-                int bytesWritten = CopyStringWithEscaping(unescapedBuffer, isUserProvidedBuffer: false);
+                bool success = TryCopyEscapedString(unescapedBuffer, out int bytesWritten);
+                Debug.Assert(success);
                 unescapedSource = unescapedBuffer.Slice(0, bytesWritten);
             }
             else
             {
                 if (HasValueSequence)
                 {
-                    valueLength = checked((int)ValueSequence.Length);
+                    ReadOnlySequence<byte> valueSequence = ValueSequence;
+                    valueLength = checked((int)valueSequence.Length);
 
                     Span<byte> intermediate = valueLength <= JsonConstants.StackallocByteThreshold ?
                         stackalloc byte[JsonConstants.StackallocByteThreshold] :
                         (rentedBuffer = ArrayPool<byte>.Shared.Rent(valueLength));
 
-                    ValueSequence.CopyTo(intermediate);
+                    valueSequence.CopyTo(intermediate);
                     unescapedSource = intermediate.Slice(0, valueLength);
                 }
                 else
@@ -147,7 +153,7 @@ namespace System.Text.Json
                 }
             }
 
-            int charsWritten = JsonReaderHelper.TranscodeHelperWithCleanupOnFailure(unescapedSource, destination);
+            int charsWritten = JsonReaderHelper.TranscodeHelper(unescapedSource, destination);
 
             if (rentedBuffer != null)
             {
@@ -158,7 +164,7 @@ namespace System.Text.Json
             return charsWritten;
         }
 
-        private readonly int CopyStringWithEscaping(Span<byte> destination, bool isUserProvidedBuffer)
+        private readonly bool TryCopyEscapedString(Span<byte> destination, out int bytesWritten)
         {
             Debug.Assert(_tokenType is JsonTokenType.String or JsonTokenType.PropertyName);
             Debug.Assert(ValueIsEscaped);
@@ -183,7 +189,7 @@ namespace System.Text.Json
                 source = ValueSpan;
             }
 
-            bool success = JsonReaderHelper.TryUnescape(source, destination, out int bytesWritten, clearBufferOnFailure: isUserProvidedBuffer);
+            bool success = JsonReaderHelper.TryUnescape(source, destination, out bytesWritten);
 
             if (rentedBuffer != null)
             {
@@ -191,13 +197,8 @@ namespace System.Text.Json
                 ArrayPool<byte>.Shared.Return(rentedBuffer);
             }
 
-            if (!success)
-            {
-                ThrowHelper.ThrowArgumentException_DestinationTooShort();
-            }
-
-            Debug.Assert(bytesWritten < source.Length, "source buffer must contain at least one escaped sequence");
-            return bytesWritten;
+            Debug.Assert(bytesWritten < source.Length, "source buffer must contain at least one escape sequence");
+            return success;
         }
 
         /// <summary>
