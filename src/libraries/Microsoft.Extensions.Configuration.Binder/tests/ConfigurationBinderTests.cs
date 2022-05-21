@@ -281,7 +281,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
 
             public string Color { get; }
             public int Length { get; }
-            public decimal Thickness { get; set; }
+            public decimal Thickness { get; init; }
         }
 
         public struct ValueTypeOptions
