@@ -242,7 +242,6 @@ namespace System.Text.RegularExpressions.Symbolic
             {
                 if (!seenElems.Add(nodes[i]))
                 {
-                {
                     // Nothing will be eliminated in the next step
                     nodes[i] = _nothing;
                 }
