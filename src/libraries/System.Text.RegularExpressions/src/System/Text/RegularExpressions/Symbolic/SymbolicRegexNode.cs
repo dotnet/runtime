@@ -1447,7 +1447,7 @@ namespace System.Text.RegularExpressions.Symbolic
             }
 
             SymbolicRegexNode<TSet>? derivative;
-            (SymbolicRegexNode<TSet>, TSet, uint, bool) key = (this, elem, context, false);
+            (SymbolicRegexNode<TSet>, TSet, uint) key = (this, elem, context);
             if (_builder._derivativeCache.TryGetValue(key, out derivative))
             {
                 return derivative;

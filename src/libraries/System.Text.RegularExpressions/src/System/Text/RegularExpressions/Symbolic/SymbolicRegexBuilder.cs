@@ -90,13 +90,29 @@ namespace System.Text.RegularExpressions.Symbolic
         // of the pattern in each call. Thus, caching is necessary to avoid a quadratic worst-case over multiple steps of
         // matching when simplification rules fail to eliminate the portions being walked over.
 
-        /// <summary>Cache for <see cref="SymbolicRegexNode{TSet}.CreateDerivative(TSet, uint)"/></summary>
-        internal readonly Dictionary<(SymbolicRegexNode<TSet>, TSet elem, uint context, bool IsBackTracking), SymbolicRegexNode<TSet>> _derivativeCache = new();
+        /// <summary>
+        /// Cache for <see cref="SymbolicRegexNode{TSet}.CreateDerivative(TSet, uint)"/> keyed by:
+        ///  -The node to derivate
+        ///  -The character or minterm to take the derivative with
+        ///  -The surrounding character context
+        /// The value is the derivative.
+        /// </summary>
+        internal readonly Dictionary<(SymbolicRegexNode<TSet>, TSet elem, uint context), SymbolicRegexNode<TSet>> _derivativeCache = new();
 
-        /// <summary>Cache for <see cref="SymbolicRegexNode{TSet}.PruneLowerPriorityThanNullability(uint)"/></summary>
+        /// <summary>
+        /// Cache for <see cref="SymbolicRegexNode{TSet}.PruneLowerPriorityThanNullability(uint)"/> keyed by:
+        ///  -The node to prune
+        ///  -The surrounding character context
+        /// The value is the pruned node.
+        /// </summary>
         internal readonly Dictionary<(SymbolicRegexNode<TSet>, uint), SymbolicRegexNode<TSet>> _pruneLowerPriorityThanNullabilityCache = new();
 
-        /// <summary>Cache for <see cref="SymbolicRegexNode{TSet}.Subsumes(SymbolicRegexNode{TSet}, int)"/></summary>
+        /// <summary>
+        /// Cache for <see cref="SymbolicRegexNode{TSet}.Subsumes(SymbolicRegexNode{TSet}, int)"/> keyed by:
+        ///  -The node R potentially subsuming S
+        ///  -The node S potentially being subsumed by R
+        /// The value indicates if subsumption is known to hold.
+        /// </summary>
         internal readonly Dictionary<(SymbolicRegexNode<TSet>, SymbolicRegexNode<TSet>), bool> _subsumptionCache = new();
 
 #if DEBUG
