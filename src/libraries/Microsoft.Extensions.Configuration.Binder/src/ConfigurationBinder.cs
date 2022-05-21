@@ -435,7 +435,7 @@ namespace Microsoft.Extensions.Configuration
 
             if (constructors.Length > 1 && !hasParameterlessConstructor)
             {
-                throw new InvalidOperationException(SR.Format(SR.Error_MultipleParameterisedConstructors, type));
+                throw new InvalidOperationException(SR.Format(SR.Error_MultipleParameterizedConstructors, type));
             }
 
             if (constructors.Length == 1 && !hasParameterlessConstructor)

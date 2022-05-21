@@ -159,9 +159,9 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             public int Length { get; }
         }
 
-        public class ImmutableClassWithOneParameterisedConstructor
+        public class ImmutableClassWithOneParameterizedConstructor
         {
-            public ImmutableClassWithOneParameterisedConstructor(string string1, int int1, string string2, int int2)
+            public ImmutableClassWithOneParameterizedConstructor(string string1, int int1, string string2, int int2)
             {
                 String1 = string1;
                 Int1 = int1;
@@ -1218,7 +1218,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            string expectedMessage = SR.Format(SR.Error_MultipleParameterisedConstructors, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithMultipleParameterisedConstructors");
+            string expectedMessage = SR.Format(SR.Error_MultipleParameterizedConstructors, "Microsoft.Extensions.Configuration.Binder.Test.ConfigurationBinderTests+ImmutableClassWithMultipleParameterisedConstructors");
 
             var ex = Assert.Throws<InvalidOperationException>(() => config.Get<ImmutableClassWithMultipleParameterisedConstructors>());
 
@@ -1310,7 +1310,7 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             configurationBuilder.AddInMemoryCollection(dic);
             var config = configurationBuilder.Build();
 
-            var options = config.Get<ImmutableClassWithOneParameterisedConstructor>();
+            var options = config.Get<ImmutableClassWithOneParameterizedConstructor>();
             Assert.Equal("s1", options.String1);
             Assert.Equal("s2", options.String2);
             Assert.Equal(1, options.Int1);
