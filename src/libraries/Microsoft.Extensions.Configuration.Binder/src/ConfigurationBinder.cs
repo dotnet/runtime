@@ -750,26 +750,12 @@ namespace Microsoft.Extensions.Configuration
             return propertyBindingPoint.Value;
         }
 
-
-        // todo: steve - we might not need this; currently, these attributes are only applicable to properties and
-        // not parameters. We might be able to get rid of this method once confirm whether it's needed or not.
-
-        private static string GetParameterName(ParameterInfo parameter)
-        {
-            var customAttributesData = parameter.GetCustomAttributesData();
-
-            return TryGetNameFromAttributes(customAttributesData) ?? parameter.Name!;
-        }
-
         private static string GetPropertyName(MemberInfo property)
         {
-            return TryGetNameFromAttributes(property.GetCustomAttributesData()) ?? property.Name;
-        }
+            ThrowHelper.ThrowIfNull(property);
 
-        private static string? TryGetNameFromAttributes(IList<CustomAttributeData> customAttributesData)
-        {
             // Check for a custom property name used for configuration key binding
-            foreach (CustomAttributeData attributeData in customAttributesData)
+            foreach (var attributeData in property.GetCustomAttributesData())
             {
                 if (attributeData.AttributeType != typeof(ConfigurationKeyNameAttribute))
                 {
@@ -788,10 +774,10 @@ namespace Microsoft.Extensions.Configuration
                     .Value?
                     .ToString();
 
-                return !string.IsNullOrWhiteSpace(name) ? name : null;
+                return !string.IsNullOrWhiteSpace(name) ? name : property.Name;
             }
 
-            return null;
+            return property.Name;
         }
     }
 }
