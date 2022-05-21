@@ -868,10 +868,7 @@ void Compiler::impPopCallArgs(CORINFO_SIG_INFO* sig, GenTreeCall* call)
             // the parameter type but exact types in the signature type.
             //
             // TODO-ARGS: Remove this quirk; we should be able to use the
-            // signature type that is different in the rare case above. It will
-            // cause positive diffs, but that is probably an indication that we
-            // have downstream phases that should be using
-            // `ClassLayout::AreCompatible` instead.
+            // signature type that is different in the rare case above.
             //
             classHnd = ti.GetClassHandleForValueClass();
 

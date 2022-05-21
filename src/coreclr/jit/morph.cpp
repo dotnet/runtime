@@ -9652,11 +9652,7 @@ GenTree* Compiler::fgMorphBlockOperand(GenTree* tree, var_types asgType, unsigne
 //    lclNum2 - the local variable on the other side of ASG, can be BAD_VAR_NUM.
 //
 // Return Value:
-//    True if the second local is valid and has the same struct handle as the first,
-//    false otherwise.
-//
-// Notes:
-//   TODO-PhysicalVN: with the physical VN scheme, this method is no longer needed.
+//    True if the second local is valid and has a layout compatible with the first local.
 //
 bool Compiler::fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2)
 {
@@ -9672,15 +9668,7 @@ bool Compiler::fgMorphCanUseLclFldForCopy(unsigned lclNum1, unsigned lclNum2)
     {
         return false;
     }
-    CORINFO_CLASS_HANDLE struct1 = varDsc1->GetStructHnd();
-    CORINFO_CLASS_HANDLE struct2 = varDsc2->GetStructHnd();
-    assert(struct1 != NO_CLASS_HANDLE);
-    assert(struct2 != NO_CLASS_HANDLE);
-    if (struct1 != struct2)
-    {
-        return false;
-    }
-    return true;
+    return ClassLayout::AreCompatible(varDsc1->GetLayout(), varDsc2->GetLayout());
 }
 
 // insert conversions and normalize to make tree amenable to register
