@@ -181,8 +181,8 @@ int __cdecl main(const int argc, const char* argv[])
         {
             if (::GetTempPathA(MAX_LONGPATH, tmpPath) == 0)
             {
-                printf_error("GetTempPath failed (0x%08x)", ::GetLastError());
-                return ::GetLastError();
+                printf_error("GetTempPath failed %s", GetLastErrorString().c_str());
+                return -1;
             }
             exitCode = strcat_s(tmpPath, MAX_LONGPATH, DEFAULT_DUMP_TEMPLATE);
             if (exitCode != 0)
@@ -220,6 +220,42 @@ int __cdecl main(const int argc, const char* argv[])
     PAL_TerminateEx(exitCode);
 #endif
     return exitCode;
+}
+
+std::string
+GetLastErrorString()
+{
+    DWORD error = GetLastError();
+    std::string result;
+#ifdef HOST_WINDOWS
+    LPSTR messageBuffer;
+    DWORD length = FormatMessage(
+        FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+        NULL,
+        error,
+        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
+        (LPTSTR)&messageBuffer,
+        0,
+        NULL);
+    if (length > 0)
+    {
+        result.append(messageBuffer, length);
+        LocalFree(messageBuffer);
+
+        // Remove the \r\n at the end of the system message. Assumes that the \r is first.
+        size_t found = result.find_last_of('\r');
+        if (found != std::string::npos)
+        {
+            result.erase(found);
+        }
+        result.append(" ");
+    }
+#endif
+    result.append("(");
+    char buffer[64];
+    result.append(_itoa(error, buffer, 10));
+    result.append(")");
+    return result;
 }
 
 void

@@ -241,31 +241,31 @@ CrashInfo::InitializeDAC()
         m_hdac = LoadLibraryA(dacPath.c_str());
         if (m_hdac == nullptr)
         {
-            printf_error("LoadLibraryA(%s) FAILED %d\n", dacPath.c_str(), GetLastError());
+            printf_error("InitializeDAC: LoadLibraryA(%s) FAILED %s\n", dacPath.c_str(), GetLastErrorString().c_str());
             goto exit;
         }
         pfnCLRDataCreateInstance = (PFN_CLRDataCreateInstance)GetProcAddress(m_hdac, "CLRDataCreateInstance");
         if (pfnCLRDataCreateInstance == nullptr)
         {
-            printf_error("GetProcAddress(CLRDataCreateInstance) FAILED %d\n", GetLastError());
+            printf_error("InitializeDAC: GetProcAddress(CLRDataCreateInstance) FAILED %s\n", GetLastErrorString().c_str());
             goto exit;
         }
         hr = pfnCLRDataCreateInstance(__uuidof(ICLRDataEnumMemoryRegions), dataTarget, (void**)&m_pClrDataEnumRegions);
         if (FAILED(hr))
         {
-            printf_error("CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
+            printf_error("InitializeDAC: CLRDataCreateInstance(ICLRDataEnumMemoryRegions) FAILED %08x\n", hr);
             goto exit;
         }
         hr = pfnCLRDataCreateInstance(__uuidof(IXCLRDataProcess), dataTarget, (void**)&m_pClrDataProcess);
         if (FAILED(hr))
         {
-            printf_error("CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
+            printf_error("InitializeDAC: CLRDataCreateInstance(IXCLRDataProcess) FAILED %08x\n", hr);
             goto exit;
         }
     }
     else
     {
-        TRACE("InitializeDAC: coreclr not found; not using DAC\n");
+        printf_error("InitializeDAC: coreclr not found; not using DAC\n");
     }
     result = true;
 exit:
