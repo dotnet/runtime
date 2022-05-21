@@ -1035,14 +1035,14 @@ private:
             // TODO-ADDR: support TYP_STRUCT LCL_FLD and use it instead.
             case IndirTransform::ObjAddrLclFld:
             {
-                indir->SetOper(GT_OBJ);
-                indir->AsObj()->SetLayout(indirLayout);
-                indir->AsObj()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
+                indir->SetOper(indirLayout->IsBlockLayout() ? GT_BLK : GT_OBJ);
+                indir->AsBlk()->SetLayout(indirLayout);
+                indir->AsBlk()->gtBlkOpKind = GenTreeBlk::BlkOpKindInvalid;
 #ifndef JIT32_GCENCODER
-                indir->AsObj()->gtBlkOpGcUnsafe = false;
+                indir->AsBlk()->gtBlkOpGcUnsafe = false;
 #endif
 
-                GenTree* addr = indir->AsObj()->Addr();
+                GenTree* addr = indir->AsBlk()->Addr();
                 assert(addr->OperIs(GT_ADDR));
 
                 GenTree* location = addr->gtGetOp1();
