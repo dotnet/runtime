@@ -31,10 +31,11 @@ namespace Microsoft.Interop
                 {
                     (TargetFramework fmk, _) = context.GetTargetFramework();
                     if (info.ManagedType is not PointerTypeInfo
+                        && info.ManagedType is not ValueTypeInfo { IsByRefLike: true }
                         && fmk is TargetFramework.Net)
                     {
-                        // Use the Unsafe.SkipInit API when available and
-                        // the managed type is not a pointer.
+                        // Use the Unsafe.SkipInit<T> API when available and
+                        // managed type is usable as a generic parameter.
                         initializations.Add(ExpressionStatement(
                             InvocationExpression(
                                 MemberAccessExpression(SyntaxKind.SimpleMemberAccessExpression,
@@ -47,7 +48,6 @@ namespace Microsoft.Interop
                     }
                     else
                     {
-                        // Assign out params to default when Unsafe.SkipInit API is unavailable.
                         initializations.Add(ExpressionStatement(
                             AssignmentExpression(
                                 SyntaxKind.SimpleAssignmentExpression,
