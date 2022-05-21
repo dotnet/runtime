@@ -151,7 +151,7 @@ namespace System.Tests
             Assert.Equal(value, (nuint)opExplicitFromPointer.Invoke(null, new object[] { Pointer.Box(v, typeof(void*)) }));
 
             value = unchecked((nuint)0x7fffffffffffffff);
-            Exception ex = Assert.Throws<TargetInvocationException>(() => opExplicitToUInt32.Invoke(null, new object[] { value }));
+            Exception ex = Assert.ThrowsAny<Exception>(() => opExplicitToUInt32.Invoke(null, new object[] { value }));
 
 
             if (ex is TargetInvocationException)
