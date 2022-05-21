@@ -136,7 +136,7 @@
     <value>Cannot create instance of type '{0}' because it is missing a public parameterless constructor.</value>
   </data>
   <data name="Error_MultipleParameterisedConstructors" xml:space="preserve">
-    <value>Cannot create instance of type '{0}' because it has multiple public parameterised constructors.</value>
+    <value>Cannot create instance of type '{0}' because it has multiple public parameterized constructors.</value>
   </data>
   <data name="Error_UnsupportedMultidimensionalArray" xml:space="preserve">
     <value>Cannot create instance of type '{0}' because multidimensional arrays are not supported.</value>
