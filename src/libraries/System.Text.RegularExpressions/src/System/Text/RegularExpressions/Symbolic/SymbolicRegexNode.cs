@@ -24,6 +24,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// Maximum recursion depth for subsumption rules before giving up.
         /// </summary>
         /// <remarks>
+        /// A regex R subsumes another regex S if all strings matching S are also matched by R.
         /// The subsumption check may do unproductive linear walks when subsumption doesn't hold. This depth limit helps
         /// curb the cost of these walks at the cost of sometimes not detecting subsumption. This limit should be set
         /// high enough that subsumption is detected in all typical cases. This limit of 50 still gives good performance
@@ -131,7 +132,7 @@ namespace System.Text.RegularExpressions.Symbolic
         /// <summary>True if this node is high priority nullable for the given context</summary>
         internal bool IsHighPriorityNullableFor(uint context) => _info.CanBeNullable && IsHighPriorityNullableForLeftmostBranch(this, context);
 
-        /// <summary>Lightweigth nullability test that determines if the leftmost branch of the node is high-priority-nullable for the given context</summary>
+        /// <summary>Nullability test that determines if the leftmost branch of the node is high-priority-nullable for the given context</summary>
         private static bool IsHighPriorityNullableForLeftmostBranch(SymbolicRegexNode<TSet> node, uint context)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
@@ -498,7 +499,8 @@ namespace System.Text.RegularExpressions.Symbolic
         internal static SymbolicRegexNode<TSet> CreateLoop(SymbolicRegexBuilder<TSet> builder, SymbolicRegexNode<TSet> body, int lower, int upper, bool isLazy)
         {
             Debug.Assert(lower >= 0 && lower <= upper);
-            //avoid wrapping X? inside (X?)?, or X?? inside (X??)??
+            // Avoid wrapping X? inside (X?)?, or X?? inside (X??)??
+            // This simplification in particular avoids creating unnecessary loops from the rule for concatenation in TryFoldAlternation
             if (lower == 0 && upper == 1 && body._kind == SymbolicRegexNodeKind.Loop && body._lower == 0 && body._upper == 1)
             {
                 Debug.Assert(body._left is not null);
@@ -1358,7 +1360,7 @@ namespace System.Text.RegularExpressions.Symbolic
             //caching pruning to avoid otherwise potential quadratic worst case behavior
             SymbolicRegexNode<TSet>? prunedNode;
             (SymbolicRegexNode<TSet>, uint) key = (this, context);
-            if (_builder._pruneCache.TryGetValue(key, out prunedNode))
+            if (_builder._pruneLowerPriorityThanNullabilityCache.TryGetValue(key, out prunedNode))
             {
                 return prunedNode;
             }
@@ -1410,7 +1412,7 @@ namespace System.Text.RegularExpressions.Symbolic
                     break;
             }
 
-            _builder._pruneCache[key] = prunedNode;
+            _builder._pruneLowerPriorityThanNullabilityCache[key] = prunedNode;
             return prunedNode;
         }
 
@@ -1427,8 +1429,12 @@ namespace System.Text.RegularExpressions.Symbolic
         /// -Some nodes, namely <see cref="SymbolicRegexNodeKind.CaptureStart"/> and <see cref="SymbolicRegexNodeKind.CaptureEnd"/>,
         ///  will produce <see cref="SymbolicRegexNodeKind.Effect"/> nodes, which indicate effects to be applied on
         ///  transitions using this derivative. The derivative must be further post-processed with a function that strips
-        ///  and possibly interprets these effects into a conveniently executable form, such as <see cref="StripEffects"/>
-        ///  or <see cref="StripAndMapEffects"/>.
+        ///  and possibly interprets these effects into a conveniently executable form. See <see cref="StripAndMapEffects"/>
+        ///  for an example of this interpretation.
+        ///  Ultimately, effects are translated into <see cref="DerivativeEffect"/> instances which may be applied at a
+        ///  specific input position to <see cref="SymbolicRegexMatcher{TSet}.Registers"/> instances, which track concrete
+        ///  positions for capture starts and ends. For example, given a DerivativeEffect for CaptureStart of capture number 0
+        ///  and an input position 5, applying it to a Registers instance is simply assigning the relevant value to 5.
         /// </remarks>
         /// <param name="elem">given element wrt which the derivative is taken</param>
         /// <param name="context">immediately surrounding character context that affects nullability of anchors</param>
@@ -1566,7 +1572,7 @@ namespace System.Text.RegularExpressions.Symbolic
             switch (_kind)
             {
                 case SymbolicRegexNodeKind.Effect:
-                    Debug.Assert(_left is not null);
+                    Debug.Assert(_left is not null && _right is not null);
                     // This is the place where the effect (the right child) is getting ignored
                     return _left.StripEffects();
 
@@ -1605,6 +1611,10 @@ namespace System.Text.RegularExpressions.Symbolic
         /// matches using that node. In effect, this function interprets effects produced during derivation into a form
         /// suitable for use in NFA simulation. This function is similar to <see cref="StripEffects"/> in that it removes
         /// Effect nodes as it maps them.
+        /// For example, Effect(Effect(R,CaptureStart_1)|S,CaptureStart_0) would be turned into two pairs:
+        /// (R,[CaptureStart_0,CaptureStart_1]) and (S,[CaptureStart_0]).
+        /// Here both include the CaptureStart_0 effect, since both are nested inside the outer Effect node,
+        /// while only R includes the CaptureStart_1 effect.
         /// </summary>
         /// <param name="context">immediately surrounding character context that affects nullability of anchors</param>
         /// <param name="alternativesAndEffects">the list to insert the pairs of nodes and their effects into in priority order</param>
