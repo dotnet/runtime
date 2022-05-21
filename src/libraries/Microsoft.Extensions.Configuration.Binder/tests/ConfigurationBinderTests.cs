@@ -117,34 +117,22 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
         public record struct RecordStructTypeOptions(string Color, int Length);
         public readonly record struct ReadonlyRecordStructTypeOptions(string Color, int Length);
 
-        public struct StructTypeOptions
-        {
-            public StructTypeOptions(string color, int length)
-            {
-                Color = color;
-                Length = length;
-            }
-
-            public string Color { get; }
-            public int Length { get; }
-        }
-
-        public readonly struct ReadonlyStructTypeOptions
-        {
-            public ReadonlyStructTypeOptions(string color, int length)
-            {
-                Color = color;
-                Length = length;
-            }
-
-            public string Color { get; }
-            public int Length { get; }
-        }
-
         public class ContainerWithNestedImmutableObject
         {
             public string ContainerName { get; set; }
             public ImmutableLengthAndColorClass LengthAndColor { get; set; }
+        }
+
+        public struct MutableStructWithConstructor
+        {
+            public MutableStructWithConstructor(string randomParameter)
+            {
+                Color = randomParameter;
+                Length = randomParameter.Length;
+            }
+
+            public string Color { get; set; }
+            public int Length { get; set;  }
         }
         
         public class ImmutableLengthAndColorClass
@@ -1294,6 +1282,23 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             Assert.Equal(expectedMessage, ex.Message);
         }
 
+        [Fact]
+        public void CanBindMutableStruct_UnmatchedConstructorsAreIgnored()
+        {
+            var dic = new Dictionary<string, string>
+            {
+                {"Length", "42"},
+                {"Color", "Green"},
+            };
+            var configurationBuilder = new ConfigurationBuilder();
+            configurationBuilder.AddInMemoryCollection(dic);
+            var config = configurationBuilder.Build();
+
+            var options = config.Get<MutableStructWithConstructor>();
+            Assert.Equal(42, options.Length);
+            Assert.Equal("Green", options.Color);
+        }        
+
         // If the immutable type has a public parameterized constructor,
         // then pick it.
         [Fact]
@@ -1368,40 +1373,6 @@ namespace Microsoft.Extensions.Configuration.Binder.Test
             var config = configurationBuilder.Build();
 
             var options = config.Get<RecordTypeOptions>();
-            Assert.Equal(42, options.Length);
-            Assert.Equal("Green", options.Color);
-        }
-
-        [Fact]
-        public void CanBindStructOptions()
-        {
-            var dic = new Dictionary<string, string>
-            {
-                {"Length", "42"},
-                {"Color", "Green"},
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
-
-            var options = config.Get<StructTypeOptions>();
-            Assert.Equal(42, options.Length);
-            Assert.Equal("Green", options.Color);
-        }
-
-        [Fact]
-        public void CanBindReadonlyStructOptions()
-        {
-            var dic = new Dictionary<string, string>
-            {
-                {"Length", "42"},
-                {"Color", "Green"},
-            };
-            var configurationBuilder = new ConfigurationBuilder();
-            configurationBuilder.AddInMemoryCollection(dic);
-            var config = configurationBuilder.Build();
-
-            var options = config.Get<ReadonlyStructTypeOptions>();
             Assert.Equal(42, options.Length);
             Assert.Equal("Green", options.Color);
         }
