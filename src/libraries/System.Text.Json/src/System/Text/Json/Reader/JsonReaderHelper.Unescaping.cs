@@ -244,6 +244,10 @@ namespace System.Text.Json
 #if BUILDING_INBOX_LIBRARY
                 return s_utf8Encoding.GetChars(utf8Unescaped, destination);
 #else
+                if (utf8Unescaped.IsEmpty)
+                {
+                    return 0;
+                }
                 unsafe
                 {
                     fixed (byte* srcPtr = utf8Unescaped)
@@ -278,6 +282,10 @@ namespace System.Text.Json
 #if BUILDING_INBOX_LIBRARY
                 s_utf8Encoding.GetCharCount(utf8Buffer);
 #else
+                if (utf8Buffer.IsEmpty)
+                {
+                    return;
+                }
                 unsafe
                 {
                     fixed (byte* srcPtr = utf8Buffer)
