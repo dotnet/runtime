@@ -990,17 +990,10 @@ private:
 
         if (fieldSeq != FieldSeqStore::NotAField())
         {
-            // For non-FIELD access, we need to check whether the type of the last field in the
-            // sequence matches that of the indirection. For primitives, this is "a choice", for
-            // structs it it a correctness requirement (see "fgValueNumberBlockAssignment").
             if (!indir->OperIs(GT_FIELD))
             {
-                CORINFO_CLASS_HANDLE fieldClassHandle = NO_CLASS_HANDLE;
-                var_types            fieldType =
-                    m_compiler->eeGetFieldType(fieldSeq->GetTail()->GetFieldHandle(), &fieldClassHandle);
-
-                if ((fieldType != indir->TypeGet()) ||
-                    ((fieldType == TYP_STRUCT) && (fieldClassHandle != indirLayout->GetClassHandle())))
+                // TODO-PhysicalVN: with the physical VN scheme, we no longer need the below check.
+                if (indir->TypeGet() != m_compiler->eeGetFieldType(fieldSeq->GetTail()->GetFieldHandle()))
                 {
                     fieldSeq = FieldSeqStore::NotAField();
                 }
