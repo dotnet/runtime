@@ -14,6 +14,8 @@ using System.Reflection;
 using Microsoft.Build.Framework;
 using Microsoft.Build.Utilities;
 
+#nullable enable
+
 public class ManagedToNativeGenerator : Task
 {
     [Required]
@@ -37,31 +39,43 @@ public class ManagedToNativeGenerator : Task
 
     public override bool Execute()
     {
-        var pinvoke = new PInvokeTableGenerator(Log)
+        if (Assemblies!.Length == 0)
         {
-            Assemblies = Assemblies,
-            Modules = PInvokeModules,
-            OutputPath = PInvokeOutputPath,
-        };
-        var icall = new IcallTableGenerator(Log)
-        {
-            Assemblies = Assemblies,
-            RuntimeIcallTableFile = RuntimeIcallTableFile,
-            OutputPath = IcallOutputPath,
-        };
-
-        if (pinvoke.Execute() && icall.Execute())
-        {
-            var m2n = new InterpToNativeGenerator(Log)
-            {
-                Cookies = Enumerable.Concat(pinvoke.Cookies!, icall.Cookies!).Distinct().ToArray(),
-                OutputPath = InterpToNativeOutputPath,
-            };
-
-            FileWrites = $"{pinvoke.FileWrites};{icall.FileWrites};{m2n.FileWrites}";
-            return m2n.Execute();
+            Log.LogError($"{nameof(ManagedToNativeGenerator)}.{nameof(Assemblies)} cannot be empty");
+            return false;
         }
 
-        return false;
+        if (PInvokeModules!.Length == 0)
+        {
+            Log.LogError($"{nameof(ManagedToNativeGenerator)}.{nameof(PInvokeModules)} cannot be empty");
+            return false;
+        }
+
+        try
+        {
+            ExecuteInternal();
+            return !Log.HasLoggedErrors;
+        }
+        catch (LogAsErrorException e)
+        {
+            Log.LogError(e.Message);
+            return false;
+        }
+    }
+
+    private void ExecuteInternal()
+    {
+        var pinvoke = new PInvokeTableGenerator(Log);
+        var icall = new IcallTableGenerator(Log);
+
+        IEnumerable<string> cookies = Enumerable.Concat(
+            pinvoke.GenPInvokeTable(PInvokeModules, Assemblies!, PInvokeOutputPath!),
+            icall.GenIcallTable(RuntimeIcallTableFile, Assemblies!, IcallOutputPath!)
+        );
+
+        var m2n = new InterpToNativeGenerator(Log);
+        m2n.Generate(cookies, InterpToNativeOutputPath!);
+
+        FileWrites = $"{PInvokeOutputPath};{IcallOutputPath};{InterpToNativeOutputPath}";
     }
 }

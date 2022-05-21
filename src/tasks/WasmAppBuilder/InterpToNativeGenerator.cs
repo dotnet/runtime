@@ -16,17 +16,11 @@ using System.Diagnostics.CodeAnalysis;
 // It should be kept in sync with mono_wasm_interp_to_native_trampoline () in the runtime.
 //
 
+#nullable enable
+
 public class InterpToNativeGenerator
 {
-    [Required, NotNull]
-    public string? OutputPath { get; set; }
-
-    [Output]
-    public string? FileWrites { get; private set; } = "";
-
-    public string[]? Cookies { get; set; }
-
-    public TaskLoggingHelper Log { get; set; }
+    protected TaskLoggingHelper Log { get; set; }
 
     public InterpToNativeGenerator(TaskLoggingHelper log) => Log = log;
 
@@ -44,34 +38,23 @@ public class InterpToNativeGenerator
         }
     }
 
-    public bool Execute()
+    public void Generate(IEnumerable<string> cookies, string outputPath)
     {
-        try
+        string tmpFileName = Path.GetTempFileName();
+        using (var w = File.CreateText(tmpFileName))
         {
-            string tmpFileName = Path.GetTempFileName();
-            using (var w = File.CreateText(tmpFileName))
-            {
-                Emit(w);
-            }
-
-            if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
-                Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{OutputPath}'.");
-            else
-                Log.LogMessage(MessageImportance.Low, $"PInvoke table in {OutputPath} is unchanged.");
-
-            FileWrites = OutputPath;
-
-            File.Delete(tmpFileName);
-            return !Log.HasLoggedErrors;
+            Emit(w, cookies);
         }
-        catch (LogAsErrorException laee)
-        {
-            Log.LogError(laee.Message);
-            return false;
-        }
+
+        if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
+            Log.LogMessage(MessageImportance.Low, $"Generating managed2native table to '{outputPath}'.");
+        else
+            Log.LogMessage(MessageImportance.Low, $"Managed2native table in {outputPath} is unchanged.");
+
+        File.Delete(tmpFileName);
     }
 
-    public void Emit(StreamWriter w)
+    private static void Emit(StreamWriter w, IEnumerable<string> cookies)
     {
         w.WriteLine("/*");
         w.WriteLine("* GENERATED FILE, DON'T EDIT");
@@ -82,18 +65,7 @@ public class InterpToNativeGenerator
         w.WriteLine(@"#include <stdlib.h>");
         w.WriteLine("");
 
-        var added = new HashSet<string>();
-
-        var l = new List<string>();
-        foreach (var c in Cookies!)
-        {
-            l.Add(c);
-            added.Add(c);
-
-            //Log.LogMessage(MessageImportance.High, $"Add cookie '{c}'");
-        }
-        var signatures = l.ToArray();
-
+        var signatures = cookies.ToArray();
         foreach (var c in signatures)
         {
             w.WriteLine("static void");

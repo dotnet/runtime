@@ -16,39 +16,14 @@ using Microsoft.Build.Utilities;
 
 public class IcallTableGenerator
 {
-    public string? RuntimeIcallTableFile { get; set; }
-
-    [Required]
-    public string[]? Assemblies { get; set; }
-
-    public string? OutputPath { get; set; }
-
-    [Output]
-    public string? FileWrites { get; private set; } = string.Empty;
-
-    [Output]
     public string[]? Cookies { get; private set; }
 
     private List<Icall> _icalls = new List<Icall> ();
     private Dictionary<string, IcallClass> _runtimeIcalls = new Dictionary<string, IcallClass> ();
 
-    public TaskLoggingHelper Log { get; set; }
+    protected TaskLoggingHelper Log { get; set; }
 
     public IcallTableGenerator(TaskLoggingHelper log) => Log = log;
-
-    public bool Execute()
-    {
-        try
-        {
-            GenIcallTable(RuntimeIcallTableFile, Assemblies!);
-            return !Log.HasLoggedErrors;
-        }
-        catch (LogAsErrorException laee)
-        {
-            Log.LogError(laee.Message);
-            return false;
-        }
-    }
 
     //
     // Given the runtime generated icall table, and a set of assemblies, generate
@@ -56,7 +31,7 @@ public class IcallTableGenerator
     // The runtime icall table should be generated using
     // mono --print-icall-table
     //
-    public void GenIcallTable(string? runtimeIcallTableFile, string[] assemblies)
+    public IEnumerable<string> GenIcallTable(string? runtimeIcallTableFile, string[] assemblies, string? outputPath)
     {
         if (runtimeIcallTableFile != null)
             ReadTable (runtimeIcallTableFile);
@@ -70,22 +45,21 @@ public class IcallTableGenerator
                 ProcessType(type);
         }
 
-        Cookies = _icalls.Select(p => CookieHelper.BuildCookie(p.Method!)).ToArray();
-
-        if (OutputPath != null)
+        if (outputPath != null)
         {
             string tmpFileName = Path.GetTempFileName();
             using (var w = File.CreateText(tmpFileName))
                 EmitTable(w);
 
-            if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
-                Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{OutputPath}'.");
+            if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
+                Log.LogMessage(MessageImportance.Low, $"Generating icall table to '{outputPath}'.");
             else
-                Log.LogMessage(MessageImportance.Low, $"Icall table in {OutputPath} is unchanged.");
+                Log.LogMessage(MessageImportance.Low, $"Icall table in {outputPath} is unchanged.");
 
-            FileWrites = OutputPath;
             File.Delete(tmpFileName);
         }
+
+        return _icalls.Select(p => CookieHelper.BuildCookie(p.Method!));
     }
 
     private void EmitTable (StreamWriter w)
@@ -237,29 +211,26 @@ public class IcallTableGenerator
         }
         else
         {
-            string name = t.Name;
-
-            switch (name)
+            sb.Append(t.Name switch
             {
-            case "Char": sb.Append ("char"); break;
-            case "Boolean": sb.Append ("bool"); break;
-            case "Int8": sb.Append ("sbyte"); break;
-            case "UInt8": sb.Append ("byte"); break;
-            case "Int16": sb.Append ("int16"); break;
-            case "UInt16": sb.Append ("uint16"); break;
-            case "Int32": sb.Append ("int"); break;
-            case "UInt32": sb.Append ("uint"); break;
-            case "Int64": sb.Append ("long"); break;
-            case "UInt64": sb.Append ("ulong"); break;
-            case "IntPtr": sb.Append ("intptr"); break;
-            case "UIntPtr": sb.Append ("uintptr"); break;
-            case "Single": sb.Append ("single"); break;
-            case "Double": sb.Append ("double"); break;
-            case "Object": sb.Append ("object"); break;
-            case "String": sb.Append ("string"); break;
-            default:
-                throw new NotImplementedException (t.FullName);
-            }
+                "Char" => "char",
+                "Boolean" => "bool",
+                "Int8" => "sbyte",
+                "UInt8" => "byte",
+                "Int16" => "int16",
+                "UInt16" => "uint16",
+                "Int32" => "int",
+                "UInt32" => "uint",
+                "Int64" => "long",
+                "UInt64" => "ulong",
+                "IntPtr" => "intptr",
+                "UIntPtr" => "uintptr",
+                "Single" => "single",
+                "Double" => "double",
+                "Object" => "object",
+                "String" => "string",
+                _ => throw new NotImplementedException (t.FullName)
+            });
         }
     }
 

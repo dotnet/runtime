@@ -13,53 +13,13 @@ using Microsoft.Build.Utilities;
 
 public class PInvokeTableGenerator
 {
-    [Required, NotNull]
-    public string[]? Modules { get; set; }
-    [Required, NotNull]
-    public string[]? Assemblies { get; set; }
-
-    [Required, NotNull]
-    public string? OutputPath { get; set; }
-
-    [Output]
-    public string FileWrites { get; private set; } = string.Empty;
-
-    [Output]
-    public string[]? Cookies { get; private set; }
-
     private static char[] s_charsToReplace = new[] { '.', '-', '+' };
 
-    public TaskLoggingHelper Log { get; set; }
+    protected TaskLoggingHelper Log { get; set; }
 
     public PInvokeTableGenerator(TaskLoggingHelper log) => Log = log;
 
-    public bool Execute()
-    {
-        if (Assemblies.Length == 0)
-        {
-            Log.LogError($"No assemblies given to scan for pinvokes");
-            return false;
-        }
-
-        if (Modules.Length == 0)
-        {
-            Log.LogError($"{nameof(PInvokeTableGenerator)}.{nameof(Modules)} cannot be empty");
-            return false;
-        }
-
-        try
-        {
-            GenPInvokeTable(Modules, Assemblies);
-            return !Log.HasLoggedErrors;
-        }
-        catch (LogAsErrorException laee)
-        {
-            Log.LogError(laee.Message);
-            return false;
-        }
-    }
-
-    public void GenPInvokeTable(string[] pinvokeModules, string[] assemblies)
+    public IEnumerable<string> GenPInvokeTable(string[] pinvokeModules, string[] assemblies, string outputPath)
     {
         var modules = new Dictionary<string, string>();
         foreach (var module in pinvokeModules)
@@ -84,15 +44,14 @@ public class PInvokeTableGenerator
             EmitNativeToInterp(w, callbacks);
         }
 
-        Cookies = pinvokes.Select(p => CookieHelper.BuildCookie(p.Method)).ToArray();
-
-        if (Utils.CopyIfDifferent(tmpFileName, OutputPath, useHash: false))
-            Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{OutputPath}'.");
+        if (Utils.CopyIfDifferent(tmpFileName, outputPath, useHash: false))
+            Log.LogMessage(MessageImportance.Low, $"Generating pinvoke table to '{outputPath}'.");
         else
-            Log.LogMessage(MessageImportance.Low, $"PInvoke table in {OutputPath} is unchanged.");
-        FileWrites = OutputPath;
+            Log.LogMessage(MessageImportance.Low, $"PInvoke table in {outputPath} is unchanged.");
 
         File.Delete(tmpFileName);
+
+        return pinvokes.Select(p => CookieHelper.BuildCookie(p.Method));
     }
 
     private void CollectPInvokes(List<PInvoke> pinvokes, List<PInvokeCallback> callbacks, Type type)
