@@ -255,11 +255,11 @@ jobs:
     buildConfig: Release
     platforms:
     - windows_arm64
-    - Linux_arm64
+    - windows_x64
     jobParameters:
       testGroup: innerloop
       isSingleFile: true
-      nameSuffix: NativeAOT
+      nameSuffix: NativeAOT_LIBS_TEST
       buildArgs: -s clr.alljits+clr.tools+clr.nativeaotlibs+clr.nativeaotruntime+libs+libs.tests -c $(_BuildConfig) /p:TestNativeAot=true /p:ArchiveTests=true
       timeoutInMinutes: 120
       # extra steps, run tests
