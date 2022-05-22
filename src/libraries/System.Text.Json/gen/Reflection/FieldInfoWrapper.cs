@@ -2,10 +2,10 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Collections.Generic;
-using System.Collections.Immutable;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
 using System.Globalization;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace System.Text.Json.Reflection
 {
@@ -18,10 +18,7 @@ namespace System.Text.Json.Reflection
             _field = parameter;
             _metadataLoadContext = metadataLoadContext;
 
-            ImmutableArray<SymbolDisplayPart> parts = _field.ToDisplayParts();
-            SymbolDisplayPart fieldName = parts.Length > 0 ? parts[parts.Length - 1] : parts[0];
-
-            NeedsAtSign = fieldName.ToString()[0] == '@';
+            NeedsAtSign = SyntaxFacts.GetKeywordKind(_field.Name) != SyntaxKind.None;
         }
 
         private FieldAttributes? _attributes;

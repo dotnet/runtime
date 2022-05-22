@@ -5,28 +5,21 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
 using Microsoft.CodeAnalysis;
-using Microsoft.CodeAnalysis.CSharp.Syntax;
+using Microsoft.CodeAnalysis.CSharp;
 
 namespace System.Text.Json.Reflection
 {
     internal class PropertyInfoWrapper : PropertyInfo
     {
         private readonly IPropertySymbol _property;
-        private MetadataLoadContextInternal _metadataLoadContext;
+        private readonly MetadataLoadContextInternal _metadataLoadContext;
 
         public PropertyInfoWrapper(IPropertySymbol property, MetadataLoadContextInternal metadataLoadContext)
         {
             _property = property;
             _metadataLoadContext = metadataLoadContext;
 
-            if (_property.DeclaringSyntaxReferences.Length > 0)
-            {
-                PropertyDeclarationSyntax paramSyntax = _property.DeclaringSyntaxReferences[0].GetSyntax() as PropertyDeclarationSyntax;
-                if (paramSyntax != null && !string.IsNullOrEmpty(paramSyntax.Identifier.Text))
-                {
-                    NeedsAtSign = paramSyntax.Identifier.Text[0] == '@';
-                }
-            }
+            NeedsAtSign = SyntaxFacts.GetKeywordKind(_property.Name) != SyntaxKind.None;
         }
 
         public override PropertyAttributes Attributes => throw new NotImplementedException();
