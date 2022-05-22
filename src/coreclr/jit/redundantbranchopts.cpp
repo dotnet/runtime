@@ -280,11 +280,17 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
     ValueNum treeNormVN;
     vnStore->VNUnpackExc(tree->GetVN(VNK_Liberal), &treeNormVN, &treeExcVN);
 
-    // If the treeVN is a constant, we can optimize directly.
+    // If the treeVN is a constant, we optimize directly.
+    //
+    // Note the inferencing we do below is not valid for constant VNs,
+    // so handling/avoiding this case up front is a correctness requirement.
     //
     if (vnStore->IsVNConstant(treeNormVN))
     {
+
         relopValue = (treeNormVN == vnStore->VNZeroForType(TYP_INT)) ? 0 : 1;
+        JITDUMP("Relop [%06u] " FMT_BB " has known value %s\n ", dspTreeID(tree), block->bbNum,
+                relopValue == 0 ? "false" : "true");
     }
 
     while ((relopValue == -1) && (domBlock != nullptr))
@@ -363,8 +369,9 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         // Taken jump in dominator reaches, fall through doesn't; relop must be true/false.
                         //
                         const bool relopIsTrue = rii.reverseSense ^ domIsSameRelop;
-                        JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop must be %s\n",
-                                domBlock->bbJumpDest->bbNum, domBlock->bbNum, relopIsTrue ? "true" : "false");
+                        JITDUMP("Jump successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
+                                domBlock->bbJumpDest->bbNum, domBlock->bbNum, dspTreeID(tree),
+                                relopIsTrue ? "true" : "false");
                         relopValue = relopIsTrue ? 1 : 0;
                         break;
                     }
@@ -373,8 +380,9 @@ bool Compiler::optRedundantBranch(BasicBlock* const block)
                         // Fall through from dominator reaches, taken jump doesn't; relop must be false/true.
                         //
                         const bool relopIsFalse = rii.reverseSense ^ domIsSameRelop;
-                        JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop must be %s\n",
-                                domBlock->bbNext->bbNum, domBlock->bbNum, relopIsFalse ? "false" : "true");
+                        JITDUMP("Fall through successor " FMT_BB " of " FMT_BB " reaches, relop [%06u] must be %s\n",
+                                domBlock->bbNext->bbNum, domBlock->bbNum, dspTreeID(tree),
+                                relopIsFalse ? "false" : "true");
                         relopValue = relopIsFalse ? 0 : 1;
                         break;
                     }
