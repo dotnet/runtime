@@ -1394,7 +1394,7 @@ do
 	./make_bool_branch_test.sh boolean_branch_${I}_4 valid ${OP} int64
 	./make_bool_branch_test.sh boolean_branch_${I}_5 valid ${OP} 'native int'
 
-	#unmanaged pointers are not variable types, all ops on unmanaged pointers are unverifiable
+	#unmanaged pointers are not verifiable types, all ops on unmanaged pointers are unverifiable
 	./make_bool_branch_test.sh boolean_branch_${I}_6 unverifiable ${OP} 'int32*'
 	./make_bool_branch_test.sh boolean_branch_${I}_8 unverifiable ${OP} 'method int32 *(int32)'
 
