@@ -132,6 +132,8 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
 {
     assert(!rii->canInfer);
 
+    // Look for related VNs
+    //
     for (auto vnRelation : s_vnRelations)
     {
         const ValueNum relatedVN = vnStore->GetRelatedRelop(rii->domCmpNormVN, vnRelation);
@@ -143,79 +145,83 @@ void Compiler::optRelopImpliesRelop(RelopImplicationInfo* rii)
         }
     }
 
-    if (vnStore->IsVNFunc(rii->domCmpNormVN))
+    // VNs are not directly related. See if dominating
+    // compare encompasses a related VN.
+    //
+    VNFuncApp funcApp;
+    if (!vnStore->GetVNFunc(rii->domCmpNormVN, &funcApp))
     {
-        VNFuncApp funcApp;
-        if (vnStore->GetVNFunc(rii->domCmpNormVN, &funcApp))
+        return;
+    }
+
+    genTreeOps const oper = genTreeOps(funcApp.m_func);
+
+    // Look for {EQ,NE}({AND,OR,NOT}, 0)
+    //
+    if (!GenTree::StaticOperIs(oper, GT_EQ, GT_NE))
+    {
+        return;
+    }
+
+    const ValueNum constantVN = funcApp.m_args[1];
+    if (constantVN != vnStore->VNZeroForType(TYP_INT))
+    {
+        return;
+    }
+
+    const ValueNum predVN = funcApp.m_args[0];
+    VNFuncApp      predFuncApp;
+    if (!vnStore->GetVNFunc(predVN, &predFuncApp))
+    {
+        return;
+    }
+
+    genTreeOps const predOper = genTreeOps(predFuncApp.m_func);
+
+    if (!GenTree::StaticOperIs(predOper, GT_AND, GT_OR, GT_NOT))
+    {
+        return;
+    }
+
+    // Dominating compare is {EQ,NE}({AND,OR,NOT}, 0).
+    //
+    // See if one of {AND,OR,NOT} operands is related.
+    //
+    for (unsigned int i = 0; (i < predFuncApp.m_arity) && !rii->canInfer; i++)
+    {
+        ValueNum pVN = predFuncApp.m_args[i];
+
+        for (auto vnRelation : s_vnRelations)
         {
-            genTreeOps const oper = genTreeOps(funcApp.m_func);
+            const ValueNum relatedVN = vnStore->GetRelatedRelop(pVN, vnRelation);
 
-            if ((oper == GT_EQ) || (oper == GT_NE))
+            if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == rii->treeNormVN))
             {
-                ValueNum predVN     = funcApp.m_args[0];
-                ValueNum constantVN = funcApp.m_args[1];
+                rii->vnRelation = vnRelation;
+                rii->canInfer   = true;
 
-                if ((constantVN == vnStore->VNZeroForType(TYP_INT)) && vnStore->IsVNFunc(predVN))
+                // If dom predicate is wrapped in EQ(*,0) then a true dom
+                // predicate implies a false branch outcome, and vice versa.
+                //
+                // And if the dom predicate is GT_NOT we reverse yet again.
+                //
+                rii->reverseSense = (oper == GT_EQ) ^ (predOper == GT_NOT);
+
+                // We only get partial knowledge in these cases.
+                //
+                //   AND(p1,p2) = true  ==> both p1 and p2 must be true
+                //   AND(p1,p2) = false ==> don't know p1 or p2
+                //    OR(p1,p2) = true  ==> don't know p1 or p2
+                //    OR(p1,p2) = false ==> both p1 and p2 must be false
+                //
+                if (predOper != GT_NOT)
                 {
-                    VNFuncApp predFuncApp;
-
-                    if (vnStore->GetVNFunc(predVN, &predFuncApp))
-                    {
-                        genTreeOps const predOper = genTreeOps(predFuncApp.m_func);
-
-                        // Also perhaps GT_NOT?
-                        //
-                        if ((predOper == GT_AND) || (predOper == GT_OR) || (predOper == GT_NOT))
-                        {
-                            // If dominating compare is AND/OR(p1, p2) and one of
-                            // the p's is related to our predicate....
-                            //
-                            for (unsigned int i = 0; (i < predFuncApp.m_arity) && !rii->canInfer; i++)
-                            {
-                                ValueNum pVN = predFuncApp.m_args[i];
-
-                                // Also consider perhaps handling N-Ary cases AND(AND(...), ...) and so on.
-                                //
-                                // Abstractly it would be nice if VN allowed n-ary commutative operators
-                                // even though the IR does not support this.
-                                //
-                                for (auto vnRelation : s_vnRelations)
-                                {
-                                    const ValueNum relatedVN = vnStore->GetRelatedRelop(pVN, vnRelation);
-
-                                    if ((relatedVN != ValueNumStore::NoVN) && (relatedVN == rii->treeNormVN))
-                                    {
-                                        rii->vnRelation = vnRelation;
-                                        rii->canInfer   = true;
-
-                                        // If dom predicate is wrapped in EQ(*,0) then a true dom
-                                        // predicate implies a false branch outcome, and vice versa.
-                                        //
-                                        // And if the dom predicate is GT_NOT we reverse yet again.
-                                        //
-                                        rii->reverseSense = (oper == GT_EQ) ^ (predOper == GT_NOT);
-
-                                        // We only get partial knowledge in these cases.
-                                        //
-                                        //   AND(p1,p2) = true  ==> both p1 and p2 must be true
-                                        //   AND(p1,p2) = false ==> don't know p1 or p2
-                                        //    OR(p1,p2) = true  ==> don't know p1 or p2
-                                        //    OR(p1,p2) = false ==> both p1 and p2 must be false
-                                        //
-                                        if (predOper != GT_NOT)
-                                        {
-                                            rii->canInferFromFalse = rii->reverseSense ^ (predOper == GT_OR);
-                                            rii->canInferFromTrue  = rii->reverseSense ^ (predOper == GT_AND);
-                                        }
-
-                                        JITDUMP("Inferring predicate value from %s\n", GenTree::OpName(predOper));
-                                        break;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                    rii->canInferFromFalse = rii->reverseSense ^ (predOper == GT_OR);
+                    rii->canInferFromTrue  = rii->reverseSense ^ (predOper == GT_AND);
                 }
+
+                JITDUMP("Inferring predicate value from %s\n", GenTree::OpName(predOper));
+                return;
             }
         }
     }
