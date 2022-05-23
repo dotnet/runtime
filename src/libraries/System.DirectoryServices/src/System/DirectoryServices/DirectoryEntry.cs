@@ -141,7 +141,7 @@ namespace System.DirectoryServices
             _options = new DirectoryEntryConfiguration(this);
 
             // We are starting from an already bound connection so make sure the options are set properly.
-            // If this is an externallly managed com object then we don't want to change it's current behavior
+            // If this is an externally managed com object then we don't want to change it's current behavior
             if (!AdsObjIsExternal)
             {
                 InitADsObjectOptions();

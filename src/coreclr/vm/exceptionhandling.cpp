@@ -1597,7 +1597,7 @@ bool ExceptionTracker::UpdateScannedStackRange(StackFrame sf, bool fIsFirstPass)
     CONTRACTL
     {
         // Since this function will modify the scanned stack range, which is also accessed during the GC stackwalk,
-        // we invoke it in COOP mode so that that access to the range is synchronized.
+        // we invoke it in COOP mode so that the access to this range is synchronized.
         MODE_COOPERATIVE;
         GC_TRIGGERS;
         THROWS;
@@ -2083,7 +2083,7 @@ bool ExceptionTracker::HandleNestedExceptionEscape(StackFrame sf, bool fIsFirstP
     CONTRACTL
     {
         // Since this function can modify the scanned stack range, which is also accessed during the GC stackwalk,
-        // we invoke it in COOP mode so that that access to the range is synchronized.
+        // we invoke it in COOP mode so that the access to this range is synchronized.
         MODE_COOPERATIVE;
         GC_NOTRIGGER;
         NOTHROW;

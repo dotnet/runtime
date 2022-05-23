@@ -732,8 +732,8 @@ namespace System.Text.Json
                 first = _buffer[_consumed];
             }
 
-            // The next character must be a key / value seperator. Validate and skip.
-            if (first != JsonConstants.KeyValueSeperator)
+            // The next character must be a key / value separator. Validate and skip.
+            if (first != JsonConstants.KeyValueSeparator)
             {
                 ThrowHelper.ThrowJsonReaderException(ref this, ExceptionResource.ExpectedSeparatorAfterPropertyNameNotFound, first);
             }

@@ -275,7 +275,9 @@ namespace BinderTracingTests
             };
         }
 
-        [BinderTest(isolate: true, additionalLoadsToTrack: new string[] { "AssemblyToLoadDependency" })]
+        [BinderTest(isolate: true,
+            additionalLoadsToTrack: new string[] { "AssemblyToLoadDependency" },
+            activeIssue: "https://github.com/dotnet/runtime/issues/68521")] // Emit-based Invoke causes an extra load.
         public static BindOperation AssemblyLoadFromResolveHandler_MissingDependency()
         {
             string appPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);

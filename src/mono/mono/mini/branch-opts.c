@@ -60,7 +60,7 @@ mono_branch_optimize_exception_target (MonoCompile *cfg, MonoBasicBlock *bb, con
 				/* get the basic block for the handler and
 				 * check if the exception object is used.
 				 * Flag is set during method_to_ir due to
-				 * pop-op is optmized away in codegen (burg).
+				 * pop-op is optimized away in codegen (burg).
 				 */
 				tbb = cfg->cil_offset_to_bb [clause->handler_offset];
 				if (tbb && tbb->flags & BB_EXCEPTION_DEAD_OBJ && !(tbb->flags & BB_EXCEPTION_UNSAFE)) {

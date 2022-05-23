@@ -563,9 +563,6 @@
 /* Have mktemp */
 #cmakedefine HAVE_MKTEMP 1
 
-/* Define to 1 if you have the <sys/sendfile.h> header file. */
-#cmakedefine HAVE_SYS_SENDFILE_H 1
-
 /* Define to 1 if you have the <sys/statvfs.h> header file. */
 #cmakedefine HAVE_SYS_STATVFS_H 1
 
@@ -589,9 +586,6 @@
 
 /* Define to 1 if you have the `vsnprintf' function. */
 #cmakedefine HAVE_VSNPRINTF 1
-
-/* Define to 1 if you have the `sendfile' function. */
-#cmakedefine HAVE_SENDFILE 1
 
 /* struct statfs */
 #cmakedefine HAVE_STATFS 1
