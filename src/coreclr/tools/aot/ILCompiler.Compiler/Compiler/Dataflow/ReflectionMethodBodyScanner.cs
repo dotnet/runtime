@@ -185,6 +185,7 @@ namespace ILCompiler.Dataflow
                         var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), diagnosticsEnabled: true, logger);
                         var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger);
                         scanner.RequireDynamicallyAccessedMembers(diagnosticContext, value, parameterValue, parameterValue.ParameterOrigin);
+                        AddResults(scanner._reflectionMarker.Dependencies);
                     }
                 }
             }
@@ -193,7 +194,6 @@ namespace ILCompiler.Dataflow
             TypeDesc attributeType = method.OwningType;
             foreach (var namedArgument in arguments.NamedArguments)
             {
-                DynamicallyAccessedMemberTypes annotation = DynamicallyAccessedMemberTypes.None;
                 MultiValue targetValues = new();
                 Origin? targetContext = null;
                 if (namedArgument.Kind == CustomAttributeNamedArgumentKind.Field)
@@ -217,30 +217,33 @@ namespace ILCompiler.Dataflow
                     }
                 }
 
-                if (annotation != DynamicallyAccessedMemberTypes.None)
+                foreach (var targetValueCandidate in targetValues)
                 {
-                    MultiValue valueNode = GetValueNodeForCustomAttributeArgument(namedArgument.Value);
-                    foreach (var targetValueCandidate in targetValues)
-                    {
-                        if (targetValueCandidate is not ValueWithDynamicallyAccessedMembers targetValue)
-                            continue;
+                    if (targetValueCandidate is not ValueWithDynamicallyAccessedMembers targetValue ||
+                        targetValue.DynamicallyAccessedMemberTypes == DynamicallyAccessedMemberTypes.None)
+                        continue;
 
-                        var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), diagnosticsEnabled: true, logger);
-                        var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger);
-                        scanner.RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, targetValue, targetContext!);
-                        if (result == null)
-                        {
-                            result = scanner._reflectionMarker.Dependencies;
-                        }
-                        else
-                        {
-                            result.AddRange(scanner._reflectionMarker.Dependencies);
-                        }
-                    }
+                    MultiValue valueNode = GetValueNodeForCustomAttributeArgument(namedArgument.Value);
+                    var diagnosticContext = new DiagnosticContext(new MessageOrigin(method), diagnosticsEnabled: true, logger);
+                    var scanner = new ReflectionMethodBodyScanner(factory, annotations, logger);
+                    scanner.RequireDynamicallyAccessedMembers(diagnosticContext, valueNode, targetValue, targetContext!);
+                    AddResults(scanner._reflectionMarker.Dependencies);
                 }
             }
 
             return result;
+
+            void AddResults(DependencyList dependencies)
+            {
+                if (result == null)
+                {
+                    result = dependencies;
+                }
+                else
+                {
+                    result.AddRange(dependencies);
+                }
+            }
         }
 
         public static DependencyList ProcessTypeGetTypeDataflow(NodeFactory factory, FlowAnnotations flowAnnotations, Logger logger, MetadataType type)
