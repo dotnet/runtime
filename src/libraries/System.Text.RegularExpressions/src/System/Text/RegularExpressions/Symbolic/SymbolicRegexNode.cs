@@ -130,25 +130,27 @@ namespace System.Text.RegularExpressions.Symbolic
         internal bool IsHighPriorityNullable => _info.IsHighPriorityNullable;
 
         /// <summary>True if this node is high priority nullable for the given context</summary>
-        internal bool IsHighPriorityNullableFor(uint context) => _info.CanBeNullable && IsHighPriorityNullableForLeftmostBranch(this, context);
+        internal bool IsHighPriorityNullableFor(uint context) => _info.CanBeNullable && IsHighPriorityNullableFor(this, context);
 
-        /// <summary>Nullability test that determines if the leftmost branch of the node is high-priority-nullable for the given context</summary>
-        private static bool IsHighPriorityNullableForLeftmostBranch(SymbolicRegexNode<TSet> node, uint context)
+        /// <summary>Nullability test that determines if the node is high-priority-nullable for the given context</summary>
+        private static bool IsHighPriorityNullableFor(SymbolicRegexNode<TSet> node, uint context)
         {
             if (!StackHelper.TryEnsureSufficientExecutionStack())
             {
-                return StackHelper.CallOnEmptyStack(IsHighPriorityNullableForLeftmostBranch, node, context);
+                return StackHelper.CallOnEmptyStack(IsHighPriorityNullableFor, node, context);
             }
 
+            //Observe that this test is lightweight when node does not include any anchors,
+            //because in that case if node._info.IsHighPriorityNullable=false this cannot change for any context
             //deep recursion can only occur for deep left-associative concatenations that is uncommon
             //in all common cases deep recursion is avoided by using a while loop
             while (true)
             {
                 Debug.Assert(node.CanBeNullable);
 
-                if (node._info.IsHighPriorityNullable)
+                if (node._info.IsHighPriorityNullable || !node._info.ContainsSomeAnchor)
                 {
-                    return true;
+                    return node._info.IsHighPriorityNullable;
                 }
 
                 switch (node._kind)
@@ -161,7 +163,7 @@ namespace System.Text.RegularExpressions.Symbolic
                         Debug.Assert(node._left is not null && node._right is not null);
                         //both left and right must be high-priority-nullable
                         //observe that node.CanBeNullable implies that both node._left and node._right can be nullable
-                        if (!IsHighPriorityNullableForLeftmostBranch(node._left, context))
+                        if (!IsHighPriorityNullableFor(node._left, context))
                         {
                             return false;
                         }
@@ -1393,13 +1395,18 @@ namespace System.Text.RegularExpressions.Symbolic
                     Debug.Assert(_left is not null && _right is not null);
                     // The left alternative, when nullable, has priority over the right alternative
                     // Otherwise the left alternative is still active and the right alternative is pruned
+                    // In a alternation (X|Y) where X is nullable (in the given context), Y must be eliminated.
+                    // Thus, taking the higher-priority branch in backtracking that is known to lead to a match
+                    // at which point the other branches become irrelevant and must no longer be used.
                     prunedNode = _left.IsNullableFor(context) ? _left.PruneLowerPriorityThanNullability(context) :
                         OrderedOr(_builder, _left, _right.PruneLowerPriorityThanNullability(context), deduplicated: true);
                     break;
 
                 case SymbolicRegexNodeKind.Concat:
                     Debug.Assert(_left is not null && _right is not null);
-                    //in a concatenation (X|Y)Z priority is given to XZ when X is nullable (XY is forgotten)
+                    //in a concatenation (X|Y)Z priority is given to XZ when X is nullable
+                    //observe that (X|Y)Z is equivalent to (XZ|YZ) and the branch YZ must be ignored
+                    //when X is nullable (observe that XZ is nullable because this=(X|Y)Z is nullable)
                     //if X is not nullable then XZ is maintaned as is, and YZ is pruned
                     //e.g. (a{0,5}?|abc|b+)c* reduces to c*
                     //---
