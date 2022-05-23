@@ -601,7 +601,7 @@ private:
                         m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
                         compiler->lvaGetDesc(m_targetLclNum)->lvSingleDef = 1;
 
-                        GenTree* asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
+                        GenTree*   asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
                         Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
                         compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
 
