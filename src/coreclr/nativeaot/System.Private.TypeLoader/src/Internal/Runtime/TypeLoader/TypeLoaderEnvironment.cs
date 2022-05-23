@@ -824,7 +824,7 @@ namespace Internal.Runtime.TypeLoader
                 // This check looks for unboxing and instantiating stubs generated via the compiler backend
                 if (TypeLoaderEnvironment.TryGetTargetOfUnboxingAndInstantiatingStub(exactTarget, out fatFunctionPointerTarget))
                 {
-                    // If this is an unboxing and instantiating stub, use seperate table, find target, and create fat function pointer
+                    // If this is an unboxing and instantiating stub, use separate table, find target, and create fat function pointer
                     exactTarget = FunctionPointerOps.GetGenericMethodFunctionPointer(fatFunctionPointerTarget,
                                                                                         declaringType.ToIntPtr());
                 }

@@ -111,7 +111,6 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #ifdef TARGET_UNIX
 #define _vsnprintf_s(string, sizeInBytes, count, format, args) vsnprintf(string, sizeInBytes, format, args)
 #define sprintf_s snprintf
-#define swprintf_s swprintf
 #define _snprintf_s(string, sizeInBytes, count, format, ...) \
   snprintf(string, sizeInBytes, format, ## __VA_ARGS__)
 #endif
@@ -119,12 +118,10 @@ inline HRESULT HRESULT_FROM_WIN32(unsigned long x)
 #ifdef UNICODE
 #define _tcslen wcslen
 #define _tcscpy wcscpy
-#define _stprintf_s swprintf_s
 #define _tfopen _wfopen
 #else
 #define _tcslen strlen
 #define _tcscpy strcpy
-#define _stprintf_s sprintf_s
 #define _tfopen fopen
 #endif
 

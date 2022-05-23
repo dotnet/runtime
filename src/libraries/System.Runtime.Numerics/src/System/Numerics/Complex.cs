@@ -20,6 +20,14 @@ namespace System.Numerics
           INumberBase<Complex>,
           ISignedNumber<Complex>
     {
+        private const NumberStyles DefaultNumberStyle = NumberStyles.Float | NumberStyles.AllowThousands;
+
+        private const NumberStyles InvalidNumberStyles = ~(NumberStyles.AllowLeadingWhite | NumberStyles.AllowTrailingWhite
+                                                         | NumberStyles.AllowLeadingSign | NumberStyles.AllowTrailingSign
+                                                         | NumberStyles.AllowParentheses | NumberStyles.AllowDecimalPoint
+                                                         | NumberStyles.AllowThousands | NumberStyles.AllowExponent
+                                                         | NumberStyles.AllowCurrencySymbol | NumberStyles.AllowHexSpecifier);
+
         public static readonly Complex Zero = new Complex(0.0, 0.0);
         public static readonly Complex One = new Complex(1.0, 0.0);
         public static readonly Complex ImaginaryOne = new Complex(0.0, 1.0);
@@ -392,7 +400,7 @@ namespace System.Numerics
             return finalHash;
         }
 
-        public override string ToString() => $"({m_real}, {m_imaginary})";
+        public override string ToString() => $"<{m_real}; {m_imaginary}>";
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format) => ToString(format, null);
 
@@ -400,7 +408,7 @@ namespace System.Numerics
 
         public string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? provider)
         {
-            return string.Format(provider, "({0}, {1})", m_real.ToString(format, provider), m_imaginary.ToString(format, provider));
+            return string.Format(provider, "<{0}; {1}>", m_real.ToString(format, provider), m_imaginary.ToString(format, provider));
         }
 
         public static Complex Sin(Complex value)
@@ -920,6 +928,822 @@ namespace System.Numerics
         /// <inheritdoc cref="INumberBase{TSelf}.Zero" />
         static Complex INumberBase<Complex>.Zero => new Complex(0.0, 0.0);
 
+        /// <inheritdoc cref="INumberBase{TSelf}.Abs(TSelf)" />
+        static Complex INumberBase<Complex>.Abs(Complex value) => Abs(value);
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateChecked{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateChecked<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (Complex)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateSaturating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateSaturating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (Complex)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.CreateTruncating{TOther}(TOther)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Complex CreateTruncating<TOther>(TOther value)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                return (byte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                return (char)(object)value;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                return (Complex)(decimal)(object)value;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                return (double)(object)value;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                return (short)(object)value;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                return (int)(object)value;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                return (long)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                return (nint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                return (sbyte)(object)value;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                return (float)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                return (ushort)(object)value;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                return (uint)(object)value;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                return (ulong)(object)value;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                return (nuint)(object)value;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                return default;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegative(TSelf)" />
+        static bool INumberBase<Complex>.IsNegative(Complex value)
+        {
+            // since complex numbers do not have a well-defined concept of
+            // negative we report false if this value has an imaginary part
+
+            return (value.m_imaginary == 0.0) && double.IsNegative(value.m_real);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNegativeInfinity(TSelf)" />
+        static bool INumberBase<Complex>.IsNegativeInfinity(Complex value)
+        {
+            // since complex numbers do not have a well-defined concept of
+            // negative we report false if this value has an imaginary part
+
+            return (value.m_imaginary == 0.0) && double.IsNegativeInfinity(value.m_real);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsNormal(TSelf)" />
+        static bool INumberBase<Complex>.IsNormal(Complex value)
+        {
+            // much as IsFinite requires both part to be finite, we require both
+            // part to be "normal" (finite, non-zero, and non-subnormal) to be true
+
+            return double.IsNormal(value.m_real)
+                && ((value.m_imaginary == 0.0) || double.IsNormal(value.m_imaginary));
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsPositiveInfinity(TSelf)" />
+        static bool INumberBase<Complex>.IsPositiveInfinity(Complex value)
+        {
+            // since complex numbers do not have a well-defined concept of
+            // positive we report false if this value has an imaginary part
+
+            return (value.m_imaginary == 0.0) && double.IsPositiveInfinity(value.m_real);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.IsSubnormal(TSelf)" />
+        static bool INumberBase<Complex>.IsSubnormal(Complex value)
+        {
+            // much as IsInfinite allows either part to be infinite, we allow either
+            // part to be "subnormal" (finite, non-zero, and non-normal) to be true
+
+            return double.IsSubnormal(value.m_real) || double.IsSubnormal(value.m_imaginary);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitude(TSelf, TSelf)" />
+        public static Complex MaxMagnitude(Complex x, Complex y)
+        {
+            // complex numbers are not normally comparable, however every complex
+            // number has a real magnitude (absolute value) and so we can provide
+            // an implementation for MaxMagnitude
+
+            // This matches the IEEE 754:2019 `maximumMagnitude` function
+            //
+            // It propagates NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            double ax = Abs(x);
+            double ay = Abs(y);
+
+            if ((ax > ay) || double.IsNaN(ax))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                // We have two equal magnitudes which means we have two of the following
+                //   `+a + ib`
+                //   `-a + ib`
+                //   `+a - ib`
+                //   `-a - ib`
+                //
+                // We want to treat `+a + ib` as greater than everything and `-a - ib` as
+                // lesser. For `-a + ib` and `+a - ib` its "ambiguous" which should be preferred
+                // so we will just preference `+a - ib` since that's the most correct choice
+                // in the face of something like `+a - i0.0` vs `-a + i0.0`. This is the "most
+                // correct" choice because both represent real numbers and `+a` is preferred
+                // over `-a`.
+
+                if (double.IsNegative(y.m_real))
+                {
+                    if (double.IsNegative(y.m_imaginary))
+                    {
+                        // when `y` is `-a - ib` we always prefer `x` (its either the same as
+                        // `x` or some part of `x` is positive).
+
+                        return x;
+                    }
+                    else
+                    {
+                        if (double.IsNegative(x.m_real))
+                        {
+                            // when `y` is `-a + ib` and `x` is `-a + ib` or `-a - ib` then
+                            // we either have same value or both parts of `x` are negative
+                            // and we want to prefer `y`.
+
+                            return y;
+                        }
+                        else
+                        {
+                            // when `y` is `-a + ib` and `x` is `+a + ib` or `+a - ib` then
+                            // we want to prefer `x` because either both parts are positive
+                            // or we want to prefer `+a - ib` due to how it handles when `x`
+                            // represents a real number.
+
+                            return x;
+                        }
+                    }
+                }
+                else if (double.IsNegative(y.m_imaginary))
+                {
+                    if (double.IsNegative(x.m_real))
+                    {
+                        // when `y` is `+a - ib` and `x` is `-a + ib` or `-a - ib` then
+                        // we either both parts of `x` are negative or we want to prefer
+                        // `+a - ib` due to how it handles when `y` represents a real number.
+
+                        return y;
+                    }
+                    else
+                    {
+                        // when `y` is `+a - ib` and `x` is `+a + ib` or `+a - ib` then
+                        // we want to prefer `x` because either both parts are positive
+                        // or they represent the same value.
+
+                        return x;
+                    }
+                }
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MaxMagnitudeNumber(TSelf, TSelf)" />
+        static Complex INumberBase<Complex>.MaxMagnitudeNumber(Complex x, Complex y)
+        {
+            // complex numbers are not normally comparable, however every complex
+            // number has a real magnitude (absolute value) and so we can provide
+            // an implementation for MaxMagnitudeNumber
+
+            // This matches the IEEE 754:2019 `maximumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a larger magnitude.
+            // It treats +0 as larger than -0 as per the specification.
+
+            double ax = Abs(x);
+            double ay = Abs(y);
+
+            if ((ax > ay) || double.IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                // We have two equal magnitudes which means we have two of the following
+                //   `+a + ib`
+                //   `-a + ib`
+                //   `+a - ib`
+                //   `-a - ib`
+                //
+                // We want to treat `+a + ib` as greater than everything and `-a - ib` as
+                // lesser. For `-a + ib` and `+a - ib` its "ambiguous" which should be preferred
+                // so we will just preference `+a - ib` since that's the most correct choice
+                // in the face of something like `+a - i0.0` vs `-a + i0.0`. This is the "most
+                // correct" choice because both represent real numbers and `+a` is preferred
+                // over `-a`.
+
+                if (double.IsNegative(y.m_real))
+                {
+                    if (double.IsNegative(y.m_imaginary))
+                    {
+                        // when `y` is `-a - ib` we always prefer `x` (its either the same as
+                        // `x` or some part of `x` is positive).
+
+                        return x;
+                    }
+                    else
+                    {
+                        if (double.IsNegative(x.m_real))
+                        {
+                            // when `y` is `-a + ib` and `x` is `-a + ib` or `-a - ib` then
+                            // we either have same value or both parts of `x` are negative
+                            // and we want to prefer `y`.
+
+                            return y;
+                        }
+                        else
+                        {
+                            // when `y` is `-a + ib` and `x` is `+a + ib` or `+a - ib` then
+                            // we want to prefer `x` because either both parts are positive
+                            // or we want to prefer `+a - ib` due to how it handles when `x`
+                            // represents a real number.
+
+                            return x;
+                        }
+                    }
+                }
+                else if (double.IsNegative(y.m_imaginary))
+                {
+                    if (double.IsNegative(x.m_real))
+                    {
+                        // when `y` is `+a - ib` and `x` is `-a + ib` or `-a - ib` then
+                        // we either both parts of `x` are negative or we want to prefer
+                        // `+a - ib` due to how it handles when `y` represents a real number.
+
+                        return y;
+                    }
+                    else
+                    {
+                        // when `y` is `+a - ib` and `x` is `+a + ib` or `+a - ib` then
+                        // we want to prefer `x` because either both parts are positive
+                        // or they represent the same value.
+
+                        return x;
+                    }
+                }
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitude(TSelf, TSelf)" />
+        public static Complex MinMagnitude(Complex x, Complex y)
+        {
+            // complex numbers are not normally comparable, however every complex
+            // number has a real magnitude (absolute value) and so we can provide
+            // an implementation for MaxMagnitude
+
+            // This matches the IEEE 754:2019 `minimumMagnitude` function
+            //
+            // It propagates NaN inputs back to the caller and
+            // otherwise returns the input with a smaller magnitude.
+            // It treats -0 as smaller than +0 as per the specification.
+
+            double ax = Abs(x);
+            double ay = Abs(y);
+
+            if ((ax < ay) || double.IsNaN(ax))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                // We have two equal magnitudes which means we have two of the following
+                //   `+a + ib`
+                //   `-a + ib`
+                //   `+a - ib`
+                //   `-a - ib`
+                //
+                // We want to treat `+a + ib` as greater than everything and `-a - ib` as
+                // lesser. For `-a + ib` and `+a - ib` its "ambiguous" which should be preferred
+                // so we will just preference `-a + ib` since that's the most correct choice
+                // in the face of something like `+a - i0.0` vs `-a + i0.0`. This is the "most
+                // correct" choice because both represent real numbers and `-a` is preferred
+                // over `+a`.
+
+                if (double.IsNegative(y.m_real))
+                {
+                    if (double.IsNegative(y.m_imaginary))
+                    {
+                        // when `y` is `-a - ib` we always prefer `y` as both parts are negative
+                        return y;
+                    }
+                    else
+                    {
+                        if (double.IsNegative(x.m_real))
+                        {
+                            // when `y` is `-a + ib` and `x` is `-a + ib` or `-a - ib` then
+                            // we either have same value or both parts of `x` are negative
+                            // and we want to prefer it.
+
+                            return x;
+                        }
+                        else
+                        {
+                            // when `y` is `-a + ib` and `x` is `+a + ib` or `+a - ib` then
+                            // we want to prefer `y` because either both parts of 'x' are positive
+                            // or we want to prefer `-a - ib` due to how it handles when `y`
+                            // represents a real number.
+
+                            return y;
+                        }
+                    }
+                }
+                else if (double.IsNegative(y.m_imaginary))
+                {
+                    if (double.IsNegative(x.m_real))
+                    {
+                        // when `y` is `+a - ib` and `x` is `-a + ib` or `-a - ib` then
+                        // either both parts of `x` are negative or we want to prefer
+                        // `-a - ib` due to how it handles when `x` represents a real number.
+
+                        return x;
+                    }
+                    else
+                    {
+                        // when `y` is `+a - ib` and `x` is `+a + ib` or `+a - ib` then
+                        // we want to prefer `y` because either both parts of x are positive
+                        // or they represent the same value.
+
+                        return y;
+                    }
+                }
+                else
+                {
+                    return x;
+                }
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.MinMagnitudeNumber(TSelf, TSelf)" />
+        static Complex INumberBase<Complex>.MinMagnitudeNumber(Complex x, Complex y)
+        {
+            // complex numbers are not normally comparable, however every complex
+            // number has a real magnitude (absolute value) and so we can provide
+            // an implementation for MinMagnitudeNumber
+
+            // This matches the IEEE 754:2019 `minimumMagnitudeNumber` function
+            //
+            // It does not propagate NaN inputs back to the caller and
+            // otherwise returns the input with a smaller magnitude.
+            // It treats -0 as smaller than +0 as per the specification.
+
+            double ax = Abs(x);
+            double ay = Abs(y);
+
+            if ((ax < ay) || double.IsNaN(ay))
+            {
+                return x;
+            }
+
+            if (ax == ay)
+            {
+                // We have two equal magnitudes which means we have two of the following
+                //   `+a + ib`
+                //   `-a + ib`
+                //   `+a - ib`
+                //   `-a - ib`
+                //
+                // We want to treat `+a + ib` as greater than everything and `-a - ib` as
+                // lesser. For `-a + ib` and `+a - ib` its "ambiguous" which should be preferred
+                // so we will just preference `-a + ib` since that's the most correct choice
+                // in the face of something like `+a - i0.0` vs `-a + i0.0`. This is the "most
+                // correct" choice because both represent real numbers and `-a` is preferred
+                // over `+a`.
+
+                if (double.IsNegative(y.m_real))
+                {
+                    if (double.IsNegative(y.m_imaginary))
+                    {
+                        // when `y` is `-a - ib` we always prefer `y` as both parts are negative
+                        return y;
+                    }
+                    else
+                    {
+                        if (double.IsNegative(x.m_real))
+                        {
+                            // when `y` is `-a + ib` and `x` is `-a + ib` or `-a - ib` then
+                            // we either have same value or both parts of `x` are negative
+                            // and we want to prefer it.
+
+                            return x;
+                        }
+                        else
+                        {
+                            // when `y` is `-a + ib` and `x` is `+a + ib` or `+a - ib` then
+                            // we want to prefer `y` because either both parts of 'x' are positive
+                            // or we want to prefer `-a - ib` due to how it handles when `y`
+                            // represents a real number.
+
+                            return y;
+                        }
+                    }
+                }
+                else if (double.IsNegative(y.m_imaginary))
+                {
+                    if (double.IsNegative(x.m_real))
+                    {
+                        // when `y` is `+a - ib` and `x` is `-a + ib` or `-a - ib` then
+                        // either both parts of `x` are negative or we want to prefer
+                        // `-a - ib` due to how it handles when `x` represents a real number.
+
+                        return x;
+                    }
+                    else
+                    {
+                        // when `y` is `+a - ib` and `x` is `+a + ib` or `+a - ib` then
+                        // we want to prefer `y` because either both parts of x are positive
+                        // or they represent the same value.
+
+                        return y;
+                    }
+                }
+                else
+                {
+                    return x;
+                }
+            }
+
+            return y;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?)" />
+        public static Complex Parse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider)
+        {
+            if (!TryParse(s, style, provider, out Complex result))
+            {
+                ThrowHelper.ThrowOverflowException();
+            }
+            return result;
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.Parse(string, NumberStyles, IFormatProvider?)" />
+        public static Complex Parse(string s, NumberStyles style, IFormatProvider? provider)
+        {
+            ArgumentNullException.ThrowIfNull(s);
+            return Parse(s.AsSpan(), style, provider);
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryCreate{TOther}(TOther, out TSelf)" />
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool TryCreate<TOther>(TOther value, out Complex result)
+            where TOther : INumberBase<TOther>
+        {
+            if (typeof(TOther) == typeof(byte))
+            {
+                result = (byte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(char))
+            {
+                result = (char)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(decimal))
+            {
+                result = (Complex)(decimal)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(double))
+            {
+                result = (double)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(short))
+            {
+                result = (short)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(int))
+            {
+                result = (int)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(long))
+            {
+                result = (long)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nint))
+            {
+                result = (nint)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(sbyte))
+            {
+                result = (sbyte)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(float))
+            {
+                result = (float)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ushort))
+            {
+                result = (ushort)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(uint))
+            {
+                result = (uint)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(ulong))
+            {
+                result = (ulong)(object)value;
+                return true;
+            }
+            else if (typeof(TOther) == typeof(nuint))
+            {
+                result = (nuint)(object)value;
+                return true;
+            }
+            else
+            {
+                ThrowHelper.ThrowNotSupportedException();
+                result = default;
+                return false;
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(ReadOnlySpan{char}, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, NumberStyles style, IFormatProvider? provider, out Complex result)
+        {
+            ValidateParseStyleFloatingPoint(style);
+
+            int openBracket = s.IndexOf('<');
+            int semicolon = s.IndexOf(';');
+            int closeBracket = s.IndexOf('>');
+
+            if ((s.Length < 5) || (openBracket == -1) || (semicolon == -1) || (closeBracket == -1) || (openBracket > semicolon) || (openBracket > closeBracket) || (semicolon > closeBracket))
+            {
+                // We need at least 5 characters for `<0;0>`
+                // We also expect a to find an open bracket, a semicolon, and a closing bracket in that order
+
+                result = default;
+                return false;
+            }
+
+            if ((openBracket != 0) && (((style & NumberStyles.AllowLeadingWhite) == 0) || !s.Slice(0, openBracket).IsWhiteSpace()))
+            {
+                // The opening bracket wasn't the first and we either didn't allow leading whitespace
+                // or one of the leading characters wasn't whitespace at all.
+
+                result = default;
+                return false;
+            }
+
+            if (!double.TryParse(s.Slice(openBracket + 1, semicolon), style, provider, out double real))
+            {
+                result = default;
+                return false;
+            }
+
+            if (char.IsWhiteSpace(s[semicolon + 1]))
+            {
+                // We allow a single whitespace after the semicolon regardless of style, this is so that
+                // the output of `ToString` can be correctly parsed by default and values will roundtrip.
+                semicolon += 1;
+            }
+
+            if (!double.TryParse(s.Slice(semicolon + 1, closeBracket - semicolon), style, provider, out double imaginary))
+            {
+                result = default;
+                return false;
+            }
+
+            if ((closeBracket != (s.Length - 1)) && (((style & NumberStyles.AllowTrailingWhite) == 0) || !s.Slice(closeBracket).IsWhiteSpace()))
+            {
+                // The closing bracket wasn't the last and we either didn't allow trailing whitespace
+                // or one of the trailing characters wasn't whitespace at all.
+
+                result = default;
+                return false;
+            }
+
+            result = new Complex(real, imaginary);
+            return true;
+
+            static void ValidateParseStyleFloatingPoint(NumberStyles style)
+            {
+                // Check for undefined flags or hex number
+                if ((style & (InvalidNumberStyles | NumberStyles.AllowHexSpecifier)) != 0)
+                {
+                    ThrowInvalid(style);
+
+                    static void ThrowInvalid(NumberStyles value)
+                    {
+                        if ((value & InvalidNumberStyles) != 0)
+                        {
+                            throw new ArgumentException(SR.Argument_InvalidNumberStyles, nameof(style));
+                        }
+
+                        throw new ArgumentException(SR.Arg_HexStyleNotSupported);
+                    }
+                }
+            }
+        }
+
+        /// <inheritdoc cref="INumberBase{TSelf}.TryParse(string, NumberStyles, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, NumberStyles style, IFormatProvider? provider, out Complex result)
+        {
+            if (s is null)
+            {
+                result = default;
+                return false;
+            }
+            return TryParse(s.AsSpan(), style, provider, out result);
+        }
+
+        //
+        // IParsable
+        //
+
+        /// <inheritdoc cref="IParsable{TSelf}.Parse(string, IFormatProvider?)" />
+        public static Complex Parse(string s, IFormatProvider? provider) => Parse(s, DefaultNumberStyle, provider);
+
+        /// <inheritdoc cref="IParsable{TSelf}.TryParse(string?, IFormatProvider?, out TSelf)" />
+        public static bool TryParse([NotNullWhen(true)] string? s, IFormatProvider? provider, out Complex result) => TryParse(s, DefaultNumberStyle, provider, out result);
+
         //
         // ISignedNumber
         //
@@ -936,43 +1760,53 @@ namespace System.Numerics
         {
             int charsWrittenSoFar = 0;
 
-            // We have at least 6 more characters for: (0, 0)
+            // We have at least 6 more characters for: <0; 0>
             if (destination.Length < 6)
             {
                 charsWritten = charsWrittenSoFar;
                 return false;
             }
 
-            destination[charsWrittenSoFar++] = '(';
+            destination[charsWrittenSoFar++] = '<';
 
             bool tryFormatSucceeded = m_real.TryFormat(destination.Slice(charsWrittenSoFar), out int tryFormatCharsWritten, format, provider);
             charsWrittenSoFar += tryFormatCharsWritten;
 
-            // We have at least 4 more characters for: , 0)
+            // We have at least 4 more characters for: ; 0>
             if (!tryFormatSucceeded || (destination.Length < (charsWrittenSoFar + 4)))
             {
                 charsWritten = charsWrittenSoFar;
                 return false;
             }
 
-            destination[charsWrittenSoFar++] = ',';
+            destination[charsWrittenSoFar++] = ';';
             destination[charsWrittenSoFar++] = ' ';
 
             tryFormatSucceeded = m_imaginary.TryFormat(destination.Slice(charsWrittenSoFar), out tryFormatCharsWritten, format, provider);
             charsWrittenSoFar += tryFormatCharsWritten;
 
-            // We have at least 1 more character for: )
+            // We have at least 1 more character for: >
             if (!tryFormatSucceeded || (destination.Length < (charsWrittenSoFar + 1)))
             {
                 charsWritten = charsWrittenSoFar;
                 return false;
             }
 
-            destination[charsWrittenSoFar++] = ')';
+            destination[charsWrittenSoFar++] = '>';
 
             charsWritten = charsWrittenSoFar;
             return true;
         }
+
+        //
+        // ISpanParsable
+        //
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.Parse(ReadOnlySpan{char}, IFormatProvider?)" />
+        public static Complex Parse(ReadOnlySpan<char> s, IFormatProvider? provider) => Parse(s, DefaultNumberStyle, provider);
+
+        /// <inheritdoc cref="ISpanParsable{TSelf}.TryParse(ReadOnlySpan{char}, IFormatProvider?, out TSelf)" />
+        public static bool TryParse(ReadOnlySpan<char> s, IFormatProvider? provider, out Complex result) => TryParse(s, DefaultNumberStyle, provider, out result);
 
         //
         // ISubtractionOperators

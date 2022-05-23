@@ -3010,7 +3010,10 @@ GenTree* Lowering::OptimizeConstCompare(GenTree* cmp)
 #endif // FEATURE_HW_INTRINSICS
                  )
 #else // TARGET_ARM64
-            op1->OperIs(GT_AND, GT_ADD, GT_SUB)
+            op1->OperIs(GT_AND, GT_ADD, GT_SUB) &&
+            // This happens in order to emit ARM64 'madd' and 'msub' instructions.
+            // We cannot combine 'adds'/'subs' and 'mul'.
+            !(op1->gtGetOp2()->OperIs(GT_MUL) && op1->gtGetOp2()->isContained())
 #endif
                 )
         {
@@ -3522,14 +3525,49 @@ void Lowering::LowerStoreLocCommon(GenTreeLclVarCommon* lclStore)
                 convertToStoreObj = false;
             }
         }
-        else if (!src->OperIs(GT_LCL_VAR))
+        else if (src->OperIs(GT_LCL_VAR))
         {
+            convertToStoreObj = false;
+        }
+        else if (src->OperIs(GT_IND, GT_OBJ, GT_BLK, GT_LCL_FLD))
+        {
+#if !defined(TARGET_ARM64)
+
+            if (src->TypeIs(TYP_STRUCT))
+            {
+                src->ChangeType(lclRegType);
+                if (src->OperIs(GT_IND, GT_OBJ, GT_BLK))
+                {
+                    if (src->OperIs(GT_OBJ, GT_BLK))
+                    {
+                        src->SetOper(GT_IND);
+                    }
+                    // This logic is skipped for struct indir in
+                    // `Lowering::LowerIndir` because we don't know the size.
+                    // Do it now.
+                    GenTreeIndir* indir = src->AsIndir();
+                    LowerIndir(indir);
+#if defined(TARGET_XARCH)
+                    if (varTypeIsSmall(lclRegType))
+                    {
+                        indir->SetDontExtend();
+                    }
+#endif // TARGET_XARCH
+                }
+            }
+            convertToStoreObj = false;
+#else  // TARGET_ARM64
+            // This optimization on arm64 allows more SIMD16 vars to be enregistered but it could cause
+            // regressions when there are many calls and before/after each one we have to store/save the upper
+            // half of these registers. So enable this for arm64 only when LSRA is taught not to allocate registers when
+            // it would have to spilled too many times.
             convertToStoreObj = true;
+#endif // TARGET_ARM64
         }
         else
         {
-            assert(src->OperIs(GT_LCL_VAR));
-            convertToStoreObj = false;
+            assert(src->OperIsInitVal());
+            convertToStoreObj = true;
         }
 
         if (convertToStoreObj)
@@ -5443,10 +5481,22 @@ GenTree* Lowering::LowerAdd(GenTreeOp* node)
 #endif // TARGET_XARCH
     }
 
+#ifdef TARGET_ARM64
+    if (node->OperIs(GT_ADD))
+    {
+        GenTree* next = LowerAddForPossibleContainment(node);
+        if (next != nullptr)
+        {
+            return next;
+        }
+    }
+#endif // TARGET_ARM64
+
     if (node->OperIs(GT_ADD))
     {
         ContainCheckBinary(node);
     }
+
     return nullptr;
 }
 
@@ -6393,11 +6443,18 @@ PhaseStatus Lowering::DoPhase()
     {
         comp->optLoopsMarked = false;
         bool modified        = comp->fgUpdateFlowGraph();
+        modified |= comp->fgRemoveDeadBlocks();
+
         if (modified)
         {
             JITDUMP("had to run another liveness pass:\n");
             comp->fgLocalVarLiveness();
         }
+    }
+    else
+    {
+        // If we are not optimizing, remove the dead blocks regardless.
+        comp->fgRemoveDeadBlocks();
     }
 
     // Recompute local var ref counts again after liveness to reflect
@@ -7199,6 +7256,7 @@ void Lowering::TransformUnusedIndirection(GenTreeIndir* ind, Compiler* comp, Bas
     bool           useNullCheck          = false;
 #else  // TARGET_XARCH
     bool useNullCheck = !ind->Addr()->isContained();
+    ind->ClearDontExtend();
 #endif // !TARGET_XARCH
 
     if (useNullCheck && !ind->OperIs(GT_NULLCHECK))
@@ -7296,14 +7354,6 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
         return false;
     }
 
-    if (varTypeIsSmall(regType) && !src->IsConstInitVal() && !src->IsLocal())
-    {
-        // source operand INDIR will use a widening instruction
-        // and generate worse code, like `movzx` instead of `mov`
-        // on x64.
-        return false;
-    }
-
     JITDUMP("Replacing STORE_OBJ with STOREIND for [%06u]\n", blkNode->gtTreeID);
     blkNode->ChangeOper(GT_STOREIND);
     blkNode->ChangeType(regType);
@@ -7326,6 +7376,14 @@ bool Lowering::TryTransformStoreObjAsStoreInd(GenTreeBlk* blkNode)
     {
         assert(src->TypeIs(regType) || src->IsCnsIntOrI() || src->IsCall());
     }
+
+#if defined(TARGET_XARCH)
+    if (varTypeIsSmall(regType) && src->OperIs(GT_IND))
+    {
+        src->AsIndir()->SetDontExtend();
+    }
+#endif // TARGET_XARCH
+
     LowerStoreIndirCommon(blkNode->AsStoreInd());
     return true;
 }

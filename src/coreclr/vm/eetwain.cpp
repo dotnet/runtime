@@ -813,7 +813,7 @@ bool        VarIsInReg(ICorDebugInfo::VarLoc varLoc)
  *  Last chance for the runtime support to do fixups in the context
  *  before execution continues inside an EnC updated function.
  *  It also adjusts ESP and munges on the stack. So the caller has to make
- *  sure that that stack region isnt needed (by doing a localloc)
+ *  sure that this stack region is not needed (by doing a localloc).
  *  Also, if this returns EnC_FAIL, we should not have munged the
  *  context ie. transcated commit
  *  The plan of attack is:
@@ -4604,7 +4604,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
      * in order to adjust ESP.
      *
      * Note that we report "this" for all methods, even if
-     * noncontinuable, because because of the off chance they may be
+     * noncontinuable, because of the off chance they may be
      * synchronized and we have to release the monitor on unwind. This
      * could conceivably be optimized, but it turns out to be more
      * expensive to check whether we're synchronized (which involves

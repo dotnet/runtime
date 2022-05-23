@@ -1,12 +1,9 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
+
 //
 // THREADS.CPP
 //
-
-//
-//
-
 
 #include "common.h"
 
@@ -1575,8 +1572,6 @@ Thread::Thread()
 
     m_pPendingTypeLoad = NULL;
 
-    m_pIBCInfo = NULL;
-
     m_dwAVInRuntimeImplOkayCount = 0;
 
 #if defined(HAVE_GCCOVER) && defined(USE_REDIRECT_FOR_GCSTRESS) && !defined(TARGET_UNIX) // GCCOVER
@@ -2724,10 +2719,6 @@ Thread::~Thread()
     }
 
     g_pThinLockThreadIdDispenser->DisposeId(GetThreadId());
-
-    if (m_pIBCInfo) {
-        delete m_pIBCInfo;
-    }
 
     m_tailCallTls.FreeArgBuffer();
 
@@ -6163,7 +6154,7 @@ size_t getStackHash(size_t* stackTrace, size_t* stackTop, size_t* stackStop, siz
 
     UINT_PTR uPrevControlPc = uControlPc;
 
-    for (;;)
+    while (true)
     {
         RtlLookupFunctionEntry(uControlPc,
                                ARM_ONLY((DWORD*))(&uImageBase),
@@ -6280,7 +6271,7 @@ BOOL Thread::UniqueStack(void* stackStart)
 #ifdef TARGET_X86
     // Find the stop point (most jitted function)
     Frame* pFrame = pThread->GetFrame();
-    for(;;)
+    while (true)
     {
         // skip GC frames
         if (pFrame == 0 || pFrame == (Frame*) -1)
@@ -8521,7 +8512,7 @@ Thread::EnumMemoryRegionsWorker(CLRDataEnumMemoryFlags flags)
 
         if (!IsAddressInStack(currentSP))
         {
-            _ASSERTE(!"Target stack has been corrupted, SP must in in the stack range.");
+            _ASSERTE(!"Target stack has been corrupted, SP must be in the stack range.");
             break;
         }
 

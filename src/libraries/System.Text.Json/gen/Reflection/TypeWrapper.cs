@@ -12,7 +12,7 @@ using Microsoft.CodeAnalysis;
 
 namespace System.Text.Json.Reflection
 {
-    internal class TypeWrapper : Type
+    internal sealed class TypeWrapper : Type
     {
         private readonly ITypeSymbol _typeSymbol;
 
@@ -147,19 +147,18 @@ namespace System.Text.Json.Reflection
 
                         if (this.IsGenericType && !ContainsGenericParameters)
                         {
-                            sb.Append("[");
+                            sb.Append('[');
 
                             foreach (Type genericArg in GetGenericArguments())
                             {
-                                sb.Append("[");
+                                sb.Append('[');
                                 sb.Append(genericArg.AssemblyQualifiedName);
-                                sb.Append("]");
+                                sb.Append(']');
                             }
 
-                            sb.Append("]");
+                            sb.Append(']');
                         }
                     }
-                    
 
                     _fullName = sb.ToString();
                 }
