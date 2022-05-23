@@ -15,25 +15,14 @@
  *   * Launches Mono, by calling mono_main.
  */
 #include <config.h>
-#include <fcntl.h>
-#ifndef HOST_WIN32
-#include <dirent.h>
-#endif
+#include <mono/utils/mono-publib.h>
 #include <mono/metadata/assembly.h>
-#include <mono/metadata/mono-config.h>
-#include <mono/utils/mono-mmap.h>
+
 #include "mini.h"
 #include "mini-runtime.h"
 
 #ifdef HAVE_UNISTD_H
 #  include <unistd.h>
-#endif
-#ifdef HOST_WIN32
-#  include <io.h>
-#else
-#  ifndef BUILDVER_INCLUDED
-#    include "buildver-boehm.h"
-#  endif
 #endif
 #ifdef TARGET_OSX
 #include <mach-o/loader.h>
@@ -185,8 +174,6 @@ main (int _argc, char* _argv[])
 int
 main (int argc, char* argv[])
 {
-	mono_build_date = build_date;
-
 #if TEST_ICALL_SYMBOL_MAP
 	const char *p  = mono_lookup_icall_symbol_internal (mono_lookup_icall_symbol_internal);
 	printf ("%s\n", p ? p : "null");
