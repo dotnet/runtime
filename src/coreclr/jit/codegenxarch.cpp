@@ -8444,7 +8444,8 @@ void CodeGen::genCreateAndStoreGCInfoX64(unsigned codeSize, unsigned prologSize 
 
         if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
         {
-            // bool in synchronized methods that tracks whether the lock has been taken (takes a full pointer sized slot)
+            // bool in synchronized methods that tracks whether the lock has been taken (takes a full pointer sized
+            // slot)
             preservedAreaSize += TARGET_POINTER_SIZE;
 
             // Verify that MonAcquired bool is at the bottom of the frame header

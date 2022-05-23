@@ -6315,8 +6315,8 @@ void Compiler::lvaAssignVirtualFrameOffsetsToLocals()
     if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 0)
     {
         // Default configuration
-        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) || opts.compDbgEnC ||
-                                                        compStressCompile(STRESS_GENERIC_VARN, 20));
+        codeGen->SetSaveFpLrWithAllCalleeSavedRegisters((getNeedsGSSecurityCookie() && compLocallocUsed) ||
+                                                        opts.compDbgEnC || compStressCompile(STRESS_GENERIC_VARN, 20));
     }
     else if (opts.compJitSaveFpLrWithCalleeSavedRegisters == 1)
     {

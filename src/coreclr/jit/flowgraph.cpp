@@ -1836,7 +1836,8 @@ void Compiler::fgAddSyncMethodEnterExit()
     }
 
     // exceptional case
-    fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis != BAD_VAR_NUM ? lvaCopyThis : info.compThisArg, faultBB, false /*exit*/);
+    fgCreateMonitorTree(lvaMonAcquired, lvaCopyThis != BAD_VAR_NUM ? lvaCopyThis : info.compThisArg, faultBB,
+                        false /*exit*/);
 
     // non-exceptional cases
     for (BasicBlock* const block : Blocks())
@@ -1860,9 +1861,9 @@ GenTree* Compiler::fgCreateMonitorTree(unsigned lvaMonAcquired, unsigned lvaThis
 {
     // Insert the expression "enter/exitCrit(this, &acquired)" or "enter/exitCrit(handle, &acquired)"
 
-    GenTree*  varNode         = gtNewLclvNode(lvaMonAcquired, lvaGetDesc(lvaMonAcquired)->TypeGet());
-    GenTree*  varAddrNode     = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
-    GenTree*  tree;
+    GenTree* varNode     = gtNewLclvNode(lvaMonAcquired, lvaGetDesc(lvaMonAcquired)->TypeGet());
+    GenTree* varAddrNode = gtNewOperNode(GT_ADDR, TYP_BYREF, varNode);
+    GenTree* tree;
 
     if (info.compIsStatic)
     {

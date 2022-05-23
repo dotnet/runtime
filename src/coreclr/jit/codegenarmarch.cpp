@@ -4174,7 +4174,8 @@ void CodeGen::genCreateAndStoreGCInfo(unsigned codeSize,
 
         if (compiler->info.compFlags & CORINFO_FLG_SYNCH)
         {
-            // bool in synchronized methods that tracks whether the lock has been taken (takes a full pointer sized slot)
+            // bool in synchronized methods that tracks whether the lock has been taken (takes a full pointer sized
+            // slot)
             preservedAreaSize += TARGET_POINTER_SIZE;
 
             // Verify that MonAcquired bool is at the bottom of the frame header
@@ -5134,7 +5135,8 @@ void CodeGen::genPushCalleeSavedRegisters()
 
             JITDUMP("    remainingFrameSz=%d\n", remainingFrameSz);
 
-            // We've already established the frame pointer, so no need to report the stack pointer change to unwind info.
+            // We've already established the frame pointer, so no need to report the stack pointer change to unwind
+            // info.
             genStackPointerAdjustment(-remainingFrameSz, initReg, pInitRegZeroed, /* reportUnwindData */ false);
             offset += remainingFrameSz;
         }
