@@ -135,7 +135,7 @@ GcInfoDecoder::GcInfoDecoder(
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     m_HasTailCalls             = ((headerFlags & GC_INFO_HAS_TAILCALLS) != 0);
 #endif // TARGET_AMD64
-    int hasSizeOfEditAndContinuePreservedArea = headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_PRESERVED_SLOTS;
+    int hasEncInfo = headerFlags & GC_INFO_HAS_EDIT_AND_CONTINUE_INFO;
     int hasReversePInvokeFrame = headerFlags & GC_INFO_REVERSE_PINVOKE_FRAME;
 
     int returnKindBits = (slimHeader) ? SIZE_OF_RETURN_KIND_IN_SLIM_HEADER : SIZE_OF_RETURN_KIND_IN_FAT_HEADER;
@@ -263,13 +263,19 @@ GcInfoDecoder::GcInfoDecoder(
         m_StackBaseRegister = NO_STACK_BASE_REGISTER;
     }
 
-    if (hasSizeOfEditAndContinuePreservedArea)
+    if (hasEncInfo)
     {
         m_SizeOfEditAndContinuePreservedArea = (UINT32) m_Reader.DecodeVarLengthUnsigned(SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA_ENCBASE);
+#ifdef TARGET_ARM64
+        m_SizeOfEditAndContinueFixedStackFrame = (UINT32) m_Reader.DecodeVarLengthUnsigned(SIZE_OF_EDIT_AND_CONTINUE_FIXED_STACK_FRAME_ENCBASE);
+#endif
     }
     else
     {
         m_SizeOfEditAndContinuePreservedArea = NO_SIZE_OF_EDIT_AND_CONTINUE_PRESERVED_AREA;
+#ifdef TARGET_ARM64
+        m_SizeOfEditAndContinueFixedStackFrame = 0;
+#endif
     }
 
     if (hasReversePInvokeFrame)
@@ -564,6 +570,14 @@ UINT32 GcInfoDecoder::GetSizeOfEditAndContinuePreservedArea()
     _ASSERTE( m_Flags & DECODE_EDIT_AND_CONTINUE );
     return m_SizeOfEditAndContinuePreservedArea;
 }
+
+#ifdef TARGET_ARM64
+UINT32 GcInfoDecoder::GetSizeOfEditAndContinueFixedStackFrame()
+{
+    _ASSERTE( m_Flags & DECODE_EDIT_AND_CONTINUE );
+    return m_SizeOfEditAndContinueFixedStackFrame;
+}
+#endif
 
 size_t  GcInfoDecoder::GetNumBytesRead()
 {

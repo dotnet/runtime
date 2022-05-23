@@ -677,17 +677,16 @@ LinearScan::LinearScan(Compiler* theCompiler)
     availableFloatRegs  = RBM_ALLFLOAT;
     availableDoubleRegs = RBM_ALLDOUBLE;
 
-#ifdef TARGET_AMD64
+#if defined(TARGET_AMD64) || defined(TARGET_ARM64)
     if (compiler->opts.compDbgEnC)
     {
-        // On x64 when the EnC option is set, we always save exactly RBP, RSI and RDI.
-        // RBP is not available to the register allocator, so RSI and RDI are the only
-        // callee-save registers available.
-        availableIntRegs &= ~RBM_CALLEE_SAVED | RBM_RSI | RBM_RDI;
+        // When the EnC option is set we have an exact set of registers that we always save
+        // that are also available in future versions.
+        availableIntRegs &= ~RBM_CALLEE_SAVED | RBM_ENC_CALLEE_SAVED;
         availableFloatRegs &= ~RBM_CALLEE_SAVED;
         availableDoubleRegs &= ~RBM_CALLEE_SAVED;
     }
-#endif // TARGET_AMD64
+#endif // TARGET_AMD64 || TARGET_ARM64
     compiler->rpFrameType           = FT_NOT_SET;
     compiler->rpMustCreateEBPCalled = false;
 

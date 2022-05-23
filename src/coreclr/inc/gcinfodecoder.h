@@ -238,7 +238,7 @@ enum GcInfoHeaderFlags
 #elif defined(TARGET_ARM) || defined(TARGET_ARM64) || defined(TARGET_LOONGARCH64)
     GC_INFO_HAS_TAILCALLS               = 0x80,
 #endif // TARGET_AMD64
-    GC_INFO_HAS_EDIT_AND_CONTINUE_PRESERVED_SLOTS = 0x100,
+    GC_INFO_HAS_EDIT_AND_CONTINUE_INFO = 0x100,
     GC_INFO_REVERSE_PINVOKE_FRAME = 0x200,
 
     GC_INFO_FLAGS_BIT_SIZE_VERSION_1    = 9,
@@ -547,6 +547,9 @@ public:
     UINT32  GetCodeLength();
     UINT32  GetStackBaseRegister();
     UINT32  GetSizeOfEditAndContinuePreservedArea();
+#ifdef TARGET_ARM64
+    UINT32  GetSizeOfEditAndContinueFixedStackFrame();
+#endif
     size_t  GetNumBytesRead();
 
 #ifdef FIXED_STACK_PARAMETER_SCRATCH_AREA
@@ -578,6 +581,9 @@ private:
     UINT32  m_CodeLength;
     UINT32  m_StackBaseRegister;
     UINT32  m_SizeOfEditAndContinuePreservedArea;
+#ifdef TARGET_ARM64
+    UINT32  m_SizeOfEditAndContinueFixedStackFrame;
+#endif
     ReturnKind m_ReturnKind;
 #ifdef PARTIALLY_INTERRUPTIBLE_GC_SUPPORTED
     UINT32  m_NumSafePoints;
