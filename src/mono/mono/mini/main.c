@@ -41,7 +41,7 @@ mono_main_with_options (int argc, char *argv [])
 const char*
 mono_lookup_icall_symbol_internal (gpointer func);
 
-ICALL_EXPORT int ves_icall_Interop_Sys_DoubleToString (double, char*, char*, int);
+ICALL_EXPORT int ves_icall_System_Environment_get_ProcessorCount ();
 
 #endif
 
@@ -81,7 +81,7 @@ main (int argc, char* argv[])
 #if TEST_ICALL_SYMBOL_MAP
 	const char *p  = mono_lookup_icall_symbol_internal (mono_lookup_icall_symbol_internal);
 	printf ("%s\n", p ? p : "null");
-	p  = mono_lookup_icall_symbol_internal (ves_icall_Interop_Sys_DoubleToString);
+	p  = mono_lookup_icall_symbol_internal (ves_icall_System_Environment_get_ProcessorCount);
 	printf ("%s\n", p ? p : "null");
 #endif
 
