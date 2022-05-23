@@ -51,8 +51,8 @@
   <UsingTask TaskName="ManagedToNativeGenerator" AssemblyFile="$(WasmAppBuilderTasksAssemblyPath)" />
   <Target Name="GenerateManagedToNative" DependsOnTargets="CheckEnv;ResolveLibrariesFromLocalBuild">
     <PropertyGroup>
-      <WasmPInvokeTablePath>$(ArtifactsObjDir)wasm\pinvoke-table.h</WasmPInvokeTablePath>
-      <WasmInterpToNativeTablePath>$(ArtifactsObjDir)wasm\wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
+      <WasmPInvokeTablePath>$(WasmObjDir)\pinvoke-table.h</WasmPInvokeTablePath>
+      <WasmInterpToNativeTablePath>$(WasmObjDir)\wasm_m2n_invoke.g.h</WasmInterpToNativeTablePath>
     </PropertyGroup>
 
     <ItemGroup>
@@ -67,6 +67,8 @@
              Targets="GetTargetPath">
       <Output TaskParameter="TargetOutputs" ItemName="WasmPInvokeAssembly" />
     </MSBuild>
+
+    <MakeDir Directories="$(WasmObjDir)" Condition="!Exists('$(WasmObjDir)')" />
     
     <ManagedToNativeGenerator
       Assemblies="@(WasmPInvokeAssembly)"

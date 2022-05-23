@@ -300,13 +300,6 @@
     </ItemGroup>
   </Target>
 
-  <Target Name="_GenerateInterpToNative">
-    <InterpToNativeGenerator
-      OutputPath="$(_WasmInterpToNativeTablePath)">
-      <Output TaskParameter="FileWrites" ItemName="FileWrites" />
-    </InterpToNativeGenerator>
-  </Target>
-
   <Target Name="_GenerateManagedToNative">
     <ItemGroup>
       <_WasmPInvokeModules Include="%(_WasmNativeFileForLinking.FileName)" Condition="'%(_WasmNativeFileForLinking.ScanForPInvokes)' != 'false'" />
@@ -323,6 +316,8 @@
     <ItemGroup>
       <FileWrites Include="$(_WasmRuntimeICallTablePath)" />
     </ItemGroup>
+
+    <MakeDir Directories="$(_WasmIntermediateOutputPath)" Condition="!Exists('$(_WasmIntermediateOutputPath)')"  />
 
     <ManagedToNativeGenerator
       Assemblies="@(_WasmAssembliesInternal)"
