@@ -180,7 +180,9 @@ public:
                        bool* isConcurrent,
                        uint64_t* genInfoRaw,
                        uint64_t* pauseInfoRaw,
-                       int kind);;
+                       int kind);
+
+    int64_t GetTotalPauseDuration();
 
     uint32_t GetMemoryLoad();
 

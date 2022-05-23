@@ -24,8 +24,7 @@ namespace System.Globalization
             {
                 // Ordinal equals or lowercase equals if the result ends up in the a-z range
                 if (charA == charB ||
-                    ((charA | 0x20) == (charB | 0x20) &&
-                        (uint)((charA | 0x20) - 'a') <= (uint)('z' - 'a')))
+                    ((charA | 0x20) == (charB | 0x20) && char.IsAsciiLetter(charA)))
                 {
                     length--;
                     charA = ref Unsafe.Add(ref charA, 1);
@@ -37,11 +36,11 @@ namespace System.Globalization
                     int currentB = charB;
 
                     // Uppercase both chars if needed
-                    if ((uint)(charA - 'a') <= 'z' - 'a')
+                    if (char.IsAsciiLetterLower(charA))
                     {
                         currentA -= 0x20;
                     }
-                    if ((uint)(charB - 'a') <= 'z' - 'a')
+                    if (char.IsAsciiLetterLower(charB))
                     {
                         currentB -= 0x20;
                     }
@@ -256,7 +255,7 @@ namespace System.Globalization
             nint offset = 0;
             bool isLetter = false;
 
-            if ((uint)((valueChar | 0x20) - 'a') <= 'z' - 'a')
+            if (char.IsAsciiLetter(valueChar))
             {
                 valueCharU = (char)(valueChar & ~0x20);
                 valueCharL = (char)(valueChar | 0x20);

@@ -23,6 +23,7 @@
 #include <mono/metadata/assembly.h>
 #include <mono/metadata/w32event.h>
 #include <mono/metadata/metadata-internals.h>
+#include "mono/utils/mono-logger-internals.h"
 #include <runtime_version.h>
 #include <mono/metadata/profiler.h>
 
@@ -600,6 +601,14 @@ ep_rt_atomic_compare_exchange_size_t (volatile size_t *target, size_t expected, 
 #else
 	return (size_t)(mono_atomic_cas_i32 ((volatile gint32 *)(target), (gint32)(value), (gint32)(expected)));
 #endif
+}
+
+static
+inline
+ep_char8_t *
+ep_rt_atomic_compare_exchange_utf8_string (ep_char8_t *volatile *target, ep_char8_t *expected, ep_char8_t *value)
+{
+	return (ep_char8_t *)mono_atomic_cas_ptr ((volatile gpointer *)target, (gpointer)value, (gpointer)expected);
 }
 
 /*
@@ -2178,6 +2187,29 @@ ep_rt_volatile_store_ptr_without_barrier (
 bool
 ep_rt_mono_write_event_ee_startup_start (void);
 
+typedef struct _BulkTypeEventLogger BulkTypeEventLogger;
+
+void
+ep_rt_mono_fire_bulk_type_event (BulkTypeEventLogger *p_type_logger);
+
+int
+ep_rt_mono_log_single_type (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_log_type_and_parameters (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_log_type_and_parameters_if_necessary (
+	BulkTypeEventLogger *p_type_logger,
+	MonoType *mono_type);
+
+void
+ep_rt_mono_send_method_details_event (MonoMethod *method);
+
 bool
 ep_rt_mono_write_event_jit_start (MonoMethod *method);
 
@@ -2298,6 +2330,12 @@ ep_rt_write_event_threadpool_io_dequeue (
 bool
 ep_rt_write_event_threadpool_working_thread_count (
 	uint16_t count,
+	uint16_t clr_instance_id);
+
+bool
+ep_rt_write_event_threadpool_io_pack (
+	intptr_t native_overlapped,
+	intptr_t overlapped,
 	uint16_t clr_instance_id);
 
 /*

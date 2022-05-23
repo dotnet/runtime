@@ -73,9 +73,6 @@ get_dyn_info_list_addr (unw_addr_space_t as, unw_word_t *dyn_info_list_addr,
   return 0;
 }
 
-#define PAGE_SIZE 4096
-#define PAGE_START(a)   ((a) & ~(PAGE_SIZE-1))
-
 static int mem_validate_pipe[2] = {-1, -1};
 
 #ifdef HAVE_PIPE2
@@ -191,10 +188,11 @@ tdep_init_mem_validate (void)
 
 #ifdef HAVE_MINCORE
   unsigned char present = 1;
-  unw_word_t addr = PAGE_START((unw_word_t)&present);
+  size_t len = unw_page_size;
+  unw_word_t addr = uwn_page_start((unw_word_t)&present);
   unsigned char mvec[1];
   int ret;
-  while ((ret = mincore ((void*)addr, PAGE_SIZE, (unsigned char *)mvec)) == -1 &&
+  while ((ret = mincore ((void*)addr, len, (unsigned char *)mvec)) == -1 &&
          errno == EAGAIN) {}
   if (ret == 0)
     {
@@ -287,14 +285,8 @@ cache_valid_mem(unw_word_t addr)
 static int
 validate_mem (unw_word_t addr)
 {
-  size_t len;
-
-  if (PAGE_START(addr + sizeof (unw_word_t) - 1) == PAGE_START(addr))
-    len = PAGE_SIZE;
-  else
-    len = PAGE_SIZE * 2;
-
-  addr = PAGE_START(addr);
+  size_t len = unw_page_size;
+  addr = uwn_page_start(addr);
 
   if (addr == 0)
     return -1;

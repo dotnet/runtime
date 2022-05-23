@@ -413,7 +413,7 @@ namespace
                 // Separate the wrapper from the tracker runtime prior to
                 // passing them onto the caller. This call is okay to make
                 // even if the instance isn't from the tracker runtime.
-                // We switch to Preemptive mode since seperating a wrapper
+                // We switch to Preemptive mode since separating a wrapper
                 // requires us to call out to non-runtime code which could
                 // call back into the runtime and/or trigger a GC.
                 GCX_PREEMP();

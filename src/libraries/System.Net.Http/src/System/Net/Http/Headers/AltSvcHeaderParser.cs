@@ -442,7 +442,7 @@ namespace System.Net.Http.Headers
                 // The port shouldn't ever need a quoted-pair, but they're still valid... skip if found.
                 if (ch == '\\') continue;
 
-                if ((uint)(ch - '0') > '9' - '0') // ch < '0' || ch > '9'
+                if (!char.IsAsciiDigit(ch))
                 {
                     result = 0;
                     return false;

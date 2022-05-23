@@ -1,7 +1,6 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System\Security\Claims\Claim.cs" />
@@ -15,8 +14,6 @@
   <ItemGroup>
     <Reference Include="System.Collections" />
     <Reference Include="System.Runtime" />
-    <Reference Include="System.Runtime.Extensions" />
-    <Reference Include="System.Security.Principal" />
     <Reference Include="System.Threading.Thread" />
   </ItemGroup>
 </Project>

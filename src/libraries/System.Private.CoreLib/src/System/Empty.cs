@@ -3,7 +3,7 @@
 
 namespace System
 {
-#if CORERT
+#if NATIVEAOT
     public // Needs to be public so that Reflection.Core can see it.
 #else
     internal

@@ -118,9 +118,10 @@ namespace System.Runtime.InteropServices
                     // Allocate unmanaged memory for GCHandle of delegate and function pointer of open static delegate
                     // We will store this pointer on the context slot of thunk data
                     //
-                    ContextData = Marshal.AllocHGlobal(2 * IntPtr.Size);
                     unsafe
                     {
+                        ContextData = (IntPtr)NativeMemory.Alloc((nuint)(2 * IntPtr.Size));
+
                         ThunkContextData* thunkData = (ThunkContextData*)ContextData;
 
                         // allocate a weak GChandle for the delegate
@@ -148,7 +149,7 @@ namespace System.Runtime.InteropServices
                         }
 
                         // Free the allocated context data memory
-                        Marshal.FreeHGlobal(ContextData);
+                        NativeMemory.Free((void*)ContextData);
                     }
                 }
             }

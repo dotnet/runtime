@@ -813,7 +813,7 @@ bool        VarIsInReg(ICorDebugInfo::VarLoc varLoc)
  *  Last chance for the runtime support to do fixups in the context
  *  before execution continues inside an EnC updated function.
  *  It also adjusts ESP and munges on the stack. So the caller has to make
- *  sure that that stack region isnt needed (by doing a localloc)
+ *  sure that this stack region is not needed (by doing a localloc).
  *  Also, if this returns EnC_FAIL, we should not have munged the
  *  context ie. transcated commit
  *  The plan of attack is:
@@ -4604,7 +4604,7 @@ bool EECodeManager::EnumGcRefs( PREGDISPLAY     pContext,
      * in order to adjust ESP.
      *
      * Note that we report "this" for all methods, even if
-     * noncontinuable, because because of the off chance they may be
+     * noncontinuable, because of the off chance they may be
      * synchronized and we have to release the monitor on unwind. This
      * could conceivably be optimized, but it turns out to be more
      * expensive to check whether we're synchronized (which involves
@@ -6074,7 +6074,7 @@ void EECodeManager::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
  *  GetAmbientSP
  *
  *  This function computes the zero-depth stack pointer for the given nesting
- *  level within the method given.  Nesting level is the the depth within
+ *  level within the method given.  Nesting level is the depth within
  *  try-catch-finally blocks, and is zero based.  It is up to the caller to
  *  supply a valid nesting level value.
  *

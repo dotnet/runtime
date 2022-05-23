@@ -68,6 +68,13 @@ if(HAVE_SYS_ICU AND NOT HOST_WASI)
       pal_timeZoneInfo.c
       entrypoints.c
       ${pal_icushim_sources_base})
+
+  if (TARGET_DARWIN)
+    set(icu_shim_sources_base
+        ${icu_shim_sources_base}
+        pal_locale.m)
+  endif()
+
   addprefix(icu_shim_sources "${ICU_SHIM_PATH}" "${icu_shim_sources_base}")
   set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_DEFINITIONS OSX_ICU_LIBRARY_PATH="${OSX_ICU_LIBRARY_PATH}")
   set_source_files_properties(${icu_shim_sources} PROPERTIES COMPILE_FLAGS "-I\"${ICU_INCLUDEDIR}\" -I\"${CLR_SRC_NATIVE_DIR}/libs/System.Globalization.Native/\" -I\"${CLR_SRC_NATIVE_DIR}/libs/Common/\" ${ICU_FLAGS}")

@@ -70,13 +70,19 @@ namespace
         return false;
     }
 
-    pal::string_t get_runtime_not_found_message()
+    pal::string_t get_apphost_details_message()
     {
-        pal::string_t msg = INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("\n\n")
-            _X("Architecture: ");
+        pal::string_t msg = _X("Architecture: ");
         msg.append(get_arch());
         msg.append(_X("\n")
             _X("App host version: ") _STRINGIFY(COMMON_HOST_PKG_VER) _X("\n\n"));
+        return msg;
+    }
+
+    pal::string_t get_runtime_not_found_message()
+    {
+        pal::string_t msg = INSTALL_NET_DESKTOP_ERROR_MESSAGE _X("\n\n");
+        msg.append(get_apphost_details_message());
         return msg;
     }
 
@@ -108,6 +114,7 @@ namespace
             dialogMsg = pal::string_t(INSTALL_OR_UPDATE_NET_ERROR_MESSAGE _X("\n\n"));
             pal::string_t line;
             pal::stringstream_t ss(g_buffered_errors);
+            bool foundCustomMessage = false;
             while (std::getline(ss, line, _X('\n')))
             {
                 const pal::char_t prefix[] = _X("Framework: '");
@@ -119,18 +126,23 @@ namespace
                 {
                     dialogMsg.append(line);
                     dialogMsg.append(_X("\n\n"));
+                    foundCustomMessage = true;
                 }
                 else if (utils::starts_with(line, custom_prefix, true))
                 {
                     dialogMsg.erase();
                     dialogMsg.append(line.substr(utils::strlen(custom_prefix)));
                     dialogMsg.append(_X("\n\n"));
+                    foundCustomMessage = true;
                 }
                 else if (try_get_url_from_line(line, url))
                 {
                     break;
                 }
             }
+
+            if (!foundCustomMessage)
+                dialogMsg.append(get_apphost_details_message());
         }
         else if (error_code == StatusCode::BundleExtractionFailure)
         {

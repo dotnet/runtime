@@ -155,10 +155,10 @@ namespace System.Diagnostics
         public bool HasListeners() { throw null; }
         public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind) { throw null; }
         public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.Diagnostics.ActivityIdFormat idFormat = System.Diagnostics.ActivityIdFormat.Unknown) { throw null; }
-        public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind, string parentId, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.Diagnostics.ActivityIdFormat idFormat = System.Diagnostics.ActivityIdFormat.Unknown) { throw null; }
+        public System.Diagnostics.Activity? CreateActivity(string name, System.Diagnostics.ActivityKind kind, string? parentId, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.Diagnostics.ActivityIdFormat idFormat = System.Diagnostics.ActivityIdFormat.Unknown) { throw null; }
         public System.Diagnostics.Activity? StartActivity([System.Runtime.CompilerServices.CallerMemberName] string name = "", System.Diagnostics.ActivityKind kind = ActivityKind.Internal)  { throw null; }
         public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
-        public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind, string parentId, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
+        public System.Diagnostics.Activity? StartActivity(string name, System.Diagnostics.ActivityKind kind, string? parentId, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, System.DateTimeOffset startTime = default) { throw null; }
         public System.Diagnostics.Activity? StartActivity(System.Diagnostics.ActivityKind kind, System.Diagnostics.ActivityContext parentContext = default, System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>>? tags = null, System.Collections.Generic.IEnumerable<System.Diagnostics.ActivityLink>? links = null, DateTimeOffset startTime = default, [System.Runtime.CompilerServices.CallerMemberName] string name = "") { throw null; }
         public static void AddActivityListener(System.Diagnostics.ActivityListener listener) { throw null; }
         public void Dispose() { throw null; }
@@ -223,6 +223,7 @@ namespace System.Diagnostics
         public string Name { get { throw null; } }
         public System.DateTimeOffset Timestamp { get { throw null; } }
         public System.Collections.Generic.IEnumerable<System.Collections.Generic.KeyValuePair<string, object?>> Tags { get { throw null; } }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
     }
     public readonly struct ActivityContext : System.IEquatable<System.Diagnostics.ActivityContext>
     {
@@ -251,6 +252,7 @@ namespace System.Diagnostics
         public static bool operator ==(System.Diagnostics.ActivityLink left, System.Diagnostics.ActivityLink right) { throw null; }
         public static bool operator !=(System.Diagnostics.ActivityLink left, System.Diagnostics.ActivityLink right) { throw null; }
         public override int GetHashCode()  { throw null; }
+        public System.Diagnostics.Activity.Enumerator<System.Collections.Generic.KeyValuePair<string, object?>> EnumerateTagObjects() { throw null; }
     }
     public readonly struct ActivityCreationOptions<T>
     {

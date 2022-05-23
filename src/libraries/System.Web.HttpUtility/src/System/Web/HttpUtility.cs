@@ -87,7 +87,7 @@ namespace System.Web
 
             HttpQSCollection result = new HttpQSCollection();
             int queryLength = query.Length;
-            int namePos = queryLength > 0 && query[0] == '?' ? 1 : 0;
+            int namePos = query.StartsWith('?') ? 1 : 0;
             if (queryLength == namePos)
             {
                 return result;

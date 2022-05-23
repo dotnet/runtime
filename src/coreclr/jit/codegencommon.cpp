@@ -1215,15 +1215,18 @@ AGAIN:
                 break;
             }
 
-            if (op1->AsOp()->gtOp2->IsIntCnsFitsInI32() &&
-                FitsIn<INT32>(cns + op1->AsOp()->gtOp2->AsIntCon()->gtIconVal))
+            if (op1->AsOp()->gtOp2->IsIntCnsFitsInI32())
             {
-                cns += op1->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                op1 = op1->AsOp()->gtOp1;
+                GenTreeIntCon* addConst = op1->AsOp()->gtOp2->AsIntCon();
 
-                goto AGAIN;
+                if (addConst->ImmedValCanBeFolded(compiler, GT_ADD) && FitsIn<INT32>(cns + addConst->IconValue()))
+                {
+                    cns += addConst->IconValue();
+                    op1 = op1->AsOp()->gtOp1;
+
+                    goto AGAIN;
+                }
             }
-
             break;
 
         case GT_MUL:
@@ -1295,15 +1298,18 @@ AGAIN:
                 break;
             }
 
-            if (op2->AsOp()->gtOp2->IsIntCnsFitsInI32() &&
-                FitsIn<INT32>(cns + op2->AsOp()->gtOp2->AsIntCon()->gtIconVal))
+            if (op2->AsOp()->gtOp2->IsIntCnsFitsInI32())
             {
-                cns += op2->AsOp()->gtOp2->AsIntCon()->gtIconVal;
-                op2 = op2->AsOp()->gtOp1;
+                GenTreeIntCon* addConst = op2->AsOp()->gtOp2->AsIntCon();
+
+                if (addConst->ImmedValCanBeFolded(compiler, GT_ADD) && FitsIn<INT32>(cns + addConst->IconValue()))
+                {
+                    cns += addConst->IconValue();
+                    op2 = op2->AsOp()->gtOp1;
+                }
 
                 goto AGAIN;
             }
-
             break;
 
         case GT_MUL:
@@ -1739,6 +1745,7 @@ void CodeGen::genGenerateMachineCode()
     {
         compiler->opts.disAsm = true;
     }
+    compiler->compCurBB = compiler->fgFirstBB;
 
     if (compiler->opts.disAsm)
     {
@@ -2052,26 +2059,6 @@ void CodeGen::genEmitMachineCode()
     }
 #endif
 
-#if EMIT_TRACK_STACK_DEPTH && defined(DEBUG_ARG_SLOTS)
-    // Check our max stack level. Needed for fgAddCodeRef().
-    // We need to relax the assert as our estimation won't include code-gen
-    // stack changes (which we know don't affect fgAddCodeRef()).
-    // NOTE: after emitEndCodeGen (including here), emitMaxStackDepth is a
-    // count of DWORD-sized arguments, NOT argument size in bytes.
-    {
-        unsigned maxAllowedStackDepth = compiler->fgGetPtrArgCntMax() + // Max number of pointer-sized stack arguments.
-                                        compiler->compHndBBtabCount +   // Return address for locally-called finallys
-                                        genTypeStSz(TYP_LONG) + // longs/doubles may be transferred via stack, etc
-                                        (compiler->compTailCallUsed ? 4 : 0); // CORINFO_HELP_TAILCALL args
-#if defined(UNIX_X86_ABI)
-        // Convert maxNestedAlignment to DWORD count before adding to maxAllowedStackDepth.
-        assert(maxNestedAlignment % sizeof(int) == 0);
-        maxAllowedStackDepth += maxNestedAlignment / sizeof(int);
-#endif
-        assert(GetEmitter()->emitMaxStackDepth <= maxAllowedStackDepth);
-    }
-#endif // EMIT_TRACK_STACK_DEPTH && DEBUG
-
     *nativeSizeOfCode                 = codeSize;
     compiler->info.compNativeCodeSize = (UNATIVE_OFFSET)codeSize;
 
@@ -2252,7 +2239,7 @@ void CodeGen::genReportEH()
 
     unsigned XTnum;
 
-    bool isCoreRTABI = compiler->IsTargetAbi(CORINFO_CORERT_ABI);
+    bool isNativeAOT = compiler->IsTargetAbi(CORINFO_NATIVEAOT_ABI);
 
     unsigned EHCount = compiler->compHndBBtabCount;
 
@@ -2262,8 +2249,8 @@ void CodeGen::genReportEH()
     unsigned duplicateClauseCount = 0;
     unsigned enclosingTryIndex;
 
-    // Duplicate clauses are not used by CoreRT ABI
-    if (!isCoreRTABI)
+    // Duplicate clauses are not used by NativeAOT ABI
+    if (!isNativeAOT)
     {
         for (XTnum = 0; XTnum < compiler->compHndBBtabCount; XTnum++)
         {
@@ -2281,8 +2268,8 @@ void CodeGen::genReportEH()
 #if FEATURE_EH_CALLFINALLY_THUNKS
     unsigned clonedFinallyCount = 0;
 
-    // Duplicate clauses are not used by CoreRT ABI
-    if (!isCoreRTABI)
+    // Duplicate clauses are not used by NativeAOT ABI
+    if (!isNativeAOT)
     {
         // We don't keep track of how many cloned finally there are. So, go through and count.
         // We do a quick pass first through the EH table to see if there are any try/finally
@@ -2362,9 +2349,9 @@ void CodeGen::genReportEH()
 
         CORINFO_EH_CLAUSE_FLAGS flags = ToCORINFO_EH_CLAUSE_FLAGS(HBtab->ebdHandlerType);
 
-        if (isCoreRTABI && (XTnum > 0))
+        if (isNativeAOT && (XTnum > 0))
         {
-            // For CoreRT, CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
+            // For NativeAOT, CORINFO_EH_CLAUSE_SAMETRY flag means that the current clause covers same
             // try block as the previous one. The runtime cannot reliably infer this information from
             // native code offsets because of different try blocks can have same offsets. Alternative
             // solution to this problem would be inserting extra nops to ensure that different try
@@ -2718,19 +2705,18 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GCInfo::WriteBarrierForm wbf
 // determining what the required write barrier form is, if possible.
 //
 // Arguments:
-//   tgt - target tree of write (e.g., GT_STOREIND)
-//   assignVal - tree with value to write
+//   store - the GT_STOREIND node
 //
 // Return Value:
 //   true if an optimized write barrier helper should be used, false otherwise.
 //   Note: only x86 implements register-specific source optimized write
 //   barriers currently.
 //
-bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assignVal)
+bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTreeStoreInd* store)
 {
 #if defined(TARGET_X86) && NOGC_WRITE_BARRIERS
 #ifdef DEBUG
-    GCInfo::WriteBarrierForm wbf = compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(tgt, assignVal);
+    GCInfo::WriteBarrierForm wbf = compiler->codeGen->gcInfo.gcIsWriteBarrierCandidate(store);
     return (wbf != GCInfo::WBF_NoBarrier_CheckNotHeapInDebug); // This one is always a call to a C++ method.
 #else
     return true;
@@ -2741,12 +2727,11 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assig
 }
 
 //----------------------------------------------------------------------
-// genWriteBarrierHelperForWriteBarrierForm: Given a write node requiring a write
-// barrier, and the write barrier form required, determine the helper to call.
+// genWriteBarrierHelperForWriteBarrierForm: Given a write barrier form
+// return the corresponding helper.
 //
 // Arguments:
-//   tgt - target tree of write (e.g., GT_STOREIND)
-//   wbf - already computed write barrier form to use
+//   wbf - the write barrier form
 //
 // Return Value:
 //   Write barrier helper to use.
@@ -2754,115 +2739,81 @@ bool CodeGenInterface::genUseOptimizedWriteBarriers(GenTree* tgt, GenTree* assig
 // Note: do not call this function to get an optimized write barrier helper (e.g.,
 // for x86).
 //
-CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GenTree* tgt, GCInfo::WriteBarrierForm wbf)
+CorInfoHelpFunc CodeGenInterface::genWriteBarrierHelperForWriteBarrierForm(GCInfo::WriteBarrierForm wbf)
 {
-    noway_assert(tgt->gtOper == GT_STOREIND);
+    switch (wbf)
+    {
+        case GCInfo::WBF_BarrierChecked:
+            return CORINFO_HELP_CHECKED_ASSIGN_REF;
 
-    CorInfoHelpFunc helper = CORINFO_HELP_ASSIGN_REF;
+        case GCInfo::WBF_BarrierUnchecked:
+            return CORINFO_HELP_ASSIGN_REF;
 
 #ifdef DEBUG
-    if (wbf == GCInfo::WBF_NoBarrier_CheckNotHeapInDebug)
-    {
-        helper = CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP;
-    }
-    else
-#endif
-        if (tgt->gtOper != GT_CLS_VAR)
-    {
-        if (wbf != GCInfo::WBF_BarrierUnchecked) // This overrides the tests below.
-        {
-            if (tgt->gtFlags & GTF_IND_TGTANYWHERE)
-            {
-                helper = CORINFO_HELP_CHECKED_ASSIGN_REF;
-            }
-            else if (tgt->AsOp()->gtOp1->TypeGet() == TYP_I_IMPL)
-            {
-                helper = CORINFO_HELP_CHECKED_ASSIGN_REF;
-            }
-        }
-    }
-    assert(((helper == CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP) && (wbf == GCInfo::WBF_NoBarrier_CheckNotHeapInDebug)) ||
-           ((helper == CORINFO_HELP_CHECKED_ASSIGN_REF) &&
-            (wbf == GCInfo::WBF_BarrierChecked || wbf == GCInfo::WBF_BarrierUnknown)) ||
-           ((helper == CORINFO_HELP_ASSIGN_REF) &&
-            (wbf == GCInfo::WBF_BarrierUnchecked || wbf == GCInfo::WBF_BarrierUnknown)));
+        case GCInfo::WBF_NoBarrier_CheckNotHeapInDebug:
+            return CORINFO_HELP_ASSIGN_REF_ENSURE_NONHEAP;
+#endif // DEBUG
 
-    return helper;
+        default:
+            unreached();
+    }
 }
 
 //----------------------------------------------------------------------
 // genGCWriteBarrier: Generate a write barrier for a node.
 //
 // Arguments:
-//   tgt - target tree of write (e.g., GT_STOREIND)
-//   wbf - already computed write barrier form to use
+//   store - the GT_STOREIND node
+//   wbf   - already computed write barrier form to use
 //
-void CodeGen::genGCWriteBarrier(GenTree* tgt, GCInfo::WriteBarrierForm wbf)
+void CodeGen::genGCWriteBarrier(GenTreeStoreInd* store, GCInfo::WriteBarrierForm wbf)
 {
-    CorInfoHelpFunc helper = genWriteBarrierHelperForWriteBarrierForm(tgt, wbf);
+    CorInfoHelpFunc helper = genWriteBarrierHelperForWriteBarrierForm(wbf);
 
 #ifdef FEATURE_COUNT_GC_WRITE_BARRIERS
-    // We classify the "tgt" trees as follows:
-    // If "tgt" is of the form (where [ x ] indicates an optional x, and { x1, ..., xn } means "one of the x_i forms"):
-    //    IND [-> ADDR -> IND] -> { GT_LCL_VAR, ADD({GT_LCL_VAR}, X), ADD(X, (GT_LCL_VAR)) }
-    // then let "v" be the GT_LCL_VAR.
-    //   * If "v" is the return buffer argument, classify as CWBKind_RetBuf.
-    //   * If "v" is another by-ref argument, classify as CWBKind_ByRefArg.
-    //   * Otherwise, classify as CWBKind_OtherByRefLocal.
-    // If "tgt" is of the form IND -> ADDR -> GT_LCL_VAR, clasify as CWBKind_AddrOfLocal.
-    // Otherwise, classify as CWBKind_Unclassified.
-
-    CheckedWriteBarrierKinds wbKind = CWBKind_Unclassified;
-    if (tgt->gtOper == GT_IND)
+    // Under FEATURE_COUNT_GC_WRITE_BARRIERS, we will add an extra argument to the
+    // checked write barrier call denoting the kind of address being written to.
+    //
+    if (helper == CORINFO_HELP_CHECKED_ASSIGN_REF)
     {
-        GenTree* lcl = NULL;
+        CheckedWriteBarrierKinds wbKind  = CWBKind_Unclassified;
+        GenTree*                 tgtAddr = store->Addr();
 
-        GenTree* indArg = tgt->AsOp()->gtOp1;
-        if (indArg->gtOper == GT_ADDR && indArg->AsOp()->gtOp1->gtOper == GT_IND)
+        while (tgtAddr->OperIs(GT_ADD, GT_LEA))
         {
-            indArg = indArg->AsOp()->gtOp1->AsOp()->gtOp1;
-        }
-        if (indArg->gtOper == GT_LCL_VAR)
-        {
-            lcl = indArg;
-        }
-        else if (indArg->gtOper == GT_ADD)
-        {
-            if (indArg->AsOp()->gtOp1->gtOper == GT_LCL_VAR)
+            if (tgtAddr->OperIs(GT_LEA) && tgtAddr->AsAddrMode()->HasBase())
             {
-                lcl = indArg->AsOp()->gtOp1;
+                tgtAddr = tgtAddr->AsAddrMode()->Base();
             }
-            else if (indArg->AsOp()->gtOp2->gtOper == GT_LCL_VAR)
+            else if (tgtAddr->OperIs(GT_ADD) && tgtAddr->AsOp()->gtGetOp2()->IsCnsIntOrI())
             {
-                lcl = indArg->AsOp()->gtOp2;
-            }
-        }
-        if (lcl != NULL)
-        {
-            wbKind          = CWBKind_OtherByRefLocal; // Unclassified local variable.
-            unsigned lclNum = lcl->AsLclVar()->GetLclNum();
-            if (lclNum == compiler->info.compRetBuffArg)
-            {
-                wbKind = CWBKind_RetBuf; // Ret buff.  Can happen if the struct exceeds the size limit.
+                tgtAddr = tgtAddr->AsOp()->gtGetOp1();
             }
             else
             {
-                const LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
-                if (varDsc->lvIsParam && varDsc->lvType == TYP_BYREF)
-                {
-                    wbKind = CWBKind_ByRefArg; // Out (or in/out) arg
-                }
+                break;
             }
         }
-        else
-        {
-            // We should have eliminated the barrier for this case.
-            assert(!(indArg->gtOper == GT_ADDR && indArg->AsOp()->gtOp1->gtOper == GT_LCL_VAR));
-        }
-    }
 
-    if (helper == CORINFO_HELP_CHECKED_ASSIGN_REF)
-    {
+        if (tgtAddr->OperIs(GT_LCL_VAR))
+        {
+            unsigned   lclNum = tgtAddr->AsLclVar()->GetLclNum();
+            LclVarDsc* varDsc = compiler->lvaGetDesc(lclNum);
+            if (lclNum == compiler->info.compRetBuffArg)
+            {
+                wbKind = CWBKind_RetBuf
+            }
+            else if (varDsc->TypeGet() == TYP_BYREF)
+            {
+                wbKind = varDsc->lvIsParam ? CWBKind_ByRefArg : CWBKind_OtherByRefLocal;
+            }
+        }
+        else if (tgtAddr->OperIsLocalAddr())
+        {
+            // Ideally, we should have eliminated the barrier for this case.
+            wbKind = CWBKind_AddrOfLocal;
+        }
+
 #if 0
 #ifdef DEBUG
         // Enable this to sample the unclassified trees.
@@ -2870,29 +2821,27 @@ void CodeGen::genGCWriteBarrier(GenTree* tgt, GCInfo::WriteBarrierForm wbf)
         if (wbKind == CWBKind_Unclassified)
         {
             unclassifiedBarrierSite++;
-            printf("unclassifiedBarrierSite = %d:\n", unclassifiedBarrierSite); compiler->gtDispTree(tgt); printf(""); printf("\n");
+            printf("unclassifiedBarrierSite = %d:\n", unclassifiedBarrierSite);
+            compiler->gtDispTree(store);
+            printf(""); // Flush.
+            printf("\n");
         }
 #endif // DEBUG
 #endif // 0
+
         AddStackLevel(4);
         inst_IV(INS_push, wbKind);
         genEmitHelperCall(helper,
                           4,           // argSize
                           EA_PTRSIZE); // retSize
         SubtractStackLevel(4);
+        return;
     }
-    else
-    {
-        genEmitHelperCall(helper,
-                          0,           // argSize
-                          EA_PTRSIZE); // retSize
-    }
+#endif // FEATURE_COUNT_GC_WRITE_BARRIERS
 
-#else  // !FEATURE_COUNT_GC_WRITE_BARRIERS
     genEmitHelperCall(helper,
                       0,           // argSize
                       EA_PTRSIZE); // retSize
-#endif // !FEATURE_COUNT_GC_WRITE_BARRIERS
 }
 
 /*
@@ -3057,7 +3006,7 @@ void CodeGen::genFnPrologCalleeRegArgs(regNumber xtraReg, bool* pXtraRegClobbere
         // When we have a promoted struct we have two possible LclVars that can represent the incoming argument
         // in the regArgTab[], either the original TYP_STRUCT argument or the introduced lvStructField.
         // We will use the lvStructField if we have a TYPE_INDEPENDENT promoted struct field otherwise
-        // use the the original TYP_STRUCT argument.
+        // use the original TYP_STRUCT argument.
         //
         if (varDsc->lvPromoted || varDsc->lvIsStructField)
         {
@@ -6709,7 +6658,7 @@ unsigned Compiler::GetHfaCount(CORINFO_CLASS_HANDLE hClass)
 //
 // Note:
 //    On x64 Windows the caller always creates slots (homing space) in its frame for the
-//    first 4 arguments of a callee (register passed args). So, the the variable number
+//    first 4 arguments of a callee (register passed args). So, the variable number
 //    (lclNum) for the first argument with a stack slot is always 0.
 //    For System V systems or armarch, there is no such calling convention requirement, and the code
 //    needs to find the first stack passed argument from the caller. This is done by iterating over
@@ -8620,7 +8569,7 @@ void CodeGenInterface::VariableLiveKeeper::VariableLiveRange::dumpVariableLiveRa
 //                      LiveRangeDumper
 //------------------------------------------------------------------------
 //------------------------------------------------------------------------
-// resetDumper: If the the "liveRange" has its last "VariableLiveRange" closed, it makes
+// resetDumper: If the "liveRange" has its last "VariableLiveRange" closed, it makes
 //  the "LiveRangeDumper" points to end of "liveRange" (nullptr). In other case,
 //  it makes the "LiveRangeDumper" points to the last "VariableLiveRange" of
 //  "liveRange", which is opened.

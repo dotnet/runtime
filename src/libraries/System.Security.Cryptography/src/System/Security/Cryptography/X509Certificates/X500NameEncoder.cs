@@ -163,7 +163,7 @@ namespace System.Security.Cryptography.X509Certificates
             return (c == ' ' || (c >= 0x09 && c <= 0x0D));
         }
 
-        private static void AppendOid(StringBuilder decodedName, string oidValue)
+        private static void AppendOid(ref ValueStringBuilder decodedName, string oidValue)
         {
             Oid oid = new Oid(oidValue);
 
@@ -217,7 +217,8 @@ namespace System.Security.Cryptography.X509Certificates
 
             int tagStart = -1;
             int tagEnd = -1;
-            Oid? tagOid = null;
+            ReadOnlySpan<char> tagOid = default;
+            bool hasTagOid = false;
             int valueStart = -1;
             int valueEnd = -1;
             bool hadEscapedQuote = false;
@@ -294,7 +295,8 @@ namespace System.Security.Cryptography.X509Certificates
                         if (c == KeyValueSeparator)
                         {
                             Debug.Assert(tagStart >= 0);
-                            tagOid = ParseOid(stringForm, tagStart, tagEnd);
+                            tagOid = ParseOid(chars[tagStart..tagEnd]);
+                            hasTagOid = true;
                             tagStart = -1;
 
                             state = ParseState.SeekValueStart;
@@ -394,12 +396,12 @@ namespace System.Security.Cryptography.X509Certificates
                     case ParseState.SeekComma:
                         if (dnSeparators.Contains(c))
                         {
-                            Debug.Assert(tagOid != null);
+                            Debug.Assert(hasTagOid);
                             Debug.Assert(valueEnd != -1);
                             Debug.Assert(valueStart != -1);
 
                             encodedSets.Add(ParseRdn(tagOid, chars[valueStart..valueEnd], hadEscapedQuote));
-                            tagOid = null;
+                            hasTagOid = false;
                             valueStart = -1;
                             valueEnd = -1;
                             state = ParseState.SeekTag;
@@ -482,35 +484,41 @@ namespace System.Security.Cryptography.X509Certificates
             return encodedSets;
         }
 
-        private static Oid ParseOid(string stringForm, int tagStart, int tagEnd)
+        private static ReadOnlySpan<char> ParseOid(ReadOnlySpan<char> str)
         {
-            int length = tagEnd - tagStart;
-
-            if (length > OidTagPrefix.Length)
+            if (str.Length > OidTagPrefix.Length)
             {
-                // Since we only care if the match starts exactly at tagStart, tell IndexOf
-                // that we're only examining OidTagPrefix.Length characters.  So it won't do
-                // more than one linear equality check.
-                int prefixIndex = stringForm.IndexOf(
-                    OidTagPrefix,
-                    tagStart,
-                    OidTagPrefix.Length,
-                    StringComparison.OrdinalIgnoreCase);
+                bool prefixed = str.StartsWith(OidTagPrefix, StringComparison.OrdinalIgnoreCase);
 
-                if (prefixIndex == tagStart)
+                if (prefixed)
                 {
-                    return new Oid(stringForm.Substring(tagStart + OidTagPrefix.Length, length - OidTagPrefix.Length));
+                    return str.Slice(OidTagPrefix.Length);
                 }
             }
 
-            return new Oid(stringForm.Substring(tagStart, length));
+            return new Oid(str.ToString()).Value; // Value can be null, but permit the null-to-empty conversion.
         }
 
-        private static byte[] ParseRdn(Oid tagOid, ReadOnlySpan<char> chars, bool hadEscapedQuote)
+        private static byte[] ParseRdn(ReadOnlySpan<char> tagOid, ReadOnlySpan<char> chars, bool hadEscapedQuote)
         {
+            ReadOnlySpan<char> data = stackalloc char[0];
+
             if (hadEscapedQuote)
             {
-                chars = ExtractValue(chars);
+                const int MaxStackAllocSize = 256;
+                Span<char> destination = stackalloc char[MaxStackAllocSize];
+
+                if (chars.Length > MaxStackAllocSize)
+                {
+                    destination = new char[chars.Length];
+                }
+
+                int written = ExtractValue(chars, destination);
+                data = destination.Slice(0, written);
+            }
+            else
+            {
+                data = chars;
             }
 
             AsnWriter writer = new AsnWriter(AsnEncodingRules.DER);
@@ -520,19 +528,19 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 try
                 {
-                    writer.WriteObjectIdentifier(tagOid.Value!);
+                    writer.WriteObjectIdentifier(tagOid);
                 }
                 catch (ArgumentException e)
                 {
                     throw new CryptographicException(SR.Cryptography_Invalid_X500Name, e);
                 }
 
-                if (tagOid.Value == Oids.EmailAddress)
+                if (tagOid.SequenceEqual(Oids.EmailAddress))
                 {
                     try
                     {
                         // An email address with an invalid value will throw.
-                        writer.WriteCharacterString(UniversalTagNumber.IA5String, chars);
+                        writer.WriteCharacterString(UniversalTagNumber.IA5String, data);
                     }
                     catch (EncoderFallbackException)
                     {
@@ -543,11 +551,11 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     try
                     {
-                        writer.WriteCharacterString(UniversalTagNumber.PrintableString, chars);
+                        writer.WriteCharacterString(UniversalTagNumber.PrintableString, data);
                     }
                     catch (EncoderFallbackException)
                     {
-                        writer.WriteCharacterString(UniversalTagNumber.UTF8String, chars);
+                        writer.WriteCharacterString(UniversalTagNumber.UTF8String, data);
                     }
                 }
             }
@@ -555,10 +563,12 @@ namespace System.Security.Cryptography.X509Certificates
             return writer.Encode();
         }
 
-        private static char[] ExtractValue(ReadOnlySpan<char> chars)
+        private static int ExtractValue(ReadOnlySpan<char> chars, Span<char> destination)
         {
-            var builder = new List<char>(chars.Length);
+            Debug.Assert(destination.Length >= chars.Length);
+
             bool skippedQuote = false;
+            int written = 0;
 
             foreach (char c in chars)
             {
@@ -573,10 +583,10 @@ namespace System.Security.Cryptography.X509Certificates
                 Debug.Assert(skippedQuote == (c == '"'));
 
                 skippedQuote = false;
-                builder.Add(c);
+                destination[written++] = c;
             }
 
-            return builder.ToArray();
+            return written;
         }
     }
 }

@@ -2,7 +2,7 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 import {
-    assert,
+    mono_assert,
     MonoArray, MonoAssembly, MonoClass,
     MonoMethod, MonoObject, MonoString,
     MonoType, MonoObjectRef, MonoStringRef
@@ -64,6 +64,11 @@ const fn_signatures: [ident: string, returnType: string | null, argTypes?: strin
     ["mono_wasm_type_get_class", "number", ["number"]],
     ["mono_wasm_get_type_name", "string", ["number"]],
     ["mono_wasm_get_type_aqn", "string", ["number"]],
+
+    // MONO.diagnostics
+    ["mono_wasm_event_pipe_enable", "bool", ["string", "number", "string", "bool", "number"]],
+    ["mono_wasm_event_pipe_session_start_streaming", "bool", ["number"]],
+    ["mono_wasm_event_pipe_session_disable", "bool", ["number"]],
 
     //DOTNET
     ["mono_wasm_string_from_js", "number", ["string"]],
@@ -156,6 +161,11 @@ export interface t_Cwraps {
      */
     mono_wasm_obj_array_set(array: MonoArray, idx: number, obj: MonoObject): void;
 
+    // MONO.diagnostics
+    mono_wasm_event_pipe_enable(outputPath: string, bufferSizeInMB: number, providers: string, rundownRequested: boolean, outSessionId: VoidPtr): boolean;
+    mono_wasm_event_pipe_session_start_streaming(sessionId: number): boolean;
+    mono_wasm_event_pipe_session_disable(sessionId: number): boolean;
+
     //DOTNET
     /**
      * @deprecated Not GC or thread safe
@@ -187,7 +197,7 @@ export default wrapped_c_functions;
 export function wrap_c_function(name: string): Function {
     const wf: any = wrapped_c_functions;
     const sig = fn_signatures.find(s => s[0] === name);
-    assert(sig, () => `Function ${name} not found`);
+    mono_assert(sig, () => `Function ${name} not found`);
     const fce = Module.cwrap(sig[0], sig[1], sig[2], sig[3]);
     wf[sig[0]] = fce;
     return fce;

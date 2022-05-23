@@ -2,7 +2,8 @@
   <PropertyGroup>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <TargetFramework>$(NetCoreAppCurrent)</TargetFramework>
-    <Nullable>enable</Nullable>
+    <FeatureWasmThreads>false</FeatureWasmThreads>
+    <DefineConstants Condition="'$(FeatureWasmThreads)' == 'true'">$(DefineConstants);FEATURE_WASM_THREADS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="System.Threading.ThreadPool.cs" />

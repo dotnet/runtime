@@ -318,7 +318,6 @@ set(VM_SOURCES_WKS
     dynamicinterfacecastable.cpp
     eeconfig.cpp
     eecontract.cpp
-    eemessagebox.cpp
     eepolicy.cpp
     eetoprofinterfaceimpl.cpp
     eventpipeinternal.cpp
@@ -334,7 +333,6 @@ set(VM_SOURCES_WKS
     genanalysis.cpp
     genmeth.cpp
     hosting.cpp
-    ibclogger.cpp
     ilmarshalers.cpp
     interopconverter.cpp
     interoputil.cpp
@@ -421,7 +419,6 @@ set(VM_HEADERS_WKS
     dllimportcallback.h
     eeconfig.h
     eecontract.h
-    eemessagebox.h
     eepolicy.h
     eeprofinterfaces.h
     eeprofinterfaces.inl
@@ -438,7 +435,6 @@ set(VM_HEADERS_WKS
     gcenv.ee.h
     gcenv.os.h
     gchelpers.h
-    ibclogger.h
     ilmarshalers.h
     interopconverter.h
     interoputil.h

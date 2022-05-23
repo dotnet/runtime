@@ -742,7 +742,7 @@ UINT_PTR ExceptionTracker::FinishSecondPass(
     //
     // In a case when we're nested inside another catch block, the domain in which we're executing may not be the
     // same as the one the domain of the throwable that was just made the current throwable above. Therefore, we
-    // make a special effort to preserve the domain of the throwable as we update the the last thrown object.
+    // make a special effort to preserve the domain of the throwable as we update the last thrown object.
     //
     // If an exception is active, we dont want to reset the LastThrownObject to NULL as the active exception
     // might be represented by a tracker created in the second pass (refer to
@@ -1597,7 +1597,7 @@ bool ExceptionTracker::UpdateScannedStackRange(StackFrame sf, bool fIsFirstPass)
     CONTRACTL
     {
         // Since this function will modify the scanned stack range, which is also accessed during the GC stackwalk,
-        // we invoke it in COOP mode so that that access to the range is synchronized.
+        // we invoke it in COOP mode so that the access to this range is synchronized.
         MODE_COOPERATIVE;
         GC_TRIGGERS;
         THROWS;
@@ -2083,7 +2083,7 @@ bool ExceptionTracker::HandleNestedExceptionEscape(StackFrame sf, bool fIsFirstP
     CONTRACTL
     {
         // Since this function can modify the scanned stack range, which is also accessed during the GC stackwalk,
-        // we invoke it in COOP mode so that that access to the range is synchronized.
+        // we invoke it in COOP mode so that the access to this range is synchronized.
         MODE_COOPERATIVE;
         GC_NOTRIGGER;
         NOTHROW;

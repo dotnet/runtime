@@ -197,6 +197,12 @@ namespace System
         }
 
         [DoesNotReturn]
+        internal static void ThrowOverflowException()
+        {
+            throw new OverflowException();
+        }
+
+        [DoesNotReturn]
         internal static void ThrowOverflowException_TimeSpanTooLong()
         {
             throw new OverflowException(SR.Overflow_TimeSpanTooLong);
@@ -509,12 +515,6 @@ namespace System
         }
 
         [DoesNotReturn]
-        internal static void ThrowFileLoadException_InvalidAssemblyName(string name)
-        {
-            throw new FileLoadException(SR.InvalidAssemblyName, name);
-        }
-
-        [DoesNotReturn]
         internal static void ThrowArgumentOutOfRangeException_PrecisionTooLarge()
         {
             throw new ArgumentOutOfRangeException("precision", SR.Format(SR.Argument_PrecisionTooLarge, StandardFormat.MaxPrecision));
@@ -524,12 +524,6 @@ namespace System
         internal static void ThrowArgumentOutOfRangeException_SymbolDoesNotFit()
         {
             throw new ArgumentOutOfRangeException("symbol", SR.Argument_BadFormatSpecifier);
-        }
-
-        [DoesNotReturn]
-        internal static void ThrowArgumentOutOfRangeException_NeedPosNum(string? paramName)
-        {
-            throw new ArgumentOutOfRangeException(paramName, SR.ArgumentOutOfRange_NeedPosNum);
         }
 
         [DoesNotReturn]
@@ -894,6 +888,8 @@ namespace System
                     return "anyOf";
                 case ExceptionArgument.overlapped:
                     return "overlapped";
+                case ExceptionArgument.minimumBytes:
+                    return "minimumBytes";
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionArgument Enum.");
                     return "";
@@ -1056,6 +1052,8 @@ namespace System
                     return SR.CancellationTokenSource_Disposed;
                 case ExceptionResource.Argument_AlignmentMustBePow2:
                     return SR.Argument_AlignmentMustBePow2;
+                case ExceptionResource.ArgumentOutOfRange_NotGreaterThanBufferLength:
+                    return SR.ArgumentOutOfRange_NotGreaterThanBufferLength;
                 default:
                     Debug.Fail("The enum value is not defined, please check the ExceptionResource Enum.");
                     return "";
@@ -1166,6 +1164,7 @@ namespace System
         stream,
         anyOf,
         overlapped,
+        minimumBytes,
     }
 
     //
@@ -1186,6 +1185,7 @@ namespace System
         ArgumentOutOfRange_GetCharCountOverflow,
         ArgumentOutOfRange_ListInsert,
         ArgumentOutOfRange_NeedNonNegNum,
+        ArgumentOutOfRange_NotGreaterThanBufferLength,
         ArgumentOutOfRange_SmallCapacity,
         Argument_InvalidOffLen,
         Argument_CannotExtractScalar,

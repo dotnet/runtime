@@ -430,7 +430,7 @@ bool HWIntrinsicInfo::isImmOp(NamedIntrinsic id, const GenTree* op)
 //    argType    -- the required type of argument
 //    argClass   -- the class handle of argType
 //    expectAddr -- if true indicates we are expecting type stack entry to be a TYP_BYREF.
-//    newobjThis -- For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitalized object.
+//    newobjThis -- For CEE_NEWOBJ, this is the temp grabbed for the allocated uninitialized object.
 //
 // Return Value:
 //     the validated argument
