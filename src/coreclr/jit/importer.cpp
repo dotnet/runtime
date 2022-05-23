@@ -22441,6 +22441,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
         return;
     }
 
+#ifdef DEBUG
     if (numberOfClasses > 0)
     {
         bool                 isExact;
@@ -22494,6 +22495,7 @@ void Compiler::pickGDV(GenTreeCall*           call,
             }
         }
     }
+#endif
 
     // Prefer class guess as it is cheaper
     if (numberOfClasses > 0)
