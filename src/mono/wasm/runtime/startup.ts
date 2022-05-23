@@ -10,6 +10,7 @@ import GuardedPromise from "./guarded-promise";
 import { mono_wasm_globalization_init, mono_wasm_load_icu_data } from "./icu";
 import { toBase64StringImpl } from "./base64";
 import { mono_wasm_init_aot_profiler, mono_wasm_init_coverage_profiler } from "./profiler";
+import { mono_wasm_init_diagnostics } from "./diagnostics";
 import { mono_wasm_load_bytes_into_heap } from "./buffers";
 import { bind_runtime_method, get_method, _create_primitive_converters } from "./method-binding";
 import { find_corlib_class } from "./class-loader";
@@ -314,6 +315,9 @@ function _apply_configuration_from_args(config: MonoConfig) {
 
     if (config.coverage_profiler_options)
         mono_wasm_init_coverage_profiler(config.coverage_profiler_options);
+
+    if (config.diagnostic_options)
+        mono_wasm_init_diagnostics(config.diagnostic_options);
 }
 
 function finalize_startup(config: MonoConfig | MonoConfigError | undefined): void {

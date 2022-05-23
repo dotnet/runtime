@@ -79,6 +79,7 @@ export type MonoConfig = {
     runtime_options?: string[], // array of runtime options as strings
     aot_profiler_options?: AOTProfilerOptions, // dictionary-style Object. If omitted, aot profiler will not be initialized.
     coverage_profiler_options?: CoverageProfilerOptions, // dictionary-style Object. If omitted, coverage profiler will not be initialized.
+    diagnostic_options?: DiagnosticOptions, // dictionary-style Object. If omitted, diagnostics will not be initialized.
     ignore_pdb_load_errors?: boolean,
     wait_for_debugger?: number
 };
@@ -178,6 +179,20 @@ export type AOTProfilerOptions = {
 export type CoverageProfilerOptions = {
     write_at?: string, // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
     send_to?: string // should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::DumpCoverageProfileData' (DumpCoverageProfileData stores the data into INTERNAL.coverage_profile_data.)
+}
+
+/// Options to configure EventPipe sessions that will be created and started at runtime startup
+export type DiagnosticOptions = {
+    sessions?: (EventPipeSessionOptions & EventPipeSessionAutoStopOptions)[]
+}
+
+/// For EventPipe sessions that will be created and started at runtime startup
+export interface EventPipeSessionAutoStopOptions {
+    /// Should be in the format <CLASS>::<METHODNAME>, default: 'WebAssembly.Runtime::StopProfile'
+    /// The session will be stopped when the jit_done event is fired for this method.
+    stop_at?: string;
+    /// Called after the session has been stopped.
+    on_session_stopped?: (session: EventPipeSession) => void;
 }
 
 /// Options to configure the event pipe session
@@ -285,4 +300,21 @@ export const enum MarshalError {
 //  https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing_operator)
 export function is_nullish<T>(value: T | null | undefined): value is null | undefined {
     return (value === undefined) || (value === null);
+}
+
+/// An identifier for an EventPipe session. The id is unique during the lifetime of the runtime.
+/// Primarily intended for debugging purposes.
+export type EventPipeSessionID = bigint;
+
+/// An EventPipe session object represents a single diagnostic tracing session that is collecting
+/// events from the runtime and managed libraries.  There may be multiple active sessions at the same time.
+/// Each session subscribes to a number of providers and will collect events from the time that start() is called, until stop() is called.
+/// Upon completion the session saves the events to a file on the VFS.
+/// The data can then be retrieved as Blob.
+export interface EventPipeSession {
+    // session ID for debugging logging only
+    get sessionID(): EventPipeSessionID;
+    start(): void;
+    stop(): void;
+    getTraceBlob(): Blob;
 }

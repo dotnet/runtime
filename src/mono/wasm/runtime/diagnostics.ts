@@ -3,27 +3,14 @@
 
 import { Module } from "./imports";
 import cwraps from "./cwraps";
-import type { EventPipeSessionOptions } from "./types";
+import type { EventPipeSessionID, DiagnosticOptions, EventPipeSession, EventPipeSessionOptions } from "./types";
 import type { VoidPtr } from "./types/emscripten";
 import * as memory from "./memory";
 
 const sizeOfInt32 = 4;
 
-export type EventPipeSessionID = bigint;
 type EventPipeSessionIDImpl = number;
 
-/// An EventPipe session object represents a single diagnostic tracing session that is collecting
-/// events from the runtime and managed libraries.  There may be multiple active sessions at the same time.
-/// Each session subscribes to a number of providers and will collect events from the time that start() is called, until stop() is called.
-/// Upon completion the session saves the events to a file on the VFS.
-/// The data can then be retrieved as Blob.
-export interface EventPipeSession {
-    // session ID for debugging logging only
-    get sessionID(): EventPipeSessionID;
-    start(): void;
-    stop(): void;
-    getTraceBlob(): Blob;
-}
 
 // internal session state of the JS instance
 enum State {
@@ -42,7 +29,7 @@ function stop_streaming(sessionID: EventPipeSessionIDImpl): void {
 
 /// An EventPipe session that saves the event data to a file in the VFS.
 class EventPipeFileSession implements EventPipeSession {
-    private _state: State;
+    protected _state: State;
     private _sessionID: EventPipeSessionIDImpl;
     private _tracePath: string; // VFS file path to the trace file
 
@@ -79,6 +66,25 @@ class EventPipeFileSession implements EventPipeSession {
         }
         const data = Module.FS_readFile(this._tracePath, { encoding: "binary" }) as Uint8Array;
         return new Blob([data], { type: "application/octet-stream" });
+    }
+}
+
+// an EventPipeSession that starts at runtime startup
+class StartupEventPipeFileSession extends EventPipeFileSession implements EventPipeSession {
+    readonly _on_stop_callback: null | ((session: EventPipeSession) => void);
+    constructor(sessionID: EventPipeSessionIDImpl, tracePath: string, on_stop_callback?: (session: EventPipeSession) => void) {
+        super(sessionID, tracePath);
+        // By the time we create the JS object, it's already running
+        this._state = State.Started;
+        this._on_stop_callback = on_stop_callback ?? null;
+    }
+
+    stop = () => {
+        super.stop();
+        if (this._on_stop_callback !== null) {
+            const cb = this._on_stop_callback;
+            setTimeout(cb, 0, this);
+        }
     }
 }
 
@@ -256,5 +262,12 @@ export const diagnostics: Diagnostics = {
         return session;
     },
 };
+
+export function mono_wasm_init_diagnostics(config?: DiagnosticOptions): void {
+    const sessions = config?.sessions ?? [];
+    sessions.forEach(session => {
+        console.log("Starting session ", session);
+    });
+}
 
 export default diagnostics;
