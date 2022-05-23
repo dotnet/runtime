@@ -286,6 +286,11 @@ namespace System.Security.Cryptography.X509Certificates
 
             static void WriteAccessMethod(AsnWriter writer, string oid, string value)
             {
+                if (value is null)
+                {
+                    throw new ArgumentException(SR.Cryptography_X509_AIA_NullValue);
+                }
+
                 writer.PushSequence();
                 writer.WriteObjectIdentifier(oid);
 

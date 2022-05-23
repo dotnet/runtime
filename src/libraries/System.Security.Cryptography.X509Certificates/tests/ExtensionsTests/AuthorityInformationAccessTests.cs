@@ -239,6 +239,28 @@ namespace System.Security.Cryptography.X509Certificates.Tests.ExtensionsTests
         }
 
         [Fact]
+        public static void BuildNullOcspValue()
+        {
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => new X509AuthorityInformationAccessExtension(
+                    new[] { "A", null, "C" },
+                    new[] { "D" }));
+
+            Assert.Null(ex.ParamName);
+        }
+
+        [Fact]
+        public static void BuildNullCAIssuerValue()
+        {
+            ArgumentException ex = Assert.Throws<ArgumentException>(
+                () => new X509AuthorityInformationAccessExtension(
+                    new[] { "D" },
+                    new[] { "C", "B", null }));
+
+            Assert.Null(ex.ParamName);
+        }
+
+        [Fact]
         public static void EnumerateNull()
         {
             using (X509Certificate2 cert = new X509Certificate2(TestFiles.MicrosoftRootCertFile))
