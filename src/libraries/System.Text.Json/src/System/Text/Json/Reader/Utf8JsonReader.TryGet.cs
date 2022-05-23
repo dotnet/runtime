@@ -52,7 +52,13 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="utf8Destination">A buffer to write the unescaped UTF-8 bytes into.</param>
         /// <returns>The number of bytes written to <paramref name="utf8Destination"/>.</returns>
-        /// <remarks>Unlike <see cref="GetString"/>, this method does not support <see cref="JsonTokenType.Null"/>.</remarks>
+        /// <remarks>
+        /// Unlike <see cref="GetString"/>, this method does not support <see cref="JsonTokenType.Null"/>.
+        ///
+        /// This method will throw <see cref="ArgumentException"/> if the destination buffer is too small to hold the unescaped value.
+        /// An appropriately sized buffer can be determined by consulting the length of either <see cref="ValueSpan"/> or <see cref="ValueSequence"/>,
+        /// since the unescaped result is always less than or equal to the length of the encoded strings.
+        /// </remarks>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of the JSON token that is not a string
         /// (i.e. other than <see cref="JsonTokenType.String"/> or <see cref="JsonTokenType.PropertyName"/>.
@@ -102,7 +108,13 @@ namespace System.Text.Json
         /// </summary>
         /// <param name="destination">A buffer to write the transcoded UTF-16 characters into.</param>
         /// <returns>The number of characters written to <paramref name="destination"/>.</returns>
-        /// <remarks>Unlike <see cref="GetString"/>, this method does not support <see cref="JsonTokenType.Null"/>.</remarks>
+        /// <remarks>
+        /// Unlike <see cref="GetString"/>, this method does not support <see cref="JsonTokenType.Null"/>.
+        ///
+        /// This method will throw <see cref="ArgumentException"/> if the destination buffer is too small to hold the unescaped value.
+        /// An appropriately sized buffer can be determined by consulting the length of either <see cref="ValueSpan"/> or <see cref="ValueSequence"/>,
+        /// since the unescaped result is always less than or equal to the length of the encoded strings.
+        /// </remarks>
         /// <exception cref="InvalidOperationException">
         /// Thrown if trying to get the value of the JSON token that is not a string
         /// (i.e. other than <see cref="JsonTokenType.String"/> or <see cref="JsonTokenType.PropertyName"/>.
