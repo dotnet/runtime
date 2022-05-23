@@ -135,11 +135,11 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("double-space", Convert("double  space"));
             Assert.Equal("double-underscore", Convert("double__underscore"));
             Assert.Equal("abc", Convert("abc"));
-            Assert.Equal("abC", Convert("ab-c"));
-            Assert.Equal("aBc", Convert("a-bc"));
-            Assert.Equal("aBC", Convert("a-bc"));
-            Assert.Equal("ABc", Convert("a-bc"));
-            Assert.Equal("ABC", Convert("abc"));
+            Assert.Equal("ab-c", Convert("abC"));
+            Assert.Equal("a-bc", Convert("aBc"));
+            Assert.Equal("a-bc", Convert("aBC"));
+            Assert.Equal("a-bc", Convert("ABc"));
+            Assert.Equal("abc", Convert("ABC"));
             Assert.Equal("abc123def456", Convert("abc123def456"));
             Assert.Equal("abc123-def456", Convert("abc123Def456"));
             Assert.Equal("abc123-def456", Convert("abc123DEF456"));
