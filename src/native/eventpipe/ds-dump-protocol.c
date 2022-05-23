@@ -100,7 +100,7 @@ dump_protocol_generate_core_dump_response_flatten (
 	uint8_t **buffer,
 	uint16_t *size)
 {
-    DiagnosticsGenerateCoreDumpResponsePayload *response = (DiagnosticsGenerateCoreDumpResponsePayload*)payload;
+	DiagnosticsGenerateCoreDumpResponsePayload *response = (DiagnosticsGenerateCoreDumpResponsePayload*)payload;
 
 	EP_ASSERT (payload != NULL);
 	EP_ASSERT (buffer != NULL);
@@ -120,7 +120,7 @@ dump_protocol_generate_core_dump_response_flatten (
 	// Assert we've used the whole buffer we were given
 	EP_ASSERT(*size == 0);
 
-    return success;
+	return success;
 }
 
 static
@@ -128,28 +128,28 @@ void
 dump_protocol_generate_core_dump_response (
 	DiagnosticsIpcStream *stream,
 	ds_ipc_result_t error,
-    ep_char8_t * errorText)
+	ep_char8_t * errorText)
 {
-    DiagnosticsGenerateCoreDumpResponsePayload payload;
+	DiagnosticsGenerateCoreDumpResponsePayload payload;
 	DiagnosticsIpcMessage message;
 	ds_ipc_message_init (&message);
 
-    // Initialize payload
-    payload.error = error;
-    payload.error_message = ep_rt_utf8_to_utf16_string (errorText, -1);
+	// Initialize payload
+	payload.error = error;
+	payload.error_message = ep_rt_utf8_to_utf16_string (errorText, -1);
 
-    // Get the size of the payload
-    size_t payload_size = sizeof(payload.error);
+	// Get the size of the payload
+	size_t payload_size = sizeof(payload.error);
 	payload_size += sizeof(uint32_t);
-    payload_size += (payload.error_message != NULL) ? (ep_rt_utf16_string_len (payload.error_message) + 1) * sizeof(ep_char16_t) : 0;
+	payload_size += (payload.error_message != NULL) ? (ep_rt_utf16_string_len (payload.error_message) + 1) * sizeof(ep_char16_t) : 0;
 
-    // Initialize response message
+	// Initialize response message
 	bool result = ds_ipc_message_initialize_buffer (
-        &message,
-        ds_ipc_header_get_generic_error (),
-        &payload,
-        (uint16_t)payload_size,
-        dump_protocol_generate_core_dump_response_flatten);
+		&message,
+		ds_ipc_header_get_generic_error (),
+		&payload,
+		(uint16_t)payload_size,
+		dump_protocol_generate_core_dump_response_flatten);
 
 	if (result)
 		ds_ipc_message_send (&message, stream);
@@ -180,17 +180,17 @@ dump_protocol_helper_generate_core_dump (
 		ep_raise_error ();
 	}
 
-    ep_char8_t errorMessage[1024];
-    errorMessage[0] = '\0';
+	ep_char8_t errorMessage[1024];
+	errorMessage[0] = '\0';
 
 	ipc_result = ds_rt_generate_core_dump (commandId, payload, errorMessage, sizeof(errorMessage));
 	if (ipc_result != DS_IPC_S_OK) {
-        if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP3) {
-            dump_protocol_generate_core_dump_response (stream, ipc_result, errorMessage);
-        }
-        else {
-            ds_ipc_message_send_error (stream, ipc_result);
-        }
+		if (commandId == DS_DUMP_COMMANDID_GENERATE_CORE_DUMP3) {
+			dump_protocol_generate_core_dump_response (stream, ipc_result, errorMessage);
+		}
+		else {
+			ds_ipc_message_send_error (stream, ipc_result);
+		}
 		ep_raise_error ();
 	} else {
 		ds_ipc_message_send_success (stream, ipc_result);
