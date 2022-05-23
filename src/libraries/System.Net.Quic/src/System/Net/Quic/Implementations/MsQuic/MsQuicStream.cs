@@ -303,16 +303,16 @@ namespace System.Net.Quic.Implementations.MsQuic
 
             using CancellationTokenRegistration registration = SetupWriteStartState(isEmpty, cancellationToken);
 
-            await WriteAsyncCore<TBuffer>(stateSetup, buffer, isEmpty, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
+            await WriteAsyncCore<TBuffer>(stateSetup, buffer, isEmpty, endStream).ConfigureAwait(false);
 
             CleanupWriteCompletedState();
         }
 
-        private unsafe ValueTask WriteAsyncCore<TBuffer>(Action<State, TBuffer> stateSetup, TBuffer buffer, bool isEmpty, QUIC_SEND_FLAGS flags)
+        private unsafe ValueTask WriteAsyncCore<TBuffer>(Action<State, TBuffer> stateSetup, TBuffer buffer, bool isEmpty, bool endStream)
         {
             if (isEmpty)
             {
-                if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
+                if (endStream)
                 {
                     // Start graceful shutdown sequence if passed in the fin flag and there is an empty buffer.
                     StartShutdown(QUIC_STREAM_SHUTDOWN_FLAGS.GRACEFUL, errorCode: 0);
@@ -327,7 +327,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 _state.Handle.QuicHandle,
                 _state.SendBuffers.Buffers,
                 (uint)_state.SendBuffers.Count,
-                flags,
+                endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE,
                 (void*)IntPtr.Zero);
 
             if (StatusFailed(status))
