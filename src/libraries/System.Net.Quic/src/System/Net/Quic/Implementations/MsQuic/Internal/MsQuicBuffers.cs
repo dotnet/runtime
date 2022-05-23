@@ -119,7 +119,6 @@ internal unsafe struct MsQuicBuffers : IDisposable
     {
         int count = buffers.Length;
         Reserve(count);
-        _count = count;
 
         ReadOnlySpan<ReadOnlyMemory<byte>> span = buffers.Span;
         for (int i = 0; i < span.Length; i++)
