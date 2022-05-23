@@ -74,7 +74,7 @@ struct _DiagnosticsGenerateCoreDumpResponsePayload_Internal {
 	// string = (array<char> where the last char must = 0) or (length = 0)
 
 	int32_t error;
-	const ep_char16_t *error_message;
+	ep_char16_t *error_message;
 };
 
 #if !defined(DS_INLINE_GETTER_SETTER) && !defined(DS_IMPL_DUMP_PROTOCOL_GETTER_SETTER)

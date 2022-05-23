@@ -94,6 +94,43 @@ dump_protocol_helper_unknown_command (
 }
 
 static
+void
+dump_protocol_generate_core_dump_response_init(
+	DiagnosticsGenerateCoreDumpResponsePayload *payload,
+	ds_ipc_result_t error,
+	ep_char8_t *errorText)
+{
+	EP_ASSERT (payload != NULL);
+
+	payload->error = error;
+	payload->error_message = ep_rt_utf8_to_utf16_string (errorText, -1);
+}
+
+static
+void
+dump_protocol_generate_core_dump_response_fini(
+	DiagnosticsGenerateCoreDumpResponsePayload *payload)
+{
+	ep_rt_utf16_string_free (payload->error_message);
+}
+
+static
+uint16_t
+dump_protocol_generate_core_dump_response_get_size (
+	DiagnosticsGenerateCoreDumpResponsePayload *payload)
+{
+	EP_ASSERT (payload != NULL);
+
+	size_t size = sizeof(payload->error);
+
+	size += sizeof(uint32_t);
+	size += (payload->error_message != NULL) ? (ep_rt_utf16_string_len (payload->error_message) + 1) * sizeof(ep_char16_t) : 0;
+
+	EP_ASSERT (size <= UINT16_MAX);
+	return (uint16_t)size;
+}
+
+static
 bool
 dump_protocol_generate_core_dump_response_flatten (
 	void *payload,
@@ -106,6 +143,7 @@ dump_protocol_generate_core_dump_response_flatten (
 	EP_ASSERT (buffer != NULL);
 	EP_ASSERT (*buffer != NULL);
 	EP_ASSERT (size != NULL);
+	EP_ASSERT (dump_protocol_generate_core_dump_response_get_size (response) == *size);
 
 	bool success = true;
 
@@ -134,28 +172,20 @@ dump_protocol_generate_core_dump_response (
 	DiagnosticsIpcMessage message;
 	ds_ipc_message_init (&message);
 
-	// Initialize payload
-	payload.error = error;
-	payload.error_message = ep_rt_utf8_to_utf16_string (errorText, -1);
+ 	dump_protocol_generate_core_dump_response_init(&payload, error, errorText);
 
-	// Get the size of the payload
-	size_t payload_size = sizeof(payload.error);
-	payload_size += sizeof(uint32_t);
-	payload_size += (payload.error_message != NULL) ? (ep_rt_utf16_string_len (payload.error_message) + 1) * sizeof(ep_char16_t) : 0;
-
-	// Initialize response message
 	bool result = ds_ipc_message_initialize_buffer (
 		&message,
 		ds_ipc_header_get_generic_error (),
 		&payload,
-		(uint16_t)payload_size,
+		dump_protocol_generate_core_dump_response_get_size(&payload),
 		dump_protocol_generate_core_dump_response_flatten);
 
 	if (result)
 		ds_ipc_message_send (&message, stream);
 
 	ds_ipc_message_fini (&message);
-	ep_rt_utf16_string_free ((ep_char16_t*)payload.error_message);
+	dump_protocol_generate_core_dump_response_fini (&payload);
 }
 
 static
