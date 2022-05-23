@@ -48,11 +48,11 @@ PTR_VOID Thread::GetTransitionFrame()
 {
     if (ThreadStore::GetSuspendingThread() == this)
     {
-        // This thread is in cooperative mode, so we grab the transition frame
-        // from the 'tunnel' location, which will have the frame from the most
+        // This thread is in cooperative mode, so we grab the deferred frame
+        // which is the frame from the most
         // recent 'cooperative pinvoke' transition that brought us here.
-        ASSERT(m_pHackPInvokeTunnel != NULL);
-        return m_pHackPInvokeTunnel;
+        ASSERT(m_pDeferredTransitionFrame != NULL);
+        return m_pDeferredTransitionFrame;
     }
 
     ASSERT(m_pCachedTransitionFrame != NULL);
@@ -66,8 +66,8 @@ PTR_VOID Thread::GetTransitionFrameForStackTrace()
     ASSERT_MSG(ThreadStore::GetSuspendingThread() == NULL, "Not allowed when suspended for GC.");
     ASSERT_MSG(this == ThreadStore::GetCurrentThread(), "Only supported for current thread.");
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
-    ASSERT(m_pHackPInvokeTunnel != NULL);
-    return m_pHackPInvokeTunnel;
+    ASSERT(m_pDeferredTransitionFrame != NULL);
+    return m_pDeferredTransitionFrame;
 }
 
 void Thread::WaitForSuspend()
@@ -121,32 +121,27 @@ bool Thread::CacheTransitionFrameForSuspend()
 
 void Thread::ResetCachedTransitionFrame()
 {
-    // @TODO: I don't understand this assert because ResumeAllThreads is clearly written
-    // to be reseting other threads' cached transition frames.
-
-    //ASSERT((ThreadStore::GetCurrentThreadIfAvailable() == this) ||
-    //       (m_pCachedTransitionFrame != NULL));
     m_pCachedTransitionFrame = NULL;
 }
 
 // This function simulates a PInvoke transition using a frame pointer from somewhere further up the stack that
-// was passed in via the m_pHackPInvokeTunnel field.  It is used to allow us to grandfather-in the set of GC
+// was passed in via the m_pDeferredTransitionFrame field.  It is used to allow us to grandfather-in the set of GC
 // code that runs in cooperative mode without having to rewrite it in managed code.  The result is that the
 // code that calls into this special mode must spill preserved registers as if it's going to PInvoke, but
-// record its transition frame pointer in m_pHackPInvokeTunnel and leave the thread in the cooperative
+// record its transition frame pointer in m_pDeferredTransitionFrame and leave the thread in the cooperative
 // mode.  Later on, when this function is called, we effect the state transition to 'unmanaged' using the
 // previously setup transition frame.
 void Thread::EnablePreemptiveMode()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
 #if !defined(HOST_WASM)
-    ASSERT(m_pHackPInvokeTunnel != NULL);
+    ASSERT(m_pDeferredTransitionFrame != NULL);
 #endif
 
     Unhijack();
 
     // ORDERING -- this write must occur before checking the trap
-    m_pTransitionFrame = m_pHackPInvokeTunnel;
+    m_pTransitionFrame = m_pDeferredTransitionFrame;
 
     // We need to prevent compiler reordering between above write and below read.  Both the read and the write
     // are volatile, so it's possible that the particular semantic for volatile that MSVC provides is enough,
@@ -173,7 +168,7 @@ void Thread::DisablePreemptiveMode()
 
     if (ThreadStore::IsTrapThreadsRequested() && (this != ThreadStore::GetSuspendingThread()))
     {
-        WaitForGC(m_pHackPInvokeTunnel);
+        WaitForGC(m_pDeferredTransitionFrame);
     }
 }
 #endif // !DACCESS_COMPILE

@@ -70,7 +70,7 @@ struct ThreadBuffer
 #else
     PTR_VOID volatile       m_pTransitionFrame;
 #endif
-    PTR_VOID                m_pHackPInvokeTunnel;                   // see Thread::EnablePreemptiveMode
+    PTR_VOID                m_pDeferredTransitionFrame;                   // see Thread::EnablePreemptiveMode
     PTR_VOID                m_pCachedTransitionFrame;
     PTR_Thread              m_pNext;                                // used by ThreadStore's SList<Thread>
     HANDLE                  m_hPalThread;                           // WARNING: this may legitimately be INVALID_HANDLE_VALUE
@@ -233,11 +233,11 @@ public:
     void                EnablePreemptiveMode();
     void                DisablePreemptiveMode();
 
-    // Set the m_pHackPInvokeTunnel field for GC allocation helpers that setup transition frame
+    // Set the m_pDeferredTransitionFrame field for GC allocation helpers that setup transition frame
     // in assembly code. Do not use anywhere else.
     void                SetCurrentThreadPInvokeTunnelForGcAlloc(void * pTransitionFrame);
 
-    // Setup the m_pHackPInvokeTunnel field for GC helpers entered via regular PInvoke.
+    // Setup the m_pDeferredTransitionFrame field for GC helpers entered via regular PInvoke.
     // Do not use anywhere else.
     void                SetupHackPInvokeTunnel();
 

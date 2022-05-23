@@ -10,8 +10,6 @@ struct REGDISPLAY;
 
 #define GC_CALL_INTERIOR            0x1
 #define GC_CALL_PINNED              0x2
-#define GC_CALL_CHECK_APP_DOMAIN    0x4
-#define GC_CALL_STATIC              0x8
 
 typedef void (*GCEnumCallback)(
     void *              hCallback,      // callback data

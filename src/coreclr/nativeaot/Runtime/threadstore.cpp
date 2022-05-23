@@ -380,7 +380,7 @@ DECLSPEC_THREAD ThreadBuffer tls_CurrentThread =
     { 0 },                              // m_rgbAllocContextBuffer
     Thread::TSF_Unknown,                // m_ThreadStateFlags
     TOP_OF_STACK_MARKER,                // m_pTransitionFrame
-    TOP_OF_STACK_MARKER,                // m_pHackPInvokeTunnel
+    TOP_OF_STACK_MARKER,                // m_pDeferredTransitionFrame
     0,                                  // m_pCachedTransitionFrame
     0,                                  // m_pNext
     INVALID_HANDLE_VALUE,               // m_hPalThread

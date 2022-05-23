@@ -6,14 +6,14 @@ inline void Thread::SetCurrentThreadPInvokeTunnelForGcAlloc(void * pTransitionFr
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(Thread::IsCurrentThreadInCooperativeMode());
-    m_pHackPInvokeTunnel = pTransitionFrame;
+    m_pDeferredTransitionFrame = pTransitionFrame;
 }
 
 inline void Thread::SetupHackPInvokeTunnel()
 {
     ASSERT(ThreadStore::GetCurrentThread() == this);
     ASSERT(!Thread::IsCurrentThreadInCooperativeMode());
-    m_pHackPInvokeTunnel = m_pTransitionFrame;
+    m_pDeferredTransitionFrame = m_pTransitionFrame;
 }
 #endif // DACCESS_COMPILE
 
