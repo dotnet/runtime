@@ -2832,7 +2832,8 @@ PALAPI
 PAL_VirtualReserveFromExecutableMemoryAllocatorWithinRange(
     IN LPCVOID lpBeginAddress,
     IN LPCVOID lpEndAddress,
-    IN SIZE_T dwSize);
+    IN SIZE_T dwSize,
+    IN BOOL storeAllocationInfo);
 
 PALIMPORT
 void
