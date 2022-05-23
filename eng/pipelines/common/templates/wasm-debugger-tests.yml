@@ -15,6 +15,7 @@ jobs:
     buildConfig: Release
     runtimeFlavor: mono
     platforms: ${{ parameters.platforms }}
+    shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
     variables:
       # map dependencies variables to local variables
       - name: wasmdebuggertestsContainsChange
@@ -27,7 +28,6 @@ jobs:
       testGroup: innerloop
       isExtraPlatforms: ${{ parameters.isExtraPlatformsBuild }}
       nameSuffix: Mono_DebuggerTests_${{ parameters.browser }}
-      shouldContinueOnError: ${{ parameters.shouldContinueOnError }}
       buildArgs: -s mono+libs+libs.tests -c $(_BuildConfig) /p:ArchiveTests=true /p:TestWasmDebuggerTests=true /p:TestAssemblies=false /p:BrowserHost=$(_hostedOs) /p:DebuggerHost=${{ parameters.browser }}
       timeoutInMinutes: 180
       condition: >-
