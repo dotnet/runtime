@@ -85,7 +85,6 @@ FCFuncStart(gValueTypeFuncs)
     FCFuncElement("CanCompareBits", ValueTypeHelper::CanCompareBits)
     FCFuncElement("FastEqualsCheck", ValueTypeHelper::FastEqualsCheck)
     FCFuncElement("GetHashCode", ValueTypeHelper::GetHashCode)
-    FCFuncElement("GetHashCodeOfPtr", ValueTypeHelper::GetHashCodeOfPtr)
 FCFuncEnd()
 
 FCFuncStart(gDiagnosticsDebugger)

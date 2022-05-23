@@ -2044,36 +2044,6 @@ FCIMPL1(INT32, ValueTypeHelper::GetHashCode, Object* objUNSAFE)
 }
 FCIMPLEND
 
-static LONG s_dwSeed;
-
-FCIMPL1(INT32, ValueTypeHelper::GetHashCodeOfPtr, LPVOID ptr)
-{
-    FCALL_CONTRACT;
-
-    INT32 hashCode = (INT32)((INT64)(ptr));
-
-    if (hashCode == 0)
-    {
-        return 0;
-    }
-
-    DWORD dwSeed = s_dwSeed;
-
-    // Initialize s_dwSeed lazily
-    if (dwSeed == 0)
-    {
-        // We use the first non-0 pointer as the seed, all hashcodes will be based off that.
-        // This is to make sure that we only reveal relative memory addresses and never absolute ones.
-        dwSeed = hashCode;
-        InterlockedCompareExchange(&s_dwSeed, dwSeed, 0);
-        dwSeed = s_dwSeed;
-    }
-    _ASSERTE(dwSeed != 0);
-
-    return hashCode - dwSeed;
-}
-FCIMPLEND
-
 static MethodTable * g_pStreamMT;
 static WORD g_slotBeginRead, g_slotEndRead;
 static WORD g_slotBeginWrite, g_slotEndWrite;

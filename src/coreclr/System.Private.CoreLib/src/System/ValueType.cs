@@ -10,9 +10,11 @@
 **
 ===========================================================*/
 
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Threading;
 
 namespace System
 {
@@ -85,8 +87,32 @@ namespace System
         [MethodImpl(MethodImplOptions.InternalCall)]
         public extern override int GetHashCode();
 
-        [MethodImpl(MethodImplOptions.InternalCall)]
-        internal static extern int GetHashCodeOfPtr(IntPtr ptr);
+        private static int s_seed;
+
+        internal static int GetHashCodeOfPtr(IntPtr ptr)
+        {
+            int hashCode = (int)ptr;
+
+            if (hashCode == 0)
+            {
+                return 0;
+            }
+
+            int seed = s_seed;
+
+            // Initialize s_seed lazily
+            if (seed == 0)
+            {
+                // We use the first non-0 pointer as the seed, all hashcodes will be based off that.
+                // This is to make sure that we only reveal relative memory addresses and never absolute ones.
+                seed = hashCode;
+                Interlocked.CompareExchange(ref s_seed, seed, 0);
+                seed = s_seed;
+            }
+
+            Debug.Assert(s_seed != 0);
+            return hashCode - seed;
+        }
 
         public override string? ToString()
         {
