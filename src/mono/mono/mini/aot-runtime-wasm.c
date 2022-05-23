@@ -176,40 +176,4 @@ mono_wasm_install_get_native_to_interp_tramp (MonoWasmGetNativeToInterpTramp cb)
 	g_assert_not_reached ();
 }
 
-void
-mono_wasm_install_interp_to_native_callback (MonoWasmNativeToInterpCallback cb)
-{
-	g_assert_not_reached ();
-}
-
-int
-mono_wasm_interp_method_args_get_iarg (InterpMethodArguments *margs, int i)
-{
-	g_assert_not_reached ();
-}
-
-gint64
-mono_wasm_interp_method_args_get_larg (InterpMethodArguments *margs, int i)
-{
-	g_assert_not_reached ();
-}
-
-float
-mono_wasm_interp_method_args_get_farg (InterpMethodArguments *margs, int i)
-{
-	g_assert_not_reached ();
-}
-
-double
-mono_wasm_interp_method_args_get_darg (InterpMethodArguments *margs, int i)
-{
-	g_assert_not_reached ();
-}
-
-gpointer*
-mono_wasm_interp_method_args_get_retval (InterpMethodArguments *margs)
-{
-	g_assert_not_reached ();
-}
-
 #endif /* TARGET_WASM */
