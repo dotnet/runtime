@@ -265,9 +265,14 @@ export const diagnostics: Diagnostics = {
 
 export function mono_wasm_init_diagnostics(config?: DiagnosticOptions): void {
     const sessions = config?.sessions ?? [];
-    sessions.forEach(session => {
-        console.log("Starting session ", session);
-    });
+    const count = sessions.length;
+    const sessionConfigs = Module._malloc(sizeOfInt32 * count);
+    for (let i = 0; i < count; ++i) {
+        const session = sessions[i];
+        const sessionPtr = <VoidPtr>(<any>sessionConfigs + i * sizeOfInt32);
+        memory.setI32(sessionPtr, cwraps.mono_wasm_strdup(session.providers));
+    }
+    cwraps.mono_wasm_event_pipe_session_set_startup_sessions(count, sessionConfigs);
 }
 
 export default diagnostics;
