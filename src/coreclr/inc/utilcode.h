@@ -61,7 +61,10 @@
 #define CoreLibSatelliteNameLen 32
 #define LegacyCoreLibName_A "mscorlib"
 
+template<typename TEncoding>
 class StringArrayList;
+
+struct EncodingUnicode;
 
 #if !defined(_DEBUG_IMPL) && defined(_DEBUG) && !defined(DACCESS_COMPILE)
 #define _DEBUG_IMPL 1
@@ -531,7 +534,7 @@ typedef WCHAR LocaleIDValue[LOCALE_NAME_MAX_LENGTH];
 //     - The id is used as a key to map to a dll hinstance.
 
 // Callback to obtain both the culture name and the culture's parent culture name
-typedef HRESULT (*FPGETTHREADUICULTURENAMES)(__inout StringArrayList* pCultureNames);
+typedef HRESULT (*FPGETTHREADUICULTURENAMES)(StringArrayList<EncodingUnicode>* pCultureNames);
 const LPCWSTR UICULTUREID_DONTCARE = NULL;
 
 typedef int (*FPGETTHREADUICULTUREID)(LocaleIDValue*);
@@ -650,7 +653,7 @@ public:
  };
 
 #ifndef DACCESS_COMPILE
-void AddThreadPreferredUILanguages(StringArrayList* pArray);
+void AddThreadPreferredUILanguages(StringArrayList<EncodingUnicode>* pArray);
 #endif
 //*****************************************************************************
 // CCompRC manages string Resource access for COM+. This includes loading
@@ -743,7 +746,7 @@ private:
     HRESULT GetLibrary(LocaleID langId, HRESOURCEDLL* phInst);
 #ifndef DACCESS_COMPILE
     HRESULT LoadLibraryHelper(HRESOURCEDLL *pHInst,
-                              SString& rcPath);
+                              SString<EncodingUnicode>& rcPath);
     HRESULT LoadLibraryThrows(HRESOURCEDLL * pHInst);
     HRESULT LoadLibrary(HRESOURCEDLL * pHInst);
     HRESULT LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName);
@@ -912,17 +915,6 @@ void    MakePath(_Out_ CQuickWSTR &path,
                  _In_ LPCWSTR ext);
 
 WCHAR * FullPath(_Out_writes_ (maxlen) WCHAR *UserBuf, const WCHAR *path, size_t maxlen);
-
-//*****************************************************************************
-//
-// SString version of the path functions.
-//
-//*****************************************************************************
-void    SplitPath(_In_ SString const &path,
-                  __inout_opt SString *drive,
-                  __inout_opt SString *dir,
-                  __inout_opt SString *fname,
-                  __inout_opt SString *ext);
 
 #include "ostype.h"
 
@@ -3783,12 +3775,12 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,              // Parent key.
                           long    *pValue,                 // Put value here, if found.
                           BOOL    fReadNonVirtualizedKey); // Whether to read 64-bit hive on WOW64
 
-HRESULT GetCurrentModuleFileName(SString& pBuffer);
+HRESULT GetCurrentModuleFileName(SString<EncodingUnicode>& pBuffer);
 
 //*****************************************************************************
 // Retrieve information regarding what registered default debugger
 //*****************************************************************************
-void GetDebuggerSettingInfo(SString &debuggerKeyValue, BOOL *pfAuto);
+void GetDebuggerSettingInfo(SString<EncodingUnicode> &debuggerKeyValue, BOOL *pfAuto);
 HRESULT GetDebuggerSettingInfoWorker(_Out_writes_to_opt_(*pcchDebuggerString, *pcchDebuggerString) LPWSTR wszDebuggerString, DWORD * pcchDebuggerString, BOOL * pfAuto);
 
 void TrimWhiteSpace(__inout_ecount(*pcch)  LPCWSTR *pwsz, __inout LPDWORD pcch);
@@ -4582,8 +4574,8 @@ inline T* InterlockedCompareExchangeT(
 
 // Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).
-HRESULT GetClrModuleDirectory(SString& wszPath);
-HRESULT CopySystemDirectory(const SString& pPathString, SString& pbuffer);
+HRESULT GetClrModuleDirectory(SString<EncodingUnicode>& wszPath);
+HRESULT CopySystemDirectory(const SString<EncodingUnicode>& pPathString, SString<EncodingUnicode>& pbuffer);
 
 HMODULE LoadLocalizedResourceDLLForSDK(_In_z_ LPCWSTR wzResourceDllName, _In_opt_z_ LPCWSTR modulePath=NULL, bool trySelf=true);
 // This is a slight variation that can be used for anything else
@@ -4597,7 +4589,7 @@ namespace Clr { namespace Util
 #ifdef HOST_WINDOWS
 namespace Com
 {
-    HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString & ssInprocServer32Name);
+    HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString<EncodingUnicode> & ssInprocServer32Name);
 }
 #endif // HOST_WINDOWS
 

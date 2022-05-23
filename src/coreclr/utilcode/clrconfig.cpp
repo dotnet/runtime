@@ -195,20 +195,20 @@ namespace
 
             if (len != 0)
             {
-                ret = temp.GetCopyOfUnicodeString();
+                ret = temp.CreateCopyOfString();
 
 #if defined(DEBUG) && !defined(SELF_NO_HOST)
                 // Validate the cache and no-cache logic result in the same answer
-                SString nameToConvert(name);
-                SString nameAsUTF8;
+                SString<EncodingUnicode> nameToConvert(name);
+                SString<EncodingUTF8> nameAsUTF8;
                 nameToConvert.ConvertToUTF8(nameAsUTF8);
-                SString valueAsUTF8;
+                SString<EncodingUTF8> valueAsUTF8;
                 temp.ConvertToUTF8(valueAsUTF8);
 
-                CLRConfigNoCache nonCache = CLRConfigNoCache::Get(nameAsUTF8.GetUTF8NoConvert(), noPrefix);
+                CLRConfigNoCache nonCache = CLRConfigNoCache::Get((LPCUTF8)nameAsUTF8, noPrefix);
                 LPCSTR valueNoCache = nonCache.AsString();
 
-                _ASSERTE(SString::_stricmp(valueNoCache, valueAsUTF8.GetUTF8NoConvert()) == 0);
+                _ASSERTE(StaticStringHelpers::_stricmp(valueNoCache, (LPCUTF8)valueAsUTF8) == 0);
 #endif // defined(DEBUG) && !defined(SELF_NO_HOST)
             }
         }
@@ -662,13 +662,13 @@ void CLRConfig::Initialize()
                 {
                     // Check the prefix
                     if(matchC
-                        && SString::_wcsnicmp(wszName, COMPLUS_PREFIX, LEN_OF_COMPLUS_PREFIX) == 0)
+                        && StaticStringHelpers::_wcsnicmp(wszName, COMPLUS_PREFIX, LEN_OF_COMPLUS_PREFIX) == 0)
                     {
                         wszName += LEN_OF_COMPLUS_PREFIX;
                         s_EnvNames.Add(wszName, (DWORD) (wszCurr - wszName));
                     }
                     else if (matchD
-                        && SString::_wcsnicmp(wszName, DOTNET_PREFIX, LEN_OF_DOTNET_PREFIX) == 0)
+                        && StaticStringHelpers::_wcsnicmp(wszName, DOTNET_PREFIX, LEN_OF_DOTNET_PREFIX) == 0)
                     {
                         wszName += LEN_OF_DOTNET_PREFIX;
                         s_EnvNames.Add(wszName, (DWORD) (wszCurr - wszName));

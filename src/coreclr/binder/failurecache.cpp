@@ -31,7 +31,7 @@ namespace BINDER_SPACE
         RemoveAll();
     }
 
-    HRESULT FailureCache::Add(SString &assemblyNameorPath,
+    HRESULT FailureCache::Add(SString<EncodingUnicode> &assemblyNameorPath,
                               HRESULT hrBindingResult)
     {
         HRESULT hr = S_OK;
@@ -52,7 +52,7 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    HRESULT FailureCache::Lookup(SString &assemblyNameorPath)
+    HRESULT FailureCache::Lookup(SString<EncodingUnicode> &assemblyNameorPath)
     {
         HRESULT hr = S_OK;
         FailureCacheEntry *pFailureCachEntry = Hash::Lookup(assemblyNameorPath);
@@ -65,7 +65,7 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    void FailureCache::Remove(SString &assemblyName)
+    void FailureCache::Remove(SString<EncodingUnicode> &assemblyName)
     {
         FailureCacheEntry *pFailureCachEntry = Hash::Lookup(assemblyName);
 

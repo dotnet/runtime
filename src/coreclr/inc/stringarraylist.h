@@ -10,17 +10,17 @@
 // list of Strings, stored in chunks.  Based on top of ArrayList
 #include "arraylist.h"
 
-
+template<typename TEncoding>
 class StringArrayList
 {
     ArrayList m_Elements;
 public:
     DWORD GetCount() const;
-    SString& operator[] (DWORD idx) const;
-    SString& Get (DWORD idx) const;
+    SString<TEncoding>& operator[] (DWORD idx) const;
+    SString<TEncoding>& Get (DWORD idx) const;
 #ifndef DACCESS_COMPILE
-    void Append(const SString& string);
-    void AppendIfNotThere(const SString& string);
+    void Append(const SString<TEncoding>& string);
+    void AppendIfNotThere(const SString<TEncoding>& string);
 #endif
     ~StringArrayList();
 };

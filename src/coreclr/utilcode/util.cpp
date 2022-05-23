@@ -180,7 +180,7 @@ namespace
         // - An empty string will be treated as NULL.
         // - A string ending will a backslash will be treated as a prefix for where to look for the DLL
         //   if the InProcServer32 value is just a DLL name and not a full path.
-        StackSString ssDllName;
+        StackSString<EncodingUnicode> ssDllName;
         if ((wszDllPath == nullptr) || (wszDllPath[0] == W('\0')) || fIsDllPathPrefix)
         {
 #ifdef HOST_WINDOWS
@@ -190,7 +190,7 @@ namespace
             {
                 if (fIsDllPathPrefix)
                 {
-                    SString::Iterator i = ssDllName.Begin();
+                    auto i = ssDllName.Begin();
                     if (!ssDllName.Find(i, W('\\')))
                     {   // If the InprocServer32 is just a DLL name (not a fully qualified path), then
                         // prefix wszFilePath with wszDllPath.
@@ -201,7 +201,7 @@ namespace
             EX_CATCH_HRESULT(hr);
             IfFailRet(hr);
 
-            wszDllPath = ssDllName.GetUnicode();
+            wszDllPath = ssDllName;
 #else // HOST_WINDOWS
             return E_FAIL;
 #endif // HOST_WINDOWS
@@ -2966,7 +2966,7 @@ namespace Util
 
 namespace Reg
 {
-    HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKeyName, LPCWSTR wszValueName, SString & ssValue)
+    HRESULT ReadStringValue(HKEY hKey, LPCWSTR wszSubKeyName, LPCWSTR wszValueName, SString<EncodingUnicode> & ssValue)
     {
         STANDARD_VM_CONTRACT;
 
@@ -2992,7 +2992,7 @@ namespace Reg
         if ((WszRegQueryValueEx(hTargetKey, wszValueName, 0, &type, 0, &size) == ERROR_SUCCESS) &&
             type == REG_SZ && size > 0)
         {
-            LPWSTR wszValueBuf = ssValue.OpenUnicodeBuffer(static_cast<COUNT_T>((size / sizeof(WCHAR)) - 1));
+            LPWSTR wszValueBuf = ssValue.OpenBuffer(static_cast<COUNT_T>((size / sizeof(WCHAR)) - 1));
             LONG lResult = WszRegQueryValueEx(
                 hTargetKey,
                 wszValueName,
@@ -3037,11 +3037,11 @@ namespace Reg
         HRESULT hr = S_OK;
         EX_TRY
         {
-            StackSString ssValue;
+            StackSString<EncodingUnicode> ssValue;
             if (SUCCEEDED(hr = ReadStringValue(hKey, wszSubKey, wszName, ssValue)))
             {
                 *pwszValue = new WCHAR[ssValue.GetCount() + 1];
-                wcscpy_s(*pwszValue, ssValue.GetCount() + 1, ssValue.GetUnicode());
+                wcscpy_s(*pwszValue, ssValue.GetCount() + 1, ssValue);
             }
         }
         EX_CATCH_HRESULT(hr);
@@ -3055,7 +3055,7 @@ namespace Com
     {
         __success(return == S_OK)
         static
-        HRESULT FindSubKeyDefaultValueForCLSID(REFCLSID rclsid, LPCWSTR wszSubKeyName, SString & ssValue)
+        HRESULT FindSubKeyDefaultValueForCLSID(REFCLSID rclsid, LPCWSTR wszSubKeyName, SString<EncodingUnicode> & ssValue)
         {
             STANDARD_VM_CONTRACT;
 
@@ -3063,7 +3063,7 @@ namespace Com
             if (GuidToLPWSTR(rclsid, wszClsid, ARRAY_SIZE(wszClsid)) == 0)
                 return E_UNEXPECTED;
 
-            StackSString ssKeyName;
+            StackSString<EncodingUnicode> ssKeyName;
             ssKeyName.Append(SL(W("CLSID\\")));
             ssKeyName.Append(wszClsid);
             ssKeyName.Append(SL(W("\\")));
@@ -3071,7 +3071,7 @@ namespace Com
 
             // Query HKCR first to retain backwards compat with previous implementation where HKCR was only queried.
             // This is being done due to registry caching. This value will be used if the process integrity is medium or less.
-            HRESULT hkcrResult = Clr::Util::Reg::ReadStringValue(HKEY_CLASSES_ROOT, ssKeyName.GetUnicode(), nullptr, ssValue);
+            HRESULT hkcrResult = Clr::Util::Reg::ReadStringValue(HKEY_CLASSES_ROOT, ssKeyName, nullptr, ssValue);
 
             // HKCR is a virtualized registry hive that weaves together HKCU\Software\Classes and HKLM\Software\Classes
             // Processes with high integrity or greater should only read from HKLM to avoid being hijacked by medium
@@ -3094,16 +3094,16 @@ namespace Com
                 ssValue.Clear();
 
                 // Force to use HKLM
-                StackSString ssHklmKeyName(SL(W("SOFTWARE\\Classes\\")));
+                StackSString<EncodingUnicode> ssHklmKeyName(SL(W("SOFTWARE\\Classes\\")));
                 ssHklmKeyName.Append(ssKeyName);
-                return Clr::Util::Reg::ReadStringValue(HKEY_LOCAL_MACHINE, ssHklmKeyName.GetUnicode(), nullptr, ssValue);
+                return Clr::Util::Reg::ReadStringValue(HKEY_LOCAL_MACHINE, ssHklmKeyName, nullptr, ssValue);
             }
 
             return hkcrResult;
         }
     }
 
-    HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString & ssInprocServer32Name)
+    HRESULT FindInprocServer32UsingCLSID(REFCLSID rclsid, SString<EncodingUnicode> & ssInprocServer32Name)
     {
         WRAPPER_NO_CONTRACT;
         return __imp::FindSubKeyDefaultValueForCLSID(rclsid, W("InprocServer32"), ssInprocServer32Name);

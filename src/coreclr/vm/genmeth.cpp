@@ -378,12 +378,12 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 pDL = DictionaryLayout::Allocate(NUM_DICTIONARY_SLOTS, pAllocator, &amt);
 #ifdef _DEBUG
                 {
-                    SString name;
+                    SString<EncodingUnicode> name;
                     TypeString::AppendMethodDebug(name, pGenericMDescInRepMT);
                     DWORD dictionarySlotSize;
                     DWORD dictionaryAllocSize = DictionaryLayout::GetDictionarySizeFromLayout(pGenericMDescInRepMT->GetNumGenericMethodArgs(), pDL, &dictionarySlotSize);
                     LOG((LF_JIT, LL_INFO1000, "GENERICS: Created new dictionary layout for dictionary of slot size %d / alloc size %d for %S\n",
-                        dictionarySlotSize, dictionaryAllocSize, name.GetUnicode()));
+                        dictionarySlotSize, dictionaryAllocSize, (LPCWSTR)name));
                 }
 #endif // _DEBUG
             }
@@ -473,10 +473,11 @@ InstantiatedMethodDesc::NewInstantiatedMethodDesc(MethodTable *pExactMT,
                 amt.SuppressRelease();
 
 #ifdef _DEBUG
-                SString name(SString::Utf8);
+                SString<EncodingUnicode> name{};
                 TypeString::AppendMethodDebug(name, pNewMD);
-                StackScratchBuffer buff;
-                const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                SString<EncodingUTF8> nameUTF8;
+                name.ConvertToUTF8(nameUTF8);
+                const char* pDebugNameUTF8 = (LPCUTF8)nameUTF8;
                 const char* verb = "Created";
                 if (pWrappedMD)
                     LOG((LF_CLASSLOADER, LL_INFO1000,
@@ -1650,23 +1651,23 @@ BOOL MethodDesc::SatisfiesMethodConstraints(TypeHandle thParent, BOOL fThrowIfNo
         {
             if (fThrowIfNotSatisfied)
             {
-                SString sParentName;
+                SString<EncodingUnicode> sParentName;
                 TypeString::AppendType(sParentName, thParent);
 
-                SString sMethodName(SString::Utf8, GetName());
+                MAKE_WIDEPTR_FROMUTF8(sMethodName, GetName());
 
-                SString sActualParamName;
+                SString<EncodingUnicode> sActualParamName;
                 TypeString::AppendType(sActualParamName, methodInst[i]);
 
-                SString sFormalParamName;
+                SString<EncodingUnicode> sFormalParamName;
                 TypeString::AppendType(sFormalParamName, typicalInst[i]);
 
                 COMPlusThrow(kVerificationException,
                              IDS_EE_METHOD_CONSTRAINTS_VIOLATION,
-                             sParentName.GetUnicode(),
-                             sMethodName.GetUnicode(),
-                             sActualParamName.GetUnicode(),
-                             sFormalParamName.GetUnicode()
+                             (LPCWSTR)sParentName,
+                             (LPCWSTR)sMethodName,
+                             (LPCWSTR)sActualParamName,
+                             (LPCWSTR)sFormalParamName
                             );
 
 

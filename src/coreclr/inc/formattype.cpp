@@ -985,7 +985,7 @@ const char* TrySigUncompressAndDumpSimpleNativeType(
         PCCOR_SIGNATURE pData,              // [IN] compressed data
         ULONG       *pDataOut,              // [OUT] the expanded *pData
         ULONG       &cbCur,
-        SString     &buf)
+        SString<EncodingASCII> &buf)
 {
     const char* sz = NULL;
     ULONG ulSize = CorSigUncompressData(pData, pDataOut);
@@ -1053,7 +1053,7 @@ const char* TrySigUncompressAndDumpSimpleNativeType(
 bool TrySigUncompress(PCCOR_SIGNATURE pData,              // [IN] compressed data
                       ULONG       *pDataOut,              // [OUT] the expanded *pData
                       ULONG       &cbCur,
-                      SString     &buf)
+                      SString<EncodingASCII> &buf)
 {
     ULONG ulSize = CorSigUncompressData(pData, pDataOut);
     if (ulSize == (ULONG)-1)
@@ -1086,7 +1086,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
 
     PCCOR_SIGNATURE pSigNativeType = NULL;
     ULONG           cbNativeType = 0;
-    SString         buf;
+    SString<EncodingASCII> buf;
     if (RidFromToken(tok) &&
         SUCCEEDED(pImport->GetFieldMarshal( // return error if no native type associate with the token
             tok,                // [IN] given fielddef
@@ -1114,7 +1114,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                     break;
                 case NATIVE_TYPE_SAFEARRAY:
                     sz = "";
-                    buf.AppendASCII(KEYWORD(" safearray"));
+                    buf.Append(KEYWORD(" safearray"));
                     ulData = VT_EMPTY;
                     if (cbCur < cbNativeType)
                     {
@@ -1166,7 +1166,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                         case VT_CLSID:      sz=" clsid"; break;
                         default:            sz=NULL; break;
                     }
-                    if(sz) buf.AppendASCII(KEYWORD(sz));
+                    if(sz) buf.Append(KEYWORD(sz));
                     else
                     {
                         // buf.AppendPrintf(ERRORMSG(" [ILLEGAL VARIANT TYPE 0x%X]"),ulData & VT_TYPEMASK);
@@ -1184,7 +1184,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                         case VT_ARRAY|VT_VECTOR: sz = "[] vector"; break;
                         case VT_BYREF|VT_ARRAY|VT_VECTOR: sz = "&[] vector"; break;
                     }
-                    buf.AppendASCII(KEYWORD(sz));
+                    buf.Append(KEYWORD(sz));
                     sz="";
 
                     // Extract the user defined sub type name.
@@ -1220,29 +1220,29 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                 case NATIVE_TYPE_FIXEDSYSSTRING:
                     {
                         sz = "";
-                        buf.AppendASCII(KEYWORD(" fixed sysstring"));
-                        buf.AppendASCII(" [");
+                        buf.Append(KEYWORD(" fixed sysstring"));
+                        buf.Append(" [");
                         if (cbCur < cbNativeType)
                         {
                             if (!TrySigUncompress(&pSigNativeType[cbCur], &ulData, cbCur, buf))
                                 goto error;
                             buf.AppendPrintf("%d",ulData);
                         }
-                        buf.AppendASCII("]");
+                        buf.Append("]");
                     }
                     break;
                 case NATIVE_TYPE_FIXEDARRAY:
                     {
                         sz = "";
-                        buf.AppendASCII(KEYWORD(" fixed array"));
-                        buf.AppendASCII(" [");
+                        buf.Append(KEYWORD(" fixed array"));
+                        buf.Append(" [");
                         if (cbCur < cbNativeType)
                         {
                             if (!TrySigUncompress(&pSigNativeType[cbCur], &ulData, cbCur, buf))
                                 goto error;
                             buf.AppendPrintf("%d",ulData);
                         }
-                        buf.AppendASCII("]");
+                        buf.Append("]");
                         if (cbCur < cbNativeType)
                         {
                             sz = TrySigUncompressAndDumpSimpleNativeType(&pSigNativeType[cbCur], &ulData, cbCur, buf);
@@ -1253,13 +1253,13 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                     break;
 
                 case NATIVE_TYPE_INTF:
-                        buf.AppendASCII(KEYWORD(" interface"));
+                        buf.Append(KEYWORD(" interface"));
                         goto DumpIidParamIndex;
                 case NATIVE_TYPE_IUNKNOWN:
-                        buf.AppendASCII(KEYWORD(" iunknown"));
+                        buf.Append(KEYWORD(" iunknown"));
                         goto DumpIidParamIndex;
                 case NATIVE_TYPE_IDISPATCH:
-                         buf.AppendASCII(KEYWORD(" idispatch"));
+                         buf.Append(KEYWORD(" idispatch"));
                      DumpIidParamIndex:
                          sz = " ";
                          if (cbCur < cbNativeType)
@@ -1278,8 +1278,8 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                         BOOL fFourStrings = FALSE;
 
                         sz = "";
-                        buf.AppendASCII(KEYWORD(" custom"));
-                        buf.AppendASCII(" (");
+                        buf.Append(KEYWORD(" custom"));
+                        buf.Append(" (");
                         // Extract the typelib GUID.
                         strLen = GetLength(&pSigNativeType[cbCur], &ByteCountLength);
                         cbCur += ByteCountLength;
@@ -1298,7 +1298,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                         }
                         if(cbCur >= cbNativeType)
                         {
-                            // buf.AppendASCII(ERRORMSG("/* INCOMPLETE MARSHALER INFO */"));
+                            // buf.Append(ERRORMSG("/* INCOMPLETE MARSHALER INFO */"));
                             buf.Clear();
                             goto error;
                         }
@@ -1323,11 +1323,11 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                                         VDELETE(strTemp);
                                     }
                                 }
-                                else buf.AppendASCII("\"\",");
+                                else buf.Append("\"\",");
                             }
                             if(cbCur >= cbNativeType)
                             {
-                                // buf.AppendASCII(ERRORMSG("/* INCOMPLETE MARSHALER INFO */"));
+                                // buf.Append(ERRORMSG("/* INCOMPLETE MARSHALER INFO */"));
                                 buf.Clear();
                                 goto error;
                             }
@@ -1350,10 +1350,10 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                                         VDELETE(strTemp);
                                     }
                                 }
-                                else buf.AppendASCII("\"\",");
+                                else buf.Append("\"\",");
                                 if(cbCur >= cbNativeType)
                                 {
-                                    // buf.AppendASCII(ERRORMSG("/* INCOMPLETE MARSHALER INFO */"));
+                                    // buf.Append(ERRORMSG("/* INCOMPLETE MARSHALER INFO */"));
                                     buf.Clear();
                                     goto error;
                                 }
@@ -1365,7 +1365,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
 
                                     if(cbCur+strLen > cbNativeType)
                                     {
-                                        // buf.AppendASCII(ERRORMSG("/* INCOMPLETE MARSHALER INFO */"));
+                                        // buf.Append(ERRORMSG("/* INCOMPLETE MARSHALER INFO */"));
                                         buf.Clear();
                                         goto error;
                                     }
@@ -1379,12 +1379,12 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                                                 memcpy(strTemp, (LPUTF8)&pSigNativeType[cbCur], strLen);
                                                 strTemp[strLen] = 0;
 
-                                                buf.AppendASCII("\"");
+                                                buf.Append("\"");
                                                 // Copy the cookie string and transform the embedded nulls into \0's.
                                                 for (int i = 0; i < strLen - 1; i++, cbCur++)
                                                 {
                                                     if (strTemp[i] == 0)
-                                                        buf.AppendASCII("\\0");
+                                                        buf.Append("\\0");
                                                     else
                                                     {
                                                         buf.AppendPrintf("%c", strTemp[i]);
@@ -1396,13 +1396,13 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                                             }
                                         }
                                         else
-                                            buf.AppendASCII("\"\"");
+                                            buf.Append("\"\"");
                                         //_ASSERTE(cbCur <= cbNativeType);
                                     }
                                 }
                             }
                         }
-                        buf.AppendASCII(")");
+                        buf.Append(")");
                     }
                     break;
                 default:
@@ -1413,16 +1413,16 @@ char* DumpMarshaling(IMDInternalImport* pImport,
             }
             if(*sz)
             {
-                buf.AppendASCII(KEYWORD(sz));
+                buf.Append(KEYWORD(sz));
                 if(fAddAsterisk)
                 {
-                    buf.AppendASCII("*");
+                    buf.Append("*");
                     fAddAsterisk = FALSE;
                 }
                 if(fAddBrackets)
                 {
                     ULONG ulSizeParam=(ULONG)-1,ulSizeConst=(ULONG)-1;
-                    buf.AppendASCII("[");
+                    buf.Append("[");
                     fAddBrackets = FALSE;
                     if (cbCur < cbNativeType)
                     {
@@ -1452,7 +1452,7 @@ char* DumpMarshaling(IMDInternalImport* pImport,
                     {
                         buf.AppendPrintf(" + %d",ulSizeParam);
                     }
-                    buf.AppendASCII("]");
+                    buf.Append("]");
                  }
 
             }
@@ -1463,13 +1463,13 @@ char* DumpMarshaling(IMDInternalImport* pImport,
         // still can have outstanding asterisk or brackets
         if(fAddAsterisk)
         {
-            buf.AppendASCII("*");
+            buf.Append("*");
             fAddAsterisk = FALSE;
         }
         if(fAddBrackets)
         {
             ULONG ulSizeParam=(ULONG)-1,ulSizeConst=(ULONG)-1;
-            buf.AppendASCII("[");
+            buf.Append("[");
             fAddBrackets = FALSE;
             if (cbCur < cbNativeType)
             {
@@ -1492,9 +1492,9 @@ char* DumpMarshaling(IMDInternalImport* pImport,
             {
                 buf.AppendPrintf(" + %d",ulSizeParam);
             }
-            buf.AppendASCII("]");
+            buf.Append("]");
         }
-        buf.AppendASCII(") ");
+        buf.Append(") ");
     }// end if(SUCCEEDED
 error:
     if (buf.IsEmpty() && cbNativeType != 0)
@@ -1504,10 +1504,13 @@ error:
         buf.AppendPrintf(" %s({", KEYWORD("marshal"));
         while (cbNativeType--)
             buf.AppendPrintf(" %2.2X", *pSigNativeType++);
-        buf.AppendASCII(" }) ");
+        buf.Append(" }) ");
+
+        SString<EncodingUnicode> wbuf;
+        buf.ConvertToUnicode(wbuf);
 
         char * tgt = szString + strlen(szString);
-        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%S", buf.GetUnicode());
+        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%S", (LPCWSTR)wbuf);
         if (sprintf_ret == -1)
         {
             // Hit an error. Oh well, nothing to do...
@@ -1521,7 +1524,9 @@ error:
     else
     {
         char * tgt = szString + strlen(szString);
-        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%S", buf.GetUnicode());
+        SString<EncodingUnicode> wbuf;
+        buf.ConvertToUnicode(wbuf);
+        int sprintf_ret = sprintf_s(tgt, cchszString - (tgt - szString), "%S", (LPCWSTR)wbuf);
         if (sprintf_ret == -1)
         {
             // There was an error, possibly with converting the Unicode characters.

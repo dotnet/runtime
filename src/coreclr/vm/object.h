@@ -909,7 +909,7 @@ class StringObject : public Object
         LIMITED_METHOD_CONTRACT;
         return (UINT)(offsetof(StringObject, m_StringLength));
     }
-    VOID    GetSString(SString &result)
+    VOID    GetSString(SString<EncodingUnicode> &result)
     {
         WRAPPER_NO_CONTRACT;
         result.Set(GetBuffer(), GetStringLength());
@@ -1622,7 +1622,7 @@ typedef WeakReferenceObject* WEAKREFERENCEREF;
 #define BoolToArgSlot(b)  ((ARG_SLOT)(CLR_BOOL)(!!(b)))
 #define ArgSlotToBool(s)  ((BOOL)(s))
 
-STRINGREF AllocateString(SString sstr);
+STRINGREF AllocateString(SString<EncodingUnicode> sstr);
 CHARARRAYREF AllocateCharArray(DWORD dwArrayLength);
 
 #ifdef FEATURE_COMINTEROP

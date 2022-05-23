@@ -992,13 +992,10 @@ Module *Assembly::FindModuleByName(LPCSTR pszModuleName)
     }
     CONTRACT_END;
 
-    SString moduleName(SString::Utf8, pszModuleName);
+    SString<EncodingUTF8> moduleName(pszModuleName);
     moduleName.LowerCase();
 
-    StackScratchBuffer buffer;
-    pszModuleName = moduleName.GetUTF8(buffer);
-
-    mdFile kFile = GetManifestFileToken(pszModuleName);
+    mdFile kFile = GetManifestFileToken(moduleName);
     if (kFile == mdTokenNil)
         ThrowHR(COR_E_UNAUTHORIZEDACCESS);
 
@@ -1557,7 +1554,7 @@ INT32 Assembly::ExecuteMainMethod(PTRARRAYREF *stringArgs, BOOL waitForOtherThre
             RunMainPost();
     }
     else {
-        StackSString displayName;
+        StackSString<EncodingUnicode> displayName;
         GetDisplayName(displayName);
         COMPlusThrowHR(COR_E_MISSINGMETHOD, IDS_EE_FAILED_TO_FIND_MAIN, displayName);
     }
@@ -1612,7 +1609,7 @@ MethodDesc* Assembly::GetEntryPoint()
     // We need to get its properties and the class token for this MethodDef token.
     mdToken mdParent;
     if (FAILED(pModule->GetMDImport()->GetParentToken(mdEntry, &mdParent))) {
-        StackSString displayName;
+        StackSString<EncodingUnicode> displayName;
         GetDisplayName(displayName);
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, IDS_EE_ILLEGAL_TOKEN_FOR_MAIN, displayName);
     }
@@ -1630,7 +1627,7 @@ MethodDesc* Assembly::GetEntryPoint()
     if (hrValidParamList == CLDB_E_FILE_CORRUPT)
     {
         // Throw an exception for bad_image_format (because of corrupt metadata)
-        StackSString displayName;
+        StackSString<EncodingUnicode> displayName;
         GetDisplayName(displayName);
         COMPlusThrowHR(COR_E_BADIMAGEFORMAT, IDS_EE_ILLEGAL_TOKEN_FOR_MAIN, displayName);
     }
@@ -1772,13 +1769,9 @@ BOOL Assembly::IsInstrumentedHelper()
         (*szZapBBInstr == '\0') || (*szAssemblyName == '\0'))
         return false;
 
-    // Convert to unicode so that we can do a case insensitive comparison
-
-    SString instrumentedAssemblyNamesList(SString::Utf8, szZapBBInstr);
-    SString assemblyName(SString::Utf8, szAssemblyName);
-
-    const WCHAR *wszInstrumentedAssemblyNamesList = instrumentedAssemblyNamesList.GetUnicode();
-    const WCHAR *wszAssemblyName                  = assemblyName.GetUnicode();
+    // Convert to unicode so that we can do a case insensitive comparison    
+    MAKE_WIDEPTR_FROMUTF8(wszInstrumentedAssemblyNamesList, szZapBBInstr);
+    MAKE_WIDEPTR_FROMUTF8(wszAssemblyName, szAssemblyName);
 
     // wszInstrumentedAssemblyNamesList is a space separated list of assembly names.
     // We need to determine if wszAssemblyName is in this list.
@@ -1803,11 +1796,11 @@ BOOL Assembly::IsInstrumentedHelper()
             if (pNextSpace == NULL)
             {
                 // We have reached the last name in the list. There are no more spaces.
-                return (SString::_wcsicmp(wszAssemblyName, pCur) == 0);
+                return (StaticStringHelpers::_wcsicmp(wszAssemblyName, pCur) == 0);
             }
             else
             {
-                if (SString::_wcsnicmp(wszAssemblyName, pCur, static_cast<COUNT_T>(pNextSpace - pCur)) == 0)
+                if (StaticStringHelpers::_wcsnicmp(wszAssemblyName, pCur, static_cast<COUNT_T>(pNextSpace - pCur)) == 0)
                     return true;
             }
         }
@@ -2045,7 +2038,7 @@ void DECLSPEC_NORETURN Assembly::ThrowTypeLoadException(LPCUTF8 pszNameSpace,
 {
     STATIC_CONTRACT_THROWS;
 
-    StackSString displayName;
+    StackSString<EncodingUnicode> displayName;
     GetDisplayName(displayName);
 
     ::ThrowTypeLoadException(pszNameSpace, pszTypeName, displayName,
@@ -2058,15 +2051,18 @@ void DECLSPEC_NORETURN Assembly::ThrowBadImageException(LPCUTF8 pszNameSpace,
 {
     STATIC_CONTRACT_THROWS;
 
-    StackSString displayName;
+    StackSString<EncodingUnicode> displayName;
     GetDisplayName(displayName);
 
-    StackSString fullName;
-    SString sNameSpace(SString::Utf8, pszNameSpace);
-    SString sTypeName(SString::Utf8, pszTypeName);
-    fullName.MakeFullNamespacePath(sNameSpace, sTypeName);
+    StackSString<EncodingUTF8> fullName;
+    SString<EncodingUTF8> sNameSpace(pszNameSpace);
+    SString<EncodingUTF8> sTypeName(pszTypeName);
+    ns::MakePath(fullName, sNameSpace, sTypeName);
 
-    COMPlusThrowHR(COR_E_BADIMAGEFORMAT, resIDWhy, fullName, displayName);
+    StackSString<EncodingUnicode> fullNameW;
+    fullName.ConvertToUnicode(fullNameW);
+
+    COMPlusThrowHR(COR_E_BADIMAGEFORMAT, resIDWhy, fullNameW, displayName);
 }
 
 #endif // #ifndef DACCESS_COMPILE
@@ -2234,7 +2230,7 @@ ReleaseHolder<FriendAssemblyDescriptor> FriendAssemblyDescriptor::CreateFriendAs
             }
 
             // Convert the string to Unicode.
-            StackSString displayName(SString::Utf8, szString, cbString);
+            StackSString<EncodingUTF8> displayName(szString, cbString);
 
             // Create an AssemblyNameObject from the string.
             FriendAssemblyNameHolder pFriendAssemblyName;

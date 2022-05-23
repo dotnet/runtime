@@ -24,40 +24,28 @@
 //   ....[.....\xxxxx]..0...  -> ....[xxxxx]..0...
 //       ^     ^        ^
 
-void DumpIL_RemoveFullPath(SString &strTokenFormatting)
+void DumpIL_RemoveFullPath(SString<EncodingUTF8> &strTokenFormatting)
 {
     STANDARD_VM_CONTRACT;
     if (strTokenFormatting.IsEmpty())
         return;
 
-    SString::Iterator begin = strTokenFormatting.Begin();
-    SString::Iterator end = strTokenFormatting.End();
-    SString::Iterator leftBracket = strTokenFormatting.Begin();
+    auto begin = strTokenFormatting.Begin();
+    auto end = strTokenFormatting.End();
+    auto leftBracket = strTokenFormatting.Begin();
 
-    // Find the first '[' in the string.
-    while ((leftBracket != end) && (*leftBracket != W('[')))
+    if (strTokenFormatting.Find(leftBracket, '['))
     {
-        ++leftBracket;
-    }
+        auto lastSlash = strTokenFormatting.End() - 1;
 
-    if (leftBracket != end)
-    {
-        SString::Iterator lastSlash = strTokenFormatting.End() - 1;
-
-        // Find the last '\\' in the string.
-        while ((lastSlash != leftBracket) && (*lastSlash != W('\\')))
-        {
-            --lastSlash;
-        }
-
-        if (leftBracket != lastSlash)
+        if (strTokenFormatting.FindBack(lastSlash, '\\') && leftBracket < lastSlash)
         {
             strTokenFormatting.Delete(leftBracket + 1, lastSlash - leftBracket);
         }
     }
 }
 
-void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting)
+void ILStubLinker::DumpIL_FormatToken(mdToken token, SString<EncodingUTF8> &strTokenFormatting)
 {
     void* pvLookupRetVal = (void*)POISONC;
     _ASSERTE(strTokenFormatting.IsEmpty());
@@ -70,7 +58,9 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
             pvLookupRetVal = pMD;
             CONSISTENCY_CHECK(CheckPointer(pMD));
 
-            pMD->GetFullMethodInfo(strTokenFormatting);
+            StackSString<EncodingUnicode> methodInfo;
+            pMD->GetFullMethodInfo(methodInfo);
+            methodInfo.ConvertToUTF8(strTokenFormatting);
         }
         else if (TypeFromToken(token) == mdtTypeDef)
         {
@@ -78,7 +68,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
             pvLookupRetVal = typeHnd.AsPtr();
             CONSISTENCY_CHECK(!typeHnd.IsNull());
 
-            SString typeName;
+            SString<EncodingUnicode> typeName;
             MethodTable *pMT = NULL;
             if (typeHnd.IsTypeDesc())
             {
@@ -95,7 +85,7 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
 
             if (pMT && typeHnd.IsNativeValueType())
                 typeName.Append(W("_NativeValueType"));
-            strTokenFormatting.Set(typeName);
+            typeName.ConvertToUTF8(strTokenFormatting);
         }
         else if (TypeFromToken(token) == mdtFieldDef)
         {
@@ -103,11 +93,15 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
             pvLookupRetVal = pFD;
             CONSISTENCY_CHECK(CheckPointer(pFD));
 
-            SString typeName;
+            SString<EncodingUnicode> typeName;
             TypeString::AppendType(typeName, TypeHandle(pFD->GetApproxEnclosingMethodTable()));
 
-            SString strFieldName(SString::Utf8, pFD->GetName());
-            strTokenFormatting.Printf(W("%s::%s"), typeName.GetUnicode(), strFieldName.GetUnicode());
+            SString<EncodingUTF8> strFieldName(pFD->GetName());
+            SString<EncodingUTF8> typeNameUTF8;
+            typeName.ConvertToUTF8(typeNameUTF8);
+            strTokenFormatting.Append(typeNameUTF8);
+            strTokenFormatting.Append("::");
+            strTokenFormatting.Append(strFieldName);
         }
         else if (TypeFromToken(token) == mdtModule)
         {
@@ -137,17 +131,17 @@ void ILStubLinker::DumpIL_FormatToken(mdToken token, SString &strTokenFormatting
             CQuickBytes sigStr;
             PrettyPrintSig(pSig, cbSig, "", &sigStr, pIMDI, NULL);
 
-            strTokenFormatting.SetUTF8((LPUTF8)sigStr.Ptr());
+            strTokenFormatting.Set((LPUTF8)sigStr.Ptr());
         }
         else
         {
-            strTokenFormatting.Printf(W("%d"), token);
+            strTokenFormatting.Printf("%d", token);
         }
         DumpIL_RemoveFullPath(strTokenFormatting);
     }
     EX_CATCH
     {
-        strTokenFormatting.Printf(W("%d"), token);
+        strTokenFormatting.Printf("%d", token);
     }
     EX_END_CATCH(SwallowAllExceptions)
 }
@@ -456,34 +450,34 @@ ILStubLinker::LogILInstruction(
     bool            isLabeled,
     INT             iCurStack,
     ILInstruction * pInstruction,
-    SString *       pDumpILStubCode)
+    SString<EncodingUTF8> *       pDumpILStubCode)
 {
     STANDARD_VM_CONTRACT;
     //
     // format label
     //
-    SString strLabel;
+    SString<EncodingUTF8> strLabel;
 
     if (isLabeled)
     {
-        strLabel.Printf(W("IL_%04Ix:"), curOffset);
+        strLabel.Printf("IL_%04Ix:", curOffset);
     }
     else
     {
-        strLabel.Set(W("        "));
+        strLabel.Set("        ");
     }
 
     //
     // format opcode
     //
-    SString strOpcode;
+    SString<EncodingUTF8> strOpcode;
 
     ILCodeStream::ILInstrEnum instr = (ILCodeStream::ILInstrEnum)pInstruction->uInstruction;
     size_t      cbOpcodeName = strlen(s_rgOpcodeNames[instr]);
-    SString strOpcodeName;
-    strOpcodeName.SetUTF8(s_rgOpcodeNames[instr]);
+    SString<EncodingUTF8> strOpcodeName;
+    strOpcodeName.Set(s_rgOpcodeNames[instr]);
     // Set the width of the opcode to 15.
-    strOpcode.Set(W("               "));
+    strOpcode.Set("               ");
     strOpcode.Replace(strOpcode.Begin(), (COUNT_T)cbOpcodeName, strOpcodeName);
 
     //
@@ -491,24 +485,24 @@ ILStubLinker::LogILInstruction(
     //
 
     static const size_t c_cchPreallocateArgument = 512;
-    SString strArgument;
+    SString<EncodingUTF8> strArgument;
     strArgument.Preallocate(c_cchPreallocateArgument);
 
     static const size_t c_cchPreallocateTokenName = 1024;
-    SString strTokenName;
+    SString<EncodingUTF8> strTokenName;
     strTokenName.Preallocate(c_cchPreallocateTokenName);
 
     if (ILCodeStream::IsBranchInstruction(instr))
     {
         size_t branchDistance = (size_t)pInstruction->uArg;
         size_t targetOffset = curOffset + s_rgbOpcodeSizes[instr] + branchDistance;
-        strArgument.Printf(W("IL_%04Ix"), targetOffset);
+        strArgument.Printf("IL_%04Ix", targetOffset);
     }
     else if ((ILCodeStream::ILInstrEnum)CEE_NOP == instr)
     {
-        SString strInstruction;
+        SString<EncodingUTF8> strInstruction;
         strInstruction.Printf("%s", (char *)pInstruction->uArg);
-        strInstruction.ConvertToUnicode(strArgument);
+        strArgument.Set(strInstruction);
     }
     else
     {
@@ -520,11 +514,11 @@ ILStubLinker::LogILInstruction(
         case ShortInlineVar:
         case ShortInlineI:
         case InlineI:
-            strArgument.Printf(W("0x%Ix"), pInstruction->uArg);
+            strArgument.Printf("0x%Ix", pInstruction->uArg);
             break;
 
         case InlineI8:
-            strArgument.Printf(W("0x%p"), (void *)pInstruction->uArg);
+            strArgument.Printf("0x%p", (void *)pInstruction->uArg);
             break;
 
         case InlineMethod:
@@ -536,7 +530,7 @@ ILStubLinker::LogILInstruction(
         case InlineTok:
             // No token value when we dump IL for ETW
             if (pDumpILStubCode == NULL)
-                strArgument.Printf(W("0x%08Ix"), pInstruction->uArg);
+                strArgument.Printf("0x%08Ix", pInstruction->uArg);
 
             // Dump to szTokenNameBuffer if logging, otherwise dump to szArgumentBuffer to avoid an extra space because we are omitting the token
             _ASSERTE(FitsIn<mdToken>(pInstruction->uArg));
@@ -554,17 +548,13 @@ ILStubLinker::LogILInstruction(
     //
     if (pDumpILStubCode)
     {
-        pDumpILStubCode->AppendPrintf(W("%s /*(%2d)*/ %s %s %s\n"), strLabel.GetUnicode(), iCurStack, strOpcode.GetUnicode(),
-            strArgument.GetUnicode(), strTokenName.GetUnicode());
+        pDumpILStubCode->AppendPrintf("%s /*(%2d)*/ %s %s %s\n", (LPCUTF8)strLabel, iCurStack, (LPCUTF8)strOpcode,
+            (LPCUTF8)strArgument, (LPCUTF8)strTokenName);
     }
     else
     {
-        StackScratchBuffer strLabelBuffer;
-        StackScratchBuffer strOpcodeBuffer;
-        StackScratchBuffer strArgumentBuffer;
-        StackScratchBuffer strTokenNameBuffer;
-        LOG((LF_STUBS, LL_INFO1000, "%s (%2d) %s %s %s\n", strLabel.GetUTF8(strLabelBuffer), iCurStack, \
-            strOpcode.GetUTF8(strOpcodeBuffer), strArgument.GetUTF8(strArgumentBuffer), strTokenName.GetUTF8(strTokenNameBuffer)));
+        LOG((LF_STUBS, LL_INFO1000, "%s (%2d) %s %s %s\n", (LPCUTF8)strLabel, iCurStack, \
+            (LPCUTF8)strOpcode, (LPCUTF8)strArgument, (LPCUTF8)strTokenName));
     }
 } // ILStubLinker::LogILInstruction
 
@@ -576,7 +566,7 @@ ILStubLinker::LogILStubWorker(
     UINT            numInstr,
     size_t *        pcbCode,
     INT *           piCurStack,
-    SString *       pDumpILStubCode)
+    SString<EncodingUTF8> *       pDumpILStubCode)
 {
     CONTRACTL
     {
@@ -620,7 +610,7 @@ ILStubLinker::LogILStubWorker(
     {
         if (pDumpILStubCode)
         {
-            pDumpILStubCode->AppendPrintf(W("IL_%04Ix:\n"), *pcbCode);
+            pDumpILStubCode->AppendPrintf("IL_%04Ix:\n", *pcbCode);
         }
         else
         {
@@ -658,7 +648,7 @@ static void LogJitFlags(DWORD facility, DWORD level, CORJIT_FLAGS jitFlags)
     }
 }
 
-void ILStubLinker::LogILStub(CORJIT_FLAGS jitFlags, SString *pDumpILStubCode)
+void ILStubLinker::LogILStub(CORJIT_FLAGS jitFlags, SString<EncodingUTF8> *pDumpILStubCode)
 {
     CONTRACTL
     {

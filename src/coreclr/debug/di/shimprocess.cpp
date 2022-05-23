@@ -1594,7 +1594,7 @@ void ShimProcess::PreDispatchEvent(bool fRealCreateProcessEvent /*= false*/)
 //    Throws on errors.
 //
 
-HMODULE ShimProcess::GetDacModule(PathString& dacModulePath)
+HMODULE ShimProcess::GetDacModule(const SString<EncodingUnicode>& dacModulePath)
 {
     HMODULE hDacDll;
     PathString wszAccessDllPath(dacModulePath);

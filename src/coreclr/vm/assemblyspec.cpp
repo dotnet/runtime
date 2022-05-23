@@ -230,20 +230,20 @@ void AssemblySpec::AssemblyNameInit(ASSEMBLYNAMEREF* pAsmName)
 
     NativeAssemblyNameParts nameParts;
 
-    StackSString ssName;
+    StackSString<EncodingUnicode> ssName;
     if (m_pAssemblyName != NULL)
-        SString(SString::Utf8Literal, m_pAssemblyName).ConvertToUnicode(ssName);
-    nameParts._pName = (m_pAssemblyName != NULL) ? ssName.GetUnicode() : NULL;
+        SString<EncodingUTF8>(SharedData, m_pAssemblyName).ConvertToUnicode(ssName);
+    nameParts._pName = (m_pAssemblyName != NULL) ? (LPCWSTR)ssName : NULL;
 
     nameParts._major = m_context.usMajorVersion;
     nameParts._minor = m_context.usMinorVersion;
     nameParts._build = m_context.usBuildNumber;
     nameParts._revision = m_context.usRevisionNumber;
 
-    SmallStackSString ssLocale;
+    SmallStackSString<EncodingUnicode> ssLocale;
     if (m_context.szLocale != NULL)
-        SString(SString::Utf8Literal, m_context.szLocale).ConvertToUnicode(ssLocale);
-    nameParts._pCultureName = (m_context.szLocale != NULL) ? ssLocale.GetUnicode() : NULL;
+        SString<EncodingUTF8>(SharedData, m_context.szLocale).ConvertToUnicode(ssLocale);
+    nameParts._pCultureName = (m_context.szLocale != NULL) ? (LPCWSTR)ssLocale : NULL;
 
     nameParts._pPublicKeyOrToken = m_pbPublicKeyOrToken;
     nameParts._cbPublicKeyOrToken = m_cbPublicKeyOrToken;
@@ -275,13 +275,15 @@ void AssemblySpec::InitializeAssemblyNameRef(_In_ BINDER_SPACE::AssemblyName* as
     AssemblySpec spec;
     spec.InitializeWithAssemblyIdentity(assemblyName);
 
-    StackScratchBuffer nameBuffer;
-    spec.SetName(assemblyName->GetSimpleName().GetUTF8(nameBuffer));
+    StackSString<EncodingUTF8> nameUTF8;
+    assemblyName->GetSimpleName().ConvertToUTF8(nameUTF8);
+    spec.SetName(nameUTF8);
 
-    StackScratchBuffer cultureBuffer;
+    StackSString<EncodingUTF8> cultureUTF8;
     if (assemblyName->Have(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE))
     {
-        LPCSTR culture = assemblyName->IsNeutralCulture() ? "" : assemblyName->GetCulture().GetUTF8(cultureBuffer);
+        assemblyName->GetCulture().ConvertToUTF8(nameUTF8);
+        LPCSTR culture = assemblyName->IsNeutralCulture() ? "" : nameUTF8;
         spec.SetCulture(culture);
     }
 
@@ -497,7 +499,7 @@ Assembly *AssemblySpec::LoadAssembly(LPCWSTR pFilePath)
 
     pILImage = PEImage::OpenImage(pFilePath,
         MDInternalImport_Default,
-        Bundle::ProbeAppBundle(pFilePath));
+        Bundle::ProbeAppBundle(SL(pFilePath)));
 
     // Need to verify that this is a valid CLR assembly.
     if (!pILImage->CheckILFormat())
@@ -542,8 +544,10 @@ HRESULT AssemblySpec::EmitToken(
 
     EX_TRY
     {
-        SmallStackSString ssName;
+        SmallStackSString<EncodingUTF8> ssName;
         GetName(ssName);
+        SmallStackSString<EncodingUnicode> ssNameW;
+        ssName.ConvertToUnicode(ssNameW);
 
         ASSEMBLYMETADATA AMD;
 
@@ -577,7 +581,7 @@ HRESULT AssemblySpec::EmitToken(
 
             hr = pEmit->DefineAssemblyRef(pbPublicKeyToken,
                                           cbPublicKeyToken,
-                                          ssName.GetUnicode(),
+                                          (LPCWSTR)ssNameW,
                                           &AMD,
                                           NULL,
                                           0,
@@ -587,7 +591,7 @@ HRESULT AssemblySpec::EmitToken(
         else {
             hr = pEmit->DefineAssemblyRef(m_pbPublicKeyOrToken,
                                           m_cbPublicKeyOrToken,
-                                          ssName.GetUnicode(),
+                                          (LPCWSTR)ssNameW,
                                           &AMD,
                                           NULL,
                                           0,

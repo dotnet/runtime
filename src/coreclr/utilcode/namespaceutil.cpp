@@ -482,10 +482,10 @@ int ns::MakePath(                       // true ok, false out of memory
     return ns::MakePath(szOut, iLen, szNameSpace, szName);
 }   // int ns::MakePath()
 
-void ns::MakePath(                      // throws on out of memory
-    SString       &ssBuf,               // Where to put results.
-    const SString &ssNameSpace,         // Namespace for name.
-    const SString &ssName)              // Final part of name.
+void ns::MakePath(                                     // throws on out of memory
+    SString<EncodingUTF8>       &ssBuf,               // Where to put results.
+    const SString<EncodingUTF8> &ssNameSpace,         // Namespace for name.
+    const SString<EncodingUTF8> &ssName)              // Final part of name.
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -501,7 +501,37 @@ void ns::MakePath(                      // throws on out of memory
         }
         else
         {
-            SString s(SString::Literal, NAMESPACE_SEPARATOR_WSTR);
+            SString<EncodingUTF8> s(SharedData, NAMESPACE_SEPARATOR_STR);
+            ssBuf.Set(ssNameSpace, s);
+        }
+    }
+
+    if (!ssName.IsEmpty())
+    {
+        ssBuf.Append(ssName);
+    }
+}
+
+void ns::MakePath(                                        // throws on out of memory
+    SString<EncodingUnicode>       &ssBuf,               // Where to put results.
+    const SString<EncodingUnicode> &ssNameSpace,         // Namespace for name.
+    const SString<EncodingUnicode> &ssName)              // Final part of name.
+{
+    STATIC_CONTRACT_THROWS;
+    STATIC_CONTRACT_GC_NOTRIGGER;
+    STATIC_CONTRACT_FAULT;
+
+    ssBuf.Clear();
+
+    if (!ssNameSpace.IsEmpty())
+    {
+        if (ssName.IsEmpty())
+        {
+            ssBuf.Set(ssNameSpace);
+        }
+        else
+        {
+            SString<EncodingUnicode> s(SharedData, NAMESPACE_SEPARATOR_WSTR);
             ssBuf.Set(ssNameSpace, s);
         }
     }
@@ -662,9 +692,9 @@ int ns::MakeNestedTypeName(             // true ok, false truncation.
 }   // int ns::MakeNestedTypeName()
 
 void ns::MakeNestedTypeName(            // throws on out of memory
-    SString        &ssBuf,              // output path for name.
-    const SString  &ssEnclosingName,    // Full name for enclosing type
-    const SString  &ssNestedName)       // Full name for nested type
+    SString<EncodingUTF8>        &ssBuf,              // output path for name.
+    const SString<EncodingUTF8>  &ssEnclosingName,    // Full name for enclosing type
+    const SString<EncodingUTF8>  &ssNestedName)       // Full name for nested type
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;
@@ -672,7 +702,7 @@ void ns::MakeNestedTypeName(            // throws on out of memory
     ssBuf.Clear();
 
     ssBuf.Append(ssEnclosingName);
-    ssBuf.Append(NESTED_SEPARATOR_WCHAR);
+    ssBuf.Append(NESTED_SEPARATOR_STR);
     ssBuf.Append(ssNestedName);
 }
 

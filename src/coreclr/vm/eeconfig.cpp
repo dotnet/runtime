@@ -382,9 +382,9 @@ HRESULT EEConfig::sync()
                 {
                     // just keep the name
                     LPCWSTR pwszName = wcsrchr(wszFileName, W('\\'));
-                    pwszName = (pwszName == NULL) ? wszFileName.GetUnicode() : (pwszName + 1);
+                    pwszName = (pwszName == NULL) ? (LPCWSTR)wszFileName : (pwszName + 1);
 
-                    if (SString::_wcsicmp(pwszName,pszGCStressExe) == 0)
+                    if (StaticStringHelpers::_wcsicmp(pwszName,pszGCStressExe) == 0)
                     {
                         bGCStressAndHeapVerifyAllowed = true;
                     }

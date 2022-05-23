@@ -84,7 +84,7 @@ namespace
         // Look for the coredistools module next to the clr binary
         libPath.AppendPrintf(W("%s%s"), sysDirectory, libFileName);
 
-        LPCWSTR libraryName = libPath.GetUnicode();
+        LPCWSTR libraryName = (LPCWSTR)libPath;
         return CLRLoadLibrary(libraryName);
     }
 }
@@ -107,7 +107,7 @@ void Disassembler::StaticInitialize()
     {
         DISPLAYERROR(
             W("GetProcAddress failed for library '%s', function 'InitDisasm': error %u\n"),
-            libPath.GetUnicode(),
+            (LPCWSTR)libPath,
             GetLastError());
         return;
     }
@@ -118,7 +118,7 @@ void Disassembler::StaticInitialize()
     {
         DISPLAYERROR(
             W("GetProcAddress failed for library '%s', function 'DisasmInstruction': error %u\n"),
-            libPath.GetUnicode(),
+            (LPCWSTR)libPath,
             GetLastError());
         return;
     }
@@ -129,7 +129,7 @@ void Disassembler::StaticInitialize()
     {
         DISPLAYERROR(
             W("GetProcAddress failed for library '%s', function 'FinishDisasm': error %u\n"),
-            libPath.GetUnicode(),
+            (LPCWSTR)libPath,
             GetLastError());
         return;
     }

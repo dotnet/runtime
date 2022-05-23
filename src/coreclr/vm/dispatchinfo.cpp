@@ -66,7 +66,7 @@ typedef int (__cdecl *UnicodeStringCompareFuncPtr)(const WCHAR *, const WCHAR *)
 //--------------------------------------------------------------------------------
 // The DispatchMemberInfo class implementation.
 
-DispatchMemberInfo::DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, SString& strName, OBJECTREF MemberInfoObj)
+DispatchMemberInfo::DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, SString<EncodingUnicode>& strName, OBJECTREF MemberInfoObj)
 : m_DispID(DispID)
 , m_hndMemberInfo(NULL)
 , m_apParamMarshaler(NULL)
@@ -222,7 +222,7 @@ HRESULT DispatchMemberInfo::GetIDsOfParameters(_In_reads_(NumNames) WCHAR **astr
         aDispIds[cNames] = DISPID_UNKNOWN;
 
     // Retrieve the appropriate string comparation function.
-    UnicodeStringCompareFuncPtr StrCompFunc = bCaseSensitive ? wcscmp : SString::_wcsicmp;
+    UnicodeStringCompareFuncPtr StrCompFunc = bCaseSensitive ? wcscmp : StaticStringHelpers::_wcsicmp;
 
     GCPROTECT_BEGIN(ParamArray)
     {
@@ -1108,7 +1108,7 @@ DispatchMemberInfo* DispatchInfo::FindMember(DISPID DispID)
     }
 }
 
-DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensitive)
+DispatchMemberInfo* DispatchInfo::FindMember(SString<EncodingUnicode>& strName, BOOL bCaseSensitive)
 {
     CONTRACT (DispatchMemberInfo*)
     {
@@ -1150,7 +1150,7 @@ DispatchMemberInfo* DispatchInfo::FindMember(SString& strName, BOOL bCaseSensiti
 
 // Helper method used to create DispatchMemberInfo's. This is only here because
 // we can't call new inside a method that has a EX_TRY statement.
-DispatchMemberInfo* DispatchInfo::CreateDispatchMemberInfoInstance(DISPID DispID, SString& strMemberName, OBJECTREF MemberInfoObj)
+DispatchMemberInfo* DispatchInfo::CreateDispatchMemberInfoInstance(DISPID DispID, SString<EncodingUnicode>& strMemberName, OBJECTREF MemberInfoObj)
 {
     CONTRACT (DispatchMemberInfo*)
     {
@@ -1761,7 +1761,7 @@ void DispatchInfo::InvokeMemberWorker(DispatchMemberInfo*   pDispMemberInfo,
         }
         else
         {
-            pObjs->MemberName = (OBJECTREF)StringObject::NewString(pDispMemberInfo->m_strName.GetUnicode());
+            pObjs->MemberName = (OBJECTREF)StringObject::NewString(pDispMemberInfo->m_strName);
         }
 
         // If there are named arguments, then set up the array of named arguments
@@ -2841,7 +2841,7 @@ BOOL DispatchInfo::SynchWithManagedView()
                             // Create a DispatchInfoMemberInfo that will represent the member.
                             //
 
-                            SString sName(strMemberName);
+                            SString<EncodingUnicode> sName(strMemberName);
                             pMemberToAdd = CreateDispatchMemberInfoInstance(MemberID, sName, CurrMemberInfoObj);
 
                             //
@@ -3236,7 +3236,7 @@ DispatchMemberInfo* DispatchExInfo::SynchFindMember(DISPID DispID)
     RETURN pMemberInfo;
 }
 
-DispatchMemberInfo* DispatchExInfo::SynchFindMember(SString& strName, BOOL bCaseSensitive)
+DispatchMemberInfo* DispatchExInfo::SynchFindMember(SString<EncodingUnicode>& strName, BOOL bCaseSensitive)
 {
     CONTRACT (DispatchMemberInfo*)
     {
@@ -3279,7 +3279,7 @@ HRESULT DispatchExInfo::SynchInvokeMember(SimpleComCallWrapper *pSimpleWrap, DIS
 
 // Helper method used to create DispatchMemberInfo's. This is only here because
 // we can't call new inside a method that has a EX_TRY statement.
-DispatchMemberInfo* DispatchExInfo::CreateDispatchMemberInfoInstance(DISPID DispID, SString& strMemberName, OBJECTREF MemberInfoObj)
+DispatchMemberInfo* DispatchExInfo::CreateDispatchMemberInfoInstance(DISPID DispID, SString<EncodingUnicode>& strMemberName, OBJECTREF MemberInfoObj)
 {
     CONTRACT (DispatchMemberInfo*)
     {

@@ -164,7 +164,7 @@ HMODULE LoadStandaloneGc(LPCWSTR libFileName)
     PathString libPath = GetInternalSystemDirectory();
     libPath.Append(libFileName);
 
-    LPCWSTR libraryName = libPath.GetUnicode();
+    LPCWSTR libraryName = (LPCWSTR)libPath;
     LOG((LF_GC, LL_INFO100, "Loading standalone GC from path %S\n", libraryName));
     return CLRLoadLibrary(libraryName);
 }

@@ -11,6 +11,11 @@
 #define __NSUTILPRIV_H__
 
 template <class T> class CQuickArray;
+
+struct EncodingUnicode;
+struct EncodingUTF8;
+
+template<class TEncoding>
 class SString;
 
 struct ns
@@ -155,9 +160,15 @@ int MakePath(                           // true ok, false out of memory
 
 static
 void MakePath(                          // throws on out of memory
-    SString       &ssBuf,               // Where to put results.
-    const SString &ssNameSpace,         // Namespace for name.
-    const SString &ssName);             // Final part of name.
+    SString<EncodingUTF8>       &ssBuf,               // Where to put results.
+    const SString<EncodingUTF8> &ssNameSpace,         // Namespace for name.
+    const SString<EncodingUTF8> &ssName);             // Final part of name.
+
+static
+void MakePath(                          // throws on out of memory
+    SString<EncodingUnicode>       &ssBuf,               // Where to put results.
+    const SString<EncodingUnicode> &ssNameSpace,         // Namespace for name.
+    const SString<EncodingUnicode> &ssName);             // Final part of name.
 
 //*****************************************************************************
 // Concatinate type names to assembly names
@@ -192,9 +203,9 @@ int MakeNestedTypeName(                 // true ok, false truncation.
 
 static
 void MakeNestedTypeName(                // throws on out of memory
-    SString        &ssBuf,              // output path for name.
-    const SString  &ssEnclosingName,    // Full name for enclosing type
-    const SString  &ssNestedName);      // Full name for nested type
+    SString<EncodingUTF8>        &ssBuf,              // output path for name.
+    const SString<EncodingUTF8>  &ssEnclosingName,    // Full name for enclosing type
+    const SString<EncodingUTF8>  &ssNestedName);      // Full name for nested type
 }; // struct ns
 
 #ifndef NAMESPACE_SEPARATOR_CHAR

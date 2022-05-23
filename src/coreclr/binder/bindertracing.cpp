@@ -56,8 +56,8 @@ namespace
         GUID activityId = GUID_NULL;
         ActivityTracker::Stop(&activityId);
 
-        SString resultName;
-        SString resultPath;
+        SString<EncodingUnicode> resultName;
+        SString<EncodingUnicode> resultPath;
         bool success = resultAssembly != nullptr;
         if (success)
         {
@@ -80,7 +80,7 @@ namespace
 #endif // FEATURE_EVENT_TRACE
     }
 
-    void GetAssemblyLoadContextNameFromManagedALC(INT_PTR managedALC, /* out */ SString &alcName)
+    void GetAssemblyLoadContextNameFromManagedALC(INT_PTR managedALC, /* out */ SString<EncodingUnicode> &alcName)
     {
         if (managedALC == GetAppDomain()->GetDefaultBinder()->GetManagedAssemblyLoadContext())
         {
@@ -107,7 +107,7 @@ namespace
         GCPROTECT_END();
     }
 
-    void GetAssemblyLoadContextNameFromBinder(AssemblyBinder *binder, AppDomain *domain, /*out*/ SString &alcName)
+    void GetAssemblyLoadContextNameFromBinder(AssemblyBinder *binder, AppDomain *domain, /*out*/ SString<EncodingUnicode> &alcName)
     {
         _ASSERTE(binder != nullptr);
 
@@ -121,7 +121,7 @@ namespace
         }
     }
 
-    void GetAssemblyLoadContextNameFromSpec(AssemblySpec *spec, /*out*/ SString &alcName)
+    void GetAssemblyLoadContextNameFromSpec(AssemblySpec *spec, /*out*/ SString<EncodingUnicode> &alcName)
     {
         _ASSERTE(spec != nullptr);
 
@@ -173,8 +173,8 @@ namespace BinderTracing
 {
     static thread_local bool t_AssemblyLoadStartInProgress = false;
 
-    AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const SString& assemblyPath)
-        : m_bindRequest { assemblySpec, SString::Empty(), assemblyPath }
+    AssemblyBindOperation::AssemblyBindOperation(AssemblySpec *assemblySpec, const SString<EncodingUnicode>& assemblyPath)
+        : m_bindRequest { assemblySpec, SString<EncodingUnicode>::Empty(), assemblyPath }
         , m_populatedBindRequest { false }
         , m_checkedIgnoreBind { false }
         , m_ignoreBind { false }
@@ -269,9 +269,9 @@ namespace BinderTracing
             return;
 
         // Use the error message that would be reported in the file load exception
-        StackSString errorMsg;
+        StackSString<EncodingUnicode> errorMsg;
         if (mvidMismatch)
-            errorMsg.LoadResource(CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
+            LoadResource(errorMsg, CCompRC::Error, IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT);
 
         const BindResult::AttemptResult *inContextAttempt = bindResult.GetAttempt(true /*foundInContext*/);
         const BindResult::AttemptResult *appAssembliesAttempt = bindResult.GetAttempt(false /*foundInContext*/);
@@ -283,11 +283,11 @@ namespace BinderTracing
             TraceStage(Stage::FindInLoadContext,
                 isLastAttempt && FAILED(m_hr) && SUCCEEDED(inContextAttempt->HResult) ? m_hr : inContextAttempt->HResult,
                 inContextAttempt->Assembly,
-                mvidMismatch && isLastAttempt ? errorMsg.GetUnicode() : nullptr);
+                mvidMismatch && isLastAttempt ? (LPCWSTR)errorMsg : nullptr);
         }
 
         if (appAssembliesAttempt != nullptr)
-            TraceStage(Stage::ApplicationAssemblies, FAILED(m_hr) && SUCCEEDED(appAssembliesAttempt->HResult) ? m_hr : appAssembliesAttempt->HResult, appAssembliesAttempt->Assembly, mvidMismatch ? errorMsg.GetUnicode() : nullptr);
+            TraceStage(Stage::ApplicationAssemblies, FAILED(m_hr) && SUCCEEDED(appAssembliesAttempt->HResult) ? m_hr : appAssembliesAttempt->HResult, appAssembliesAttempt->Assembly, mvidMismatch ? (LPCWSTR)errorMsg : nullptr);
     }
 
     void ResolutionAttemptedOperation::TraceStage(Stage stage, HRESULT hr, BINDER_SPACE::Assembly *resultAssembly, const WCHAR *customError)
@@ -296,15 +296,15 @@ namespace BinderTracing
             return;
 
         PathString resultAssemblyName;
-        StackSString resultAssemblyPath;
+        StackSString<EncodingUnicode> resultAssemblyPath;
         if (resultAssembly != nullptr)
         {
             resultAssembly->GetAssemblyName()->GetDisplayName(resultAssemblyName, AssemblyName::INCLUDE_VERSION | AssemblyName::INCLUDE_PUBLIC_KEY_TOKEN);
-            resultAssemblyPath = resultAssembly->GetPEImage()->GetPath();
+            resultAssemblyPath.Set(resultAssembly->GetPEImage()->GetPath());
         }
 
         Result result;
-        StackSString errorMsg;
+        StackSString<EncodingUnicode> errorMsg;
         if (customError != nullptr)
         {
             errorMsg.Set(customError);
@@ -312,7 +312,7 @@ namespace BinderTracing
         }
         else if (!m_exceptionMessage.IsEmpty())
         {
-            errorMsg = m_exceptionMessage;
+            errorMsg.Set(m_exceptionMessage);
             result = Result::Exception;
         }
         else
@@ -358,9 +358,9 @@ namespace BinderTracing
 
                 case FUSION_E_REF_DEF_MISMATCH:
                     result = Result::MismatchedAssemblyName;
-                    errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), m_assemblyName.GetUnicode());
+                    errorMsg.Printf(W("Requested assembly name '%s' does not match found assembly name"), (LPCWSTR)m_assemblyName);
                     if (resultAssembly != nullptr)
-                        errorMsg.AppendPrintf(W(" '%s'"), resultAssemblyName.GetUnicode());
+                        errorMsg.AppendPrintf(W(" '%s'"), (LPCWSTR)resultAssemblyName);
 
                     break;
 
@@ -397,9 +397,9 @@ namespace BinderTracing
             return;
 
         Result result;
-        StackSString errorMessage;
-        StackSString resultAssemblyName;
-        StackSString resultAssemblyPath;
+        StackSString<EncodingUnicode> errorMessage;
+        StackSString<EncodingUnicode> resultAssemblyName;
+        StackSString<EncodingUnicode> resultAssemblyPath;
         if (exception != nullptr)
         {
             exception->GetMessage(errorMessage);
@@ -408,7 +408,7 @@ namespace BinderTracing
         else if (resultAssembly != nullptr)
         {
             result = Result::Success;
-            resultAssemblyPath = resultAssembly->GetPath();
+            resultAssemblyPath.Set(resultAssembly->GetPath());
             resultAssembly->GetDisplayName(resultAssemblyName);
         }
         else
@@ -417,10 +417,10 @@ namespace BinderTracing
             errorMessage.Set(s_assemblyNotFoundMessage);
         }
 
-        StackSString assemblyName;
+        StackSString<EncodingUnicode> assemblyName;
         spec->GetDisplayName(ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE | ASM_DISPLAYF_PUBLIC_KEY_TOKEN, assemblyName);
 
-        StackSString alcName;
+        StackSString<EncodingUnicode> alcName;
         GetAssemblyLoadContextNameFromSpec(spec, alcName);
 
         FireEtwResolutionAttempted(

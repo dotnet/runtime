@@ -1490,14 +1490,15 @@ namespace
 
 bool GCToEEInterface::CreateThread(void (*threadStart)(void*), void* arg, bool is_suspendable, const char* name)
 {
-    InlineSString<MaxThreadNameSize> wideName;
+    InlineSString<MaxThreadNameSize, EncodingUnicode> wideName;
     const WCHAR* namePtr = nullptr;
     EX_TRY
     {
         if (name != nullptr)
         {
-            wideName.SetUTF8(name);
-            namePtr = wideName.GetUnicode();
+            MAKE_WIDEPTR_FROMUTF8(wname, name);
+            wideName.Set(wname);
+            namePtr = wideName;
         }
     }
         EX_CATCH

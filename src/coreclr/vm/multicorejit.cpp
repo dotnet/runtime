@@ -48,11 +48,10 @@ void MulticoreJitFireEtwA(const WCHAR * pAction, const char * pTarget, int p1, i
     {
         if (EventEnabledMulticoreJit())
         {
-            SString wTarget;
+            MAKE_WIDEPTR_FROMUTF8(wTargetStr, pTarget);
+            SString<EncodingUnicode> wTarget(wTargetStr);
 
-            wTarget.SetUTF8(pTarget);
-
-            FireEtwMulticoreJit(GetClrInstanceId(), pAction, wTarget.GetUnicode(), p1, p2, p3);
+            FireEtwMulticoreJit(GetClrInstanceId(), pAction, (LPCWSTR)wTarget, p1, p2, p3);
         }
     }
     EX_CATCH
@@ -308,13 +307,12 @@ bool RecorderModuleInfo::SetModule(Module * pMod)
     unsigned lenModuleName = (unsigned) strlen(pModuleName);
     simpleName.Set((const BYTE *) pModuleName, lenModuleName); // SBuffer::Set copies over name
 
-    SString sAssemblyName;
-    StackScratchBuffer scratch;
+    SString<EncodingUnicode> sAssemblyName;
     pMod->GetAssembly()->GetPEAssembly()->GetDisplayName(sAssemblyName);
 
-    LPCUTF8 pAssemblyName = sAssemblyName.GetUTF8(scratch);
-    unsigned lenAssemblyName = sAssemblyName.GetCount();
-    assemblyName.Set((const BYTE *) pAssemblyName, lenAssemblyName);
+    SString<EncodingUTF8> sAssemblyNameUTF8(sAssemblyName.MoveToUTF8());
+    unsigned lenAssemblyName = sAssemblyNameUTF8.GetCount();
+    assemblyName.Set((const BYTE *) (LPCUTF8)sAssemblyNameUTF8, lenAssemblyName);
 
 
     return  moduleVersion.GetModuleVersion(pMod);
@@ -554,7 +552,7 @@ HRESULT MulticoreJitRecorder::WriteOutput(IStream * pStream)
 
     MulticoreJitTrace(("New profile: %d modules, %d methods", m_ModuleCount, m_JitInfoCount));
 
-    _FireEtwMulticoreJit(W("WRITEPROFILE"), m_fullFileName.GetUnicode(), m_ModuleCount, m_JitInfoCount, 0);
+    _FireEtwMulticoreJit(W("WRITEPROFILE"), (LPCWSTR)m_fullFileName, m_ModuleCount, m_JitInfoCount, 0);
 
     return hr;
 }
@@ -920,7 +918,7 @@ HRESULT MulticoreJitRecorder::StopProfile(bool appDomainShutdown)
         hr = WriteOutput();
     }
 
-    MulticoreJitTrace(("StopProfile: Save new profile to %S, hr=0x%x", m_fullFileName.GetUnicode(), hr));
+    MulticoreJitTrace(("StopProfile: Save new profile to %S, hr=0x%x", (LPCWSTR)m_fullFileName, hr));
 
     return hr;
 }
@@ -998,7 +996,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
 
         if ((len != 0) && (m_fullFileName[len - 1] != '\\'))
         {
-            m_fullFileName.Append('\\');
+            m_fullFileName.Append(W("\\"));
         }
 
         m_fullFileName.Append(pFile);
@@ -1043,7 +1041,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
                 player.SuppressRelease();
             }
 
-            MulticoreJitTrace(("ProcessProfile('%S') returns %x", m_fullFileName.GetUnicode(), hr1));
+            MulticoreJitTrace(("ProcessProfile('%S') returns %x", (LPCWSTR)m_fullFileName, hr1));
 
             // Ignore error, even when we can't play back the file, we can still record new one
 
@@ -1057,7 +1055,7 @@ HRESULT MulticoreJitRecorder::StartProfile(const WCHAR * pRoot, const WCHAR * pF
 
     MulticoreJitTrace(("StartProfile('%S', '%S', %d) returns %x", pRoot, pFile, suffix, hr));
 
-    _FireEtwMulticoreJit(W("STARTPROFILE"), m_fullFileName.GetUnicode(), hr, 0, 0);
+    _FireEtwMulticoreJit(W("STARTPROFILE"), (LPCWSTR)m_fullFileName, hr, 0, 0);
 
     return hr;
 }

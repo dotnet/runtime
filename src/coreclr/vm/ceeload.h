@@ -60,7 +60,6 @@ class DomainModule;
 struct DomainLocalModule;
 class SystemDomain;
 class Module;
-class SString;
 class Pending;
 class MethodTable;
 class AppDomain;
@@ -1750,7 +1749,7 @@ public:
     }
 
     HRESULT GetScopeName(LPCUTF8 * pszName) { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetScopeName(pszName); }
-    const SString &GetPath() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetPath(); }
+    const SString<EncodingUnicode> &GetPath() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetPath(); }
 
 #ifdef LOGGING
     LPCWSTR GetDebugName() { WRAPPER_NO_CONTRACT; return m_pPEAssembly->GetDebugName(); }

@@ -167,7 +167,7 @@ ULONG PEImage::Release()
 }
 
 /* static */
-CHECK PEImage::CheckCanonicalFullPath(const SString &path)
+CHECK PEImage::CheckCanonicalFullPath(const SString<EncodingUnicode> &path)
 {
     CONTRACT_CHECK
     {
@@ -181,9 +181,9 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
     {
         // This is not intended to be an exhaustive test, just to provide a sanity check
 
-        SString::CIterator i = path.Begin();
+        SString<EncodingUnicode>::CIterator i = path.Begin();
 
-        SString sNetworkPathPrefix(SString::Literal, W("\\\\"));
+        SString<EncodingUnicode> sNetworkPathPrefix(SharedData, W("\\\\"));
         if (path.Skip(i, sNetworkPathPrefix))
         {
             // Network path
@@ -192,7 +192,7 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
         {
             // Drive path
             i++;
-            SString sDrivePath(SString::Literal, ":\\");
+            SString<EncodingUnicode> sDrivePath(SharedData, W(":\\"));
             CCHECK(path.Skip(i, sDrivePath));
         }
         else
@@ -207,8 +207,8 @@ CHECK PEImage::CheckCanonicalFullPath(const SString &path)
             {
 
                 // Check for . or ..
-                SString sParentDir(SString::Ascii, "..");
-                SString sCurrentDir(SString::Ascii, ".");
+                SString<EncodingUnicode> sParentDir(SharedData, W(".."));
+                SString<EncodingUnicode> sCurrentDir(SharedData, W("."));
                 if ((path.Skip(i, sParentDir) || path.Skip(i, sCurrentDir))
                     && (path.Match(i, '\\')))
                 {
@@ -253,7 +253,7 @@ BOOL PEImage::CompareImage(UPTR u1, UPTR u2)
     HRESULT hr;
     EX_TRY
     {
-        SString path(SString::Literal, pLocator->m_pPath);
+        SString<EncodingUnicode> path(SharedData, pLocator->m_pPath);
 
 #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
         if (pImage->GetPath().Equals(path))
@@ -407,8 +407,8 @@ void PEImage::OpenMDImport()
                 //
                 LPCSTR strModuleName;
                 IfFailThrow(m_pMDImport->GetScopeProps(&strModuleName, NULL));
-                m_sModuleFileNameHintUsedByDac.SetUTF8(strModuleName);
-                m_sModuleFileNameHintUsedByDac.Normalize();
+                MAKE_WIDEPTR_FROMUTF8(wstrModuleName, strModuleName);
+                m_sModuleFileNameHintUsedByDac.Set(wstrModuleName);
             }
          }
     }
@@ -900,7 +900,7 @@ PTR_PEImage PEImage::CreateFromHMODULE(HMODULE hMod)
     }
     CONTRACT_END;
 
-    StackSString path;
+    StackSString<EncodingUnicode> path;
     WszGetModuleFileName(hMod, path);
     PEImageHolder pImage(PEImage::OpenImage(path, MDInternalImport_Default));
 

@@ -1339,7 +1339,7 @@ DacGetIlMethod(TADDR methAddr)
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 void
-DacMdCacheAddEEName(TADDR taEE, const SString& ssEEName)
+DacMdCacheAddEEName(TADDR taEE, const SString<EncodingUnicode>& ssEEName)
 {
     if (!g_dacImpl)
     {
@@ -1350,7 +1350,7 @@ DacMdCacheAddEEName(TADDR taEE, const SString& ssEEName)
     g_dacImpl->MdCacheAddEEName(taEE, ssEEName);
 }
 bool
-DacMdCacheGetEEName(TADDR taEE, SString & eeName)
+DacMdCacheGetEEName(TADDR taEE, SString<EncodingUnicode> & eeName)
 {
     if (!g_dacImpl)
     {

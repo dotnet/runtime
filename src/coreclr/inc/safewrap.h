@@ -58,12 +58,15 @@ consistency's sake.
 
 #include "holder.h"
 
+template<typename TEncoding>
 class SString;
-bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString & value);
-bool ClrGetEnvironmentVariableNoThrow(LPCSTR szEnvVarName, SString & value);
-void ClrGetModuleFileName(HMODULE hModule, SString & value);
+struct EncodingUTF8;
+struct EncodingUnicode;
+bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString<EncodingUTF8> & value);
+bool ClrGetEnvironmentVariableNoThrow(LPCSTR szEnvVarName, SString<EncodingUTF8> & value);
+void ClrGetModuleFileName(HMODULE hModule, SString<EncodingUnicode> & value);
 
-void ClrGetCurrentDirectory(SString & value);
+void ClrGetCurrentDirectory(SString<EncodingUnicode> & value);
 
 
 /* --------------------------------------------------------------------------- *

@@ -98,11 +98,11 @@ ComPlusCallInfo *ComPlusCall::PopulateComPlusCallMethodDesc(MethodDesc* pMD, DWO
         if (pItfMD == NULL)
         {
             // the method does not implement any interface
-            StackSString ssClassName;
+            StackSString<EncodingUnicode> ssClassName;
             pMT->_GetFullyQualifiedNameForClass(ssClassName);
-            StackSString ssMethodName(SString::Utf8, pMD->GetName());
+            MAKE_WIDEPTR_FROMUTF8(ssMethodName, pMD->GetName());
 
-            COMPlusThrow(kInvalidOperationException, IDS_EE_COMIMPORT_METHOD_NO_INTERFACE, ssMethodName.GetUnicode(), ssClassName.GetUnicode());
+            COMPlusThrow(kInvalidOperationException, IDS_EE_COMIMPORT_METHOD_NO_INTERFACE, (LPCWSTR)ssMethodName, (LPCWSTR)ssClassName);
         }
 
         pComInfo->m_cachedComSlot = pItfMD->GetComSlot();

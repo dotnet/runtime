@@ -314,11 +314,11 @@ ErrExit:
     {
         WCHAR rcExt[_MAX_PATH];
         SplitPath(szName, NULL, 0, NULL, 0, NULL, 0, rcExt, _MAX_PATH);
-        if (SString::_wcsicmp(rcExt, W(".obj")) == 0)
+        if (StaticStringHelpers::_wcsicmp(rcExt, W(".obj")) == 0)
         {
             m_FileType = FILETYPE_NTOBJ;
         }
-        else if (SString::_wcsicmp(rcExt, W(".tlb")) == 0)
+        else if (StaticStringHelpers::_wcsicmp(rcExt, W(".tlb")) == 0)
         {
             m_FileType = FILETYPE_TLB;
         }

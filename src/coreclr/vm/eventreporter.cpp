@@ -50,9 +50,9 @@ EventReporter::EventReporter(EventReporterType type)
 
     fBufferFull = FALSE;
 
-    InlineSString<256> ssMessage;
+    InlineSString<256, EncodingUnicode> ssMessage;
 
-    if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_APPLICATION))
+    if(!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_APPLICATION))
         m_Description.Append(W("Application: "));
     else
     {
@@ -71,7 +71,7 @@ EventReporter::EventReporter(EventReporterType type)
     else
     {
         ssMessage.Clear();
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNKNOWN))
+        if(!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_UNKNOWN))
             m_Description.Append(W("unknown\n"));
         else
         {
@@ -81,7 +81,7 @@ EventReporter::EventReporter(EventReporterType type)
     }
 
     ssMessage.Clear();
-    if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_FRAMEWORK_VERSION))
+    if(!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_FRAMEWORK_VERSION))
         m_Description.Append(W("CoreCLR Version: "));
     else
     {
@@ -99,7 +99,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     switch(m_eventType) {
     case ERT_UnhandledException:
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTION))
+        if(!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTION))
             m_Description.Append(W("Description: The process was terminated due to an unhandled exception."));
         else
         {
@@ -109,7 +109,7 @@ EventReporter::EventReporter(EventReporterType type)
         break;
 
     case ERT_ManagedFailFast:
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_MANAGEDFAILFAST))
+        if(!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_MANAGEDFAILFAST))
             m_Description.Append(W("Description: The application requested process termination through System.Environment.FailFast."));
         else
         {
@@ -119,7 +119,7 @@ EventReporter::EventReporter(EventReporterType type)
         break;
 
     case ERT_UnmanagedFailFast:
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFAST))
+        if(!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_UNMANAGEDFAILFAST))
             m_Description.Append(W("Description: The process was terminated due to an internal error in the .NET Runtime "));
         else
         {
@@ -129,7 +129,7 @@ EventReporter::EventReporter(EventReporterType type)
 
     case ERT_StackOverflow:
         // Fetch the localized Stack Overflow Error text or fall back on a hardcoded variant if things get dire.
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_STACK_OVERFLOW))
+        if(!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_STACK_OVERFLOW))
             m_Description.Append(W("Description: The process was terminated due to a stack overflow."));
         else
         {
@@ -139,7 +139,7 @@ EventReporter::EventReporter(EventReporterType type)
         break;
 
     case ERT_CodeContractFailed:
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_CODECONTRACT_FAILED))
+        if(!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_CODECONTRACT_FAILED))
             m_Description.Append(W("Description: The application encountered a bug.  A managed code contract (precondition, postcondition, object invariant, or assert) failed."));
         else
         {
@@ -174,7 +174,7 @@ void EventReporter::AddDescription(_In_ WCHAR *pString)
         MODE_ANY;
     }
     CONTRACTL_END;
-    StackSString s(pString);
+    StackSString<EncodingUnicode> s(pString);
     AddDescription(s);
 }
 
@@ -188,7 +188,7 @@ void EventReporter::AddDescription(_In_ WCHAR *pString)
 // Return Value:
 //    None.
 //
-void EventReporter::AddDescription(SString& s)
+void EventReporter::AddDescription(SString<EncodingUnicode>& s)
 {
     CONTRACTL
     {
@@ -201,8 +201,8 @@ void EventReporter::AddDescription(SString& s)
               m_eventType == ERT_UnmanagedFailFast || m_eventType == ERT_CodeContractFailed);
     if (m_eventType == ERT_ManagedFailFast)
     {
-        SmallStackSString ssMessage;
-        if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_MANAGEDFAILFASTMSG))
+        SmallStackSString<EncodingUnicode> ssMessage;
+        if(!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_MANAGEDFAILFASTMSG))
             m_Description.Append(W("Message: "));
         else
         {
@@ -211,8 +211,8 @@ void EventReporter::AddDescription(SString& s)
     }
     else if (m_eventType == ERT_UnhandledException)
     {
-        SmallStackSString ssMessage;
-        if (!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTIONMSG))
+        SmallStackSString<EncodingUnicode> ssMessage;
+        if (!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTIONMSG))
         {
             m_Description.Append(W("Exception Info: "));
         }
@@ -223,8 +223,8 @@ void EventReporter::AddDescription(SString& s)
     }
     else if (m_eventType == ERT_CodeContractFailed)
     {
-        SmallStackSString ssMessage;
-        if (!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_CODECONTRACT_DETAILMSG))
+        SmallStackSString<EncodingUnicode> ssMessage;
+        if (!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_CODECONTRACT_DETAILMSG))
             m_Description.Append(W("Contract details: "));
         else
             m_Description.Append(ssMessage);
@@ -253,8 +253,8 @@ void EventReporter::BeginStackTrace()
     }
     CONTRACTL_END;
     _ASSERTE (m_eventType == ERT_UnhandledException || m_eventType == ERT_ManagedFailFast || m_eventType == ERT_CodeContractFailed);
-    InlineSString<80> ssMessage;
-    if(!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_STACK))
+    InlineSString<80, EncodingUnicode> ssMessage;
+    if(!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_STACK))
         m_Description.Append(W("Stack:\n"));
     else
     {
@@ -273,7 +273,7 @@ void EventReporter::BeginStackTrace()
 // Return Value:
 //    None.
 //
-void EventReporter::AddStackTrace(SString& s)
+void EventReporter::AddStackTrace(SString<EncodingUnicode>& s)
 {
     WRAPPER_NO_CONTRACT;
     _ASSERTE (m_eventType == ERT_UnhandledException || m_eventType == ERT_ManagedFailFast || m_eventType == ERT_CodeContractFailed);
@@ -291,15 +291,15 @@ void EventReporter::AddStackTrace(SString& s)
         if (curSize >= dwMaxSizeLimit)
         {
             // Load the truncation message
-            StackSString truncate;
-            if (!truncate.LoadResource(CCompRC::Optional, IDS_ER_MESSAGE_TRUNCATE))
+            StackSString<EncodingUnicode> truncate;
+            if (!LoadResource(truncate, CCompRC::Optional, IDS_ER_MESSAGE_TRUNCATE))
             {
                 truncate.Set(W("The remainder of the message was truncated."));
             }
             truncate.Insert(truncate.Begin(), W("\n"));
             truncate.Insert(truncate.End(), W("\n"));
 
-            SString::Iterator ext;
+            SString<EncodingUnicode>::Iterator ext;
             COUNT_T truncCount = truncate.GetCount();
 
             // Go back "truncCount" characters from the end of the string.
@@ -336,7 +336,7 @@ void EventReporter::AddStackTrace(SString& s)
 // Return Value:
 //    None.
 //
-void EventReporter::AddFailFastStackTrace(SString& s)
+void EventReporter::AddFailFastStackTrace(SString<EncodingUnicode>& s)
 {
     CONTRACTL
     {
@@ -347,8 +347,8 @@ void EventReporter::AddFailFastStackTrace(SString& s)
     CONTRACTL_END;
 
     _ASSERTE(m_eventType == ERT_ManagedFailFast);
-    InlineSString<80> ssMessage;
-    if (!ssMessage.LoadResource(CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTION))
+    InlineSString<80, EncodingUnicode> ssMessage;
+    if (!LoadResource(ssMessage, CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTION))
     {
         m_Description.Append(W("Exception stack:\n"));
     }
@@ -415,7 +415,7 @@ void EventReporter::Report()
                        0,
                        eventID,
                        NULL,
-                       m_Description.GetUnicode()
+                       m_Description
                        );
 
         if (dwRetVal != ERROR_SUCCESS)
@@ -503,7 +503,7 @@ BOOL ShouldLogInEventLog()
 struct LogCallstackData
 {
     EventReporter *pReporter;
-    SmallStackSString *pWordAt;
+    SmallStackSString<EncodingUnicode> *pWordAt;
 };
 
 StackWalkAction LogCallstackForEventReporterCallback(
@@ -520,13 +520,12 @@ StackWalkAction LogCallstackForEventReporterCallback(
     CONTRACTL_END;
 
     EventReporter* pReporter = ((LogCallstackData*)pData)->pReporter;
-    SmallStackSString *pWordAt = ((LogCallstackData*)pData)->pWordAt;
+    SmallStackSString<EncodingUnicode> *pWordAt = ((LogCallstackData*)pData)->pWordAt;
 
     MethodDesc *pMD = pCF->GetFunction();
     _ASSERTE(pMD != NULL);
 
-    StackSString str;
-    str = *pWordAt;
+    StackSString<EncodingUnicode> str(*pWordAt);
 
     TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
     pReporter->AddStackTrace(str);
@@ -547,9 +546,9 @@ StackWalkAction LogCallstackForEventReporterCallback(
 void LogCallstackForEventReporterWorker(EventReporter& reporter)
 {
     Thread* pThread = GetThread();
-    SmallStackSString WordAt;
+    SmallStackSString<EncodingUnicode> WordAt;
 
-    if (!WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))
+    if (!LoadResource(WordAt, CCompRC::Optional, IDS_ER_WORDAT))
     {
         WordAt.Set(W("   at"));
     }
@@ -557,7 +556,7 @@ void LogCallstackForEventReporterWorker(EventReporter& reporter)
     {
         WordAt.Insert(WordAt.Begin(), W("   "));
     }
-    WordAt += W(" ");
+    WordAt += SL(W(" "));
 
     LogCallstackData data = {
         &reporter, &WordAt
@@ -585,7 +584,7 @@ void LogCallstackForEventReporter(EventReporter& reporter)
     LogCallstackForEventReporterWorker(reporter);
 }
 
-void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallStackSString& wordAt, int recursionLimit)
+void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallStackSString<EncodingUnicode>& wordAt, int recursionLimit)
 {
     CONTRACTL
     {
@@ -614,14 +613,14 @@ void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallS
 
     ReportExceptionStackHelper((gc.ex)->GetInnerException(), reporter, wordAt, recursionLimit - 1);
 
-    StackSString exTypeStr;
+    StackSString<EncodingUnicode> exTypeStr;
     TypeString::AppendType(exTypeStr, TypeHandle((gc.ex)->GetMethodTable()), TypeString::FormatNamespace | TypeString::FormatFullInst);
     reporter.AddDescription(exTypeStr);
 
     gc.remoteStackTraceString = (gc.ex)->GetRemoteStackTraceString();
     if (gc.remoteStackTraceString != NULL && gc.remoteStackTraceString->GetStringLength())
     {
-        SString remoteStackTrace;
+        SString<EncodingUnicode> remoteStackTrace;
         gc.remoteStackTraceString->GetSString(remoteStackTrace);
 
         // If source info is contained, trim it
@@ -639,13 +638,12 @@ void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallS
 
     for (int j = 0; j < stackFramesData.cElements; j++)
     {
-        StackSString str;
-        str = wordAt;
+        StackSString<EncodingUnicode> str(wordAt);
         TypeString::AppendMethodInternal(str, stackFramesData.pElements[j].pFunc, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatSignature);
         reporter.AddStackTrace(str);
     }
 
-    StackSString separator(L""); // This will result in blank line
+    StackSString<EncodingUnicode> separator(L""); // This will result in blank line
     reporter.AddStackTrace(separator);
 
     GCPROTECT_END();
@@ -672,20 +670,20 @@ void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo)
         EventReporter reporter(EventReporter::ERT_UnhandledException);
         EX_TRY
         {
-            StackSString s;
-        InlineSString<80> ssErrorFormat;
-        if (!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTIONINFO))
-            ssErrorFormat.Set(W("exception code %1, exception address %2"));
-        SmallStackSString exceptionCodeString;
-        exceptionCodeString.Printf(W("%x"), pExceptionInfo->ExceptionRecord->ExceptionCode);
-        SmallStackSString addressString;
-        addressString.Printf(W("%p"), (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress);
-        s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)ssErrorFormat, 0, 0, exceptionCodeString, addressString);
-        reporter.AddDescription(s);
-        if (pThread)
-        {
-            LogCallstackForEventReporter(reporter);
-        }
+            StackSString<EncodingUnicode> s;
+            InlineSString<80, EncodingUnicode> ssErrorFormat;
+            if (!LoadResource(ssErrorFormat, CCompRC::Optional, IDS_ER_UNHANDLEDEXCEPTIONINFO))
+                ssErrorFormat.Set(W("exception code %1, exception address %2"));
+            SmallStackSString<EncodingUnicode> exceptionCodeString;
+            exceptionCodeString.Printf(W("%x"), pExceptionInfo->ExceptionRecord->ExceptionCode);
+            SmallStackSString<EncodingUnicode> addressString;
+            addressString.Printf(W("%p"), (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress);
+            s.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)ssErrorFormat, 0, 0, exceptionCodeString, addressString);
+            reporter.AddDescription(s);
+            if (pThread)
+            {
+                LogCallstackForEventReporter(reporter);
+            }
         }
             EX_CATCH
         {

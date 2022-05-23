@@ -662,8 +662,7 @@ void CallDefaultConstructor(OBJECTREF ref)
 
     if (!pMT->HasDefaultConstructor())
     {
-        SString ctorMethodName(SString::Utf8, COR_CTOR_METHOD_NAME);
-        COMPlusThrowNonLocalized(kMissingMethodException, ctorMethodName.GetUnicode());
+        COMPlusThrowNonLocalized(kMissingMethodException, COR_CTOR_METHOD_NAME_W);
     }
 
     GCPROTECT_BEGIN (ref);

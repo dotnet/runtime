@@ -200,19 +200,15 @@ static void ConstructKeyFromDataCaseInsensitive(EEClassHashTable::ConstructKeyCa
     }
     CONTRACTL_END
 
-    LPUTF8 Key[2];
+    LPCUTF8 Key[2];
 
-    StackSString nameSpace(SString::Utf8, pszNameSpace);
+    StackSString<EncodingUTF8> nameSpace(pszNameSpace);
     nameSpace.LowerCase();
+    Key[0] = nameSpace;
 
-    StackScratchBuffer nameSpaceBuffer;
-    Key[0] = (LPUTF8)nameSpace.GetUTF8(nameSpaceBuffer);
-
-    StackSString name(SString::Utf8, pszName);
+    StackSString<EncodingUTF8> name(pszName);
     name.LowerCase();
-
-    StackScratchBuffer nameBuffer;
-    Key[1] = (LPUTF8)name.GetUTF8(nameBuffer);
+    Key[1] = name;
 
     pCallback->UseKeys(Key);
 }
@@ -291,7 +287,7 @@ VOID EEClassHashTable::ConstructKeyFromData(PTR_EEClassHashEntry pEntry, // IN  
 
         if (!m_bCaseInsensitive)
         {
-            LPUTF8 Key[2];
+            LPCUTF8 Key[2];
 
             Key[0] = pszNameSpace;
             Key[1] = pszName;
@@ -348,7 +344,7 @@ EEClassHashEntry_t *EEClassHashTable::InsertValue(LPCUTF8 pszNamespace, LPCUTF8 
 class ConstructKeyCallbackValidate : public EEClassHashTable::ConstructKeyCallback
 {
 public:
-    virtual void UseKeys(_In_reads_(2) LPUTF8 *Key)
+    virtual void UseKeys(_In_reads_(2) LPCUTF8 *Key)
     {
         LIMITED_METHOD_CONTRACT;
         STATIC_CONTRACT_DEBUG_ONLY;
@@ -693,7 +689,7 @@ EEClassHashEntry_t * EEClassHashTable::GetValue(const NameHandle* pName, PTR_VOI
 class ConstructKeyCallbackCompare : public EEClassHashTable::ConstructKeyCallback
 {
 public:
-    virtual void UseKeys(_In_reads_(2) LPUTF8 *pKey1)
+    virtual void UseKeys(_In_reads_(2) LPCUTF8 *pKey1)
     {
         LIMITED_METHOD_CONTRACT;
         SUPPORTS_DAC;
@@ -757,7 +753,7 @@ BOOL EEClassHashTable::CompareKeys(PTR_EEClassHashEntry pEntry, LPCUTF8 * pKey2)
 class ConstructKeyCallbackCaseInsensitive : public EEClassHashTable::ConstructKeyCallback
 {
 public:
-    virtual void UseKeys(_In_reads_(2) LPUTF8 *key)
+    virtual void UseKeys(_In_reads_(2) LPCUTF8 *key)
     {
         WRAPPER_NO_CONTRACT;
 

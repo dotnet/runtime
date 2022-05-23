@@ -25,18 +25,25 @@ inline ULONG PEImage::AddRef()
     RETURN (static_cast<ULONG>(FastInterlockIncrement(&m_refCount)));
 }
 
-inline const SString &PEImage::GetPath()
+inline const SString<EncodingUnicode> &PEImage::GetPath()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
     return m_path;
 }
 
-inline const SString& PEImage::GetPathToLoad()
+inline SString<EncodingUnicode> PEImage::GetPathToLoad()
 {
     LIMITED_METHOD_DAC_CONTRACT;
 
-    return IsInBundle() ? m_bundleFileLocation.Path() : m_path;
+    if (IsInBundle())
+    {
+        SString<EncodingUnicode> bundleLocation;
+        m_bundleFileLocation.Path().ConvertToUnicode(bundleLocation);
+        return bundleLocation;
+    }
+
+    return m_path;
 }
 
 inline INT64 PEImage::GetOffset() const
@@ -72,7 +79,7 @@ inline void PEImage::SetModuleFileNameHintForDAC()
     // Grab module name only for triage dumps where full paths are excluded
     // because may contain PII data.
     // m_sModuleFileNameHintUsedByDac will just point to module name starting character.
-    const WCHAR* pStartPath = m_path.GetUnicode();
+    const WCHAR* pStartPath = m_path;
     COUNT_T nChars = m_path.GetCount();
     if (pStartPath != NULL && nChars > 0 && nChars <= MAX_PATH)
     {
@@ -89,7 +96,7 @@ inline void PEImage::SetModuleFileNameHintForDAC()
 }
 
 #ifdef DACCESS_COMPILE
-inline const SString &PEImage::GetModuleFileNameHintForDAC()
+inline const SString<EncodingUnicode> &PEImage::GetModuleFileNameHintForDAC()
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -287,7 +294,6 @@ inline void  PEImage::Init(LPCWSTR pPath, BundleFileLocation bundleFileLocation)
     CONTRACTL_END;
 
     m_path = pPath;
-    m_path.Normalize();
     m_bundleFileLocation = bundleFileLocation;
     SetModuleFileNameHintForDAC();
 }

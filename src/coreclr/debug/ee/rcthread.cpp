@@ -574,20 +574,9 @@ static LONG _debugFilter(LPEXCEPTION_POINTERS ep, PVOID pv)
     {
         // We can't really use SStrings on the helper thread; though if we're at this point, we've already died.
         // So go ahead and risk it and use them anyways.
-        SString sStack;
-        StackScratchBuffer buffer;
+        SString<EncodingASCII> sStack;
         GetStackTraceAtContext(sStack, ep->ContextRecord);
-        const CHAR *string = NULL;
-
-        EX_TRY
-        {
-            string = sStack.GetANSI(buffer);
-        }
-        EX_CATCH
-        {
-            string = "*Could not retrieve stack*";
-        }
-        EX_END_CATCH(RethrowTerminalExceptions);
+        const CHAR *string = sStack;
 
         CONSISTENCY_CHECK_MSGF(false,
             ("Unhandled exception on the helper thread.\nEvent=%s(0x%p)\nCode=0x%0x, Ip=0x%p, .cxr=%p, .exr=%p.\n pid=0x%x (%d), tid=0x%x (%d).\n-----\nStack of exception:\n%s\n----\n",

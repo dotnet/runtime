@@ -43,7 +43,7 @@ private:
     EventReporterType m_eventType;
     // We use 2048 which is large enough for most task.  This allows us to avoid
     // unnecessary memory allocation.
-    InlineSString<2048> m_Description;
+    InlineSString<2048, EncodingUnicode> m_Description;
 
     // Flag to indicate if the buffer is full
     BOOL fBufferFull;
@@ -53,13 +53,13 @@ public:
     EventReporter(EventReporterType type);
     // Add extra info into description part of the log
     void AddDescription(_In_ WCHAR *pString);
-    void AddDescription(SString& s);
+    void AddDescription(SString<EncodingUnicode>& s);
     // Start callstack record
     void BeginStackTrace();
     // Add one frame to the callstack part
-    void AddStackTrace(SString& s);
+    void AddStackTrace(SString<EncodingUnicode>& s);
     // Add failfast stack trace
-    void AddFailFastStackTrace(SString& s);
+    void AddFailFastStackTrace(SString<EncodingUnicode>& s);
     // Report to the EventLog
     void Report();
 };
@@ -71,5 +71,5 @@ void LogCallstackForEventReporter(EventReporter& reporter);
 // Record unhandled native exceptions.
 void DoReportForUnhandledNativeException(PEXCEPTION_POINTERS pExceptionInfo);
 // Helper method for logging stack trace in EventReporter
-void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallStackSString& wordAt, int recursionLimit);
+void ReportExceptionStackHelper(OBJECTREF exObj, EventReporter& reporter, SmallStackSString<EncodingUnicode>& wordAt, int recursionLimit);
 #endif // _eventreporter_h_

@@ -1380,7 +1380,7 @@ InternalDispatchImpl_GetIDsOfNames (
         pDispInfo = ComMethodTable::ComMethodTableFromIP(pDisp)->GetDispatchInfo();
 
         // Attempt to find the member in the DispatchEx information.
-        SString sName(rgszNames[0]);
+        SString<EncodingUnicode> sName(rgszNames[0]);
         DispatchMemberInfo *pDispMemberInfo = pDispInfo->FindMember(sName, FALSE);
 
         // Check to see if the member has been found.
@@ -1601,7 +1601,7 @@ HRESULT __stdcall   DispatchEx_GetIDsOfNames (
         // Attempt to find the member in the DispatchEx information.
         DispatchExInfo *pDispExInfo = pSimpleWrap->GetDispatchExInfo();
 
-        SString sName(rgszNames[0]);
+        SString<EncodingUnicode> sName(rgszNames[0]);
         DispatchMemberInfo *pDispMemberInfo = pDispExInfo->SynchFindMember(sName, FALSE);
 
         // Check to see if the member has been found.
@@ -1762,7 +1762,7 @@ HRESULT __stdcall   DispatchEx_GetDispID (
         // Attempt to find the member in the DispatchEx information.
         pDispExInfo = pSimpleWrap->GetDispatchExInfo();
 
-        SString sName(bstrName);
+        SString<EncodingUnicode> sName(bstrName);
         DispatchMemberInfo *pDispMemberInfo = pDispExInfo->SynchFindMember(sName, grfdex & fdexNameCaseSensitive);
 
         // If we still have not found a match and the fdexNameEnsure flag is set then we

@@ -1495,7 +1495,7 @@ CHECK PEDecoder::CheckILOnlyImportDlls() const
     CHECK(CheckRva(nameRVA, (COUNT_T) sizeof("mscoree.dll")));
 
     // Make sure the name is equal to mscoree
-    CHECK(SString::_stricmp( (char *)GetRvaData(nameRVA), "mscoree.dll") == 0);
+    CHECK(StaticStringHelpers::_stricmp( (char *)GetRvaData(nameRVA), "mscoree.dll") == 0);
 
     // Check the Hint/Name table.
     CHECK(CheckILOnlyImportByNameTable(VAL32(IMAGE_IMPORT_DESC_FIELD(pID[0], OriginalFirstThunk))));
@@ -1541,7 +1541,7 @@ CHECK PEDecoder::CheckILOnlyImportByNameTable(RVA rva) const
 
     IMAGE_IMPORT_BY_NAME *import = (IMAGE_IMPORT_BY_NAME*) GetRvaData(importRVA);
 
-    CHECK(SString::_stricmp((char *) import->Name, DLL_NAME) == 0 || _stricmp((char *) import->Name, EXE_NAME) == 0);
+    CHECK(StaticStringHelpers::_stricmp((char *) import->Name, DLL_NAME) == 0 || _stricmp((char *) import->Name, EXE_NAME) == 0);
 
     CHECK_OK;
 }

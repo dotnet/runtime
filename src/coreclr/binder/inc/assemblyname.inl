@@ -14,12 +14,12 @@
 #ifndef __BINDER__ASSEMBLY_NAME_INL__
 #define __BINDER__ASSEMBLY_NAME_INL__
 
-const SString &AssemblyName::GetSimpleName()
+const SString<EncodingUnicode> &AssemblyName::GetSimpleName()
 {
     return m_simpleName;
 }
 
-void AssemblyName::SetSimpleName(SString &simpleName)
+void AssemblyName::SetSimpleName(SString<EncodingUnicode> &simpleName)
 {
     m_simpleName.Set(simpleName);
     SetHave(AssemblyIdentity::IDENTITY_FLAG_SIMPLE_NAME);
@@ -35,12 +35,12 @@ void AssemblyName::SetVersion(AssemblyVersion *pAssemblyVersion)
     m_version.SetVersion(pAssemblyVersion);
 }
 
-SString &AssemblyName::GetCulture()
+SString<EncodingUnicode> &AssemblyName::GetCulture()
 {
     return m_cultureOrLanguage;
 }
 
-void AssemblyName::SetCulture(SString &culture)
+void AssemblyName::SetCulture(SString<EncodingUnicode> &culture)
 {
     m_cultureOrLanguage.Set(culture);
     SetHave(AssemblyIdentity::IDENTITY_FLAG_CULTURE);

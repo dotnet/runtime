@@ -153,7 +153,7 @@ void MakePath (
 
 // Returns the directory for clr module. So, if path was for "C:\Dir1\Dir2\Filename.DLL",
 // then this would return "C:\Dir1\Dir2\" (note the trailing backslash).HRESULT GetClrModuleDirectory(SString& wszPath)
-HRESULT GetClrModuleDirectory(SString& wszPath)
+HRESULT GetClrModuleDirectory(SString<EncodingUnicode>& wszPath)
 {
     CONTRACTL
     {
@@ -188,14 +188,14 @@ HRESULT GetClrModuleDirectory(SString& wszPath)
 //    S_OK - Output buffer contains path name.
 //    other errors - If Sstring throws.
 //
-HRESULT CopySystemDirectory(const SString& pPathString,
-                            SString& pbuffer)
+HRESULT CopySystemDirectory(const SString<EncodingUnicode>& pPathString,
+                            SString<EncodingUnicode>& pbuffer)
 {
     HRESULT hr = S_OK;
     EX_TRY
     {
         pbuffer.Set(pPathString);
-        SString::Iterator iter = pbuffer.End();
+        SString<EncodingUnicode>::Iterator iter = pbuffer.End();
         if (pbuffer.FindBack(iter,DIRECTORY_SEPARATOR_CHAR_W))
         {
             iter++;

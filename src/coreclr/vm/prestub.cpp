@@ -818,7 +818,8 @@ PCODE MethodDesc::JitCompileCodeLockedEventWrapper(PrepareCodeConfig* pConfig, J
     }
     else
     {
-        SString namespaceOrClassName, methodName, methodSignature;
+        SString<EncodingUnicode> namespaceOrClassName;
+        SString<EncodingUTF8> methodName, methodSignature;
 
         // Methods that may be interpreted defer this notification until it is certain
         // we are jitting and not interpreting in CompileMethodWithEtwWrapper.

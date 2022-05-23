@@ -1852,14 +1852,14 @@ static void LoadAndInitializeJIT(LPCWSTR pwzJitName, OUT HINSTANCE* phJit, OUT I
         PathString CoreClrFolderHolder;
         if (GetClrModulePathName(CoreClrFolderHolder) && !CoreClrFolderHolder.IsEmpty())
         {
-            SString::Iterator iter = CoreClrFolderHolder.End();
+            SString<EncodingUnicode>::Iterator iter = CoreClrFolderHolder.End();
             BOOL findSep = CoreClrFolderHolder.FindBack(iter, DIRECTORY_SEPARATOR_CHAR_W);
             if (findSep)
             {
-                SString sJitName(pwzJitName);
+                SString<EncodingUnicode> sJitName(pwzJitName);
                 CoreClrFolderHolder.Replace(iter + 1, CoreClrFolderHolder.End() - (iter + 1), sJitName);
 
-                *phJit = CLRLoadLibrary(CoreClrFolderHolder.GetUnicode());
+                *phJit = CLRLoadLibrary(CoreClrFolderHolder);
                 if (*phJit != NULL)
                 {
                     hr = S_OK;

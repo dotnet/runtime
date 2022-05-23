@@ -139,9 +139,9 @@ HRESULT DefaultAssemblyBinder::BindUsingPEImage( /* in */ PEImage *pPEImage,
         {
             // Ensure we are not being asked to bind to a TPA assembly
             //
-            const SString& simpleName = pAssemblyName->GetSimpleName();
+            const SString<EncodingUnicode>& simpleName = pAssemblyName->GetSimpleName();
             SimpleNameToFileNameMap* tpaMap = GetAppContext()->GetTpaList();
-            if (tpaMap->LookupPtr(simpleName.GetUnicode()) != NULL)
+            if (tpaMap->LookupPtr(simpleName) != NULL)
             {
                 // The simple name of the assembly being requested to be bound was found in the TPA list.
                 // Now, perform the actual bind to see if the assembly was really in the TPA assembly list or not.
@@ -172,9 +172,9 @@ Exit:;
 }
 #endif // !defined(DACCESS_COMPILE)
 
-HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
-                                                SString  &sPlatformResourceRoots,
-                                                SString  &sAppPaths)
+HRESULT DefaultAssemblyBinder::SetupBindingPaths(SString<EncodingUnicode>  &sTrustedPlatformAssemblies,
+                                                SString<EncodingUnicode>  &sPlatformResourceRoots,
+                                                SString<EncodingUnicode>  &sAppPaths)
 {
     HRESULT hr = S_OK;
 
@@ -194,7 +194,7 @@ HRESULT DefaultAssemblyBinder::BindToSystem(BINDER_SPACE::Assembly** ppSystemAss
     EX_TRY
     {
         ReleaseHolder<BINDER_SPACE::Assembly> pAsm;
-        StackSString systemPath(SystemDomain::System()->SystemDirectory());
+        StackSString<EncodingUnicode> systemPath(SystemDomain::System()->SystemDirectory());
         hr = AssemblyBinderCommon::BindToSystem(systemPath, &pAsm);
         if (SUCCEEDED(hr))
         {

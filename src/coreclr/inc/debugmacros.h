@@ -17,14 +17,17 @@
 #undef _ASSERTE
 #undef VERIFY
 
+template<typename TEncoding>
+class SString;
+
+struct EncodingASCII;
+
 #ifdef __cplusplus
 extern "C" {
 #endif // __cplusplus
 
 #if defined(_DEBUG)
-
-class SString;
-bool GetStackTraceAtContext(SString & s, struct _CONTEXT * pContext);
+bool GetStackTraceAtContext(SString<EncodingASCII> & s, struct _CONTEXT * pContext);
 
 void _cdecl DbgWriteEx(LPCTSTR szFmt, ...);
 bool _DbgBreakCheck(LPCSTR szFile, int iLine, LPCSTR szExpr, BOOL fConstrained = FALSE);

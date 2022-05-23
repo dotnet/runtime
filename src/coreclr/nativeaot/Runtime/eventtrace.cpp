@@ -1116,7 +1116,7 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
 #ifdef FEATURE_REDHAWK
         EventDataDescCreate(&EventData[iDesc++], L"", sizeof(WCHAR));
 #else   // FEATURE_REDHAWK
-        LPCWSTR wszName = m_rgBulkTypeValues[iTypeData].sName.GetUnicode();
+        LPCWSTR wszName = m_rgBulkTypeValues[iTypeData].(LPCWSTR)sName;
         EventDataDescCreate(
             &EventData[iDesc++],
             (wszName == NULL) ? L"" : wszName,
@@ -3898,7 +3898,7 @@ void ETW::ExceptionLog::ExceptionThrown(CrawlFrame* pCf, BOOL bIsReThrownExcepti
         gc.exceptionMessageRef = ((EXCEPTIONREF)gc.exceptionObj)->GetMessage();
         TypeHandle exceptionTypeHandle = (gc.exceptionObj)->GetTypeHandle();
         exceptionTypeHandle.GetName(exceptionType);
-        WCHAR* exceptionTypeName = (WCHAR*)exceptionType.GetUnicode();
+        WCHAR* exceptionTypeName = (WCHAR*)(LPCWSTR)exceptionType;
 
         if (gc.exceptionMessageRef != NULL)
         {
@@ -4852,7 +4852,7 @@ void ETW::LoaderLog::SendAssemblyEvent(Assembly* pAssembly, DWORD dwEventOptions
 
     SString sAssemblyPath;
     pAssembly->GetDisplayName(sAssemblyPath);
-    LPWSTR lpszAssemblyPath = (LPWSTR)sAssemblyPath.GetUnicode();
+    LPWSTR lpszAssemblyPath = (LPWSTR)(LPCWSTR)sAssemblyPath;
 
     /* prepare events args for ETW and ETM */
 #ifndef FEATURE_DTRACE
@@ -5228,7 +5228,7 @@ void ETW::LoaderLog::SendModuleEvent(Module* pModule, DWORD dwEventOptions, BOOL
     if (bIsDynamicAssembly || ModuleILPath == NULL || wcslen(ModuleILPath) <= 2)
     {
         moduleName.SetUTF8(pModule->GetSimpleName());
-        ModuleILPath = (PWCHAR)moduleName.GetUnicode();
+        ModuleILPath = (PWCHAR)(LPCWSTR)moduleName;
         ModuleNativePath = (PWCHAR)pEmptyString;
     }
 
@@ -5238,8 +5238,8 @@ void ETW::LoaderLog::SendModuleEvent(Module* pModule, DWORD dwEventOptions, BOOL
     szDtraceOutput2 = (PCWSTR)ModuleNativePath;
 
     // Convert PDB paths to UNICODE
-    StackSString managedPdbPath(SString::Utf8, cvInfoIL.path);
-    StackSString nativePdbPath(SString::Utf8, cvInfoNative.path);
+    StackSString<EncodingUTF8> managedPdbPath(cvInfoIL.path);
+    StackSString<EncodingUTF8> nativePdbPath(cvInfoNative.path);
 #else // !FEATURE_DTRACE
     // since DTrace do not support UNICODE string, they need to be converted to ANSI string
     INT32 nSizeOfILPath = WideCharToMultiByte(ModuleILPath, szDtraceOutput1);

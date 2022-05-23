@@ -303,21 +303,21 @@ VOID __fastcall UMEntryThunk::ReportViolation(UMEntryThunk* pEntryThunk)
 
     MethodDesc* pMethodDesc = pEntryThunk->GetMethod();
 
-    SString namespaceOrClassName;
-    SString methodName;
-    SString moduleName;
+    SString<EncodingUnicode> namespaceOrClassName;
+    SString<EncodingUTF8> methodName;
+    SString<EncodingUTF8> moduleName;
 
     pMethodDesc->GetMethodInfoNoSig(namespaceOrClassName, methodName);
-    moduleName.SetUTF8(pMethodDesc->GetModule()->GetSimpleName());
+    moduleName.Set(pMethodDesc->GetModule()->GetSimpleName());
 
-    SString message;
+    SString<EncodingUnicode> message;
 
-    message.Printf(W("A callback was made on a garbage collected delegate of type '%s!%s::%s'."),
-        moduleName.GetUnicode(),
-        namespaceOrClassName.GetUnicode(),
-        methodName.GetUnicode());
+    message.Printf(W("A callback was made on a garbage collected delegate of type '%S!%s::%S'."),
+        (LPCSTR)moduleName,
+        (LPCWSTR)namespaceOrClassName,
+        (LPCSTR)methodName);
 
-    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, message.GetUnicode());
+    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_FAILFAST, (LPCWSTR)message);
 }
 
 UMThunkMarshInfo::~UMThunkMarshInfo()

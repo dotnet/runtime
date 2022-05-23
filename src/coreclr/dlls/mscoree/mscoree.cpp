@@ -292,7 +292,7 @@ HRESULT SetInternalSystemDirectory()
                 wzSystemDirectory.Set(W('\0'));
             }
 
-            pSystemDirectory = wzSystemDirectory.GetCopyOfUnicodeString();
+            pSystemDirectory = wzSystemDirectory.CreateCopyOfString();
             if (pSystemDirectory == NULL)
             {
                hr =  HRESULT_FROM_WIN32(ERROR_NOT_ENOUGH_MEMORY);

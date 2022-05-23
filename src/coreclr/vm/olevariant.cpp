@@ -1788,12 +1788,12 @@ void OleVariant::MarshalInterfaceArrayOleToCom(void *oleArray, BASEARRAYREF *pCo
 
             if (pElementMT != NULL && !CanCastComObject(obj, pElementMT))
             {
-                StackSString ssObjClsName;
-                StackSString ssDestClsName;
+                StackSString<EncodingUnicode> ssObjClsName;
+                StackSString<EncodingUnicode> ssDestClsName;
                 obj->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
                 pElementMT->_GetFullyQualifiedNameForClass(ssDestClsName);
                 COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
-                             ssObjClsName.GetUnicode(), ssDestClsName.GetUnicode());
+                             (LPCWSTR)ssObjClsName, (LPCWSTR)ssDestClsName);
             }
 
             //
@@ -4709,9 +4709,9 @@ void OleVariant::ConvertValueClassToVariant(OBJECTREF *pBoxedValueClass, VARIANT
         if (hr == TLBX_E_LIBNOTREGISTERED)
         {
             // Indicate that conversion of the class to variant without a registered type lib is not supported
-            StackSString className;
+            StackSString<EncodingUnicode> className;
             pValueClassMT->_GetFullyQualifiedNameForClass(className);
-            COMPlusThrow(kNotSupportedException, IDS_EE_CLASS_TO_VARIANT_TLB_NOT_REG, className.GetUnicode());
+            COMPlusThrow(kNotSupportedException, IDS_EE_CLASS_TO_VARIANT_TLB_NOT_REG, (LPCWSTR)className);
         }
         else
         {

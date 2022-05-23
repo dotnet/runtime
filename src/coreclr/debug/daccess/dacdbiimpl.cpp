@@ -4184,8 +4184,8 @@ void DacDbiInterfaceImpl::GetModuleSimpleName(VMPTR_Module vmModule, IStringHold
     Module * pModule = vmModule.GetDacPtr();
     LPCUTF8 szNameUtf8 = pModule->GetSimpleName();
 
-    SString convert(SString::Utf8, szNameUtf8);
-    IfFailThrow(pStrFilename->AssignCopy(convert.GetUnicode()));
+    MAKE_WIDEPTR_FROMUTF8(convert, szNameUtf8);
+    IfFailThrow(pStrFilename->AssignCopy(convert));
 }
 
 HRESULT DacDbiInterfaceImpl::IsModuleMapped(VMPTR_Module pModule, OUT BOOL *isModuleMapped)

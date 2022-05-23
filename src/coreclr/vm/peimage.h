@@ -134,8 +134,8 @@ public:
 
     BOOL  HasPath();
     ULONG GetPathHash();
-    const SString& GetPath();
-    const SString& GetPathToLoad();
+    const SString<EncodingUnicode>& GetPath();
+    SString<EncodingUnicode> GetPathToLoad();
     LPCWSTR GetPathForErrorMessages() { return GetPath(); }
 
     BOOL IsFile();
@@ -176,7 +176,7 @@ public:
 
     // Check utilites
     static CHECK CheckStartup();
-    static CHECK CheckCanonicalFullPath(const SString& path);
+    static CHECK CheckCanonicalFullPath(const SString<EncodingUnicode>& path);
 
     CHECK CheckFormat();
     CHECK CheckILFormat();
@@ -185,7 +185,7 @@ public:
     void SetModuleFileNameHintForDAC();
 #ifdef DACCESS_COMPILE
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags);
-    const SString &GetModuleFileNameHintForDAC();
+    const SString<EncodingUnicode> &GetModuleFileNameHintForDAC();
 #endif
 
 private:
@@ -225,7 +225,7 @@ private:
         }
 
         PEImageLocator(PEImage * pImage)
-            : m_pPath(pImage->m_path.GetUnicode())
+            : m_pPath(pImage->m_path)
         {
             m_bIsInBundle = pImage->IsInBundle();
         }
@@ -291,11 +291,11 @@ private:
     // Instance fields
     // ------------------------------------------------------------
 
-    SString   m_path;
-    LONG      m_refCount;
+    SString<EncodingUnicode> m_path;
+    LONG                      m_refCount;
 
     // means this is a unique (deduped) instance.
-    BOOL      m_bInHashMap;
+    BOOL m_bInHashMap;
 
     // If this image is located within a single-file bundle, the location within the bundle.
     // If m_bundleFileLocation is valid, it takes precedence over m_path for loading.
@@ -312,7 +312,7 @@ private:
     // disk IL. This really is a workaround. The real fix is for fusion loader
     // hook (public API on hosting) to take an additional file name hint.
     // We are piggy backing on the fact that module name is the same as file name!!!
-    SString   m_sModuleFileNameHintUsedByDac; // This is only used by DAC
+    SString<EncodingUnicode>   m_sModuleFileNameHintUsedByDac; // This is only used by DAC
 
     enum
     {

@@ -39,7 +39,7 @@ bool inline IsTypeNameReservedChar(WCHAR ch)
 
 
 DomainAssembly * LoadDomainAssembly(
-    SString *  psszAssemblySpec,
+    SString<EncodingUnicode> *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
     AssemblyBinder * pBinder,
     BOOL       bThrowIfNotFound);
@@ -158,7 +158,7 @@ private:
     //
     private:
         TypeNameTokens LexAToken(BOOL ignorePlus = FALSE);
-        BOOL GetIdentifier(SString* sszId, TypeNameIdentifiers identiferType);
+        BOOL GetIdentifier(SString<EncodingUnicode>* sszId, TypeNameIdentifiers identiferType);
         void NextToken()  { WRAPPER_NO_CONTRACT; m_currentToken = m_nextToken; m_currentItr = m_itr; m_nextToken = LexAToken(); }
         BOOL NextTokenIs(TypeNameTokens token) { LIMITED_METHOD_CONTRACT; return !!(m_nextToken & token); }
         BOOL TokenIs(TypeNameTokens token) { LIMITED_METHOD_CONTRACT; return !!(m_currentToken & token); }
@@ -319,8 +319,8 @@ public:
 
 
 public:
-    SString* GetAssembly() { WRAPPER_NO_CONTRACT; return &m_assembly; }
-    SArray<SString*>& GetNames() { WRAPPER_NO_CONTRACT; return m_names; }
+    InlineSString<128, EncodingUnicode>* GetAssembly() { WRAPPER_NO_CONTRACT; return &m_assembly; }
+    SArray<SString<EncodingUnicode>*>& GetNames() { WRAPPER_NO_CONTRACT; return m_names; }
     SArray<TypeName*>& GetGenericArguments() { WRAPPER_NO_CONTRACT; return m_genericArguments; }
     SArray<DWORD>& GetSignature() { WRAPPER_NO_CONTRACT; return m_signature; }
     SAFEHANDLE GetSafeHandle();
@@ -329,7 +329,7 @@ private:
     TypeName() : m_bIsGenericArgument(FALSE), m_count(0) { LIMITED_METHOD_CONTRACT; }
     TypeName* AddGenericArgument();
 
-    SString* AddName()
+    SString<EncodingUnicode>* AddName()
     {
         CONTRACTL
         {
@@ -339,7 +339,7 @@ private:
         }
         CONTRACTL_END;
 
-        return m_names.AppendEx(m_nestNameFactory.Create());
+        return m_names.AppendEx((SString<EncodingUnicode>*)m_nestNameFactory.Create());
     }
 
     void SetByRef() { WRAPPER_NO_CONTRACT; m_signature.Append(ELEMENT_TYPE_BYREF); }
@@ -359,7 +359,7 @@ private:
         m_signature.Append(rank);
     }
 
-    SString* ToString(SString* pBuf, BOOL bAssemblySpec = FALSE, BOOL bSignature = FALSE, BOOL bGenericArguments = FALSE);
+    SString<EncodingUnicode>* ToString(SString<EncodingUnicode>* pBuf, BOOL bAssemblySpec = FALSE, BOOL bSignature = FALSE, BOOL bGenericArguments = FALSE);
 
 private:
     //----------------------------------------------------------------------------------------------------------------
@@ -396,9 +396,9 @@ private:
     DWORD m_count;
     InlineSArray<DWORD, 128> m_signature;
     InlineSArray<TypeName*, 16> m_genericArguments;
-    InlineSArray<SString*, 16> m_names;
-    InlineSString<128> m_assembly;
-    Factory<InlineSString<128> > m_nestNameFactory;
+    InlineSArray<SString<EncodingUnicode>*, 16> m_names;
+    InlineSString<128, EncodingUnicode> m_assembly;
+    Factory<InlineSString<128, EncodingUnicode> > m_nestNameFactory;
 };
 
 extern "C" void QCALLTYPE TypeName_CreateTypeNameParser (LPCWSTR wszTypeName, QCall::ObjectHandleOnStack pNames, BOOL throwOnError);

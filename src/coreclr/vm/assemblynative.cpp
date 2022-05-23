@@ -75,8 +75,8 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
     if (pAssemblyNameParts->_pName == NULL)
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
 
-    StackSString ssName;
-    SString(SString::Literal, pAssemblyNameParts->_pName).ConvertToUTF8(ssName);
+    StackSString<EncodingUTF8> ssName;
+    SString<EncodingUnicode>(SharedData, pAssemblyNameParts->_pName).ConvertToUTF8(ssName);
 
     AssemblyMetaDataInternal asmInfo;
 
@@ -85,13 +85,13 @@ extern "C" void QCALLTYPE AssemblyNative_InternalLoad(NativeAssemblyNameParts* p
     asmInfo.usBuildNumber = pAssemblyNameParts->_build;
     asmInfo.usRevisionNumber = pAssemblyNameParts->_revision;
 
-    SmallStackSString ssLocale;
+    SmallStackSString<EncodingUTF8> ssLocale;
     if (pAssemblyNameParts->_pCultureName != NULL)
-        SString(SString::Literal, pAssemblyNameParts->_pCultureName).ConvertToUTF8(ssLocale);
-    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8NoConvert() : NULL;
+        SString<EncodingUnicode>(SharedData, pAssemblyNameParts->_pCultureName).ConvertToUTF8(ssLocale);
+    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? (LPCUTF8)ssLocale : NULL;
 
     // Initialize spec
-    spec.Init(ssName.GetUTF8NoConvert(), &asmInfo,
+    spec.Init((LPCUTF8)ssName, &asmInfo,
         pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
     if (pParentAssembly != NULL)
@@ -162,7 +162,7 @@ Assembly* AssemblyNative::LoadFromPEImage(AssemblyBinder* pBinder, PEImage *pIma
             dwMessageID = IDS_HOST_ASSEMBLY_RESOLVER_ASSEMBLY_ALREADY_LOADED_IN_CONTEXT;
         }
 
-        StackSString name;
+        StackSString<EncodingUnicode> name;
         spec.GetDisplayName(0, name);
         COMPlusThrowHR(COR_E_FILELOAD, dwMessageID, name);
     }
@@ -495,7 +495,7 @@ extern "C" BOOL QCALLTYPE AssemblyNative_GetCodeBase(QCall::AssemblyHandle pAsse
 
     BEGIN_QCALL;
 
-    StackSString codebase;
+    StackSString<EncodingUnicode> codebase;
 
     {
         ret = pAssembly->GetPEAssembly()->GetCodeBase(codebase);
@@ -541,10 +541,9 @@ extern "C" BYTE * QCALLTYPE AssemblyNative_GetResource(QCall::AssemblyHandle pAs
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 
     // Get the name in UTF8
-    SString name(SString::Literal, wszName);
+    SString<EncodingUnicode> name(SharedData, wszName);
 
-    StackScratchBuffer scratch;
-    LPCUTF8 pNameUTF8 = name.GetUTF8(scratch);
+    MAKE_UTF8PTR_FROMWIDE(pNameUTF8, name);
 
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
@@ -571,10 +570,9 @@ extern "C" INT32 QCALLTYPE AssemblyNative_GetManifestResourceInfo(QCall::Assembl
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
 
     // Get the name in UTF8
-    SString name(SString::Literal, wszName);
+    SString<EncodingUnicode> name(SharedData, wszName);
 
-    StackScratchBuffer scratch;
-    LPCUTF8 pNameUTF8 = name.GetUTF8(scratch);
+    MAKE_UTF8PTR_FROMWIDE(pNameUTF8, name);
 
     if (*pNameUTF8 == '\0')
         COMPlusThrow(kArgumentException, W("Format_StringZeroLength"));
@@ -698,7 +696,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetModule(QCall::AssemblyHandle pAssemb
 
     if SUCCEEDED(pAssembly->GetModule()->GetScopeName(&pModuleName))
     {
-        if (::SString::_stricmp(pModuleName, szModuleName) == 0)
+        if (::StaticStringHelpers::_stricmp(pModuleName, szModuleName) == 0)
             pModule = pAssembly->GetModule();
     }
 
@@ -1042,7 +1040,7 @@ extern "C" void QCALLTYPE AssemblyNative_GetFullName(QCall::AssemblyHandle pAsse
 
     BEGIN_QCALL;
 
-    StackSString name;
+    StackSString<EncodingUnicode> name;
     pAssembly->GetPEAssembly()->GetDisplayName(name);
     retString.Set(name);
 
@@ -1103,10 +1101,10 @@ extern "C" void QCALLTYPE AssemblyNative_GetImageRuntimeVersion(QCall::AssemblyH
     LPCSTR pszVersion = NULL;
     IfFailThrow(pPEAssembly->GetMDImport()->GetVersionString(&pszVersion));
 
-    SString version(SString::Utf8, pszVersion);
+    SString<EncodingUTF8> version(pszVersion);
 
     // Allocate a managed string that contains the version and return it.
-    retString.Set(version);
+    retString.Set((LPCUTF8)version);
 
     END_QCALL;
 }

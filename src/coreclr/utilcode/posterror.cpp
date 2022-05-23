@@ -74,7 +74,7 @@ HRESULT UtilLoadResourceString(CCompRC::ResourceCategory eCategory, UINT iResour
 
     HRESULT retVal = E_OUTOFMEMORY;
 
-    SString::Startup();
+    StaticStringHelpers::Startup();
     EX_TRY
     {
         CCompRC *pResourceDLL = CCompRC::GetDefaultResourceDll();

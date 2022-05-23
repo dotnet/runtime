@@ -662,7 +662,7 @@ TypeHandle::CastResult TypeHandle::CanCastToCached(TypeHandle type)  const
 
 #endif // #ifndef DACCESS_COMPILE
 
-void TypeHandle::GetName(SString &result) const
+void TypeHandle::GetName(SString<EncodingUnicode> &result) const
 {
     CONTRACTL
     {
@@ -1362,21 +1362,23 @@ BOOL SatisfiesClassConstraints(TypeHandle instanceTypeHnd, TypeHandle typicalTyp
 
         if (!bSatisfiesConstraints)
         {
-            SString argNum;
+            SmallStackSString<EncodingUTF8> argNum;
             argNum.Printf("%d", i);
+            SmallStackSString<EncodingUnicode> argNumW;
+            argNum.ConvertToUnicode(argNumW);
 
-            SString typicalTypeHndName;
+            SString<EncodingUnicode> typicalTypeHndName;
             TypeString::AppendType(typicalTypeHndName, typicalTypeHnd);
 
-            SString actualParamName;
+            SString<EncodingUnicode> actualParamName;
             TypeString::AppendType(actualParamName, actualInst[i]);
 
-            SString formalParamName;
+            SString<EncodingUnicode> formalParamName;
             TypeString::AppendType(formalParamName, formalInst[i]);
 
             COMPlusThrow(kTypeLoadException,
                          IDS_EE_CLASS_CONSTRAINTS_VIOLATION,
-                         argNum,
+                         argNumW,
                          actualParamName,
                          typicalTypeHndName,
                          formalParamName
@@ -1514,57 +1516,57 @@ CHECK TypeHandle::CheckMatchesKey(TypeKey *pKey) const
     // Check first to avoid creating debug name
     if (!GetTypeKey().Equals(pKey))
     {
-        StackSString typeKeyString;
+        StackSString<EncodingUnicode> typeKeyString;
         CONTRACT_VIOLATION(GCViolation|ThrowsViolation);
         TypeString::AppendTypeKeyDebug(typeKeyString, pKey);
         if (!IsTypeDesc() && AsMethodTable()->IsArray())
         {
             MethodTable *pMT = AsMethodTable();
             CHECK_MSGF(pMT->GetInternalCorElementType() == pKey->GetKind(),
-                       ("CorElementType %d of Array MethodTable does not match key %S", pMT->GetArrayElementType(), typeKeyString.GetUnicode()));
+                       ("CorElementType %d of Array MethodTable does not match key %S", pMT->GetArrayElementType(), (LPCWSTR)typeKeyString));
 
             CHECK_MSGF(pMT->GetArrayElementTypeHandle() == pKey->GetElementType(),
-                       ("Element type of Array MethodTable does not match key %S",typeKeyString.GetUnicode()));
+                       ("Element type of Array MethodTable does not match key %S",(LPCWSTR)typeKeyString));
 
             CHECK_MSGF(pMT->GetRank() == pKey->GetRank(),
-                       ("Rank %d of Array MethodTable does not match key %S", pMT->GetRank(), typeKeyString.GetUnicode()));
+                       ("Rank %d of Array MethodTable does not match key %S", pMT->GetRank(), (LPCWSTR)typeKeyString));
         }
         else
         if (IsTypeDesc())
         {
             TypeDesc *pTD = AsTypeDesc();
             CHECK_MSGF(pTD->GetInternalCorElementType() == pKey->GetKind(),
-                       ("CorElementType %d of TypeDesc does not match key %S", pTD->GetInternalCorElementType(), typeKeyString.GetUnicode()));
+                       ("CorElementType %d of TypeDesc does not match key %S", pTD->GetInternalCorElementType(), (LPCWSTR)typeKeyString));
 
             if (CorTypeInfo::IsModifier(pKey->GetKind()))
             {
                 CHECK_MSGF(pTD->GetTypeParam() == pKey->GetElementType(),
-                           ("Element type of TypeDesc does not match key %S",typeKeyString.GetUnicode()));
+                           ("Element type of TypeDesc does not match key %S",(LPCWSTR)typeKeyString));
             }
         }
         else
         {
             MethodTable *pMT = AsMethodTable();
-            CHECK_MSGF(pMT->GetModule() == pKey->GetModule(), ("Module of MethodTable does not match key %S", typeKeyString.GetUnicode()));
+            CHECK_MSGF(pMT->GetModule() == pKey->GetModule(), ("Module of MethodTable does not match key %S", (LPCWSTR)typeKeyString));
             CHECK_MSGF(pMT->GetCl() == pKey->GetTypeToken(),
                        ("TypeDef %x of Methodtable does not match TypeDef %x of key %S", pMT->GetCl(), pKey->GetTypeToken(),
-                        typeKeyString.GetUnicode()));
+                        (LPCWSTR)typeKeyString));
 
             if (pMT->IsTypicalTypeDefinition())
             {
                 CHECK_MSGF(pKey->GetNumGenericArgs() == 0 && !pKey->HasInstantiation(),
-                           ("Key %S for Typical MethodTable has non-zero number of generic arguments", typeKeyString.GetUnicode()));
+                           ("Key %S for Typical MethodTable has non-zero number of generic arguments", (LPCWSTR)typeKeyString));
             }
             else
             {
                 CHECK_MSGF(pMT->GetNumGenericArgs() == pKey->GetNumGenericArgs(),
-                           ("Number of generic params %d in MethodTable does not match key %S", pMT->GetNumGenericArgs(), typeKeyString.GetUnicode()));
+                           ("Number of generic params %d in MethodTable does not match key %S", pMT->GetNumGenericArgs(), (LPCWSTR)typeKeyString));
                 if (pKey->HasInstantiation())
                 {
                     for (DWORD i = 0; i < pMT->GetNumGenericArgs(); i++)
                     {
                         CHECK_MSGF(pMT->GetInstantiation()[i] == pKey->GetInstantiation()[i],
-                               ("Generic argument %d in MethodTable does not match key %S", i, typeKeyString.GetUnicode()));
+                               ("Generic argument %d in MethodTable does not match key %S", i, (LPCWSTR)typeKeyString));
                     }
                 }
             }
@@ -1601,7 +1603,7 @@ CHECK TypeHandle::CheckLoadLevel(ClassLoadLevel requiredLevel)
         CHECK(actualLevel >= requiredLevel);
         //        CHECK_MSGF(actualLevel >= requiredLevel,
         //                   ("Type has not been sufficiently loaded (actual level is %d, required level is %d)",
-        //                    /* debugTypeName.GetUnicode(), */ actualLevel, requiredLevel /* classLoadLevelName[actualLevel], classLoadLevelName[requiredLevel] */));
+        //                    /* (LPCWSTR)debugTypeName, */ actualLevel, requiredLevel /* classLoadLevelName[actualLevel], classLoadLevelName[requiredLevel] */));
     }
     CONSISTENCY_CHECK((actualLevel > CLASS_LOAD_UNRESTORED) == IsRestored());
     CONSISTENCY_CHECK((actualLevel == CLASS_LOAD_UNRESTOREDTYPEKEY) == HasUnrestoredTypeKey());

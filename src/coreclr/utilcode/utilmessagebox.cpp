@@ -153,9 +153,9 @@ static int UtilMessageBoxNonLocalizedVA(
 
     EX_TRY
     {
-        StackSString formattedMessage;
-        StackSString formattedTitle;
-        SString details(lpDetails);
+        StackSString<EncodingUnicode> formattedMessage;
+        StackSString<EncodingUnicode> formattedTitle;
+        SString<EncodingUnicode> details(lpDetails);
         PathString fileName;
         BOOL fDisplayMsgBox = TRUE;
 
@@ -197,7 +197,7 @@ static int UtilMessageBoxNonLocalizedVA(
             0,                      // category zero
             1024,                   // event identifier
             NULL,                   // no user security identifier
-            message.GetUnicode());
+            (LPCWSTR)message);
 
         if(lpTitle != NULL)
             WszOutputDebugString(lpTitle);
@@ -261,17 +261,17 @@ int UtilMessageBoxVA(
     }
     CONTRACTL_END;
 
-    SString text;
-    SString title;
+    SString<EncodingUnicode> text;
+    SString<EncodingUnicode> title;
     int result = IDCANCEL;
 
     EX_TRY
     {
-        text.LoadResource(CCompRC::Error, uText);
-        title.LoadResource(CCompRC::Error, uTitle);
+        LoadResource(text, CCompRC::Error, uText);
+        LoadResource(title, CCompRC::Error, uTitle);
 
-        result = UtilMessageBoxNonLocalizedVA(hWnd, (LPWSTR)text.GetUnicode(),
-            (LPWSTR)title.GetUnicode(), NULL, uType, displayForNonInteractive, showFileNameInTitle, NULL, args);
+        result = UtilMessageBoxNonLocalizedVA(hWnd, text,
+            title, NULL, uType, displayForNonInteractive, showFileNameInTitle, NULL, args);
     }
     EX_CATCH
     {

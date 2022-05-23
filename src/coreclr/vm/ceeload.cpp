@@ -2520,7 +2520,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
                 RETURN (NULL);
             }
             symbolReaderPath.Append(NATIVE_SYMBOL_READER_DLL);
-            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, symbolReaderPath.GetUnicode(), IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
+            hr = FakeCoCreateInstanceEx(CLSID_CorSymBinder_SxS, (LPCWSTR)symbolReaderPath, IID_ISymUnmanagedBinder, (void**)&pBinder, NULL);
             if (FAILED(hr))
             {
                 RETURN (NULL);
@@ -2567,7 +2567,7 @@ ISymUnmanagedReader *Module::GetISymUnmanagedReader(void)
         else
         {
             // The assembly is on disk, so try and load symbols based on the path to the assembly (case 1)
-            const SString &path = m_pPEAssembly->GetPath();
+            const SString<EncodingUnicode> &path = m_pPEAssembly->GetPath();
 
             // Call Fusion to ensure that any PDB's are shadow copied before
             // trying to get a symbol reader. This has to be done once per
@@ -3457,7 +3457,8 @@ DomainAssembly *Module::LoadModule(AppDomain *pDomain, mdFile kFile)
                                     NULL));
     }
 
-    SString name(SString::Utf8, psModuleName);
+    SString<EncodingUnicode> name;
+    SString<EncodingUTF8>(psModuleName).ConvertToUnicode(name);
     EEFileLoadException::Throw(name, COR_E_MULTIMODULEASSEMBLIESDIALLOWED, NULL);
     RETURN NULL;
 }
@@ -4828,7 +4829,7 @@ HANDLE Module::OpenMethodProfileDataLogFile(GUID mvid)
 
     HANDLE profileDataFile = INVALID_HANDLE_VALUE;
 
-    SString path;
+    SString<EncodingUnicode> path;
     LPCWSTR assemblyPath = m_pPEAssembly->GetPath();
     LPCWSTR ibcDir = g_pConfig->GetZapBBInstrDir();     // should we put the ibc data into a particular directory?
     if (ibcDir == 0) {
@@ -4846,7 +4847,7 @@ HANDLE Module::OpenMethodProfileDataLogFile(GUID mvid)
         path.Append(assemblyFileName);
     }
 
-    SString::Iterator ext = path.End();                 // remove the extension
+    SString<EncodingUnicode>::Iterator ext = path.End();                 // remove the extension
     if (path.FindBack(ext, '.'))
         path.Truncate(ext);
     path.Append(W(".ibc"));               // replace with .ibc extension

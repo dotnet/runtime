@@ -111,7 +111,7 @@ private:
     static HRESULT AttemptLoadDelayedStartupProfilers();
     static HRESULT AttemptLoadProfilerList();
 
-    static void AppendSupplementaryInformation(int iStringResource, SString * pString);
+    static void AppendSupplementaryInformation(int iStringResource, SString<EncodingUnicode> * pString);
 
     static void LogProfEventVA(
         int iStringResourceID,

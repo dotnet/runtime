@@ -42,9 +42,9 @@ public:
 #ifdef _DEBUG
         if (LoggingOn(LF_CLASSLOADER, LL_INFO10000))
         {
-            SString name;
+            SString<EncodingUnicode> name;
             TypeString::AppendTypeKeyDebug(name, &m_typeKey);
-            LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Creating loading entry for type %S\n", name.GetUnicode()));
+            LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Creating loading entry for type %S\n", (LPCWSTR)name));
         }
 #endif
 

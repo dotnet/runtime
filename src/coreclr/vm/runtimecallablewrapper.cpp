@@ -62,22 +62,24 @@ void ComClassFactory::ThrowHRMsg(HRESULT hr, DWORD dwMsgResID)
     }
     CONTRACTL_END;
 
-    SString strMessage;
-    SString strResource;
+    SString<EncodingUnicode> strMessage;
+    SString<EncodingUnicode> strResource;
     WCHAR strClsid[39];
-    SString strHRDescription;
+    SString<EncodingUnicode> strHRDescription;
 
     // Obtain the textual representation of the HRESULT.
     StringFromGUID2(m_rclsid, strClsid, sizeof(strClsid) / sizeof(WCHAR));
 
-    SString strHRHex;
+    SString<EncodingUTF8> strHRHex;
     strHRHex.Printf("%.8x", hr);
+    SString<EncodingUnicode>strHRHexW;
+    strHRHex.ConvertToUnicode(strHRHexW);
 
     // Obtain the description of the HRESULT.
     GetHRMsg(hr, strHRDescription);
 
     // Load the appropriate resource and throw
-    COMPlusThrowHR(hr, dwMsgResID, strHRHex, strClsid, strHRDescription.GetUnicode());
+    COMPlusThrowHR(hr, dwMsgResID, strHRHexW, strClsid, strHRDescription);
 }
 
 //-------------------------------------------------------------
@@ -502,25 +504,27 @@ IClassFactory *ComClassFactory::GetIClassFactory()
     // explaining the failure.
     if (FAILED(hr))
     {
-        SString strMessage;
-        SString strResource;
+        SString<EncodingUnicode> strMessage;
+        SString<EncodingUnicode> strResource;
         WCHAR strClsid[39];
-        SString strHRDescription;
+        SString<EncodingUnicode> strHRDescription;
 
         // Obtain the textual representation of the HRESULT.
         StringFromGUID2(m_rclsid, strClsid, sizeof(strClsid) / sizeof(WCHAR));
 
-        SString strHRHex;
+        SString<EncodingUTF8> strHRHex;
         strHRHex.Printf("%.8x", hr);
+        SString<EncodingUnicode>strHRHexW;
+        strHRHex.ConvertToUnicode(strHRHexW);
 
         // Obtain the description of the HRESULT.
         GetHRMsg(hr, strHRDescription);
 
         // Throw the actual exception indicating we couldn't find the class factory.
         if (m_wszServer == NULL)
-            COMPlusThrowHR(hr, IDS_EE_LOCAL_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, strHRDescription.GetUnicode());
+            COMPlusThrowHR(hr, IDS_EE_LOCAL_COGETCLASSOBJECT_FAILED, strHRHexW, strClsid, strHRDescription);
         else
-            COMPlusThrowHR(hr, IDS_EE_REMOTE_COGETCLASSOBJECT_FAILED, strHRHex, strClsid, m_wszServer, strHRDescription.GetUnicode());
+            COMPlusThrowHR(hr, IDS_EE_REMOTE_COGETCLASSOBJECT_FAILED, strHRHexW, strClsid, m_wszServer, strHRDescription);
     }
 
     RETURN pClassFactory;
@@ -2604,8 +2608,8 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
     // Use an InlineSString with a size of MAX_CLASSNAME_LENGTH + 1 to prevent
     // TypeHandle::GetName from having to allocate a new block of memory. This
     // significantly improves the performance of throwing an InvalidCastException.
-    InlineSString<MAX_CLASSNAME_LENGTH + 1> strComObjClassName;
-    InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastToName;
+    InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strComObjClassName;
+    InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastToName;
 
     TypeHandle thClass = (*pObj)->GetTypeHandle();
     TypeHandle thCastTo = TypeHandle(pCastToMT);
@@ -2631,7 +2635,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         // no longer fails now, we still need to throw, so throw a generic invalid cast exception.
         if (SUCCEEDED(hr))
         {
-            COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
+            COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName, strCastToName);
         }
 
         // Convert the IID to a string.
@@ -2639,7 +2643,7 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
         StringFromGUID2(iid, strIID, sizeof(strIID) / sizeof(WCHAR));
 
         // Obtain the textual description of the HRESULT.
-        SString strHRDescription;
+        SString<EncodingUnicode> strHRDescription;
         GetHRMsg(hr, strHRDescription);
 
         if (thCastTo.IsComEventItfType())
@@ -2656,13 +2660,13 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             WCHAR strSrcItfIID[39];
             StringFromGUID2(SrcItfIID, strSrcItfIID, sizeof(strSrcItfIID) / sizeof(WCHAR));
 
-            COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
-                strCastToName.GetUnicode(), strIID, strSrcItfIID);
+            COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_EVENTITF, strHRDescription, strComObjClassName,
+                strCastToName, strIID, strSrcItfIID);
         }
         else if (thCastTo == TypeHandle(CoreLibBinder::GetClass(CLASS__IENUMERABLE)))
         {
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_IENUMERABLE,
-                strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(), strCastToName.GetUnicode(), strIID);
+                strHRDescription, strComObjClassName, strCastToName, strIID);
         }
         else if ((pNativeIID = MngStdInterfaceMap::GetNativeIIDForType(thCastTo)) != NULL)
         {
@@ -2676,19 +2680,19 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             // If this function was called, it means the QI call failed in the past. If it
             // no longer fails now, we still need to throw, so throw a generic invalid cast exception.
             if (SUCCEEDED(hr2))
-                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
+                COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strComObjClassName, strCastToName);
 
             // Obtain the textual description of the 2nd HRESULT.
-            SString strHR2Description;
+            SString<EncodingUnicode> strHR2Description;
             GetHRMsg(hr2, strHR2Description);
 
-            COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_MNGSTDITF, strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(),
-                strCastToName.GetUnicode(), strIID, strNativeItfIID, strHR2Description.GetUnicode());
+            COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_MNGSTDITF, strHRDescription, strComObjClassName,
+                strCastToName, strIID, strNativeItfIID, strHR2Description);
         }
         else
         {
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_ITF,
-                strHRDescription.GetUnicode(), strComObjClassName.GetUnicode(), strCastToName.GetUnicode(), strIID);
+                strHRDescription, strComObjClassName, strCastToName, strIID);
         }
     }
     else
@@ -2702,21 +2706,21 @@ void ComObject::ThrowInvalidCastException(OBJECTREF *pObj, MethodTable *pCastToM
             {
                 // An attempt was made to cast an __ComObject to ComImport metadata defined type.
                 COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_COMOBJ_TO_MD,
-                    strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
+                    strComObjClassName, strCastToName);
             }
             else
             {
                 // An attempt was made to cast an instance of a ComImport metadata defined type to
                 // a different non ComImport metadata defined type.
                 COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_MD_TO_MD,
-                    strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
+                    strComObjClassName, strCastToName);
             }
         }
         else
         {
             // An attempt was made to cast this RCW to a non ComObjectType class.
             COMPlusThrow(kInvalidCastException, IDS_EE_RCW_INVALIDCAST_TO_NON_COMOBJTYPE,
-                strComObjClassName.GetUnicode(), strCastToName.GetUnicode());
+                strComObjClassName, strCastToName);
         }
     }
 

@@ -131,7 +131,7 @@ OBJECTREF PossiblyUnwrapThrowable(OBJECTREF throwable, Assembly *pAssembly);
 BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT);
 
 // Removes source file names/paths and line information from a stack trace.
-void StripFileInfoFromStackTrace(SString &ssStackTrace);
+void StripFileInfoFromStackTrace(SString<EncodingUnicode> &ssStackTrace);
 
 #ifdef _DEBUG
 // C++ EH cracking material gleaned from the debugger:
@@ -349,7 +349,7 @@ void CreateTypeInitializationExceptionObject(LPCWSTR pTypeThatFailed,
 ULONG GetExceptionMessage(OBJECTREF throwable,
                           _Inout_updates_(bufferLength) LPWSTR buffer,
                           ULONG bufferLength);
-void GetExceptionMessage(OBJECTREF throwable, SString &result);
+void GetExceptionMessage(OBJECTREF throwable, SString<EncodingUnicode> &result);
 STRINGREF GetExceptionMessage(OBJECTREF throwable);
 HRESULT GetExceptionHResult(OBJECTREF throwable);
 DWORD GetExceptionXCode(OBJECTREF throwable);

@@ -21,7 +21,7 @@
 //
 // TypeName
 //
-SString* TypeName::ToString(SString* pBuf, BOOL bAssemblySpec, BOOL bSignature, BOOL bGenericArguments)
+SString<EncodingUnicode>* TypeName::ToString(SString<EncodingUnicode>* pBuf, BOOL bAssemblySpec, BOOL bSignature, BOOL bGenericArguments)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -30,7 +30,7 @@ SString* TypeName::ToString(SString* pBuf, BOOL bAssemblySpec, BOOL bSignature, 
     TypeNameBuilder tnb(pBuf);
 
     for (COUNT_T i = 0; i < m_names.GetCount(); i ++)
-        tnb.AddName(m_names[i]->GetUnicode());
+        tnb.AddName(*m_names[i]);
 
     return pBuf;
 }
@@ -129,13 +129,13 @@ extern "C" void QCALLTYPE TypeName_CreateTypeNameParser(LPCWSTR wszTypeName, QCa
     {
         if (throwOnError)
         {
-            StackSString buf;
-            StackSString msg(W("typeName@"));
-            COUNT_T size = buf.GetUnicodeAllocation();
-            _itow_s(error, buf.OpenUnicodeBuffer(size), size, /*radix*/10);
+            StackSString<EncodingUnicode> buf;
+            StackSString<EncodingUnicode> msg(W("typeName@"));
+            COUNT_T size = buf.GetAllocation();
+            _itow_s(error, buf.OpenBuffer(size), size, /*radix*/10);
             buf.CloseBuffer();
             msg.Append(buf);
-            COMPlusThrowArgumentException(msg.GetUnicode(), NULL);
+            COMPlusThrowArgumentException(msg, NULL);
         }
     }
 
@@ -171,7 +171,7 @@ extern "C" void QCALLTYPE TypeName_GetNames(TypeName * pTypeName, QCall::ObjectH
 
     BEGIN_QCALL;
 
-    SArray<SString*> names = pTypeName->GetNames();
+    SArray<SString<EncodingUnicode>*> names = pTypeName->GetNames();
     COUNT_T count = names.GetCount();
 
     GCX_COOP();
@@ -186,7 +186,7 @@ extern "C" void QCALLTYPE TypeName_GetNames(TypeName * pTypeName, QCall::ObjectH
 
         for (COUNT_T i = 0; i < count; i++)
         {
-            STRINGREF str = StringObject::NewString(names[i]->GetUnicode());
+            STRINGREF str = StringObject::NewString(*names[i]);
             pReturnNames->SetAt(i, str);
         }
 
@@ -366,7 +366,7 @@ TypeName::TypeNameParser::TypeNameTokens TypeName::TypeNameParser::LexAToken(BOO
     return TypeNameIdentifier;
 }
 
-BOOL TypeName::TypeNameParser::GetIdentifier(SString* sszId, TypeName::TypeNameParser::TypeNameIdentifiers identifierType)
+BOOL TypeName::TypeNameParser::GetIdentifier(SString<EncodingUnicode>* sszId, TypeName::TypeNameParser::TypeNameIdentifiers identifierType)
 {
     CONTRACTL
     {
@@ -807,8 +807,9 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCUTF8 szTypeName, Assembly *pRe
     STATIC_CONTRACT_GC_TRIGGERS;
     STATIC_CONTRACT_FAULT;
 
-    StackSString sszAssemblyQualifiedName(SString::Utf8, szTypeName);
-    return GetTypeUsingCASearchRules(sszAssemblyQualifiedName.GetUnicode(), pRequestingAssembly, pfNameIsAsmQualified, bDoVisibilityChecks);
+    StackSString<EncodingUTF8> sszAssemblyQualifiedName(szTypeName);
+    MAKE_WIDEPTR_FROMUTF8(wszAssemblyQualifiedName, szTypeName);
+    return GetTypeUsingCASearchRules(wszAssemblyQualifiedName, pRequestingAssembly, pfNameIsAsmQualified, bDoVisibilityChecks);
 }
 
 TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRequestingAssembly, BOOL *pfNameIsAsmQualified/* = NULL*/, BOOL bDoVisibilityChecks/* = TRUE*/)
@@ -838,13 +839,13 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
 
     if (error != (DWORD)-1)
     {
-        StackSString buf;
-        StackSString msg(W("typeName@"));
-        COUNT_T size = buf.GetUnicodeAllocation();
-        _itow_s(error,buf.OpenUnicodeBuffer(size),size,10);
+        StackSString<EncodingUnicode> buf;
+        StackSString<EncodingUnicode> msg(W("typeName@"));
+        COUNT_T size = buf.GetAllocation();
+        _itow_s(error,buf.OpenBuffer(size),size,10);
         buf.CloseBuffer();
         msg.Append(buf);
-        COMPlusThrowArgumentException(msg.GetUnicode(), NULL);
+        COMPlusThrowArgumentException(msg, NULL);
     }
 
     if (pfNameIsAsmQualified)
@@ -925,13 +926,13 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
         if (!bThrowIfNotFound)
             return TypeHandle();
 
-        StackSString buf;
-        StackSString msg(W("typeName@"));
-        COUNT_T size = buf.GetUnicodeAllocation();
-        _itow_s(error, buf.OpenUnicodeBuffer(size), size, /*radix*/10);
+        StackSString<EncodingUnicode> buf;
+        StackSString<EncodingUnicode> msg(W("typeName@"));
+        COUNT_T size = buf.GetAllocation();
+        _itow_s(error, buf.OpenBuffer(size), size, /*radix*/10);
         buf.CloseBuffer();
         msg.Append(buf);
-        COMPlusThrowArgumentException(msg.GetUnicode(), NULL);
+        COMPlusThrowArgumentException(msg, NULL);
     }
 
     BOOL bPeriodPrefix = szTypeName[0] == W('.');
@@ -955,13 +956,13 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
             if (!bThrowIfNotFound)
                 return TypeHandle();
 
-            StackSString buf;
-            StackSString msg(W("typeName@"));
-            COUNT_T size = buf.GetUnicodeAllocation();
-            _itow_s(error-1,buf.OpenUnicodeBuffer(size),size,10);
+            StackSString<EncodingUnicode> buf;
+            StackSString<EncodingUnicode> msg(W("typeName@"));
+            COUNT_T size = buf.GetAllocation();
+            _itow_s(error-1,buf.OpenBuffer(size),size,10);
             buf.CloseBuffer();
             msg.Append(buf);
-            COMPlusThrowArgumentException(msg.GetUnicode(), NULL);
+            COMPlusThrowArgumentException(msg, NULL);
         }
 
         result = pTypeName->GetTypeWorker(
@@ -1010,13 +1011,13 @@ TypeHandle TypeName::GetTypeUsingCASearchRules(LPCWSTR szTypeName, Assembly *pRe
 
     if (error != (DWORD)-1)
     {
-        StackSString buf;
-        StackSString msg(W("typeName@"));
-        COUNT_T size = buf.GetUnicodeAllocation();
-        _itow_s(error,buf.OpenUnicodeBuffer(size),size,10);
+        StackSString<EncodingUnicode> buf;
+        StackSString<EncodingUnicode> msg(W("typeName@"));
+        COUNT_T size = buf.GetAllocation();
+        _itow_s(error,buf.OpenBuffer(size),size,10);
         buf.CloseBuffer();
         msg.Append(buf);
-        COMPlusThrowArgumentException(msg.GetUnicode(), NULL);
+        COMPlusThrowArgumentException(msg, NULL);
     }
 
     return pTypeName->GetTypeFromAsm();
@@ -1141,10 +1142,11 @@ TypeHandle TypeName::GetTypeFromAsm()
             {
                 TypeNameBuilder tnb;
                 for (COUNT_T i = 0; i < GetNames().GetCount(); i ++)
-                    tnb.AddName(GetNames()[i]->GetUnicode());
+                    tnb.AddName(*(GetNames()[i]));
 
-                StackScratchBuffer bufFullName;
-                DomainAssembly* pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(pRequestingAssembly?pRequestingAssembly->GetDomainAssembly():NULL,tnb.GetString()->GetANSI(bufFullName), pAsmRef);
+                SString<EncodingUTF8> bufFullName;
+                tnb.GetString()->ConvertToUTF8(bufFullName);
+                DomainAssembly* pDomainAssembly = pDomain->RaiseTypeResolveEventThrowing(pRequestingAssembly?pRequestingAssembly->GetDomainAssembly():NULL, bufFullName, pAsmRef);
                 if (pDomainAssembly)
                     th = GetTypeHaveAssembly(pDomainAssembly->GetAssembly(), bThrowIfNotFound, bIgnoreCase, pKeepAlive);
             }
@@ -1228,13 +1230,13 @@ TypeHandle TypeName::GetTypeFromAsm()
 
     if (th.IsNull() && bThrowIfNotFound)
     {
-        StackSString buf;
-        LPCWSTR wszName = ToString(&buf)->GetUnicode();
+        StackSString<EncodingUnicode> buf;
+        LPCWSTR wszName = *ToString(&buf);
         MAKE_UTF8PTR_FROMWIDE(szName, wszName);
 
         if (GetAssembly() && !GetAssembly()->IsEmpty())
         {
-            ThrowTypeLoadException(NULL, szName, GetAssembly()->GetUnicode(), NULL, IDS_CLASSLOAD_GENERAL);
+            ThrowTypeLoadException(NULL, szName, *GetAssembly(), NULL, IDS_CLASSLOAD_GENERAL);
         }
         else if (pAssemblyGetType)
         {
@@ -1272,7 +1274,7 @@ TypeName::GetTypeHaveAssemblyHelper(
     WRAPPER_NO_CONTRACT;
 
     TypeHandle th = TypeHandle();
-    SArray<SString *> & names = GetNames();
+    SArray<SString<EncodingUnicode> *> & names = GetNames();
     Module *      pManifestModule = pAssembly->GetModule();
     Module *      pLookOnlyInModule = NULL;
     ClassLoader * pClassLoader = pAssembly->GetLoader();
@@ -1297,14 +1299,15 @@ TypeName::GetTypeHaveAssemblyHelper(
         for (COUNT_T i = 0; i < names.GetCount(); i ++)
         {
             // each extra name represents one more level of nesting
-            StackSString name(*(names[i]));
+            StackSString<EncodingUnicode> name(*(names[i]));
 
             // The type name is expected to be lower-cased by the caller for case-insensitive lookups
             if (bIgnoreCase)
                 name.LowerCase();
 
-            StackScratchBuffer buffer;
-            typeName.SetName(name.GetUTF8(buffer));
+            StackSString<EncodingUTF8> buffer;
+            name.ConvertToUTF8(buffer);
+            typeName.SetName(buffer);
 
             // typeName.m_pBucket gets set here if the type is found
             // it will be used in the next iteration to look up the nested type
@@ -1390,7 +1393,7 @@ TypeName::GetTypeHaveAssemblyHelper(
 
 
 DomainAssembly * LoadDomainAssembly(
-    SString *  psszAssemblySpec,
+    SString<EncodingUnicode> *  psszAssemblySpec,
     Assembly * pRequestingAssembly,
     AssemblyBinder * pBinder,
     BOOL       bThrowIfNotFound)
@@ -1407,7 +1410,8 @@ DomainAssembly * LoadDomainAssembly(
     AssemblySpec spec;
     DomainAssembly *pDomainAssembly = NULL;
 
-    StackSString ssAssemblyName(*psszAssemblySpec);
+    StackSString<EncodingUTF8> ssAssemblyName;
+    psszAssemblySpec->ConvertToUTF8(ssAssemblyName);
     spec.Init(ssAssemblyName);
 
     if (pRequestingAssembly)

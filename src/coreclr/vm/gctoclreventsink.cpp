@@ -164,7 +164,7 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
 
     void * typeId = nullptr;
     const WCHAR * name = nullptr;
-    InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
+    InlineSString<MAX_CLASSNAME_LENGTH, EncodingUnicode> strTypeName;
     EX_TRY
     {
         TypeHandle th = GetThread()->GetTHAllocContextObj();
@@ -172,7 +172,7 @@ void GCToCLREventSink::FireGCAllocationTick_V4(uint64_t allocationAmount,
         if (th != 0)
         {
             th.GetName(strTypeName);
-            name = strTypeName.GetUnicode();
+            name = (LPCWSTR)strTypeName;
             typeId = th.GetMethodTable();
         }
     }
@@ -199,7 +199,7 @@ void GCToCLREventSink::FirePinObjectAtGCTime(void* object, uint8_t** ppObject)
 
     Object* obj = (Object*)object;
 
-    InlineSString<MAX_CLASSNAME_LENGTH> strTypeName;
+    InlineSString<MAX_CLASSNAME_LENGTH, EncodingUnicode> strTypeName;
 
     EX_TRY
     {
@@ -214,7 +214,7 @@ void GCToCLREventSink::FirePinObjectAtGCTime(void* object, uint8_t** ppObject)
         FireEtwPinObjectAtGCTime(ppObject,
                              object,
                              obj->GetSize(),
-                             strTypeName.GetUnicode(),
+                             (LPCWSTR)strTypeName,
                              GetClrInstanceId());
     }
     EX_CATCH {}

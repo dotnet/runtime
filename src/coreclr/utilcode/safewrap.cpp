@@ -24,7 +24,7 @@
 // On success, returns true and sets 'Value' to unicode version of cur dir.
 // Throws on all failures. This should mainly be oom.
 //-----------------------------------------------------------------------------
-void ClrGetCurrentDirectory(SString & value)
+void ClrGetCurrentDirectory(SString<EncodingUnicode> & value)
 {
     CONTRACTL
     {
@@ -49,7 +49,7 @@ void ClrGetCurrentDirectory(SString & value)
 // Returns true on success, false on failure (includes if the var does not exist).
 // May throw on oom.
 //-----------------------------------------------------------------------------
-bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString & value)
+bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString<EncodingUTF8> & value)
 {
     CONTRACTL
     {
@@ -68,7 +68,7 @@ bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString & value)
     }
 
     // Now read it for content.
-    char * pCharBuf = value.OpenANSIBuffer(lenWithNull);
+    char * pCharBuf = value.OpenBuffer(lenWithNull);
     DWORD lenWithoutNull = GetEnvironmentVariableA(szEnvVarName, pCharBuf, lenWithNull);
     value.CloseBuffer(lenWithoutNull);
 
@@ -80,7 +80,7 @@ bool ClrGetEnvironmentVariable(LPCSTR szEnvVarName, SString & value)
     return true;
 }
 
-void ClrGetModuleFileName(HMODULE hModule, SString & value)
+void ClrGetModuleFileName(HMODULE hModule, SString<EncodingUnicode> & value)
 {
     CONTRACTL
     {
@@ -89,7 +89,7 @@ void ClrGetModuleFileName(HMODULE hModule, SString & value)
     }
     CONTRACTL_END;
 
-    WCHAR * pCharBuf = value.OpenUnicodeBuffer(_MAX_PATH);
+    WCHAR * pCharBuf = value.OpenBuffer(_MAX_PATH);
     DWORD numChars = GetModuleFileNameW(hModule, pCharBuf, _MAX_PATH);
     value.CloseBuffer(numChars);
 }
@@ -103,8 +103,8 @@ ClrDirectoryEnumerator::ClrDirectoryEnumerator(LPCWSTR pBaseDirectory, LPCWSTR p
     }
     CONTRACTL_END;
 
-    StackSString strMask(pBaseDirectory);
-    SString s(SString::Literal, DIRECTORY_SEPARATOR_STR_W);
+    StackSString<EncodingUnicode> strMask(pBaseDirectory);
+    SString<EncodingUnicode> s(SharedData, DIRECTORY_SEPARATOR_STR_W);
     if (!strMask.EndsWith(s))
     {
         strMask.Append(s);

@@ -42,7 +42,7 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
         COMPlusThrow(kArgumentNullException, W("ArgumentNull_String"));
     }
 
-    InlineSString<128> ssNameUnescaped;
+    InlineSString<128, EncodingUnicode> ssNameUnescaped;
     LPCWSTR wszTemp = wszFullName;
 
     WCHAR c;
@@ -60,7 +60,7 @@ extern "C" mdTypeRef QCALLTYPE ModuleBuilder_GetTypeRef(QCall::ModuleHandle pMod
         }
     }
 
-    LPCWSTR wszFullNameUnescaped = ssNameUnescaped.GetUnicode();
+    LPCWSTR wszFullNameUnescaped = (LPCWSTR)ssNameUnescaped;
 
     Assembly * pThisAssembly = pModule->GetClassLoader()->GetAssembly();
     Assembly * pRefedAssembly = pRefedModule->GetClassLoader()->GetAssembly();
@@ -658,14 +658,14 @@ extern "C" void QCALLTYPE RuntimeModule_GetScopeName(QCall::ModuleHandle pModule
     END_QCALL;
 }
 
-static void ReplaceNiExtension(SString& fileName, PCWSTR pwzOldSuffix, PCWSTR pwzNewSuffix)
+static void ReplaceNiExtension(SString<EncodingUnicode>& fileName, PCWSTR pwzOldSuffix, PCWSTR pwzNewSuffix)
 {
     STANDARD_VM_CONTRACT;
 
-    if (fileName.EndsWithCaseInsensitive(pwzOldSuffix))
+    if (fileName.EndsWithCaseInsensitive(SL(pwzOldSuffix)))
     {
         COUNT_T oldSuffixLen = (COUNT_T)wcslen(pwzOldSuffix);
-        fileName.Replace(fileName.End() - oldSuffixLen, oldSuffixLen, pwzNewSuffix);
+        fileName.Replace(fileName.End() - oldSuffixLen, oldSuffixLen, SL(pwzNewSuffix));
     }
 }
 

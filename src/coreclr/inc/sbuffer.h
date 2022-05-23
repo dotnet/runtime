@@ -397,6 +397,8 @@ protected:
         return DacInstantiateTypeByAddress(bufAddr, m_size, true);
     }
 
+    void* DacTryGetRawContent() const;
+
     void EnumMemoryRegions(CLRDataEnumMemoryFlags flags) const
     {
         SUPPORTS_DAC;

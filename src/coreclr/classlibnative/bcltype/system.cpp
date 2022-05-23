@@ -288,11 +288,11 @@ void SystemNative::GenericFailFast(STRINGREF refMesgString, EXCEPTIONREF refExce
     }
 
     LPCWSTR argExceptionString = NULL;
-    StackSString msg;
+    StackSString<EncodingUnicode> msg;
     if (gc.refExceptionForWatsonBucketing != NULL)
     {
         GetExceptionMessage(gc.refExceptionForWatsonBucketing, msg);
-        argExceptionString = msg.GetUnicode();
+        argExceptionString = msg;
     }
 
     Thread *pThread = GetThread();

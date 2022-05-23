@@ -107,27 +107,25 @@ void CHECK::Trigger(LPCSTR reason)
     STATIC_CONTRACT_GC_NOTRIGGER;
 
     const char *messageString = NULL;
-    NewHolder<StackScratchBuffer> pScratch(NULL);
-    NewHolder<StackSString> pMessage(NULL);
+    NewHolder<StackSString<EncodingASCII>> pMessage(NULL);
 
     EX_TRY
     {
         FAULT_NOT_FATAL();
 
-        pScratch = new StackScratchBuffer();
-        pMessage = new StackSString();
+        pMessage = new StackSString<EncodingASCII>();
 
-        pMessage->AppendASCII(reason);
-        pMessage->AppendASCII(": ");
+        pMessage->Append(reason);
+        pMessage->Append(": ");
         if (m_message != NULL)
-            pMessage->AppendASCII((m_message != (LPCSTR)1) ? m_message : "<runtime check failure>");
+            pMessage->Append((m_message != (LPCSTR)1) ? m_message : "<runtime check failure>");
 
 #if _DEBUG
-        pMessage->AppendASCII("FAILED: ");
-        pMessage->AppendASCII(m_condition);
+        pMessage->Append("FAILED: ");
+        pMessage->Append(m_condition);
 #endif
 
-        messageString = pMessage->GetANSI(*pScratch);
+        messageString = *pMessage;
     }
     EX_CATCH
     {
@@ -174,7 +172,7 @@ void CHECK::Setup(LPCSTR message, LPCSTR condition, LPCSTR file, INT line)
             FAULT_NOT_FATAL();
             // Try to build a stack of condition failures
 
-            StackSString context;
+            StackSString<EncodingUTF8> context;
             context.Printf("%s\n\t%s%s FAILED: %s\n\t\t%s, line: %d",
                            m_condition,
                            message && *message ? message : "",
@@ -235,7 +233,7 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
             va_list args;
             va_start( args, messageFormat);
 
-            SString s;
+            SString<EncodingUTF8> s;
             s.VPrintf(messageFormat, args);
 
             va_end(args);
@@ -254,14 +252,12 @@ LPCSTR CHECK::FormatMessage(LPCSTR messageFormat, ...)
     return result;
 }
 
-LPCSTR CHECK::AllocateDynamicMessage(const SString &s)
+LPCSTR CHECK::AllocateDynamicMessage(const SString<EncodingUTF8> &s)
 {
     STATIC_CONTRACT_NOTHROW;
     STATIC_CONTRACT_GC_NOTRIGGER;
 
-    // Make a copy of it.
-    StackScratchBuffer buffer;
-    const char * pMsg = s.GetANSI(buffer);
+    const char * pMsg = s;
 
     // Must copy that into our own field.
     size_t len = strlen(pMsg) + 1;

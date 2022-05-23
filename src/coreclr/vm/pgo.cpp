@@ -217,13 +217,12 @@ void PgoManager::WritePgoData()
 
         fprintf(pgoDataFile, s_MethodHeaderString, pgoData->header.codehash, pgoData->header.methodhash, pgoData->header.ilSize, schemaItems);
 
-        SString tClass, tMethodName, tMethodSignature;
+        SString<EncodingUnicode> tClass;
+        SString<EncodingUTF8> tMethodName, tMethodSignature;
         pgoData->header.method->GetMethodInfo(tClass, tMethodName, tMethodSignature);
 
-        StackScratchBuffer nameBuffer;
-        StackScratchBuffer nameBuffer2;
-        fprintf(pgoDataFile, "MethodName: %s.%s\n", tClass.GetUTF8(nameBuffer), tMethodName.GetUTF8(nameBuffer2));
-        fprintf(pgoDataFile, "Signature: %s\n", tMethodSignature.GetUTF8(nameBuffer));
+        fprintf(pgoDataFile, "MethodName: %s.%s\n", (LPCUTF8)tClass.MoveToUTF8(), (LPCUTF8)tMethodName);
+        fprintf(pgoDataFile, "Signature: %s\n", (LPCUTF8)tMethodSignature);
 
         uint8_t* data = pgoData->header.GetData();
 
@@ -261,8 +260,7 @@ void PgoManager::WritePgoData()
                             }
                             else
                             {
-                                StackSString ss;
-                                StackScratchBuffer nameBuffer;
+                                StackSString<EncodingUnicode> ss;
                                 TypeString::AppendType(ss, th, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
                                 if (ss.GetCount() > 8192)
                                 {
@@ -270,7 +268,9 @@ void PgoManager::WritePgoData()
                                 }
                                 else
                                 {
-                                    fprintf(pgoDataFile, s_TypeHandle, ss.GetUTF8(nameBuffer));
+                                    StackSString<EncodingUTF8> ssUtf8;
+                                    ss.ConvertToUTF8(ssUtf8);
+                                    fprintf(pgoDataFile, s_TypeHandle, (LPCUTF8)ssUtf8);
                                 }
                             }
                             break;
@@ -289,9 +289,10 @@ void PgoManager::WritePgoData()
                             }
                             else
                             {
-                                SString garbage1, tMethodName, garbage2;
+                                SString<EncodingUnicode> garbage1;
+                                SString<EncodingUTF8> tMethodName, garbage2;
                                 md->GetMethodInfo(garbage1, tMethodName, garbage2);
-                                StackSString tTypeName;
+                                StackSString<EncodingUnicode> tTypeName;
                                 TypeString::AppendType(tTypeName, TypeHandle(md->GetMethodTable()), TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
                                 // Format is:
                                 // MethodName|@|fully_qualified_type_name
@@ -301,9 +302,7 @@ void PgoManager::WritePgoData()
                                 }
                                 else
                                 {
-                                    StackScratchBuffer methodNameBuffer;
-                                    StackScratchBuffer typeBuffer;
-                                    fprintf(pgoDataFile, "MethodHandle: %s|@|%s", tMethodName.GetUTF8(methodNameBuffer), tTypeName.GetUTF8(typeBuffer));
+                                    fprintf(pgoDataFile, "MethodHandle: %s|@|%s", (LPCUTF8)tMethodName, (LPCUTF8)tTypeName.MoveToUTF8());
                                 }
                             }
                             break;
@@ -854,8 +853,8 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                                         {
                                             if (kind == ICorJitInfo::PgoInstrumentationKind::TypeHandle)
                                             {
-                                                StackSString ts(SString::Utf8, string);
-                                                TypeHandle th = TypeName::GetTypeManaged(ts.GetUnicode(), NULL, FALSE, FALSE, FALSE, NULL, NULL);
+                                                MAKE_WIDEPTR_FROMUTF8(ts, string);
+                                                TypeHandle th = TypeName::GetTypeManaged((LPCWSTR)ts, NULL, FALSE, FALSE, FALSE, NULL, NULL);
                                                 newPtr = (INT_PTR)th.AsPtr();
                                             }
                                             else
@@ -866,12 +865,12 @@ HRESULT PgoManager::getPgoInstrumentationResults(MethodDesc* pMD, BYTE** pAlloca
                                                 char* sep = strstr(string, "|@|");
                                                 if (sep != nullptr)
                                                 {
-                                                    StackSString typeString(SString::Utf8, sep + 3);
-                                                    StackSString methodString(SString::Utf8, string, (COUNT_T)(sep - string));
-                                                    TypeHandle th = TypeName::GetTypeManaged(typeString.GetUnicode(), NULL, FALSE, FALSE, FALSE, NULL, NULL);
+                                                    MAKE_WIDEPTR_FROMUTF8(typeString, sep + 3);
+                                                    StackSString<EncodingUTF8> methodString(string, (COUNT_T)(sep - string));
+                                                    TypeHandle th = TypeName::GetTypeManaged((LPCWSTR)typeString, NULL, FALSE, FALSE, FALSE, NULL, NULL);
                                                     if (!th.IsNull())
                                                     {
-                                                        MethodDesc* pMD = MemberLoader::FindMethodByName(th.GetMethodTable(), methodString.GetUTF8NoConvert());
+                                                        MethodDesc* pMD = MemberLoader::FindMethodByName(th.GetMethodTable(), (LPCUTF8)methodString);
                                                         newPtr = (INT_PTR)pMD;
                                                     }
                                                 }

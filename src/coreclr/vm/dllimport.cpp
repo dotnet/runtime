@@ -928,9 +928,8 @@ public:
     // Truncates a SString by first converting it to unicode and truncate it
     // if it is larger than size. "..." will be appended if it is truncated.
     //
-    void TruncateUnicodeString(SString &string, COUNT_T bufSize)
+    void TruncateUnicodeString(SString<EncodingUnicode> &string, COUNT_T bufSize)
     {
-        string.Normalize();
         if ((string.GetCount() + 1) * sizeof(WCHAR) > bufSize)
         {
             _ASSERTE(bufSize / sizeof(WCHAR) > 4);
@@ -958,7 +957,8 @@ public:
         // Interop Method Information
         //
         MethodDesc *pTargetMD = m_slIL.GetTargetMD();
-        SString strNamespaceOrClassName, strMethodName, strMethodSignature;
+        SString<EncodingUnicode> strNamespaceOrClassName;
+        SString<EncodingUTF8> strMethodName, strMethodSignature;
         UINT64 uModuleId = 0;
 
         if (pTargetMD)
@@ -970,7 +970,8 @@ public:
         //
         // Stub Method Signature
         //
-        SString stubNamespaceOrClassName, stubMethodName, stubMethodSignature;
+        SString<EncodingUnicode> stubNamespaceOrClassName;
+        SString<EncodingUTF8> stubMethodName, stubMethodSignature;
         pStubMD->GetMethodInfoWithNewSig(stubNamespaceOrClassName, stubMethodName, stubMethodSignature);
 
         IMDInternalImport *pStubImport = pStubMD->GetModule()->GetMDImport();
@@ -978,12 +979,12 @@ public:
         CQuickBytes qbLocal;
         PrettyPrintSig(pbLocalSig, (DWORD)cbSig, NULL, &qbLocal,  pStubImport, NULL);
 
-        SString strLocalSig(SString::Utf8, (LPCUTF8)qbLocal.Ptr());
+        SString<EncodingUTF8> strLocalSig((LPCUTF8)qbLocal.Ptr());
 
         //
         // Native Signature
         //
-        SString strNativeSignature(SString::Utf8);
+        SString<EncodingUTF8> strNativeSignature {};
         if (m_dwStubFlags & NDIRECTSTUB_FL_REVERSE_INTEROP)
         {
             // Reverse interop. Use StubSignature
@@ -999,27 +1000,29 @@ public:
 
             PrettyPrintSig(pCallTargetSig, cCallTargetSig, "", &qbCallTargetSig,  pStubImport, NULL);
 
-            strNativeSignature.SetUTF8((LPCUTF8)qbCallTargetSig.Ptr());
+            strNativeSignature.Set((LPCUTF8)qbCallTargetSig.Ptr());
         }
 
         //
         // Dump IL stub code
         //
-        SString strILStubCode;
+        SString<EncodingUTF8> strILStubCode;
         strILStubCode.Preallocate(4096);    // Preallocate 4K bytes to avoid unnecessary growth
 
-        SString codeSizeFormat;
-        codeSizeFormat.LoadResource(CCompRC::Optional, IDS_EE_INTEROP_CODE_SIZE_COMMENT);
-        strILStubCode.AppendPrintf(W("// %s\t%d (0x%04x)\n"), codeSizeFormat.GetUnicode(), cbCode, cbCode);
-        strILStubCode.AppendPrintf(W(".maxstack %d \n"), maxStack);
-        strILStubCode.AppendPrintf(W(".locals %s\n"), strLocalSig.GetUnicode());
+        SString<EncodingUnicode> codeSizeFormat;
+        LoadResource(codeSizeFormat, CCompRC::Optional, IDS_EE_INTEROP_CODE_SIZE_COMMENT);
+        SString<EncodingUTF8> codeSizeFormatUTF8;
+        codeSizeFormat.ConvertToUTF8(codeSizeFormatUTF8);
+        strILStubCode.AppendPrintf("// %s\t%d (0x%04x)\n", (LPCUTF8)codeSizeFormatUTF8, cbCode, cbCode);
+        strILStubCode.AppendPrintf(".maxstack %d \n", maxStack);
+        strILStubCode.AppendPrintf(".locals %s\n", (LPCUTF8)strLocalSig);
 
         m_slIL.LogILStub(jitFlags, &strILStubCode);
 
         if (pConvertToHRTryCatchBounds->cbTryLength != 0 && pConvertToHRTryCatchBounds->cbHandlerLength != 0)
         {
             strILStubCode.AppendPrintf(
-                W(".try IL_%04x to IL_%04x catch handler IL_%04x to IL_%04x\n"),
+                ".try IL_%04x to IL_%04x catch handler IL_%04x to IL_%4x\n",
                 pConvertToHRTryCatchBounds->dwTryBeginOffset,
                 pConvertToHRTryCatchBounds->dwTryBeginOffset + pConvertToHRTryCatchBounds->cbTryLength,
                 pConvertToHRTryCatchBounds->dwHandlerBeginOffset,
@@ -1029,7 +1032,7 @@ public:
         if (pCleanupTryFinallyBounds->cbTryLength != 0 && pCleanupTryFinallyBounds->cbHandlerLength != 0)
         {
             strILStubCode.AppendPrintf(
-                W(".try IL_%04x to IL_%04x finally handler IL_%04x to IL_%04x\n"),
+                ".try IL_%04x to IL_%04x finally handler IL_%04x to IL_%04x\n",
                 pCleanupTryFinallyBounds->dwTryBeginOffset,
                 pCleanupTryFinallyBounds->dwTryBeginOffset + pCleanupTryFinallyBounds->cbTryLength,
                 pCleanupTryFinallyBounds->dwHandlerBeginOffset,
@@ -1063,12 +1066,19 @@ public:
         //
         // Truncate string fields. Make sure the whole event is less than 64KB
         //
+
+        SString<EncodingUnicode> strMethodNameW, strMethodSignatureW, strNativeSignatureW, stubMethodSignatureW, strILStubCodeW;
+        strMethodName.ConvertToUnicode(strMethodNameW);
+        strMethodSignature.ConvertToUnicode(strMethodSignatureW);
+        strNativeSignature.ConvertToUnicode(strNativeSignatureW);
+        stubMethodSignature.ConvertToUnicode(stubMethodSignatureW);
+        strILStubCode.ConvertToUnicode(strILStubCodeW);
         TruncateUnicodeString(strNamespaceOrClassName, ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
-        TruncateUnicodeString(strMethodName,           ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
-        TruncateUnicodeString(strMethodSignature,      ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
-        TruncateUnicodeString(strNativeSignature,      ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
-        TruncateUnicodeString(stubMethodSignature,     ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
-        TruncateUnicodeString(strILStubCode,           ETW_IL_STUB_EVENT_CODE_STRING_FIELD_MAXSIZE);
+        TruncateUnicodeString(strMethodNameW,           ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
+        TruncateUnicodeString(strMethodSignatureW,      ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
+        TruncateUnicodeString(strNativeSignatureW,      ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
+        TruncateUnicodeString(stubMethodSignatureW,     ETW_IL_STUB_EVENT_STRING_FIELD_MAXSIZE);
+        TruncateUnicodeString(strILStubCodeW,           ETW_IL_STUB_EVENT_CODE_STRING_FIELD_MAXSIZE);
 
         //
         // Fire ETW event
@@ -1079,12 +1089,12 @@ public:
             (UINT64)pStubMD,                            // StubMethodIdentifier
             dwFlags,                                    // StubFlags
             dwToken,                                    // ManagedInteropMethodToken
-            strNamespaceOrClassName.GetUnicode(),       // ManagedInteropMethodNamespace
-            strMethodName.GetUnicode(),                 // ManagedInteropMethodName
-            strMethodSignature.GetUnicode(),            // ManagedInteropMethodSignature
-            strNativeSignature.GetUnicode(),            // NativeSignature
-            stubMethodSignature.GetUnicode(),           // StubMethodSigature
-            strILStubCode.GetUnicode()                  // StubMethodILCode
+            (LPCWSTR)strNamespaceOrClassName,       // ManagedInteropMethodNamespace
+            (LPCWSTR)strMethodNameW,                 // ManagedInteropMethodName
+            (LPCWSTR)strMethodSignatureW,            // ManagedInteropMethodSignature
+            (LPCWSTR)strNativeSignatureW,            // NativeSignature
+            (LPCWSTR)stubMethodSignatureW,           // StubMethodSigature
+            (LPCWSTR)strILStubCodeW                  // StubMethodILCode
             );
     } // EtwOnILStubGenerated
 #endif // DACCESS_COMPILE
@@ -4537,21 +4547,23 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
     ULONG cbMethodName;
     IfFailRet(parser.GetNonEmptyString(&pMethodName, &cbMethodName));
 
-    StackSString typeName(SString::Utf8, pTypeName, cbTypeName);
-    StackSString methodName(SString::Utf8, pMethodName, cbMethodName);
+    StackSString<EncodingUnicode> typeName;
+    SString<EncodingUTF8>(pTypeName, cbTypeName).ConvertToUnicode(typeName);
+    StackSString<EncodingUnicode> methodName;
+    SString<EncodingUTF8>(pMethodName, cbMethodName).ConvertToUnicode(methodName);
 
     //
     // Retrieve the type
     //
     TypeHandle stubClassType;
-    stubClassType = TypeName::GetTypeUsingCASearchRules(typeName.GetUnicode(), pTargetMT->GetAssembly());
+    stubClassType = TypeName::GetTypeUsingCASearchRules((LPCWSTR)typeName, pTargetMT->GetAssembly());
 
     MethodTable *pStubClassMT = stubClassType.AsMethodTable();
 
-    StackSString stubClassName;
+    StackSString<EncodingUnicode> stubClassName;
     pStubClassMT->_GetFullyQualifiedNameForClassNestedAware(stubClassName);
 
-    StackSString targetInterfaceName;
+    StackSString<EncodingUnicode> targetInterfaceName;
     pTargetMT->_GetFullyQualifiedNameForClassNestedAware(targetInterfaceName);
 
     // Restrict to same assembly only to reduce test cost
@@ -4560,8 +4572,8 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         COMPlusThrow(
             kArgumentException,
             IDS_EE_INTEROP_STUB_CA_MUST_BE_WITHIN_SAME_ASSEMBLY,
-            stubClassName.GetUnicode(),
-            targetInterfaceName.GetUnicode()
+            (LPCWSTR)stubClassName,
+            (LPCWSTR)targetInterfaceName
             );
     }
 
@@ -4570,7 +4582,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         COMPlusThrow(
             kArgumentException,
             IDS_EE_INTEROP_STUB_CA_STUB_CLASS_MUST_NOT_BE_GENERIC,
-            stubClassName.GetUnicode()
+            (LPCWSTR)stubClassName
             );
     }
 
@@ -4579,7 +4591,7 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         COMPlusThrow(
             kArgumentException,
             IDS_EE_INTEROP_STUB_CA_STUB_CLASS_MUST_NOT_BE_INTERFACE,
-            stubClassName.GetUnicode()
+            (LPCWSTR)stubClassName
             );
     }
 
@@ -4647,10 +4659,8 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
         //
         // Find method using name + signature
         //
-        StackScratchBuffer buffer;
-        LPCUTF8 szMethodNameUTF8 = methodName.GetUTF8(buffer);
         pStubMD = MemberLoader::FindMethod(stubClassType.GetMethodTable(),
-            szMethodNameUTF8,
+            pMethodName,
             pStubSig,
             pcStubSig,
             pTargetMT->GetModule());
@@ -4662,21 +4672,24 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
             PrettyPrintSig(
                 pStubSig,
                 pcStubSig,
-                szMethodNameUTF8,
+                pMethodName,
                 &qbSig,
                 pTargetMD->GetMDImport(),
                 NULL);
 
             // Unfortunately the PrettyPrintSig doesn't print 'static' when the function is static
             // so we need to append 'static' here. No need to localize
-            SString signature(SString::Utf8, (LPCUTF8)"static ");
-            signature.AppendUTF8((LPCUTF8) qbSig.Ptr());
+            SString<EncodingUTF8> signature((LPCUTF8)"static ");
+            signature.Append((LPCUTF8) qbSig.Ptr());
+
+            SString<EncodingUnicode> sigW;
+            signature.ConvertToUnicode(sigW);
 
             COMPlusThrow(
                 kMissingMethodException,
                 IDS_EE_INTEROP_STUB_CA_STUB_METHOD_MISSING,
-                signature.GetUnicode(),
-                stubClassName.GetUnicode()
+                (LPCWSTR)sigW,
+                (LPCWSTR)stubClassName
                 );
 
         }
@@ -4700,13 +4713,12 @@ HRESULT FindPredefinedILStubMethod(MethodDesc *pTargetMD, DWORD dwStubFlags, Met
             pStubMD,
             NULL))
     {
-        StackSString interopMethodName(SString::Utf8, pTargetMD->GetName());
-
+        MAKE_WIDEPTR_FROMUTF8(interopMethodName, pTargetMD->GetName());
         COMPlusThrow(
             kMethodAccessException,
             IDS_EE_INTEROP_STUB_CA_NO_ACCESS_TO_STUB_METHOD,
-            interopMethodName.GetUnicode(),
-            methodName.GetUnicode()
+            (LPCWSTR)interopMethodName,
+            (LPCWSTR)methodName
             );
     }
 
@@ -4947,9 +4959,9 @@ namespace
                             if (SF_IsStructMarshalStub(dwStubFlags))
                             {
                                 _ASSERTE(pSigDesc->m_pMT != nullptr);
-                                StackSString strTypeName;
+                                StackSString<EncodingUnicode> strTypeName;
                                 TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
-                                COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
+                                COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, (LPCWSTR)strTypeName);
                             }
                             UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                         }
@@ -4982,9 +4994,9 @@ namespace
                                     if (SF_IsStructMarshalStub(dwStubFlags))
                                     {
                                         _ASSERTE(pSigDesc->m_pMT != nullptr);
-                                        StackSString strTypeName;
+                                        StackSString<EncodingUnicode> strTypeName;
                                         TypeString::AppendType(strTypeName, TypeHandle(pSigDesc->m_pMT));
-                                        COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, strTypeName.GetUnicode());
+                                        COMPlusThrow(kTypeLoadException, IDS_CANNOT_MARSHAL_RECURSIVE_DEF, (LPCWSTR)strTypeName);
                                     }
                                     UNREACHABLE_MSG("unexpected deadlock in IL stub generation!");
                                 }
@@ -5508,7 +5520,7 @@ namespace
 
         if (!fSuccess)
         {
-            StackSString ssLibName(SString::Utf8, pMD->GetLibName());
+            MAKE_WIDEPTR_FROMUTF8(wsLibName, pMD->GetLibName());
 
             WCHAR wszEPName[50];
             if (WszMultiByteToWideChar(CP_UTF8, 0, (LPCSTR)pMD->GetEntrypointName(), -1, wszEPName, sizeof(wszEPName)/sizeof(WCHAR)) == 0)
@@ -5517,9 +5529,9 @@ namespace
                 wszEPName[1] = W('\0');
             }
 #ifdef TARGET_UNIX
-            COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_UNIX, ssLibName.GetUnicode(), wszEPName);
+            COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_UNIX, (LPCWSTR)wsLibName, wszEPName);
 #else
-            COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_WIN, ssLibName.GetUnicode(), wszEPName);
+            COMPlusThrow(kEntryPointNotFoundException, IDS_EE_NDIRECT_GETPROCADDRESS_WIN, (LPCWSTR)wsLibName, wszEPName);
 #endif
         }
     }

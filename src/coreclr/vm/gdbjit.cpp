@@ -508,7 +508,7 @@ GetDebugInfoFromPDB(MethodDesc* methodDescPtr,
         return E_FAIL;
 
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
-    SString modName = mod->GetFile()->GetPath();
+    SString<EncodingUnicode> modName = mod->GetFile()->GetPath();
     if (modName.IsEmpty())
         return E_FAIL;
 
@@ -948,7 +948,7 @@ void TypeInfoBase::DumpStrings(char* ptr, int& offset)
 void TypeInfoBase::CalculateName()
 {
     // name the type
-    SString sName;
+    SString<EncodingUnicode> sName;
 
     const TypeString::FormatFlags formatFlags = static_cast<TypeString::FormatFlags>(
         TypeString::FormatNamespace |
@@ -1292,12 +1292,12 @@ void FunctionMember::DumpMangledNamespaceAndMethod(char *buf, int &offset, const
 
 void FunctionMember::DumpLinkageName(char* ptr, int& offset)
 {
-    SString namespaceOrClassName;
-    SString methodName;
+    SString<EncodingUnicode> namespaceOrClassName;
+    SString<EncodingUTF8> methodName;
 
     md->GetMethodInfoNoSig(namespaceOrClassName, methodName);
-    SString utf8namespaceOrClassName;
-    SString utf8methodName;
+    SString<EncodingUTF8> utf8namespaceOrClassName;
+    SString<EncodingUTF8> utf8methodName;
     namespaceOrClassName.ConvertToUTF8(utf8namespaceOrClassName);
     methodName.ConvertToUTF8(utf8methodName);
 
@@ -2537,7 +2537,7 @@ void NotifyGdb::OnMethodPrepared(MethodDesc* methodDescPtr)
 
     /* Get module name */
     const Module* mod = methodDescPtr->GetMethodTable()->GetModule();
-    SString modName = mod->GetFile()->GetPath();
+    SString<EncodingUnicode> modName = mod->GetFile()->GetPath();
     StackScratchBuffer scratch;
     const char* szModName = modName.GetUTF8(scratch);
     const char* szModuleFile = SplitFilename(szModName);

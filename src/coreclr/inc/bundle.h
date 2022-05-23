@@ -32,7 +32,7 @@ struct BundleFileLocation
 
     static BundleFileLocation Invalid() { LIMITED_METHOD_CONTRACT; return BundleFileLocation(); }
 
-    const SString &Path() const;
+    const SString<EncodingUTF8> &Path() const;
 
     bool IsValid() const { LIMITED_METHOD_CONTRACT; return Offset != 0; }
 };
@@ -41,21 +41,21 @@ class Bundle
 {
 public:
     Bundle(LPCSTR bundlePath, BundleProbeFn *probe);
-    BundleFileLocation Probe(const SString& path, bool pathIsBundleRelative = false) const;
+    BundleFileLocation Probe(const SString<EncodingUTF8>& path, bool pathIsBundleRelative = false) const;
 
-    const SString &Path() const { LIMITED_METHOD_CONTRACT; return m_path; }
-    const SString &BasePath() const { LIMITED_METHOD_CONTRACT; return m_basePath; }
+    const SString<EncodingUTF8> &Path() const { LIMITED_METHOD_CONTRACT; return m_path; }
+    const SString<EncodingUTF8> &BasePath() const { LIMITED_METHOD_CONTRACT; return m_basePath; }
 
     static Bundle* AppBundle; // The BundleInfo for the current app, initialized by coreclr_initialize.
     static bool AppIsBundle() { LIMITED_METHOD_CONTRACT; return AppBundle != nullptr; }
-    static BundleFileLocation ProbeAppBundle(const SString& path, bool pathIsBundleRelative = false);
+    static BundleFileLocation ProbeAppBundle(const SString<EncodingUnicode>& path, bool pathIsBundleRelative = false);
 
 private:
 
-    SString m_path; // The path to single-file executable
+    SString<EncodingUTF8> m_path; // The path to single-file executable
     BundleProbeFn *m_probe;
 
-    SString m_basePath; // The prefix to denote a path within the bundle
+    SString<EncodingUTF8> m_basePath; // The prefix to denote a path within the bundle
     COUNT_T m_basePathLength;
 };
 

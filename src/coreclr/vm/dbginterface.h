@@ -237,8 +237,8 @@ public:
     virtual void SendUserBreakpointAndSynchronize(Thread * pThread) = 0;
 
     virtual void SendLogMessage(int iLevel,
-                                SString * pSwitchName,
-                                SString * pMessage) = 0;
+                                SString<EncodingUnicode> * pSwitchName,
+                                SString<EncodingUnicode> * pMessage) = 0;
 
     // send a custom notification from the target to the RS. This will become an ICorDebugThread and
     // ICorDebugAppDomain on the RS.
@@ -247,9 +247,9 @@ public:
     // Send an MDA notification. This ultimately translates to an ICorDebugMDA object on the Right-Side.
     virtual void SendMDANotification(
         Thread * pThread, // may be NULL. Lets us send on behalf of other threads.
-        SString * szName,
-        SString * szDescription,
-        SString * szXML,
+        SString<EncodingUnicode> * szName,
+        SString<EncodingUnicode> * szDescription,
+        SString<EncodingUnicode> * szXML,
         CorDebugMDAFlags flags,
         BOOL bAttach
     ) = 0;

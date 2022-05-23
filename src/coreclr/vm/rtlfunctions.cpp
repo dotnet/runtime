@@ -79,7 +79,7 @@ VOID InstallEEFunctionTable (
 
     if (wszModuleName == NULL)
     {
-        StackSString ssTempName;
+        StackSString<EncodingUnicode> ssTempName;
         DWORD dwTempNameSize;
 
         // Leaves trailing backslash on path, producing something like "c:\windows\microsoft.net\framework\v4.0.x86dbg\"
@@ -96,14 +96,14 @@ VOID InstallEEFunctionTable (
 
         if (ssTempName.GetCount() < MAX_LONGPATH)
         {
-            wcscpy_s(rgwModuleName, MAX_LONGPATH, ssTempName.GetUnicode());
+            wcscpy_s(rgwModuleName, MAX_LONGPATH, ssTempName);
 
             // publish result
             InterlockedExchangeT(&wszModuleName, rgwModuleName);
         }
         else
         {
-            NewArrayHolder<WCHAR> wzTempName(DuplicateStringThrowing(ssTempName.GetUnicode()));
+            NewArrayHolder<WCHAR> wzTempName(DuplicateStringThrowing(ssTempName));
 
             // publish result
             if (InterlockedCompareExchangeT(&wszModuleName, (LPWSTR)wzTempName, nullptr) == nullptr)

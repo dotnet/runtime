@@ -167,7 +167,7 @@ Assembly* TypeDesc::GetAssembly() {
     return pModule->GetAssembly();
 }
 
-void TypeDesc::GetName(SString &ssBuf)
+void TypeDesc::GetName(SString<EncodingUnicode> &ssBuf)
 {
     CONTRACTL
     {
@@ -197,7 +197,7 @@ void TypeDesc::GetName(SString &ssBuf)
 void TypeDesc::ConstructName(CorElementType kind,
                              TypeHandle param,
                              int rank,
-                             SString &ssBuff)
+                             SString<EncodingUnicode> &ssBuff)
 {
     CONTRACTL
     {
@@ -263,14 +263,16 @@ void TypeDesc::ConstructName(CorElementType kind,
     default:
         LPCUTF8 namesp = CorTypeInfo::GetNamespace(kind);
         if(namesp && *namesp) {
-            ssBuff.AppendUTF8(namesp);
+            MAKE_WIDEPTR_FROMUTF8(wnamesp, namesp);
+            ssBuff.Append(wnamesp);
             ssBuff.Append(W('.'));
         }
 
         LPCUTF8 name = CorTypeInfo::GetName(kind);
         BAD_FORMAT_NOTHROW_ASSERT(name);
         if (name && *name) {
-            ssBuff.AppendUTF8(name);
+            MAKE_WIDEPTR_FROMUTF8(wname, name);
+            ssBuff.Append(wname);
         }
     }
 }

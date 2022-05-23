@@ -80,23 +80,23 @@ namespace BINDER_SPACE
                         ));
 
         {
-            StackSString culture;
-            culture.SetUTF8(amd.szLocale);
-            culture.Normalize();
+            StackSString<EncodingUTF8> culture(amd.szLocale);
+            SString<EncodingUnicode> cultureUnicode;
+            culture.ConvertToUnicode(cultureUnicode);
 
-            SString::CIterator itr = culture.Begin();
-            if (culture.Find(itr, L';'))
+            SString<EncodingUnicode>::CIterator itr = cultureUnicode.Begin();
+            if (cultureUnicode.Find(itr, L';'))
             {
-                culture = SString(culture, culture.Begin(), itr-1);
+                cultureUnicode = SString<EncodingUnicode>(cultureUnicode, cultureUnicode.Begin(), itr-1);
             }
 
-            SetCulture(culture);
+            SetCulture(cultureUnicode);
         }
 
         {
-            StackSString assemblyName;
-            assemblyName.SetUTF8(pAssemblyName);
-            assemblyName.Normalize();
+            StackSString<EncodingUTF8> assemblyName(pAssemblyName);
+            SString<EncodingUnicode> assemblyNameUnicode;
+            assemblyName.ConvertToUnicode(assemblyNameUnicode);
 
             COUNT_T assemblyNameLength = assemblyName.GetCount();
             if (assemblyNameLength == 0 || assemblyNameLength >= MAX_PATH_FNAME)
@@ -104,7 +104,7 @@ namespace BINDER_SPACE
                 IF_FAIL_GO(FUSION_E_INVALID_NAME);
             }
 
-            SetSimpleName(assemblyName);
+            SetSimpleName(assemblyNameUnicode);
         }
 
         // See if the assembly[def] is retargetable (ie, for a generic assembly).
@@ -159,10 +159,12 @@ namespace BINDER_SPACE
     HRESULT AssemblyName::Init(const AssemblyNameData &data)
     {
         DWORD flags = data.IdentityFlags;
-        m_simpleName.SetUTF8(data.Name);
+        MAKE_WIDEPTR_FROMUTF8(pSimpleName, data.Name);
+        m_simpleName.Set(pSimpleName);
         m_version.SetFeatureVersion(data.MajorVersion, data.MinorVersion);
         m_version.SetServiceVersion(data.BuildNumber, data.RevisionNumber);
-        m_cultureOrLanguage.SetUTF8(data.Culture);
+        MAKE_WIDEPTR_FROMUTF8(pCulture, data.Culture);
+        m_cultureOrLanguage.Set(pCulture);
 
         m_publicKeyOrTokenBLOB.Set(data.PublicKeyOrToken, data.PublicKeyOrTokenLength);
         if ((flags & BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_PUBLIC_KEY) != 0)
@@ -204,13 +206,13 @@ namespace BINDER_SPACE
     BOOL AssemblyName::IsCoreLib()
     {
         // TODO: Is this simple comparison enough?
-        return SString::_wcsicmp(GetSimpleName().GetUnicode(), CoreLibName_W) == 0;
+        return StaticStringHelpers::_wcsicmp(GetSimpleName(), CoreLibName_W) == 0;
     }
 
     bool AssemblyName::IsNeutralCulture()
     {
         return m_cultureOrLanguage.IsEmpty()
-            || SString::_wcsicmp(m_cultureOrLanguage.GetUnicode(), s_neutralCulture) == 0;
+            || StaticStringHelpers::_wcsicmp(m_cultureOrLanguage, s_neutralCulture) == 0;
     }
 
     ULONG AssemblyName::Hash(DWORD dwIncludeFlags)
@@ -350,7 +352,7 @@ namespace BINDER_SPACE
         return fEquals;
     }
 
-    void AssemblyName::GetDisplayName(PathString &displayName,
+    void AssemblyName::GetDisplayName(SString<EncodingUnicode> &displayName,
                                       DWORD       dwIncludeFlags)
     {
         DWORD dwUseIdentityFlags = m_dwIdentityFlags;
@@ -376,9 +378,9 @@ namespace BINDER_SPACE
         TextualIdentityParser::ToString(this, dwUseIdentityFlags, displayName);
     }
 
-    SString &AssemblyName::GetNormalizedCulture()
+    SString<EncodingUnicode> &AssemblyName::GetNormalizedCulture()
     {
-        SString &culture = GetCulture();
+        SString<EncodingUnicode> &culture = GetCulture();
 
         if (culture.IsEmpty())
         {

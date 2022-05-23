@@ -27,10 +27,10 @@ namespace BINDER_SPACE
         FailureCache();
         ~FailureCache();
 
-        HRESULT Add(/* in */ SString  &assemblyNameorPath,
+        HRESULT Add(/* in */ SString<EncodingUnicode>  &assemblyNameorPath,
                     /* in */ HRESULT  hrBindResult);
-        HRESULT Lookup(/* in */ SString &assemblyNameorPath);
-        void Remove(/* in */ SString &assemblyName);
+        HRESULT Lookup(/* in */ SString<EncodingUnicode> &assemblyNameorPath);
+        void Remove(/* in */ SString<EncodingUnicode> &assemblyName);
     };
 };
 

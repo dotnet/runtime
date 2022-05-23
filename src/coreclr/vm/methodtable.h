@@ -2767,12 +2767,12 @@ public:
 public :
     // Helper routines for the GetFullyQualifiedNameForClass macros defined at the top of class.h.
     // You probably should not use these functions directly.
-    SString &_GetFullyQualifiedNameForClassNestedAware(SString &ssBuf);
-    SString &_GetFullyQualifiedNameForClass(SString &ssBuf);
+    SString<EncodingUnicode> &_GetFullyQualifiedNameForClassNestedAware(SString<EncodingUnicode> &ssBuf);
+    SString<EncodingUnicode> &_GetFullyQualifiedNameForClass(SString<EncodingUnicode> &ssBuf);
     LPCUTF8 GetFullyQualifiedNameInfo(LPCUTF8 *ppszNamespace);
 
 private:
-    template<typename RedirectFunctor> SString &_GetFullyQualifiedNameForClassNestedAwareInternal(SString &ssBuf);
+    template<typename RedirectFunctor> SString<EncodingUnicode> &_GetFullyQualifiedNameForClassNestedAwareInternal(SString<EncodingUnicode> &ssBuf);
 
 public :
     //-------------------------------------------------------------------

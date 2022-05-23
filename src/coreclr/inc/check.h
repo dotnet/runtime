@@ -60,7 +60,10 @@
 // NOTE: you should NEVER use the CHECK class API directly - use the macros below.
 //--------------------------------------------------------------------------------
 
+template<typename TEncoding>
 class SString;
+
+struct EncodingUTF8;
 
 class CHECK
 {
@@ -147,7 +150,7 @@ public: // !!! NOTE: Called from macros only!!!
 
   private:
 #ifdef _DEBUG
-    static LPCSTR AllocateDynamicMessage(const SString &s);
+    static LPCSTR AllocateDynamicMessage(const SString<EncodingUTF8> &s);
 #endif
 };
 

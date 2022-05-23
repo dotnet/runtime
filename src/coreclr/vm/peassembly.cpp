@@ -58,10 +58,10 @@ static void ValidatePEFileMachineType(PEAssembly *pPEAssembly)
 #endif // BIT64_
 
         // Image has required machine that doesn't match the CLR.
-        StackSString name;
+        StackSString<EncodingUnicode> name;
         pPEAssembly->GetDisplayName(name);
 
-        COMPlusThrow(kBadImageFormatException, IDS_CLASSLOAD_WRONGCPU, name.GetUnicode());
+        COMPlusThrow(kBadImageFormatException, IDS_CLASSLOAD_WRONGCPU, (LPCWSTR)name);
     }
 
     return;   // If we got here, all is good.
@@ -171,7 +171,7 @@ BOOL PEAssembly::Equals(PEImage *pImage)
 // Descriptive strings
 // ------------------------------------------------------------
 
-void PEAssembly::GetPathOrCodeBase(SString &result)
+void PEAssembly::GetPathOrCodeBase(SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -736,7 +736,6 @@ PEAssembly::PEAssembly(
 
 #if _DEBUG
     GetPathOrCodeBase(m_debugName);
-    m_debugName.Normalize();
     m_pDebugName = m_debugName;
 #endif
 }
@@ -870,7 +869,7 @@ PEAssembly *PEAssembly::Create(IMetaDataAssemblyEmit *pAssemblyEmit)
 
 // Supports implementation of the legacy Assembly.CodeBase property.
 // Returns false if the assembly was loaded from a bundle, true otherwise
-BOOL PEAssembly::GetCodeBase(SString &result)
+BOOL PEAssembly::GetCodeBase(SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -894,13 +893,13 @@ BOOL PEAssembly::GetCodeBase(SString &result)
     }
     else
     {
-        result.Set(SString::Empty());
+        result.Set(SString<EncodingUnicode>::Empty());
         return FALSE;
     }
 }
 
 /* static */
-void PEAssembly::PathToUrl(SString &string)
+void PEAssembly::PathToUrl(SString<EncodingUnicode> &string)
 {
     CONTRACTL
     {
@@ -912,25 +911,25 @@ void PEAssembly::PathToUrl(SString &string)
     }
     CONTRACTL_END;
 
-    SString::Iterator i = string.Begin();
+    SString<EncodingUnicode>::Iterator i = string.Begin();
 
 #if !defined(TARGET_UNIX)
     if (i[0] == W('\\'))
     {
         // Network path
-        string.Insert(i, SL("file://"));
-        string.Skip(i, SL("file://"));
+        string.Insert(i, SL(W("file://")));
+        string.Skip(i, SL(W("file://")));
     }
     else
     {
         // Disk path
-        string.Insert(i, SL("file:///"));
-        string.Skip(i, SL("file:///"));
+        string.Insert(i, SL(W("file:///")));
+        string.Skip(i, SL(W("file:///")));
     }
 #else
     // Unix doesn't have a distinction between a network or a local path
     _ASSERTE( i[0] == W('\\') || i[0] == W('/'));
-    SString sss(SString::Literal, W("file://"));
+    SString<EncodingUnicode> sss(SharedData, W("file://"));
     string.Insert(i, sss);
     string.Skip(i, sss);
 #endif
@@ -941,7 +940,7 @@ void PEAssembly::PathToUrl(SString &string)
     }
 }
 
-void PEAssembly::UrlToPath(SString &string)
+void PEAssembly::UrlToPath(SString<EncodingUnicode> &string)
 {
     CONTRACT_VOID
     {
@@ -950,11 +949,11 @@ void PEAssembly::UrlToPath(SString &string)
     }
     CONTRACT_END;
 
-    SString::Iterator i = string.Begin();
+    SString<EncodingUnicode>::Iterator i = string.Begin();
 
-    SString sss2(SString::Literal, W("file://"));
+    SString<EncodingUnicode> sss2(SharedData, W("file://"));
 #if !defined(TARGET_UNIX)
-    SString sss3(SString::Literal, W("file:///"));
+    SString<EncodingUnicode> sss3(SharedData, W("file:///"));
     if (string.MatchCaseInsensitive(i, sss3))
         string.Delete(i, 8);
     else
@@ -970,11 +969,11 @@ void PEAssembly::UrlToPath(SString &string)
     RETURN;
 }
 
-BOOL PEAssembly::FindLastPathSeparator(const SString &path, SString::Iterator &i)
+BOOL PEAssembly::FindLastPathSeparator(const SString<EncodingUnicode> &path, SString<EncodingUnicode>::Iterator &i)
 {
 #ifdef TARGET_UNIX
-    SString::Iterator slash = i;
-    SString::Iterator backSlash = i;
+    SString<EncodingUnicode>::Iterator slash = i;
+    SString<EncodingUnicode>::Iterator backSlash = i;
     BOOL foundSlash = path.FindBack(slash, '/');
     BOOL foundBackSlash = path.FindBack(backSlash, '\\');
     if (!foundSlash && !foundBackSlash)

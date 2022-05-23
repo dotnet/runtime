@@ -737,7 +737,7 @@ private:
 
     static size_t _strcmp(str_t left, str_t right)
     {
-        return ::SString::_tstricmp(left, right);
+        return ::StaticStringHelpers::_tstricmp(left, right);
     }
 
     static size_t _hash(CHAR const *str)
@@ -853,11 +853,11 @@ class EMPTY_BASES_DECL WStringSHash : public SHash< StringSHashTraits<ELEMENT, W
 {
 };
 
-template <typename ELEMENT>
-class EMPTY_BASES_DECL SStringSHashTraits : public PtrSHashTraits<ELEMENT, SString>
+template <typename ELEMENT, typename TEncoding>
+class EMPTY_BASES_DECL SStringSHashTraits : public PtrSHashTraits<ELEMENT, SString<TEncoding>>
 {
   public:
-    typedef PtrSHashTraits<ELEMENT, SString> PARENT;
+    typedef PtrSHashTraits<ELEMENT, SString<TEncoding>> PARENT;
     typedef typename PARENT::element_t element_t;
     typedef typename PARENT::key_t key_t;
     typedef typename PARENT::count_t count_t;
@@ -876,8 +876,8 @@ class EMPTY_BASES_DECL SStringSHashTraits : public PtrSHashTraits<ELEMENT, SStri
     }
 };
 
-template <typename ELEMENT>
-class EMPTY_BASES_DECL SStringSHash : public SHash< SStringSHashTraits<ELEMENT> >
+template <typename ELEMENT, typename TEncoding>
+class EMPTY_BASES_DECL SStringSHash : public SHash< SStringSHashTraits<ELEMENT, TEncoding> >
 {
 };
 

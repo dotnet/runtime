@@ -963,8 +963,8 @@ bool BaseBucketParamsManager::GetFileVersionInfoForModule(Module* pModule, USHOR
         // if we failed to get the version info from the native image then fall back to the IL image.
         if (!succeeded)
         {
-            LPCWSTR modulePath = pPEAssembly->GetPath().GetUnicode();
-            if (modulePath != NULL && modulePath != SString::Empty() && SUCCEEDED(DwGetFileVersionInfo(modulePath, major, minor, build, revision)))
+            LPCWSTR modulePath = pPEAssembly->GetPath();
+            if (modulePath != NULL && modulePath != SString<EncodingUnicode>::Empty() && SUCCEEDED(DwGetFileVersionInfo(modulePath, major, minor, build, revision)))
             {
                 succeeded = true;
             }
@@ -1107,7 +1107,7 @@ int BaseBucketParamsManager::CopyStringToBucket(_Out_writes_(targetMaxLength) LP
             if (slen < srcLen)
             {
                 // maybe -- check.
-                if (SString::_wcsicmp(&pSource[srcLen - slen], truncations[i]) == 0)
+                if (StaticStringHelpers::_wcsicmp(&pSource[srcLen - slen], truncations[i]) == 0)
                 {
                     // yes, the string does have this suffix.  drop it.
                     srcLen -= slen;

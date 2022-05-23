@@ -179,7 +179,6 @@ HRESULT SymbolInfo::SetMethodProps(mdToken method, mdToken cls, LPCWSTR wszName)
         m_LastMethod.method=method;
         m_LastMethod.cls=cls;
         m_LastMethod.wszName=wszName;
-        m_LastMethod.wszName.Normalize();
     }
     EX_CATCH_HRESULT(hr)
     return hr;

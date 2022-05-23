@@ -397,7 +397,7 @@ struct LoaderHeapEvent
     size_t           m_dwSize;              //Actual size of block (including validation tags, padding, everything)
 
 
-    void Describe(SString *pSString)
+    void Describe(SString<EncodingASCII> *pSString)
     {
         CONTRACTL
         {
@@ -407,10 +407,10 @@ struct LoaderHeapEvent
         }
         CONTRACTL_END
 
-        pSString->AppendASCII("\n");
+        pSString->Append("\n");
 
         {
-            StackSString buf;
+            StackSString<EncodingASCII> buf;
             if (m_allocationType == kFreedMem)
             {
                 buf.Printf("    Freed at:         %s (line %d)\n", m_szFile, m_lineNum);
@@ -425,21 +425,21 @@ struct LoaderHeapEvent
 
         if (!QuietValidate())
         {
-            pSString->AppendASCII("    *** THIS BLOCK HAS BEEN CORRUPTED ***\n");
+            pSString->Append("    *** THIS BLOCK HAS BEEN CORRUPTED ***\n");
         }
 
 
 
         {
-            StackSString buf;
+            StackSString<EncodingASCII> buf;
             buf.Printf("    Type:          ");
             switch (m_allocationType)
             {
                 case kAllocMem:
-                    buf.AppendASCII("AllocMem()\n");
+                    buf.Append("AllocMem()\n");
                     break;
                 case kFreedMem:
-                    buf.AppendASCII("Free\n");
+                    buf.Append("Free\n");
                     break;
                 default:
                     break;
@@ -449,30 +449,30 @@ struct LoaderHeapEvent
 
 
         {
-            StackSString buf;
+            StackSString<EncodingASCII> buf;
             buf.Printf("    Start of block:       0x%p\n", m_pMem);
             pSString->Append(buf);
         }
 
         {
-            StackSString buf;
+            StackSString<EncodingASCII> buf;
             buf.Printf("    End of block:         0x%p\n", ((BYTE*)m_pMem) + m_dwSize - 1);
             pSString->Append(buf);
         }
 
         {
-            StackSString buf;
+            StackSString<EncodingASCII> buf;
             buf.Printf("    Requested size:       %lu (0x%lx)\n", (ULONG)m_dwRequestedSize, (ULONG)m_dwRequestedSize);
             pSString->Append(buf);
         }
 
         {
-            StackSString buf;
+            StackSString<EncodingASCII> buf;
             buf.Printf("    Actual size:          %lu (0x%lx)\n", (ULONG)m_dwSize, (ULONG)m_dwSize);
             pSString->Append(buf);
         }
 
-        pSString->AppendASCII("\n");
+        pSString->Append("\n");
     }
 
 
@@ -608,10 +608,10 @@ class LoaderHeapSniffer
         }
 
 
-        static VOID PitchSniffer(SString *pSString)
+        static VOID PitchSniffer(SString<EncodingASCII> *pSString)
         {
             WRAPPER_NO_CONTRACT;
-            pSString->AppendASCII("\n"
+            pSString->Append("\n"
                              "\nBecause call-tracing wasn't turned on, we couldn't provide details about who last owned the affected memory block. To get more precise diagnostics,"
                              "\nset the following registry DWORD value:"
                              "\n"
@@ -1550,7 +1550,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
         {
             CONTRACT_VIOLATION(ThrowsViolation|FaultViolation); // We're reporting a heap corruption - who cares about violations
 
-            StackSString message;
+            StackSString<EncodingASCII> message;
             message.Printf("HEAP VIOLATION: Invalid BackoutMem() call made at:\n"
                            "\n"
                            "     File: %s\n"
@@ -1578,22 +1578,22 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
 
             if (m_dwDebugFlags & kCallTracing)
             {
-                message.AppendASCII("*** CALLTRACING ENABLED ***\n");
+                message.Append("*** CALLTRACING ENABLED ***\n");
                 LoaderHeapEvent *pEvent = LoaderHeapSniffer::FindEvent(this, pMem);
                 if (!pEvent)
                 {
-                    message.AppendASCII("This pointer doesn't appear to have come from this LoaderHeap.\n");
+                    message.Append("This pointer doesn't appear to have come from this LoaderHeap.\n");
                 }
                 else
                 {
-                    message.AppendASCII(pMem == pEvent->m_pMem ? "We have the following data about this pointer:" : "This pointer points to the middle of the following block:");
+                    message.Append(pMem == pEvent->m_pMem ? "We have the following data about this pointer:" : "This pointer points to the middle of the following block:");
                     pEvent->Describe(&message);
                 }
             }
 
             if (pTag->m_dwRequestedSize != dwRequestedSize)
             {
-                StackSString buf;
+                StackSString<EncodingASCII> buf;
                 buf.Printf(
                         "Possible causes:\n"
                         "\n"
@@ -1608,7 +1608,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
             }
             else
             {
-                message.AppendASCII("This memory block is completely unrecognizable.\n");
+                message.Append("This memory block is completely unrecognizable.\n");
             }
 
 
@@ -1617,8 +1617,7 @@ void UnlockedLoaderHeap::UnlockedBackoutMem(void *pMem,
                 LoaderHeapSniffer::PitchSniffer(&message);
             }
 
-            StackScratchBuffer scratch;
-            DbgAssertDialog(szFile, lineNum, (char*) message.GetANSI(scratch));
+            DbgAssertDialog(szFile, lineNum, message);
 
         }
     }
@@ -2164,7 +2163,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
     }
 
     {
-        StackSString message;
+        StackSString<EncodingASCII> message;
 
         message.Printf("A loaderheap freelist has been corrupted. The bytes at or near address 0x%p appears to have been overwritten. We expected to see %s here.\n"
                        "\n"
@@ -2181,7 +2180,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
 
         if (!(pHeap->m_dwDebugFlags & pHeap->kCallTracing))
         {
-            message.AppendASCII("\nThe usual reason is that someone wrote past the end of a block or wrote into a block after freeing it."
+            message.Append("\nThe usual reason is that someone wrote past the end of a block or wrote into a block after freeing it."
                            "\nOf course, the culprit is long gone so it's probably too late to debug this now. Try turning on call-tracing"
                            "\nand reproing. We can attempt to find out who last owned the surrounding pieces of memory."
                            "\n"
@@ -2196,16 +2195,16 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
         {
             LoaderHeapEvent *pBadAddrEvent = FindEvent(pHeap, pBadAddr);
 
-            message.AppendASCII("*** CALL TRACING ENABLED ***\n\n");
+            message.Append("*** CALL TRACING ENABLED ***\n\n");
 
             if (pBadAddrEvent)
             {
-                message.AppendASCII("\nThe last known owner of the corrupted address was:\n");
+                message.Append("\nThe last known owner of the corrupted address was:\n");
                 pBadAddrEvent->Describe(&message);
             }
             else
             {
-                message.AppendASCII("\nNo known owner of last corrupted address.\n");
+                message.Append("\nNo known owner of last corrupted address.\n");
             }
 
             LoaderHeapEvent *pPrevEvent = FindEvent(pHeap, ((BYTE*)pProbeThis) - 1);
@@ -2215,14 +2214,14 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
                    pPrevEvent != NULL &&
                    ( ((UINT_PTR)pProbeThis) - ((UINT_PTR)(pPrevEvent->m_pMem)) + pPrevEvent->m_dwSize ) < 1024)
             {
-                message.AppendASCII("\nThis block is located close to the corruption point. ");
+                message.Append("\nThis block is located close to the corruption point. ");
                 if (!pHeap->IsInterleaved() && pPrevEvent->QuietValidate())
                 {
-                    message.AppendASCII("If it was overrun, it might have caused this.");
+                    message.Append("If it was overrun, it might have caused this.");
                 }
                 else
                 {
-                    message.AppendASCII("*** CORRUPTION DETECTED IN THIS BLOCK ***");
+                    message.Append("*** CORRUPTION DETECTED IN THIS BLOCK ***");
                 }
                 pPrevEvent->Describe(&message);
                 pPrevEvent = FindEvent(pHeap, ((BYTE*)(pPrevEvent->m_pMem)) - 1);
@@ -2231,8 +2230,7 @@ void LoaderHeapSniffer::ValidateFreeList(UnlockedLoaderHeap *pHeap)
 
         }
 
-        StackScratchBuffer scratch;
-        DbgAssertDialog(__FILE__, __LINE__, (char*) message.GetANSI(scratch));
+        DbgAssertDialog(__FILE__, __LINE__, message);
 
     }
 

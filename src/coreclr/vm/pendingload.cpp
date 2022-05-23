@@ -214,10 +214,10 @@ void PendingTypeLoadTable::Dump()
     {
         for (TableEntry *pSearch = m_pBuckets[i]; pSearch; pSearch = pSearch->pNext)
         {
-            SString name;
+            SString<EncodingUnicode> name;
             TypeKey entryTypeKey = pSearch->pData->GetTypeKey();
             TypeString::AppendTypeKeyDebug(name, &entryTypeKey);
-            LOG((LF_CLASSLOADER, LL_INFO10000, "  Entry %S with handle %p at level %s\n", name.GetUnicode(), pSearch->pData->m_typeHandle.AsPtr(),
+            LOG((LF_CLASSLOADER, LL_INFO10000, "  Entry %S with handle %p at level %s\n", (LPCWSTR)name, pSearch->pData->m_typeHandle.AsPtr(),
                  pSearch->pData->m_typeHandle.IsNull() ? "not-applicable" : classLoadLevelName[pSearch->pData->m_typeHandle.GetLoadLevel()]));
         }
     }

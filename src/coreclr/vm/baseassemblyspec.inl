@@ -17,10 +17,10 @@
 inline int BaseAssemblySpec::CompareStrings(LPCUTF8 string1, LPCUTF8 string2)
 {
     WRAPPER_NO_CONTRACT;
-    SString s1;
-    SString s2;
-    s1.SetUTF8(string1);
-    s2.SetUTF8(string2);
+    SString<EncodingUTF8> s1;
+    SString<EncodingUTF8> s2;
+    s1.Set(string1);
+    s2.Set(string2);
     return s1.CompareCaseInsensitive(s2);
 }
 

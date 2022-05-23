@@ -46,10 +46,9 @@ namespace BINDER_SPACE
         }
         static count_t Hash(const key_t &str)
         {
-            SString ssKey(SString::Literal, str);
-            return ssKey.HashCaseInsensitive();
+            return SL(str).HashCaseInsensitive();
         }
-        static BOOL Equals(const key_t &lhs, const key_t &rhs) { LIMITED_METHOD_CONTRACT; return (SString::_wcsicmp(lhs, rhs) == 0); }
+        static BOOL Equals(const key_t &lhs, const key_t &rhs) { LIMITED_METHOD_CONTRACT; return (StaticStringHelpers::_wcsicmp(lhs, rhs) == 0); }
 
         void OnDestructPerEntryCleanupAction(const SimpleNameToFileNameMapEntry & e)
         {
@@ -86,21 +85,21 @@ namespace BINDER_SPACE
         ~ApplicationContext();
         HRESULT Init();
 
-        inline SString &GetApplicationName();
+        inline SString<EncodingUnicode> &GetApplicationName();
 
-        HRESULT SetupBindingPaths(/* in */ SString &sTrustedPlatformAssemblies,
-                                  /* in */ SString &sPlatformResourceRoots,
-                                  /* in */ SString &sAppPaths,
+        HRESULT SetupBindingPaths(/* in */ SString<EncodingUnicode> &sTrustedPlatformAssemblies,
+                                  /* in */ SString<EncodingUnicode> &sPlatformResourceRoots,
+                                  /* in */ SString<EncodingUnicode> &sAppPaths,
                                   /* in */ BOOL     fAcquireLock);
 
         // Getters/Setter
         inline ExecutionContext *GetExecutionContext();
         inline FailureCache *GetFailureCache();
-        inline HRESULT AddToFailureCache(SString &assemblyNameOrPath,
+        inline HRESULT AddToFailureCache(SString<EncodingUnicode> &assemblyNameOrPath,
                                          HRESULT  hrBindResult);
-        inline StringArrayList *GetAppPaths();
+        inline StringArrayList<EncodingUnicode> *GetAppPaths();
         inline SimpleNameToFileNameMap *GetTpaList();
-        inline StringArrayList *GetPlatformResourceRoots();
+        inline StringArrayList<EncodingUnicode> *GetPlatformResourceRoots();
 
         // Using a host-configured Trusted Platform Assembly list
         bool IsTpaListProvided();
@@ -110,13 +109,13 @@ namespace BINDER_SPACE
 
     private:
         Volatile<LONG>     m_cVersion;
-        SString            m_applicationName;
+        SString<EncodingUnicode>            m_applicationName;
         ExecutionContext  *m_pExecutionContext;
         FailureCache      *m_pFailureCache;
         CRITSEC_COOKIE     m_contextCS;
 
-        StringArrayList    m_platformResourceRoots;
-        StringArrayList    m_appPaths;
+        StringArrayList<EncodingUnicode> m_platformResourceRoots;
+        StringArrayList<EncodingUnicode> m_appPaths;
 
         SimpleNameToFileNameMap * m_pTrustedPlatformAssemblyMap;
     };

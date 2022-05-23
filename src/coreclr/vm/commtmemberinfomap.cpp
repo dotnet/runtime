@@ -87,7 +87,7 @@ public:
         }
         CONTRACTL_END;
 
-        return SString::_wcsicmp(reinterpret_cast<LPCWSTR>(pData),reinterpret_cast<WSTRHASH*>(pItem)->szName);
+        return StaticStringHelpers::_wcsicmp(reinterpret_cast<LPCWSTR>(pData),reinterpret_cast<WSTRHASH*>(pItem)->szName);
     }
 }; // class CWStrHash : public CChainedHash<WSTRHASH>
 
@@ -768,7 +768,7 @@ void ComMTMemberInfoMap::GetMethodPropsForMeth(
             pName = rName.Ptr();
 
             // If this is a "ToString" method, make it a property get.
-            if (SString::_wcsicmp(pName, szDefaultToString) == 0)
+            if (StaticStringHelpers::_wcsicmp(pName, szDefaultToString) == 0)
             {
                 rProps[ix].semantic = msGetter;
                 rProps[ix].bFunction2Getter = TRUE;
@@ -881,14 +881,14 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
                 if (!rProps[iTst].bMemberVisible)
                     continue;
 
-                if (SString::_wcsicmp(rProps[iCur].pName, rProps[iTst].pName) == 0)
+                if (StaticStringHelpers::_wcsicmp(rProps[iCur].pName, rProps[iTst].pName) == 0)
                     bDup = TRUE;
             }
 
             // If OK with other members, check with base interface names.
             for (iTst=0; !bDup && iTst<cBaseNames; ++iTst)
             {
-                if (SString::_wcsicmp(rProps[iCur].pName, rBaseNames[iTst]) == 0)
+                if (StaticStringHelpers::_wcsicmp(rProps[iCur].pName, rBaseNames[iTst]) == 0)
                     bDup = TRUE;
             }
 
@@ -915,7 +915,7 @@ void ComMTMemberInfoMap::EliminateDuplicateNames(
                         // or iTry is the same as iCur, don't need to examine it.
                         if (TypeFromToken(rProps[iTry].property) != mdtProperty || iTry == iCur)
                             continue;
-                        if (SString::_wcsicmp(rProps[iTry].pName, rcName) == 0)
+                        if (StaticStringHelpers::_wcsicmp(rProps[iTry].pName, rcName) == 0)
                             break;
                     }
 
@@ -1149,14 +1149,14 @@ void ComMTMemberInfoMap::AssignDefaultMember(
             continue;
 
         pName = rProps[ix].pName;
-        if (SString::_wcsicmp(pName, szDefaultValue) == 0)
+        if (StaticStringHelpers::_wcsicmp(pName, szDefaultValue) == 0)
         {
             if (rProps[ix].semantic != 0)
                 pDef = &defValueProp;
             else
                 pDef = &defValueMeth;
         }
-        else if (SString::_wcsicmp(pName, szDefaultToString) == 0)
+        else if (StaticStringHelpers::_wcsicmp(pName, szDefaultToString) == 0)
         {
             pDef = &defToString;
         }
@@ -1282,7 +1282,7 @@ void ComMTMemberInfoMap::AssignNewEnumMember(
 
         // Check to see if the member is GetEnumerator.
         pName = rProps[ix].pName;
-        if (SString::_wcsicmp(pName, szGetEnumerator) != 0)
+        if (StaticStringHelpers::_wcsicmp(pName, szGetEnumerator) != 0)
             continue;
 
         pMeth = rProps[ix].pMeth;

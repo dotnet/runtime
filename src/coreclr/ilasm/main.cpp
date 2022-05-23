@@ -620,7 +620,7 @@ extern "C" int _cdecl wmain(int argc, _In_ WCHAR **argv)
                 PathString wzIncludePathBuffer;
                 if (0 != WszGetEnvironmentVariable(W("ILASM_INCLUDE"), wzIncludePathBuffer))
                 {
-                    wzIncludePath = wzIncludePathBuffer.GetCopyOfUnicodeString();
+                    wzIncludePath = wzIncludePathBuffer.CreateCopyOfString();
 
                 }
             }

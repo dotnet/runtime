@@ -40,7 +40,7 @@ private:
     PerfMap(int pid);
 
     // Write a line to the map file.
-    void WriteLine(SString & line);
+    void WriteLine(SString<EncodingUnicode> & line);
 
 protected:
     // Construct a new map without a specified file name.

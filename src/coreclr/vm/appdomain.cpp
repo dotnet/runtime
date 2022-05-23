@@ -794,14 +794,14 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
 {
     STANDARD_VM_CONTRACT;
 
-    SString sDirectories(wszNativeDllSearchDirectories);
+    SString<EncodingUnicode> sDirectories(wszNativeDllSearchDirectories);
 
     if (sDirectories.GetCount() > 0)
     {
-        SString::CIterator start = sDirectories.Begin();
-        SString::CIterator itr = sDirectories.Begin();
-        SString::CIterator end = sDirectories.End();
-        SString qualifiedPath;
+        SString<EncodingUnicode>::CIterator start = sDirectories.Begin();
+        SString<EncodingUnicode>::CIterator itr = sDirectories.Begin();
+        SString<EncodingUnicode>::CIterator end = sDirectories.End();
+        SString<EncodingUnicode> qualifiedPath;
 
         while (itr != end)
         {
@@ -812,7 +812,7 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
                 itr = end;
             }
 
-            SString qualifiedPath(sDirectories, start, itr);
+            SString<EncodingUnicode> qualifiedPath(sDirectories, start, itr);
 
             if (found)
             {
@@ -825,10 +825,10 @@ void AppDomain::SetNativeDllSearchDirectories(LPCWSTR wszNativeDllSearchDirector
             {
                 if (qualifiedPath[len - 1] != DIRECTORY_SEPARATOR_CHAR_W)
                 {
-                    qualifiedPath.Append(DIRECTORY_SEPARATOR_CHAR_W);
+                    qualifiedPath.Append(DIRECTORY_SEPARATOR_STR_W);
                 }
 
-                NewHolder<SString> stringHolder(new SString(qualifiedPath));
+                NewHolder<SString<EncodingUnicode>> stringHolder(new SString<EncodingUnicode>(qualifiedPath));
                 IfFailThrow(m_NativeDllSearchDirectories.Append(stringHolder.GetValue()));
                 stringHolder.SuppressRelease();
             }
@@ -1181,19 +1181,17 @@ void SystemDomain::Init()
         ThrowHR(hr);
 
     // GetInternalSystemDirectory returns a size, including the null!
-    WCHAR* buffer = m_SystemDirectory.OpenUnicodeBuffer(size - 1);
+    WCHAR* buffer = m_SystemDirectory.OpenBuffer(size - 1);
     IfFailThrow(GetInternalSystemDirectory(buffer, &size));
     m_SystemDirectory.CloseBuffer();
-    m_SystemDirectory.Normalize();
 
     // At this point m_SystemDirectory should already be canonicalized
     m_BaseLibrary.Append(m_SystemDirectory);
-    if (!m_BaseLibrary.EndsWith(DIRECTORY_SEPARATOR_CHAR_W))
+    if (!m_BaseLibrary.EndsWith(SL(DIRECTORY_SEPARATOR_STR_W)))
     {
-        m_BaseLibrary.Append(DIRECTORY_SEPARATOR_CHAR_W);
+        m_BaseLibrary.Append(DIRECTORY_SEPARATOR_STR_W);
     }
     m_BaseLibrary.Append(g_pwBaseLibrary);
-    m_BaseLibrary.Normalize();
 
     LoadBaseSystemClasses();
 
@@ -2762,7 +2760,7 @@ DomainAssembly* AppDomain::LoadDomainAssembly(AssemblySpec* pSpec,
 
             if (!EEFileLoadException::CheckType(pEx))
             {
-                StackSString name;
+                StackSString<EncodingUnicode> name;
                 pSpec->GetDisplayName(0, name);
                 pEx=new EEFileLoadException(name, pEx->GetHR(), pEx);
                 AddExceptionToCache(pSpec, pEx);
@@ -3196,7 +3194,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
     CONTRACTL_END;
 
     // Do all computations into a temporary until we're ensured of success
-    SString tmpFriendlyName;
+    SString<EncodingUnicode> tmpFriendlyName;
 
 
     if (pwzFriendlyName)
@@ -3208,9 +3206,10 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
 
         if (m_pRootAssembly)
         {
-            tmpFriendlyName.SetUTF8(m_pRootAssembly->GetSimpleName());
+            MAKE_WIDEPTR_FROMUTF8(pSimpleName, m_pRootAssembly->GetSimpleName());
+            tmpFriendlyName.Set(pSimpleName);
 
-            SString::Iterator i = tmpFriendlyName.End();
+            SString<EncodingUnicode>::Iterator i = tmpFriendlyName.End();
             if (tmpFriendlyName.FindBack(i, '.'))
                 tmpFriendlyName.Truncate(i);
         }
@@ -3220,11 +3219,7 @@ void AppDomain::SetFriendlyName(LPCWSTR pwzFriendlyName, BOOL fDebuggerCares/*=T
         }
     }
 
-    tmpFriendlyName.Normalize();
-
-
     m_friendlyName = tmpFriendlyName;
-    m_friendlyName.Normalize();
 
     if(g_pDebugInterface)
     {
@@ -3740,7 +3735,7 @@ PEAssembly * AppDomain::BindAssemblySpec(
                             }
                             else
                             {
-                                StackSString exceptionDisplayName, failedSpecDisplayName;
+                                StackSString<EncodingUnicode> exceptionDisplayName, failedSpecDisplayName;
 
                                 ((EEFileLoadException*)ex)->GetName(exceptionDisplayName);
                                 pFailedSpec->GetDisplayName(0, failedSpecDisplayName);
@@ -4567,7 +4562,7 @@ AppDomain::RaiseAssemblyResolveEvent(
     }
     CONTRACT_END;
 
-    StackSString ssName;
+    StackSString<EncodingUnicode> ssName;
     pSpec->GetDisplayName(0, ssName);
 
     // Elevate threads allowed loading level.  This allows the host to load an assembly even in a restricted

@@ -89,7 +89,7 @@ namespace BINDER_SPACE
     /* static */
     HRESULT TextualIdentityParser::ToString(AssemblyIdentity *pAssemblyIdentity,
                                             DWORD             dwIdentityFlags,
-                                            SString          &textualIdentity)
+                                            SString<EncodingUnicode> &textualIdentity)
     {
         HRESULT hr = S_OK;
 
@@ -97,7 +97,7 @@ namespace BINDER_SPACE
 
         EX_TRY
         {
-            SmallStackSString tmpString;
+            SmallStackSString<EncodingUnicode> tmpString;
 
             textualIdentity.Clear();
 
@@ -186,26 +186,26 @@ namespace BINDER_SPACE
 
     /* static */
     void TextualIdentityParser::BlobToHex(SBuffer &publicKeyOrTokenBLOB,
-                                          SString &publicKeyOrToken)
+                                          SString<EncodingUnicode> &publicKeyOrToken)
     {
         UINT cbPublicKeyOrTokenBLOB = publicKeyOrTokenBLOB.GetSize();
         WCHAR *pwzpublicKeyOrToken =
-            publicKeyOrToken.OpenUnicodeBuffer(cbPublicKeyOrTokenBLOB * 2);
+            publicKeyOrToken.OpenBuffer(cbPublicKeyOrTokenBLOB * 2);
 
         BinToUnicodeHex(publicKeyOrTokenBLOB, cbPublicKeyOrTokenBLOB, pwzpublicKeyOrToken);
         publicKeyOrToken.CloseBuffer(cbPublicKeyOrTokenBLOB * 2);
     }
 
     /* static */
-    void TextualIdentityParser::EscapeString(SString &input,
-                                             SString &result)
+    void TextualIdentityParser::EscapeString(SString<EncodingUnicode> &input,
+                                             SString<EncodingUnicode> &result)
     {
         BOOL fNeedQuotes = FALSE;
         WCHAR wcQuoteCharacter = W('"');
 
-        SmallStackSString tmpString;
-        SString::Iterator cursor = input.Begin();
-        SString::Iterator end = input.End() - 1;
+        SmallStackSString<EncodingUnicode> tmpString;
+        SString<EncodingUnicode>::Iterator cursor = input.Begin();
+        SString<EncodingUnicode>::Iterator end = input.End() - 1;
 
         // Leading/Trailing white space require quotes
         if (IsWhitespace(cursor[0]) || IsWhitespace(end[0]))

@@ -571,7 +571,7 @@ HRESULT CCompRC::LoadResourceFile(HRESOURCEDLL * pHInst, LPCWSTR lpFileName)
 //  3. Dll in root path (<dir passed>\mscorrc.dll)
 //*****************************************************************************
 HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
-                                   SString& rcPath)
+                                   SString<EncodingUnicode>& rcPath)
 {
     CONTRACTL
     {
@@ -588,12 +588,12 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
 
     _ASSERTE(m_pResourceFile != NULL);
 
-    // must initialize before calling SString::Empty()
-    SString::Startup();
+    // must initialize before calling StaticStringHelpers::Empty()
+    StaticStringHelpers::Startup();
 
     // Try and get both the culture fallback sequence
 
-    StringArrayList cultureNames;
+    StringArrayList<EncodingUnicode> cultureNames;
 
     if (m_fpGetThreadUICultureNames)
     {
@@ -603,7 +603,7 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
     {
         EX_TRY
         {
-            cultureNames.Append(SString::Empty());
+            cultureNames.Append(SString<EncodingUnicode>::Empty());
         }
         EX_CATCH_HRESULT(hr);
     }
@@ -614,11 +614,11 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
     {
         for (DWORD i=0; i< cultureNames.GetCount();i++)
         {
-            SString& sLang = cultureNames[i];
+            SString<EncodingUnicode>& sLang = cultureNames[i];
 
             PathString rcPathName(rcPath);
 
-            if (!rcPathName.EndsWith(W("\\")))
+            if (!rcPathName.EndsWith(SL(W("\\"))))
             {
                 rcPathName.Append(W("\\"));
             }
@@ -635,7 +635,7 @@ HRESULT CCompRC::LoadLibraryHelper(HRESOURCEDLL *pHInst,
             }
 
             // Feedback for debugging to eliminate unecessary loads.
-            DEBUG_STMT(DbgWriteEx(W("Loading %s to load strings.\n"), rcPath.GetUnicode()));
+            DEBUG_STMT(DbgWriteEx(W("Loading %s to load strings.\n"), (LPCWSTR)rcPath));
 
             // Load the resource library as a data file, so that the OS doesn't have
             // to allocate it as code.  This only works so long as the file contains
@@ -675,7 +675,7 @@ HRESULT CCompRC::LoadLibraryThrows(HRESOURCEDLL * pHInst)
     _ASSERTE(!"CCompRC::LoadLibraryThrows not implemented for SELF_NO_HOST");
     hr = E_NOTIMPL;
 #else // SELF_NO_HOST
-    PathString       rcPath;      // Path to resource DLL.
+    PathString rcPath;      // Path to resource DLL.
 
     // Try first in the same directory as this dll.
 

@@ -129,7 +129,9 @@ DEFINE_DACVAR(DWORD, dac__g_debuggerWordTLSIndex, g_debuggerWordTLSIndex)
 #endif
 DEFINE_DACVAR(DWORD, dac__g_TlsIndex, g_TlsIndex)
 
-DEFINE_DACVAR(PTR_SString, SString__s_Empty, SString::s_Empty)
+DEFINE_DACVAR(PTR_SString<EncodingUnicode>, StaticStringHelpers__s_EmptyUnicode, StaticStringHelpers::s_EmptyUnicode)
+DEFINE_DACVAR(PTR_SString<EncodingUTF8>, StaticStringHelpers__s_EmptyUtf8, StaticStringHelpers::s_EmptyUtf8)
+DEFINE_DACVAR(PTR_SString<EncodingASCII>, StaticStringHelpers__s_EmptyAscii, StaticStringHelpers::s_EmptyAscii)
 
 DEFINE_DACVAR(INT32, ArrayBase__s_arrayBoundsZero, ArrayBase::s_arrayBoundsZero)
 

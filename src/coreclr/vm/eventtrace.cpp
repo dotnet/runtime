@@ -1670,7 +1670,7 @@ void BulkTypeEventLogger::FireBulkTypeEvent()
 
         // Do var-sized data individually per field
 
-        LPCWSTR wszName = target.sName.GetUnicode();
+        LPCWSTR wszName = target.sName;
         if (wszName == NULL)
         {
             m_pBulkTypeEventBuffer[iSize++] = 0;
@@ -1886,7 +1886,6 @@ int BulkTypeEventLogger::LogSingleType(TypeHandle th)
         {
             th.GetName(pVal->sName);
         }
-        pVal->sName.Normalize();
     }
     EX_CATCH
     {
@@ -3197,7 +3196,7 @@ void ETW::TypeSystemLog::TypeLoadEnd(UINT32 typeLoad, TypeHandle th, UINT16 load
     {
         EX_TRY
         {
-            StackSString typeName;
+            StackSString<EncodingUnicode> typeName;
             const TypeString::FormatFlags formatFlags = static_cast<TypeString::FormatFlags>(
                 TypeString::FormatNamespace |
                 TypeString::FormatAngleBrackets);
@@ -4727,7 +4726,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
     }
     EX_TRY
     {
-        SString exceptionType(W(""));
+        SString<EncodingUnicode> exceptionType(W(""));
         LPWSTR exceptionMessage = NULL;
         BOOL bIsCLSCompliant=FALSE, bIsCSE=FALSE, bIsNestedException=FALSE, bHasInnerException=FALSE;
         UINT16 exceptionFlags=0;
@@ -4795,7 +4794,7 @@ VOID ETW::ExceptionLog::ExceptionThrown(CrawlFrame  *pCf, BOOL bIsReThrownExcept
         gc.exceptionMessageRef =  ((EXCEPTIONREF)gc.exceptionObj)->GetMessage();
         TypeHandle exceptionTypeHandle = (gc.exceptionObj)->GetTypeHandle();
         exceptionTypeHandle.GetName(exceptionType);
-        WCHAR *exceptionTypeName = (WCHAR *)exceptionType.GetUnicode();
+        const WCHAR *exceptionTypeName = (const WCHAR *)exceptionType;
 
         if(gc.exceptionMessageRef != NULL)
         {
@@ -4847,12 +4846,12 @@ VOID ETW::ExceptionLog::ExceptionCatchBegin(MethodDesc * pMethodDesc, PVOID pEnt
 
     EX_TRY
     {
-        SString methodName;
+        SString<EncodingUnicode> methodName;
         pMethodDesc->GetFullMethodInfo(methodName);
 
         FireEtwExceptionCatchStart((uint64_t)pEntryEIP,
             (uint64_t)pMethodDesc,
-            methodName.GetUnicode(),
+            methodName,
             GetClrInstanceId());
 
     } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
@@ -4887,12 +4886,12 @@ VOID ETW::ExceptionLog::ExceptionFinallyBegin(MethodDesc * pMethodDesc, PVOID pE
 
     EX_TRY
     {
-        SString methodName;
+        SString<EncodingUnicode> methodName;
         pMethodDesc->GetFullMethodInfo(methodName);
 
         FireEtwExceptionFinallyStart((uint64_t)pEntryEIP,
             (uint64_t)pMethodDesc,
-            methodName.GetUnicode(),
+            methodName,
             GetClrInstanceId());
 
     } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
@@ -4927,12 +4926,12 @@ VOID ETW::ExceptionLog::ExceptionFilterBegin(MethodDesc * pMethodDesc, PVOID pEn
 
     EX_TRY
     {
-        SString methodName;
+        SString<EncodingUnicode> methodName;
         pMethodDesc->GetFullMethodInfo(methodName);
 
         FireEtwExceptionFilterStart((uint64_t)pEntryEIP,
             (uint64_t)pMethodDesc,
-            methodName.GetUnicode(),
+            methodName,
             GetClrInstanceId());
 
     } EX_CATCH{} EX_END_CATCH(SwallowAllExceptions);
@@ -5377,14 +5376,17 @@ VOID ETW::MethodLog::GetR2RGetEntryPoint(MethodDesc *pMethodDesc, PCODE pEntryPo
         {
                 SendMethodDetailsEvent(pMethodDesc);
 
-                SString tNamespace, tMethodName, tMethodSignature;
+                SString<EncodingUnicode> tNamespace, tMethodNameW, tMethodSignatureW;
+                SString<EncodingUTF8> tMethodName, tMethodSignature;
                 pMethodDesc->GetMethodInfo(tNamespace, tMethodName, tMethodSignature);
+                tMethodName.ConvertToUnicode(tMethodNameW);
+                tMethodSignature.ConvertToUnicode(tMethodSignatureW);
 
                 FireEtwR2RGetEntryPoint(
                     (UINT64)pMethodDesc,
-                    (PCWSTR)tNamespace.GetUnicode(),
-                    (PCWSTR)tMethodName.GetUnicode(),
-                    (PCWSTR)tMethodSignature.GetUnicode(),
+                    (PCWSTR)tNamespace,
+                    (PCWSTR)tMethodNameW,
+                    (PCWSTR)tMethodSignatureW,
                     pEntryPoint,
                     GetClrInstanceId());
 
@@ -5458,12 +5460,15 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
             else
                 ulMethodToken = (ULONG)method->GetMemberDef_NoLogging();
 
-            SString tNamespace, tMethodName, tMethodSignature;
+            SString<EncodingUnicode> tNamespace, tMethodNameW, tMethodSignatureW;
+            SString<EncodingUTF8> tMethodName, tMethodSignature;
             method->GetMethodInfo(tNamespace, tMethodName, tMethodSignature);
+            tMethodName.ConvertToUnicode(tMethodNameW);
+            tMethodSignature.ConvertToUnicode(tMethodSignatureW);
 
-            PCWSTR pNamespace = (PCWSTR)tNamespace.GetUnicode();
-            PCWSTR pMethodName = (PCWSTR)tMethodName.GetUnicode();
-            PCWSTR pMethodSignature = (PCWSTR)tMethodSignature.GetUnicode();
+            PCWSTR pNamespace = (PCWSTR)tNamespace;
+            PCWSTR pMethodName = (PCWSTR)tMethodNameW;
+            PCWSTR pMethodSignature = (PCWSTR)tMethodSignatureW;
 
             // Send data in 40,000 byte chunks
             uint32_t chunkIndex = 0;
@@ -5493,7 +5498,7 @@ VOID ETW::MethodLog::LogMethodInstrumentationData(MethodDesc* method, uint32_t c
 /*******************************************************/
 /* This is called by the runtime when a method is jitted completely */
 /*******************************************************/
-VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig)
+VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString<EncodingUnicode> *namespaceOrClassName, SString<EncodingUTF8> *methodName, SString<EncodingUTF8> *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig)
 {
     CONTRACTL {
         NOTHROW;
@@ -5530,7 +5535,7 @@ VOID ETW::MethodLog::MethodJitted(MethodDesc *pMethodDesc, SString *namespaceOrC
 /*************************************************/
 /* This is called by the runtime when method jitting started */
 /*************************************************/
-VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
+VOID ETW::MethodLog::MethodJitting(MethodDesc *pMethodDesc, SString<EncodingUnicode> *namespaceOrClassName, SString<EncodingUTF8> *methodName, SString<EncodingUTF8> *methodSignature)
 {
     CONTRACTL {
         NOTHROW;
@@ -6056,9 +6061,9 @@ VOID ETW::LoaderLog::SendAssemblyEvent(Assembly *pAssembly, DWORD dwEventOptions
                              (bIsCollectibleAssembly ? ETW::LoaderLog::LoaderStructs::CollectibleAssembly : 0) |
                              (bIsReadyToRun ? ETW::LoaderLog::LoaderStructs::ReadyToRunAssembly : 0));
 
-    SString sAssemblyPath;
+    SString<EncodingUnicode> sAssemblyPath;
     pAssembly->GetDisplayName(sAssemblyPath);
-    LPWSTR lpszAssemblyPath = (LPWSTR)sAssemblyPath.GetUnicode();
+    LPCWSTR lpszAssemblyPath = (LPCWSTR)sAssemblyPath;
 
 /* prepare events args for ETW and ETM */
     szDtraceOutput1 = (PCWSTR)lpszAssemblyPath;
@@ -6326,7 +6331,7 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     CV_INFO_PDB70 cvInfoNative = {0};
     GetCodeViewInfo(pModule, &cvInfoIL, &cvInfoNative);
 
-    PWCHAR ModuleILPath=(PWCHAR)W(""), ModuleNativePath=(PWCHAR)W("");
+    PCWCHAR ModuleILPath=(PCWCHAR)W(""), ModuleNativePath=(PCWCHAR)W("");
 
     if(bFireDomainModuleEvents)
     {
@@ -6334,20 +6339,20 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     }
 
     LPCWSTR pEmptyString = W("");
-    SString moduleName = SString::Empty();
 
     if(!bIsDynamicAssembly)
     {
-        ModuleILPath = (PWCHAR)pModule->GetAssembly()->GetPEAssembly()->GetPEImage()->GetPath().GetUnicode();
-        ModuleNativePath = (PWCHAR)pEmptyString;
+        ModuleILPath = (PCWCHAR)pModule->GetAssembly()->GetPEAssembly()->GetPEImage()->GetPath();
+        ModuleNativePath = (PCWCHAR)pEmptyString;
     }
 
     // if we do not have a module path yet, we put the module name
     if(bIsDynamicAssembly || ModuleILPath==NULL || wcslen(ModuleILPath) <= 2)
     {
-        moduleName.SetUTF8(pModule->GetSimpleName());
-        ModuleILPath = (PWCHAR)moduleName.GetUnicode();
-        ModuleNativePath = (PWCHAR)pEmptyString;
+        SString<EncodingUnicode> moduleName;
+        SString<EncodingUTF8>(pModule->GetSimpleName()).ConvertToUnicode(moduleName);
+        ModuleILPath = (PCWCHAR)moduleName;
+        ModuleNativePath = (PCWCHAR)pEmptyString;
     }
 
     /* prepare events args for ETW and ETM */
@@ -6355,8 +6360,8 @@ VOID ETW::LoaderLog::SendModuleEvent(Module *pModule, DWORD dwEventOptions, BOOL
     szDtraceOutput2 = (PCWSTR)ModuleNativePath;
 
     // Convert PDB paths to UNICODE
-    StackSString managedPdbPath(SString::Utf8, cvInfoIL.path);
-    StackSString nativePdbPath(SString::Utf8, cvInfoNative.path);
+    MAKE_WIDEPTR_FROMUTF8(managedPdbPath, cvInfoIL.path);
+    MAKE_WIDEPTR_FROMUTF8(nativePdbPath, cvInfoNative.path);
 
     if(bFireDomainModuleEvents)
     {
@@ -6487,7 +6492,7 @@ done:;
 /*****************************************************************/
 /* This routine is used to send an ETW event just before a method starts jitting*/
 /*****************************************************************/
-VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *namespaceOrClassName, SString *methodName, SString *methodSignature)
+VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString<EncodingUnicode> *namespaceOrClassName, SString<EncodingUTF8> *methodName, SString<EncodingUTF8> *methodSignature)
 {
     CONTRACTL {
         THROWS;
@@ -6534,7 +6539,8 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
             ulMethodILSize = (ULONG)ILHeader.GetCodeSize();
         }
 
-        SString tNamespace, tMethodName, tMethodSignature;
+        SString<EncodingUnicode> tNamespace;
+        SString<EncodingUTF8> tMethodName, tMethodSignature;
         if(!namespaceOrClassName|| !methodName|| !methodSignature || (methodName->IsEmpty() && namespaceOrClassName->IsEmpty() && methodSignature->IsEmpty()))
         {
             pMethodDesc->GetMethodInfo(tNamespace, tMethodName, tMethodSignature);
@@ -6545,9 +6551,11 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
 
         // fire method information
         /* prepare events args for ETW and ETM */
-        szDtraceOutput1 = (PCWSTR)namespaceOrClassName->GetUnicode();
-        szDtraceOutput2 = (PCWSTR)methodName->GetUnicode();
-        szDtraceOutput3 = (PCWSTR)methodSignature->GetUnicode();
+        szDtraceOutput1 = (PCWSTR)*namespaceOrClassName;
+        MAKE_WIDEPTR_FROMUTF8(methodNameW, *methodName);
+        MAKE_WIDEPTR_FROMUTF8(methodSignatureW, *methodSignature);
+        szDtraceOutput2 = (PCWSTR)methodNameW;
+        szDtraceOutput3 = (PCWSTR)methodSignatureW;
 
         FireEtwMethodJittingStarted_V1(ullMethodIdentifier,
                                        ullModuleID,
@@ -6563,7 +6571,7 @@ VOID ETW::MethodLog::SendMethodJitStartEvent(MethodDesc *pMethodDesc, SString *n
 /****************************************************************************/
 /* This routine is used to send a method load/unload or rundown event                              */
 /****************************************************************************/
-VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString *namespaceOrClassName, SString *methodName, SString *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig)
+VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptions, BOOL bIsJit, SString<EncodingUnicode> *namespaceOrClassName, SString<EncodingUTF8> *methodName, SString<EncodingUTF8> *methodSignature, PCODE pNativeCodeStartAddress, PrepareCodeConfig *pConfig)
 {
     CONTRACTL {
         THROWS;
@@ -6676,8 +6684,9 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
     }
     else
         ulMethodToken = (ULONG)pMethodDesc->GetMemberDef_NoLogging();
-
-    SString tNamespace, tMethodName, tMethodSignature;
+    
+    SString<EncodingUnicode> tNamespace;
+    SString<EncodingUTF8> tMethodName, tMethodSignature;
 
     // if verbose method load info needed, only then
     // find method name and signature and fire verbose method load info
@@ -6690,15 +6699,17 @@ VOID ETW::MethodLog::SendMethodEvent(MethodDesc *pMethodDesc, DWORD dwEventOptio
             methodName = &tMethodName;
             methodSignature = &tMethodSignature;
         }
-        pNamespaceName = (PWCHAR)namespaceOrClassName->GetUnicode();
-        pMethodName = (PWCHAR)methodName->GetUnicode();
-        pMethodSignature = (PWCHAR)methodSignature->GetUnicode();
+        pNamespaceName = (PWCHAR)namespaceOrClassName;
+        pMethodName = (PWCHAR)methodName;
+        pMethodSignature = (PWCHAR)methodSignature;
     }
 
     /* prepare events args for ETW and ETM */
-    szDtraceOutput1 = (PCWSTR)pNamespaceName;
-    szDtraceOutput2 = (PCWSTR)pMethodName;
-    szDtraceOutput3 = (PCWSTR)pMethodSignature;
+        szDtraceOutput1 = (PCWSTR)*namespaceOrClassName;
+        MAKE_WIDEPTR_FROMUTF8(methodNameW, *methodName);
+        MAKE_WIDEPTR_FROMUTF8(methodSignatureW, *methodSignature);
+        szDtraceOutput2 = (PCWSTR)methodNameW;
+        szDtraceOutput3 = (PCWSTR)methodSignatureW;
 
     SendMethodDetailsEvent(pMethodDesc);
 

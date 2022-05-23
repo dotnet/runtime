@@ -190,7 +190,7 @@ BOOL GetRegistryLongValue(HKEY    hKeyParent,
 // Note:
 //
 //----------------------------------------------------------------------------
-HRESULT GetCurrentModuleFileName(SString& pBuffer)
+HRESULT GetCurrentModuleFileName(SString<EncodingUnicode>& pBuffer)
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -266,7 +266,7 @@ BOOL IsCurrentModuleFileNameInAutoExclusionList()
 //*****************************************************************************
 // Retrieve information regarding what registered default debugger
 //*****************************************************************************
-void GetDebuggerSettingInfo(SString &ssDebuggerString, BOOL *pfAuto)
+void GetDebuggerSettingInfo(SString<EncodingUnicode> &ssDebuggerString, BOOL *pfAuto)
 {
     CONTRACTL
     {
@@ -280,7 +280,7 @@ void GetDebuggerSettingInfo(SString &ssDebuggerString, BOOL *pfAuto)
         DWORD cchDebuggerString = MAX_LONGPATH;
         INDEBUG(DWORD cchOldDebuggerString = cchDebuggerString);
 
-        WCHAR * buf = ssDebuggerString.OpenUnicodeBuffer(cchDebuggerString);
+        WCHAR * buf = ssDebuggerString.OpenBuffer(cchDebuggerString);
         HRESULT hr = GetDebuggerSettingInfoWorker(buf, &cchDebuggerString, pfAuto);
         ssDebuggerString.CloseBuffer(cchDebuggerString);
 
@@ -289,12 +289,12 @@ void GetDebuggerSettingInfo(SString &ssDebuggerString, BOOL *pfAuto)
             _ASSERTE(cchDebuggerString > cchOldDebuggerString);
             INDEBUG(cchOldDebuggerString = cchDebuggerString);
 
-            buf = ssDebuggerString.OpenUnicodeBuffer(cchDebuggerString);
+            buf = ssDebuggerString.OpenBuffer(cchDebuggerString);
             hr = GetDebuggerSettingInfoWorker(buf, &cchDebuggerString, pfAuto);
             ssDebuggerString.CloseBuffer(cchDebuggerString);
         }
 
-        if (*ssDebuggerString.GetUnicode() == W('\0'))
+        if (*(const WCHAR*)ssDebuggerString == W('\0'))
         {
             ssDebuggerString.Clear();
         }

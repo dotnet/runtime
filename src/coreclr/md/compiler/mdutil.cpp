@@ -268,7 +268,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
     #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
                 if (wcscmp(szName, pszName) == 0)
     #else
-                if (SString::_wcsicmp(szName, pszName) == 0)
+                if (StaticStringHelpers::_wcsicmp(szName, pszName) == 0)
     #endif
                 {
                     ULONG cRefs;
@@ -302,7 +302,7 @@ HRESULT LOADEDMODULES::FindCachedReadOnlyEntry(
     #ifdef FEATURE_CASE_SENSITIVE_FILESYSTEM
                 if (wcscmp(szName, pszName) == 0)
     #else
-                if (SString::_wcsicmp(szName, pszName) == 0)
+                if (StaticStringHelpers::_wcsicmp(szName, pszName) == 0)
     #endif
                 {
                     ULONG cRefs;

@@ -3,27 +3,31 @@
 
 #include "ex.h"
 
-inline SString& StringArrayList::operator[] (DWORD idx) const
+template<typename TEncoding>
+inline SString<TEncoding>& StringArrayList<TEncoding>::operator[] (DWORD idx) const
 {
     WRAPPER_NO_CONTRACT;
     return Get(idx);
 }
 
-inline SString& StringArrayList::Get (DWORD idx) const
+template<typename TEncoding>
+inline SString<TEncoding>& StringArrayList<TEncoding>::Get (DWORD idx) const
 {
     WRAPPER_NO_CONTRACT;
-    PTR_SString ppRet=(PTR_SString)m_Elements.Get(idx);
+    PTR_SString<TEncoding> ppRet=(PTR_SString<TEncoding>)m_Elements.Get(idx);
     return *ppRet;
 }
 
-inline DWORD StringArrayList::GetCount() const
+template<typename TEncoding>
+inline DWORD StringArrayList<TEncoding>::GetCount() const
 {
     WRAPPER_NO_CONTRACT;
     return m_Elements.GetCount();
 }
 
 #ifndef DACCESS_COMPILE
-inline void StringArrayList::Append(const SString& string)
+template<typename TEncoding>
+inline void StringArrayList<TEncoding>::Append(const SString<TEncoding>& string)
 {
     CONTRACTL
     {
@@ -31,13 +35,13 @@ inline void StringArrayList::Append(const SString& string)
         GC_NOTRIGGER;
     }
     CONTRACTL_END;
-    NewHolder<SString> pAdd=new SString(string);
-    pAdd->Normalize();
+    NewHolder<SString<TEncoding>> pAdd = new SString<TEncoding>(string);
     IfFailThrow(m_Elements.Append(pAdd));
     pAdd.SuppressRelease();
 }
 
-inline void StringArrayList::AppendIfNotThere(const SString& string)
+template<typename TEncoding>
+inline void StringArrayList<TEncoding>::AppendIfNotThere(const SString<TEncoding>& string)
 {
     CONTRACTL
     {
@@ -56,7 +60,8 @@ inline void StringArrayList::AppendIfNotThere(const SString& string)
 #endif
 
 
-inline StringArrayList::~StringArrayList()
+template<typename TEncoding>
+inline StringArrayList<TEncoding>::~StringArrayList()
 {
     CONTRACTL
     {
@@ -68,7 +73,7 @@ inline StringArrayList::~StringArrayList()
 #ifndef DACCESS_COMPILE
     for (DWORD i=0;i< GetCount() ;i++)
     {
-        delete (SString*)m_Elements.Get(i);
+        delete (SString<TEncoding>*)m_Elements.Get(i);
     }
 #endif
 }

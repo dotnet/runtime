@@ -24,7 +24,7 @@ void ApplicationContext::IncrementVersion()
     InterlockedIncrement(&m_cVersion);
 }
 
-SString &ApplicationContext::GetApplicationName()
+SString<EncodingUnicode> &ApplicationContext::GetApplicationName()
 {
     return m_applicationName;
 }
@@ -40,7 +40,7 @@ FailureCache *ApplicationContext::GetFailureCache()
     return m_pFailureCache;
 }
 
-HRESULT ApplicationContext::AddToFailureCache(SString &assemblyNameOrPath,
+HRESULT ApplicationContext::AddToFailureCache(SString<EncodingUnicode> &assemblyNameOrPath,
                                               HRESULT  hrBindResult)
 {
     HRESULT hr = GetFailureCache()->Add(assemblyNameOrPath, hrBindResult);
@@ -48,7 +48,7 @@ HRESULT ApplicationContext::AddToFailureCache(SString &assemblyNameOrPath,
     return hr;
 }
 
-StringArrayList *ApplicationContext::GetAppPaths()
+StringArrayList<EncodingUnicode> *ApplicationContext::GetAppPaths()
 {
     return &m_appPaths;
 }
@@ -58,7 +58,7 @@ SimpleNameToFileNameMap * ApplicationContext::GetTpaList()
     return m_pTrustedPlatformAssemblyMap;
 }
 
-StringArrayList * ApplicationContext::GetPlatformResourceRoots()
+StringArrayList<EncodingUnicode> * ApplicationContext::GetPlatformResourceRoots()
 {
     return &m_platformResourceRoots;
 }

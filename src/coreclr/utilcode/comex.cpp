@@ -35,7 +35,7 @@ IErrorInfo *COMException::GetErrorInfo()
     return pErrorInfo;
 }
 
-void COMException::GetMessage(SString &string)
+void COMException::GetMessage(SString<EncodingUnicode> &string)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_GC_NOTRIGGER;

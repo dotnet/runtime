@@ -136,9 +136,9 @@ void VirtualCallStubManager::StartupLogging()
     EX_TRY
     {
         FAULT_NOT_FATAL(); // We handle filecreation problems locally
-        SString str;
+        SString<EncodingUnicode> str;
         str.Printf(W("StubLog_%d.log"), GetCurrentProcessId());
-        g_hStubLogFile = WszCreateFile (str.GetUnicode(),
+        g_hStubLogFile = WszCreateFile (str,
                                         GENERIC_WRITE,
                                         0,
                                         0,
@@ -2194,11 +2194,11 @@ VirtualCallStubManager::Resolver(
 #ifdef FEATURE_COMINTEROP
         if ((pTokenMT != NULL) && (pTokenMT->GetClass()->IsEquivalentType()))
         {
-            SString methodName;
+            SString<EncodingUnicode> methodName;
             DefineFullyQualifiedNameForClassW();
             pTokenMD->GetFullMethodInfo(methodName);
 
-            COMPlusThrowHR(COR_E_MISSINGMETHOD, COR_E_MISSINGMETHOD, GetFullyQualifiedNameForClassNestedAwareW(pMT), methodName.GetUnicode());
+            COMPlusThrowHR(COR_E_MISSINGMETHOD, COR_E_MISSINGMETHOD, GetFullyQualifiedNameForClassNestedAwareW(pMT), methodName);
         }
         else
 #endif // FEATURE_COMINTEROP

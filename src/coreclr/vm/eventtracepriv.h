@@ -234,7 +234,7 @@ public:
     // this is 0.)
     ULONGLONG ullSingleTypeParameter;
 #else   // FEATURE_REDHAWK
-    StackSString sName;
+    StackSString<EncodingUnicode> sName;
     StackSArray<ULONGLONG> rgTypeParameters;
 #endif // FEATURE_REDHAWK
 };

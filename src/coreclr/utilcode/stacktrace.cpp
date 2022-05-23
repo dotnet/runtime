@@ -284,7 +284,7 @@ LPSTR FillSymbolSearchPathThrows(CQuickBytes &qb)
         return NULL;
 #endif
 
-   InlineSString<MAX_SYM_PATH> rcBuff ; // Working buffer
+   InlineSString<MAX_SYM_PATH, EncodingUnicode> rcBuff ; // Working buffer
     int         chTotal = 0;                // How full is working buffer.
     int         ch;
 

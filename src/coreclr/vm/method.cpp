@@ -292,7 +292,7 @@ LPCUTF8 MethodDesc::GetName()
 /*
  * Function to get a method's name, its namespace
  */
-VOID MethodDesc::GetMethodInfoNoSig(SString &namespaceOrClassName, SString &methodName)
+VOID MethodDesc::GetMethodInfoNoSig(SString<EncodingUnicode> &namespaceOrClassName, SString<EncodingUTF8> &methodName)
 {
     static LPCWSTR pDynamicClassName = W("dynamicClass");
 
@@ -303,13 +303,13 @@ VOID MethodDesc::GetMethodInfoNoSig(SString &namespaceOrClassName, SString &meth
         TypeString::AppendType(namespaceOrClassName, TypeHandle(GetMethodTable()));
 
     // name
-    methodName.AppendUTF8(GetName());
+    methodName.Append(GetName());
 }
 
 /*
  * Function to get a method's name, its namespace and signature (legacy format)
  */
-VOID MethodDesc::GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature)
+VOID MethodDesc::GetMethodInfo(SString<EncodingUnicode> &namespaceOrClassName, SString<EncodingUTF8> &methodName, SString<EncodingUTF8> &methodSignature)
 {
     GetMethodInfoNoSig(namespaceOrClassName, methodName);
 
@@ -320,13 +320,13 @@ VOID MethodDesc::GetMethodInfo(SString &namespaceOrClassName, SString &methodNam
 
     GetSig(&pSig, &cSig);
     PrettyPrintSigInternalLegacy(pSig, cSig, " ", &qbOut, GetMDImport());
-    methodSignature.AppendUTF8((char *)qbOut.Ptr());
+    methodSignature.Append((char *)qbOut.Ptr());
 }
 
 /*
  * Function to get a method's name, its namespace and signature (new format)
  */
-VOID MethodDesc::GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature)
+VOID MethodDesc::GetMethodInfoWithNewSig(SString<EncodingUnicode> &namespaceOrClassName, SString<EncodingUTF8> &methodName, SString<EncodingUTF8> &methodSignature)
 {
     GetMethodInfoNoSig(namespaceOrClassName, methodName);
 
@@ -337,16 +337,17 @@ VOID MethodDesc::GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString 
 
     GetSig(&pSig, &cSig);
     PrettyPrintSig(pSig, (DWORD)cSig, "", &qbOut, GetMDImport(), NULL);
-    methodSignature.AppendUTF8((char *)qbOut.Ptr());
+    methodSignature.Append((char *)qbOut.Ptr());
 }
 
 /*
  * Function to get a method's full name, something like
  * void [mscorlib]System.StubHelpers.BSTRMarshaler::ClearNative(native int)
  */
-VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
+VOID MethodDesc::GetFullMethodInfo(SString<EncodingUnicode>& fullMethodSigName)
 {
-    SString namespaceOrClassName, methodName;
+    SString<EncodingUnicode> namespaceOrClassName;
+    SString<EncodingUTF8> methodName;
     GetMethodInfoNoSig(namespaceOrClassName, methodName);
 
     // signature
@@ -354,19 +355,19 @@ VOID MethodDesc::GetFullMethodInfo(SString& fullMethodSigName)
     ULONG cSig = 0;
     PCCOR_SIGNATURE pSig;
 
-    SString methodFullName;
-    StackScratchBuffer namespaceNameBuffer, methodNameBuffer;
+    SString<EncodingUTF8> methodFullName;
+    StackSString<EncodingUTF8> namespaceNameBuffer(namespaceOrClassName.MoveToUTF8());
     methodFullName.AppendPrintf(
         (LPCUTF8)"[%s] %s::%s",
         GetModule()->GetAssembly()->GetSimpleName(),
-        namespaceOrClassName.GetUTF8(namespaceNameBuffer),
-        methodName.GetUTF8(methodNameBuffer));
+        (LPCUTF8)namespaceNameBuffer,
+        (LPCUTF8)methodName);
 
     GetSig(&pSig, &cSig);
 
-    StackScratchBuffer buffer;
-    PrettyPrintSig(pSig, (DWORD)cSig, methodFullName.GetUTF8(buffer), &qbOut, GetMDImport(), NULL);
-    fullMethodSigName.AppendUTF8((char *)qbOut.Ptr());
+    PrettyPrintSig(pSig, (DWORD)cSig, (LPCUTF8)methodFullName, &qbOut, GetMDImport(), NULL);
+    MAKE_WIDEPTR_FROMUTF8(sigStr, (char*)qbOut.Ptr());
+    fullMethodSigName.Append(sigStr);
 }
 
 #endif
@@ -3711,19 +3712,19 @@ void ComPlusCallMethodDesc::InitComEventCallInfo()
         pItfMD = (ComPlusCallMethodDesc*)pItfMT->GetMethodDescForSlot(itfSlotNum);
 
         // Retrieve the event provider class name.
-        StackSString ssEvProvClassName;
+        StackSString<EncodingUnicode> ssEvProvClassName;
         pEvProvClass->_GetFullyQualifiedNameForClass(ssEvProvClassName);
 
         // Retrieve the COM event interface class name.
-        StackSString ssEvItfName;
+        StackSString<EncodingUnicode> ssEvItfName;
         pItfMT->_GetFullyQualifiedNameForClass(ssEvItfName);
 
         // Convert the method name to unicode.
-        StackSString ssMethodName(SString::Utf8, pItfMD->GetName());
+        MAKE_WIDEPTR_FROMUTF8(ssMethodName, pItfMD->GetName());
 
         // Throw the exception.
         COMPlusThrow(kTypeLoadException, IDS_EE_METHOD_NOT_FOUND_ON_EV_PROV,
-                     ssMethodName.GetUnicode(), ssEvItfName.GetUnicode(), ssEvProvClassName.GetUnicode());
+                     (LPCWSTR)ssMethodName, (LPCWSTR)ssEvItfName, (LPCWSTR)ssEvProvClassName);
     }
 }
 #endif // FEATURE_COMINTEROP
@@ -3762,14 +3763,14 @@ MethodDesc::EnumMemoryRegions(CLRDataEnumMemoryFlags flags)
     {
         // The assembling of the string below implicitly dumps the memory we need.
 
-        StackSString str;
+        StackSString<EncodingUnicode> str;
         TypeString::AppendMethodInternal(str, this, TypeString::FormatSignature|TypeString::FormatNamespace|TypeString::FormatFullInst);
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         if (flags == CLRDATA_ENUM_MEM_MINI || flags == CLRDATA_ENUM_MEM_TRIAGE)
         {
             // we want to save just the method name, so truncate at the open paranthesis
-            SString::Iterator it = str.Begin();
+            SString<EncodingUnicode>::Iterator it = str.Begin();
             if (str.Find(it, W('(')))
             {
                 // ensure the symbol ends in "()" to minimize regressions

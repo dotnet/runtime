@@ -7385,7 +7385,7 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
         // at native offset 0 (before the prolog) and before we get the TME. That means if
         // we do get the TME, then there was no stub-manager to find us.
 
-        SString sLog;
+        SString<EncodingUTF8> sLog;
         StubManager::DbgGetLog(&sLog);
 
         // Assert b/c the Stub-manager should have caught us first.
@@ -7404,7 +7404,7 @@ void DebuggerStepper::TriggerMethodEnter(Thread * thread,
             this,
             ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugClassName),
             ((m_StepInStartMethod == NULL) ? "unknown" : m_StepInStartMethod->m_pszDebugMethodName),
-            sLog.GetUnicode(),
+            (LPCUTF8)sLog,
             pDesc->m_pszDebugClassName, pDesc->m_pszDebugMethodName
             ));
     }

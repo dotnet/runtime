@@ -252,7 +252,7 @@ Assembly *AssemblyBaseObject::GetAssembly()
     return m_pAssembly->GetAssembly();
 }
 
-STRINGREF AllocateString(SString sstr)
+STRINGREF AllocateString(SString<EncodingUnicode> sstr)
 {
     CONTRACTL {
         THROWS;
@@ -261,7 +261,7 @@ STRINGREF AllocateString(SString sstr)
 
     COUNT_T length = sstr.GetCount(); // count of WCHARs excluding terminating NULL
     STRINGREF strObj = AllocateString(length);
-    memcpyNoGCRefs(strObj->GetBuffer(), sstr.GetUnicode(), length*sizeof(WCHAR));
+    memcpyNoGCRefs(strObj->GetBuffer(), (LPCWSTR)sstr, length*sizeof(WCHAR));
 
     return strObj;
 }

@@ -236,7 +236,7 @@ CRITSEC_COOKIE ProfilingAPIUtility::s_csStatus = NULL;
 //
 
 // static
-void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SString * pString)
+void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SString<EncodingUnicode> * pString)
 {
     CONTRACTL
     {
@@ -249,9 +249,10 @@ void ProfilingAPIUtility::AppendSupplementaryInformation(int iStringResource, SS
     }
     CONTRACTL_END;
 
-    StackSString supplementaryInformation;
+    StackSString<EncodingUnicode> supplementaryInformation;
 
-    if (!supplementaryInformation.LoadResource(
+    if (!LoadResource(
+        supplementaryInformation,
         CCompRC::Debugging,
         IDS_PROF_SUPPLEMENTARY_INFO
         ))
@@ -299,10 +300,11 @@ void ProfilingAPIUtility::LogProfEventVA(
     }
     CONTRACTL_END;
 
-    StackSString messageFromResource;
-    StackSString messageToLog;
+    StackSString<EncodingUnicode> messageFromResource;
+    StackSString<EncodingUnicode> messageToLog;
 
-    if (!messageFromResource.LoadResource(
+    if (!LoadResource(
+        messageFromResource,
         CCompRC::Debugging,
         iStringResourceID
         ))
@@ -316,7 +318,7 @@ void ProfilingAPIUtility::LogProfEventVA(
     AppendSupplementaryInformation(iStringResourceID, &messageToLog);
 
     // Write to ETW and EventPipe with the message
-    FireEtwProfilerMessage(GetClrInstanceId(), messageToLog.GetUnicode());
+    FireEtwProfilerMessage(GetClrInstanceId(), (LPCWSTR)messageToLog);
 
     // Ouput debug strings for diagnostic messages.
     WszOutputDebugString(messageToLog);
@@ -743,7 +745,7 @@ HRESULT ProfilingAPIUtility::AttemptLoadDelayedStartupProfilers()
             kStartupLoad,
             pClsid,
             wszClsid,
-            item->path.GetUnicode(),
+            item->path,
             NULL,               // No client data for startup load
             0);                 // No client data for startup load
         if (FAILED(hr))
@@ -922,11 +924,11 @@ HRESULT ProfilingAPIUtility::DoPreInitialization(
         CLRConfig::GetConfigValue(CLRConfig::EXTERNAL_ProfAPI_ProfilerCompatibilitySetting, &wszProfilerCompatibilitySetting);
         if (wszProfilerCompatibilitySetting != NULL)
         {
-            if (SString::_wcsicmp(wszProfilerCompatibilitySetting, W("EnableV2Profiler")) == 0)
+            if (StaticStringHelpers::_wcsicmp(wszProfilerCompatibilitySetting, W("EnableV2Profiler")) == 0)
             {
                 profilerCompatibilityFlag = kEnableV2Profiler;
             }
-            else if (SString::_wcsicmp(wszProfilerCompatibilitySetting, W("PreventLoad")) == 0)
+            else if (StaticStringHelpers::_wcsicmp(wszProfilerCompatibilitySetting, W("PreventLoad")) == 0)
             {
                 profilerCompatibilityFlag = kPreventLoad;
             }

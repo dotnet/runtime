@@ -2325,7 +2325,7 @@ public:
 
     CorDebugInterfaceVersion    GetDebuggerVersion() const;
 
-    PathString& GetDacModulePath() { return m_dacModulePath; }
+    SString<EncodingUnicode>& GetDacModulePath() { return m_dacModulePath; }
 
     HMODULE GetTargetCLR() { return m_targetCLR; }
 

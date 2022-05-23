@@ -64,14 +64,14 @@ namespace
         if (CanCastComObject(*obj, pMTClass))
             return;
 
-        StackSString ssObjClsName;
-        StackSString ssDestClsName;
+        StackSString<EncodingUnicode> ssObjClsName;
+        StackSString<EncodingUnicode> ssDestClsName;
 
         (*obj)->GetMethodTable()->_GetFullyQualifiedNameForClass(ssObjClsName);
         pMTClass->_GetFullyQualifiedNameForClass(ssDestClsName);
 
         COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST,
-            ssObjClsName.GetUnicode(), ssDestClsName.GetUnicode());
+            (LPCWSTR)ssObjClsName, (LPCWSTR)ssDestClsName);
     }
 }
 

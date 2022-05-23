@@ -389,7 +389,7 @@ public:
     );
 
     // Locates the DAC module adjacent to DBI
-    static HMODULE GetDacModule(PathString& dacModulePath);
+    static HMODULE GetDacModule(const SString<EncodingUnicode>& dacModulePath);
 
     //
     // Functions used by CordbProcess

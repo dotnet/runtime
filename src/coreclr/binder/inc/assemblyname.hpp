@@ -49,12 +49,12 @@ namespace BINDER_SPACE
         ULONG Release();
 
         // Getters/Setters
-        inline const SString &GetSimpleName();
-        inline void SetSimpleName(SString &simpleName);
+        inline const SString<EncodingUnicode> &GetSimpleName();
+        inline void SetSimpleName(SString<EncodingUnicode> &simpleName);
         inline AssemblyVersion *GetVersion();
         inline void SetVersion(/* in */ AssemblyVersion *pAssemblyVersion);
-        inline SString &GetCulture();
-        inline void SetCulture(SString &culture);
+        inline SString<EncodingUnicode> &GetCulture();
+        inline void SetCulture(SString<EncodingUnicode> &culture);
         inline SBuffer &GetPublicKeyTokenBLOB();
         inline PEKIND GetArchitecture();
         inline void SetArchitecture(PEKIND kArchitecture);
@@ -72,11 +72,11 @@ namespace BINDER_SPACE
         BOOL Equals(/* in */ AssemblyName *pAssemblyName,
                     /* in */ DWORD         dwIncludeFlags);
 
-        void GetDisplayName(/* out */ PathString &displayName,
+        void GetDisplayName(/* out */ SString<EncodingUnicode> &displayName,
                             /* in */  DWORD       dwIncludeFlags);
 
     private:
-        SString &GetNormalizedCulture();
+        SString<EncodingUnicode> &GetNormalizedCulture();
 
         LONG           m_cRef;
         bool           m_isDefinition;

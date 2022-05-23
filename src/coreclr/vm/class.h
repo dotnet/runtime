@@ -508,30 +508,30 @@ typedef struct
 #define DEFAULT_NONSTACK_CLASSNAME_SIZE (MAX_CLASSNAME_LENGTH/4)
 
 #define DefineFullyQualifiedNameForClass() \
-    ScratchBuffer<DEFAULT_NONSTACK_CLASSNAME_SIZE> _scratchbuffer_; \
-    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> _ssclsname_;
+    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE, EncodingUTF8> _utf8_; \
+    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE, EncodingUnicode> _ssclsname_;
 
 #define DefineFullyQualifiedNameForClassOnStack() \
     ScratchBuffer<MAX_CLASSNAME_LENGTH> _scratchbuffer_; \
-    InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname_;
+    InlineSString<MAX_CLASSNAME_LENGTH, EncodingUnicode> _ssclsname_;
 
 #define DefineFullyQualifiedNameForClassW() \
-    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE> _ssclsname_w_;
+    InlineSString<DEFAULT_NONSTACK_CLASSNAME_SIZE, EncodingUnicode> _ssclsname_w_;
 
 #define DefineFullyQualifiedNameForClassWOnStack() \
-    InlineSString<MAX_CLASSNAME_LENGTH> _ssclsname_w_;
+    InlineSString<MAX_CLASSNAME_LENGTH, EncodingUnicode> _ssclsname_w_;
 
 #define GetFullyQualifiedNameForClassNestedAware(pClass) \
-    pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_).GetUTF8(_scratchbuffer_)
+    (pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_), _ssclsname_.ConvertToUTF8(_utf8_), (LPCUTF8)_utf8_)
 
 #define GetFullyQualifiedNameForClassNestedAwareW(pClass) \
-    pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_w_).GetUnicode()
+    pClass->_GetFullyQualifiedNameForClassNestedAware(_ssclsname_w_)
 
 #define GetFullyQualifiedNameForClass(pClass) \
-    pClass->_GetFullyQualifiedNameForClass(_ssclsname_).GetUTF8(_scratchbuffer_)
+    (pClass->_GetFullyQualifiedNameForClass(_ssclsname_), _ssclsname_.ConvertToUTF8(_utf8_), (LPCUTF8)_utf8_)
 
 #define GetFullyQualifiedNameForClassW(pClass) \
-    pClass->_GetFullyQualifiedNameForClass(_ssclsname_w_).GetUnicode()
+    pClass->_GetFullyQualifiedNameForClass(_ssclsname_w_)
 
 // Structure containing EEClass fields used by a minority of EEClass instances. This separation allows us to
 // save memory and improve the density of accessed fields in the EEClasses themselves. This class is reached

@@ -53,7 +53,7 @@ void LogTraceDestination(const char * szHint, PCODE stubAddr, TraceDestination *
 #ifdef _DEBUG
 // Get a string representation of this TraceDestination
 // Uses the supplied buffer to store the memory (or may return a string literal).
-const WCHAR * TraceDestination::DbgToString(SString & buffer)
+const char * TraceDestination::DbgToString(SString<EncodingUTF8> & buffer)
 {
     CONTRACTL
     {
@@ -63,12 +63,12 @@ const WCHAR * TraceDestination::DbgToString(SString & buffer)
     }
     CONTRACTL_END;
 
-    const WCHAR * pValue = W("unknown");
+    const char * pValue = "unknown";
 
 #ifndef DACCESS_COMPILE
     if (!StubManager::IsStubLoggingEnabled())
     {
-        return W("<unavailable while native-debugging>");
+        return "<unavailable while native-debugging>";
     }
     // Now that we know we're not interop-debugging, we can safely call new.
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
@@ -82,50 +82,50 @@ const WCHAR * TraceDestination::DbgToString(SString & buffer)
         {
             case TRACE_ENTRY_STUB:
                 buffer.Printf("TRACE_ENTRY_STUB(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = (LPCUTF8)buffer;
                 break;
 
             case TRACE_STUB:
                 buffer.Printf("TRACE_STUB(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = (LPCUTF8)buffer;
                 break;
 
             case TRACE_UNMANAGED:
                 buffer.Printf("TRACE_UNMANAGED(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = (LPCUTF8)buffer;
                 break;
 
             case TRACE_MANAGED:
                 buffer.Printf("TRACE_MANAGED(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = (LPCUTF8)buffer;
                 break;
 
             case TRACE_UNJITTED_METHOD:
             {
                 MethodDesc * md = this->GetMethodDesc();
                 buffer.Printf("TRACE_UNJITTED_METHOD(md=0x%p, %s::%s)", md, md->m_pszDebugClassName, md->m_pszDebugMethodName);
-                pValue = buffer.GetUnicode();
+                pValue = (LPCUTF8)buffer;
             }
                 break;
 
             case TRACE_FRAME_PUSH:
                 buffer.Printf("TRACE_FRAME_PUSH(addr=0x%p)", GetAddress());
-                pValue = buffer.GetUnicode();
+                pValue = (LPCUTF8)buffer;
                 break;
 
             case TRACE_MGR_PUSH:
                 buffer.Printf("TRACE_MGR_PUSH(addr=0x%p, sm=%s)", GetAddress(), this->GetStubManager()->DbgGetName());
-                pValue = buffer.GetUnicode();
+                pValue = (LPCUTF8)buffer;
                 break;
 
             case TRACE_OTHER:
-                pValue = W("TRACE_OTHER");
+                pValue = "TRACE_OTHER";
                 break;
         }
     }
     EX_CATCH
     {
-        pValue = W("(OOM while printing TD)");
+        pValue = "(OOM while printing TD)";
     }
     EX_END_CATCH(SwallowAllExceptions);
 #endif
@@ -196,7 +196,7 @@ void TraceDestination::InitForUnjittedMethod(MethodDesc * pDesc)
 
 // Initialize statics.
 #ifdef _DEBUG
-SString * StubManager::s_pDbgStubManagerLog = NULL;
+SString<EncodingUTF8> * StubManager::s_pDbgStubManagerLog = NULL;
 CrstStatic StubManager::s_DbgLogCrst;
 
 #endif
@@ -541,8 +541,8 @@ BOOL StubManager::TraceStub(PCODE stubStartAddress, TraceDestination *trace)
             {
                 SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
                 FAULT_NOT_FATAL();
-                SString buffer;
-                DbgWriteLog("  td=%S\n", trace->DbgToString(buffer));
+                SString<EncodingUTF8> buffer;
+                DbgWriteLog("  td=%s\n", trace->DbgToString(buffer));
             }
             else
             {
@@ -786,7 +786,7 @@ void StubManager::DbgBeginLog(TADDR addrCallInstruction, TADDR addrCallTarget)
         {
             if (s_pDbgStubManagerLog == NULL)
             {
-                s_pDbgStubManagerLog = new SString();
+                s_pDbgStubManagerLog = new SString<EncodingUTF8>();
             }
             s_pDbgStubManagerLog->Clear();
         }
@@ -863,7 +863,7 @@ void StubManager::DbgWriteLog(const CHAR *format, ...)
         return;
     }
 
-    // Suppress asserts about lossy encoding conversion in SString::Printf
+    // Suppress asserts about lossy encoding conversion in StaticStringHelpers::Printf
     CHECK chk;
     BOOL fEntered = chk.EnterAssert();
 
@@ -888,7 +888,7 @@ void StubManager::DbgWriteLog(const CHAR *format, ...)
 //-----------------------------------------------------------
 // Get the log as a string.
 //-----------------------------------------------------------
-void StubManager::DbgGetLog(SString * pStringOut)
+void StubManager::DbgGetLog(SString<EncodingUTF8> * pStringOut)
 {
 #ifndef DACCESS_COMPILE
     CONTRACTL

@@ -209,11 +209,11 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
         return 0;
     }
 
-    StackSString result;
+    StackSString<EncodingUnicode> result;
     GetExceptionMessage(throwable, result);
 
     ULONG length = result.GetCount();
-    LPCWSTR chars = result.GetUnicode();
+    LPCWSTR chars = (LPCWSTR)result;
 
     if (length < bufferLength)
     {
@@ -231,7 +231,7 @@ ULONG GetExceptionMessage(OBJECTREF throwable,
 // Given an object, get the "message" from it.  If the object is an Exception
 //  call Exception.ToString, otherwise, call Object.ToString
 //-----------------------------------------------------------------------------
-void GetExceptionMessage(OBJECTREF throwable, SString &result)
+void GetExceptionMessage(OBJECTREF throwable, SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -4029,7 +4029,7 @@ LPCWSTR g_createDumpCommandLine = nullptr;
 
 static void
 BuildCreateDumpCommandLine(
-    SString& commandLine,
+    SString<EncodingUTF8>& commandLine,
     LPCWSTR dumpName,
     int dumpType,
     bool diag)
@@ -4039,10 +4039,12 @@ BuildCreateDumpCommandLine(
     PathString coreclrPath;
     if (GetClrModulePathName(coreclrPath))
     {
-        SString::CIterator lastBackslash = coreclrPath.End();
-        if (coreclrPath.FindBack(lastBackslash, W('\\')))
+        SmallStackSString<EncodingUTF8> coreclrPathUtf8;
+        coreclrPath.ConvertToUTF8(coreclrPathUtf8);
+        SString<EncodingUTF8>::CIterator lastBackslash = coreclrPathUtf8.End();
+        if (coreclrPathUtf8.FindBack(lastBackslash, W('\\')))
         {
-            commandLine.Set(coreclrPath, coreclrPath.Begin(), lastBackslash + 1);
+            commandLine.Set(coreclrPathUtf8, coreclrPathUtf8.Begin(), lastBackslash + 1);
         }
     }
 
@@ -4142,7 +4144,7 @@ GenerateCrashDump(
     int dumpType,
     bool diag)
 {
-    SString commandLine;
+    SString<EncodingUTF8> commandLine;
     if (dumpType < 1 || dumpType > 4)
     {
         return false;
@@ -4152,7 +4154,9 @@ GenerateCrashDump(
         dumpName = nullptr;
     }
     BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag);
-    return LaunchCreateDump(commandLine);
+    SString<EncodingUnicode> commandLineW;
+    commandLine.ConvertToUnicode(commandLineW);
+    return LaunchCreateDump(commandLineW);
 }
 
 void
@@ -4165,9 +4169,11 @@ InitializeCrashDump()
         int dumpType = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_DbgMiniDumpType);
         DWORD diag = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_CreateDumpDiagnostics);
 
-        SString commandLine;
+        SString<EncodingUTF8> commandLine;
         BuildCreateDumpCommandLine(commandLine, dumpName, dumpType, diag == 1);
-        g_createDumpCommandLine = commandLine.GetCopyOfUnicodeString();
+        SString<EncodingUnicode> commandLineW;
+        commandLine.ConvertToUnicode(commandLineW);
+        g_createDumpCommandLine = commandLineW.CreateCopyOfString();
     }
 }
 
@@ -5144,13 +5150,13 @@ LONG __stdcall COMUnhandledExceptionFilter(     // EXCEPTION_CONTINUE_SEARCH or 
 
 void PrintStackTraceToStdout();
 
-static SString GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
+static SString<EncodingUnicode> GetExceptionMessageWrapper(Thread* pThread, OBJECTREF throwable)
 {
     STATIC_CONTRACT_THROWS;
     STATIC_CONTRACT_MODE_COOPERATIVE;
     STATIC_CONTRACT_GC_TRIGGERS;
 
-    StackSString result;
+    StackSString<EncodingUnicode> result;
 
     INSTALL_NESTED_EXCEPTION_HANDLER(pThread->GetFrame());
     GetExceptionMessage(throwable, result);
@@ -5177,7 +5183,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
         PrintToStdErrW(buf);
         PrintToStdErrA(" ");
 
-        SString message = GetExceptionMessageWrapper(pThread, throwable);
+        SString<EncodingUnicode> message = GetExceptionMessageWrapper(pThread, throwable);
 
         if (!message.IsEmpty())
         {
@@ -5204,7 +5210,7 @@ DefaultCatchHandlerExceptionMessageWorker(Thread* pThread,
                 }
                 else
                 {
-                    StackSString s;
+                    StackSString<EncodingUnicode> s;
                     TypeString::AppendType(s, TypeHandle(throwable->GetMethodTable()), TypeString::FormatNamespace | TypeString::FormatFullInst);
                     reporter.AddDescription(s);
                     LogCallstackForEventReporter(reporter);
@@ -5735,15 +5741,15 @@ LONG CallOutFilter(PEXCEPTION_POINTERS pExceptionInfo, PVOID pv)
 // Note: This is not general purpose routine. It handles only cases found
 // in TypeLoadException and FileLoadException.
 //==========================================================================
-static BOOL GetManagedFormatStringForResourceID(CCompRC::ResourceCategory eCategory, UINT32 resId, SString & converted)
+static BOOL GetManagedFormatStringForResourceID(CCompRC::ResourceCategory eCategory, UINT32 resId, SString<EncodingUnicode> & converted)
 {
     STANDARD_VM_CONTRACT;
 
-    StackSString temp;
-    if (!temp.LoadResource(eCategory, resId))
+    StackSString<EncodingUnicode> temp;
+    if (!LoadResource(temp, eCategory, resId))
         return FALSE;
 
-    SString::Iterator itr = temp.Begin();
+    SString<EncodingUnicode>::Iterator itr = temp.Begin();
     while (*itr)
     {
         WCHAR c = *itr++;
@@ -5788,7 +5794,7 @@ extern "C" void QCALLTYPE GetTypeLoadExceptionMessage(UINT32 resId, QCall::Strin
 
     BEGIN_QCALL;
 
-    StackSString format;
+    StackSString<EncodingUnicode> format;
     GetManagedFormatStringForResourceID(CCompRC::Error, resId ? resId : IDS_CLASSLOAD_GENERAL,  format);
     retString.Set(format);
 
@@ -5807,7 +5813,7 @@ extern "C" void QCALLTYPE GetFileLoadExceptionMessage(UINT32 hr, QCall::StringHa
 
     BEGIN_QCALL;
 
-    StackSString format;
+    StackSString<EncodingUnicode> format;
     GetManagedFormatStringForResourceID(CCompRC::Error, GetResourceIDForFileLoadExceptionHR(hr), format);
     retString.Set(format);
 
@@ -5846,7 +5852,7 @@ extern "C" void QCALLTYPE FileLoadException_GetMessageForHR(UINT32 hresult, QCal
             break;
     }
 
-    SString s;
+    SString<EncodingUnicode> s;
     GetHRMsg((HRESULT)hresult, s, bNoGeekStuff);
     retString.Set(s);
 
@@ -7565,11 +7571,10 @@ VEH_ACTION WINAPI CLRVectoredExceptionHandlerPhase3(PEXCEPTION_POINTERS pExcepti
                     //
 #if defined(_DEBUG)
                     const char * pStack = "<stack not available>";
-                    StackScratchBuffer buffer;
-                    SString sStack;
+                    SString<EncodingASCII> sStack;
                     if (GetStackTraceAtContext(sStack, pContext))
                     {
-                        pStack = sStack.GetANSI(buffer);
+                        pStack = sStack;
                     }
 
                     DWORD tid = GetCurrentThreadId();
@@ -8652,7 +8657,7 @@ BOOL ExceptionTypeOverridesStackTraceGetter(PTR_MethodTable pMT)
 
 // Removes source file names/paths and line information from a stack trace generated
 // by Environment.GetStackTrace.
-void StripFileInfoFromStackTrace(SString &ssStackTrace)
+void StripFileInfoFromStackTrace(SString<EncodingUnicode> &ssStackTrace)
 {
     CONTRACTL
     {
@@ -8663,8 +8668,8 @@ void StripFileInfoFromStackTrace(SString &ssStackTrace)
     }
     CONTRACTL_END;
 
-    SString::Iterator i = ssStackTrace.Begin();
-    SString::Iterator end;
+    SString<EncodingUnicode>::Iterator i = ssStackTrace.Begin();
+    SString<EncodingUnicode>::Iterator end;
     int countBracket = 0;
     int position = 0;
 
@@ -8679,7 +8684,7 @@ void StripFileInfoFromStackTrace(SString &ssStackTrace)
             if (countBracket == 1)
             {
                 end = i + 1;
-                SString::Iterator j = i + 1;
+                SString<EncodingUnicode>::Iterator j = i + 1;
                 while (j < ssStackTrace.End())
                 {
                     if (j[0] == W('\r') || j[0] == W('\n'))
@@ -11488,23 +11493,23 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
     CONTRACTL_END
 
 #ifndef DACCESS_COMPILE
-    SString msgStr;
+    SString<EncodingUnicode> msgStr;
 
-    SString resStr;
-    if (resID == 0 || !resStr.LoadResource(CCompRC::Optional, resID))
+    SString<EncodingUnicode> resStr;
+    if (resID == 0 || !LoadResource(resStr, CCompRC::Optional, resID))
     {
-        resStr.LoadResource(CCompRC::Error, BFA_BAD_IL); // "Bad IL format."
+        LoadResource(resStr, CCompRC::Error, BFA_BAD_IL); // "Bad IL format."
     }
     msgStr += resStr;
 
     if ((imageName != NULL) && (imageName[0] != 0))
     {
-        SString suffixResStr;
-        if (suffixResStr.LoadResource(CCompRC::Optional, COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
+        SString<EncodingUnicode> suffixResStr;
+        if (LoadResource(suffixResStr, CCompRC::Optional, COR_E_BADIMAGEFORMAT)) // "The format of the file '%1' is invalid."
         {
-            SString suffixMsgStr;
-            suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, imageName);
-            msgStr.AppendASCII(" ");
+            SString<EncodingUnicode> suffixMsgStr;
+            suffixMsgStr.FormatMessage(FORMAT_MESSAGE_FROM_STRING, (LPCWSTR)suffixResStr, 0, 0, SL(imageName));
+            msgStr.Append(W(" "));
             msgStr += suffixMsgStr;
         }
     }
@@ -11512,10 +11517,12 @@ VOID ThrowBadFormatWorker(UINT resID, LPCWSTR imageName DEBUGARG(_In_z_ const ch
 #ifdef _DEBUG
     if (0 != strcmp(cond, "FALSE"))
     {
-        msgStr += W(" (Failed condition: "); // this is in DEBUG only - not going to localize it.
-        SString condStr(SString::Ascii, cond);
-        msgStr += condStr;
-        msgStr += W(")");
+        msgStr += SL(W(" (Failed condition: ")); // this is in DEBUG only - not going to localize it.
+        SString<EncodingASCII> condStr(cond);
+        SString<EncodingUnicode> condStrW;
+        condStr.ConvertToUnicode(condStrW);
+        msgStr += condStrW;
+        msgStr += SL(W(")"));
     }
 #endif
     ThrowHR(COR_E_BADIMAGEFORMAT, msgStr);
@@ -11848,11 +11855,11 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrow(RuntimeExceptionKind reKind, LPCWSTR wsz
 
     if (pInnerException == NULL)
     {
-        EX_THROW(EEResourceException, (reKind, wszResourceName));
+        EX_THROW(EEResourceException, (reKind, SString<EncodingUnicode>(wszResourceName)));
     }
     else
     {
-        EX_THROW_WITH_INNER(EEResourceException, (reKind, wszResourceName), pInnerException);
+        EX_THROW_WITH_INNER(EEResourceException, (reKind, SString<EncodingUnicode>(wszResourceName)), pInnerException);
     }
 }
 
@@ -12085,34 +12092,34 @@ VOID DECLSPEC_NORETURN RealCOMPlusThrowHR(EXCEPINFO *pExcepInfo)
 //==========================================================================
 
 
-VOID GetAssemblyDetailInfo(SString    &sType,
-                           SString    &sAssemblyDisplayName,
+VOID GetAssemblyDetailInfo(SString<EncodingUnicode>    &sType,
+                           SString<EncodingUnicode>    &sAssemblyDisplayName,
                            PEAssembly *pPEAssembly,
-                           SString    &sAssemblyDetailInfo)
+                           SString<EncodingUnicode> &sAssemblyDetailInfo)
 {
     WRAPPER_NO_CONTRACT;
 
-    InlineSString<MAX_LONGPATH> sFormat;
+    InlineSString<MAX_LONGPATH, EncodingUnicode> sFormat;
     const WCHAR *pwzLoadContext = W("Default");
 
     if (pPEAssembly->GetPath().IsEmpty())
     {
-        sFormat.LoadResource(CCompRC::Debugging, IDS_EE_CANNOTCAST_HELPER_BYTE);
+        LoadResource(sFormat, CCompRC::Debugging, IDS_EE_CANNOTCAST_HELPER_BYTE);
 
-        sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
-                                   sType.GetUnicode(),
-                                   sAssemblyDisplayName.GetUnicode(),
+        sAssemblyDetailInfo.Printf((LPCWSTR)sFormat,
+                                   (LPCWSTR)sType,
+                                   (LPCWSTR)sAssemblyDisplayName,
                                    pwzLoadContext);
     }
     else
     {
-        sFormat.LoadResource(CCompRC::Debugging, IDS_EE_CANNOTCAST_HELPER_PATH);
+        LoadResource(sFormat, CCompRC::Debugging, IDS_EE_CANNOTCAST_HELPER_PATH);
 
-        sAssemblyDetailInfo.Printf(sFormat.GetUnicode(),
-                                   sType.GetUnicode(),
-                                   sAssemblyDisplayName.GetUnicode(),
+        sAssemblyDetailInfo.Printf((LPCWSTR)sFormat,
+                                   (LPCWSTR)sType,
+                                   (LPCWSTR)sAssemblyDisplayName,
                                    pwzLoadContext,
-                                   pPEAssembly->GetPath().GetUnicode());
+                                   (LPCWSTR)pPEAssembly->GetPath());
     }
 }
 
@@ -12142,27 +12149,27 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
          _ASSERTE(pPEAssemblyTypeFrom != NULL);
          _ASSERTE(pPEAssemblyTypeTo != NULL);
 
-         InlineSString<MAX_LONGPATH> sAssemblyFromDisplayName;
-         InlineSString<MAX_LONGPATH> sAssemblyToDisplayName;
+         InlineSString<MAX_LONGPATH, EncodingUnicode> sAssemblyFromDisplayName;
+         InlineSString<MAX_LONGPATH, EncodingUnicode> sAssemblyToDisplayName;
 
          pPEAssemblyTypeFrom->GetDisplayName(sAssemblyFromDisplayName);
          pPEAssemblyTypeTo->GetDisplayName(sAssemblyToDisplayName);
 
          // Found the culprit case. Now format the new exception text.
-         InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastFromName;
-         InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastToName;
-         InlineSString<MAX_LONGPATH> sAssemblyDetailInfoFrom;
-         InlineSString<MAX_LONGPATH> sAssemblyDetailInfoTo;
+         InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastFromName;
+         InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastToName;
+         InlineSString<MAX_LONGPATH, EncodingUnicode> sAssemblyDetailInfoFrom;
+         InlineSString<MAX_LONGPATH, EncodingUnicode> sAssemblyDetailInfoTo;
 
          thCastFrom.GetName(strCastFromName);
          thCastTo.GetName(strCastToName);
 
-         SString typeA = SL(W("A"));
+         SString<EncodingUnicode> typeA(SharedData, W("A"));
          GetAssemblyDetailInfo(typeA,
                                sAssemblyFromDisplayName,
                                pPEAssemblyTypeFrom,
                                sAssemblyDetailInfoFrom);
-         SString typeB = SL(W("B"));
+         SString<EncodingUnicode> typeB(SharedData, W("B"));
          GetAssemblyDetailInfo(typeB,
                                sAssemblyToDisplayName,
                                pPEAssemblyTypeTo,
@@ -12170,10 +12177,10 @@ VOID CheckAndThrowSameTypeAndAssemblyInvalidCastException(TypeHandle thCastFrom,
 
          COMPlusThrow(kInvalidCastException,
                       IDS_EE_CANNOTCASTSAME,
-                      strCastFromName.GetUnicode(),
-                      strCastToName.GetUnicode(),
-                      sAssemblyDetailInfoFrom.GetUnicode(),
-                      sAssemblyDetailInfoTo.GetUnicode());
+                      (LPCWSTR)strCastFromName,
+                      (LPCWSTR)strCastToName,
+                      (LPCWSTR)sAssemblyDetailInfoFrom,
+                      (LPCWSTR)sAssemblyDetailInfoTo);
      }
 }
 
@@ -12188,8 +12195,8 @@ VOID RealCOMPlusThrowInvalidCastException(TypeHandle thCastFrom, TypeHandle thCa
     // Use an InlineSString with a size of MAX_CLASSNAME_LENGTH + 1 to prevent
     // TypeHandle::GetName from having to allocate a new block of memory. This
     // significantly improves the performance of throwing an InvalidCastException.
-    InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastFromName;
-    InlineSString<MAX_CLASSNAME_LENGTH + 1> strCastToName;
+    InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastFromName;
+    InlineSString<MAX_CLASSNAME_LENGTH + 1, EncodingUnicode> strCastToName;
 
     thCastTo.GetName(strCastToName);
     {
@@ -12199,7 +12206,7 @@ VOID RealCOMPlusThrowInvalidCastException(TypeHandle thCastFrom, TypeHandle thCa
         {
             CheckAndThrowSameTypeAndAssemblyInvalidCastException(thCastFrom, thCastTo);
         }
-         COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, strCastFromName.GetUnicode(), strCastToName.GetUnicode());
+         COMPlusThrow(kInvalidCastException, IDS_EE_CANNOTCAST, (LPCWSTR)strCastFromName, (LPCWSTR)strCastToName);
     }
 }
 

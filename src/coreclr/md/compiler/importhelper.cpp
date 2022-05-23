@@ -1364,8 +1364,8 @@ HRESULT ImportHelper::FindAssemblyRef(
 
         LPCUTF8 szAssemblyRefName;
         IfFailRet(pMiniMd->getNameOfAssemblyRef(pRec, &szAssemblyRefName));
-        if (SString::_stricmp(szAssemblyRefName, "mscorlib") &&
-            SString::_stricmp(szAssemblyRefName, "microsoft.visualc"))
+        if (StaticStringHelpers::_stricmp(szAssemblyRefName, "mscorlib") &&
+            StaticStringHelpers::_stricmp(szAssemblyRefName, "microsoft.visualc"))
         {
             if (pRec->GetBuildNumber() != usBuildNumber)
                 continue;

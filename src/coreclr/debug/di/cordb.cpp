@@ -229,7 +229,7 @@ BOOL WINAPI DbgDllMain(HINSTANCE hInstance, DWORD dwReason, LPVOID lpReserved)
                 WszGetModuleFileName(hInstance, rcFile);
                 LOG((LF_CORDB, LL_INFO10000,
                     "DI::DbgDllMain: load right side support from file '%s'\n",
-                     rcFile.GetUnicode()));
+                     (LPCWSTR)rcFile));
             }
 #endif
 

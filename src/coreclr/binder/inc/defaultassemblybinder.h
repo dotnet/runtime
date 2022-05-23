@@ -34,9 +34,9 @@ public:
 
 public:
 
-    HRESULT SetupBindingPaths(SString  &sTrustedPlatformAssemblies,
-                              SString  &sPlatformResourceRoots,
-                              SString  &sAppPaths);
+    HRESULT SetupBindingPaths(SString<EncodingUnicode>  &sTrustedPlatformAssemblies,
+                              SString<EncodingUnicode>  &sPlatformResourceRoots,
+                              SString<EncodingUnicode>  &sAppPaths);
 
     HRESULT BindToSystem(BINDER_SPACE::Assembly **ppSystemAssembly);
 

@@ -134,16 +134,16 @@ HRESULT EditAndContinueModule::ApplyEditAndContinue(
         dumpChanges = CLRConfig::GetConfigValue(CLRConfig::INTERNAL_EncDumpApplyChanges);
 
     if (dumpChanges> 0) {
-        SString fn;
+        SString<EncodingUnicode> fn;
         int ec;
         fn.Printf(W("ApplyChanges.%d.dmeta"), m_applyChangesCount);
         FILE *fp;
-        ec = _wfopen_s(&fp, fn.GetUnicode(), W("wb"));
+        ec = _wfopen_s(&fp, (LPCWSTR)fn, W("wb"));
         _ASSERTE(SUCCEEDED(ec));
         fwrite(pDeltaMD, 1, cbDeltaMD, fp);
         fclose(fp);
         fn.Printf(W("ApplyChanges.%d.dil"), m_applyChangesCount);
-        ec = _wfopen_s(&fp, fn.GetUnicode(), W("wb"));
+        ec = _wfopen_s(&fp, (LPCWSTR)fn, W("wb"));
         _ASSERTE(SUCCEEDED(ec));
         fwrite(pDeltaIL, 1, cbDeltaIL, fp);
         fclose(fp);
@@ -562,15 +562,15 @@ PCODE EditAndContinueModule::JitUpdatedFunction( MethodDesc *pMD,
             // we just have the violation.
             CONTRACT_VIOLATION(ThrowsViolation);
 
-            StackSString exceptionMessage;
-            SString errorMessage;
+            StackSString<EncodingUnicode> exceptionMessage;
+            SString<EncodingUnicode> errorMessage;
             GetExceptionMessage(GET_THROWABLE(), exceptionMessage);
-            errorMessage.AppendASCII("**Error: Probable rude edit.**\n\n"
-                                "EnCModule::JITUpdatedFunction JIT failed with the following exception:\n\n");
+            errorMessage.Append(W("**Error: Probable rude edit.**\n\n")
+                                W("EnCModule::JITUpdatedFunction JIT failed with the following exception:\n\n"));
             errorMessage.Append(exceptionMessage);
-            StackScratchBuffer buffer;
-            DbgAssertDialog(__FILE__, __LINE__, errorMessage.GetANSI(buffer));
-            LOG((LF_ENC, LL_INFO100, errorMessage.GetANSI(buffer)));
+            SString<EncodingUTF8> buffer(errorMessage.MoveToUTF8());
+            DbgAssertDialog(__FILE__, __LINE__, buffer);
+            LOG((LF_ENC, LL_INFO100, (LPCUTF8)buffer));
         }
 #endif
     } EX_END_CATCH(SwallowAllExceptions)

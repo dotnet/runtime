@@ -15,7 +15,7 @@
 
 Bundle *Bundle::AppBundle = nullptr;
 
-const SString &BundleFileLocation::Path() const
+const SString<EncodingUTF8> &BundleFileLocation::Path() const
 {
     LIMITED_METHOD_CONTRACT;
 
@@ -36,7 +36,7 @@ Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
 
     _ASSERTE(probe != nullptr);
 
-    m_path.SetUTF8(bundlePath);
+    m_path.Set(bundlePath);
     m_probe = probe;
 
     // The bundle-base path is the directory containing the single-file bundle.
@@ -45,11 +45,11 @@ Bundle::Bundle(LPCSTR bundlePath, BundleProbeFn *probe)
     LPCSTR pos = strrchr(bundlePath, DIRECTORY_SEPARATOR_CHAR_A);
     _ASSERTE(pos != nullptr);
     size_t baseLen = pos - bundlePath + 1; // Include DIRECTORY_SEPARATOR_CHAR_A in m_basePath
-    m_basePath.SetUTF8(bundlePath, (COUNT_T)baseLen);
+    m_basePath.Set(bundlePath, (COUNT_T)baseLen);
     m_basePathLength = (COUNT_T)baseLen;
 }
 
-BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative) const
+BundleFileLocation Bundle::Probe(const SString<EncodingUTF8>& path, bool pathIsBundleRelative) const
 {
     STANDARD_VM_CONTRACT;
 
@@ -60,15 +60,14 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
     //    Bundle.Probe("path/to/exe/lib.dll") => m_probe("lib.dll")
     //    Bundle.Probe("path/to/exe/and/some/more/lib.dll") => m_probe("and/some/more/lib.dll")
 
-    StackScratchBuffer scratchBuffer;
-    LPCSTR utf8Path(path.GetUTF8(scratchBuffer));
+    LPCSTR utf8Path(path);
 
     if (!pathIsBundleRelative)
     {
 #ifdef TARGET_UNIX
-        if (wcsncmp(m_basePath, path, m_basePath.GetCount()) == 0)
+        if (strncmp(m_basePath, path, m_basePath.GetCount()) == 0)
 #else
-        if (_wcsnicmp(m_basePath, path, m_basePath.GetCount()) == 0)
+        if (strncmp(m_basePath, path, m_basePath.GetCount()) == 0)
 #endif // TARGET_UNIX
         {
             utf8Path += m_basePathLength; // m_basePath includes count for DIRECTORY_SEPARATOR_CHAR_W
@@ -99,9 +98,12 @@ BundleFileLocation Bundle::Probe(const SString& path, bool pathIsBundleRelative)
     return loc;
 }
 
-BundleFileLocation Bundle::ProbeAppBundle(const SString& path, bool pathIsBundleRelative)
+BundleFileLocation Bundle::ProbeAppBundle(const SString<EncodingUnicode>& path, bool pathIsBundleRelative)
 {
     STANDARD_VM_CONTRACT;
 
-    return AppIsBundle() ? AppBundle->Probe(path, pathIsBundleRelative) : BundleFileLocation::Invalid();
+    StackSString<EncodingUTF8> pathUtf8;
+    path.ConvertToUTF8(pathUtf8);
+
+    return AppIsBundle() ? AppBundle->Probe(pathUtf8, pathIsBundleRelative) : BundleFileLocation::Invalid();
 }

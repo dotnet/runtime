@@ -38,7 +38,7 @@ BOOL BaseAssemblySpec::IsCoreLib()
     size_t iNameLen = strlen(m_pAssemblyName);
     return ( (iNameLen >= CoreLibNameLen) &&
              ( (!stricmpUTF8(m_pAssemblyName, g_psBaseLibrary)) ||
-             ( (!SString::_strnicmp(m_pAssemblyName, g_psBaseLibraryName, CoreLibNameLen)) &&
+             ( (!StaticStringHelpers::_strnicmp(m_pAssemblyName, g_psBaseLibraryName, CoreLibNameLen)) &&
                ( (iNameLen == CoreLibNameLen) || (m_pAssemblyName[CoreLibNameLen] == ',') ) ) ) );
 }
 
@@ -74,7 +74,7 @@ BOOL BaseAssemblySpec::IsCoreLibSatellite() const
     // we allow name to be of the form System.Private.CoreLib.resources.dll only
     BOOL r = ( (m_cbPublicKeyOrToken == sizeof(CORELIB_PUBLICKEY)) &&
              (iNameLen >= CoreLibSatelliteNameLen) &&
-             (!SString::_strnicmp(m_pAssemblyName, g_psBaseLibrarySatelliteAssemblyName, CoreLibSatelliteNameLen)) &&
+             (!StaticStringHelpers::_strnicmp(m_pAssemblyName, g_psBaseLibrarySatelliteAssemblyName, CoreLibSatelliteNameLen)) &&
              ( (iNameLen == CoreLibSatelliteNameLen) || (m_pAssemblyName[CoreLibSatelliteNameLen] == ',') ) );
 
     r = r && ( memcmp(m_pbPublicKeyOrToken,CORELIB_PUBLICKEY,sizeof(CORELIB_PUBLICKEY)) == 0);

@@ -557,11 +557,11 @@ public:
 
     void ClearCodeStreams();
 
-    void LogILStub(CORJIT_FLAGS jitFlags, SString *pDumpILStubCode = NULL);
+    void LogILStub(CORJIT_FLAGS jitFlags, SString<EncodingUTF8> *pDumpILStubCode = NULL);
 protected:
-    void DumpIL_FormatToken(mdToken token, SString &strTokenFormatting);
-    void LogILStubWorker(ILInstruction* pInstrBuffer, UINT numInstr, size_t* pcbCode, INT* piCurStack, SString *pDumpILStubCode = NULL);
-    void LogILInstruction(size_t curOffset, bool isLabeled, INT iCurStack, ILInstruction* pInstruction, SString *pDumpILStubCode = NULL);
+    void DumpIL_FormatToken(mdToken token, SString<EncodingUTF8> &strTokenFormatting);
+    void LogILStubWorker(ILInstruction* pInstrBuffer, UINT numInstr, size_t* pcbCode, INT* piCurStack, SString<EncodingUTF8> *pDumpILStubCode = NULL);
+    void LogILInstruction(size_t curOffset, bool isLabeled, INT iCurStack, ILInstruction* pInstruction, SString<EncodingUTF8> *pDumpILStubCode = NULL);
 
 private:
     ILCodeStream*       m_pCodeStreamList;

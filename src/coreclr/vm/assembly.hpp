@@ -226,7 +226,7 @@ public:
     }
 
 #ifndef DACCESS_COMPILE
-    void GetDisplayName(SString &result, DWORD flags = 0)
+    void GetDisplayName(SString<EncodingUnicode> &result, DWORD flags = 0)
     {
         WRAPPER_NO_CONTRACT;
 
@@ -234,7 +234,7 @@ public:
     }
 #endif // DACCESS_COMPILE
 
-    BOOL GetCodeBase(SString &result)
+    BOOL GetCodeBase(SString<EncodingUnicode> &result)
     {
         WRAPPER_NO_CONTRACT;
 

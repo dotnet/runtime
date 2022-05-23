@@ -32,8 +32,8 @@
     static const char       ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE[]    = {""};
     static const int        ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE_LEN  = ARRAY_SIZE(ENUMERATOR_TO_ENUM_VARIANT_CM_COOKIE);
 
-    DEFINE_ASM_QUAL_TYPE_NAME(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME, g_ColorTranslatorClassName, g_DrawingAsmName);
-    DEFINE_ASM_QUAL_TYPE_NAME(COLOR_ASM_QUAL_TYPE_NAME, g_ColorClassName, g_DrawingAsmName);
+    DEFINE_ASM_QUAL_TYPE_NAME_W(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME_W, g_ColorTranslatorClassName, g_DrawingAsmName);
+    DEFINE_ASM_QUAL_TYPE_NAME_W(COLOR_ASM_QUAL_TYPE_NAME_W, g_ColorClassName, g_DrawingAsmName);
 
     #define OLECOLOR_TO_SYSTEMCOLOR_METH_NAME   "FromOle"
     #define SYSTEMCOLOR_TO_OLECOLOR_METH_NAME   "ToOle"
@@ -658,16 +658,16 @@ VOID ThrowInteropParamException(UINT resID, UINT paramIdx)
     }
     CONTRACTL_END;
 
-    SString paramString;
+    SString<EncodingUnicode> paramString;
     if (paramIdx == 0)
         paramString.Set(W("return value"));
     else
         paramString.Printf(W("parameter #%u"), paramIdx);
 
-    SString errorString(W("Unknown error."));
-    errorString.LoadResource(CCompRC::Error, resID);
+    SString<EncodingUnicode> errorString(W("Unknown error."));
+    LoadResource(errorString, CCompRC::Error, resID);
 
-    COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_ERROR_MSG, paramString.GetUnicode(), errorString.GetUnicode());
+    COMPlusThrow(kMarshalDirectiveException, IDS_EE_BADMARSHAL_ERROR_MSG, paramString, errorString);
 }
 
 #ifdef _DEBUG
@@ -758,15 +758,15 @@ OleColorMarshalingInfo::OleColorMarshalingInfo() :
     }
     CONTRACTL_END;
 
-    SString qualifiedColorTranslatorTypeName(SString::Utf8, COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME);
+    SString<EncodingUnicode> qualifiedColorTranslatorTypeName(COLOR_TRANSLATOR_ASM_QUAL_TYPE_NAME_W);
 
     // Load the color translator class.
-    TypeHandle hndColorTranslatorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTranslatorTypeName.GetUnicode());
+    TypeHandle hndColorTranslatorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTranslatorTypeName);
 
 
-    SString qualifiedColorTypeName(SString::Utf8, COLOR_ASM_QUAL_TYPE_NAME);
+    SString<EncodingUnicode> qualifiedColorTypeName(COLOR_ASM_QUAL_TYPE_NAME_W);
     // Load the color class.
-    m_hndColorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTypeName.GetUnicode());
+    m_hndColorType = TypeName::GetTypeFromAsmQualifiedName(qualifiedColorTypeName);
 
     // Retrieve the method to convert an OLE_COLOR to a System.Drawing.Color.
     m_OleColorToSystemColorMD = MemberLoader::FindMethodByName(hndColorTranslatorType.GetMethodTable(), OLECOLOR_TO_SYSTEMCOLOR_METH_NAME);
@@ -912,11 +912,11 @@ CustomMarshalerHelper *EEMarshalingData::GetCustomMarshalerHelper(Assembly *pAss
         _ASSERTE(strMarshalerTypeName && strCookie && !hndManagedType.IsNull());
 
         // Append a NULL terminator to the marshaler type name.
-        SString strCMMarshalerTypeName(SString::Utf8, strMarshalerTypeName, cMarshalerTypeNameBytes);
+        SString<EncodingUTF8> strCMMarshalerTypeName(strMarshalerTypeName, cMarshalerTypeNameBytes);
 
         // Load the custom marshaler class.
         BOOL fNameIsAsmQualified = FALSE;
-        hndCustomMarshalerType = TypeName::GetTypeUsingCASearchRules(strCMMarshalerTypeName.GetUTF8NoConvert(), pAssembly, &fNameIsAsmQualified);
+        hndCustomMarshalerType = TypeName::GetTypeUsingCASearchRules((LPCUTF8)strCMMarshalerTypeName, pAssembly, &fNameIsAsmQualified);
 
         if (hndCustomMarshalerType.IsGenericTypeDefinition())
         {
@@ -2067,9 +2067,8 @@ MarshalInfo::MarshalInfo(Module* pModule,
                                 {
                                     // Load the type. Use an SString for the string since we need to NULL terminate the string
                                     // that comes from the metadata.
-                                    StackScratchBuffer utf8Name;
-                                    SString safeArrayUserDefTypeName(SString::Utf8, ParamInfo.m_strSafeArrayUserDefTypeName, ParamInfo.m_cSafeArrayUserDefTypeNameBytes);
-                                    thElement = TypeName::GetTypeUsingCASearchRules(safeArrayUserDefTypeName.GetUTF8(utf8Name), pAssembly);
+                                    SString<EncodingUTF8> safeArrayUserDefTypeName(ParamInfo.m_strSafeArrayUserDefTypeName, ParamInfo.m_cSafeArrayUserDefTypeNameBytes);
+                                    thElement = TypeName::GetTypeUsingCASearchRules(safeArrayUserDefTypeName, pAssembly);
                                 }
                             }
                             else
@@ -2529,14 +2528,15 @@ void MarshalInfo::ThrowTypeLoadExceptionForInvalidFieldMarshal(FieldDesc* pField
 {
     DefineFullyQualifiedNameForClassW();
 
-    StackSString ssFieldName(SString::Utf8, pFieldDesc->GetName());
+    StackSString<EncodingUnicode> ssFieldName;
+    StackSString<EncodingUTF8>(pFieldDesc->GetName()).ConvertToUnicode(ssFieldName);
 
-    StackSString errorString(W("Unknown error."));
-    errorString.LoadResource(CCompRC::Error, resID);
+    StackSString<EncodingUnicode> errorString(W("Unknown error."));
+    LoadResource(errorString, CCompRC::Error, resID);
 
     COMPlusThrow(kTypeLoadException, IDS_EE_BADMARSHALFIELD_ERROR_MSG,
         GetFullyQualifiedNameForClassW(pFieldDesc->GetEnclosingMethodTable()),
-        ssFieldName.GetUnicode(), errorString.GetUnicode());
+        ssFieldName, errorString);
 }
 
 
@@ -3252,34 +3252,33 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
 
     if (LoggingOn(LF_MARSHALER, LL_INFO10))
     {
-        SString logbuf;
-        StackScratchBuffer scratch;
+        SString<EncodingUTF8> logbuf;
 
         IMDInternalImport *pInternalImport = pModule->GetMDImport();
 
-        logbuf.AppendASCII("------------------------------------------------------------\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetANSI(scratch)));
+        logbuf.Append("------------------------------------------------------------\n");
+        LOG((LF_MARSHALER, LL_INFO10, (LPCUTF8)logbuf));
         logbuf.Clear();
 
-        logbuf.AppendASCII("Managed type: ");
+        logbuf.Append("Managed type: ");
         if (m_byref)
-            logbuf.AppendASCII("Byref ");
+            logbuf.Append("Byref ");
 
         TypeHandle th = sig.GetTypeHandleNT(pModule, pTypeContext);
         if (th.IsNull())
-            logbuf.AppendASCII("<error>");
+            logbuf.Append("<error>");
         else
         {
             SigFormat sigfmt;
             sigfmt.AddType(th);
-            logbuf.AppendUTF8(sigfmt.GetCString());
+            logbuf.Append(sigfmt.GetCString());
         }
 
-        logbuf.AppendASCII("\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetANSI(scratch)));
+        logbuf.Append("\n");
+        LOG((LF_MARSHALER, LL_INFO10, (LPCUTF8)logbuf));
         logbuf.Clear();
 
-        logbuf.AppendASCII("NativeType  : ");
+        logbuf.Append("NativeType  : ");
         PCCOR_SIGNATURE pvNativeType;
         ULONG           cbNativeType;
         if (token == mdParamDefNil
@@ -3287,7 +3286,7 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
                                                  &pvNativeType,
                                                  &cbNativeType) != S_OK)
         {
-            logbuf.AppendASCII("<absent>");
+            logbuf.Append("<absent>");
         }
         else
         {
@@ -3296,10 +3295,10 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
             {
                 char num[100];
                 sprintf_s(num, ARRAY_SIZE(num), "0x%lx ", (ULONG)*pvNativeType);
-                logbuf.AppendASCII(num);
+                logbuf.Append(num);
                 switch (*(pvNativeType++))
                 {
-#define XXXXX(nt) case nt: logbuf.AppendASCII("(" #nt ")"); break;
+#define XXXXX(nt) case nt: logbuf.Append("(" #nt ")"); break;
 
                     XXXXX(NATIVE_TYPE_BOOLEAN)
                     XXXXX(NATIVE_TYPE_I1)
@@ -3356,65 +3355,65 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
                     case NATIVE_TYPE_CUSTOMMARSHALER:
                     {
                         int strLen = 0;
-                        logbuf.AppendASCII("(NATIVE_TYPE_CUSTOMMARSHALER)");
+                        logbuf.Append("(NATIVE_TYPE_CUSTOMMARSHALER)");
 
                         // Skip the typelib guid.
-                        logbuf.AppendASCII(" ");
+                        logbuf.Append(" ");
 
                         strLen = CPackedLen::GetLength(pvNativeType, (void const **)&pvNativeType);
                         if (strLen)
                         {
-                            BYTE* p = (BYTE*)logbuf.OpenANSIBuffer(strLen);
+                            BYTE* p = (BYTE*)logbuf.OpenBuffer(strLen);
                             memcpyNoGCRefs(p, pvNativeType, strLen);
                             logbuf.CloseBuffer();
-                            logbuf.AppendASCII("\0");
+                            logbuf.Append("\0");
 
                             pvNativeType += strLen;
                             cbNativeType -= strLen + 1;
 
                             // Skip the name of the native type.
-                            logbuf.AppendASCII(" ");
+                            logbuf.Append(" ");
                         }
 
 
                         strLen = CPackedLen::GetLength(pvNativeType, (void const **)&pvNativeType);
                         if (strLen)
                         {
-                            BYTE* p = (BYTE*)logbuf.OpenANSIBuffer(strLen);
+                            BYTE* p = (BYTE*)logbuf.OpenBuffer(strLen);
                             memcpyNoGCRefs(p, pvNativeType, strLen);
                             logbuf.CloseBuffer();
-                            logbuf.AppendASCII("\0");
+                            logbuf.Append("\0");
 
                             pvNativeType += strLen;
                             cbNativeType -= strLen + 1;
 
                             // Extract the name of the custom marshaler.
-                            logbuf.AppendASCII(" ");
+                            logbuf.Append(" ");
                         }
 
 
                         strLen = CPackedLen::GetLength(pvNativeType, (void const **)&pvNativeType);
                         if (strLen)
                         {
-                            BYTE* p = (BYTE*)logbuf.OpenANSIBuffer(strLen);
+                            BYTE* p = (BYTE*)logbuf.OpenBuffer(strLen);
                             memcpyNoGCRefs(p, pvNativeType, strLen);
                             logbuf.CloseBuffer();
-                            logbuf.AppendASCII("\0");
+                            logbuf.Append("\0");
 
                             pvNativeType += strLen;
                             cbNativeType -= strLen + 1;
 
                             // Extract the cookie string.
-                            logbuf.AppendASCII(" ");
+                            logbuf.Append(" ");
                         }
 
                         strLen = CPackedLen::GetLength(pvNativeType, (void const **)&pvNativeType);
                         if (strLen)
                         {
-                            BYTE* p = (BYTE*)logbuf.OpenANSIBuffer(strLen);
+                            BYTE* p = (BYTE*)logbuf.OpenBuffer(strLen);
                             memcpyNoGCRefs(p, pvNativeType, strLen);
                             logbuf.CloseBuffer();
-                            logbuf.AppendASCII("\0");
+                            logbuf.Append("\0");
 
                             pvNativeType += strLen;
                             cbNativeType -= strLen + 1;
@@ -3424,42 +3423,42 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
                     }
 
                     default:
-                        logbuf.AppendASCII("(?)");
+                        logbuf.Append("(?)");
                 }
 
-                logbuf.AppendASCII("   ");
+                logbuf.Append("   ");
             }
         }
-        logbuf.AppendASCII("\n");
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetANSI(scratch)));
+        logbuf.Append("\n");
+        LOG((LF_MARSHALER, LL_INFO10, (LPCUTF8)logbuf));
         logbuf.Clear();
 
-        logbuf.AppendASCII("MarshalType : ");
+        logbuf.Append("MarshalType : ");
         {
             char num[100];
             sprintf_s(num, ARRAY_SIZE(num), "0x%lx ", (ULONG)m_type);
-            logbuf.AppendASCII(num);
+            logbuf.Append(num);
         }
         switch (m_type)
         {
-            #define DEFINE_MARSHALER_TYPE(mt, mc) case mt: logbuf.AppendASCII( #mt " (IL" #mc ")"); break;
+            #define DEFINE_MARSHALER_TYPE(mt, mc) case mt: logbuf.Append( #mt " (IL" #mc ")"); break;
             #include "mtypes.h"
 
             case MARSHAL_TYPE_UNKNOWN:
-                logbuf.AppendASCII("MARSHAL_TYPE_UNKNOWN (illegal combination)");
+                logbuf.Append("MARSHAL_TYPE_UNKNOWN (illegal combination)");
                 break;
 
             default:
-                logbuf.AppendASCII("MARSHAL_TYPE_???");
+                logbuf.Append("MARSHAL_TYPE_???");
                 break;
         }
 
-        logbuf.AppendASCII("\n");
+        logbuf.Append("\n");
 
 
-        logbuf.AppendASCII("Metadata In/Out     : ");
+        logbuf.Append("Metadata In/Out     : ");
         if (TypeFromToken(token) != mdtParamDef || token == mdParamDefNil)
-            logbuf.AppendASCII("<absent>");
+            logbuf.Append("<absent>");
 
         else
         {
@@ -3468,30 +3467,30 @@ VOID MarshalInfo::DumpMarshalInfo(Module* pModule, SigPointer sig, const SigType
             LPCSTR szParamName_Ignore;
             if (FAILED(pInternalImport->GetParamDefProps(token, &usSequence, &dwAttr, &szParamName_Ignore)))
             {
-                logbuf.AppendASCII("Invalid ParamDef record ");
+                logbuf.Append("Invalid ParamDef record ");
             }
             else
             {
                 if (IsPdIn(dwAttr))
-                    logbuf.AppendASCII("In ");
+                    logbuf.Append("In ");
 
                 if (IsPdOut(dwAttr))
-                    logbuf.AppendASCII("Out ");
+                    logbuf.Append("Out ");
             }
         }
 
-        logbuf.AppendASCII("\n");
+        logbuf.Append("\n");
 
-        logbuf.AppendASCII("Effective In/Out     : ");
+        logbuf.Append("Effective In/Out     : ");
         if (m_in)
-            logbuf.AppendASCII("In ");
+            logbuf.Append("In ");
 
         if (m_out)
-            logbuf.AppendASCII("Out ");
+            logbuf.Append("Out ");
 
-        logbuf.AppendASCII("\n");
+        logbuf.Append("\n");
 
-        LOG((LF_MARSHALER, LL_INFO10, logbuf.GetANSI(scratch)));
+        LOG((LF_MARSHALER, LL_INFO10, (LPCUTF8)logbuf));
         logbuf.Clear();
     }
 } // MarshalInfo::DumpMarshalInfo

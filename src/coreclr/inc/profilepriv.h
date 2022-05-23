@@ -154,7 +154,7 @@ public:
 struct StoredProfilerNode
 {
     CLSID guid;
-    SString path;
+    SString<EncodingUnicode> path;
     SLink m_Link;
 };
 

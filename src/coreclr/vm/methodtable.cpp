@@ -4193,16 +4193,16 @@ static VOID DoAccessibilityCheck(MethodTable *pAskingMT, MethodTable *pTargetMT,
                                      *AccessCheckOptions::s_pNormalAccessChecks
                                     ))
     {
-        SString displayName;
+        SString<EncodingUnicode> displayName;
         pAskingMT->GetAssembly()->GetDisplayName(displayName);
-        SString targetName;
+        SString<EncodingUnicode> targetName;
 
         // Error string is either E_ACCESSDENIED which requires the type name of the target, vs
         // a more normal TypeLoadException which displays the requesting type.
        _ASSERTE((resIDWhy == (UINT)E_ACCESSDENIED) || (resIDWhy == (UINT)IDS_CLASSLOAD_INTERFACE_NO_ACCESS));
         TypeString::AppendType(targetName, TypeHandle((resIDWhy == (UINT)E_ACCESSDENIED) ? pTargetMT : pAskingMT));
 
-        COMPlusThrow(kTypeLoadException, resIDWhy, targetName.GetUnicode(), displayName.GetUnicode());
+        COMPlusThrow(kTypeLoadException, resIDWhy, (LPCWSTR)targetName, (LPCWSTR)displayName);
     }
 
 }
@@ -4670,9 +4670,9 @@ void MethodTable::DoFullyLoad(Generics::RecursionGraph * const pVisited,  const 
 #ifdef _DEBUG
     if (LoggingOn(LF_CLASSLOADER, LL_INFO10000))
     {
-        SString name;
+        SString<EncodingUnicode> name;
         TypeString::AppendTypeDebug(name, this);
-        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Completed full dependency load of type %S\n", name.GetUnicode()));
+        LOG((LF_CLASSLOADER, LL_INFO10000, "PHASEDLOAD: Completed full dependency load of type %S\n", (LPCWSTR)name));
     }
 #endif
 
@@ -5264,17 +5264,17 @@ void ThrowExceptionForAbstractOverride(
 {
     LIMITED_METHOD_CONTRACT;
 
-    SString assemblyName;
+    SString<EncodingUnicode> assemblyName;
 
     pTargetClass->GetAssembly()->GetDisplayName(assemblyName);
 
-    SString strInterfaceName;
+    SString<EncodingUnicode> strInterfaceName;
     TypeString::AppendType(strInterfaceName, TypeHandle(pInterfaceMT));
 
-    SString strMethodName;
+    SString<EncodingUnicode> strMethodName;
     TypeString::AppendMethod(strMethodName, pInterfaceMD, pInterfaceMD->GetMethodInstantiation());
 
-    SString strTargetClassName;
+    SString<EncodingUnicode> strTargetClassName;
     TypeString::AppendType(strTargetClassName, pTargetClass);
 
     COMPlusThrow(
@@ -5473,17 +5473,17 @@ void ThrowExceptionForConflictingOverride(
 {
     LIMITED_METHOD_CONTRACT;
 
-    SString assemblyName;
+    SString<EncodingUnicode> assemblyName;
 
     pTargetClass->GetAssembly()->GetDisplayName(assemblyName);
 
-    SString strInterfaceName;
+    SString<EncodingUnicode> strInterfaceName;
     TypeString::AppendType(strInterfaceName, TypeHandle(pInterfaceMT));
 
-    SString strMethodName;
+    SString<EncodingUnicode> strMethodName;
     TypeString::AppendMethod(strMethodName, pInterfaceMD, pInterfaceMD->GetMethodInstantiation());
 
-    SString strTargetClassName;
+    SString<EncodingUnicode> strTargetClassName;
     TypeString::AppendType(strTargetClassName, pTargetClass);
 
     COMPlusThrow(

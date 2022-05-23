@@ -142,4 +142,24 @@ void SBuffer::Replace(const Iterator &i, COUNT_T deleteSize, COUNT_T insertSize)
     RETURN;
 }
 
+#ifdef DACCESS_COMPILE
+void* SBuffer::DacTryGetRawContent() const
+{
+    HRESULT status = S_OK;
+    void* buf = NULL;
+    EX_TRY
+    {
+        buf = SBuffer::DacGetRawContent();
+    }
+    EX_CATCH_HRESULT(status);
 
+    if (SUCCEEDED(status))
+    {
+        return buf;
+    }
+    else
+    {
+        return NULL;
+    }
+}
+#endif

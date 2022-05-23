@@ -1345,7 +1345,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
     SOSDacEnter();
 
     MethodDesc* pMD = PTR_MethodDesc(TO_TADDR(methodDesc));
-    StackSString str;
+    StackSString<EncodingUnicode> str;
 
     EX_TRY
     {
@@ -1409,7 +1409,7 @@ ClrDataAccess::GetMethodDescName(CLRDATA_ADDRESS methodDesc, unsigned int count,
     if (SUCCEEDED(hr))
     {
 
-        const WCHAR *val = str.GetUnicode();
+        const WCHAR *val = (LPCWSTR)str;
 
         if (pNeeded)
             *pNeeded = str.GetCount() + 1;
@@ -1528,9 +1528,9 @@ ClrDataAccess::GetObjectClassName(CLRDATA_ADDRESS obj, unsigned int count, _Inou
         }
         else
         {
-            StackSString s;
+            StackSString<EncodingUnicode> s;
             TypeString::AppendType(s, TypeHandle(mt), TypeString::FormatNamespace|TypeString::FormatFullInst);
-            const WCHAR *val = s.GetUnicode();
+            const WCHAR *val = (LPCWSTR)s;
 
             if (pNeeded)
                 *pNeeded = s.GetCount() + 1;
@@ -1792,7 +1792,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
         }
         else
         {
-            StackSString s;
+            StackSString<EncodingUnicode> s;
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
             EX_TRY
             {
@@ -1818,7 +1818,7 @@ ClrDataAccess::GetMethodTableName(CLRDATA_ADDRESS mt, unsigned int count, _Inout
             }
             else
             {
-                const WCHAR *val = s.GetUnicode();
+                const WCHAR *val = (LPCWSTR)s;
 
                 if (pNeeded)
                     *pNeeded = s.GetCount() + 1;
@@ -2074,7 +2074,7 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_up
     }
     else if (!pPEAssembly->IsDynamic())
     {
-        StackSString displayName;
+        StackSString<EncodingUnicode> displayName;
         pPEAssembly->GetDisplayName(displayName, 0);
 
         if (displayName.IsEmpty())
@@ -2091,7 +2091,7 @@ ClrDataAccess::GetPEFileName(CLRDATA_ADDRESS addr, unsigned int count, _Inout_up
 
             if (fileName)
             {
-                wcsncpy_s(fileName, count, displayName.GetUnicode(), _TRUNCATE);
+                wcsncpy_s(fileName, count, (LPCWSTR)displayName, _TRUNCATE);
 
                 if (count < len)
                     len = count;
@@ -2638,10 +2638,10 @@ ClrDataAccess::GetAssemblyName(CLRDATA_ADDRESS assembly, unsigned int count, _In
     }
     else if (!pAssembly->GetPEAssembly()->IsDynamic())
     {
-        StackSString displayName;
+        StackSString<EncodingUnicode> displayName;
         pAssembly->GetPEAssembly()->GetDisplayName(displayName, 0);
 
-        const WCHAR *val = displayName.GetUnicode();
+        const WCHAR *val = (LPCWSTR)displayName;
 
         if (pNeeded)
             *pNeeded = displayName.GetCount() + 1;

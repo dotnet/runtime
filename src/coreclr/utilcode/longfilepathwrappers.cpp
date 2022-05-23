@@ -21,17 +21,17 @@ private:
         static const WCHAR DirectorySeparatorChar;
         static const WCHAR AltDirectorySeparatorChar;
 public:
-        static BOOL ContainsDirectorySeparator(SString & path);
+        static BOOL ContainsDirectorySeparator(SString<EncodingUnicode> & path);
         static BOOL IsDirectorySeparator(WCHAR c);
-        static BOOL IsPathNotFullyQualified(const SString & path);
+        static BOOL IsPathNotFullyQualified(const SString<EncodingUnicode> & path);
 
-        static HRESULT NormalizePath(SString& path);
+        static HRESULT NormalizePath(SString<EncodingUnicode>& path);
 
 #ifdef HOST_WINDOWS
-        static BOOL IsExtended(const SString & path);
-        static BOOL IsUNCExtended(const SString & path);
-        static BOOL IsDevice(const SString & path);
-        static void NormalizeDirectorySeparators(SString& path);
+        static BOOL IsExtended(const SString<EncodingUnicode> & path);
+        static BOOL IsUNCExtended(const SString<EncodingUnicode> & path);
+        static BOOL IsDevice(const SString<EncodingUnicode> & path);
+        static void NormalizeDirectorySeparators(SString<EncodingUnicode>& path);
 #endif
 };
 
@@ -55,7 +55,7 @@ LoadLibraryExWrapper(
     EX_TRY
     {
 
-        LongPathString path(LongPathString::Literal, lpLibFileName);
+        SString<EncodingUnicode> path(SharedData, lpLibFileName);
 
         if (LongFile::IsPathNotFullyQualified(path) || SUCCEEDED(LongFile::NormalizePath(path)))
         {
@@ -65,7 +65,7 @@ LoadLibraryExWrapper(
             LongFile::NormalizeDirectorySeparators(path);
 #endif //HOST_WINDOWS
 
-            ret = LoadLibraryExW(path.GetUnicode(), hFile, dwFlags);
+            ret = LoadLibraryExW(path, hFile, dwFlags);
         }
 
         lastError = GetLastError();
@@ -107,11 +107,11 @@ CreateFileWrapper(
 
     EX_TRY
     {
-        LongPathString path(LongPathString::Literal, lpFileName);
+        SString<EncodingUnicode> path(SharedData, lpFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
-            ret = CreateFileW(path.GetUnicode(),
+            ret = CreateFileW(path,
                     dwDesiredAccess,
                     dwShareMode,
                     lpSecurityAttributes,
@@ -154,12 +154,12 @@ GetFileAttributesWrapper(
 
     EX_TRY
     {
-        LongPathString path(LongPathString::Literal, lpFileName);
+        SString<EncodingUnicode> path(SharedData, lpFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
             ret = GetFileAttributesW(
-                    path.GetUnicode()
+                    path
                 );
         }
 
@@ -198,12 +198,12 @@ GetFileAttributesExWrapper(
 
     EX_TRY
     {
-        LongPathString path(LongPathString::Literal, lpFileName);
+        SString<EncodingUnicode> path(SharedData, lpFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
             ret = GetFileAttributesExW(
-                    path.GetUnicode(),
+                    path,
                     fInfoLevelId,
                     lpFileInformation
                     );
@@ -243,12 +243,12 @@ DeleteFileWrapper(
 
     EX_TRY
     {
-        LongPathString path(LongPathString::Literal, lpFileName);
+        SString<EncodingUnicode> path(SharedData, lpFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
             ret = DeleteFileW(
-                    path.GetUnicode()
+                    path
                     );
         }
 
@@ -287,14 +287,14 @@ MoveFileExWrapper(
 
     EX_TRY
     {
-        LongPathString Existingpath(LongPathString::Literal, lpExistingFileName);
-        LongPathString Newpath(LongPathString::Literal, lpNewFileName);
+        SString<EncodingUnicode> Existingpath(SharedData, lpExistingFileName);
+        SString<EncodingUnicode> Newpath(SharedData, lpNewFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(Existingpath)) && SUCCEEDED(LongFile::NormalizePath(Newpath)))
         {
             ret = MoveFileExW(
-                    Existingpath.GetUnicode(),
-                    Newpath.GetUnicode(),
+                    Existingpath,
+                    Newpath,
                     dwFlags
                     );
         }
@@ -322,7 +322,7 @@ SearchPathWrapper(
         _In_ LPCWSTR lpFileName,
         _In_opt_ LPCWSTR lpExtension,
         _In_ BOOL getPath,
-        SString& lpBuffer,
+        SString<EncodingUnicode>& lpBuffer,
         _Out_opt_ LPWSTR * lpFilePart
         )
 {
@@ -338,7 +338,7 @@ SearchPathWrapper(
 
     EX_TRY
     {
-        LongPathString Existingpath(LongPathString::Literal, lpPath);
+        SString<EncodingUnicode> Existingpath(SharedData, lpPath);
 
         if (lpPath != NULL)
         {
@@ -348,7 +348,7 @@ SearchPathWrapper(
             }
             else
             {
-                lpPath = Existingpath.GetUnicode();
+                lpPath = Existingpath;
             }
         }
 
@@ -365,14 +365,14 @@ SearchPathWrapper(
         }
         else
         {
-            COUNT_T size = lpBuffer.GetUnicodeAllocation() + 1;
+            COUNT_T size = lpBuffer.GetAllocation() + 1;
 
             ret = SearchPathW(
                     lpPath,
                     lpFileName,
                     lpExtension,
                     size,
-                    lpBuffer.OpenUnicodeBuffer(size - 1),
+                    lpBuffer.OpenBuffer(size - 1),
                     lpFilePart
                     );
 
@@ -384,7 +384,7 @@ SearchPathWrapper(
                         lpFileName,
                         lpExtension,
                         ret,
-                        lpBuffer.OpenUnicodeBuffer(ret - 1),
+                        lpBuffer.OpenBuffer(ret - 1),
                         lpFilePart
                         );
             }
@@ -413,7 +413,7 @@ SearchPathWrapper(
 DWORD
 GetModuleFileNameWrapper(
     _In_opt_ HMODULE hModule,
-    SString& buffer
+    SString<EncodingUnicode>& buffer
     )
 {
     CONTRACTL
@@ -428,11 +428,11 @@ GetModuleFileNameWrapper(
 
     EX_TRY
     {
-        COUNT_T size = buffer.GetUnicodeAllocation() + 1;
+        COUNT_T size = buffer.GetAllocation() + 1;
 
         ret = GetModuleFileNameW(
             hModule,
-            buffer.OpenUnicodeBuffer(size - 1),
+            buffer.OpenBuffer(size - 1),
             (DWORD)size
             );
 
@@ -443,7 +443,7 @@ GetModuleFileNameWrapper(
             size = size * 2;
             ret = GetModuleFileNameW(
                 hModule,
-                buffer.OpenUnicodeBuffer(size - 1),
+                buffer.OpenBuffer(size - 1),
                 (DWORD)size
                 );
 
@@ -471,7 +471,7 @@ UINT WINAPI GetTempFileNameWrapper(
     _In_  LPCTSTR lpPathName,
     _In_  LPCTSTR lpPrefixString,
     _In_  UINT    uUnique,
-    SString&  lpTempFileName
+    SString<EncodingUnicode>&  lpTempFileName
     )
 {
     CONTRACTL
@@ -488,7 +488,7 @@ UINT WINAPI GetTempFileNameWrapper(
     {
         //Change the behaviour in Redstone to retry
         COUNT_T size = MAX_LONGPATH;
-        WCHAR* buffer = lpTempFileName.OpenUnicodeBuffer(size - 1);
+        WCHAR* buffer = lpTempFileName.OpenBuffer(size - 1);
         ret  = GetTempFileNameW(
             lpPathName,
             lpPrefixString,
@@ -515,7 +515,7 @@ UINT WINAPI GetTempFileNameWrapper(
     return ret;
 }
 DWORD WINAPI GetTempPathWrapper(
-    SString& lpBuffer
+    SString<EncodingUnicode>& lpBuffer
     )
 {
     CONTRACTL
@@ -535,7 +535,7 @@ DWORD WINAPI GetTempPathWrapper(
 
         ret = GetTempPathW(
             size,
-            lpBuffer.OpenUnicodeBuffer(size - 1)
+            lpBuffer.OpenBuffer(size - 1)
             );
 
         lastError = GetLastError();
@@ -556,7 +556,7 @@ DWORD WINAPI GetTempPathWrapper(
 }
 
 DWORD WINAPI GetCurrentDirectoryWrapper(
-    SString&  lpBuffer
+    SString<EncodingUnicode>&  lpBuffer
     )
 {
     CONTRACTL
@@ -576,7 +576,7 @@ DWORD WINAPI GetCurrentDirectoryWrapper(
 
         ret = GetCurrentDirectoryW(
             size,
-            lpBuffer.OpenUnicodeBuffer(size - 1)
+            lpBuffer.OpenBuffer(size - 1)
             );
 
         lastError = GetLastError();
@@ -598,7 +598,7 @@ DWORD WINAPI GetCurrentDirectoryWrapper(
 
 DWORD WINAPI GetEnvironmentVariableWrapper(
     _In_opt_  LPCTSTR lpName,
-    _Out_opt_ SString&  lpBuffer
+    _Out_opt_ SString<EncodingUnicode>&  lpBuffer
     )
 {
     CONTRACTL
@@ -614,11 +614,11 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
     EX_TRY
     {
 
-        COUNT_T size = lpBuffer.GetUnicodeAllocation() + 1;
+        COUNT_T size = lpBuffer.GetAllocation() + 1;
 
         ret = GetEnvironmentVariableW(
             lpName,
-            lpBuffer.OpenUnicodeBuffer(size - 1),
+            lpBuffer.OpenBuffer(size - 1),
             size
             );
 
@@ -634,7 +634,7 @@ DWORD WINAPI GetEnvironmentVariableWrapper(
             lpBuffer.CloseBuffer();
             ret = GetEnvironmentVariableW(
                 lpName,
-                lpBuffer.OpenUnicodeBuffer(size - 1),
+                lpBuffer.OpenBuffer(size - 1),
                 size);
         }
 
@@ -681,14 +681,14 @@ CopyFileExWrapper(
 
     EX_TRY
     {
-        LongPathString Existingpath(LongPathString::Literal, lpExistingFileName);
-        LongPathString Newpath(LongPathString::Literal, lpNewFileName);
+        SString<EncodingUnicode> Existingpath(SharedData, lpExistingFileName);
+        SString<EncodingUnicode> Newpath(SharedData, lpNewFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(Existingpath)) && SUCCEEDED(LongFile::NormalizePath(Newpath)))
         {
             ret = CopyFileExW(
-                    Existingpath.GetUnicode(),
-                    Newpath.GetUnicode(),
+                    Existingpath,
+                    Newpath,
                     lpProgressRoutine,
                     lpData,
                     pbCancel,
@@ -734,12 +734,12 @@ FindFirstFileExWrapper(
 
     EX_TRY
     {
-        LongPathString path(LongPathString::Literal, lpFileName);
+        SString<EncodingUnicode> path(SharedData, lpFileName);
 
         if (SUCCEEDED(LongFile::NormalizePath(path)))
         {
             ret = FindFirstFileExW(
-                    path.GetUnicode(),
+                    path,
                     fInfoLevelId,
                     lpFindFileData,
                     fSearchOp,
@@ -775,9 +775,9 @@ const WCHAR* LongFile::DevicePathPrefix = W("\\\\.\\");
 const WCHAR* LongFile::UNCExtendedPathPrefix = W("\\\\?\\UNC\\");
 const WCHAR* LongFile::UNCPathPrefix = UNCPATHPREFIX;
 
-void LongFile::NormalizeDirectorySeparators(SString& path)
+void LongFile::NormalizeDirectorySeparators(SString<EncodingUnicode>& path)
 {
-    for(SString::Iterator i = path.Begin(); i < path.End(); ++i)
+    for(auto i = path.Begin(); i < path.End(); ++i)
     {
         if (*i == AltDirectorySeparatorChar)
         {
@@ -786,12 +786,12 @@ void LongFile::NormalizeDirectorySeparators(SString& path)
     }
 }
 
-BOOL LongFile::IsExtended(const SString & path)
+BOOL LongFile::IsExtended(const SString<EncodingUnicode> & path)
 {
     return path.BeginsWith(SL(ExtendedPrefix));
 }
 
-BOOL LongFile::IsUNCExtended(const SString & path)
+BOOL LongFile::IsUNCExtended(const SString<EncodingUnicode> & path)
 {
     return path.BeginsWith(SL(UNCExtendedPathPrefix));
 }
@@ -804,7 +804,7 @@ BOOL LongFile::IsUNCExtended(const SString & path)
 // Handles paths that use the alternate directory separator.  It is a frequent mistake to
 // assume that rooted paths (Path.IsPathRooted) are not relative.  This isn't the case.
 
-BOOL LongFile::IsPathNotFullyQualified(const SString & path)
+BOOL LongFile::IsPathNotFullyQualified(const SString<EncodingUnicode> & path)
 {
     if (path.GetCount() < 2)
     {
@@ -821,7 +821,7 @@ BOOL LongFile::IsPathNotFullyQualified(const SString & path)
             && IsDirectorySeparator(path[2]));
 }
 
-BOOL LongFile::IsDevice(const SString & path)
+BOOL LongFile::IsDevice(const SString<EncodingUnicode> & path)
 {
     return path.BeginsWith(SL(DevicePathPrefix));
 }
@@ -830,7 +830,7 @@ BOOL LongFile::IsDevice(const SString & path)
 // The normalization examples are :
 //  C:\foo\<long>\bar   => \\?\C:\foo\<long>\bar
 //  \\server\<long>\bar => \\?\UNC\server\<long>\bar
-HRESULT LongFile::NormalizePath(SString & path)
+HRESULT LongFile::NormalizePath(SString<EncodingUnicode> & path)
 {
     HRESULT hr        = S_OK;
     DWORD   ret       = 0;
@@ -843,8 +843,8 @@ HRESULT LongFile::NormalizePath(SString & path)
 
     //Now the path will be normalized
 
-    SString originalPath(path);
-    SString prefix(ExtendedPrefix);
+    SString<EncodingUnicode> originalPath(path);
+    SString<EncodingUnicode> prefix(ExtendedPrefix);
     prefixLen = prefix.GetCount();
 
     if (path.BeginsWith(SL(UNCPathPrefix)))
@@ -858,11 +858,11 @@ HRESULT LongFile::NormalizePath(SString & path)
     }
 
 
-    COUNT_T size  = path.GetUnicodeAllocation() + 1;
-    WCHAR* buffer = path.OpenUnicodeBuffer(size - 1);
+    COUNT_T size  = path.GetAllocation() + 1;
+    WCHAR* buffer = path.OpenBuffer(size - 1);
 
     ret = GetFullPathNameW(
-        originalPath.GetUnicode(),
+        originalPath,
         size - prefixLen,        //memory avilable for path after reserving for prefix
         (buffer + prefixLen),    //reserve memory for prefix
         NULL
@@ -877,10 +877,10 @@ HRESULT LongFile::NormalizePath(SString & path)
     {
         path.CloseBuffer();
         size   = ret + prefixLen;
-        buffer = path.OpenUnicodeBuffer(size -1);
+        buffer = path.OpenBuffer(size -1);
 
         ret = GetFullPathNameW(
-            originalPath.GetUnicode(),
+            originalPath,
             ret,                   // memory required for the path
             (buffer + prefixLen),  //reserve memory for prefix
             NULL
@@ -894,13 +894,13 @@ HRESULT LongFile::NormalizePath(SString & path)
         }
     }
 
-	SString fullpath(SString::Literal,buffer + prefixLen);
+	SString<EncodingUnicode> fullpath(SharedData, buffer + prefixLen);
 
     //Check if the resolved path is a UNC. By default we assume relative path to resolve to disk
     if (fullpath.BeginsWith(SL(UNCPathPrefix)) && prefixLen != prefix.GetCount() - (COUNT_T)wcslen(UNCPATHPREFIX))
     {
         //Remove the leading '\\' from the UNC path to be replaced with UNCExtendedPathPrefix
-        fullpath.Replace(fullpath.Begin(), (COUNT_T)wcslen(UNCPATHPREFIX), UNCExtendedPathPrefix);
+        fullpath.Replace(fullpath.Begin(), (COUNT_T)wcslen(UNCPATHPREFIX), SL(UNCExtendedPathPrefix));
         path.CloseBuffer();
         path.Set(fullpath);
     }
@@ -908,7 +908,7 @@ HRESULT LongFile::NormalizePath(SString & path)
     {
         //wcscpy_s always termintes with NULL, so we are saving the character that will be overwriiten
         WCHAR temp = buffer[prefix.GetCount()];
-        wcscpy_s(buffer, prefix.GetCount() + 1, prefix.GetUnicode());
+        wcscpy_s(buffer, prefix.GetCount() + 1, prefix);
         buffer[prefix.GetCount()] = temp;
         path.CloseBuffer(ret + prefixLen);
     }
@@ -916,19 +916,19 @@ HRESULT LongFile::NormalizePath(SString & path)
     return S_OK;
 }
 #else
-BOOL LongFile::IsPathNotFullyQualified(const SString & path)
+BOOL LongFile::IsPathNotFullyQualified(const SString<EncodingUnicode> & path)
 {
     return TRUE;
 }
 
 //Don't need to do anything For XPlat
-HRESULT LongFile::NormalizePath(SString & path)
+HRESULT LongFile::NormalizePath(SString<EncodingUnicode> & path)
 {
     return S_OK;
 }
 #endif //HOST_WINDOWS
 
-BOOL LongFile::ContainsDirectorySeparator(SString & path)
+BOOL LongFile::ContainsDirectorySeparator(SString<EncodingUnicode> & path)
 {
     return path.Find(path.Begin(), DirectorySeparatorChar) || path.Find(path.Begin(), AltDirectorySeparatorChar);
 }

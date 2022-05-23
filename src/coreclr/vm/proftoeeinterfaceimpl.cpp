@@ -4106,13 +4106,13 @@ HRESULT ProfToEEInterfaceImpl::GetModuleInfo2(ModuleID     moduleId,
         // modules, then rather than returning an empty string for the name, just use the
         // module name from metadata (a.k.a. Module.ScopeName). This is required to
         // support SQL F1 sampling profiling.
-        StackSString strScopeName;
+        StackSString<EncodingUnicode> strScopeName;
         LPCUTF8 szScopeName = NULL;
         if ((*wszFileName == W('\0')) && SUCCEEDED(pModule->GetScopeName(&szScopeName)))
         {
-            strScopeName.SetUTF8(szScopeName);
-            strScopeName.Normalize();
-            wszFileName = strScopeName.GetUnicode();
+            MAKE_WIDEPTR_FROMUTF8(wszScopeName, szScopeName);
+            strScopeName.Set(wszScopeName);
+            wszFileName = strScopeName;
         }
 
         ULONG trueLen = (ULONG)(wcslen(wszFileName) + 1);
@@ -5646,7 +5646,7 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
 {
     CONTRACTL
     {
-        // SString::SString throws
+        // SString constructor throws
         THROWS;
 
         // Yay!
@@ -5685,13 +5685,13 @@ HRESULT ProfToEEInterfaceImpl::GetAssemblyInfo(AssemblyID    assemblyId,
     if (pcchName || szName)
     {
         // Get the friendly name of the assembly
-        SString name(SString::Utf8, pAssembly->GetSimpleName());
+        SString<EncodingUnicode> name(SString<EncodingUTF8>(pAssembly->GetSimpleName()).MoveToUnicode());
 
         const COUNT_T nameLength = name.GetCount() + 1;
 
         if ((NULL != szName) && (cchName > 0))
         {
-            wcsncpy_s(szName, cchName, name.GetUnicode(), min(nameLength, cchName - 1));
+            wcsncpy_s(szName, cchName, name, min(nameLength, cchName - 1));
         }
 
         if (NULL != pcchName)
@@ -6472,10 +6472,10 @@ HRESULT ProfToEEInterfaceImpl::GetDynamicFunctionInfo(FunctionID functionId,
         if (pcchName != NULL)
             *pcchName = 0;
 
-        StackSString ss;
-        ss.SetUTF8(pMethDesc->GetName());
-        ss.Normalize();
-        LPCWSTR methodName = ss.GetUnicode();
+        StackSString<EncodingUnicode> ss;
+        MAKE_WIDEPTR_FROMUTF8(pName, pMethDesc->GetName());
+        ss.Set(pName);
+        LPCWSTR methodName = ss;
 
         ULONG trueLen = (ULONG)(wcslen(methodName) + 1);
 

@@ -926,9 +926,10 @@ FCIMPL5(FC_BOOL_RET, COMDelegate::BindToMethodName,
     //
 
     // get the name in UTF8 format
-    SString wszName(SString::Literal, gc.methodName->GetBuffer());
-    StackScratchBuffer utf8Name;
-    LPCUTF8 szNameStr = wszName.GetUTF8(utf8Name);
+    SString<EncodingUnicode> wszName(SharedData, gc.methodName->GetBuffer());
+    StackSString<EncodingUTF8> utf8Name;
+    wszName.ConvertToUTF8(utf8Name);
+    LPCUTF8 szNameStr = utf8Name;
 
     // pick a proper compare function
     typedef int (__cdecl *UTF8StringCompareFuncPtr)(const char *, const char *);
@@ -2070,16 +2071,16 @@ void COMDelegate::ThrowIfInvalidUnmanagedCallersOnlyUsage(MethodDesc* pMD)
     CONTRACTL_END;
 
     if (!pMD->IsStatic())
-        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonStaticMethod")));
+        EX_THROW(EEResourceException, (kInvalidProgramException, SL(W("InvalidProgram_NonStaticMethod"))));
 
     // No generic methods
     if (pMD->HasClassOrMethodInstantiation())
-        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_GenericMethod")));
+        EX_THROW(EEResourceException, (kInvalidProgramException, SL(W("InvalidProgram_GenericMethod"))));
 
     // Arguments - Scenarios involving UnmanagedCallersOnly are handled during the jit.
     bool unmanagedCallersOnlyRequiresMarshalling = false;
     if (NDirect::MarshalingRequired(pMD, NULL, NULL, unmanagedCallersOnlyRequiresMarshalling))
-        EX_THROW(EEResourceException, (kInvalidProgramException, W("InvalidProgram_NonBlittableTypes")));
+        EX_THROW(EEResourceException, (kInvalidProgramException, SL(W("InvalidProgram_NonBlittableTypes"))));
 }
 
 BOOL COMDelegate::NeedsWrapperDelegate(MethodDesc* pTargetMD)

@@ -732,7 +732,7 @@ TiggerStorage::FindStream(
                 return CLDB_E_FILE_CORRUPT;
             }
 
-            if (SString::_stricmp(p->GetName(), szName) == 0)
+            if (StaticStringHelpers::_stricmp(p->GetName(), szName) == 0)
             {
                 *stream = p;
                 return S_OK;
@@ -745,7 +745,7 @@ TiggerStorage::FindStream(
     {
         for (int j = 0; j < m_Streams.Count(); j++)
         {
-            if (SString::_stricmp(m_Streams[j].GetName(), szName) == 0)
+            if (StaticStringHelpers::_stricmp(m_Streams[j].GetName(), szName) == 0)
             {
                 *stream = &m_Streams[j];
                 return S_OK;

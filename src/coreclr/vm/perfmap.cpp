@@ -98,8 +98,8 @@ PerfMap::PerfMap(int pid)
         return;
     }
 
-    SString path;
-    path.Printf("%Sperf-%d.map", &tempPath, pid);
+    SString<EncodingUnicode> path;
+    path.Printf(W("%sperf-%d.map"), &tempPath, pid);
 
     // Open the map file for writing.
     OpenFile(path);
@@ -142,7 +142,7 @@ void PerfMap::OpenFile(SString& path)
     m_FileStream = new (nothrow) CFileStream();
     if(m_FileStream != nullptr)
     {
-        HRESULT hr = m_FileStream->OpenForWrite(path.GetUnicode());
+        HRESULT hr = m_FileStream->OpenForWrite((LPCWSTR)path);
         if(FAILED(hr))
         {
             delete m_FileStream;
@@ -199,7 +199,7 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, cons
     EX_TRY
     {
         // Get the full method signature.
-        SString name;
+        SString<EncodingUnicode> name;
         pMethod->GetFullMethodInfo(name);
 
         // Build the map file line.
@@ -208,7 +208,7 @@ void PerfMap::LogMethod(MethodDesc * pMethod, PCODE pCode, size_t codeSize, cons
         {
             name.AppendPrintf("[%s]", optimizationTier);
         }
-        SString line;
+        SString<EncodingUnicode> line;
         line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetANSI(scratch));
 
         // Write the line.
@@ -295,7 +295,7 @@ void PerfMap::LogPreCompiledMethod(MethodDesc * pMethod, PCODE pCode)
     EX_TRY
     {
         // Get the full method signature.
-        SString name;
+        SString<EncodingUnicode> name;
         pMethod->GetFullMethodInfo(name);
 
         StackScratchBuffer scratch;
@@ -349,9 +349,9 @@ void PerfMap::LogStubs(const char* stubType, const char* stubOwner, PCODE pCode,
 
         // Build the map file line.
         StackScratchBuffer scratch;
-        SString name;
+        SString<EncodingUnicode> name;
         name.Printf("stub<%d> %s<%s>", ++(s_Current->m_StubsMapped), stubType, stubOwner);
-        SString line;
+        SString<EncodingUnicode> line;
         line.Printf(FMT_CODE_ADDR " %x %s\n", pCode, codeSize, name.GetANSI(scratch));
 
         // Write the line.
@@ -397,7 +397,7 @@ NativeImagePerfMap::NativeImagePerfMap(Assembly * pAssembly, BSTR pDestPath)
 
     // Build the path to the perfmap file, which consists of <inputpath><imagesimplename>.ni.<signature>.map.
     // Example: /tmp/System.Private.CoreLib.ni.{GUID}.map
-    SString sDestPerfMapPath;
+    SString<EncodingUnicode> sDestPerfMapPath;
     sDestPerfMapPath.Printf("%S%s.ni.%S.map", pDestPath, lpcSimpleName, wszSignature);
 
     // Open the perf map file.

@@ -98,7 +98,7 @@ MethodDesc *StubHelpers::ResolveInteropMethod(Object *pThisUNSAFE, MethodDesc *p
 }
 
 // static
-void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString &ssErrorString)
+void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString<EncodingUnicode> &ssErrorString)
 {
     CONTRACTL
     {
@@ -119,12 +119,13 @@ void StubHelpers::FormatValidationMessage(MethodDesc *pMD, SString &ssErrorStrin
     {
         ssErrorString.Append(W("method '"));
 
-        StackSString ssClassName;
+        StackSString<EncodingUnicode> ssClassName;
         pMD->GetMethodTable()->_GetFullyQualifiedNameForClass(ssClassName);
 
         ssErrorString.Append(ssClassName);
-        ssErrorString.Append(NAMESPACE_SEPARATOR_CHAR);
-        ssErrorString.AppendUTF8(pMD->GetName());
+        ssErrorString.Append(NAMESPACE_SEPARATOR_WCHAR);
+        MAKE_WIDEPTR_FROMUTF8(methodName, pMD->GetName());
+        ssErrorString.Append(methodName);
 
         ssErrorString.Append(W("'."));
     }
@@ -141,7 +142,7 @@ void StubHelpers::ProcessByrefValidationList()
     }
     CONTRACTL_END;
 
-    StackSString errorString;
+    StackSString<EncodingUnicode> errorString;
     ByrefValidationEntry entry = { NULL, NULL };
 
     EX_TRY
@@ -163,7 +164,7 @@ void StubHelpers::ProcessByrefValidationList()
         EX_TRY
         {
             FormatValidationMessage(entry.pMD, errorString);
-            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, errorString.GetUnicode());
+            EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, (LPCWSTR)errorString);
         }
         EX_CATCH
         {
@@ -856,7 +857,7 @@ FCIMPL3(void, StubHelpers::ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, 
 #ifdef VERIFY_HEAP
     HELPER_METHOD_FRAME_BEGIN_0();
 
-    StackSString errorString;
+    StackSString<EncodingUnicode> errorString;
     EX_TRY
     {
         AVInRuntimeImplOkayHolder AVOkay;
@@ -867,7 +868,7 @@ FCIMPL3(void, StubHelpers::ValidateObject, Object *pObjUNSAFE, MethodDesc *pMD, 
     EX_CATCH
     {
         FormatValidationMessage(ResolveInteropMethod(pThisUNSAFE, pMD), errorString);
-        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, errorString.GetUnicode());
+        EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(COR_E_EXECUTIONENGINE, (LPCWSTR)errorString);
     }
     EX_END_CATCH_UNREACHABLE;
 

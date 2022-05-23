@@ -15,14 +15,14 @@ PerfInfo::PerfInfo(int pid)
 {
     LIMITED_METHOD_CONTRACT;
 
-    SString tempPath;
+    SString<EncodingUnicode> tempPath;
     if (!WszGetTempPath(tempPath))
     {
         return;
     }
 
-    SString path;
-    path.Printf("%Sperfinfo-%d.map", tempPath.GetUnicode(), pid);
+    SString<EncodingUnicode> path;
+    path.Printf("%Sperfinfo-%d.map", (LPCWSTR)tempPath, pid);
     OpenFile(path);
 }
 
@@ -38,7 +38,7 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
         PRECONDITION(guid != nullptr);
     } CONTRACTL_END;
 
-    SString value;
+    SString<EncodingUnicode> value;
     const SString& path = pPEAssembly->GetPath();
     if (path.IsEmpty())
     {
@@ -55,16 +55,16 @@ void PerfInfo::LogImage(PEAssembly* pPEAssembly, WCHAR* guid)
         }
     }
 
-    value.Printf("%S%c%S%c%p", path.GetUnicode(), sDelimiter, guid, sDelimiter, baseAddr);
+    value.Printf(W("%s%c%s%c%p"), (LPCWSTR)path, sDelimiter, guid, sDelimiter, baseAddr);
 
-    SString command;
-    command.Printf("%s", "ImageLoad");
+    SString<EncodingUnicode> command;
+    command.Printf(W("%s"), W("ImageLoad"));
     WriteLine(command, value);
 
 }
 
 // Writes a command line, with "type" being the type of command, with "value" as the command's corresponding instructions/values. This is to be used to log specific information, e.g. LogImage
-void PerfInfo::WriteLine(SString& type, SString& value)
+void PerfInfo::WriteLine(SString<EncodingUnicode>& type, SString<EncodingUnicode>& value)
 {
 
     CONTRACTL
@@ -79,9 +79,9 @@ void PerfInfo::WriteLine(SString& type, SString& value)
         return;
     }
 
-    SString line;
-    line.Printf("%S%c%S%c\n",
-            type.GetUnicode(), sDelimiter, value.GetUnicode(), sDelimiter);
+    SString<EncodingUnicode> line;
+    line.Printf(W("%s%c%s%c\n"),
+            (LPCWSTR)type, sDelimiter, (LPCWSTR)value, sDelimiter);
 
     EX_TRY
     {
@@ -109,7 +109,7 @@ void PerfInfo::OpenFile(SString& path)
 
     if (m_Stream != nullptr)
     {
-        HRESULT hr = m_Stream->OpenForWrite(path.GetUnicode());
+        HRESULT hr = m_Stream->OpenForWrite((LPCWSTR)path);
         if (FAILED(hr))
         {
             delete m_Stream;

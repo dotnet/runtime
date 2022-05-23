@@ -393,6 +393,8 @@ IUnknown* MarshalObjectToInterface(OBJECTREF* ppObject, MethodTable* pItfMT, Met
 void UnmarshalObjectFromInterface(OBJECTREF *ppObjectDest, IUnknown **ppUnkSrc, MethodTable *pItfMT, MethodTable *pClassMT, DWORD dwFlags);
 
 #define DEFINE_ASM_QUAL_TYPE_NAME(varname, typename, asmname)          static const char varname##[] = { typename##", "##asmname## };
+#define W2(x) W(x)
+#define DEFINE_ASM_QUAL_TYPE_NAME_W(varname, typename, asmname)          static const WCHAR varname##[] = { W2(typename##", "##asmname##) };
 
 #else // FEATURE_COMINTEROP
 inline HRESULT EnsureComStartedNoThrow()

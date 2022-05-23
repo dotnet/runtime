@@ -296,7 +296,7 @@ void PlayerModuleInfo::Dump(const WCHAR * prefix, int index)
     DEBUG_ONLY_FUNCTION;
 #endif
 
-    StackSString ssBuff;
+    StackSString<EncodingUnicode> ssBuff;
 
     ssBuff.Append(prefix);
     ssBuff.AppendPrintf(W("[%2d]: "), index);
@@ -320,7 +320,7 @@ void PlayerModuleInfo::Dump(const WCHAR * prefix, int index)
         i ++;
     }
 
-    MulticoreJitTrace(("%S", ssBuff.GetUnicode()));
+    MulticoreJitTrace(("%S", (LPCWSTR)ssBuff));
 }
 
 #endif
@@ -778,8 +778,7 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, uns
             if (!mod.m_pModule)
             {
                 // Get the assembly name.
-                SString assemblyName;
-                assemblyName.SetASCII(mod.m_pRecord->GetAssemblyName(), mod.m_pRecord->AssemblyNameLen());
+                SString<EncodingUTF8> assemblyName(mod.m_pRecord->GetAssemblyName(), mod.m_pRecord->AssemblyNameLen());
 
                 // Load the assembly.
                 DomainAssembly * pDomainAssembly = LoadAssembly(assemblyName);
@@ -821,7 +820,7 @@ HRESULT MulticoreJitProfilePlayer::HandleModuleInfoRecord(unsigned moduleTo, uns
     return hr;
 }
 
-DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(SString & assemblyName)
+DomainAssembly * MulticoreJitProfilePlayer::LoadAssembly(const SString<EncodingUTF8> & assemblyName)
 {
     STANDARD_VM_CONTRACT;
 

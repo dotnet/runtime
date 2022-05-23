@@ -315,13 +315,13 @@ NOINLINE Object* LoadComWeakReferenceTarget(WEAKREFERENCEREF weakReference, Type
         TypeHandle rcwType(gc.rcw->GetMethodTable());
         if (!rcwType.CanCastTo(targetType))
         {
-            SString weakReferenceTypeName;
+            SString<EncodingUnicode> weakReferenceTypeName;
             TypeString::AppendType(weakReferenceTypeName, targetType, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
 
-            SString resolvedTypeName;
+            SString<EncodingUnicode> resolvedTypeName;
             TypeString::AppendType(resolvedTypeName, rcwType, TypeString::FormatNamespace | TypeString::FormatFullInst | TypeString::FormatAssembly);
 
-            COMPlusThrow(kInvalidCastException, IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE, weakReferenceTypeName.GetUnicode(), resolvedTypeName.GetUnicode());
+            COMPlusThrow(kInvalidCastException, IDS_EE_NATIVE_COM_WEAKREF_BAD_TYPE, weakReferenceTypeName, resolvedTypeName);
         }
 
         WeakHandleSpinLockHolder handle(AcquireWeakHandleSpinLock(gc.weakReference), &gc.weakReference);

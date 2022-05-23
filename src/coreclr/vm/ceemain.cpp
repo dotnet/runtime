@@ -218,7 +218,7 @@
 
 static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale);  // TODO: This shouldn't use the LCID.  We should rely on name instead
 
-static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames);
+static HRESULT GetThreadUICultureNames(StringArrayList<EncodingUnicode>* pCultureNames);
 
 HRESULT EEStartup();
 
@@ -597,8 +597,8 @@ void EEStartupHelper()
 
 
         // SString initialization
-        // This needs to be done before config because config uses SString::Empty()
-        SString::Startup();
+        // This needs to be done before config because config uses StaticStringHelpers::Empty()
+        StaticStringHelpers::Startup();
 
         IfFailGo(EEConfig::Setup());
 
@@ -1935,7 +1935,7 @@ static void TerminateDebugger(void)
 // copy culture name into szBuffer and return length
 // ---------------------------------------------------------------------------
 extern BOOL g_fFatalErrorOccurredOnGCThread;
-static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
+static HRESULT GetThreadUICultureNames(StringArrayList<EncodingUnicode>* pCultureNames)
 {
     CONTRACTL
     {
@@ -1950,8 +1950,8 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 
     EX_TRY
     {
-        InlineSString<LOCALE_NAME_MAX_LENGTH> sCulture;
-        InlineSString<LOCALE_NAME_MAX_LENGTH> sParentCulture;
+        InlineSString<LOCALE_NAME_MAX_LENGTH, EncodingUnicode> sCulture;
+        InlineSString<LOCALE_NAME_MAX_LENGTH, EncodingUnicode> sParentCulture;
 
 #if 0 // Enable and test if/once the unmanaged runtime is localized
         Thread * pThread = GetThreadNULLOk();
@@ -1966,9 +1966,9 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
         // coreclr.dll!CCompRC::GetLibrary
         // coreclr.dll!CCompRC::LoadString
         // coreclr.dll!CCompRC::LoadString
-        // coreclr.dll!SString::LoadResourceAndReturnHR
-        // coreclr.dll!SString::LoadResourceAndReturnHR
-        // coreclr.dll!SString::LoadResource
+        // coreclr.dll!LoadResourceAndReturnHR
+        // coreclr.dll!LoadResourceAndReturnHR
+        // coreclr.dll!LoadResource
         // coreclr.dll!EventReporter::EventReporter
         // coreclr.dll!EEPolicy::LogFatalError
         // coreclr.dll!EEPolicy::HandleFatalError
@@ -2016,7 +2016,7 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
             sCulture.Set(id);
 
 #ifndef TARGET_UNIX
-            if (!::GetLocaleInfoEx((LPCWSTR)sCulture, LOCALE_SPARENT, sParentCulture.OpenUnicodeBuffer(static_cast<COUNT_T>(cchParentCultureName)),static_cast<int>(cchParentCultureName)))
+            if (!::GetLocaleInfoEx((LPCWSTR)sCulture, LOCALE_SPARENT, sParentCulture.OpenBuffer(static_cast<COUNT_T>(cchParentCultureName)),static_cast<int>(cchParentCultureName)))
             {
                 hr = HRESULT_FROM_GetLastError();
             }
@@ -2026,12 +2026,12 @@ static HRESULT GetThreadUICultureNames(__inout StringArrayList* pCultureNames)
 #endif // !TARGET_UNIX
         }
         // (LPCWSTR) to restrict the size to null terminated size
-        pCultureNames->AppendIfNotThere((LPCWSTR)sCulture);
+        pCultureNames->AppendIfNotThere(SString<EncodingUnicode>((LPCWSTR)sCulture));
         // Disabling for Dev10 for consistency with managed resource lookup (see AppCompat bug notes in ResourceFallbackManager.cs)
         // Also, this is in the wrong order - put after the parent culture chain.
         //AddThreadPreferredUILanguages(pCultureNames);
-        pCultureNames->AppendIfNotThere((LPCWSTR)sParentCulture);
-        pCultureNames->Append(SString::Empty());
+        pCultureNames->AppendIfNotThere(SString<EncodingUnicode>((LPCWSTR)sParentCulture));
+        pCultureNames->Append(SString<EncodingUnicode>::Empty());
     }
     EX_CATCH
     {
@@ -2096,9 +2096,9 @@ static int GetThreadUICultureId(_Out_ LocaleIDValue* pLocale)
     // coreclr.dll!CCompRC::GetLibrary
     // coreclr.dll!CCompRC::LoadString
     // coreclr.dll!CCompRC::LoadString
-    // coreclr.dll!SString::LoadResourceAndReturnHR
-    // coreclr.dll!SString::LoadResourceAndReturnHR
-    // coreclr.dll!SString::LoadResource
+    // coreclr.dll!LoadResourceAndReturnHR
+    // coreclr.dll!LoadResourceAndReturnHR
+    // coreclr.dll!LoadResource
     // coreclr.dll!EventReporter::EventReporter
     // coreclr.dll!EEPolicy::LogFatalError
     // coreclr.dll!EEPolicy::HandleFatalError

@@ -33,7 +33,7 @@ namespace BINDER_SPACE
         }
 
         // Getters/Setters
-        inline SString &GetAssemblyNameOrPath()
+        inline SString<EncodingUnicode> &GetAssemblyNameOrPath()
         {
             return m_assemblyNameOrPath;
         }
@@ -47,14 +47,14 @@ namespace BINDER_SPACE
         }
 
     protected:
-        SString m_assemblyNameOrPath;
+        SString<EncodingUnicode> m_assemblyNameOrPath;
         HRESULT m_hrBindingResult;
     };
 
     class FailureCacheHashTraits : public DefaultSHashTraits<FailureCacheEntry *>
     {
     public:
-        typedef SString& key_t;
+        typedef SString<EncodingUnicode>& key_t;
 
         // GetKey, Equals, and Hash can throw due to SString
         static const bool s_NoThrow = false;

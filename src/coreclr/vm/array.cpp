@@ -399,11 +399,10 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
         // The only way for dwComponentSize to be large is to be part of a value class. If this changes
         // then the check will need to be moved outside valueclass check.
         if(dwComponentSize > MAX_SIZE_FOR_VALUECLASS_IN_ARRAY) {
-            StackSString ssElemName;
+            StackSString<EncodingUnicode> ssElemName;
             elemTypeHnd.GetName(ssElemName);
-
-            StackScratchBuffer scratch;
-            elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(scratch), IDS_CLASSLOAD_VALUECLASSTOOLARGE);
+            MAKE_UTF8PTR_FROMWIDE(szElemName, ssElemName);
+            elemTypeHnd.GetAssembly()->ThrowTypeLoadException(szElemName, IDS_CLASSLOAD_VALUECLASSTOOLARGE);
         }
     }
 
@@ -508,10 +507,9 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
     }
 
 #ifdef _DEBUG
-    StackSString debugName;
+    StackSString<EncodingUnicode> debugName;
     TypeString::AppendType(debugName, TypeHandle(pMT));
-    StackScratchBuffer buff;
-    const char* pDebugNameUTF8 = debugName.GetUTF8(buff);
+    MAKE_UTF8PTR_FROMWIDE(pDebugNameUTF8, debugName);
     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
     size_t len = safeLen.Value();
@@ -654,11 +652,11 @@ MethodTable* Module::CreateArrayMethodTable(TypeHandle elemTypeHnd, CorElementTy
 
                 unsigned short NumPtrs = (unsigned short) (numPtrsInBytes / TARGET_POINTER_SIZE);
                 if(skip > MAX_SIZE_FOR_VALUECLASS_IN_ARRAY || numPtrsInBytes > MAX_PTRS_FOR_VALUECLASSS_IN_ARRAY) {
-                    StackSString ssElemName;
+                    StackSString<EncodingUnicode> ssElemName;
                     elemTypeHnd.GetName(ssElemName);
 
-                    StackScratchBuffer scratch;
-                    elemTypeHnd.GetAssembly()->ThrowTypeLoadException(ssElemName.GetUTF8(scratch),
+                    MAKE_UTF8PTR_FROMWIDE(scratch, ssElemName);
+                    elemTypeHnd.GetAssembly()->ThrowTypeLoadException(scratch,
                                                                       IDS_CLASSLOAD_VALUECLASSTOOLARGE);
                 }
 

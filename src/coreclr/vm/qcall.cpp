@@ -11,7 +11,7 @@
 // Helpers for returning managed string from QCall
 //
 
-void QCall::StringHandleOnStack::Set(const SString& value)
+void QCall::StringHandleOnStack::Set(const SString<EncodingUnicode>& value)
 {
     STANDARD_VM_CONTRACT;
 

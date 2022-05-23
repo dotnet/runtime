@@ -54,7 +54,7 @@ enum CultureAwareStates
 // This structure represents a dispatch member.
 struct DispatchMemberInfo
 {
-    DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, SString& strName, OBJECTREF MemberInfoObj);
+    DispatchMemberInfo(DispatchInfo *pDispInfo, DISPID DispID, SString<EncodingUnicode>& strName, OBJECTREF MemberInfoObj);
     ~DispatchMemberInfo();
 
     // Helper method to ensure the entry is initialized.
@@ -181,7 +181,7 @@ public:
     DispParamMarshaler**    m_apParamMarshaler;
     BOOL*                   m_pParamInOnly;
     DispatchMemberInfo*     m_pNext;
-    SString                 m_strName;
+    SString<EncodingUnicode> m_strName;
     EnumMemberTypes         m_enumType;
     int                     m_iNumParams;
     CultureAwareStates      m_CultureAwareState;
@@ -237,7 +237,7 @@ public:
 
     // Methods to lookup members.
     DispatchMemberInfo*     FindMember(DISPID DispID);
-    DispatchMemberInfo*     FindMember(SString& strName, BOOL bCaseSensitive);
+    DispatchMemberInfo*     FindMember(SString<EncodingUnicode>& strName, BOOL bCaseSensitive);
 
     // Helper method that invokes the member with the specified DISPID.
     HRESULT                 InvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pVarRes, EXCEPINFO *pei, IServiceProvider *pspCaller, unsigned int *puArgErr);
@@ -335,7 +335,7 @@ protected:
     DISPID                  GenerateDispID();
 
     // Helper method to create an instance of a DispatchMemberInfo.
-    virtual DispatchMemberInfo*  CreateDispatchMemberInfoInstance(DISPID DispID, SString& strMemberName, OBJECTREF MemberInfoObj);
+    virtual DispatchMemberInfo*  CreateDispatchMemberInfoInstance(DISPID DispID, SString<EncodingUnicode>& strMemberName, OBJECTREF MemberInfoObj);
 
     // Helper function to fill in an EXCEPINFO for an InvocationException.
     static void             GetExcepInfoForInvocationExcep(OBJECTREF objException, EXCEPINFO *pei);
@@ -369,14 +369,14 @@ public:
     // Methods to lookup members. These methods synch with the managed view if they fail to
     // find the method.
     DispatchMemberInfo*     SynchFindMember(DISPID DispID);
-    DispatchMemberInfo*     SynchFindMember(SString& strName, BOOL bCaseSensitive);
+    DispatchMemberInfo*     SynchFindMember(SString<EncodingUnicode>& strName, BOOL bCaseSensitive);
 
     // Helper method that invokes the member with the specified DISPID. These methods synch
     // with the managed view if they fail to find the method.
     HRESULT                 SynchInvokeMember(SimpleComCallWrapper *pSimpleWrap, DISPID id, LCID lcid, WORD wFlags, DISPPARAMS *pdp, VARIANT *pVarRes, EXCEPINFO *pei, IServiceProvider *pspCaller, unsigned int *puArgErr);
 
     // Helper method to create an instance of a DispatchMemberInfo.
-    virtual DispatchMemberInfo*  CreateDispatchMemberInfoInstance(DISPID DispID, SString& strMemberName, OBJECTREF MemberInfoObj);
+    virtual DispatchMemberInfo*  CreateDispatchMemberInfoInstance(DISPID DispID, SString<EncodingUnicode>& strMemberName, OBJECTREF MemberInfoObj);
 
     // These methods return the first and next non deleted members.
     DispatchMemberInfo*     GetFirstMember();

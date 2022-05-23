@@ -38,7 +38,7 @@ static VOID ThrowLoadError(AssemblySpec * pSpec, HRESULT hr)
     }
     CONTRACTL_END;
 
-    StackSString name;
+    StackSString<EncodingUnicode> name;
     pSpec->GetDisplayName(0, name);
     EEFileLoadException::Throw(name, hr);
 }
@@ -65,13 +65,13 @@ HRESULT  AssemblySpec::Bind(AppDomain *pAppDomain, BINDER_SPACE::Assembly** ppAs
 
     if (IsCoreLibSatellite())
     {
-        StackSString sSystemDirectory(SystemDomain::System()->SystemDirectory());
-        StackSString sSimpleName;
-        SmallStackSString sCultureName;
+        StackSString<EncodingUnicode> sSystemDirectory(SystemDomain::System()->SystemDirectory());
+        StackSString<EncodingUnicode> sSimpleName;
+        SmallStackSString<EncodingUnicode> sCultureName;
 
-        SString(SString::Utf8Literal, m_pAssemblyName).ConvertToUnicode(sSimpleName);
+        SString<EncodingUTF8>(SharedData, m_pAssemblyName).ConvertToUnicode(sSimpleName);
         if (m_context.szLocale != NULL)
-            SString(SString::Utf8Literal, m_context.szLocale).ConvertToUnicode(sCultureName);
+            SString<EncodingUTF8>(SharedData, m_context.szLocale).ConvertToUnicode(sCultureName);
 
         hr = BINDER_SPACE::AssemblyBinderCommon::BindToSystemSatellite(sSystemDirectory, sSimpleName, sCultureName, &pPrivAsm);
     }
@@ -156,7 +156,7 @@ ErrExit:
     return hr;
 }
 
-void BaseAssemblySpec::Init(SString& assemblyDisplayName)
+void BaseAssemblySpec::Init(const SString<EncodingUTF8>& assemblyDisplayName)
 {
     CONTRACTL
     {
@@ -166,7 +166,7 @@ void BaseAssemblySpec::Init(SString& assemblyDisplayName)
     }
     CONTRACTL_END;
 
-    PCWSTR pAssemblyDisplayName = assemblyDisplayName.GetUnicode();
+    MAKE_WIDEPTR_FROMUTF8(pAssemblyDisplayName, assemblyDisplayName);
 
     GCX_COOP();
 
@@ -185,8 +185,8 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
 
     BEGIN_QCALL;
 
-    StackSString ssName;
-    SString(SString::Literal, pAssemblyNameParts->_pName).ConvertToUTF8(ssName);
+    StackSString<EncodingUTF8> ssName;
+    SString<EncodingUnicode>(SharedData, pAssemblyNameParts->_pName).ConvertToUTF8(ssName);
 
     AssemblyMetaDataInternal asmInfo;
 
@@ -195,13 +195,13 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
     asmInfo.usBuildNumber = pAssemblyNameParts->_build;
     asmInfo.usRevisionNumber = pAssemblyNameParts->_revision;
 
-    SmallStackSString ssLocale;
+    SmallStackSString<EncodingUTF8> ssLocale;
     if (pAssemblyNameParts->_pCultureName != NULL)
-        SString(SString::Literal, pAssemblyNameParts->_pCultureName).ConvertToUTF8(ssLocale);
-    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? ssLocale.GetUTF8NoConvert() : NULL;
+        SString<EncodingUnicode>(SharedData, pAssemblyNameParts->_pCultureName).ConvertToUTF8(ssLocale);
+    asmInfo.szLocale = (pAssemblyNameParts->_pCultureName != NULL) ? (LPCUTF8)ssLocale : NULL;
 
     // Initialize spec
-    pAssemblySpec->Init(ssName.GetUTF8NoConvert(), &asmInfo,
+    pAssemblySpec->Init((LPCUTF8)ssName, &asmInfo,
         pAssemblyNameParts->_pPublicKeyOrToken, pAssemblyNameParts->_cbPublicKeyOrToken, pAssemblyNameParts->_flags);
 
     // Copy and own any fields we do not own
@@ -210,7 +210,7 @@ extern "C" void QCALLTYPE AssemblyName_InitializeAssemblySpec(NativeAssemblyName
     END_QCALL;
 }
 
-HRESULT BaseAssemblySpec::InitNoThrow(SString& assemblyDisplayName)
+HRESULT BaseAssemblySpec::InitNoThrow(const SString<EncodingUTF8>& assemblyDisplayName)
 {
     CONTRACTL
     {
@@ -340,15 +340,15 @@ namespace
     }
 }
 
-VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
+VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString<EncodingUnicode> &result) const
 {
     if (flags==0)
         flags=ASM_DISPLAYF_FULL;
 
     BINDER_SPACE::AssemblyIdentity assemblyIdentity;
-    SString tmpString;
+    SString<EncodingUTF8> tmpString;
 
-    tmpString.SetUTF8(m_pAssemblyName);
+    tmpString.Set(m_pAssemblyName);
 
     if ((m_ownedFlags & BAD_NAME_OWNED) != 0)
     {
@@ -376,7 +376,7 @@ VOID BaseAssemblySpec::GetDisplayName(DWORD flags, SString &result) const
         assemblyIdentity.SetHave(BINDER_SPACE::AssemblyIdentity::IDENTITY_FLAG_CULTURE);
         if ((m_context.szLocale != NULL) && (m_context.szLocale[0] != 0))
         {
-            tmpString.SetUTF8(m_context.szLocale);
+            tmpString.Set(m_context.szLocale);
             tmpString.ConvertToUnicode(assemblyIdentity.m_cultureOrLanguage);
         }
     }

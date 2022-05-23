@@ -30,7 +30,7 @@
 //
 // TypeNameBuilder
 //
-TypeNameBuilder::TypeNameBuilder(SString* pStr, ParseState parseState /*= ParseStateSTART*/) :
+TypeNameBuilder::TypeNameBuilder(SString<EncodingUnicode>* pStr, ParseState parseState /*= ParseStateSTART*/) :
     m_pStr(NULL)
 {
     CONTRACTL
@@ -477,7 +477,7 @@ HRESULT TypeNameBuilder::ToString(BSTR* pszStringRepresentation)
     if (m_instNesting)
         return Fail();
 
-    *pszStringRepresentation = SysAllocString(m_pStr->GetUnicode());
+    *pszStringRepresentation = SysAllocString(*m_pStr);
 
     return S_OK;
 }
@@ -511,7 +511,7 @@ HRESULT TypeNameBuilder::Clear()
 
 // Append the name of the type td to the string
 // The following flags in the FormatFlags argument are significant: FormatNamespace
-void TypeString::AppendTypeDef(SString& ss, IMDInternalImport *pImport, mdTypeDef td, DWORD format)
+void TypeString::AppendTypeDef(SString<EncodingUnicode>& ss, IMDInternalImport *pImport, mdTypeDef td, DWORD format)
 {
     CONTRACT_VOID
     {
@@ -548,16 +548,18 @@ void TypeString::AppendTypeDef(TypeNameBuilder& tnb, IMDInternalImport *pImport,
 
     const WCHAR *wszNameSpace = NULL;
 
-    InlineSString<128> ssName(SString::Utf8, szName);
-    InlineSString<128> ssNameSpace;
+    MAKE_WIDEPTR_FROMUTF8(wszName, szName);
+    InlineSString<128, EncodingUnicode> ssName(wszName);
+    InlineSString<128, EncodingUnicode> wszNamespaceStr;
 
     if (format & FormatNamespace)
     {
-        ssNameSpace.SetUTF8(szNameSpace);
-        wszNameSpace = ssNameSpace.GetUnicode();
+        InlineSString<128, EncodingUTF8> ssNameSpace(szNameSpace);
+        ssNameSpace.ConvertToUnicode(wszNamespaceStr);
+        wszNameSpace = wszNamespaceStr;
     }
 
-    tnb.AddName(ssName.GetUnicode(), wszNameSpace);
+    tnb.AddName(ssName, wszNameSpace);
 
     RETURN;
 }
@@ -594,7 +596,7 @@ void TypeString::AppendNestedTypeDef(TypeNameBuilder& tnb, IMDInternalImport *pI
 // Append a square-bracket-enclosed, comma-separated list of n type parameters in inst to the string s
 // and enclose each parameter in square brackets to disambiguate the commas
 // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
-void TypeString::AppendInst(SString& ss, Instantiation inst, DWORD format)
+void TypeString::AppendInst(SString<EncodingUnicode>& ss, Instantiation inst, DWORD format)
 {
     CONTRACT_VOID
     {
@@ -687,7 +689,7 @@ void TypeString::AppendParamTypeQualifier(TypeNameBuilder& tnb, CorElementType k
 // Append a representation of the type t to the string s
 // The following flags in the FormatFlags argument are significant: FormatNamespace FormatFullInst FormatAssembly FormatNoVersion
 
-void TypeString::AppendType(SString& ss, TypeHandle ty, DWORD format)
+void TypeString::AppendType(SString<EncodingUnicode>& ss, TypeHandle ty, DWORD format)
 {
     CONTRACT_VOID
     {
@@ -702,7 +704,7 @@ void TypeString::AppendType(SString& ss, TypeHandle ty, DWORD format)
     RETURN;
 }
 
-void TypeString::AppendType(SString& ss, TypeHandle ty, Instantiation typeInstantiation, DWORD format)
+void TypeString::AppendType(SString<EncodingUnicode>& ss, TypeHandle ty, Instantiation typeInstantiation, DWORD format)
 {
     CONTRACT_VOID
     {
@@ -802,9 +804,11 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         else
             szPrefix = "!!";
 
-        SmallStackSString pName(SString::Utf8, szPrefix);
-        pName.AppendUTF8(szName);
-        tnb.AddName(pName.GetUnicode());
+        SmallStackSString<EncodingUTF8> pName(szPrefix);
+        pName.Append(szName);
+        SmallStackSString<EncodingUnicode> pNameW;
+        pName.ConvertToUnicode(pNameW);
+        tnb.AddName(pNameW);
 
         format &= ~FormatAssembly;
     }
@@ -855,23 +859,24 @@ void TypeString::AppendType(TypeNameBuilder& tnb, TypeHandle ty, Instantiation t
         Assembly* pAssembly = ty.GetAssembly();
         _ASSERTE(pAssembly != NULL);
 
-        StackSString pAssemblyName;
+        StackSString<EncodingUnicode> pAssemblyName;
 #ifdef DACCESS_COMPILE
-        pAssemblyName.SetUTF8(pAssembly->GetSimpleName());
+        StackSString<EncodingUTF8> pAssemblyNameUTF8(pAssembly->GetSimpleName());
+        pAssemblyNameUTF8.ConvertToUnicode(pAssemblyName);
 #else
         pAssembly->GetDisplayName(pAssemblyName,
                                   ASM_DISPLAYF_PUBLIC_KEY_TOKEN | ASM_DISPLAYF_CONTENT_TYPE |
                                   (format & FormatNoVersion ? 0 : ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE));
 #endif
 
-        tnb.AddAssemblySpec(pAssemblyName.GetUnicode());
+        tnb.AddAssemblySpec(pAssemblyName);
 
     }
 
     RETURN;
 }
 
-void TypeString::AppendMethod(SString& s, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format)
+void TypeString::AppendMethod(SString<EncodingUnicode>& s, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format)
 {
     CONTRACTL
     {
@@ -886,7 +891,7 @@ void TypeString::AppendMethod(SString& s, MethodDesc *pMD, Instantiation typeIns
     AppendMethodImpl(s, pMD, typeInstantiation, format);
 }
 
-void TypeString::AppendMethodInternal(SString& s, MethodDesc *pMD, const DWORD format)
+void TypeString::AppendMethodInternal(SString<EncodingUnicode>& s, MethodDesc *pMD, const DWORD format)
 {
     CONTRACTL
     {
@@ -902,7 +907,7 @@ void TypeString::AppendMethodInternal(SString& s, MethodDesc *pMD, const DWORD f
     AppendMethodImpl(s, pMD, Instantiation(), format);
 }
 
-void TypeString::AppendMethodImpl(SString& ss, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format)
+void TypeString::AppendMethodImpl(SString<EncodingUnicode>& ss, MethodDesc *pMD, Instantiation typeInstantiation, const DWORD format)
 {
     CONTRACTL
     {
@@ -922,12 +927,13 @@ void TypeString::AppendMethodImpl(SString& ss, MethodDesc *pMD, Instantiation ty
         {
             if (pMD->IsLCGMethod())
             {
-                SString sss(SString::Literal, "DynamicClass");
+                SString<EncodingUnicode> sss(SharedData, W("DynamicClass"));
                 ss += sss;
             }
             else if (pMD->IsILStub())
             {
-                SString sss(SString::Literal, ILStubResolver::GetStubClassName(pMD));
+                MAKE_WIDEPTR_FROMUTF8(stubClassName, ILStubResolver::GetStubClassName(pMD));
+                SString<EncodingUnicode> sss(SharedData, stubClassName);
                 ss += sss;
             }
         }
@@ -937,9 +943,10 @@ void TypeString::AppendMethodImpl(SString& ss, MethodDesc *pMD, Instantiation ty
             AppendType(ss, th, typeInstantiation, format);
         }
 
-        SString sss1(SString::Literal, NAMESPACE_SEPARATOR_STR);
+        SString<EncodingUnicode> sss1(SharedData, NAMESPACE_SEPARATOR_WSTR);
         ss += sss1;
-        SString sss2(SString::Utf8, pMD->GetName());
+        MAKE_WIDEPTR_FROMUTF8(methodName, pMD->GetName());
+        SString<EncodingUnicode> sss2(methodName);
         ss += sss2;
 
         if (pMD->HasMethodInstantiation() && !pMD->IsGenericMethodDefinition())
@@ -952,47 +959,47 @@ void TypeString::AppendMethodImpl(SString& ss, MethodDesc *pMD, Instantiation ty
             // @TODO: The argument list should be formatted nicely using AppendType()
 
             SigFormat sigFormatter(pMD, th);
-            const char* sigStr = sigFormatter.GetCStringParmsOnly();
-            SString sss(SString::Utf8, sigStr);
+            MAKE_WIDEPTR_FROMUTF8(sig, sigFormatter.GetCStringParmsOnly());
+            SString<EncodingUnicode> sss(sig);
             ss += sss;
         }
 
         if (format & FormatStubInfo) {
             if (pMD->IsInstantiatingStub())
             {
-                SString sss(SString::Literal, "{inst-stub}");
+                SString<EncodingUnicode> sss(SharedData, W("{inst-stub}"));
                 ss += sss;
             }
             if (pMD->IsUnboxingStub())
             {
-                SString sss(SString::Literal, "{unbox-stub}");
+                SString<EncodingUnicode> sss(SharedData, W("{unbox-stub}"));
                 ss += sss;
             }
             if (pMD->IsSharedByGenericMethodInstantiations())
             {
-                SString sss(SString::Literal, "{method-shared}");
+                SString<EncodingUnicode> sss(SharedData, W("{method-shared}"));
                 ss += sss;
             }
             else if (pMD->IsSharedByGenericInstantiations())
             {
-                SString sss(SString::Literal, "{shared}");
+                SString<EncodingUnicode> sss(SharedData, W("{shared}"));
                 ss += sss;
             }
             if (pMD->RequiresInstMethodTableArg())
             {
-                SString sss(SString::Literal, "{requires-mt-arg}");
+                SString<EncodingUnicode> sss(SharedData, W("{requires-mt-arg}"));
                 ss += sss;
             }
             if (pMD->RequiresInstMethodDescArg())
             {
-                SString sss(SString::Literal, "{requires-mdesc-arg}");
+                SString<EncodingUnicode> sss(SharedData, W("{requires-mdesc-arg}"));
                 ss += sss;
             }
         }
     }
 }
 
-void TypeString::AppendField(SString& s, FieldDesc *pFD, Instantiation typeInstantiation, const DWORD format /* = FormatNamespace */)
+void TypeString::AppendField(SString<EncodingUnicode>& s, FieldDesc *pFD, Instantiation typeInstantiation, const DWORD format /* = FormatNamespace */)
 {
     CONTRACTL
     {
@@ -1008,13 +1015,14 @@ void TypeString::AppendField(SString& s, FieldDesc *pFD, Instantiation typeInsta
         TypeHandle th(pFD->GetApproxEnclosingMethodTable());
         AppendType(s, th, typeInstantiation, format);
 
-        s.AppendUTF8(NAMESPACE_SEPARATOR_STR);
-        s.AppendUTF8(pFD->GetName());
+        s.Append(NAMESPACE_SEPARATOR_WSTR);
+        MAKE_WIDEPTR_FROMUTF8(pName, pFD->GetName());
+        s.Append(pName);
     }
 }
 
 #ifdef _DEBUG
-void TypeString::AppendMethodDebug(SString& ss, MethodDesc *pMD)
+void TypeString::AppendMethodDebug(SString<EncodingUnicode>& ss, MethodDesc *pMD)
 {
     CONTRACTL
     {
@@ -1043,7 +1051,7 @@ void TypeString::AppendMethodDebug(SString& ss, MethodDesc *pMD)
 #endif
 }
 
-void TypeString::AppendTypeDebug(SString& ss, TypeHandle t)
+void TypeString::AppendTypeDebug(SString<EncodingUnicode>& ss, TypeHandle t)
 {
     CONTRACTL
     {
@@ -1072,7 +1080,7 @@ void TypeString::AppendTypeDebug(SString& ss, TypeHandle t)
 #endif
 }
 
-void TypeString::AppendTypeKeyDebug(SString& ss, TypeKey *pTypeKey)
+void TypeString::AppendTypeKeyDebug(SString<EncodingUnicode>& ss, TypeKey *pTypeKey)
 {
     CONTRACTL
     {
@@ -1174,21 +1182,22 @@ void TypeString::AppendTypeKey(TypeNameBuilder& tnb, TypeKey *pTypeKey, DWORD fo
         Assembly* pAssembly = pModule->GetAssembly();
         _ASSERTE(pAssembly != NULL);
 
-        StackSString pAssemblyName;
+        StackSString<EncodingUnicode> pAssemblyName;
 #ifdef DACCESS_COMPILE
-        pAssemblyName.SetUTF8(pAssembly->GetSimpleName());
+        StackSString<EncodingUTF8> pAssemblyNameUTF8(pAssembly->GetSimpleName());
+        pAssemblyNameUTF8.ConvertToUnicode(pAssemblyName);
 #else
         pAssembly->GetDisplayName(pAssemblyName,
                                   ASM_DISPLAYF_PUBLIC_KEY_TOKEN | ASM_DISPLAYF_CONTENT_TYPE |
                                   (format & FormatNoVersion ? 0 : ASM_DISPLAYF_VERSION | ASM_DISPLAYF_CULTURE));
 #endif
-        tnb.AddAssemblySpec(pAssemblyName.GetUnicode());
+        tnb.AddAssemblySpec(pAssemblyName);
     }
 
     RETURN;
 }
 
-void TypeString::AppendTypeKey(SString& ss, TypeKey *pTypeKey, DWORD format)
+void TypeString::AppendTypeKey(SString<EncodingUnicode>& ss, TypeKey *pTypeKey, DWORD format)
 {
     CONTRACT_VOID
     {
@@ -1208,9 +1217,9 @@ void TypeString::AppendTypeKey(SString& ss, TypeKey *pTypeKey, DWORD format)
 }
 
 /*static*/
-void TypeString::EscapeSimpleTypeName(SString* ssTypeName, SString* ssEscapedTypeName)
+void TypeString::EscapeSimpleTypeName(SString<EncodingUnicode>* ssTypeName, SString<EncodingUnicode>* ssEscapedTypeName)
 {
-    SString::Iterator itr = ssTypeName->Begin();
+    auto itr = ssTypeName->Begin();
     WCHAR c;
     while ((c = *itr++) != W('\0'))
     {

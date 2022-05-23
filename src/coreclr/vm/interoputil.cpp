@@ -123,14 +123,14 @@ HRESULT SetupErrorInfo(OBJECTREF pThrownObject)
 #ifdef _DEBUG
                 EX_TRY
                 {
-                    StackSString message;
+                    StackSString<EncodingUnicode> message;
                     GetExceptionMessage(pThrownObject, message);
 
                     if (g_pConfig->ShouldExposeExceptionsInCOMToConsole())
                     {
                         PrintToStdOutW(W(".NET exception in COM\n"));
                         if (!message.IsEmpty())
-                            PrintToStdOutW(message.GetUnicode());
+                            PrintToStdOutW(message);
                         else
                             PrintToStdOutW(W("No exception info available"));
                     }
@@ -1862,47 +1862,49 @@ DefaultInterfaceType GetDefaultInterfaceForClassInternal(TypeHandle hndClass, Ty
         IfFailThrow(cap.GetNonNullString(&szStr, &cbStr));
 
         // Allocate a new buffer that will contain the name of the default COM interface.
-        StackSString defItf(SString::Utf8, szStr, cbStr);
+        StackSString<EncodingUTF8> defItf(szStr, cbStr);
 
         // Load the default COM interface specified in the CA.
         {
             GCX_COOP();
 
-            DefItfType = TypeName::GetTypeUsingCASearchRules(defItf.GetUnicode(), pClassMT->GetAssembly());
+            DefItfType = TypeName::GetTypeUsingCASearchRules(defItf, pClassMT->GetAssembly());
 
             // If the type handle isn't a named type, then throw an exception using
             // the name of the type obtained from pCurrInterfaces.
             if (!DefItfType.GetMethodTable())
             {
                 // This should only occur for TypeDesc's.
-                StackSString ssClassName;
+                StackSString<EncodingUnicode> ssClassName;
                 DefineFullyQualifiedNameForClassW()
+                StackSString<EncodingUnicode> defItfName;
+                defItf.ConvertToUnicode(defItfName);
                 COMPlusThrow(kTypeLoadException, IDS_EE_INVALIDCOMDEFITF,
                              GetFullyQualifiedNameForClassW(pClassMT),
-                             defItf.GetUnicode());
+                             defItfName);
             }
 
             // Otherwise, if the type is not an interface thrown an exception using the actual
             // name of the type.
             if (!DefItfType.IsInterface())
             {
-                StackSString ssClassName;
-                StackSString ssInvalidItfName;
+                StackSString<EncodingUnicode> ssClassName;
+                StackSString<EncodingUnicode> ssInvalidItfName;
                 pClassMT->_GetFullyQualifiedNameForClass(ssClassName);
                 DefItfType.GetMethodTable()->_GetFullyQualifiedNameForClass(ssInvalidItfName);
                 COMPlusThrow(kTypeLoadException, IDS_EE_INVALIDCOMDEFITF,
-                             ssClassName.GetUnicode(), ssInvalidItfName.GetUnicode());
+                             ssClassName, ssInvalidItfName);
             }
 
             // Make sure the class implements the interface.
             if (!pClassMT->CanCastToInterface(DefItfType.GetMethodTable()))
             {
-                StackSString ssClassName;
-                StackSString ssInvalidItfName;
+                StackSString<EncodingUnicode> ssClassName;
+                StackSString<EncodingUnicode> ssInvalidItfName;
                 pClassMT->_GetFullyQualifiedNameForClass(ssClassName);
                 DefItfType.GetMethodTable()->_GetFullyQualifiedNameForClass(ssInvalidItfName);
                 COMPlusThrow(kTypeLoadException, IDS_EE_COMDEFITFNOTSUPPORTED,
-                             ssClassName.GetUnicode(), ssInvalidItfName.GetUnicode());
+                             ssClassName, ssInvalidItfName);
             }
         }
 
@@ -2147,34 +2149,35 @@ void GetComSourceInterfacesForClass(MethodTable *pMT, CQuickArray<MethodTable *>
                     if (!ItfType.GetMethodTable())
                     {
                         // This should only occur for TypeDesc's.
-                        StackSString ssInvalidItfName(SString::Utf8, pCurrInterfaces);
+                        StackSString<EncodingUnicode> ssInvalidItfName;
+                        SString<EncodingUTF8>(pCurrInterfaces).ConvertToUnicode(ssInvalidItfName);
                         DefineFullyQualifiedNameForClassW()
                         COMPlusThrow(kTypeLoadException, IDS_EE_INVALIDCOMSOURCEITF,
                                      GetFullyQualifiedNameForClassW(pMT),
-                                     ssInvalidItfName.GetUnicode());
+                                     ssInvalidItfName);
                     }
 
                     // Otherwise, if the type is not an interface thrown an exception using the actual
                     // name of the type.
                     if (!ItfType.IsInterface())
                     {
-                        StackSString ssClassName;
-                        StackSString ssInvalidItfName;
+                        StackSString<EncodingUnicode> ssClassName;
+                        StackSString<EncodingUnicode> ssInvalidItfName;
                         pMT->_GetFullyQualifiedNameForClass(ssClassName);
                         ItfType.GetMethodTable()->_GetFullyQualifiedNameForClass(ssInvalidItfName);
                         COMPlusThrow(kTypeLoadException, IDS_EE_INVALIDCOMSOURCEITF,
-                                     ssClassName.GetUnicode(), ssInvalidItfName.GetUnicode());
+                                     ssClassName, ssInvalidItfName);
                     }
 
                     // Ensure the source interface is not generic.
                     if (ItfType.HasInstantiation())
                     {
-                        StackSString ssClassName;
-                        StackSString ssInvalidItfName;
+                        StackSString<EncodingUnicode> ssClassName;
+                        StackSString<EncodingUnicode> ssInvalidItfName;
                         pMT->_GetFullyQualifiedNameForClass(ssClassName);
                         ItfType.GetMethodTable()->_GetFullyQualifiedNameForClass(ssInvalidItfName);
                         COMPlusThrow(kTypeLoadException, IDS_EE_INVALIDCOMSOURCEITF,
-                                     ssClassName.GetUnicode(), ssInvalidItfName.GetUnicode());
+                                     ssClassName, ssInvalidItfName);
                     }
 
 
@@ -3267,7 +3270,7 @@ void IUInvokeDispMethod(
             aNamesToConvert[0] = (*pStrName)->GetBuffer();
 
             // Check to see if the name is for a standard DISPID.
-            if (SString::_wcsnicmp(aNamesToConvert[0], STANDARD_DISPID_PREFIX, STANDARD_DISPID_PREFIX_LENGTH) == 0)
+            if (StaticStringHelpers::_wcsnicmp(aNamesToConvert[0], STANDARD_DISPID_PREFIX, STANDARD_DISPID_PREFIX_LENGTH) == 0)
             {
                 // The name is for a standard DISPID so extract it from the name.
                 MemberID = ExtractStandardDispId(aNamesToConvert[0]);
@@ -3283,7 +3286,7 @@ void IUInvokeDispMethod(
                         strTmpName = pNamedArgsData[i]->GetBuffer();
 
                         // Check to see if the name is for a standard DISPID.
-                        if (SString::_wcsnicmp(strTmpName, STANDARD_DISPID_PREFIX, STANDARD_DISPID_PREFIX_LENGTH) != 0)
+                        if (StaticStringHelpers::_wcsnicmp(strTmpName, STANDARD_DISPID_PREFIX, STANDARD_DISPID_PREFIX_LENGTH) != 0)
                             COMPlusThrow(kArgumentException, IDS_EE_NON_STD_NAME_WITH_STD_DISPID);
 
                         // The name is for a standard DISPID so extract it from the name.
@@ -3369,7 +3372,7 @@ void IUInvokeDispMethod(
                     if (FAILED(hr))
                     {
                         // Check to see if the user wants to invoke the new enum member.
-                        if (cNamesToConvert == 1 && SString::_wcsicmp(aNamesToConvert[0], GET_ENUMERATOR_METHOD_NAME) == 0)
+                        if (cNamesToConvert == 1 && StaticStringHelpers::_wcsicmp(aNamesToConvert[0], GET_ENUMERATOR_METHOD_NAME) == 0)
                         {
                             // Invoke the new enum member.
                             MemberID = DISPID_NEWENUM;

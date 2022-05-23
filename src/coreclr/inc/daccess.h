@@ -809,9 +809,12 @@ HRESULT DacVirtualUnwind(ULONG32 threadId, PT_CONTEXT context, PT_KNONVOLATILE_C
 #endif // TARGET_UNIX
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
+template<typename TEncoding>
 class SString;
-void DacMdCacheAddEEName(TADDR taEE, const SString& ssEEName);
-bool DacMdCacheGetEEName(TADDR taEE, SString & ssEEName);
+struct EncodingUnicode;
+struct EncodingUTF8;
+void DacMdCacheAddEEName(TADDR taEE, const SString<EncodingUnicode>& ssEEName);
+bool DacMdCacheGetEEName(TADDR taEE, SString<EncodingUnicode> & ssEEName);
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
 //

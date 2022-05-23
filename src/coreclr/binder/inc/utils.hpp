@@ -19,17 +19,17 @@
 namespace BINDER_SPACE
 {
     // It is safe to use either A or B as CombinedPath.
-    void CombinePath(const SString &pathA,
-                     const SString &pathB,
-                     SString &combinedPath);
+    void CombinePath(const SString<EncodingUnicode> &pathA,
+                     const SString<EncodingUnicode> &pathB,
+                     SString<EncodingUnicode> &combinedPath);
 
     HRESULT GetTokenFromPublicKey(SBuffer &publicKeyBLOB,
                                   SBuffer &publicKeyTokenBLOB);
 
     BOOL IsFileNotFound(HRESULT hr);
 
-    HRESULT GetNextPath(const SString& paths, SString::CIterator& startPos, SString& outPath);
-    HRESULT GetNextTPAPath(const SString& paths, SString::CIterator& startPos, bool dllOnly, SString& outPath, SString& simpleName, bool& isNativeImage);
+    HRESULT GetNextPath(const SString<EncodingUnicode>& paths, SString<EncodingUnicode>::CIterator& startPos, SString<EncodingUnicode>& outPath);
+    HRESULT GetNextTPAPath(const SString<EncodingUnicode>& paths, SString<EncodingUnicode>::CIterator& startPos, bool dllOnly, SString<EncodingUnicode>& outPath, SString<EncodingUnicode>& simpleName, bool& isNativeImage);
 };
 
 #endif

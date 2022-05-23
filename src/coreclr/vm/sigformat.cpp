@@ -561,11 +561,13 @@ void SigFormat::AddType(TypeHandle th)
     case ELEMENT_TYPE_VAR:
     case ELEMENT_TYPE_MVAR:
         {
-            StackScratchBuffer scratch;
-            StackSString name;
+            StackSString<EncodingUnicode> name;
             th.GetName(name);
 
-            AddString(name.GetANSI(scratch));
+            StackSString<EncodingUTF8> nameUTF8;
+            name.ConvertToUTF8(nameUTF8);
+
+            AddString((LPCUTF8)nameUTF8);
 
             break;
         }

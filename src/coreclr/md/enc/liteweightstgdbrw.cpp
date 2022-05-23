@@ -1048,7 +1048,7 @@ HRESULT CLiteWeightStgdbRW::Save(
             IfFailGo(SetFileName(szDatabase));
         }
     }
-    else if ((szDatabase != NULL) && (SString::_wcsicmp(szDatabase, m_wszFileName) != 0))
+    else if ((szDatabase != NULL) && (StaticStringHelpers::_wcsicmp(szDatabase, m_wszFileName) != 0))
     {
         // Save the file name.
         IfFailGo(SetFileName(szDatabase));

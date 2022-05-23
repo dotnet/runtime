@@ -380,7 +380,7 @@ HRESULT CLRException::SetErrorInfo()
  }
 #endif  // FEATURE_COMINTEROP
 
-void CLRException::GetMessage(SString &result)
+void CLRException::GetMessage(SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -706,7 +706,7 @@ OBJECTREF CLRException::GetThrowableFromException(Exception *pException)
                     }
                     else
                     {
-                        SString message;
+                        SString<EncodingUnicode> message;
                         pException->GetMessage(message);
 
                         EEMessageException e(hr, IDS_EE_GENERIC, message);
@@ -947,7 +947,7 @@ IErrorInfo *EEException::GetErrorInfo()
     return NULL;
 }
 
-BOOL EEException::GetThrowableMessage(SString &result)
+BOOL EEException::GetThrowableMessage(SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -982,7 +982,7 @@ BOOL EEException::GetThrowableMessage(SString &result)
     return FALSE;
 }
 
-void EEException::GetMessage(SString &result)
+void EEException::GetMessage(SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -998,7 +998,8 @@ void EEException::GetMessage(SString &result)
 
     // Otherwise, report the class's generic message
     LPCUTF8 pszExceptionName = CoreLibBinder::GetExceptionName(m_kind);
-    result.SetUTF8(pszExceptionName);
+    MAKE_WIDEPTR_FROMUTF8(pwszExceptionName, pszExceptionName);
+    result.Set(pwszExceptionName);
 }
 
 OBJECTREF EEException::CreateThrowable()
@@ -1031,7 +1032,7 @@ OBJECTREF EEException::CreateThrowable()
     HRESULT hr = GetHR();
     ((EXCEPTIONREF)throwable)->SetHResult(hr);
 
-    SString message;
+    SString<EncodingUnicode> message;
     if (GetThrowableMessage(message))
     {
         // Set the message field. It is not safe doing this through the constructor
@@ -1066,10 +1067,10 @@ RuntimeExceptionKind EEException::GetKindFromHR(HRESULT hr)
 
 } // RuntimeExceptionKind EEException::GetKindFromHR()
 
-BOOL EEException::GetResourceMessage(UINT iResourceID, SString &result,
-                                     const SString &arg1, const SString &arg2,
-                                     const SString &arg3, const SString &arg4,
-                                     const SString &arg5, const SString &arg6)
+BOOL EEException::GetResourceMessage(UINT iResourceID, SString<EncodingUnicode> &result,
+                                     const SString<EncodingUnicode> &arg1, const SString<EncodingUnicode> &arg2,
+                                     const SString<EncodingUnicode> &arg3, const SString<EncodingUnicode> &arg4,
+                                     const SString<EncodingUnicode> &arg5, const SString<EncodingUnicode> &arg6)
 {
     CONTRACTL
     {
@@ -1081,8 +1082,8 @@ BOOL EEException::GetResourceMessage(UINT iResourceID, SString &result,
 
     BOOL ok;
 
-    StackSString temp;
-    ok = temp.LoadResource(CCompRC::Error, iResourceID);
+    StackSString<EncodingUnicode> temp;
+    ok = LoadResource(temp, CCompRC::Error, iResourceID);
 
     if (ok)
         result.FormatMessage(FORMAT_MESSAGE_FROM_STRING,
@@ -1102,7 +1103,7 @@ HRESULT EEMessageException::GetHR()
     return m_hr;
 }
 
-BOOL EEMessageException::GetThrowableMessage(SString &result)
+BOOL EEMessageException::GetThrowableMessage(SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -1118,7 +1119,7 @@ BOOL EEMessageException::GetThrowableMessage(SString &result)
     return EEException::GetThrowableMessage(result);
 }
 
-BOOL EEMessageException::GetResourceMessage(UINT iResourceID, SString &result)
+BOOL EEMessageException::GetResourceMessage(UINT iResourceID, SString<EncodingUnicode> &result)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1130,7 +1131,7 @@ BOOL EEMessageException::GetResourceMessage(UINT iResourceID, SString &result)
 // EEResourceException methods
 // ---------------------------------------------------------------------------
 
-void EEResourceException::GetMessage(SString &result)
+void EEResourceException::GetMessage(SString<EncodingUnicode> &result)
 {
     WRAPPER_NO_CONTRACT;
     //
@@ -1138,11 +1139,11 @@ void EEResourceException::GetMessage(SString &result)
     // since we don't want to call managed code here.
     //
 
-    result.Printf("%s (message resource %S)",
-                  CoreLibBinder::GetExceptionName(m_kind), m_resourceName.GetUnicode());
+    result.Printf(W("%S (message resource %s)"),
+                  CoreLibBinder::GetExceptionName(m_kind), (LPCWSTR)m_resourceName);
 }
 
-BOOL EEResourceException::GetThrowableMessage(SString &result)
+BOOL EEResourceException::GetThrowableMessage(SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -1169,7 +1170,7 @@ BOOL EEResourceException::GetThrowableMessage(SString &result)
 // ---------------------------------------------------------------------------
 
 
-BOOL EEFieldException::GetThrowableMessage(SString &result)
+BOOL EEFieldException::GetThrowableMessage(SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -1187,7 +1188,8 @@ BOOL EEFieldException::GetThrowableMessage(SString &result)
         DefineFullyQualifiedNameForClass();
         szClassName = GetFullyQualifiedNameForClass(m_pFD->GetApproxEnclosingMethodTable());
         MAKE_FULLY_QUALIFIED_MEMBER_NAME(szFullName, NULL, szClassName, szMember, "");
-        result.SetUTF8(szFullName);
+        MAKE_WIDEPTR_FROMUTF8(wszFullName, szFullName);
+        result.Set(wszFullName);
 
         return TRUE;
     }
@@ -1200,13 +1202,13 @@ BOOL EEFieldException::GetThrowableMessage(SString &result)
             TypeString::FormatAngleBrackets |
             TypeString::FormatSignature);
 
-        StackSString caller;
+        StackSString<EncodingUnicode> caller;
         TypeString::AppendMethod(caller,
                                  m_pAccessingMD,
                                  m_pAccessingMD->GetClassInstantiation(),
                                  formatFlags);
 
-        StackSString field;
+        StackSString<EncodingUnicode> field;
         TypeString::AppendField(field,
                                 m_pFD,
                                 m_pFD->GetApproxEnclosingMethodTable()->GetInstantiation(),
@@ -1220,7 +1222,7 @@ BOOL EEFieldException::GetThrowableMessage(SString &result)
 // EEMethodException is an EE exception subclass composed of a field
 // ---------------------------------------------------------------------------
 
-BOOL EEMethodException::GetThrowableMessage(SString &result)
+BOOL EEMethodException::GetThrowableMessage(SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -1242,7 +1244,8 @@ BOOL EEMethodException::GetThrowableMessage(SString &result)
         SigFormat sigFormatter(tmp, szMember);
         const char * sigStr = sigFormatter.GetCStringParmsOnly();
         MAKE_FULLY_QUALIFIED_MEMBER_NAME(szFullName, NULL, szClassName, szMember, sigStr);
-        result.SetUTF8(szFullName);
+        MAKE_WIDEPTR_FROMUTF8(wszFullName, szFullName);
+        result.Set(wszFullName);
 
         return TRUE;
     }
@@ -1255,13 +1258,13 @@ BOOL EEMethodException::GetThrowableMessage(SString &result)
             TypeString::FormatAngleBrackets |
             TypeString::FormatSignature);
 
-        StackSString caller;
+        StackSString<EncodingUnicode> caller;
         TypeString::AppendMethod(caller,
                                  m_pAccessingMD,
                                  m_pAccessingMD->GetClassInstantiation(),
                                  formatFlags);
 
-        StackSString callee;
+        StackSString<EncodingUnicode> callee;
         TypeString::AppendMethod(callee,
                                  m_pMD,
                                  m_pMD->GetClassInstantiation(),
@@ -1271,7 +1274,7 @@ BOOL EEMethodException::GetThrowableMessage(SString &result)
     }
 }
 
-BOOL EETypeAccessException::GetThrowableMessage(SString &result)
+BOOL EETypeAccessException::GetThrowableMessage(SString<EncodingUnicode> &result)
 {
     CONTRACTL
     {
@@ -1285,7 +1288,7 @@ BOOL EETypeAccessException::GetThrowableMessage(SString &result)
             TypeString::FormatNamespace |
             TypeString::FormatAngleBrackets |
             TypeString::FormatSignature);
-    StackSString type;
+    StackSString<EncodingUnicode> type;
     TypeString::AppendType(type, TypeHandle(m_pMT), formatFlags);
 
     if (m_messageID == 0)
@@ -1297,7 +1300,7 @@ BOOL EETypeAccessException::GetThrowableMessage(SString &result)
     {
         _ASSERTE(m_pAccessingMD != NULL);
 
-        StackSString caller;
+        StackSString<EncodingUnicode> caller;
         TypeString::AppendMethod(caller,
                                  m_pAccessingMD,
                                  m_pAccessingMD->GetClassInstantiation(),
@@ -1387,7 +1390,7 @@ EETypeLoadException::EETypeLoadException(LPCUTF8 pszNameSpace, LPCUTF8 pTypeName
                     LPCWSTR pAssemblyName, LPCUTF8 pMessageArg, UINT resIDWhy)
   : EEException(kTypeLoadException),
     m_pAssemblyName(pAssemblyName),
-    m_pMessageArg(SString::Utf8, pMessageArg),
+    m_pMessageArg(SString<EncodingUnicode>::Empty()),
     m_resIDWhy(resIDWhy)
 {
     CONTRACTL
@@ -1398,23 +1401,30 @@ EETypeLoadException::EETypeLoadException(LPCUTF8 pszNameSpace, LPCUTF8 pTypeName
     }
     CONTRACTL_END;
 
+    SString<EncodingUTF8>(pMessageArg).ConvertToUnicode(m_pMessageArg);
+
     if(pszNameSpace)
     {
-        SString sNameSpace(SString::Utf8, pszNameSpace);
-        SString sTypeName(SString::Utf8, pTypeName);
-        m_fullName.MakeFullNamespacePath(sNameSpace, sTypeName);
+        SString<EncodingUTF8> sNameSpace(pszNameSpace);
+        SString<EncodingUTF8> sTypeName(pTypeName);
+        SString<EncodingUTF8> fullName;
+        ns::MakePath(fullName, sNameSpace, fullName);
+        fullName.ConvertToUnicode(m_fullName);
     }
     else if (pTypeName)
-        m_fullName.SetUTF8(pTypeName);
-    else {
+    {
+        MAKE_WIDEPTR_FROMUTF8(name, pTypeName);
+        m_fullName.Set(name);
+    }
+    else
+    {
         WCHAR wszTemplate[30];
         if (FAILED(UtilLoadStringRC(IDS_EE_NAME_UNKNOWN,
                                     wszTemplate,
                                     sizeof(wszTemplate)/sizeof(wszTemplate[0]),
                                     FALSE)))
             wszTemplate[0] = W('\0');
-        MAKE_UTF8PTR_FROMWIDE(name, wszTemplate);
-        m_fullName.SetUTF8(name);
+        m_fullName.Set(wszTemplate);
     }
 }
 
@@ -1423,8 +1433,9 @@ EETypeLoadException::EETypeLoadException(LPCWSTR pFullName,
                                          LPCUTF8 pMessageArg,
                                          UINT resIDWhy)
   : EEException(kTypeLoadException),
+    m_fullName(pFullName),
     m_pAssemblyName(pAssemblyName),
-    m_pMessageArg(SString::Utf8, pMessageArg),
+    m_pMessageArg(SString<EncodingUnicode>::Empty()),
     m_resIDWhy(resIDWhy)
 {
     CONTRACTL
@@ -1434,21 +1445,34 @@ EETypeLoadException::EETypeLoadException(LPCWSTR pFullName,
         MODE_ANY;
     }
     CONTRACTL_END;
-
-    MAKE_UTF8PTR_FROMWIDE(name, pFullName);
-    m_fullName.SetUTF8(name);
+    
+    SString<EncodingUTF8>(pMessageArg).ConvertToUnicode(m_pMessageArg);
 }
 
-void EETypeLoadException::GetMessage(SString &result)
+EETypeLoadException::EETypeLoadException(LPCWSTR pFullName,
+                                         LPCWSTR pAssemblyName,
+                                         LPCWSTR pMessageArg,
+                                         UINT resIDWhy)
+  : EEException(kTypeLoadException),
+    m_fullName(pFullName),
+    m_pAssemblyName(pAssemblyName),
+    m_pMessageArg(pMessageArg),
+    m_resIDWhy(resIDWhy)
+{
+    LIMITED_METHOD_CONTRACT;
+}
+
+void EETypeLoadException::GetMessage(SString<EncodingUnicode> &result)
 {
     WRAPPER_NO_CONTRACT;
+    SString<EncodingUnicode> fullNameUnicode;
+    m_fullName.ConvertToUnicode(fullNameUnicode);
     GetResourceMessage(IDS_CLASSLOAD_GENERAL, result,
-                       m_fullName, m_pAssemblyName, m_pMessageArg);
+                       fullNameUnicode, m_pAssemblyName, m_pMessageArg);
 }
 
 OBJECTREF EETypeLoadException::CreateThrowable()
 {
-
     CONTRACTL
     {
         GC_TRIGGERS;
@@ -1508,7 +1532,7 @@ OBJECTREF EETypeLoadException::CreateThrowable()
 // EEFileLoadException is an EE exception subclass representing a file loading
 // error
 // ---------------------------------------------------------------------------
-EEFileLoadException::EEFileLoadException(const SString &name, HRESULT hr, Exception *pInnerException/* = NULL*/)
+EEFileLoadException::EEFileLoadException(const SString<EncodingUnicode> &name, HRESULT hr, Exception *pInnerException/* = NULL*/)
   : EEException(GetFileLoadKind(hr)),
     m_name(name),
     m_hr(hr)
@@ -1551,7 +1575,7 @@ EEFileLoadException::~EEFileLoadException()
 
 
 
-void EEFileLoadException::SetFileName(const SString &fileName, BOOL removePath)
+void EEFileLoadException::SetFileName(const SString<EncodingUnicode> &fileName, BOOL removePath)
 {
     CONTRACTL
     {
@@ -1565,7 +1589,7 @@ void EEFileLoadException::SetFileName(const SString &fileName, BOOL removePath)
     // user could have the full path, if the user has the right permission.</TODO>
     if (removePath)
     {
-        SString::CIterator i = fileName.End();
+        SString<EncodingUnicode>::CIterator i = fileName.End();
 
         if (fileName.FindBack(i, W('\\')))
             i++;
@@ -1579,16 +1603,16 @@ void EEFileLoadException::SetFileName(const SString &fileName, BOOL removePath)
         m_name.Set(fileName);
 }
 
-void EEFileLoadException::GetMessage(SString &result)
+void EEFileLoadException::GetMessage(SString<EncodingUnicode> &result)
 {
     WRAPPER_NO_CONTRACT;
 
-    SString sHR;
+    SString<EncodingUnicode> sHR;
     GetHRMsg(m_hr, sHR);
     GetResourceMessage(GetResourceIDForFileLoadExceptionHR(m_hr), result, m_name, sHR);
 }
 
-void EEFileLoadException::GetName(SString &result)
+void EEFileLoadException::GetName(SString<EncodingUnicode> &result)
 {
     WRAPPER_NO_CONTRACT;
 
@@ -1727,7 +1751,7 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(AssemblySpec  *pSpec, HRESULT 
     if (hr == E_OUTOFMEMORY)
         COMPlusThrowOM();
 
-    StackSString name;
+    StackSString<EncodingUnicode> name;
     pSpec->GetDisplayName(0, name);
     EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
 }
@@ -1748,7 +1772,7 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(PEAssembly *pPEAssembly, HRESU
     if (hr == E_OUTOFMEMORY)
         COMPlusThrowOM();
 
-    StackSString name;
+    StackSString<EncodingUnicode> name;
     pPEAssembly->GetDisplayName(name);
 
     EX_THROW_WITH_INNER(EEFileLoadException, (name, hr), pInnerException);
@@ -1771,7 +1795,7 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(LPCWSTR path, HRESULT hr, Exce
     if (hr == E_OUTOFMEMORY)
         COMPlusThrowOM();
 
-    EX_THROW_WITH_INNER(EEFileLoadException, (StackSString(path), hr), pInnerException);
+    EX_THROW_WITH_INNER(EEFileLoadException, (StackSString<EncodingUnicode>(path), hr), pInnerException);
 }
 
 /* static */
@@ -1792,10 +1816,10 @@ void DECLSPEC_NORETURN EEFileLoadException::Throw(PEAssembly *parent,
     if (hr == E_OUTOFMEMORY)
         COMPlusThrowOM();
 
-    StackSString name;
-    name.Printf("%d bytes loaded from ", size);
+    StackSString<EncodingUnicode> name;
+    name.Printf(W("%d bytes loaded from "), size);
 
-    StackSString parentName;
+    StackSString<EncodingUnicode> parentName;
     parent->GetDisplayName(parentName);
 
     name.Append(parentName);
@@ -1906,7 +1930,7 @@ EECOMException::EECOMException(
     FillExceptionData(&m_ED, pErrInfo);
 }
 
-BOOL EECOMException::GetThrowableMessage(SString &result)
+BOOL EECOMException::GetThrowableMessage(SString<EncodingUnicode> &result)
 {
      CONTRACTL
     {
@@ -1966,7 +1990,7 @@ OBJECTREF EECOMException::CreateThrowable()
         if (m_ED.dwHelpContext != 0)
         {
             // We have a non 0 help context so use it to form the help link.
-            SString strMessage;
+            SString<EncodingUnicode> strMessage;
             strMessage.Printf(W("%s#%d"), m_ED.bstrHelpFile, m_ED.dwHelpContext);
             helpStr = StringObject::NewString(strMessage);
         }

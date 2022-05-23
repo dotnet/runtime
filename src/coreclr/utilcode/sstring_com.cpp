@@ -15,22 +15,21 @@
 //----------------------------------------------------------------------------
 // Load the string resource into this string.
 //----------------------------------------------------------------------------
-BOOL SString::LoadResource(CCompRC::ResourceCategory eCategory, int resourceID)
+BOOL LoadResource(SString<EncodingUnicode>& buffer, CCompRC::ResourceCategory eCategory, int resourceID)
 {
-    return SUCCEEDED(LoadResourceAndReturnHR(eCategory, resourceID));
+    return SUCCEEDED(LoadResourceAndReturnHR(buffer, eCategory, resourceID));
 }
 
-HRESULT SString::LoadResourceAndReturnHR(CCompRC::ResourceCategory eCategory, int resourceID)
+HRESULT LoadResourceAndReturnHR(SString<EncodingUnicode>& buffer, CCompRC::ResourceCategory eCategory, int resourceID)
 {
     WRAPPER_NO_CONTRACT;
-    return LoadResourceAndReturnHR(NULL, eCategory,resourceID);
+    return LoadResourceAndReturnHR(buffer, NULL, eCategory,resourceID);
 }
 
-HRESULT SString::LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID)
+HRESULT LoadResourceAndReturnHR(SString<EncodingUnicode>& buffer, CCompRC* pResourceDLL, CCompRC::ResourceCategory eCategory, int resourceID)
 {
     CONTRACT(BOOL)
     {
-        INSTANCE_CHECK;
         NOTHROW;
     }
     CONTRACT_END;
@@ -50,8 +49,8 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::Resourc
 
         EX_TRY
         {
-            if (GetRawCount() == 0)
-                Resize(DEFAULT_RESOURCE_STRING_SIZE, REPRESENTATION_UNICODE);
+            if (buffer.GetCount() == 0)
+                buffer.Resize(DEFAULT_RESOURCE_STRING_SIZE, {});
 
             while (TRUE)
             {
@@ -59,34 +58,32 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::Resourc
                 // In fatal error reporting scenarios, we may not have enough memory to
                 // allocate a larger buffer.
 
-                hr = pResourceDLL->LoadString(eCategory, resourceID, GetRawUnicode(), GetRawCount()+1, &size);
+                hr = pResourceDLL->LoadString(eCategory, resourceID, const_cast<LPWSTR>((LPCWSTR)buffer), buffer.GetCount()+1, &size);
                 if (hr != HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER))
                 {
                     if (FAILED(hr))
                     {
-                        Clear();
+                        buffer.Clear();
                         break;
                     }
 
                     // Although we cannot generally detect truncation, we can tell if we
                     // used up all the space (in which case we will assume truncation.)
-                    if (size < (int)GetRawCount())
+                    if (size < (int)buffer.GetCount())
                     {
                         break;
                     }
                 }
 
                 // Double the size and try again.
-                Resize(size*2, REPRESENTATION_UNICODE);
+                buffer.Resize(size*2, {});
 
             }
 
             if (SUCCEEDED(hr))
             {
-                Truncate(Begin() + (COUNT_T) wcslen(GetRawUnicode()));
+                // Truncate(Begin() + (COUNT_T) wcslen(GetRawUnicode()));
             }
-
-            Normalize();
 
         }
         EX_CATCH
@@ -98,4 +95,4 @@ HRESULT SString::LoadResourceAndReturnHR(CCompRC* pResourceDLL, CCompRC::Resourc
 #endif //!FEATURE_UTILCODE_NO_DEPENDENCIES
 
     RETURN hr;
-} // SString::LoadResourceAndReturnHR
+} // StaticStringHelpers::LoadResourceAndReturnHR

@@ -78,9 +78,9 @@ namespace BINDER_SPACE
         return hr;
     }
 
-    HRESULT ApplicationContext::SetupBindingPaths(SString &sTrustedPlatformAssemblies,
-                                                  SString &sPlatformResourceRoots,
-                                                  SString &sAppPaths,
+    HRESULT ApplicationContext::SetupBindingPaths(SString<EncodingUnicode> &sTrustedPlatformAssemblies,
+                                                  SString<EncodingUnicode> &sPlatformResourceRoots,
+                                                  SString<EncodingUnicode> &sAppPaths,
                                                   BOOL     fAcquireLock)
     {
         HRESULT hr = S_OK;
@@ -96,12 +96,10 @@ namespace BINDER_SPACE
         //
         m_pTrustedPlatformAssemblyMap = new SimpleNameToFileNameMap();
 
-        sTrustedPlatformAssemblies.Normalize();
-
-        for (SString::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
+        for (SString<EncodingUnicode>::Iterator i = sTrustedPlatformAssemblies.Begin(); i != sTrustedPlatformAssemblies.End(); )
         {
-            SString fileName;
-            SString simpleName;
+            SString<EncodingUnicode> fileName;
+            SString<EncodingUnicode> simpleName;
             bool isNativeImage = false;
             HRESULT pathResult = S_OK;
             IF_FAIL_GO(pathResult = GetNextTPAPath(sTrustedPlatformAssemblies, i, /*dllOnly*/ false, fileName, simpleName, isNativeImage));
@@ -110,7 +108,7 @@ namespace BINDER_SPACE
                 break;
             }
 
-            const SimpleNameToFileNameMapEntry *pExistingEntry = m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName.GetUnicode());
+            const SimpleNameToFileNameMapEntry *pExistingEntry = m_pTrustedPlatformAssemblyMap->LookupPtr(simpleName);
 
             if (pExistingEntry != nullptr)
             {
@@ -135,7 +133,7 @@ namespace BINDER_SPACE
                 {
                     GO_WITH_HRESULT(E_OUTOFMEMORY);
                 }
-                wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName.GetUnicode());
+                wcscpy_s(wszSimpleName, simpleName.GetCount() + 1, simpleName);
             }
             else
             {
@@ -147,7 +145,7 @@ namespace BINDER_SPACE
             {
                 GO_WITH_HRESULT(E_OUTOFMEMORY);
             }
-            wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName.GetUnicode());
+            wcscpy_s(wszFileName, fileName.GetCount() + 1, fileName);
 
             SimpleNameToFileNameMapEntry mapEntry;
             mapEntry.m_wszSimpleName = wszSimpleName;
@@ -168,10 +166,9 @@ namespace BINDER_SPACE
         //
         // Parse PlatformResourceRoots
         //
-        sPlatformResourceRoots.Normalize();
-        for (SString::Iterator i = sPlatformResourceRoots.Begin(); i != sPlatformResourceRoots.End(); )
+        for (SString<EncodingUnicode>::Iterator i = sPlatformResourceRoots.Begin(); i != sPlatformResourceRoots.End(); )
         {
-            SString pathName;
+            SString<EncodingUnicode> pathName;
             HRESULT pathResult = S_OK;
 
             IF_FAIL_GO(pathResult = GetNextPath(sPlatformResourceRoots, i, pathName));
@@ -191,10 +188,9 @@ namespace BINDER_SPACE
         //
         // Parse AppPaths
         //
-        sAppPaths.Normalize();
-        for (SString::Iterator i = sAppPaths.Begin(); i != sAppPaths.End(); )
+        for (SString<EncodingUnicode>::Iterator i = sAppPaths.Begin(); i != sAppPaths.End(); )
         {
-            SString pathName;
+            SString<EncodingUnicode> pathName;
             HRESULT pathResult = S_OK;
 
             IF_FAIL_GO(pathResult = GetNextPath(sAppPaths, i, pathName));

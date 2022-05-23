@@ -230,11 +230,11 @@ class CallStackLogger
     {
         WRAPPER_NO_CONTRACT;
 
-        SString str(pWordAt);
+        SString<EncodingUnicode> str(pWordAt);
 
         MethodDesc* pMD = m_frames[index];
         TypeString::AppendMethodInternal(str, pMD, TypeString::FormatNamespace|TypeString::FormatFullInst|TypeString::FormatSignature);
-        PrintToStdErrW(str.GetUnicode());
+        PrintToStdErrW((LPCWSTR)str);
         PrintToStdErrA("\n");
     }
 
@@ -255,10 +255,10 @@ public:
 
         if (m_largestCommonStartLength != 0)
         {
-            SmallStackSString repeatStr;
-            repeatStr.AppendPrintf("Repeat %d times:\n", m_largestCommonStartRepeat);
+            SmallStackSString<EncodingUnicode> repeatStr;
+            repeatStr.AppendPrintf(W("Repeat %d times:\n"), m_largestCommonStartRepeat);
 
-            PrintToStdErrW(repeatStr.GetUnicode());
+            PrintToStdErrW((LPCWSTR)repeatStr);
             PrintToStdErrA("--------------------------------\n");
             for (int i = 0; i < m_largestCommonStartLength; i++)
             {
@@ -288,9 +288,9 @@ inline void LogCallstackForLogWorker(Thread* pThread)
 {
     WRAPPER_NO_CONTRACT;
 
-    SmallStackSString WordAt;
+    SmallStackSString<EncodingUnicode> WordAt;
 
-    if (!WordAt.LoadResource(CCompRC::Optional, IDS_ER_WORDAT))
+    if (!LoadResource(WordAt, CCompRC::Optional, IDS_ER_WORDAT))
     {
         WordAt.Set(W("   at"));
     }
@@ -298,13 +298,13 @@ inline void LogCallstackForLogWorker(Thread* pThread)
     {
         WordAt.Insert(WordAt.Begin(), W("   "));
     }
-    WordAt += W(" ");
+    WordAt += SL(W(" "));
 
     CallStackLogger logger;
 
     pThread->StackWalkFrames(&CallStackLogger::LogCallstackForLogCallback, &logger, QUICKUNWIND | FUNCTIONSONLY | ALLOW_ASYNC_STACK_WALK);
 
-    logger.PrintStackTrace(WordAt.GetUnicode());
+    logger.PrintStackTrace((LPCWSTR)WordAt);
 
 }
 
@@ -371,7 +371,7 @@ void LogInfoForFatalError(UINT exitCode, LPCWSTR pszMessage, LPCWSTR errorSource
         else
         {
             // If no message was passed in, generate it from the exitCode
-            SString exitCodeMessage;
+            SString<EncodingUnicode> exitCodeMessage;
             GetHRMsg(exitCode, exitCodeMessage);
             PrintToStdErrW((LPCWSTR)exitCodeMessage);
         }
@@ -440,7 +440,7 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             else if (exitCode == (UINT)COR_E_CODECONTRACTFAILED)
                 failureType = EventReporter::ERT_CodeContractFailed;
             EventReporter reporter(failureType);
-            StackSString s(argExceptionString);
+            StackSString<EncodingUnicode> s(argExceptionString);
 
             if ((exitCode == (UINT)COR_E_FAILFAST) || (exitCode == (UINT)COR_E_CODECONTRACTFAILED) || (exitCode == (UINT)CLR_E_GC_OOM))
             {
@@ -460,11 +460,11 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
             else
             {
                 // Fetch the localized Fatal Execution Engine Error text or fall back on a hardcoded variant if things get dire.
-                InlineSString<80> ssMessage;
-                InlineSString<80> ssErrorFormat;
-                if(!ssErrorFormat.LoadResource(CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
+                InlineSString<80, EncodingUnicode> ssMessage;
+                InlineSString<80, EncodingUnicode> ssErrorFormat;
+                if(!LoadResource(ssErrorFormat, CCompRC::Optional, IDS_ER_UNMANAGEDFAILFASTMSG ))
                     ssErrorFormat.Set(W("at IP 0x%x (0x%x) with exit code 0x%x."));
-                SmallStackSString addressString;
+                SmallStackSString<EncodingUnicode> addressString;
                 addressString.Printf(W("%p"), pExceptionInfo? (PVOID)pExceptionInfo->ExceptionRecord->ExceptionAddress : (PVOID)address);
 
                 // We should always have the reference to the runtime's instance
@@ -473,10 +473,10 @@ void EEPolicy::LogFatalError(UINT exitCode, UINT_PTR address, LPCWSTR pszMessage
                 // Setup the string to contain the runtime's base address. Thus, when customers report FEEE with just
                 // the event log entry containing this string, we can use the absolute and base addresses to determine
                 // where the fault happened inside the runtime.
-                SmallStackSString runtimeBaseAddressString;
+                SmallStackSString<EncodingUnicode> runtimeBaseAddressString;
                 runtimeBaseAddressString.Printf(W("%p"), GetClrModuleBase());
 
-                SmallStackSString exitCodeString;
+                SmallStackSString<EncodingUnicode> exitCodeString;
                 exitCodeString.Printf(W("%x"), exitCode);
 
                 // Format the string

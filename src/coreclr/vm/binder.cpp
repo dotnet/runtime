@@ -648,7 +648,7 @@ static BOOL IsStrInArray(const char* sStr, size_t len, const char* aStrArray[], 
     STANDARD_VM_CONTRACT;
     for (int i = 0; i < nSize; i++)
     {
-        if (SString::_strnicmp(aStrArray[i], sStr, (COUNT_T)len) == 0)
+        if (StaticStringHelpers::_strnicmp(aStrArray[i], sStr, (COUNT_T)len) == 0)
         {
             return TRUE;
         }
@@ -800,14 +800,13 @@ static void FCallCheckSignature(MethodDesc* pMD, PCODE pImpl)
 
             size_t len = pUnmanagedTypeEnd - pUnmanagedArg;
             // generate the unmanaged argument signature to show them in the error message if possible
-            StackSString ssUnmanagedType(SString::Ascii, pUnmanagedArg, (COUNT_T)len);
-            StackScratchBuffer buffer;
-            const char * pUnManagedType = ssUnmanagedType.GetANSI(buffer);
+            StackSString<EncodingASCII> ssUnmanagedType(pUnmanagedArg, (COUNT_T)len);
+            const char * pUnManagedType = ssUnmanagedType;
 
             if (expectedType != NULL)
             {
                 // when managed type is well known
-                if (!(strlen(expectedType) == len && SString::_strnicmp(expectedType, pUnmanagedArg, (COUNT_T)len) == 0))
+                if (!(strlen(expectedType) == len && StaticStringHelpers::_strnicmp(expectedType, pUnmanagedArg, (COUNT_T)len) == 0))
                 {
                     printf("CheckExtended: The managed and unmanaged fcall signatures do not match, Method: %s:%s. Argument: %d Expecting: %s Actual: %s\n", pMD->m_pszDebugClassName, pMD->m_pszDebugMethodName, argIndex, expectedType, pUnManagedType);
                 }

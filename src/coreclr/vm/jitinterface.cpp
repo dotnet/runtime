@@ -3372,12 +3372,12 @@ int CEEInfo::appendClassName(_Outptr_opt_result_buffer_(*pnBufLen) char16_t**   
     JIT_TO_EE_TRANSITION();
 
     TypeHandle th(clsHnd);
-    StackSString ss;
+    StackSString<EncodingUnicode> ss;
     TypeString::AppendType(ss,th,
                            (fNamespace ? TypeString::FormatNamespace : 0) |
                            (fFullInst ? TypeString::FormatFullInst : 0) |
                            (fAssembly ? TypeString::FormatAssembly : 0));
-    const WCHAR* szString = ss.GetUnicode();
+    const WCHAR* szString = (LPCWSTR)ss;
     nLen = (int)wcslen(szString);
     if (*pnBufLen > 0)
     {
@@ -6134,10 +6134,16 @@ const char* CEEInfo::getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** s
                 if (pMT->IsArray())
                 {
                     ssClsNameBuff.Clear();
-                    ssClsNameBuff.SetUTF8(pMT->GetDebugClassName());
+                    ssClsNameBuff.Set(pMT->GetDebugClassName());
                 }
                 else
-                    pMT->_GetFullyQualifiedNameForClassNestedAware(ssClsNameBuff);
+                {
+                    SString<EncodingUnicode> className;
+                    pMT->_GetFullyQualifiedNameForClassNestedAware(className);
+                    MAKE_UTF8PTR_FROMWIDE(classNamePtr, (LPCWSTR)className);
+                    ssClsNameBuff.Clear();
+                    ssClsNameBuff.Set(classNamePtr);
+                }
             }
             else
             {
@@ -6148,7 +6154,7 @@ const char* CEEInfo::getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** s
                 // GetDebugClassName - which doesn't calculate the class name everytime.
                 // This results in huge saving in Ngen time for checked builds.
                 ssClsNameBuff.Clear();
-                ssClsNameBuff.SetUTF8(pMT->GetDebugClassName());
+                ssClsNameBuff.Set(pMT->GetDebugClassName());
 
 #ifdef FEATURE_SYMDIFF
             }
@@ -6156,9 +6162,14 @@ const char* CEEInfo::getMethodName (CORINFO_METHOD_HANDLE ftnHnd, const char** s
             // Append generic instantiation at the end
             Instantiation inst = pMT->GetInstantiation();
             if (!inst.IsEmpty())
-                TypeString::AppendInst(ssClsNameBuff, inst);
+            {
+                SString<EncodingUnicode> instantiation;
+                TypeString::AppendInst(instantiation, inst);
+                MAKE_UTF8PTR_FROMWIDE(instantiationPtr, (LPCWSTR)instantiation);
+                ssClsNameBuff.Append(instantiationPtr);
+            }
 
-            *scopeName = ssClsNameBuff.GetUTF8(ssClsNameBuffScratch);
+            *scopeName = (LPCUTF8)ssClsNameBuff;
 #else // !_DEBUG
             // since this is for diagnostic purposes only,
             // give up on the namespace, as we don't have a buffer to concat it
@@ -7905,47 +7916,50 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
 #ifdef _DEBUG
     if (LoggingOn(LF_JIT, LL_INFO100000))
     {
-        SString currentMethodName;
-        currentMethodName.AppendUTF8(m_pMethodBeingCompiled->GetModule_NoLogging()->GetPEAssembly()->GetSimpleName());
-        currentMethodName.Append(L'/');
+        SString<EncodingUnicode> currentMethodName;
+        MAKE_WIDEPTR_FROMUTF8(currentSimpleName, m_pMethodBeingCompiled->GetModule_NoLogging()->GetPEAssembly()->GetSimpleName());
+        currentMethodName.Append(currentSimpleName);
+        currentMethodName.Append(W('/'));
         TypeString::AppendMethodInternal(currentMethodName, m_pMethodBeingCompiled, TypeString::FormatBasic);
 
-        SString inlineeMethodName;
+        SString<EncodingUnicode> inlineeMethodName;
         if (GetMethod(inlineeHnd))
         {
-            inlineeMethodName.AppendUTF8(GetMethod(inlineeHnd)->GetModule_NoLogging()->GetPEAssembly()->GetSimpleName());
-            inlineeMethodName.Append(L'/');
+            MAKE_WIDEPTR_FROMUTF8(inlineeSimpleName, GetMethod(inlineeHnd)->GetModule_NoLogging()->GetPEAssembly()->GetSimpleName());
+            inlineeMethodName.Append(inlineeSimpleName);
+            inlineeMethodName.Append(W('/'));
             TypeString::AppendMethodInternal(inlineeMethodName, GetMethod(inlineeHnd), TypeString::FormatBasic);
         }
         else
         {
-            inlineeMethodName.AppendASCII( "<null>" );
+            inlineeMethodName.Append( W("<null>"));
         }
 
-        SString inlinerMethodName;
+        SString<EncodingUnicode> inlinerMethodName;
         if (GetMethod(inlinerHnd))
         {
-            inlinerMethodName.AppendUTF8(GetMethod(inlinerHnd)->GetModule_NoLogging()->GetPEAssembly()->GetSimpleName());
+            MAKE_WIDEPTR_FROMUTF8(inlinerSimpleName, GetMethod(inlinerHnd)->GetModule_NoLogging()->GetPEAssembly()->GetSimpleName());
+            inlinerMethodName.Append(inlinerSimpleName);
             inlinerMethodName.Append(L'/');
             TypeString::AppendMethodInternal(inlinerMethodName, GetMethod(inlinerHnd), TypeString::FormatBasic);
         }
         else
         {
-            inlinerMethodName.AppendASCII("<null>");
+            inlinerMethodName.Append(W("<null>"));
         }
 
         if (dontInline(inlineResult))
         {
             LOG((LF_JIT, LL_INFO100000,
                  "While compiling '%S', inline of '%S' into '%S' failed because: '%s'.\n",
-                 currentMethodName.GetUnicode(), inlineeMethodName.GetUnicode(),
-                 inlinerMethodName.GetUnicode(), reason));
+                 (LPCWSTR)currentMethodName, (LPCWSTR)inlineeMethodName,
+                 (LPCWSTR)inlinerMethodName, reason));
         }
         else
         {
             LOG((LF_JIT, LL_INFO100000, "While compiling '%S', inline of '%S' into '%S' succeeded.\n",
-                 currentMethodName.GetUnicode(), inlineeMethodName.GetUnicode(),
-                 inlinerMethodName.GetUnicode()));
+                 (LPCWSTR)currentMethodName, (LPCWSTR)inlineeMethodName,
+                 (LPCWSTR)inlinerMethodName));
 
         }
     }
@@ -7956,55 +7970,57 @@ void CEEInfo::reportInliningDecision (CORINFO_METHOD_HANDLE inlinerHnd,
                                      TRACE_LEVEL_VERBOSE,
                                      CLR_JITTRACING_KEYWORD))
     {
-        SString methodBeingCompiledNames[3];
-        SString inlinerNames[3];
-        SString inlineeNames[3];
+        SString<EncodingUnicode> methodBeingCompiledNamespace, methodBeingCompiledMethodName, methodBeingCompiledMethodSignature;
+        SString<EncodingUnicode> inlinerNamespace, inlinerMethodName, inlinerMethodSignature;
+        SString<EncodingUnicode> inlineeNamespace, inlineeMethodName, inlineeMethodSignature;
         MethodDesc * methodBeingCompiled = m_pMethodBeingCompiled;
-#define GMI(pMD, strArray) \
+#define GMI(pMD, targetName) \
         do { \
             if (pMD) { \
-                (pMD)->GetMethodInfo((strArray)[0], (strArray)[1], (strArray)[2]); \
+                SString<EncodingUTF8> methodName, methodSignature; \
+                (pMD)->GetMethodInfo(targetName ## Namespace, methodName, methodSignature); \
+                methodName.ConvertToUnicode(targetName ## MethodName); \
+                methodSignature.ConvertToUnicode(targetName ## MethodSignature); \
             } else {  \
-                (strArray)[0].Set(W("<null>")); \
-                (strArray)[1].Set(W("<null>")); \
-                (strArray)[2].Set(W("<null>")); \
+                (targetName ## Namespace).Set(W("<null>")); \
+                (targetName ## MethodName).Set(W("<null>")); \
+                (targetName ## MethodSignature).Set(W("<null>")); \
             } } while (0)
 
-        GMI(methodBeingCompiled, methodBeingCompiledNames);
-        GMI(GetMethod(inlinerHnd), inlinerNames);
-        GMI(GetMethod(inlineeHnd), inlineeNames);
+        GMI(methodBeingCompiled, methodBeingCompiled);
+        GMI(GetMethod(inlinerHnd), inliner);
+        GMI(GetMethod(inlineeHnd), inlinee);
 #undef GMI
         if (dontInline(inlineResult))
         {
             const char * str = (reason ? reason : "");
-            SString strReason;
-            strReason.SetANSI(str);
+            MAKE_WIDEPTR_FROMANSI(strW, str);
+            SString<EncodingUnicode> strReason(strW);
 
-
-            FireEtwMethodJitInliningFailed(methodBeingCompiledNames[0].GetUnicode(),
-                                           methodBeingCompiledNames[1].GetUnicode(),
-                                           methodBeingCompiledNames[2].GetUnicode(),
-                                           inlinerNames[0].GetUnicode(),
-                                           inlinerNames[1].GetUnicode(),
-                                           inlinerNames[2].GetUnicode(),
-                                           inlineeNames[0].GetUnicode(),
-                                           inlineeNames[1].GetUnicode(),
-                                           inlineeNames[2].GetUnicode(),
+            FireEtwMethodJitInliningFailed((LPCWSTR)methodBeingCompiledNamespace,
+                                           (LPCWSTR)methodBeingCompiledMethodName,
+                                           (LPCWSTR)methodBeingCompiledMethodSignature,
+                                           (LPCWSTR)inlinerNamespace,
+                                           (LPCWSTR)inlinerMethodName,
+                                           (LPCWSTR)inlinerMethodSignature,
+                                           (LPCWSTR)inlineeNamespace,
+                                           (LPCWSTR)inlineeMethodName,
+                                           (LPCWSTR)inlineeMethodSignature,
                                            inlineResult == INLINE_NEVER,
-                                           strReason.GetUnicode(),
+                                           (LPCWSTR)strReason,
                                            GetClrInstanceId());
         }
         else
         {
-            FireEtwMethodJitInliningSucceeded(methodBeingCompiledNames[0].GetUnicode(),
-                                              methodBeingCompiledNames[1].GetUnicode(),
-                                              methodBeingCompiledNames[2].GetUnicode(),
-                                              inlinerNames[0].GetUnicode(),
-                                              inlinerNames[1].GetUnicode(),
-                                              inlinerNames[2].GetUnicode(),
-                                              inlineeNames[0].GetUnicode(),
-                                              inlineeNames[1].GetUnicode(),
-                                              inlineeNames[2].GetUnicode(),
+            FireEtwMethodJitInliningSucceeded((LPCWSTR)methodBeingCompiledNamespace,
+                                           (LPCWSTR)methodBeingCompiledMethodName,
+                                           (LPCWSTR)methodBeingCompiledMethodSignature,
+                                           (LPCWSTR)inlinerNamespace,
+                                           (LPCWSTR)inlinerMethodName,
+                                           (LPCWSTR)inlinerMethodSignature,
+                                           (LPCWSTR)inlineeNamespace,
+                                           (LPCWSTR)inlineeMethodName,
+                                           (LPCWSTR)inlineeMethodSignature,
                                               GetClrInstanceId());
         }
 
@@ -8153,11 +8169,11 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
 #ifdef _DEBUG
     if (LoggingOn(LF_JIT, LL_INFO100000))
     {
-        SString currentMethodName;
+        SString<EncodingUnicode> currentMethodName;
         TypeString::AppendMethodInternal(currentMethodName, m_pMethodBeingCompiled,
                                          TypeString::FormatBasic);
 
-        SString calleeMethodName;
+        SString<EncodingUnicode> calleeMethodName;
         if (GetMethod(calleeHnd))
         {
             TypeString::AppendMethodInternal(calleeMethodName, GetMethod(calleeHnd),
@@ -8165,10 +8181,10 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
         }
         else
         {
-            calleeMethodName.AppendASCII( "<null>" );
+            calleeMethodName.Append(W( "<null>" ));
         }
 
-        SString callerMethodName;
+        SString<EncodingUnicode> callerMethodName;
         if (GetMethod(callerHnd))
         {
             TypeString::AppendMethodInternal(callerMethodName, GetMethod(callerHnd),
@@ -8176,14 +8192,14 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
         }
         else
         {
-            callerMethodName.AppendASCII( "<null>" );
+            callerMethodName.Append(W( "<null>" ));
         }
         if (tailCallResult == TAILCALL_FAIL)
         {
             LOG((LF_JIT, LL_INFO100000,
                  "While compiling '%S', %Splicit tail call from '%S' to '%S' failed because: '%s'.\n",
-                 currentMethodName.GetUnicode(), fIsTailPrefix ? W("ex") : W("im"),
-                 callerMethodName.GetUnicode(), calleeMethodName.GetUnicode(), reason));
+                 (LPCWSTR)currentMethodName, fIsTailPrefix ? W("ex") : W("im"),
+                 (LPCWSTR)callerMethodName, (LPCWSTR)calleeMethodName, reason));
         }
         else
         {
@@ -8193,8 +8209,8 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
             _ASSERTE(tailCallResult >= 0 && (size_t)tailCallResult < ARRAY_SIZE(tailCallType));
             LOG((LF_JIT, LL_INFO100000,
                  "While compiling '%S', %Splicit tail call from '%S' to '%S' generated as a %s.\n",
-                 currentMethodName.GetUnicode(), fIsTailPrefix ? W("ex") : W("im"),
-                 callerMethodName.GetUnicode(), calleeMethodName.GetUnicode(), tailCallType[tailCallResult]));
+                 (LPCWSTR)currentMethodName, fIsTailPrefix ? W("ex") : W("im"),
+                 (LPCWSTR)callerMethodName, (LPCWSTR)calleeMethodName, tailCallType[tailCallResult]));
 
         }
     }
@@ -8205,54 +8221,57 @@ void CEEInfo::reportTailCallDecision (CORINFO_METHOD_HANDLE callerHnd,
                                      TRACE_LEVEL_VERBOSE,
                                      CLR_JITTRACING_KEYWORD))
     {
-        SString methodBeingCompiledNames[3];
-        SString callerNames[3];
-        SString calleeNames[3];
+        SString<EncodingUnicode> methodBeingCompiledNamespace, methodBeingCompiledMethodName, methodBeingCompiledMethodSignature;
+        SString<EncodingUnicode> callerNamespace, callerMethodName, callerMethodSignature;
+        SString<EncodingUnicode> calleeNamespace, calleeMethodName, calleeMethodSignature;
         MethodDesc * methodBeingCompiled = m_pMethodBeingCompiled;
-#define GMI(pMD, strArray) \
+#define GMI(pMD, targetName) \
         do { \
             if (pMD) { \
-                (pMD)->GetMethodInfo((strArray)[0], (strArray)[1], (strArray)[2]); \
+                SString<EncodingUTF8> methodName, methodSignature; \
+                (pMD)->GetMethodInfo(targetName ## Namespace, methodName, methodSignature); \
+                methodName.ConvertToUnicode(targetName ## MethodName); \
+                methodSignature.ConvertToUnicode(targetName ## MethodSignature); \
             } else {  \
-                (strArray)[0].Set(W("<null>")); \
-                (strArray)[1].Set(W("<null>")); \
-                (strArray)[2].Set(W("<null>")); \
+                (targetName ## Namespace).Set(W("<null>")); \
+                (targetName ## MethodName).Set(W("<null>")); \
+                (targetName ## MethodSignature).Set(W("<null>")); \
             } } while (0)
 
-        GMI(methodBeingCompiled, methodBeingCompiledNames);
-        GMI(GetMethod(callerHnd), callerNames);
-        GMI(GetMethod(calleeHnd), calleeNames);
+        GMI(methodBeingCompiled, methodBeingCompiled);
+        GMI(GetMethod(callerHnd), caller);
+        GMI(GetMethod(calleeHnd), callee);
 #undef GMI
         if (tailCallResult == TAILCALL_FAIL)
         {
             const char * str = (reason ? reason : "");
-            SString strReason;
-            strReason.SetANSI(str);
+            MAKE_WIDEPTR_FROMANSI(strW, str);
+            SString<EncodingUnicode> strReason(strW);
 
-            FireEtwMethodJitTailCallFailed(methodBeingCompiledNames[0].GetUnicode(),
-                                           methodBeingCompiledNames[1].GetUnicode(),
-                                           methodBeingCompiledNames[2].GetUnicode(),
-                                           callerNames[0].GetUnicode(),
-                                           callerNames[1].GetUnicode(),
-                                           callerNames[2].GetUnicode(),
-                                           calleeNames[0].GetUnicode(),
-                                           calleeNames[1].GetUnicode(),
-                                           calleeNames[2].GetUnicode(),
+            FireEtwMethodJitTailCallFailed((LPCWSTR)methodBeingCompiledNamespace,
+                                           (LPCWSTR)methodBeingCompiledMethodName,
+                                           (LPCWSTR)methodBeingCompiledMethodSignature,
+                                           (LPCWSTR)callerNamespace,
+                                           (LPCWSTR)callerMethodName,
+                                           (LPCWSTR)callerMethodSignature,
+                                           (LPCWSTR)calleeNamespace,
+                                           (LPCWSTR)calleeMethodName,
+                                           (LPCWSTR)calleeMethodSignature,
                                            fIsTailPrefix,
-                                           strReason.GetUnicode(),
+                                           (LPCWSTR)strReason,
                                            GetClrInstanceId());
         }
         else
         {
-            FireEtwMethodJitTailCallSucceeded(methodBeingCompiledNames[0].GetUnicode(),
-                                              methodBeingCompiledNames[1].GetUnicode(),
-                                              methodBeingCompiledNames[2].GetUnicode(),
-                                              callerNames[0].GetUnicode(),
-                                              callerNames[1].GetUnicode(),
-                                              callerNames[2].GetUnicode(),
-                                              calleeNames[0].GetUnicode(),
-                                              calleeNames[1].GetUnicode(),
-                                              calleeNames[2].GetUnicode(),
+            FireEtwMethodJitTailCallSucceeded((LPCWSTR)methodBeingCompiledNamespace,
+                                           (LPCWSTR)methodBeingCompiledMethodName,
+                                           (LPCWSTR)methodBeingCompiledMethodSignature,
+                                           (LPCWSTR)callerNamespace,
+                                           (LPCWSTR)callerMethodName,
+                                           (LPCWSTR)callerMethodSignature,
+                                           (LPCWSTR)calleeNamespace,
+                                           (LPCWSTR)calleeMethodName,
+                                           (LPCWSTR)calleeMethodSignature,
                                               fIsTailPrefix,
                                               tailCallResult,
                                               GetClrInstanceId());
@@ -9084,8 +9103,10 @@ const char* CEEInfo::getFieldName (CORINFO_FIELD_HANDLE fieldHnd, const char** s
         if (!t.IsNull())
         {
 #ifdef _DEBUG
-            t.GetName(ssClsNameBuff);
-            *scopeName = ssClsNameBuff.GetUTF8(ssClsNameBuffScratch);
+            SString<EncodingUnicode> className;
+            t.GetName(className);
+            className.ConvertToUTF8(ssClsNameBuff);
+            *scopeName = (LPCUTF8)ssClsNameBuff;
 #else // !_DEBUG
             // since this is for diagnostic purposes only,
             // give up on the namespace, as we don't have a buffer to concat it
@@ -10598,13 +10619,13 @@ int CEEInfo::doAssert(const char* szFile, int iLine, const char* szExpr)
     BEGIN_DEBUG_ONLY_CODE;
     if (CLRConfig::GetConfigValue(CLRConfig::INTERNAL_JitThrowOnAssertionFailure) != 0)
     {
-        SString output;
+        SString<EncodingUnicode> output;
         output.Printf(
             W("JIT assert failed:\n")
             W("%hs\n")
             W("    File: %hs Line: %d\n"),
             szExpr, szFile, iLine);
-        COMPlusThrowNonLocalized(kInvalidProgramException, output.GetUnicode());
+        COMPlusThrowNonLocalized(kInvalidProgramException, (LPCWSTR)output);
     }
 
     result = _DbgBreakCheck(szFile, iLine, szExpr);
@@ -12755,16 +12776,16 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
     }
     else
     {
-        SString methodString;
+        SString<EncodingUnicode> methodString;
         if (LoggingOn(LF_JIT, LL_INFO10000))
             TypeString::AppendMethodDebug(methodString, ftn);
 
-        LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %S %s\n", ftn, methodString.GetUnicode(), ftn->m_pszDebugMethodSignature));
+        LOG((LF_JIT, LL_INFO10000, "{ Jitting method (%p) %S %s\n", ftn, (LPCWSTR)methodString, ftn->m_pszDebugMethodSignature));
     }
 
 #if 0
-    if (!SString::_stricmp(cls,"ENC") &&
-       (!SString::_stricmp(name,"G")))
+    if (!StaticStringHelpers::_stricmp(cls,"ENC") &&
+       (!StaticStringHelpers::_stricmp(name,"G")))
     {
        static count = 0;
        count++;
@@ -12790,11 +12811,11 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 #ifdef _DEBUG
     if (!flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_SKIP_VERIFICATION))
     {
-        SString methodString;
+        SString<EncodingUnicode> methodString;
         if (LoggingOn(LF_VERIFIER, LL_INFO100))
             TypeString::AppendMethodDebug(methodString, ftn);
 
-        LOG((LF_VERIFIER, LL_INFO100, "{ Will verify method (%p) %S %s\n", ftn, methodString.GetUnicode(), ftn->m_pszDebugMethodSignature));
+        LOG((LF_VERIFIER, LL_INFO100, "{ Will verify method (%p) %S %s\n", ftn, (LPCWSTR)methodString, ftn->m_pszDebugMethodSignature));
     }
 #endif //_DEBUG
 
@@ -13139,7 +13160,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
 
             DefineFullyQualifiedNameForClassW();
             wprintf(W("Type %s: expected size 0x%08x, actual size 0x%08x\n"),
-                GetFullyQualifiedNameForClassW(pMT), dwExpectedSize, dwActualSize);
+                (LPCWSTR)GetFullyQualifiedNameForClassW(pMT), dwExpectedSize, dwActualSize);
         }
         else
         {
@@ -13209,7 +13230,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
 
                 DefineFullyQualifiedNameForClassW();
                 wprintf(W("Type %s: expected alignment 0x%08x, actual 0x%08x\n"),
-                    GetFullyQualifiedNameForClassW(pMT), dwExpectedAlignment, dwActualAlignment);
+                    (LPCWSTR)GetFullyQualifiedNameForClassW(pMT), dwExpectedAlignment, dwActualAlignment);
             }
             else
             {
@@ -13231,7 +13252,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
 
                     DefineFullyQualifiedNameForClassW();
                     wprintf(W("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n"),
-                        GetFullyQualifiedNameForClassW(pMT));
+                        (LPCWSTR)GetFullyQualifiedNameForClassW(pMT));
                 }
                 else
                 {
@@ -13256,7 +13277,7 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
 
                     DefineFullyQualifiedNameForClassW();
                     wprintf(W("Type %s: GC refmap content doesn't match\n"),
-                        GetFullyQualifiedNameForClassW(pMT));
+                        (LPCWSTR)GetFullyQualifiedNameForClassW(pMT));
                 }
                 else
                 {
@@ -13728,21 +13749,20 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 else
                 {
                     // Verification failures are failfast events
-                    DefineFullyQualifiedNameForClassW();
-                    SString fatalErrorString;
-                    fatalErrorString.Printf(W("Verify_TypeLayout '%s' failed to verify type layout"),
-                        GetFullyQualifiedNameForClassW(pMT));
+                    DefineFullyQualifiedNameForClass();
+                    SString<EncodingUTF8> fatalErrorString;
+                    fatalErrorString.Printf("Verify_TypeLayout '%s' failed to verify type layout",
+                        GetFullyQualifiedNameForClass(pMT));
 
 #ifdef _DEBUG
                     {
-                        StackScratchBuffer buf;
-                        _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
+                        _ASSERTE_MSG(false, fatalErrorString);
                         // Run through the type layout logic again, after the assert, makes debugging easy
                         TypeLayoutCheck(pMT, pBlob, /* printDiff */ TRUE);
                     }
 #endif
 
-                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, (LPCWSTR)fatalErrorString.MoveToUnicode());
                     return FALSE;
                 }
             }
@@ -13801,13 +13821,13 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
             if ((fieldOffset != actualFieldOffset) || (baseOffset != actualBaseOffset))
             {
                 // Verification failures are failfast events
-                DefineFullyQualifiedNameForClassW();
-                SString ssFieldName(SString::Utf8, pField->GetName());
+                DefineFullyQualifiedNameForClass();
+                SString<EncodingUTF8> ssFieldName(pField->GetName());
 
-                SString fatalErrorString;
-                fatalErrorString.Printf(W("Verify_FieldOffset '%s.%s' Field offset %d!=%d(actual) || baseOffset %d!=%d(actual)"),
-                    GetFullyQualifiedNameForClassW(pEnclosingMT),
-                    ssFieldName.GetUnicode(),
+                SString<EncodingUTF8> fatalErrorString;
+                fatalErrorString.Printf("Verify_FieldOffset '%s.%s' Field offset %d!=%d(actual) || baseOffset %d!=%d(actual)",
+                    (LPCUTF8)GetFullyQualifiedNameForClass(pEnclosingMT),
+                    (LPCUTF8)ssFieldName,
                     fieldOffset,
                     actualFieldOffset,
                     baseOffset,
@@ -13815,12 +13835,11 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
 
 #ifdef _DEBUG
                 {
-                    StackScratchBuffer buf;
-                    _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
+                    _ASSERTE_MSG(false, fatalErrorString);
                 }
 #endif
 
-                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
+                EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, (LPCWSTR)fatalErrorString.MoveToUnicode());
                 return FALSE;
             }
             result = 1;
@@ -13909,9 +13928,9 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                 {
                     // Verification failures are failfast events
                     DefineFullyQualifiedNameForClassW();
-                    SString methodNameDecl;
-                    SString methodNameImplRuntime(W("(NULL)"));
-                    SString methodNameImplCompiler(W("(NULL)"));
+                    SString<EncodingUnicode> methodNameDecl;
+                    SString<EncodingUnicode> methodNameImplRuntime(W("(NULL)"));
+                    SString<EncodingUnicode> methodNameImplCompiler(W("(NULL)"));
 
                     pDeclMethod->GetFullMethodInfo(methodNameDecl);
 
@@ -13927,22 +13946,23 @@ BOOL LoadDynamicInfoEntry(Module *currentModule,
                         pImplMethodCompiler->GetFullMethodInfo(methodNameImplCompiler);
                     }
 
-                    SString fatalErrorString;
+                    SString<EncodingUnicode> fatalErrorString;
                     fatalErrorString.Printf(W("Verify_VirtualFunctionOverride Decl Method '%s' on type '%s' is '%s'(actual) instead of expected '%s'(from compiler)"),
-                        methodNameDecl.GetUnicode(),
-                        GetFullyQualifiedNameForClassW(thImpl.GetMethodTable()),
-                        methodNameImplRuntime.GetUnicode(),
-                        methodNameImplCompiler.GetUnicode());
+                        (LPCWSTR)methodNameDecl,
+                        (LPCWSTR)GetFullyQualifiedNameForClassW(thImpl.GetMethodTable()),
+                        (LPCWSTR)methodNameImplRuntime,
+                        (LPCWSTR)methodNameImplCompiler);
 
 #ifdef _DEBUG
                     {
-                        StackScratchBuffer buf;
-                        _ASSERTE_MSG(false, fatalErrorString.GetUTF8(buf));
+                        SString<EncodingUTF8> buf;
+                        fatalErrorString.ConvertToUTF8(buf);
+                        _ASSERTE_MSG(false, buf);
                     }
 #endif
                     _ASSERTE(!IsDebuggerPresent() && "Stop on assert here instead of fatal error for ease of live debugging");
 
-                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, fatalErrorString.GetUnicode());
+                    EEPOLICY_HANDLE_FATAL_ERROR_WITH_MESSAGE(-1, (LPCWSTR)fatalErrorString);
                     return FALSE;
 
                 }

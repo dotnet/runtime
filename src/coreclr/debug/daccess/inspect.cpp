@@ -2304,9 +2304,9 @@ ClrDataTypeDefinition::GetName(
         }
         else
         {
-            StackSString ssClassNameBuf;
+            StackSString<EncodingUnicode> ssClassNameBuf;
             m_typeHandle.GetName(ssClassNameBuf);
-            if (wcsncpy_s(nameBuf, bufLen, ssClassNameBuf.GetUnicode(), _TRUNCATE) == STRUNCATE)
+            if (wcsncpy_s(nameBuf, bufLen, ssClassNameBuf, _TRUNCATE) == STRUNCATE)
             {
                 status = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
             }
@@ -3443,7 +3443,7 @@ ClrDataTypeInstance::GetName(
 
     EX_TRY
     {
-        StackSString ssClassNameBuf;
+        StackSString<EncodingUnicode> ssClassNameBuf;
 
 #ifdef FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
         PAL_CPP_TRY
@@ -3474,7 +3474,7 @@ ClrDataTypeInstance::GetName(
         PAL_CPP_ENDTRY
 #endif // FEATURE_MINIMETADATA_IN_TRIAGEDUMPS
 
-        if (wcsncpy_s(nameBuf, bufLen, ssClassNameBuf.GetUnicode(), _TRUNCATE) == STRUNCATE)
+        if (wcsncpy_s(nameBuf, bufLen, ssClassNameBuf, _TRUNCATE) == STRUNCATE)
         {
             status = HRESULT_FROM_WIN32(ERROR_INSUFFICIENT_BUFFER);
         }

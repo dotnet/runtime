@@ -1644,10 +1644,10 @@ public:
 
     PCODE DoPrestub(MethodTable *pDispatchingMT, CallerGCMode callerGCMode = CallerGCMode::Unknown);
 
-    VOID GetMethodInfo(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
-    VOID GetMethodInfoWithNewSig(SString &namespaceOrClassName, SString &methodName, SString &methodSignature);
-    VOID GetMethodInfoNoSig(SString &namespaceOrClassName, SString &methodName);
-    VOID GetFullMethodInfo(SString& fullMethodSigName);
+    VOID GetMethodInfo(SString<EncodingUnicode> &namespaceOrClassName, SString<EncodingUTF8> &methodName, SString<EncodingUTF8> &methodSignature);
+    VOID GetMethodInfoWithNewSig(SString<EncodingUnicode> &namespaceOrClassName, SString<EncodingUTF8> &methodName, SString<EncodingUTF8> &methodSignature);
+    VOID GetMethodInfoNoSig(SString<EncodingUnicode> &namespaceOrClassName, SString<EncodingUTF8> &methodName);
+    VOID GetFullMethodInfo(SString<EncodingUnicode>& fullMethodSigName);
 
     typedef void (*WalkValueTypeParameterFnPtr)(Module *pModule, mdToken token, Module *pDefModule, mdToken tkDefToken, const SigParser *ptr, SigTypeContext *pTypeContext, void *pData);
 

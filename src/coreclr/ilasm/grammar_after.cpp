@@ -986,7 +986,7 @@ Its_An_Id:
                                     {
                                         delete [] wzFile;
 
-                                        wzFile = wzFullName.GetCopyOfUnicodeString();
+                                        wzFile = wzFullName.CreateCopyOfString();
                                     }
 
                                 }

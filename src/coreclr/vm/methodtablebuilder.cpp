@@ -1342,15 +1342,18 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pszDebugName = pszDebugNamespace = "Invalid TypeDef record";
     }
 
-    StackSString debugName(SString::Utf8, pszDebugName);
+    StackSString<EncodingUTF8> debugName(pszDebugName);
 
     // If there is an instantiation, update the debug name to include instantiation type names.
     if (bmtGenerics->HasInstantiation())
     {
-        StackSString debugName(SString::Utf8, GetDebugClassName());
-        TypeString::AppendInst(debugName, bmtGenerics->GetInstantiation(), TypeString::FormatBasic);
-        StackScratchBuffer buff;
-        const char* pDebugNameUTF8 = debugName.GetUTF8(buff);
+        StackSString<EncodingUTF8> debugName(GetDebugClassName());
+        StackSString<EncodingUnicode> instantiation;
+        TypeString::AppendInst(instantiation, bmtGenerics->GetInstantiation(), TypeString::FormatBasic);
+        StackSString<EncodingUTF8> instantiationUTF8;
+        instantiation.ConvertToUTF8(instantiationUTF8);
+        debugName.Append(instantiationUTF8);
+        const char* pDebugNameUTF8 = (LPCUTF8)debugName;
         S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
         if(safeLen.IsOverflow())
             COMPlusThrowHR(COR_E_OVERFLOW);
@@ -1362,10 +1365,10 @@ MethodTableBuilder::BuildMethodTableThrowing(
         pszDebugName = (LPCUTF8)name;
     }
 
-    LOG((LF_CLASSLOADER, LL_INFO1000, "Loading class \"%s%s%S\" from module \"%ws\" in domain 0x%p %s\n",
+    LOG((LF_CLASSLOADER, LL_INFO1000, "Loading class \"%s%s%s\" from module \"%ws\" in domain 0x%p %s\n",
         *pszDebugNamespace ? pszDebugNamespace : "",
         *pszDebugNamespace ? NAMESPACE_SEPARATOR_STR : "",
-        debugName.GetUnicode(),
+        (LPCUTF8)debugName,
         pModule->GetDebugName(),
         pModule->GetDomain(),
         (pModule->IsSystem()) ? "System Domain" : ""
@@ -1892,10 +1895,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
             {
                 {
                     MethodDesc *pMD = methIt->GetUnboxedMethodDesc();
-                    StackSString name(SString::Utf8);
+                    StackSString<EncodingUnicode> name{};
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackScratchBuffer buff;
-                    const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                    StackSString<EncodingUTF8> nameUTF8;
+                    name.ConvertToUTF8(nameUTF8);
+                    const char* pDebugNameUTF8 = (LPCUTF8)nameUTF8;
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8)) + S_SIZE_T(1);
                     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
                     size_t len = safeLen.Value();
@@ -1907,10 +1911,11 @@ MethodTableBuilder::BuildMethodTableThrowing(
                 {
                     MethodDesc *pMD = methIt->GetMethodDesc();
 
-                    StackSString name(SString::Utf8);
+                    StackSString<EncodingUnicode> name{};
                     TypeString::AppendMethodDebug(name, pMD);
-                    StackScratchBuffer buff;
-                    const char* pDebugNameUTF8 = name.GetUTF8(buff);
+                    StackSString<EncodingUTF8> nameUTF8;
+                    name.ConvertToUTF8(nameUTF8);
+                    const char* pDebugNameUTF8 = (LPCUTF8)nameUTF8;
                     S_SIZE_T safeLen = S_SIZE_T(strlen(pDebugNameUTF8))+S_SIZE_T(1);
                     if(safeLen.IsOverflow()) COMPlusThrowHR(COR_E_OVERFLOW);
                     size_t len = safeLen.Value();

@@ -226,7 +226,7 @@ VOID LogAssert(
          szFile,
          iLine,
          szExpr));
-    LOG((LF_ASSERT, LL_FATALERROR, "RUNNING EXE: %ws\n", exename.GetUnicode()));
+    LOG((LF_ASSERT, LL_FATALERROR, "RUNNING EXE: %ws\n", (LPCWSTR)exename));
 }
 
 //*****************************************************************************
@@ -241,7 +241,7 @@ BOOL LaunchJITDebugger()
 #ifndef TARGET_UNIX
     EX_TRY
     {
-        SString debugger;
+        SString<EncodingUnicode> debugger;
         GetDebuggerSettingInfo(debugger, NULL);
 
         SECURITY_ATTRIBUTES sa;
@@ -255,7 +255,7 @@ BOOL LaunchJITDebugger()
         if (eventHandle == NULL)
             ThrowOutOfMemory();
 
-        SString cmdLine;
+        SString<EncodingUnicode> cmdLine;
         cmdLine.Printf(debugger, GetCurrentProcessId(), eventHandle.GetValue());
 
         STARTUPINFO StartupInfo;
@@ -322,7 +322,7 @@ bool _DbgBreakCheck(
     // Check for ignore all.
     for (i = 0, psData = pDBGIFNORE->Ptr();  i < pDBGIFNORE->Count();  i++, psData++)
     {
-        if (psData->iLine == iLine && SString::_stricmp(psData->rcFile, szFile) == 0 && psData->bIgnore == true)
+        if (psData->iLine == iLine && StaticStringHelpers::_stricmp(psData->rcFile, szFile) == 0 && psData->bIgnore == true)
         {
             return false;
         }
@@ -330,11 +330,11 @@ bool _DbgBreakCheck(
 
     CONTRACT_VIOLATION(FaultNotFatal | GCViolation | TakesLockViolation);
 
-    SString debugOutput;
-    SString dialogOutput;
-    SString modulePath;
-    SString dialogTitle;
-    SString dialogIgnoreMessage;
+    SString<EncodingUnicode> debugOutput;
+    SString<EncodingUnicode> dialogOutput;
+    SString<EncodingUnicode> modulePath;
+    SString<EncodingUnicode> dialogTitle;
+    SString<EncodingUnicode> dialogIgnoreMessage;
     BOOL formattedMessages = FALSE;
 
     // If we are low on memory we cannot even format a message. If this happens we want to
@@ -608,7 +608,7 @@ VOID DbgAssertDialog(const char *szFile, int iLine, const char *szExpr)
 // Returns true if successful, false on failure (such as OOM).
 // This never throws.
 //-----------------------------------------------------------------------------
-bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
+extern "C" bool GetStackTraceAtContext(SString<EncodingASCII> & s, CONTEXT * pContext)
 {
     SUPPRESS_ALLOCATION_ASSERTS_IN_THIS_SCOPE;
     STATIC_CONTRACT_DEBUG_ONLY;
@@ -625,7 +625,7 @@ bool GetStackTraceAtContext(SString & s, CONTEXT * pContext)
         // If we have a supplied context, then don't skip any frames. Else we'll
         // be using the current context, so skip this frame.
         const int cSkip = (pContext == NULL) ? 1 : 0;
-        char * szString = s.OpenANSIBuffer(cchMaxAssertStackLevelStringLen * cTotal);
+        char * szString = s.OpenBuffer(cchMaxAssertStackLevelStringLen * cTotal);
         GetStringFromStackLevels(cSkip, cTotal, szString, pContext);
         s.CloseBuffer((COUNT_T) strlen(szString));
 
@@ -672,8 +672,8 @@ void DECLSPEC_NORETURN __FreeBuildAssertFail(const char *szFile, int iLine, cons
 
     __FreeBuildDebugBreak();
 
-    SString buffer;
-    SString modulePath;
+    SString<EncodingUnicode> buffer;
+    SString<EncodingUnicode> modulePath;
 
     // Give assert in output for easy access.
     ClrGetModuleFileName(0, modulePath);

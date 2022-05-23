@@ -66,7 +66,6 @@ enum TraceType
 };
 
 class StubManager;
-class SString;
 
 class DebuggerRCThread;
 
@@ -86,7 +85,7 @@ public:
     // Get a string representation of this TraceDestination
     // Uses the supplied buffer to store the memory (or may return a string literal).
     // This will also print the TD's arguments.
-    const WCHAR * DbgToString(SString &buffer);
+    const char * DbgToString(SString<EncodingUTF8> &buffer);
 #endif
 
     // Initialize for unmanaged code.
@@ -298,11 +297,11 @@ public:
     static void DbgWriteLog(const CHAR *format, ...);
 
     // Get the log as a string.
-    static void DbgGetLog(SString * pStringOut);
+    static void DbgGetLog(SString<EncodingUTF8> * pStringOut);
 
 protected:
     // Implement log as a SString.
-    static SString * s_pDbgStubManagerLog;
+    static SString<EncodingUTF8> * s_pDbgStubManagerLog;
 
     static CrstStatic s_DbgLogCrst;
 

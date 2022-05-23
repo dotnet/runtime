@@ -2099,8 +2099,8 @@ int __cdecl stricmpUTF8(const char* szStr1, const char* szStr2)
     }
     CONTRACTL_END
 
-    SString sStr1 (SString::Utf8, szStr1);
-    SString sStr2 (SString::Utf8, szStr2);
+    SString<EncodingUTF8> sStr1 (szStr1);
+    SString<EncodingUTF8> sStr2 (szStr2);
     return sStr1.CompareCaseInsensitive(sStr2);
 
 }
