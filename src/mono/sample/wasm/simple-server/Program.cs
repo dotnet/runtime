@@ -2,6 +2,8 @@
 // The .NET Foundation licenses this file to you under the MIT license.
 
 using System.Net;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
 
 namespace HttpServer
 {
@@ -11,7 +13,6 @@ namespace HttpServer
 
         public static int Main()
         {
-
             if (!HttpListener.IsSupported)
             {
                 Console.WriteLine("error: HttpListener is not supported.");
@@ -45,9 +46,39 @@ namespace HttpServer
             }
 
             Console.WriteLine($"Listening on {url}");
+            OpenUrl(url);
 
             while (true)
                 HandleRequest(listener);
+        }
+
+        private void OpenUrl(string url)
+        {
+            var proc = new Process();
+            var si = new ProcessStartInfo();
+
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                si.FileName = url;
+                si.UseShellExecute = true;
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                si.FileName = "xdg-open";
+                si.ArgumentList.Add(url);
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            {
+                si.FileName = "open";
+                si.ArgumentList.Add(url);
+            }
+            else
+            {
+                System.Console.WriteLine("Don't know how to open url on this OS platform");
+            }
+
+            proc.StartInfo = si;
+            proc.Start();
         }
 
         private void HandleRequest(HttpListener listener)
