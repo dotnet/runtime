@@ -279,7 +279,7 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override ValueTask WriteAsync(ReadOnlySequence<byte> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
-            return WriteAsync(new WriteSequenceAdapter(buffers), endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE, cancellationToken);
+            return WriteAsync(static (state, buffers) => state.SendBuffers.Initialize(buffers), buffers, buffers.IsEmpty, endStream, cancellationToken);
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, CancellationToken cancellationToken = default)
@@ -289,28 +289,28 @@ namespace System.Net.Quic.Implementations.MsQuic
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers, bool endStream, CancellationToken cancellationToken = default)
         {
-            return WriteAsync(new WriteMemoryOfMemoryAdapter(buffers), endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE, cancellationToken);
+            return WriteAsync(static (state, buffers) => state.SendBuffers.Initialize(buffers), buffers, buffers.IsEmpty, endStream, cancellationToken);
         }
 
         internal override ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, bool endStream, CancellationToken cancellationToken = default)
         {
-            return WriteAsync(new WriteMemoryAdapter(buffer), endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE, cancellationToken);
+            return WriteAsync(static (state, buffer) => state.SendBuffers.Initialize(buffer), buffer, buffer.IsEmpty, endStream, cancellationToken);
         }
 
-        private async ValueTask WriteAsync<TAdapter>(TAdapter adapter, QUIC_SEND_FLAGS flags, CancellationToken cancellationToken) where TAdapter : ISendBufferAdapter
+        private async ValueTask WriteAsync<TBuffer>(Action<State, TBuffer> stateSetup, TBuffer buffer, bool isEmpty, bool endStream, CancellationToken cancellationToken)
         {
             ThrowIfDisposed();
 
-            using CancellationTokenRegistration registration = SetupWriteStartState(adapter.IsEmpty, cancellationToken);
+            using CancellationTokenRegistration registration = SetupWriteStartState(isEmpty, cancellationToken);
 
-            await WriteAsyncCore<TAdapter>(adapter, flags).ConfigureAwait(false);
+            await WriteAsyncCore<TBuffer>(stateSetup, buffer, isEmpty, endStream ? QUIC_SEND_FLAGS.FIN : QUIC_SEND_FLAGS.NONE).ConfigureAwait(false);
 
             CleanupWriteCompletedState();
         }
 
-        private unsafe ValueTask WriteAsyncCore<TAdapter>(TAdapter adapter, QUIC_SEND_FLAGS flags) where TAdapter : ISendBufferAdapter
+        private unsafe ValueTask WriteAsyncCore<TBuffer>(Action<State, TBuffer> stateSetup, TBuffer buffer, bool isEmpty, QUIC_SEND_FLAGS flags)
         {
-            if (adapter.IsEmpty)
+            if (isEmpty)
             {
                 if ((flags & QUIC_SEND_FLAGS.FIN) == QUIC_SEND_FLAGS.FIN)
                 {
@@ -320,7 +320,7 @@ namespace System.Net.Quic.Implementations.MsQuic
                 return default;
             }
 
-            adapter.SetupSendState(_state);
+            stateSetup(_state, buffer);
 
             Debug.Assert(!Monitor.IsEntered(_state), "!Monitor.IsEntered(_state)");
             int status = MsQuicApi.Api.ApiTable->StreamSend(
@@ -1700,36 +1700,6 @@ namespace System.Net.Quic.Implementations.MsQuic
             /// Stream is closed for writing (is receive-only).
             /// </summary>
             Closed
-        }
-
-        private interface ISendBufferAdapter
-        {
-            void SetupSendState(State state);
-            bool IsEmpty { get; }
-        }
-
-        private struct WriteMemoryAdapter : ISendBufferAdapter
-        {
-            private readonly ReadOnlyMemory<byte> _buffer;
-            public WriteMemoryAdapter(ReadOnlyMemory<byte> buffer) => _buffer = buffer;
-            public bool IsEmpty => _buffer.IsEmpty;
-            public void SetupSendState(State state) => state.SendBuffers.Initialize(_buffer);
-        }
-
-        private struct WriteSequenceAdapter : ISendBufferAdapter
-        {
-            private readonly ReadOnlySequence<byte> _buffers;
-            public WriteSequenceAdapter(ReadOnlySequence<byte> buffers) => _buffers = buffers;
-            public bool IsEmpty => _buffers.IsEmpty;
-            public void SetupSendState(State state) => state.SendBuffers.Initialize(_buffers);
-        }
-
-        private struct WriteMemoryOfMemoryAdapter : ISendBufferAdapter
-        {
-            private readonly ReadOnlyMemory<ReadOnlyMemory<byte>> _buffers;
-            public WriteMemoryOfMemoryAdapter(ReadOnlyMemory<ReadOnlyMemory<byte>> buffers) => _buffers = buffers;
-            public bool IsEmpty => _buffers.IsEmpty;
-            public void SetupSendState(State state) => state.SendBuffers.Initialize(_buffers);
         }
     }
 }
