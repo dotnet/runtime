@@ -587,38 +587,46 @@ private:
             else
             {
                 assert(origCall->IsVirtualVtable() || origCall->IsDelegateInvoke());
+                // We reuse the target except if this is a chained GDV, in
+                // which case the check will be moved into the success case of
+                // a previous GDV and thus may not execute when we hit the cold
+                // path.
+                bool reuseTarget = (origCall->gtCallMoreFlags & GTF_CALL_M_GUARDED_DEVIRT_CHAIN) == 0;
                 if (origCall->IsVirtualVtable())
                 {
-                    m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
-                    compiler->lvaGetDesc(m_targetLclNum)->lvSingleDef = 1;
+                    GenTree* tarTree = compiler->fgExpandVirtualVtableCallTarget(origCall);
 
-                    GenTree*   tarTree = compiler->fgExpandVirtualVtableCallTarget(origCall);
-                    GenTree*   asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
-                    Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
-                    compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+                    if (reuseTarget)
+                    {
+                        m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
+                        compiler->lvaGetDesc(m_targetLclNum)->lvSingleDef = 1;
+
+                        GenTree* asgTree = compiler->gtNewTempAssign(m_targetLclNum, tarTree);
+                        Statement* asgStmt = compiler->fgNewStmtFromTree(asgTree, stmt->GetDebugInfo());
+                        compiler->fgInsertStmtAtEnd(checkBlock, asgStmt);
+
+                        tarTree = compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL);
+                    }
 
                     CORINFO_METHOD_HANDLE methHnd = guardedInfo->guardedMethodHandle;
                     CORINFO_CONST_LOOKUP  lookup;
                     compiler->info.compCompHnd->getFunctionEntryPoint(methHnd, &lookup);
 
                     GenTree* compareTarTree = CreateTreeForLookup(lookup);
-                    compare                 = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree,
-                                                      compiler->gtNewLclvNode(m_targetLclNum, TYP_I_IMPL));
+                    compare                 = compiler->gtNewOperNode(GT_NE, TYP_INT, compareTarTree, tarTree);
                 }
                 else
                 {
-                    // Since the guard requires the target address we will
-                    // expand the cold call to reuse the target call.
-                    // Essentially we will do the transformation done in
+                    // Reusing the call target for delegates is more complicated.
+                    // Essentially we need to do the transformation done in
                     // LowerDelegateInvoke here by converting the call to
                     // CT_INDIRECT and reusing the target address.
-                    bool expandOrigCall = true;
-
+                    CLANG_FORMAT_COMMENT_ANCHOR;
 #ifdef TARGET_ARM
                     // Not impossible to support, but would additionally
                     // require us to load the wrapper delegate cell when
                     // expanding.
-                    expandOrigCall &= (origCall->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV) == 0;
+                    reuseTarget &= (origCall->gtCallMoreFlags & GTF_CALL_M_WRAPPER_DELEGATE_INV) == 0;
 #endif
 
                     GenTree* offset =
@@ -627,7 +635,7 @@ private:
                     GenTree* tarTree = compiler->gtNewOperNode(GT_ADD, TYP_BYREF, thisTree, offset);
                     tarTree          = compiler->gtNewIndir(TYP_I_IMPL, tarTree);
 
-                    if (expandOrigCall)
+                    if (reuseTarget)
                     {
                         m_targetLclNum = compiler->lvaGrabTemp(false DEBUGARG("guarded devirt call target temp"));
                         compiler->lvaGetDesc(m_targetLclNum)->lvSingleDef = 1;
@@ -1127,7 +1135,7 @@ private:
                 //
                 GenTree* const root = nextStmt->GetRootNode();
 
-                if (root->IsCall() && !root->AsCall()->IsDelegateInvoke())
+                if (root->IsCall())
                 {
                     GenTreeCall* const call = root->AsCall();
 
