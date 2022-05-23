@@ -149,7 +149,7 @@ namespace System.Text.Json.Serialization.Tests
             Assert.Equal("abc", Convert("  abc"));
             Assert.Equal("abc", Convert("abc  "));
             Assert.Equal("abc", Convert("  abc  "));
-            Assert.Equal("abc-def","  abc def  ");
+            Assert.Equal("abc-def", Convert("  abc def  "));
             
             static string Convert(string name)
             {
