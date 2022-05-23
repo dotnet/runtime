@@ -3577,7 +3577,7 @@ public:
 //     -> FP" cases. For all other unchecked casts, "IsUnsigned" is meaningless.
 //  4) For unchecked casts, signedness of the target type is only meaningful if
 //     the cast is to an FP or small type. In the latter case (and everywhere
-//     else in IR) it decided whether the value will be sign- or zero-extended.
+//     else in IR) it decides whether the value will be sign- or zero-extended.
 //
 // For additional context on "GT_CAST"'s semantics, see "IntegralRange::ForCast"
 // methods and "GenIntCastDesc"'s constructor.
