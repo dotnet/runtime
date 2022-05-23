@@ -3,6 +3,7 @@
 
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
@@ -33,6 +34,7 @@ namespace System.Threading.RateLimiting
     internal sealed class DefaultPartitionedRateLimiter<TResource, TKey> : PartitionedRateLimiter<TResource> where TKey : notnull
     {
         private readonly Func<TResource, RateLimitPartition<TKey>> _partitioner;
+        private static TimeSpan _idleTimeLimit = TimeSpan.FromSeconds(10);
 
         // TODO: Look at ConcurrentDictionary to try and avoid a global lock
         private Dictionary<TKey, Lazy<RateLimiter>> _limiters;
@@ -42,7 +44,7 @@ namespace System.Threading.RateLimiting
         // Used by the Timer to call TryRelenish on ReplenishingRateLimiters
         // We use a separate list to avoid running TryReplenish (which might be user code) inside our lock
         // And we cache the list to amortize the allocation cost to as close to 0 as we can get
-        private List<Lazy<RateLimiter>> _cachedLimiters = new();
+        private List<KeyValuePair<TKey, Lazy<RateLimiter>>> _cachedLimiters = new();
         private bool _cacheInvalid;
         private TimerAwaitable _timer;
         private Task _timerTask;
@@ -68,7 +70,7 @@ namespace System.Threading.RateLimiting
             {
                 try
                 {
-                    Replenish(this);
+                    await TimerLoop().ConfigureAwait(false);
                 }
                 // TODO: Can we log to EventSource or somewhere? Maybe dispatch throwing the exception so it is at least an unhandled exception?
                 catch { }
@@ -182,48 +184,77 @@ namespace System.Threading.RateLimiting
             }
         }
 
-        private static void Replenish(DefaultPartitionedRateLimiter<TResource, TKey> limiter)
+        private async Task TimerLoop()
         {
-            lock (limiter.Lock)
+            lock (Lock)
             {
-                if (limiter._disposed)
+                if (_disposed)
                 {
                     return;
                 }
 
                 // If the cache has been invalidated we need to recreate it
-                if (limiter._cacheInvalid)
+                if (_cacheInvalid)
                 {
-                    limiter._cachedLimiters.Clear();
-                    bool cacheStillInvalid = false;
-                    foreach (KeyValuePair<TKey, Lazy<RateLimiter>> kvp in limiter._limiters)
-                    {
-                        if (kvp.Value.IsValueCreated)
-                        {
-                            if (kvp.Value.Value is ReplenishingRateLimiter)
-                            {
-                                limiter._cachedLimiters.Add(kvp.Value);
-                            }
-                        }
-                        else
-                        {
-                            // In rare cases the RateLimiter will be added to the storage but not be initialized yet
-                            // keep cache invalid if there was a non-initialized RateLimiter
-                            // the next time we run the timer the cache will be updated
-                            // with the initialized RateLimiter
-                            cacheStillInvalid = true;
-                        }
-                    }
-                    limiter._cacheInvalid = cacheStillInvalid;
+                    _cachedLimiters.Clear();
+                    _cachedLimiters = _limiters.ToList();
                 }
             }
 
+            List<RateLimiter>? limitersToDispose = null;
+
             // cachedLimiters is safe to use outside the lock because it is only updated by the Timer
-            // and the Timer avoids re-entrancy issues via the _executingTimer field
-            foreach (Lazy<RateLimiter> rateLimiter in limiter._cachedLimiters)
+            foreach (KeyValuePair<TKey, Lazy<RateLimiter>> rateLimiter in _cachedLimiters)
             {
-                Debug.Assert(rateLimiter.IsValueCreated && rateLimiter.Value is ReplenishingRateLimiter);
-                ((ReplenishingRateLimiter)rateLimiter.Value).TryReplenish();
+                if (!rateLimiter.Value.IsValueCreated)
+                {
+                    continue;
+                }
+                if (rateLimiter.Value.Value.IdleDuration is TimeSpan idleDuration && idleDuration > _idleTimeLimit)
+                {
+                    lock (Lock)
+                    {
+                        // Check time again under lock to make sure no one calls Acquire or WaitAsync after checking the time and removing the limiter
+                        idleDuration = rateLimiter.Value.Value.IdleDuration ?? TimeSpan.Zero;
+                        if (idleDuration > _idleTimeLimit)
+                        {
+                            // Remove limiter from the lookup table and mark cache as invalid
+                            // If a request for this partition comes in it will have to create a new limiter now
+                            // And the next time the timer runs the cache needs to be updated to no longer have a reference to this limiter
+                            _cacheInvalid = true;
+                            _limiters.Remove(rateLimiter.Key);
+
+                            // We don't want to dispose inside the lock so we need to defer it
+                            limitersToDispose ??= new List<RateLimiter>();
+                            limitersToDispose.Add(rateLimiter.Value.Value);
+                        }
+                    }
+                }
+                else if (rateLimiter.Value.Value is ReplenishingRateLimiter replenishingRateLimiter)
+                {
+                    replenishingRateLimiter.TryReplenish();
+                }
+            }
+
+            if (limitersToDispose is not null)
+            {
+                List<Exception>? aggregateExceptions = null;
+                foreach (RateLimiter limiter in limitersToDispose)
+                {
+                    try
+                    {
+                        await limiter.DisposeAsync().ConfigureAwait(false);
+                    }
+                    catch (Exception ex)
+                    {
+                        aggregateExceptions ??= new List<Exception>();
+                        aggregateExceptions.Add(ex);
+                    }
+                }
+                if (aggregateExceptions is not null)
+                {
+                    throw new AggregateException(aggregateExceptions);
+                }
             }
         }
     }

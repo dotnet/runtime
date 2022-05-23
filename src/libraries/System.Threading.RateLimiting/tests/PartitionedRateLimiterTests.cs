@@ -32,8 +32,6 @@ namespace System.Threading.RateLimiting.Tests
                 async () => await limiter.WaitAsync(string.Empty, 1, new CancellationToken(true)));
         }
 
-        // Create
-
         [Fact]
         public void Create_AcquireCallsUnderlyingPartitionsLimiter()
         {
@@ -403,6 +401,36 @@ namespace System.Threading.RateLimiting.Tests
             await Assert.ThrowsAsync<TaskCanceledException>(async () => await waitTask);
         }
 
+        [Fact]
+        public async Task IdleLimiterIsCleanedUp()
+        {
+            ExpiredLimiter expiredLimiter = null;
+            var factoryCallCount = 0;
+            using var limiter = PartitionedRateLimiter.Create<string, int>(resource =>
+            {
+                return RateLimitPartition.Create(1, _ =>
+                {
+                    factoryCallCount++;
+                    expiredLimiter = new ExpiredLimiter();
+                    return expiredLimiter;
+                });
+            });
+
+            var lease = limiter.Acquire("");
+            Assert.True(lease.IsAcquired);
+
+            Assert.Equal(1, factoryCallCount);
+
+            expiredLimiter.IdleLength = TimeSpan.FromMinutes(1);
+            // Limiter is disposed when timer runs and sees that IdleDuration is greater than idle limit
+            await expiredLimiter.DisposeCts.Task;
+
+            // Acquire will call limiter factory again as the limiter was disposed and removed
+            lease = limiter.Acquire("");
+            Assert.True(lease.IsAcquired);
+            Assert.Equal(2, factoryCallCount);
+        }
+
         internal sealed class NotImplementedPartitionedRateLimiter<T> : PartitionedRateLimiter<T>
         {
             public override int GetAvailablePermits(T resourceID) => throw new NotImplementedException();
@@ -424,7 +452,7 @@ namespace System.Threading.RateLimiting.Tests
             public int DisposeCallCount => _disposeCallCount;
             public int DisposeAsyncCallCount => _disposeAsyncCallCount;
 
-            public override TimeSpan? IdleDuration => throw new NotImplementedException();
+            public override TimeSpan? IdleDuration => null;
 
             public override int GetAvailablePermits()
             {
@@ -498,6 +526,33 @@ namespace System.Threading.RateLimiting.Tests
             {
                 Interlocked.Increment(ref _getHashCodeCallCount);
                 return obj.GetHashCode();
+            }
+        }
+
+        internal sealed class ExpiredLimiter : RateLimiter
+        {
+            public TaskCompletionSource<object?> DisposeCts = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+            public TimeSpan? IdleLength = null;
+
+            public override TimeSpan? IdleDuration => IdleLength;
+
+            public override int GetAvailablePermits() => throw new NotImplementedException();
+            protected override RateLimitLease AcquireCore(int permitCount) => new Lease();
+            protected override ValueTask<RateLimitLease> WaitAsyncCore(int permitCount, CancellationToken cancellationToken) => new ValueTask<RateLimitLease>(new Lease());
+
+            protected override ValueTask DisposeAsyncCore()
+            {
+                DisposeCts.SetResult(null);
+                return new ValueTask();
+            }
+
+            private sealed class Lease : RateLimitLease
+            {
+                public override bool IsAcquired => true;
+
+                public override IEnumerable<string> MetadataNames => throw new NotImplementedException();
+
+                public override bool TryGetMetadata(string metadataName, out object? metadata) => throw new NotImplementedException();
             }
         }
     }
