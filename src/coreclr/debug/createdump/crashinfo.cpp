@@ -412,9 +412,15 @@ CrashInfo::UnwindAllThreads()
 void
 CrashInfo::ReplaceModuleMapping(CLRDATA_ADDRESS baseAddress, ULONG64 size, const std::string& name)
 {
-    ULONG_PTR start = (ULONG_PTR)baseAddress;
+    // Round to page boundary (single-file managed assemblies are not page aligned)
+    ULONG_PTR start = ((ULONG_PTR)baseAddress) & PAGE_MASK;
+    assert(start > 0);
+
+    // Round up to page boundary
     ULONG_PTR end = ((baseAddress + size) + (PAGE_SIZE - 1)) & PAGE_MASK;
-    uint32_t flags = GetMemoryRegionFlags(start);
+    assert(end > 0);
+
+    uint32_t flags = GetMemoryRegionFlags((ULONG_PTR)baseAddress);
 
     // Make sure that the page containing the PE header for the managed asseblies is in the dump
     // especially on MacOS where they are added artificially.
@@ -807,6 +813,22 @@ GetFileName(const std::string& fileName)
         last = 0;
     }
     return fileName.substr(last);
+}
+
+//
+// Returns just the directory portion of a path or empty if none
+//
+const std::string
+GetDirectory(const std::string& fileName)
+{
+    size_t last = fileName.rfind(DIRECTORY_SEPARATOR_STR_A);
+    if (last != std::string::npos) {
+        last++;
+    }
+    else {
+        last = 0;
+    }
+    return fileName.substr(0, last);
 }
 
 //

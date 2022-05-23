@@ -192,14 +192,15 @@ namespace System.Security.Cryptography.Cose
             }
         }
 
-        internal static byte[] Encode(CoseHeaderMap? map, bool mustReturnEmptyBstrIfEmpty = false, int? algHeaderValueToSlip = null)
+        internal static int Encode(CoseHeaderMap? map, Span<byte> destination, bool mustReturnEmptyBstrIfEmpty = false, int? algHeaderValueToSlip = null)
         {
             map ??= s_emptyMap;
             bool shouldSlipAlgHeader = algHeaderValueToSlip.HasValue;
 
             if (map._headerParameters.Count == 0 && mustReturnEmptyBstrIfEmpty && !shouldSlipAlgHeader)
             {
-                return s_emptyBstrEncoded;
+                s_emptyBstrEncoded.CopyTo(destination);
+                return s_emptyBstrEncoded.Length;
             }
 
             int mapLength = map._headerParameters.Count;
@@ -231,7 +232,33 @@ namespace System.Security.Cryptography.Cose
                 writer.WriteEncodedValue(encodedValue.Span);
             }
             writer.WriteEndMap();
-            return writer.Encode();
+
+            return writer.Encode(destination);
+        }
+
+        internal static int ComputeEncodedSize(CoseHeaderMap? map, int? algHeaderValueToSlip = null)
+        {
+            map ??= s_emptyMap;
+
+            // encoded map length => map length + (label + value)*
+            int encodedSize = 0;
+            int mapLength = map._headerParameters.Count;
+
+            if (algHeaderValueToSlip != null)
+            {
+                mapLength += 1;
+                encodedSize += CoseHeaderLabel.Algorithm.EncodedSize;
+                encodedSize += CoseHelpers.GetIntegerEncodedSize(algHeaderValueToSlip.Value);
+            }
+
+            encodedSize += CoseHelpers.GetIntegerEncodedSize(mapLength);
+
+            foreach ((CoseHeaderLabel label, ReadOnlyMemory<byte> encodedValue) in map)
+            {
+                encodedSize += label.EncodedSize + encodedValue.Length;
+            }
+
+            return encodedSize;
         }
 
         public Enumerator GetEnumerator() => new Enumerator(_headerParameters.GetEnumerator());

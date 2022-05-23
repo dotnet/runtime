@@ -102,8 +102,10 @@ namespace System.Net
             }
         }
 
-        internal void AddPrefix(string uriPrefix!!)
+        internal void AddPrefix(string uriPrefix)
         {
+            ArgumentNullException.ThrowIfNull(uriPrefix);
+
             string? registeredPrefix;
             try
             {
@@ -144,7 +146,7 @@ namespace System.Net
                 {
                     throw new ArgumentException(SR.net_listener_host, nameof(uriPrefix));
                 }
-                if (uriPrefix[uriPrefix.Length - 1] != '/')
+                if (!uriPrefix.EndsWith('/'))
                 {
                     throw new ArgumentException(SR.net_listener_slash, nameof(uriPrefix));
                 }

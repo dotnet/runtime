@@ -10,7 +10,6 @@ namespace System.Xml.Serialization
     using System.Reflection;
     using System.Reflection.Emit;
     using System.Text.RegularExpressions;
-    using System.Xml.Extensions;
 
     internal class XmlSerializationILGen
     {

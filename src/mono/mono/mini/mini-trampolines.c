@@ -428,7 +428,6 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	gboolean generic_shared = FALSE;
 	gboolean need_unbox_tramp = FALSE;
 	gboolean need_rgctx_tramp = FALSE;
-	MonoMethod *declaring = NULL;
 	MonoMethod *generic_virtual = NULL, *variant_iface = NULL;
 	int context_used;
 	gboolean imt_call, virtual_;
@@ -513,13 +512,14 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		}
 	}
 
+	MonoMethod *declaring = NULL;
+
 	/*
 	 * The virtual check is needed because is_generic_method_definition (m) could
 	 * return TRUE for methods used in IMT calls too.
 	 */
 	if (virtual_ && is_generic_method_definition (m)) {
 		MonoGenericContext context = { NULL, NULL };
-		MonoMethod *declaring;
 
 		if (m->is_inflated)
 			declaring = mono_method_get_declaring_generic_method (m);
@@ -543,7 +543,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 	} else if ((context_used = mono_method_check_context_used (m))) {
 		MonoClass *klass = NULL;
 		MonoMethod *actual_method = NULL;
-		MonoVTable *vt = NULL;
+		MonoVTable *actual_vt  = NULL;
 		MonoGenericInst *method_inst = NULL;
 
 		vtable_slot = NULL;
@@ -570,7 +570,7 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		} else {
 			MonoObject *this_argument = (MonoObject *)mono_arch_get_this_arg_from_call (regs, code);
 
-			vt = this_argument->vtable;
+			actual_vt  = this_argument->vtable;
 			vtable_slot = orig_vtable_slot;
 
 			g_assert (m_class_is_inited (this_argument->vtable->klass));
@@ -584,13 +584,13 @@ common_call_trampoline (host_mgreg_t *regs, guint8 *code, MonoMethod *m, MonoVTa
 		g_assert (vtable_slot || klass);
 
 		if (vtable_slot) {
-			int displacement = vtable_slot - ((gpointer*)vt);
+			int displacement = vtable_slot - ((gpointer*)actual_vt );
 
 			g_assert_not_reached ();
 
 			g_assert (displacement > 0);
 
-			actual_method = m_class_get_vtable (vt->klass) [displacement];
+			actual_method = m_class_get_vtable (actual_vt ->klass) [displacement];
 		}
 
 		if (method_inst || m->wrapper_type) {

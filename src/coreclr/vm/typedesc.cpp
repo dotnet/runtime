@@ -542,9 +542,6 @@ OBJECTREF ParamTypeDesc::GetManagedClassObject()
             GetTemplateMethodTableInternal()->GetWriteableDataForWrite()->m_hExposedClassObject = m_hExposedClassObject;
         }
 
-        // Log the TypeVarTypeDesc access
-        g_IBCLogger.LogTypeMethodTableWriteableAccess(&th);
-
         GCPROTECT_END();
     }
     return GetManagedClassObjectIfExists();
@@ -560,8 +557,6 @@ BOOL TypeDesc::IsRestored()
     STATIC_CONTRACT_CANNOT_TAKE_LOCK;
     SUPPORTS_DAC;
 
-    TypeHandle th = TypeHandle(this);
-    g_IBCLogger.LogTypeMethodTableAccess(&th);
     return IsRestored_NoLogging();
 }
 
@@ -1435,7 +1430,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
 
     ArrayList argList;
 
-    // First check special constraints (must-be-reference-type, must-be-value-type, and must-have-default-constructor)
+    // First check special constraints
     DWORD flags;
     IfFailThrow(pInternalImport->GetGenericParamProps(genericParamToken, NULL, &flags, NULL, NULL, NULL));
 
@@ -1522,6 +1517,9 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
             if (thArg.IsTypeDesc() || (!thArg.AsMethodTable()->HasExplicitOrImplicitPublicDefaultConstructor()))
                 return FALSE;
         }
+
+        if (thArg.IsByRefLike() && (specialConstraints & gpAcceptByRefLike) == 0)
+            return FALSE;
     }
 
     // Complete the list by adding thArg itself. If thArg is not a generic variable this will be the only
@@ -1598,7 +1596,7 @@ BOOL TypeVarTypeDesc::SatisfiesConstraints(SigTypeContext *pTypeContextOfConstra
                         // to ensure that the implementation of the constraint is complete
                         //
                         // Do not apply this check when the generic argument is exactly a generic variable, as those
-                        // do not hold the correct detail for checking, and do not need to do so. This constraint rule 
+                        // do not hold the correct detail for checking, and do not need to do so. This constraint rule
                         // is only applicable for generic arguments which have been specialized to some extent
                         if (!thArg.IsGenericVariable() &&
                             !thElem.IsTypeDesc() &&

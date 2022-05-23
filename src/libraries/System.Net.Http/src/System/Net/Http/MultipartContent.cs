@@ -89,14 +89,8 @@ namespace System.Net.Http
 
             foreach (char ch in boundary)
             {
-                if (('0' <= ch && ch <= '9') || // Digit.
-                    ('a' <= ch && ch <= 'z') || // alpha.
-                    ('A' <= ch && ch <= 'Z') || // ALPHA.
-                    (AllowedMarks.Contains(ch))) // Marks.
-                {
-                    // Valid.
-                }
-                else
+                if (!char.IsAsciiLetterOrDigit(ch) &&
+                    !AllowedMarks.Contains(ch)) // Marks.
                 {
                     throw new ArgumentException(SR.Format(System.Globalization.CultureInfo.InvariantCulture, SR.net_http_headers_invalid_value, boundary), nameof(boundary));
                 }
@@ -108,8 +102,10 @@ namespace System.Net.Http
             return Guid.NewGuid().ToString();
         }
 
-        public virtual void Add(HttpContent content!!)
+        public virtual void Add(HttpContent content)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             _nestedContent.Add(content);
         }
 

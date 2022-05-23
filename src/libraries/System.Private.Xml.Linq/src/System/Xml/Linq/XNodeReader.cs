@@ -1152,7 +1152,7 @@ namespace System.Xml.Linq
                     XNamespace? ns = e.GetNamespaceOfPrefix(qualifiedName.Substring(0, i));
                     if (ns != null)
                     {
-                        localName = qualifiedName.Substring(i + 1, qualifiedName.Length - i - 1);
+                        localName = qualifiedName.Substring(i + 1);
                         namespaceName = ns.NamespaceName;
                         return;
                     }

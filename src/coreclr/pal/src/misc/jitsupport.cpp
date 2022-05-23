@@ -54,7 +54,9 @@ static const CpuCapability CpuCapabilities[] = {
 #endif
     //{ "jscvt", HWCAP_JSCVT },
     //{ "fcma", HWCAP_FCMA },
-    //{ "lrcpc", HWCAP_LRCPC },
+#ifdef HWCAP_LRCPC
+    { "lrcpc", HWCAP_LRCPC },
+#endif
     //{ "dcpop", HWCAP_DCPOP },
     //{ "sha3", HWCAP_SHA3 },
     //{ "sm3", HWCAP_SM3 },
@@ -208,8 +210,8 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 //        flags->Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_JSCVT);
 #endif
 #ifdef HWCAP_LRCPC
-//    if (hwCap & HWCAP_LRCPC)
-//        flags->Set(CORJIT_FLAGS::CORJIT_FLAG_HAS_ARM64_LRCPC);
+      if (hwCap & HWCAP_LRCPC)
+          flags->Set(InstructionSet_Rcpc);
 #endif
 #ifdef HWCAP_PMULL
 //    if (hwCap & HWCAP_PMULL)
@@ -280,6 +282,9 @@ PAL_GetJitCpuCapabilityFlags(CORJIT_FLAGS *flags)
 
     if ((sysctlbyname("hw.optional.armv8_1_atomics", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
         flags->Set(InstructionSet_Atomics);
+
+    if ((sysctlbyname("hw.optional.arm.FEAT_LRCPC", &valueFromSysctl, &sz, nullptr, 0) == 0) && (valueFromSysctl != 0))
+        flags->Set(InstructionSet_Rcpc);
 #endif // HAVE_SYSCTLBYNAME
     // CoreCLR SIMD and FP support is included in ARM64 baseline
     // On exceptional basis platforms may leave out support, but CoreCLR does not

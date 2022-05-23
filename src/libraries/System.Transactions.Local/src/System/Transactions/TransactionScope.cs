@@ -466,10 +466,7 @@ namespace System.Transactions
             TimeSpan scopeTimeout,
             bool interopModeSpecified)
         {
-            if (null == transactionToUse)
-            {
-                throw new ArgumentNullException(nameof(transactionToUse));
-            }
+            ArgumentNullException.ThrowIfNull(transactionToUse);
 
             ValidateScopeTimeout(nameof(scopeTimeout), scopeTimeout);
 

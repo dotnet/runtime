@@ -1226,7 +1226,7 @@ mono_class_get_fields_lazy (MonoClass* klass, gpointer *iter);
 gboolean
 mono_class_check_vtable_constraints (MonoClass *klass, GList *in_setup);
 
-gboolean
+MONO_COMPONENT_API gboolean
 mono_class_has_finalizer (MonoClass *klass);
 
 void
@@ -1413,6 +1413,9 @@ mono_class_set_metadata_update_info (MonoClass *klass, MonoClassMetadataUpdateIn
 
 MONO_COMPONENT_API MonoMethod *
 mono_class_get_method_from_name_checked (MonoClass *klass, const char *name, int param_count, int flags, MonoError *error);
+
+void
+mono_class_set_is_simd_type (MonoClass *klass, gboolean is_simd);
 
 MONO_COMPONENT_API gboolean
 mono_method_has_no_body (MonoMethod *method);

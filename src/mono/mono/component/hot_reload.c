@@ -509,15 +509,15 @@ hot_reload_close_except_pools_all (MonoImage *base_image)
 	if (!info)
 		return;
 	for (GList *ptr = info->delta_info; ptr; ptr = ptr->next) {
-		DeltaInfo *info = (DeltaInfo *)ptr->data;
-		MonoImage *image = info->delta_image;
+		DeltaInfo *delta_info = (DeltaInfo *)ptr->data;
+		MonoImage *image = delta_info->delta_image;
 		if (image) {
 			table_to_image_lock ();
 			g_hash_table_remove (delta_image_to_info, image);
 			table_to_image_unlock ();
 			/* if for some reason the image has other references, break the link to this delta_info that is going away */
 			if (!mono_image_close_except_pools (image))
-			    info->delta_image = NULL;
+				delta_info->delta_image = NULL;
 		}
 	}
 }
@@ -529,14 +529,14 @@ hot_reload_close_all (MonoImage *base_image)
 	if (!info)
 		return;
 	for (GList *ptr = info->delta_info; ptr; ptr = ptr->next) {
-		DeltaInfo *info = (DeltaInfo *)ptr->data;
-		if (!info)
+		DeltaInfo *delta_info = (DeltaInfo *)ptr->data;
+		if (!delta_info)
 			continue;
-		MonoImage *image = info->delta_image;
+		MonoImage *image = delta_info->delta_image;
 		if (image) {
 			mono_image_close_finish (image);
 		}
-		delta_info_destroy (info);
+		delta_info_destroy (delta_info);
 		ptr->data = NULL;
 	}
 	g_list_free (info->delta_info);
@@ -1902,7 +1902,7 @@ add_nested_class_to_worklist (Pass2Context *ctx, MonoImage *image_base, uint32_t
 
 /**
  * For any enclosing classes that already had their nested classes property initialized,
- * add any newly-added classes the the nested classes list.
+ * add any newly-added classes the nested classes list.
  *
  * This has to be called late because we construct the nested class - which
  * could have been a skeleton.
@@ -1922,7 +1922,7 @@ pass2_update_nested_classes (Pass2Context *ctx, MonoImage *image_base, MonoError
 		uint32_t enclosing_typedef_row = cols[MONO_NESTED_CLASS_ENCLOSING];
 		if (pass2_context_is_skeleton (ctx, enclosing_typedef_row))
 			continue;
-		
+
 		MonoClass *enclosing_klass = mono_class_get_checked (image_base, mono_metadata_make_token (MONO_TABLE_TYPEDEF, enclosing_typedef_row), error);
 		return_val_if_nok (error, FALSE);
 		g_assert (enclosing_klass);
@@ -2140,7 +2140,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 					mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Can't get class with token 0x%08x due to: %s", add_member_typedef, mono_error_get_message (error));
 					return FALSE;
 				}
-				
+
 				mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Adding new field 0x%08x to class %s.%s", log_token, m_class_get_name_space (add_member_klass), m_class_get_name (add_member_klass));
 
 				uint32_t mapped_token = hot_reload_relative_delta_index (image_dmeta, delta_info, log_token);
@@ -2167,7 +2167,7 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 					return FALSE;
 				}
 			}
-			
+
 			add_member_typedef = 0;
 			break;
 		}
@@ -2218,10 +2218,10 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			default:
 				g_assert_not_reached (); /* unexpected func code */
 			}
-			uint32_t cols[MONO_PROPERTY_MAP_SIZE];
-			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_PROPERTYMAP], token_index - 1, cols, MONO_PROPERTY_MAP_SIZE);
+			uint32_t prop_cols[MONO_PROPERTY_MAP_SIZE];
+			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_PROPERTYMAP], token_index - 1, prop_cols, MONO_PROPERTY_MAP_SIZE);
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: propertymap parent = 0x%08x, props = 0x%08x\n", cols[MONO_PROPERTY_MAP_PARENT], cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: propertymap parent = 0x%08x, props = 0x%08x\n", prop_cols [MONO_PROPERTY_MAP_PARENT], prop_cols [MONO_PROPERTY_MAP_PROPERTY_LIST]);
 			break;
 		}
 		case MONO_TABLE_PROPERTY: {
@@ -2271,12 +2271,12 @@ apply_enclog_pass2 (Pass2Context *ctx, MonoImage *image_base, BaselineInfo *base
 			default:
 				g_assert_not_reached (); /* unexpected func code */
 			}
-			uint32_t cols[MONO_EVENT_MAP_SIZE];
-			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_EVENTMAP], token_index - 1, cols, MONO_EVENT_MAP_SIZE);
+			uint32_t prop_cols[MONO_EVENT_MAP_SIZE];
+			mono_metadata_decode_row (&image_base->tables [MONO_TABLE_EVENTMAP], token_index - 1, prop_cols, MONO_EVENT_MAP_SIZE);
 
-			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: eventmap parent = 0x%08x, evts = 0x%08x\n", cols[MONO_EVENT_MAP_PARENT], cols [MONO_EVENT_MAP_EVENTLIST]);
+			mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "EnC: eventmap parent = 0x%08x, evts = 0x%08x\n", prop_cols [MONO_EVENT_MAP_PARENT], prop_cols [MONO_EVENT_MAP_EVENTLIST]);
 			break;
-			
+
 		}
 		case MONO_TABLE_EVENT: {
 			if (!is_addition)
@@ -3075,7 +3075,7 @@ hot_reload_added_fields_iter (MonoClass *klass, gboolean lazy G_GNUC_UNUSED, gpo
 	g_assert (idx >= mono_class_get_field_count (klass));
 
 	uint32_t field_idx = idx - mono_class_get_field_count (klass);
-	
+
 	mono_trace (G_LOG_LEVEL_DEBUG, MONO_TRACE_METADATA_UPDATE, "Iterating added fields of 0x%08x idx = %u", m_class_get_type_token (klass), field_idx);
 
 	GSList *field_node = g_slist_nth (added_fields, field_idx);

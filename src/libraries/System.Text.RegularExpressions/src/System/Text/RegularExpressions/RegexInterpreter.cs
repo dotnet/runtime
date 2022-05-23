@@ -12,36 +12,39 @@ namespace System.Text.RegularExpressions
     internal sealed class RegexInterpreterFactory : RegexRunnerFactory
     {
         private readonly RegexInterpreterCode _code;
+        private readonly CultureInfo? _culture;
 
-        public RegexInterpreterFactory(RegexTree tree, CultureInfo culture) =>
+        public RegexInterpreterFactory(RegexTree tree)
+        {
+            // We use the CultureInfo field from the tree's culture which will only be set to an actual culture if the
+            // tree contains IgnoreCase backreferences. If the tree doesn't have IgnoreCase backreferences, then we keep _culture as null.
+            _culture = tree.Culture;
             // Generate and store the RegexInterpretedCode for the RegexTree and the specified culture
-            _code = RegexWriter.Write(tree, culture);
+            _code = RegexWriter.Write(tree);
+        }
 
         protected internal override RegexRunner CreateInstance() =>
             // Create a new interpreter instance.
-            new RegexInterpreter(_code, RegexParser.GetTargetCulture(_code.Options));
+            new RegexInterpreter(_code, _culture);
     }
 
     /// <summary>Executes a block of regular expression codes while consuming input.</summary>
     internal sealed class RegexInterpreter : RegexRunner
     {
-        private const int LoopTimeoutCheckCount = 2048; // conservative value to provide reasonably-accurate timeout handling.
-
         private readonly RegexInterpreterCode _code;
-        private readonly TextInfo _textInfo;
+        private readonly CultureInfo? _culture;
+        private RegexCaseBehavior _caseBehavior;
 
         private RegexOpcode _operator;
         private int _codepos;
         private bool _rightToLeft;
-        private bool _caseInsensitive;
 
-        public RegexInterpreter(RegexInterpreterCode code, CultureInfo culture)
+        public RegexInterpreter(RegexInterpreterCode code, CultureInfo? culture)
         {
             Debug.Assert(code != null, "code must not be null.");
-            Debug.Assert(culture != null, "culture must not be null.");
 
             _code = code;
-            _textInfo = culture.TextInfo;
+            _culture = culture;
         }
 
         protected override void InitTrackCount() => runtrackcount = _code.TrackCount;
@@ -132,12 +135,10 @@ namespace System.Text.RegularExpressions
 
         private void Backtrack()
         {
+            CheckTimeout(); // to ensure that any backtracking operation has a timeout check
+
             int newpos = runtrack![runtrackpos];
             runtrackpos++;
-
-#if DEBUG
-            Debug.WriteLineIf(Regex.EnableDebugTracing, $"       Backtracking{(newpos < 0 ? " (back2)" : "")} to code position {Math.Abs(newpos)}");
-#endif
 
             int back = (int)RegexOpcode.Backtracking;
             if (newpos < 0)
@@ -159,8 +160,7 @@ namespace System.Text.RegularExpressions
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private void SetOperator(RegexOpcode op)
         {
-            _operator = op & ~(RegexOpcode.RightToLeft | RegexOpcode.CaseInsensitive);
-            _caseInsensitive = (op & RegexOpcode.CaseInsensitive) != 0;
+            _operator = op & ~RegexOpcode.RightToLeft;
             _rightToLeft = (op & RegexOpcode.RightToLeft) != 0;
         }
 
@@ -215,8 +215,7 @@ namespace System.Text.RegularExpressions
         private char Forwardcharnext(ReadOnlySpan<char> inputSpan)
         {
             int i = _rightToLeft ? --runtextpos : runtextpos++;
-            char ch = inputSpan[i];
-            return _caseInsensitive ? _textInfo.ToLower(ch) : ch;
+            return inputSpan[i];
         }
 
         private bool MatchString(string str, ReadOnlySpan<char> inputSpan)
@@ -243,25 +242,11 @@ namespace System.Text.RegularExpressions
                 pos = runtextpos;
             }
 
-            if (!_caseInsensitive)
+            while (c != 0)
             {
-                while (c != 0)
+                if (str[--c] != inputSpan[--pos])
                 {
-                    if (str[--c] != inputSpan[--pos])
-                    {
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                TextInfo ti = _textInfo;
-                while (c != 0)
-                {
-                    if (str[--c] != ti.ToLower(inputSpan[--pos]))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
 
@@ -275,7 +260,7 @@ namespace System.Text.RegularExpressions
             return true;
         }
 
-        private bool MatchRef(int index, int length, ReadOnlySpan<char> inputSpan)
+        private bool MatchRef(int index, int length, ReadOnlySpan<char> inputSpan, bool caseInsensitive)
         {
             int pos;
             if (!_rightToLeft)
@@ -300,7 +285,7 @@ namespace System.Text.RegularExpressions
             int cmpos = index + length;
             int c = length;
 
-            if (!_caseInsensitive)
+            if (!caseInsensitive)
             {
                 while (c-- != 0)
                 {
@@ -312,12 +297,25 @@ namespace System.Text.RegularExpressions
             }
             else
             {
-                TextInfo ti = _textInfo;
                 while (c-- != 0)
                 {
-                    if (ti.ToLower(inputSpan[--cmpos]) != ti.ToLower(inputSpan[--pos]))
+                    char backreferenceChar = inputSpan[--cmpos];
+                    char currentChar = inputSpan[--pos];
+
+                    // If we are evaluating a backreference case-insensitive match, we first check if the characters at the position
+                    // are the same character.
+                    if (backreferenceChar != currentChar)
                     {
-                        return false;
+                        // If they are not the same character, then we need to check if the backreference character participates in case conversion
+                        // and if so, we need to fetch the case equivalences from our casing tables.
+                        Debug.Assert(_culture != null, "If the pattern has backreferences and is IgnoreCase, then _culture must not be null.");
+                        if (!RegexCaseEquivalences.TryFindCaseEquivalencesForCharWithIBehavior(backreferenceChar, _culture, ref _caseBehavior, out ReadOnlySpan<char> equivalences) ||
+                            equivalences.IndexOf(inputSpan[pos]) < 0)
+                        {
+                            // The backreference character doesn't participate in case conversions, or it does but the input character
+                            // doesn't match any of its equivalents.  Either way, we fail to match.
+                            return false;
+                        }
                     }
                 }
             }
@@ -384,13 +382,6 @@ namespace System.Text.RegularExpressions
                     Advance(advance);
                     advance = -1;
                 }
-#if DEBUG
-                if (Regex.EnableDebugTracing)
-                {
-                    DebugTraceCurrentState();
-                }
-#endif
-                CheckTimeout();
 
                 switch (_operator)
                 {
@@ -698,6 +689,7 @@ namespace System.Text.RegularExpressions
                         break;                                    // Backtrack
 
                     case RegexOpcode.Setjump:
+                        CheckTimeout(); // to ensure that positive/negative lookarounds have a timeout check
                         StackPush(Trackpos(), Crawlpos());
                         TrackPush();
                         advance = 0;
@@ -865,11 +857,12 @@ namespace System.Text.RegularExpressions
                         continue;
 
                     case RegexOpcode.Backreference:
+                    case RegexOpcode.Backreference | RegexOpcode.CaseInsensitive:
                         {
                             int capnum = Operand(0);
                             if (IsMatched(capnum))
                             {
-                                if (!MatchRef(MatchIndex(capnum), MatchLength(capnum), inputSpan))
+                                if (!MatchRef(MatchIndex(capnum), MatchLength(capnum), inputSpan, (_operator & RegexOpcode.CaseInsensitive) != 0))
                                 {
                                     break;
                                 }
@@ -939,12 +932,6 @@ namespace System.Text.RegularExpressions
 
                             while (c-- > 0)
                             {
-                                // Check the timeout every 2048th iteration.
-                                if ((uint)c % LoopTimeoutCheckCount == 0)
-                                {
-                                    CheckTimeout();
-                                }
-
                                 if (!RegexCharClass.CharInClass(Forwardcharnext(inputSpan), set, ref setLookup))
                                 {
                                     goto BreakBackward;
@@ -985,9 +972,9 @@ namespace System.Text.RegularExpressions
                             char ch = (char)Operand(0);
                             int i;
 
-                            if (!_rightToLeft && !_caseInsensitive)
+                            if (!_rightToLeft)
                             {
-                                // We're left-to-right and case-sensitive, so we can employ the vectorized IndexOf
+                                // We're left-to-right, so we can employ the vectorized IndexOf
                                 // to search for the character.
                                 i = inputSpan.Slice(runtextpos, len).IndexOf(ch);
                                 if (i == -1)
@@ -1032,12 +1019,6 @@ namespace System.Text.RegularExpressions
 
                             for (i = len; i > 0; i--)
                             {
-                                // Check the timeout every 2048th iteration.
-                                if ((uint)i % LoopTimeoutCheckCount == 0)
-                                {
-                                    CheckTimeout();
-                                }
-
                                 if (!RegexCharClass.CharInClass(Forwardcharnext(inputSpan), set, ref setLookup))
                                 {
                                     Backwardnext();
@@ -1167,15 +1148,5 @@ namespace System.Text.RegularExpressions
                 Backtrack();
             }
         }
-
-#if DEBUG
-        [ExcludeFromCodeCoverage(Justification = "Debug only")]
-        internal override void DebugTraceCurrentState()
-        {
-            base.DebugTraceCurrentState();
-            Debug.WriteLine($"       {_code.DescribeInstruction(_codepos)} {((_operator & RegexOpcode.Backtracking) != 0 ? " Back" : "")} {((_operator & RegexOpcode.BacktrackingSecond) != 0 ? " Back2" : "")}");
-            Debug.WriteLine("");
-        }
-#endif
     }
 }

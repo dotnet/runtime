@@ -15,8 +15,10 @@ namespace System.Security.Cryptography
         ///     Wrap an existing key handle with a CngKey object
         /// </summary>
         [SupportedOSPlatform("windows")]
-        public static CngKey Open(SafeNCryptKeyHandle keyHandle!!, CngKeyHandleOpenOptions keyHandleOpenOptions)
+        public static CngKey Open(SafeNCryptKeyHandle keyHandle, CngKeyHandleOpenOptions keyHandleOpenOptions)
         {
+            ArgumentNullException.ThrowIfNull(keyHandle);
+
             if (keyHandle.IsClosed || keyHandle.IsInvalid)
                 throw new ArgumentException(SR.Cryptography_OpenInvalidHandle, nameof(keyHandle));
 

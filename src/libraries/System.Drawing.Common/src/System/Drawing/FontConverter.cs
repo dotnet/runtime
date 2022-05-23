@@ -153,7 +153,7 @@ namespace System.Drawing
                 if (styleIndex != -1)
                 {
                     // style found.
-                    style = font.Substring(styleIndex, font.Length - styleIndex);
+                    style = font.Substring(styleIndex);
 
                     // Get the mid-substring containing the size information.
                     sizeStr = font.Substring(nameIndex + 1, styleIndex - nameIndex - 1);
@@ -270,8 +270,10 @@ namespace System.Drawing
                 _ => throw new ArgumentException(SR.Format(SR.InvalidArgumentValueFontConverter, units), nameof(units)),
             };
 
-        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues!!)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
+            ArgumentNullException.ThrowIfNull(propertyValues);
+
             object? value;
             byte charSet = 1;
             float size = 8;

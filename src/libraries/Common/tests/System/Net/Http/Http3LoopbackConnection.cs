@@ -59,9 +59,9 @@ namespace System.Net.Test.Common
                 stream.Dispose();
             }
 
-// We don't dispose the connection currently, because this causes races when the server connection is closed before
-// the client has received and handled all response data.
-// See discussion in https://github.com/dotnet/runtime/pull/57223#discussion_r687447832
+            // We don't dispose the connection currently, because this causes races when the server connection is closed before
+            // the client has received and handled all response data.
+            // See discussion in https://github.com/dotnet/runtime/pull/57223#discussion_r687447832
 #if false
             // Dispose the connection
             // If we already waited for graceful shutdown from the client, then the connection is already closed and this will simply release the handle.
@@ -79,14 +79,14 @@ namespace System.Net.Test.Common
             await _connection.CloseAsync(errorCode).ConfigureAwait(false);
         }
 
-        public Http3LoopbackStream OpenUnidirectionalStream()
+        public async ValueTask<Http3LoopbackStream> OpenUnidirectionalStreamAsync()
         {
-            return new Http3LoopbackStream(_connection.OpenUnidirectionalStream());
+            return new Http3LoopbackStream(await _connection.OpenUnidirectionalStreamAsync());
         }
 
-        public Http3LoopbackStream OpenBidirectionalStream()
+        public async ValueTask<Http3LoopbackStream> OpenBidirectionalStreamAsync()
         {
-            return new Http3LoopbackStream(_connection.OpenBidirectionalStream());
+            return new Http3LoopbackStream(await _connection.OpenBidirectionalStreamAsync());
         }
 
         public static int GetRequestId(QuicStream stream)
@@ -129,6 +129,8 @@ namespace System.Net.Test.Common
                 throw new Exception("Received second control stream from client???");
             }
 
+            Assert.False(controlStream.CanWrite);
+
             long? streamType = await controlStream.ReadIntegerAsync();
             Assert.Equal(Http3LoopbackStream.ControlStream, streamType);
 
@@ -143,19 +145,37 @@ namespace System.Net.Test.Common
         // This will automatically handle the control stream, including validating its contents
         public async Task<Http3LoopbackStream> AcceptRequestStreamAsync()
         {
-            Http3LoopbackStream stream;
+            Http3LoopbackStream requestStream = null;
 
             while (true)
             {
-                stream = await AcceptStreamAsync().ConfigureAwait(false);
+                var stream = await AcceptStreamAsync().ConfigureAwait(false);
 
+                // Accepted request stream.
                 if (stream.CanWrite)
                 {
-                    return stream;
+                    // Only one expected.
+                    Assert.True(requestStream is null, "Expected single request stream, got a second");
+
+                    // Control stream is set --> return the request stream.
+                    if (_inboundControlStream is not null)
+                    {
+                        return stream;
+                    }
+
+                    // Control stream not set --> need to accept another stream.
+                    requestStream = stream;
+                    continue;
                 }
 
-                // Must be the control stream
+                // Must be the control stream.
                 await HandleControlStreamAsync(stream);
+
+                // We've already accepted request stream --> return it.
+                if (requestStream is not null)
+                {
+                    return requestStream;
+                }
             }
         }
 
@@ -185,10 +205,10 @@ namespace System.Net.Test.Common
 
         public async Task EstablishControlStreamAsync()
         {
-            _outboundControlStream = OpenUnidirectionalStream();
+            _outboundControlStream = await OpenUnidirectionalStreamAsync();
             await _outboundControlStream.SendUnidirectionalStreamTypeAsync(Http3LoopbackStream.ControlStream);
             await _outboundControlStream.SendSettingsFrameAsync();
-       }
+        }
 
         public override async Task<byte[]> ReadRequestBodyAsync()
         {
@@ -240,11 +260,11 @@ namespace System.Net.Test.Common
             return request;
         }
 
-        public async Task ShutdownAsync()
+        public async Task ShutdownAsync(bool failCurrentRequest = false)
         {
             try
             {
-                long firstInvalidStreamId = _currentStreamId + 4;
+                long firstInvalidStreamId = failCurrentRequest ? _currentStreamId : _currentStreamId + 4;
                 await _outboundControlStream.SendGoAwayFrameAsync(firstInvalidStreamId);
             }
             catch (QuicConnectionAbortedException abortException) when (abortException.ErrorCode == H3_NO_ERROR)

@@ -420,7 +420,6 @@ COR_IL_MAP* ProfilerFunctionControl::GetInstrumentedMapEntries()
 #ifndef DACCESS_COMPILE
 NativeImageInliningIterator::NativeImageInliningIterator() :
         m_pModule(NULL),
-        m_pInlinee(NULL),
         m_dynamicBuffer(NULL),
         m_dynamicBufferSize(0),
         m_dynamicAvailable(0),
@@ -429,21 +428,21 @@ NativeImageInliningIterator::NativeImageInliningIterator() :
 
 }
 
-HRESULT NativeImageInliningIterator::Reset(Module *pModule, MethodDesc *pInlinee)
+HRESULT NativeImageInliningIterator::Reset(Module *pInlinerModule, MethodInModule inlinee)
 {
-    _ASSERTE(pModule != NULL);
-    _ASSERTE(pInlinee != NULL);
+    _ASSERTE(pInlinerModule != NULL);
+    _ASSERTE(inlinee.m_module != NULL);
 
-    m_pModule = pModule;
-    m_pInlinee = pInlinee;
+    m_pModule = pInlinerModule;
+    m_inlinee = inlinee;
 
     HRESULT hr = S_OK;
     EX_TRY
     {
         // Trying to use the existing buffer
         BOOL incompleteData;
-        Module *inlineeModule = m_pInlinee->GetModule();
-        mdMethodDef mdInlinee = m_pInlinee->GetMemberDef();
+        Module *inlineeModule = m_inlinee.m_module;
+        mdMethodDef mdInlinee = m_inlinee.m_methodDef;
         COUNT_T methodsAvailable = m_pModule->GetReadyToRunInliners(inlineeModule, mdInlinee, m_dynamicBufferSize, m_dynamicBuffer, &incompleteData);
 
         // If the existing buffer is not large enough, reallocate.
@@ -484,19 +483,16 @@ BOOL NativeImageInliningIterator::Next()
     return m_currentPos < m_dynamicAvailable;
 }
 
-MethodDesc *NativeImageInliningIterator::GetMethodDesc()
+MethodInModule NativeImageInliningIterator::GetMethod()
 {
     // this evaluates true when m_currentPos == s_failurePos or m_currentPos == (COUNT_T)-1
     // m_currentPos is an unsigned type
     if (m_currentPos >= m_dynamicAvailable)
     {
-        return NULL;
+        return MethodInModule();
     }
 
-    MethodInModule mm = m_dynamicBuffer[m_currentPos];
-    Module *pModule = mm.m_module;
-    mdMethodDef mdInliner = mm.m_methodDef;
-    return pModule->LookupMethodDef(mdInliner);
+    return m_dynamicBuffer[m_currentPos];
 }
 
 //---------------------------------------------------------------------------------------
@@ -623,16 +619,20 @@ HRESULT ReJitManager::UpdateActiveILVersions(
 
         if ((flags & COR_PRF_REJIT_BLOCK_INLINING) == COR_PRF_REJIT_BLOCK_INLINING)
         {
-            hr = UpdateNativeInlinerActiveILVersions(&mgrToCodeActivationBatch, pMD, fIsRevert, flags);
+            hr = UpdateNativeInlinerActiveILVersions(&mgrToCodeActivationBatch, pModule, rgMethodDefs[i], fIsRevert, flags);
             if (FAILED(hr))
             {
                 return hr;
             }
 
-            hr = UpdateJitInlinerActiveILVersions(&mgrToCodeActivationBatch, pMD, fIsRevert, flags);
-            if (FAILED(hr))
+            if (pMD != NULL)
             {
-                return hr;
+                // If pMD is not null, then the method may have already been inlined somewhere. Go check.
+                hr = UpdateJitInlinerActiveILVersions(&mgrToCodeActivationBatch, pMD, fIsRevert, flags);
+                if (FAILED(hr))
+                {
+                    return hr;
+                }
             }
         }
     }   // for (ULONG i = 0; i < cFunctions; i++)
@@ -643,8 +643,6 @@ HRESULT ReJitManager::UpdateActiveILVersions(
     SHash<CodeActivationBatchTraits>::Iterator endIter = mgrToCodeActivationBatch.End();
 
     {
-        MethodDescBackpatchInfoTracker::ConditionalLockHolderForGCCoop slotBackpatchLockHolder;
-
         for (SHash<CodeActivationBatchTraits>::Iterator iter = beginIter; iter != endIter; iter++)
         {
             CodeActivationBatch * pCodeActivationBatch = *iter;
@@ -782,7 +780,8 @@ HRESULT ReJitManager::UpdateActiveILVersion(
 // static
 HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
     SHash<CodeActivationBatchTraits>   *pMgrToCodeActivationBatch,
-    MethodDesc                         *pInlinee,
+    Module                             *pInlineeModule,
+    mdMethodDef                         inlineeMethodDef,
     BOOL                                fIsRevert,
     COR_PRF_REJIT_FLAGS                 flags)
 {
@@ -796,7 +795,8 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
     CONTRACTL_END;
 
     _ASSERTE(pMgrToCodeActivationBatch != NULL);
-    _ASSERTE(pInlinee != NULL);
+    _ASSERTE(pInlineeModule != NULL);
+    _ASSERTE(RidFromToken(inlineeMethodDef) != 0);
 
     HRESULT hr = S_OK;
 
@@ -814,16 +814,15 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
         Module * pModule = pDomainAssembly->GetModule();
         if (pModule->HasReadyToRunInlineTrackingMap())
         {
-            inlinerIter.Reset(pModule, pInlinee);
+            inlinerIter.Reset(pModule, MethodInModule(pInlineeModule, inlineeMethodDef));
 
-            MethodDesc *pInliner = NULL;
             while (inlinerIter.Next())
             {
-                pInliner = inlinerIter.GetMethodDesc();
+                MethodInModule inliner = inlinerIter.GetMethod();
                 {
                     CodeVersionManager *pCodeVersionManager = pModule->GetCodeVersionManager();
                     CodeVersionManager::LockHolder codeVersioningLockHolder;
-                    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(pInliner);
+                    ILCodeVersion ilVersion = pCodeVersionManager->GetActiveILCodeVersion(inliner.m_module, inliner.m_methodDef);
                     if (!ilVersion.HasDefaultIL())
                     {
                         // This method has already been ReJITted, no need to request another ReJIT at this point.
@@ -832,10 +831,10 @@ HRESULT ReJitManager::UpdateNativeInlinerActiveILVersions(
                     }
                 }
 
-                hr = UpdateActiveILVersion(pMgrToCodeActivationBatch, pInliner->GetModule(), pInliner->GetMemberDef(), fIsRevert, flags);
+                hr = UpdateActiveILVersion(pMgrToCodeActivationBatch, inliner.m_module, inliner.m_methodDef, fIsRevert, flags);
                 if (FAILED(hr))
                 {
-                    ReportReJITError(pInliner->GetModule(), pInliner->GetMemberDef(), NULL, hr);
+                    ReportReJITError(inliner.m_module, inliner.m_methodDef, NULL, hr);
                 }
             }
         }

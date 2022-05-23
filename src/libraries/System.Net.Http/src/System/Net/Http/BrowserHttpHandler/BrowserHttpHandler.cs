@@ -143,189 +143,195 @@ namespace System.Net.Http
             throw new PlatformNotSupportedException();
         }
 
-        protected internal override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request!!, CancellationToken cancellationToken)
+        protected internal override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
         {
-            CancellationTokenRegistration? abortRegistration = null;
-            try
+            ArgumentNullException.ThrowIfNull(request);
+            return Impl(request, cancellationToken);
+
+            async Task<HttpResponseMessage> Impl(HttpRequestMessage request, CancellationToken cancellationToken)
             {
-                using var requestObject = new JSObject();
-
-                if (request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions))
+                CancellationTokenRegistration? abortRegistration = null;
+                try
                 {
-                    foreach (KeyValuePair<string, object> item in fetchOptions)
-                    {
-                        requestObject.SetObjectProperty(item.Key, item.Value);
-                    }
-                }
+                    using var requestObject = new JSObject();
 
-                requestObject.SetObjectProperty("method", request.Method.Method);
-
-                // Only set if property was specifically modified and is not default value
-                if (_isAllowAutoRedirectTouched)
-                {
-                    // Allowing or Disallowing redirects.
-                    // Here we will set redirect to `manual` instead of error if AllowAutoRedirect is
-                    // false so there is no exception thrown
-                    //
-                    // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
-                    //
-                    // other issues from whatwg/fetch:
-                    //
-                    // https://github.com/whatwg/fetch/issues/763
-                    // https://github.com/whatwg/fetch/issues/601
-                    requestObject.SetObjectProperty("redirect", AllowAutoRedirect ? "follow" : "manual");
-                }
-
-                // We need to check for body content
-                if (request.Content != null)
-                {
-                    if (request.Content is StringContent)
+                    if (request.Options.TryGetValue(FetchOptions, out IDictionary<string, object>? fetchOptions))
                     {
-                        requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true));
-                    }
-                    else
-                    {
-                        using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true)))
+                        foreach (KeyValuePair<string, object> item in fetchOptions)
                         {
-                            requestObject.SetObjectProperty("body", uint8Buffer);
+                            requestObject.SetObjectProperty(item.Key, item.Value);
                         }
                     }
-                }
 
-                // Process headers
-                // Cors has its own restrictions on headers.
-                // https://developer.mozilla.org/en-US/docs/Web/API/Headers
-                using (JSObject jsHeaders = new JSObject("Headers"))
-                {
-                    foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
+                    requestObject.SetObjectProperty("method", request.Method.Method);
+
+                    // Only set if property was specifically modified and is not default value
+                    if (_isAllowAutoRedirectTouched)
                     {
-                        foreach (string value in header.Value)
-                        {
-                            jsHeaders.Invoke("append", header.Key, value);
-                        }
+                        // Allowing or Disallowing redirects.
+                        // Here we will set redirect to `manual` instead of error if AllowAutoRedirect is
+                        // false so there is no exception thrown
+                        //
+                        // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                        //
+                        // other issues from whatwg/fetch:
+                        //
+                        // https://github.com/whatwg/fetch/issues/763
+                        // https://github.com/whatwg/fetch/issues/601
+                        requestObject.SetObjectProperty("redirect", AllowAutoRedirect ? "follow" : "manual");
                     }
+
+                    // We need to check for body content
                     if (request.Content != null)
                     {
-                        foreach (KeyValuePair<string, IEnumerable<string>> header in request.Content.Headers)
+                        if (request.Content is StringContent)
+                        {
+                            requestObject.SetObjectProperty("body", await request.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true));
+                        }
+                        else
+                        {
+                            using (Uint8Array uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync(cancellationToken).ConfigureAwait(continueOnCapturedContext: true)))
+                            {
+                                requestObject.SetObjectProperty("body", uint8Buffer);
+                            }
+                        }
+                    }
+
+                    // Process headers
+                    // Cors has its own restrictions on headers.
+                    // https://developer.mozilla.org/en-US/docs/Web/API/Headers
+                    using (JSObject jsHeaders = new JSObject("Headers"))
+                    {
+                        foreach (KeyValuePair<string, IEnumerable<string>> header in request.Headers)
                         {
                             foreach (string value in header.Value)
                             {
                                 jsHeaders.Invoke("append", header.Key, value);
                             }
                         }
-                    }
-                    requestObject.SetObjectProperty("headers", jsHeaders);
-                }
-
-
-                JSObject abortController = new JSObject("AbortController");
-                using JSObject signal = (JSObject)abortController.GetObjectProperty("signal");
-                requestObject.SetObjectProperty("signal", signal);
-
-                abortRegistration = cancellationToken.Register(() =>
-                {
-                    if (!abortController.IsDisposed)
-                    {
-                        abortController.Invoke("abort");
-                        abortController?.Dispose();
-                    }
-                });
-
-                using var args = new System.Runtime.InteropServices.JavaScript.Array();
-                if (request.RequestUri != null)
-                {
-                    args.Push(request.RequestUri.ToString());
-                    args.Push(requestObject);
-                }
-
-
-                var responseTask = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
-                if (responseTask == null)
-                    throw new Exception(SR.net_http_marshalling_response_promise_from_fetch);
-
-                cancellationToken.ThrowIfCancellationRequested();
-
-                var fetchResponseJs = (JSObject)await responseTask.ConfigureAwait(continueOnCapturedContext: true);
-
-                var fetchResponse = new WasmFetchResponse(fetchResponseJs, abortController, abortRegistration.Value);
-                abortRegistration = null;
-                var responseMessage = new HttpResponseMessage((HttpStatusCode)fetchResponse.Status);
-                responseMessage.RequestMessage = request;
-
-                // Here we will set the ReasonPhrase so that it can be evaluated later.
-                // We do not have a status code but this will signal some type of what happened
-                // after interrogating the status code for success or not i.e. IsSuccessStatusCode
-                //
-                // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
-                // opaqueredirect: The fetch request was made with redirect: "manual".
-                // The Response's status is 0, headers are empty, body is null and trailer is empty.
-                if (fetchResponse.ResponseType == "opaqueredirect")
-                {
-                    responseMessage.SetReasonPhraseWithoutValidation(fetchResponse.ResponseType);
-                }
-
-                bool streamingEnabled = false;
-                if (StreamingSupported)
-                {
-                    request.Options.TryGetValue(EnableStreamingResponse, out streamingEnabled);
-                }
-
-                responseMessage.Content = streamingEnabled
-                    ? new StreamContent(new WasmHttpReadStream(fetchResponse))
-                    : new BrowserHttpContent(fetchResponse);
-
-                // Fill the response headers
-                // CORS will only allow access to certain headers.
-                // If a request is made for a resource on another origin which returns the CORs headers, then the type is cors.
-                // cors and basic responses are almost identical except that a cors response restricts the headers you can view to
-                // `Cache-Control`, `Content-Language`, `Content-Type`, `Expires`, `Last-Modified`, and `Pragma`.
-                // View more information https://developers.google.com/web/updates/2015/03/introduction-to-fetch#response_types
-                //
-                // Note: Some of the headers may not even be valid header types in .NET thus we use TryAddWithoutValidation
-                using (JSObject respHeaders = fetchResponse.Headers)
-                {
-                    if (respHeaders != null)
-                    {
-                        using (var entriesIterator = (JSObject)respHeaders.Invoke("entries"))
+                        if (request.Content != null)
                         {
-                            JSObject? nextResult = null;
-                            try
+                            foreach (KeyValuePair<string, IEnumerable<string>> header in request.Content.Headers)
                             {
-                                nextResult = (JSObject)entriesIterator.Invoke("next");
-                                while (!(bool)nextResult.GetObjectProperty("done"))
+                                foreach (string value in header.Value)
                                 {
-                                    using (var resultValue = (System.Runtime.InteropServices.JavaScript.Array)nextResult.GetObjectProperty("value"))
-                                    {
-                                        var name = (string)resultValue[0];
-                                        var value = (string)resultValue[1];
-                                        if (!responseMessage.Headers.TryAddWithoutValidation(name, value))
-                                            responseMessage.Content.Headers.TryAddWithoutValidation(name, value);
-                                    }
-                                    nextResult?.Dispose();
-                                    nextResult = (JSObject)entriesIterator.Invoke("next");
+                                    jsHeaders.Invoke("append", header.Key, value);
                                 }
                             }
-                            finally
+                        }
+                        requestObject.SetObjectProperty("headers", jsHeaders);
+                    }
+
+
+                    JSObject abortController = new JSObject("AbortController");
+                    using JSObject signal = (JSObject)abortController.GetObjectProperty("signal");
+                    requestObject.SetObjectProperty("signal", signal);
+
+                    abortRegistration = cancellationToken.Register(() =>
+                    {
+                        if (!abortController.IsDisposed)
+                        {
+                            abortController.Invoke("abort");
+                            abortController?.Dispose();
+                        }
+                    });
+
+                    using var args = new System.Runtime.InteropServices.JavaScript.Array();
+                    if (request.RequestUri != null)
+                    {
+                        args.Push(request.RequestUri.ToString());
+                        args.Push(requestObject);
+                    }
+
+
+                    var responseTask = s_fetch?.Invoke("apply", s_window, args) as Task<object>;
+                    if (responseTask == null)
+                        throw new Exception(SR.net_http_marshalling_response_promise_from_fetch);
+
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var fetchResponseJs = (JSObject)await responseTask.ConfigureAwait(continueOnCapturedContext: true);
+
+                    var fetchResponse = new WasmFetchResponse(fetchResponseJs, abortController, abortRegistration.Value);
+                    abortRegistration = null;
+                    var responseMessage = new HttpResponseMessage((HttpStatusCode)fetchResponse.Status);
+                    responseMessage.RequestMessage = request;
+
+                    // Here we will set the ReasonPhrase so that it can be evaluated later.
+                    // We do not have a status code but this will signal some type of what happened
+                    // after interrogating the status code for success or not i.e. IsSuccessStatusCode
+                    //
+                    // https://developer.mozilla.org/en-US/docs/Web/API/Response/type
+                    // opaqueredirect: The fetch request was made with redirect: "manual".
+                    // The Response's status is 0, headers are empty, body is null and trailer is empty.
+                    if (fetchResponse.ResponseType == "opaqueredirect")
+                    {
+                        responseMessage.SetReasonPhraseWithoutValidation(fetchResponse.ResponseType);
+                    }
+
+                    bool streamingEnabled = false;
+                    if (StreamingSupported)
+                    {
+                        request.Options.TryGetValue(EnableStreamingResponse, out streamingEnabled);
+                    }
+
+                    responseMessage.Content = streamingEnabled
+                        ? new StreamContent(new WasmHttpReadStream(fetchResponse))
+                        : new BrowserHttpContent(fetchResponse);
+
+                    // Fill the response headers
+                    // CORS will only allow access to certain headers.
+                    // If a request is made for a resource on another origin which returns the CORs headers, then the type is cors.
+                    // cors and basic responses are almost identical except that a cors response restricts the headers you can view to
+                    // `Cache-Control`, `Content-Language`, `Content-Type`, `Expires`, `Last-Modified`, and `Pragma`.
+                    // View more information https://developers.google.com/web/updates/2015/03/introduction-to-fetch#response_types
+                    //
+                    // Note: Some of the headers may not even be valid header types in .NET thus we use TryAddWithoutValidation
+                    using (JSObject respHeaders = fetchResponse.Headers)
+                    {
+                        if (respHeaders != null)
+                        {
+                            using (var entriesIterator = (JSObject)respHeaders.Invoke("entries"))
                             {
-                                nextResult?.Dispose();
+                                JSObject? nextResult = null;
+                                try
+                                {
+                                    nextResult = (JSObject)entriesIterator.Invoke("next");
+                                    while (!(bool)nextResult.GetObjectProperty("done"))
+                                    {
+                                        using (var resultValue = (System.Runtime.InteropServices.JavaScript.Array)nextResult.GetObjectProperty("value"))
+                                        {
+                                            var name = (string)resultValue[0];
+                                            var value = (string)resultValue[1];
+                                            if (!responseMessage.Headers.TryAddWithoutValidation(name, value))
+                                                responseMessage.Content.Headers.TryAddWithoutValidation(name, value);
+                                        }
+                                        nextResult?.Dispose();
+                                        nextResult = (JSObject)entriesIterator.Invoke("next");
+                                    }
+                                }
+                                finally
+                                {
+                                    nextResult?.Dispose();
+                                }
                             }
                         }
                     }
-                }
-                return responseMessage;
+                    return responseMessage;
 
-            }
-            catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
-            {
-                throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
-            }
-            catch (JSException jse)
-            {
-                throw TranslateJSException(jse, cancellationToken);
-            }
-            finally
-            {
-                abortRegistration?.Dispose();
+                }
+                catch (OperationCanceledException oce) when (cancellationToken.IsCancellationRequested)
+                {
+                    throw CancellationHelper.CreateOperationCanceledException(oce, cancellationToken);
+                }
+                catch (JSException jse)
+                {
+                    throw TranslateJSException(jse, cancellationToken);
+                }
+                finally
+                {
+                    abortRegistration?.Dispose();
+                }
             }
         }
 
@@ -349,8 +355,11 @@ namespace System.Net.Http
             private readonly CancellationTokenRegistration _abortRegistration;
             private bool _isDisposed;
 
-            public WasmFetchResponse(JSObject fetchResponse!!, JSObject abortController!!, CancellationTokenRegistration abortRegistration)
+            public WasmFetchResponse(JSObject fetchResponse, JSObject abortController, CancellationTokenRegistration abortRegistration)
             {
+                ArgumentNullException.ThrowIfNull(fetchResponse);
+                ArgumentNullException.ThrowIfNull(abortController);
+
                 _fetchResponse = fetchResponse;
                 _abortController = abortController;
                 _abortRegistration = abortRegistration;
@@ -393,8 +402,10 @@ namespace System.Net.Http
             private byte[]? _data;
             private readonly WasmFetchResponse _status;
 
-            public BrowserHttpContent(WasmFetchResponse status!!)
+            public BrowserHttpContent(WasmFetchResponse status)
             {
+                ArgumentNullException.ThrowIfNull(status);
+
                 _status = status;
             }
 

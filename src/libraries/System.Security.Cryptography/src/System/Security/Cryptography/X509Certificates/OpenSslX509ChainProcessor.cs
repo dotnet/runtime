@@ -388,15 +388,25 @@ namespace System.Security.Cryptography.X509Certificates
                 {
                     for (int i = 0; i < revocationSize; i++)
                     {
-                        using (SafeX509Handle cert =
-                            Interop.Crypto.X509UpRef(Interop.Crypto.GetX509StackField(chainStack, i)))
+                        if (i == 0 && Interop.Crypto.X509ChainHasStapledOcsp(_storeCtx))
                         {
-                            OpenSslCrlCache.AddCrlForCertificate(
-                                cert,
-                                _store,
-                                revocationMode,
-                                _verificationTime,
-                                _downloadTimeout);
+                            if (OpenSslX509ChainEventSource.Log.IsEnabled())
+                            {
+                                OpenSslX509ChainEventSource.Log.StapledOcspPresent();
+                            }
+                        }
+                        else
+                        {
+                            using (SafeX509Handle cert =
+                                Interop.Crypto.X509UpRef(Interop.Crypto.GetX509StackField(chainStack, i)))
+                            {
+                                OpenSslCrlCache.AddCrlForCertificate(
+                                    cert,
+                                    _store,
+                                    revocationMode,
+                                    _verificationTime,
+                                    _downloadTimeout);
+                            }
                         }
                     }
                 }
@@ -807,7 +817,7 @@ namespace System.Security.Cryptography.X509Certificates
 
             int count = baseUri.Length + resource.Length;
 
-            if (baseUri[baseUri.Length - 1] == '/')
+            if (baseUri.EndsWith('/'))
             {
                 return string.Create(
                     count,
@@ -853,9 +863,7 @@ namespace System.Security.Cryptography.X509Certificates
             {
                 char cur = base64[readIdx];
 
-                if ((cur >= 'A' && cur <= 'Z') ||
-                    (cur >= 'a' && cur <= 'z') ||
-                    (cur >= '0' && cur <= '9'))
+                if (char.IsAsciiLetterOrDigit(cur))
                 {
                     urlEncoded[writeIdx++] = cur;
                 }

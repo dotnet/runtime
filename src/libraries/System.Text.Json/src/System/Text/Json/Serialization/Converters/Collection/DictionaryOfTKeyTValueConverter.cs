@@ -80,7 +80,7 @@ namespace System.Text.Json.Serialization.Converters
                         return false;
                     }
 
-                    state.Current.EndDictionaryElement();
+                    state.Current.EndDictionaryEntry();
                 } while (enumerator.MoveNext());
             }
 

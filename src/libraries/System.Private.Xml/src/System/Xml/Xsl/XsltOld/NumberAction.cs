@@ -12,7 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 
 namespace System.Xml.Xsl.XsltOld
 {
-    internal class NumberAction : ContainerAction
+    internal sealed class NumberAction : ContainerAction
     {
         internal sealed class FormatInfo
         {

@@ -613,7 +613,7 @@ mono_ssa_remove_gsharedvt (MonoCompile *cfg)
 void
 mono_ssa_remove (MonoCompile *cfg)
 {
-	MonoInst *ins, *var, *move;
+	MonoInst *ins, *move;
 	int bbindex, i, j, first;
 
 	g_assert (cfg->comp_done & MONO_COMP_SSA);
@@ -627,7 +627,7 @@ mono_ssa_remove (MonoCompile *cfg)
 		for (ins = bb->code; ins; ins = ins->next) {
 			if (MONO_IS_PHI (ins)) {
 				g_assert (ins->inst_phi_args [0] == bb->in_count);
-				var = get_vreg_to_inst (cfg, ins->dreg);
+				MonoInst *var = get_vreg_to_inst (cfg, ins->dreg);
 
 				/* Check for PHI nodes where all the inputs are the same */
 				first = ins->inst_phi_args [1];
@@ -1484,8 +1484,7 @@ void
 mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 {
 	MonoBasicBlock *bb, *h, *idom;
-	MonoInst *ins, *n, *tins;
-	int i;
+	MonoInst *ins, *n;
 
 	g_assert (cfg->comp_done & MONO_COMP_SSA);
 	if (!(cfg->comp_done & MONO_COMP_LOOPS) || !(cfg->comp_done & MONO_COMP_SSA_DEF_USE))
@@ -1504,6 +1503,7 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 			 * Try to move instructions out of loop headers into the preceeding bblock.
 			 */
 			if (ins->opcode == OP_LDLEN || ins->opcode == OP_STRLEN || ins->opcode == OP_CHECK_THIS || ins->opcode == OP_AOTCONST || ins->opcode == OP_GENERIC_CLASS_INIT) {
+				MonoInst *tins;
 				gboolean skip;
 				int sreg;
 
@@ -1542,7 +1542,7 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 				else
 					sreg = -1;
 				if (sreg != -1) {
-					MonoInst *tins, *var;
+					MonoInst *var;
 
 					skip = FALSE;
 					for (tins = ins->prev; tins; tins = tins->prev) {
@@ -1585,7 +1585,7 @@ mono_ssa_loop_invariant_code_motion (MonoCompile *cfg)
 	}
 
 	cfg->comp_done &=  ~MONO_COMP_SSA_DEF_USE;
-	for (i = 0; i < cfg->num_varinfo; i++) {
+	for (guint i = 0; i < cfg->num_varinfo; i++) {
 		MonoMethodVar *info = MONO_VARINFO (cfg, i);
 		info->def = NULL;
 		info->uses = NULL;

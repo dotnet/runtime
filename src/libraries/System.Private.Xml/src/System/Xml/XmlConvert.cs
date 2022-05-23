@@ -76,46 +76,36 @@ namespace System.Xml
         public static string? DecodeName(string? name)
         {
             if (string.IsNullOrEmpty(name))
+            {
                 return name;
-
-            StringBuilder? bufBld = null;
-
-            int length = name.Length;
-            int copyPosition = 0;
+            }
 
             int underscorePos = name.IndexOf('_');
-            MatchCollection? mc;
-            IEnumerator? en;
-            if (underscorePos >= 0)
-            {
-                mc = DecodeCharRegex().Matches(name, underscorePos);
-                en = mc.GetEnumerator();
-            }
-            else
+            if (underscorePos < 0)
             {
                 return name;
             }
+
+            Regex.ValueMatchEnumerator en = DecodeCharRegex().EnumerateMatches(name.AsSpan(underscorePos));
             int matchPos = -1;
-            if (en != null && en.MoveNext())
+            if (en.MoveNext())
             {
-                Match m = (Match)en.Current!;
-                matchPos = m.Index;
+                matchPos = underscorePos + en.Current.Index;
             }
 
+            StringBuilder? bufBld = null;
+            int length = name.Length;
+            int copyPosition = 0;
             for (int position = 0; position < length - EncodedCharLength + 1; position++)
             {
                 if (position == matchPos)
                 {
-                    if (en!.MoveNext())
+                    if (en.MoveNext())
                     {
-                        Match m = (Match)en.Current!;
-                        matchPos = m.Index;
+                        matchPos = underscorePos + en.Current.Index;
                     }
 
-                    if (bufBld == null)
-                    {
-                        bufBld = new StringBuilder(length + 20);
-                    }
+                    bufBld ??= new StringBuilder(length + 20);
                     bufBld.Append(name, copyPosition, position - copyPosition);
 
                     if (name[position + 6] != '_')
@@ -312,13 +302,17 @@ namespace System.Xml
             return FromBinHexString(s, true);
         }
 
-        internal static byte[] FromBinHexString(string s!!, bool allowOddCount)
+        internal static byte[] FromBinHexString(string s, bool allowOddCount)
         {
-            return BinHexDecoder.Decode(s.ToCharArray(), allowOddCount);
+            ArgumentNullException.ThrowIfNull(s);
+
+            return BinHexDecoder.Decode(s.AsSpan(), allowOddCount);
         }
 
-        internal static string ToBinHexString(byte[] inArray!!)
+        internal static string ToBinHexString(byte[] inArray)
         {
+            ArgumentNullException.ThrowIfNull(inArray);
+
             return BinHexEncoder.Encode(inArray, 0, inArray.Length);
         }
 
@@ -328,8 +322,10 @@ namespace System.Xml
         ///    <para>
         ///    </para>
         /// </devdoc>
-        public static string VerifyName(string name!!)
+        public static string VerifyName(string name)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentNullException(nameof(name), SR.Xml_EmptyName);
@@ -389,8 +385,10 @@ namespace System.Xml
             return VerifyNCName(name, ExceptionType.XmlException);
         }
 
-        internal static string VerifyNCName(string name!!, ExceptionType exceptionType)
+        internal static string VerifyNCName(string name, ExceptionType exceptionType)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw new ArgumentNullException(nameof(name), SR.Xml_EmptyLocalName);
@@ -431,7 +429,10 @@ namespace System.Xml
                 return token;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 throw new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -440,12 +441,15 @@ namespace System.Xml
 
         internal static Exception? TryVerifyTOKEN(string token)
         {
-            if (token == null || token.Length == 0)
+            if (string.IsNullOrEmpty(token))
             {
                 return null;
             }
 
-            if (token[0] == ' ' || token[token.Length - 1] == ' ' || token.IndexOfAny(crt) != -1 || token.IndexOf("  ", StringComparison.Ordinal) != -1)
+            if (token.StartsWith(' ') ||
+                token.EndsWith(' ') ||
+                token.IndexOfAny(crt) >= 0 ||
+                token.Contains("  "))
             {
                 return new XmlException(SR.Sch_NotTokenString, token);
             }
@@ -462,8 +466,10 @@ namespace System.Xml
             return VerifyNMTOKEN(name, ExceptionType.XmlException);
         }
 
-        internal static string VerifyNMTOKEN(string name!!, ExceptionType exceptionType)
+        internal static string VerifyNMTOKEN(string name, ExceptionType exceptionType)
         {
+            ArgumentNullException.ThrowIfNull(name);
+
             if (name.Length == 0)
             {
                 throw CreateException(SR.Xml_InvalidNmToken, name, exceptionType);
@@ -507,16 +513,19 @@ namespace System.Xml
 
         // Verification method for XML characters as defined in XML spec production [2] Char.
         // Throws XmlException if invalid character is found, otherwise returns the input string.
-        public static string VerifyXmlChars(string content!!)
+        public static string VerifyXmlChars(string content)
         {
+            ArgumentNullException.ThrowIfNull(content);
+
             VerifyCharData(content, ExceptionType.XmlException);
             return content;
         }
 
         // Verification method for XML public ID characters as defined in XML spec production [13] PubidChar.
         // Throws XmlException if invalid character is found, otherwise returns the input string.
-        public static string VerifyPublicId(string publicId!!)
+        public static string VerifyPublicId(string publicId)
         {
+            ArgumentNullException.ThrowIfNull(publicId);
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsPublicId(publicId);
@@ -530,8 +539,9 @@ namespace System.Xml
 
         // Verification method for XML whitespace characters as defined in XML spec production [3] S.
         // Throws XmlException if invalid character is found, otherwise returns the input string.
-        public static string VerifyWhitespace(string content!!)
+        public static string VerifyWhitespace(string content)
         {
+            ArgumentNullException.ThrowIfNull(content);
 
             // returns the position of invalid character or -1
             int pos = XmlCharType.IsOnlyWhitespaceWithPos(content);
@@ -781,8 +791,10 @@ namespace System.Xml
             return new FormatException(SR.Format(SR.XmlConvert_BadFormat, s, "Boolean"));
         }
 
-        public static char ToChar(string s!!)
+        public static char ToChar(string s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             if (s.Length != 1)
             {
                 throw new FormatException(SR.XmlConvert_NotOneCharString);
@@ -1235,20 +1247,26 @@ namespace System.Xml
             return dt;
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s!!)
+        public static DateTimeOffset ToDateTimeOffset(string s)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             XsdDateTime xsdDateTime = new XsdDateTime(s, XsdDateTimeFlags.AllXsd);
             DateTimeOffset dateTimeOffset = (DateTimeOffset)xsdDateTime;
             return dateTimeOffset;
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s!!, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
+        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string format)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             return DateTimeOffset.ParseExact(s, format, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 
-        public static DateTimeOffset ToDateTimeOffset(string s!!, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
+        public static DateTimeOffset ToDateTimeOffset(string s, [StringSyntax(StringSyntaxAttribute.DateTimeFormat)] string[] formats)
         {
+            ArgumentNullException.ThrowIfNull(s);
+
             return DateTimeOffset.ParseExact(s, formats, DateTimeFormatInfo.InvariantInfo, DateTimeStyles.AllowLeadingWhite | DateTimeStyles.AllowTrailingWhite);
         }
 

@@ -43,9 +43,16 @@
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=%HELIX_CORRELATION_PAYLOAD%" />
     </ItemGroup>
 
+    <PropertyGroup Condition="'$(Scenario)' == 'BuildWasmApps'">
+      <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' == 'true'">-notrait category=no-workload</_XUnitTraitArg>
+      <_XUnitTraitArg Condition="'$(TestUsingWorkloads)' != 'true'">-trait category=no-workload</_XUnitTraitArg>
+    </PropertyGroup>
     <ItemGroup Condition="'$(ContinuousIntegrationBuild)' != 'true'">
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set TEST_USING_WORKLOADS=$(TestUsingWorkloads)" />
+
+      <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
+      <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set &quot;XUnitTraitArg=$(_XUnitTraitArg)&quot;" />
 
       <RunScriptCommands Condition="'$(OS)' != 'Windows_NT'" Include="export BASE_DIR=$(ArtifactsBinDir)" />
       <RunScriptCommands Condition="'$(OS)' == 'Windows_NT'" Include="set BASE_DIR=$(ArtifactsBinDir)" />
@@ -64,14 +71,17 @@
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">$(RunScriptCommand) %HELIX_XUNIT_ARGS%</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true'">$(RunScriptCommand) -nocolor</RunScriptCommand>
-      <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' or '$(XUnitShowProgress)' == 'true'">$(RunScriptCommand) -verbose</RunScriptCommand>
       <RunScriptCommand Condition="'$(ContinuousIntegrationBuild)' == 'true' and '$(OS)' == 'Windows_NT'">$(RunScriptCommand) -parallel none</RunScriptCommand>
+      <RunScriptCommand>$(RunScriptCommand) -verbose</RunScriptCommand>
 
       <RunScriptCommand Condition="'$(XUnitMethodName)' != ''">$(RunScriptCommand) -method $(XUnitMethodName)</RunScriptCommand>
       <RunScriptCommand Condition="'$(XUnitClassName)' != ''">$(RunScriptCommand) -class $(XUnitClassName)</RunScriptCommand>
 
       <!-- this allows use of test attributes from dotnet.xunitextensions -->
       <RunScriptCommand>$(RunScriptCommand) -notrait category=IgnoreForCI -notrait category=failing</RunScriptCommand>
+
+      <RunScriptCommand Condition="'$(OS)' == 'Windows_NT'">$(RunScriptCommand) %XUnitTraitArg%</RunScriptCommand>
+      <RunScriptCommand Condition="'$(OS)' != 'Windows_NT'">$(RunScriptCommand) %24XUnitTraitArg</RunScriptCommand>
     </PropertyGroup>
   </Target>
 </Project>

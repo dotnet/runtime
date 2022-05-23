@@ -748,5 +748,32 @@ namespace System.Text.RegularExpressions.Tests
                     private static partial Regex Valid();
                 }", compile: true, additionalRefs: new[] { MetadataReference.CreateFromImage(referencedAssembly) }));
         }
+
+        [Fact]
+        public async Task Valid_ConcatenatedLiteralsArgument()
+        {
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+
+                partial class C
+                {
+                    [RegexGenerator(""ab"" + ""[cd]"")]
+                    public static partial Regex Valid();
+                }
+            ", compile: true));
+        }
+
+        [Fact]
+        public async Task Valid_InterpolatedLiteralsArgument()
+        {
+            Assert.Empty(await RegexGeneratorHelper.RunGenerator(@"
+                using System.Text.RegularExpressions;
+
+                partial class C
+                {
+                    [RegexGenerator($""{""ab""}{""cd""}"")]
+                    public static partial Regex Valid();
+                }", compile: true));
+        }
     }
 }

@@ -21,7 +21,7 @@ inline static int ComputeNameHashCode(LPCUTF8 src)
     int hash1 = 0x6DA3B944;
     int hash2 = 0;
 
-    // DIFFERENT FROM CORERT: We hash UTF-8 bytes here, while CoreRT hashes UTF-16 characters.
+    // DIFFERENT FROM NATIVEAOT: We hash UTF-8 bytes here, while NativeAOT hashes UTF-16 characters.
 
     for (COUNT_T i = 0; src[i] != '\0'; i += 2)
     {
@@ -42,7 +42,7 @@ inline static int ComputeNameHashCode(LPCUTF8 pszNamespace, LPCUTF8 pszName)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // DIFFERENT FROM CORERT: CoreRT hashes the full name as one string ("namespace.name"),
+    // DIFFERENT FROM NATIVEAOT: NativeAOT hashes the full name as one string ("namespace.name"),
     // as the full name is already available. In CoreCLR we normally only have separate
     // strings for namespace and name, thus we hash them separately.
     return ComputeNameHashCode(pszNamespace) ^ ComputeNameHashCode(pszName);
@@ -52,8 +52,8 @@ inline static int ComputeArrayTypeHashCode(int elementTypeHashcode, int rank)
 {
     LIMITED_METHOD_CONTRACT;
 
-    // DIFFERENT FROM CORERT: This is much simplified compared to CoreRT, to avoid converting.rank to string.
-    // For single-dimensinal array, the result is identical to CoreRT.
+    // DIFFERENT FROM NATIVEAOT: This is much simplified compared to NativeAOT, to avoid converting.rank to string.
+    // For single-dimensinal array, the result is identical to NativeAOT.
     int hashCode = 0xd5313556 + rank;
     if (rank == 1)
         _ASSERTE(hashCode == ComputeNameHashCode("System.Array`1"));

@@ -6,6 +6,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics.Arm;
 using System.Text;
 
 namespace System.Runtime.Intrinsics
@@ -289,17 +290,38 @@ namespace System.Runtime.Intrinsics
         /// <param name="other">The <see cref="Vector64{T}" /> to compare with the current instance.</param>
         /// <returns><c>true</c> if <paramref name="other" /> is equal to the current instance; otherwise, <c>false</c>.</returns>
         /// <exception cref="NotSupportedException">The type of the current instance (<typeparamref name="T" />) is not supported.</exception>
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Equals(Vector64<T> other)
         {
-            for (int i = 0; i < Count; i++)
+            // This function needs to account for floating-point equality around NaN
+            // and so must behave equivalently to the underlying float/double.Equals
+
+            if (Vector64.IsHardwareAccelerated)
             {
-                if (!((IEquatable<T>)(this.GetElement(i))).Equals(other.GetElement(i)))
+                if ((typeof(T) == typeof(double)) || (typeof(T) == typeof(float)))
                 {
-                    return false;
+                    Vector64<T> result = Vector64.Equals(this, other) | ~(Vector64.Equals(this, this) | Vector64.Equals(other, other));
+                    return result.AsInt32() == Vector64<int>.AllBitsSet;
+                }
+                else
+                {
+                    return this == other;
                 }
             }
 
-            return true;
+            return SoftwareFallback(in this, other);
+
+            static bool SoftwareFallback(in Vector64<T> self, Vector64<T> other)
+            {
+                for (int index = 0; index < Count; index++)
+                {
+                    if (!Scalar<T>.ObjectEquals(self.GetElementUnsafe(index), other.GetElementUnsafe(index)))
+                    {
+                        return false;
+                    }
+                }
+                return true;
+            }
         }
 
         /// <summary>Gets the hash code for the instance.</summary>
@@ -324,7 +346,7 @@ namespace System.Runtime.Intrinsics
         public override string ToString()
             => ToString("G", CultureInfo.InvariantCulture);
 
-        private string ToString(string? format, IFormatProvider? formatProvider)
+        private string ToString([StringSyntax(StringSyntaxAttribute.NumericFormat)] string? format, IFormatProvider? formatProvider)
         {
             ThrowHelper.ThrowForUnsupportedIntrinsicsVector64BaseType<T>();
 

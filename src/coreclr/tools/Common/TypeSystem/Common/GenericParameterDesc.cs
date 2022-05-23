@@ -57,6 +57,11 @@ namespace Internal.TypeSystem
         /// constructor.
         /// </summary>
         DefaultConstructorConstraint = 0x10,
+
+        /// <summary>
+        /// A type is permitted to be ByRefLike.
+        /// </summary>
+        AcceptByRefLike = 0x20,
     }
 
     public abstract partial class GenericParameterDesc : TypeDesc

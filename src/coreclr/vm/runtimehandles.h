@@ -222,7 +222,7 @@ class RuntimeMethodHandle {
 public:
     static FCDECL1(ReflectMethodObject*, GetCurrentMethod, StackCrawlMark* stackMark);
 
-    static FCDECL5(Object*, InvokeMethod, Object *target, Span<OBJECTREF>* objs, SignatureNative* pSig, CLR_BOOL fConstructor, CLR_BOOL fWrapExceptions);
+    static FCDECL4(Object*, InvokeMethod, Object *target, PVOID* args, SignatureNative* pSig, CLR_BOOL fConstructor);
 
     struct StreamingContextData {
         Object * additionalContext;  // additionalContex was changed from OBJECTREF to Object to avoid having a
@@ -322,6 +322,7 @@ public:
     static FCDECL1(INT32, GetToken, ReflectFieldObject *pFieldUNSAFE);
     static FCDECL2(FieldDesc*, GetStaticFieldForGenericType, FieldDesc *pField, ReflectClassBaseObject *pDeclaringType);
     static FCDECL1(FC_BOOL_RET, AcquiresContextFromThis, FieldDesc *pField);
+    static FCDECL1(Object*, GetLoaderAllocator, FieldDesc *pField);
 };
 
 class ModuleHandle {

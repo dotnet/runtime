@@ -634,30 +634,39 @@ namespace System.DirectoryServices.Protocols
                     }
 
                     // Process the attribute.
-                    string stringValue = null;
-                    if (assertion[0] is byte[] byteArray)
+                    byte[] byteArray;
+                    if (assertion[0] is string str)
                     {
-                        if (byteArray != null && byteArray.Length != 0)
-                        {
-                            berValuePtr = new BerVal
-                            {
-                                bv_len = byteArray.Length,
-                                bv_val = Marshal.AllocHGlobal(byteArray.Length)
-                            };
-                            Marshal.Copy(byteArray, 0, berValuePtr.bv_val, byteArray.Length);
-                        }
+                        var encoder = new UTF8Encoding();
+                        byteArray = encoder.GetBytes(str);
+                    }
+                    else if (assertion[0] is Uri uri)
+                    {
+                        var encoder = new UTF8Encoding();
+                        byteArray = encoder.GetBytes(uri.ToString());
+                    }
+                    else if (assertion[0] is byte[] bytes)
+                    {
+                        byteArray = bytes;
                     }
                     else
                     {
-                        stringValue = assertion[0].ToString();
+                        throw new ArgumentException(SR.ValidValueType);
                     }
+
+                    berValuePtr = new BerVal
+                    {
+                        bv_len = byteArray.Length,
+                        bv_val = Marshal.AllocHGlobal(byteArray.Length)
+                    };
+                    Marshal.Copy(byteArray, 0, berValuePtr.bv_val, byteArray.Length);
 
                     // It is a compare request.
                     error = LdapPal.CompareDirectoryEntries(
                         _ldapHandle,
                         ((CompareRequest)request).DistinguishedName,
                         assertion.Name,
-                        stringValue,
+                        null,
                         berValuePtr,
                         serverControlArray, clientControlArray, ref messageID);
                 }

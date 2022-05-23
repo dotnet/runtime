@@ -4,11 +4,8 @@
     <AssemblyName>Microsoft.Interop.LibraryImportGenerator</AssemblyName>
     <TargetFramework>netstandard2.0</TargetFramework>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <LangVersion>Preview</LangVersion>
-    <Nullable>enable</Nullable>
     <RootNamespace>Microsoft.Interop</RootNamespace>
     <IsRoslynComponent>true</IsRoslynComponent>
-    <RunAnalyzers>true</RunAnalyzers>
     <!-- Disable RS2008: Enable analyzer release tracking
          Diagnostics in runtime use a different mechanism (docs/project/list-of-diagnostics.md) -->
     <NoWarn>RS2008;$(NoWarn)</NoWarn>
@@ -24,12 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Code included from System.Runtime.InteropServices -->
-    <Compile Include="$(CoreLibSharedDir)System\Runtime\InteropServices\StringMarshalling.cs" Link="Production\StringMarshalling.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion)" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="$(MicrosoftCodeAnalysisVersion_4_X)" PrivateAssets="all" />
     <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="$(MicrosoftCodeAnalysisAnalyzersVersion)" PrivateAssets="all" />
   </ItemGroup>
 

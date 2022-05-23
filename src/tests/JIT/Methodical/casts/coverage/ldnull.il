@@ -11,12 +11,12 @@
 {
 }
 .assembly extern xunit.core {}
-.namespace JitTest
+.namespace JitTest_ldnull_il
 {
-  .class private auto ansi beforefieldinit TestClass
+  .class public auto ansi beforefieldinit TestClass
          extends [mscorlib]System.Object
   {
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() cil managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -25,14 +25,14 @@
       .entrypoint
       // Code size       36 (0x24)
       .maxstack  2
-      .locals (class JitTest.TestClass V_0,
-               class JitTest.TestClass V_1)
+      .locals (class JitTest_ldnull_il.TestClass V_0,
+               class JitTest_ldnull_il.TestClass V_1)
       ldnull
-      isinst JitTest.TestClass
+      isinst JitTest_ldnull_il.TestClass
       stloc.0
       
       ldnull
-      castclass JitTest.TestClass
+      castclass JitTest_ldnull_il.TestClass
       stloc.1
       
       IL_0004:  ldloc.0
@@ -64,7 +64,7 @@
 
   } // end of class TestClass
 
-} // end of namespace JitTest
+} // end of namespace JitTest_ldnull_il
 
 //*********** DISASSEMBLY COMPLETE ***********************
 // WARNING: Created Win32 resource file ldnull.res

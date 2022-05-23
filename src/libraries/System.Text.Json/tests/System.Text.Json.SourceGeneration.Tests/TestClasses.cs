@@ -106,6 +106,8 @@ namespace System.Text.Json.SourceGeneration.Tests
         public HighLowTempsImmutable(int high, int low) => (High, Low) = (high, low);
     }
 
+    public record HighLowTempsRecord(int High, int Low);
+
     public class EmptyPoco
     {
     }
@@ -180,4 +182,15 @@ namespace System.Text.Json.SourceGeneration.Tests
     [Derived(TestProperty = "Test")]
     public class TypeWithDerivedAttribute
     { }
+
+    [JsonDerivedType(typeof(DerivedClass), "derivedClass")]
+    public class PolymorphicClass
+    {
+        public int Number { get; set; }
+
+        public class DerivedClass : PolymorphicClass
+        {
+            public bool Boolean { get; set; }
+        }
+    }
 }

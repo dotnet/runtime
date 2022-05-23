@@ -265,7 +265,7 @@ MGHbpaaShD6iJfoGMRX0frr0mMCtuOOZkkjBF9pSpkhaH0TDSq1PrVLxcM0/S4Vs
 dVYwfovccu8ktEAwk5XAOo0r+5CCw2lDDw/hbDeO87BToC5Cc5nu3F5LxAUj8Flc
 v8pi3w==
 -----END ENCRYPTED PRIVATE KEY-----";
-                dsa.ImportFromEncryptedPem(pem, "test");
+                dsa.ImportFromEncryptedPem(pem, (ReadOnlySpan<char>)"test");
                 DSAParameters dsaParameters = dsa.ExportParameters(true);
 
                 DSAImportExport.AssertKeyEquals(DSATestData.Dsa512Parameters, dsaParameters);
@@ -346,7 +346,7 @@ v8pi3w==
             {
                 string pem = "";
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
-                    dsa.ImportFromEncryptedPem(pem, ""));
+                    dsa.ImportFromEncryptedPem(pem, (ReadOnlySpan<char>)""));
                 Assert.Contains(NoPemExceptionMarker, ae.Message);
             }
         }
@@ -365,7 +365,7 @@ fve77OGaTv4qbZwinTYAg86p9yHzmwW6+XBS3vxnpYorBBYCFC49eoTIW2Z4Xh9v
 55aYKyKwy5i8
 -----END PRIVATE KEY-----";
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
-                    dsa.ImportFromEncryptedPem(pem, ""));
+                    dsa.ImportFromEncryptedPem(pem, (ReadOnlySpan<char>)""));
                 Assert.Contains(NoPemExceptionMarker, ae.Message);
             }
         }

@@ -122,8 +122,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
-        public virtual void AddValueChanged(object component!!, EventHandler handler!!)
+        public virtual void AddValueChanged(object component, EventHandler handler)
         {
+            ArgumentNullException.ThrowIfNull(component);
+            ArgumentNullException.ThrowIfNull(handler);
+
             if (_valueChangedHandlers == null)
             {
                 _valueChangedHandlers = new Dictionary<object, EventHandler?>();
@@ -391,8 +394,11 @@ namespace System.ComponentModel
         /// <summary>
         /// Allows interested objects to be notified when this property changes.
         /// </summary>
-        public virtual void RemoveValueChanged(object component!!, EventHandler handler!!)
+        public virtual void RemoveValueChanged(object component, EventHandler handler)
         {
+            ArgumentNullException.ThrowIfNull(component);
+            ArgumentNullException.ThrowIfNull(handler);
+
             if (_valueChangedHandlers != null)
             {
                 EventHandler? h = _valueChangedHandlers.GetValueOrDefault(component, defaultValue: null);

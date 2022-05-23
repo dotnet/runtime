@@ -1,11 +1,6 @@
 // Licensed to the .NET Foundation under one or more agreements.
 // The .NET Foundation licenses this file to you under the MIT license.
 
-// ==++==
-//
-
-//
-// ==--==
 // ****************************************************************************
 // File: controller.cpp
 //
@@ -883,7 +878,7 @@ void DebuggerController::CancelOutstandingThreadStarter(Thread * pThread)
 
 //void DebuggerController::Initialize()   Sets up the static
 // variables for the static DebuggerController class.
-// How: Sets g_runningOnWin95, initializes the critical section
+// How: initializes the critical section
 HRESULT DebuggerController::Initialize()
 {
     CONTRACT(HRESULT)
@@ -4632,7 +4627,7 @@ void DebuggerPatchSkip::CopyInstructionBlock(BYTE *to, const BYTE* from)
     }
     PAL_EXCEPT_FILTER(FilterAccessViolation2)
     {
-        // The whole point is that if we copy up the the AV, then
+        // The whole point is that if we copy up the AV, then
         // that's enough to execute, otherwise we would not have been
         // able to execute the code anyway. So we just ignore the
         // exception.

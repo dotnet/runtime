@@ -129,12 +129,17 @@ MONO_PROFILER_API
 gpointer
 mono_threads_enter_gc_safe_region_with_info (THREAD_INFO_TYPE *info, MonoStackData *stackdata);
 
+#ifndef DISABLE_THREADS
 #define MONO_ENTER_GC_SAFE_WITH_INFO(info)	\
 	do {	\
 		MONO_STACKDATA (__gc_safe_dummy); \
 		gpointer __gc_safe_cookie = mono_threads_enter_gc_safe_region_with_info ((info), &__gc_safe_dummy)
 
 #define MONO_EXIT_GC_SAFE_WITH_INFO	MONO_EXIT_GC_SAFE
+#else
+#define MONO_ENTER_GC_SAFE_WITH_INFO(info)	do { (void)info;
+#define MONO_EXIT_GC_SAFE_WITH_INFO	MONO_EXIT_GC_SAFE
+#endif
 
 MONO_PROFILER_API
 gpointer

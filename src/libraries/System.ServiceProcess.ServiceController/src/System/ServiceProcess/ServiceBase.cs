@@ -577,22 +577,8 @@ namespace System.ServiceProcess
 
         /// <summary>
         /// <para>When implemented in a derived class, <see cref='System.ServiceProcess.ServiceBase.OnCustomCommand'/>
-        /// executes when a custom command is passed to
-        /// the service. Specifies the actions to take when
+        /// executes when a custom command is passed to the service. Specifies the actions to take when
         /// a command with the specified parameter value occurs.</para>
-        /// <note type="rnotes">
-        ///    Previously had "Passed to the
-        ///    service by
-        ///    the SCM", but the SCM doesn't pass custom commands. Do we want to indicate an
-        ///    agent here? Would it be the ServiceController, or is there another way to pass
-        ///    the int into the service? I thought that the SCM did pass it in, but
-        ///    otherwise ignored it since it was an int it doesn't recognize. I was under the
-        ///    impression that the difference was that the SCM didn't have default processing, so
-        ///    it transmitted it without examining it or trying to performs its own
-        ///    default behavior on it. Please correct where my understanding is wrong in the
-        ///    second paragraph below--what, if any, contact does the SCM have with a
-        ///    custom command?
-        /// </note>
         /// </summary>
         protected virtual void OnCustomCommand(int command)
         {
@@ -698,11 +684,11 @@ namespace System.ServiceProcess
 
                 if (!multipleServices)
                 {
-                    _status.serviceType = ServiceTypeOptions.SERVICE_TYPE_WIN32_OWN_PROCESS;
+                    _status.serviceType = ServiceTypeOptions.SERVICE_WIN32_OWN_PROCESS;
                 }
                 else
                 {
-                    _status.serviceType = ServiceTypeOptions.SERVICE_TYPE_WIN32_SHARE_PROCESS;
+                    _status.serviceType = ServiceTypeOptions.SERVICE_WIN32_SHARE_PROCESS;
                 }
 
                 _status.currentState = ServiceControlStatus.STATE_START_PENDING;
@@ -885,10 +871,15 @@ namespace System.ServiceProcess
 
                 if (argCount > 0)
                 {
-                    char** argsAsPtr = (char**)argPointer.ToPointer();
+                    char** argsAsPtr = (char**)argPointer;
 
-                    //Lets read the arguments
-                    // the first arg is always the service name. We don't want to pass that in.
+                    // The first arg is always the service name. We don't want to pass that in,
+                    // but we can use it to set the service name on ourselves if we don't already know it.
+                    if (string.IsNullOrEmpty(_serviceName))
+                    {
+                         _serviceName = Marshal.PtrToStringUni((IntPtr)(*argsAsPtr))!;
+                    }
+
                     args = new string[argCount - 1];
 
                     for (int index = 0; index < args.Length; ++index)
@@ -954,7 +945,8 @@ namespace System.ServiceProcess
                 statusOK = SetServiceStatus(_statusHandle, pStatus);
                 if (!statusOK)
                 {
-                    WriteLogEntry(SR.Format(SR.StartFailed, new Win32Exception().Message), EventLogEntryType.Error);
+                    string errorMessage = new Win32Exception().Message;
+                    WriteLogEntry(SR.Format(SR.StartFailed, errorMessage), EventLogEntryType.Error);
                     _status.currentState = ServiceControlStatus.STATE_STOPPED;
                     SetServiceStatus(_statusHandle, pStatus);
                 }

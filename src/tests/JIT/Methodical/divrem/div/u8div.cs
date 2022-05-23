@@ -7,7 +7,8 @@ op1 and op2 can be static, local, class/struct member, function retval, 1D/2D/3D
 *****************************************************************************/
 
 using System;
-internal class u8div
+using Xunit;
+public class u8div
 {
     private static ulong s_ul_s_op1 = 12;
     private static int s_i_s_op2 = 2;
@@ -91,7 +92,8 @@ internal class u8div
         public decimal m_vt_op2;
     }
 
-    public static int Main()
+    [Fact]
+    public static int TestEntryPoint()
     {
         bool passed = true;
         //initialize class

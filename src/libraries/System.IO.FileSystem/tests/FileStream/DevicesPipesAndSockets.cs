@@ -63,6 +63,8 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task NamedPipe_ReadWrite()
         {
             string fifoPath = GetTestFilePath();
@@ -83,6 +85,8 @@ namespace System.IO.Tests
 
         [Fact]
         [PlatformSpecific(TestPlatforms.AnyUnix & ~TestPlatforms.Browser)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/67853", TestPlatforms.tvOS)]
+        [SkipOnPlatform(TestPlatforms.LinuxBionic, "SElinux blocks UNIX sockets")]
         public async Task NamedPipe_ReadWrite_Async()
         {
             string fifoPath = GetTestFilePath();

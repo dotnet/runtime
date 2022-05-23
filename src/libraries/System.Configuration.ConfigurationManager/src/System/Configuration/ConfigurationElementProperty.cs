@@ -9,8 +9,13 @@ namespace System.Configuration
     // new overridable on ConfigurationElement
     public sealed class ConfigurationElementProperty
     {
-        public ConfigurationElementProperty(ConfigurationValidatorBase validator!!)
+        public ConfigurationElementProperty(ConfigurationValidatorBase validator)
         {
+            if (validator is null)
+            {
+                throw new ArgumentNullException(nameof(validator));
+            }
+
             Validator = validator;
         }
 

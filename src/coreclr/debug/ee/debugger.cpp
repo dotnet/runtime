@@ -1735,15 +1735,18 @@ CLR_ENGINE_METRICS g_CLREngineMetrics = {
     CorDebugVersion_4_0,
     &g_hContinueStartupEvent};
 
-#define StartupNotifyEventNamePrefix W("TelestoStartupEvent_")
-const int cchEventNameBufferSize = sizeof(StartupNotifyEventNamePrefix)/sizeof(WCHAR) + 8; // + hex DWORD (8).  NULL terminator is included in sizeof(StartupNotifyEventNamePrefix)
 HANDLE OpenStartupNotificationEvent()
 {
-    DWORD debuggeePID = GetCurrentProcessId();
-    WCHAR szEventName[cchEventNameBufferSize];
-    swprintf_s(szEventName, cchEventNameBufferSize, StartupNotifyEventNamePrefix W("%08x"), debuggeePID);
+    // "Telesto" is the legacy name for the start up event. Changing this name
+    // would impact multiple repos and not worth the effort at present.
+    // This event is used by https://github.com/dotnet/diagnostics/blob/main/src/dbgshim/dbgshim.cpp
+    WCHAR prefix[] = W("TelestoStartupEvent_");
+    WCHAR eventName[ARRAY_SIZE(prefix) + Max32BitHexString] = { W('\0') };
+    wcscat_s(eventName, ARRAY_SIZE(eventName), prefix);
 
-    return WszOpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, szEventName);
+    DWORD debuggeePID = GetCurrentProcessId();
+    FormatInteger(eventName + ARRAY_SIZE(prefix) - 1, ARRAY_SIZE(eventName) - ARRAY_SIZE(prefix), "%08x", debuggeePID);
+    return WszOpenEvent(MAXIMUM_ALLOWED | SYNCHRONIZE | EVENT_MODIFY_STATE, FALSE, eventName);
 }
 
 void NotifyDebuggerOfStartup()
@@ -5623,7 +5626,7 @@ void Debugger::TraceCall(const BYTE *code)
         EX_TRY
         {
             // Since we have a try catch and the debugger code can deal properly with
-            // faults occuring inside DebuggerController::DispatchTraceCall, we can safely
+            // faults occurring inside DebuggerController::DispatchTraceCall, we can safely
             // establish a FAULT_NOT_FATAL region. This is required since some callers can't
             // tolerate faults.
             FAULT_NOT_FATAL();
@@ -6629,6 +6632,8 @@ void Debugger::InitDebuggerLaunchJitInfo(Thread * pThread, EXCEPTION_POINTERS * 
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM;
 #elif defined(TARGET_ARM64)
     s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_ARM64;
+#elif defined(TARGET_LOONGARCH64)
+    s_DebuggerLaunchJitInfo.dwProcessorArchitecture = PROCESSOR_ARCHITECTURE_LOONGARCH64;
 #else
 #error Unknown processor.
 #endif
@@ -6863,8 +6868,6 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
 
     StackSString strDbgCommand;
     const WCHAR * wszDbgCommand = NULL;
-    SString strCurrentDir;
-    const WCHAR * wszCurrentDir = NULL;
 
     EX_TRY
     {
@@ -6877,9 +6880,6 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
             _ASSERTE(wszDbgCommand != NULL); // would have thrown on oom.
 
             LOG((LF_CORDB, LL_INFO10000, "D::EDA: launching with command [%S]\n", wszDbgCommand));
-
-            ClrGetCurrentDirectory(strCurrentDir);
-            wszCurrentDir = strCurrentDir.GetUnicode();
         }
     }
     EX_CATCH
@@ -6901,7 +6901,8 @@ HRESULT Debugger::EDAHelper(PROCESS_INFORMATION *pProcessInfo)
                                NULL, NULL,
                                TRUE,
                                CREATE_NEW_CONSOLE,
-                               NULL, wszCurrentDir,
+                               NULL,
+                               NULL,
                                &startupInfo,
                                pProcessInfo);
         errCreate = GetLastError();
@@ -8933,7 +8934,7 @@ void Debugger::SendUserBreakpoint(Thread * thread)
     }
     else if (dbgAction == ATTACH_TERMINATE)
     {
-        // ATTACH_TERMINATE indicates the the user wants to terminate the app.
+        // ATTACH_TERMINATE indicates the user wants to terminate the app.
         LOG((LF_CORDB, LL_INFO10000, "D::SUB: terminating this process due to user request\n"));
 
         // Should this go through the host?
@@ -13523,6 +13524,9 @@ LONG Debugger::FirstChanceSuspendHijackWorker(CONTEXT *pContext,
     SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p, EFlags=0x%08x\n",
         tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp,
         pContext->EFlags));
+#elif defined(TARGET_LOONGARCH64)
+    SPEW(fprintf(stderr, "0x%x D::FCHF: code=0x%08x, addr=0x%08x, Pc=0x%p, Sp=0x%p\n",
+        tid, pExceptionRecord->ExceptionCode, pExceptionRecord->ExceptionAddress, pContext->Pc, pContext->Sp));
 #endif
 
     // This memory is used as IPC during the hijack. We will place a pointer to this in
@@ -13939,7 +13943,7 @@ DWORD Debugger::GetHelperThreadID(void )
 
 
 // HRESULT Debugger::InsertToMethodInfoList():  Make sure
-//  that there's only one head of the the list of DebuggerMethodInfos
+//  that there's only one head of the list of DebuggerMethodInfos
 //  for the (implicitly) given MethodDef/Module pair.
 HRESULT
 Debugger::InsertToMethodInfoList( DebuggerMethodInfo *dmi )
@@ -14127,7 +14131,7 @@ void Debugger::SendMDANotification(
     DebuggerIPCControlBlock *pDCB = m_pRCThread->GetDCB();
 
 
-    // If the MDA is ocuring very early in startup before the DCB is setup, then bail.
+    // If the MDA is occurring very early in startup before the DCB is setup, then bail.
     if (pDCB == NULL)
     {
         return;
@@ -14245,7 +14249,7 @@ void Debugger::SendLogMessage(int iLevel,
     LOG((LF_CORDB, LL_INFO10000, "D::SLM: Sending log message.\n"));
 
     // Send the message only if the debugger is attached to this appdomain.
-    // Note the the debugger may detach at any time, so we'll have to check
+    // Note the debugger may detach at any time, so we'll have to check
     // this again after we get the lock.
     AppDomain *pAppDomain = g_pEEInterface->GetThread()->GetDomain();
 
@@ -14396,7 +14400,7 @@ void Debugger::SendCustomDebuggerNotification(Thread * pThread,
     LOG((LF_CORDB, LL_INFO10000, "D::SLM: Sending log message.\n"));
 
     // Send the message only if the debugger is attached to this appdomain.
-    // Note the the debugger may detach at any time, so we'll have to check
+    // Note the debugger may detach at any time, so we'll have to check
     // this again after we get the lock.
     if (!CORDebuggerAttached())
     {
@@ -16553,10 +16557,15 @@ void DebuggerHeap::Free(void *pMem)
 }
 
 #ifndef DACCESS_COMPILE
-
-
-// Undef this so we can call them from the EE versions.
-#undef UtilMessageBoxVA
+// forward declare for specific type needed.
+int UtilMessageBoxVA(
+        HWND hWnd,        // Handle to Owner Window
+        UINT uText,       // Resource Identifier for Text message
+        UINT uCaption,    // Resource Identifier for Caption
+        UINT uType,       // Style of MessageBox
+        BOOL displayForNonInteractive,    // Display even if the process is running non interactive
+        BOOL ShowFileNameInTitle, // Flag to show FileName in Caption
+        va_list args);    // Additional Arguments
 
 // Message box API for the left side of the debugger. This API handles calls from the
 // debugger helper thread as well as from normal EE threads. It is the only one that
@@ -16591,9 +16600,6 @@ int Debugger::MessageBox(
 
     return result;
 }
-
-// Redefine this to an error just in case code is added after this point in the file.
-#define UtilMessageBoxVA __error("Use g_pDebugger->MessageBox from inside the left side of the debugger")
 
 #else // DACCESS_COMPILE
 void

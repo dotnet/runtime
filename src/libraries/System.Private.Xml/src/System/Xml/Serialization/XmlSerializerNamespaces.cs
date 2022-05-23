@@ -9,7 +9,6 @@ namespace System.Xml.Serialization
     using System.Xml.Schema;
     using System;
     using System.Collections.Generic;
-    using System.Xml.Extensions;
     using System.Xml;
     using System.Diagnostics.CodeAnalysis;
 
@@ -69,7 +68,7 @@ namespace System.Xml.Serialization
                 XmlConvert.VerifyNCName(prefix);
 
             if (ns != null && ns.Length > 0)
-                ExtensionMethods.ToUri(ns);
+                XmlConvert.ToUri(ns);
             AddInternal(prefix!, ns);
         }
 

@@ -16,9 +16,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
     {
         private readonly ReflectionWritableMember _member;
 
-        public ImportingMember(ContractBasedImportDefinition definition, ReflectionWritableMember member!!, ImportType importType)
+        public ImportingMember(ContractBasedImportDefinition definition, ReflectionWritableMember member, ImportType importType)
             : base(definition, importType)
         {
+            ArgumentNullException.ThrowIfNull(member);
+
             _member = member;
         }
 
@@ -100,8 +102,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private void SetCollectionMemberValue(object? instance, IEnumerable values!!)
+        private void SetCollectionMemberValue(object? instance, IEnumerable values)
         {
+            ArgumentNullException.ThrowIfNull(values);
+
             ICollection<object>? collection = null;
             Type? itemType = CollectionServices.GetCollectionElementType(ImportType.ActualType);
             if (itemType != null)
@@ -113,8 +117,10 @@ namespace System.ComponentModel.Composition.ReflectionModel
             PopulateCollection(collection!, values);
         }
 
-        private ICollection<object> GetNormalizedCollection(Type itemType!!, object? instance)
+        private ICollection<object> GetNormalizedCollection(Type itemType, object? instance)
         {
+            ArgumentNullException.ThrowIfNull(itemType);
+
             object? collectionObject = null;
 
             if (_member.CanRead)
@@ -204,8 +210,11 @@ namespace System.ComponentModel.Composition.ReflectionModel
             }
         }
 
-        private void PopulateCollection(ICollection<object?> collection!!, IEnumerable values!!)
+        private void PopulateCollection(ICollection<object?> collection, IEnumerable values)
         {
+            ArgumentNullException.ThrowIfNull(collection);
+            ArgumentNullException.ThrowIfNull(values);
+
             try
             {
                 collection.Clear();

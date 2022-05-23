@@ -59,8 +59,10 @@ namespace System.Drawing
             return base.ConvertFrom(context, culture, value);
         }
 
-        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType!!)
+        public override object? ConvertTo(ITypeDescriptorContext? context, CultureInfo? culture, object? value, Type destinationType)
         {
+            ArgumentNullException.ThrowIfNull(destinationType);
+
             if (value is Rectangle rect)
             {
                 if (destinationType == typeof(string))
@@ -99,8 +101,10 @@ namespace System.Drawing
             return base.ConvertTo(context, culture, value, destinationType);
         }
 
-        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues!!)
+        public override object CreateInstance(ITypeDescriptorContext? context, IDictionary propertyValues)
         {
+            ArgumentNullException.ThrowIfNull(propertyValues);
+
             object? x = propertyValues["X"];
             object? y = propertyValues["Y"];
             object? width = propertyValues["Width"];

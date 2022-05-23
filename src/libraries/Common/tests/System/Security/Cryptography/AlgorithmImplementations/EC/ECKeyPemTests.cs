@@ -322,7 +322,7 @@ Evt9yfvEjiP/6yITq59drw1Kcgp6buOCVCY7LZ06aD6WpogiqGDYMuzfvqg5hNFp
 opSAJ/pvHONL5kyAJLeNyG9c/mR2qyrP2L9gL0Z5fB9NyPejKTLi0PXMGQWdDTH8
 Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
 -----END ENCRYPTED PRIVATE KEY-----";
-                key.ImportFromEncryptedPem(pem, "test");
+                key.ImportFromEncryptedPem(pem, (ReadOnlySpan<char>)"test");
                 ECParameters ecParameters = key.ExportParameters(true);
                 ECParameters expected = EccTestData.GetNistP256ReferenceKey();
                 EccTestBase.AssertEqual(expected, ecParameters);
@@ -400,7 +400,7 @@ opSAJ/pvHONL5kyAJLeNyG9c/mR2qyrP2L9gL0Z5fB9NyPejKTLi0PXMGQWdDTH8
 Qh0fqdrNovgFLubbJFMQN/MwwIAfIuf0Mn0WFYYeQiBJ3kg=
 -----END ENCRYPTED PRIVATE KEY-----";
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
-                    key.ImportFromEncryptedPem(pem, ""));
+                    key.ImportFromEncryptedPem(pem, (ReadOnlySpan<char>)""));
                 Assert.Contains(AmbiguousExceptionMarker, ae.Message);
             }
         }
@@ -429,7 +429,7 @@ y6T3Y16v8maAqNihK6YdWZI19n2ctNWPF4PTykPnjwpauqYkB5k2wMOp
             using(TAlg key = CreateKey())
             {
                 ArgumentException ae = AssertExtensions.Throws<ArgumentException>("input", () =>
-                    key.ImportFromEncryptedPem("", ""));
+                    key.ImportFromEncryptedPem("", (ReadOnlySpan<char>)""));
                 Assert.Contains(NoPemExceptionMarker, ae.Message);
             }
         }

@@ -1765,7 +1765,7 @@ PCODE VirtualCallStubManager::ResolveWorker(StubCallSite* pCallSite,
 #ifdef CHAIN_LOOKUP
                     pResolverFcn  = (PCODE) GetEEFuncEntryPoint(ResolveWorkerChainLookupAsmStub);
 #else // CHAIN_LOOKUP
-                    // Use the the slow resolver
+                    // Use the slow resolver
                     pResolverFcn = (PCODE) GetEEFuncEntryPoint(ResolveWorkerAsmStub);
 #endif
 
@@ -2029,8 +2029,6 @@ VirtualCallStubManager::Resolver(
     }
 #endif // _DEBUG
 
-    g_IBCLogger.LogMethodTableAccess(pMT);
-
     // NOTE: CERs are not hardened against transparent proxy types,
     // so no need to worry about throwing an exception from here.
 
@@ -2046,7 +2044,6 @@ VirtualCallStubManager::Resolver(
     // this target and backpatch the callsite.
     if (!implSlot.IsNull())
     {
-        g_IBCLogger.LogDispatchTableSlotAccess(&implSlot);
 #if defined(LOGGING) || defined(_DEBUG)
         {
             pMD = implSlot.GetMethodDesc();
@@ -2112,10 +2109,6 @@ VirtualCallStubManager::Resolver(
                     //           every time. If the way we call generic virtual methods changes, this will also need
                     //           to change.
                     fShouldPatch = TRUE;
-                }
-                else
-                {
-                    g_IBCLogger.LogMethodDescAccess(pMD);
                 }
             }
         }
@@ -3378,7 +3371,7 @@ BOOL BucketTable::SetUpProber(size_t keyA, size_t keyB, Prober *prober)
     // scenario each processor could see old memory values that would cause us to
     // leak memory.
     //
-    // Since this a a fairly hot code path and it is very rare for buckets[index]
+    // Since this is a fairly hot code path and it is very rare for buckets[index]
     // to be CALL_STUB_EMPTY_ENTRY, we can first try a non-volatile read and then
     // if it looks like we need to create a new FastTable we double check by doing
     // a volatile read.

@@ -10,9 +10,9 @@
 .assembly extern mscorlib { }
 .assembly 'typedref' { }
 .assembly extern xunit.core {}
-.namespace BoxTest
+.namespace BoxTest_typedref_il
 {
-  .class auto ansi Test extends [mscorlib]System.Object
+  .class public auto ansi Test extends [mscorlib]System.Object
   {
     .method family hidebysig instance class [mscorlib]System.Object 
             Fibonacci(typedref num, typedref flag) il managed
@@ -46,7 +46,7 @@ equal_types:
       			ldarg.2
 				refanyval	[mscorlib]System.Object
 				ldind.ref
-      			tail. call       instance class System.Object BoxTest.Test::Fibonacci2(class System.Object,
+      			tail. call       instance class System.Object BoxTest_typedref_il.Test::Fibonacci2(class System.Object,
                                                                                  class System.Object)
       			ret
     } // end of method 'Test::Fibonacci'
@@ -90,7 +90,7 @@ equal_types:
       			stloc buf2
       			ldloca buf2
       			mkrefany	[mscorlib]System.Object
-      IL_0029:  call       instance class [mscorlib]System.Object BoxTest.Test::Fibonacci(typedref, typedref)
+      IL_0029:  call       instance class [mscorlib]System.Object BoxTest_typedref_il.Test::Fibonacci(typedref, typedref)
       IL_002e:  unbox      [mscorlib]System.Int32
       IL_0033:  ldind.i4
       IL_0034:  ldarg.0
@@ -107,7 +107,7 @@ equal_types:
       			mkrefany	[mscorlib]System.Object
       IL_0046:  ldarga flag
       			mkrefany	[mscorlib]System.Object
-      IL_0047:  call       instance class [mscorlib]System.Object BoxTest.Test::Fibonacci(typedref, typedref)
+      IL_0047:  call       instance class [mscorlib]System.Object BoxTest_typedref_il.Test::Fibonacci(typedref, typedref)
       IL_004c:  unbox      [mscorlib]System.Int32
       IL_0051:  ldind.i4
       IL_0052:  add
@@ -146,7 +146,7 @@ equal_types:
       IL_009e:  ret
     } // end of method 'Test::Fibonacci2'
 
-    .method private hidebysig static int32
+    .method public hidebysig static int32
             Main() il managed
     {
       .custom instance void [xunit.core]Xunit.FactAttribute::.ctor() = (
@@ -158,7 +158,7 @@ equal_types:
                [1] bool V_1,
                [2] class [mscorlib]System.Object buf1,
                [3] class [mscorlib]System.Object buf2)
-      IL_0000:  newobj     instance void BoxTest.Test::.ctor()
+      IL_0000:  newobj     instance void BoxTest_typedref_il.Test::.ctor()
       IL_0005:  ldc.i4.s   20
       IL_0007:  stloc.0
       
@@ -176,7 +176,7 @@ equal_types:
       			ldloca buf2
       			mkrefany	[mscorlib]System.Object
       
-      IL_0018:  call       instance class [mscorlib]System.Object BoxTest.Test::Fibonacci(typedref, typedref)
+      IL_0018:  call       instance class [mscorlib]System.Object BoxTest_typedref_il.Test::Fibonacci(typedref, typedref)
       IL_001d:  pop
       IL_001e:  call       void [System.Console]System.Console::WriteLine()
       IL_0023:  ldstr      "*** PASSED ***"
@@ -196,5 +196,5 @@ equal_types:
 
   } // end of class 'Test'
 
-} // end of namespace 'BoxTest'
+} // end of namespace 'BoxTest_typedref_il'
 

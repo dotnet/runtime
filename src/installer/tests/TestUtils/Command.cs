@@ -250,6 +250,13 @@ namespace Microsoft.DotNet.Cli.Build.Framework
 
         public CommandResult Execute(bool fExpectedToFail)
         {
+            // Clear out any enabling of dump creation if failure is expected
+            if (fExpectedToFail)
+            {
+                EnvironmentVariable("COMPlus_DbgEnableMiniDump", null);
+                EnvironmentVariable("DOTNET_DbgEnableMiniDump", null);
+            }
+
             Start();
             return WaitForExit(fExpectedToFail);
         }
