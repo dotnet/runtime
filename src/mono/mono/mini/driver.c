@@ -50,6 +50,7 @@
 #include "mono/metadata/w32handle.h"
 #include "mono/metadata/callspec.h"
 #include "mono/metadata/custom-attrs-internals.h"
+#include "mono/metadata/custom-attrs-types.h"
 #include <mono/utils/w32subset.h>
 
 #include <mono/metadata/components.h>
@@ -432,6 +433,7 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 		gpointer *typed_args, *named_args;
 		int num_named_args;
 		CattrNamedArg *arginfo;
+		MonoCustomAttrValue *attr_value;
 
 		mono_reflection_create_custom_attr_data_args_noalloc (
 			mono_defaults.corlib, centry->ctor, centry->data, centry->data_size,
@@ -439,7 +441,8 @@ method_should_be_regression_tested (MonoMethod *method, gboolean interp)
 		if (!is_ok (error))
 			continue;
 
-		const char *arg = (const char*)typed_args [0];
+		attr_value = (MonoCustomAttrValue *)typed_args [0];
+		const char *arg = (const char*)attr_value->value.primitive;
 		mono_metadata_decode_value (arg, &arg);
 		char *utf8_str = (char*)arg; //this points into image memory that is constant
 		g_free (typed_args);

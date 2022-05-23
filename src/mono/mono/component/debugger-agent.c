@@ -91,6 +91,7 @@
 #include "debugger-engine.h"
 #include <mono/metadata/debug-mono-ppdb.h>
 #include <mono/metadata/custom-attrs-internals.h>
+#include <mono/metadata/custom-attrs-types.h>
 #include <mono/metadata/components.h>
 #include <mono/mini/debugger-agent-external.h>
 
@@ -2934,6 +2935,7 @@ static gint32 isFixedSizeArray (MonoClassField *f)
 				gpointer *typed_args, *named_args;
 				CattrNamedArg *arginfo;
 				int num_named_args;
+				MonoCustomAttrValue *attr_value;
 
 				mono_reflection_create_custom_attr_data_args_noalloc (mono_get_corlib (), attr->ctor, attr->data, attr->data_size,
 																	&typed_args, &named_args, &num_named_args, &arginfo, error);
@@ -2941,7 +2943,10 @@ static gint32 isFixedSizeArray (MonoClassField *f)
 					ret = 0;
 					goto leave;
 				}
-				ret = *(gint32*)typed_args [1];
+
+				attr_value = (MonoCustomAttrValue*)typed_args[1];
+				ret = *(gint32*)attr_value->value.primitive;
+
 				g_free (typed_args [1]);
 				g_free (typed_args);
 				g_free (named_args);

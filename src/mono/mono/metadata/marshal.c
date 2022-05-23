@@ -56,7 +56,7 @@ MONO_PRAGMA_WARNING_POP()
 #include "mono/metadata/handle.h"
 #include "mono/metadata/object-internals.h"
 #include "mono/metadata/custom-attrs-internals.h"
-#include <mono/metadata/custom-attrs-types.h>
+#include "mono/metadata/custom-attrs-types.h"
 #include "mono/metadata/abi-details.h"
 #include "mono/metadata/custom-attrs-internals.h"
 #include "mono/metadata/loader-internals.h"
@@ -4159,22 +4159,25 @@ mono_marshal_get_managed_wrapper (MonoMethod *method, MonoClass *delegate_klass,
 			gint32 charset = 0;
 			MonoBoolean set_last_error = 0;
 			int num_named_args;
+			MonoCustomAttrValue *call_conv_attr_value;
 
 			mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size,
 																  &typed_args, &named_args, &num_named_args, &arginfo, error);
 			g_assert (is_ok (error));
 
 			/* typed args */
-			call_conv = *(gint32*)typed_args [0];
+			call_conv_attr_value = (MonoCustomAttrValue*)typed_args [0];
+			call_conv = *(gint32*)call_conv_attr_value->value.primitive;
 			/* named args */
 			for (i = 0; i < num_named_args; ++i) {
 				CattrNamedArg *narg = &arginfo [i];
+				MonoCustomAttrValue *attr_value = (MonoCustomAttrValue*)named_args [i];
 
 				g_assert (narg->field);
 				if (!strcmp (narg->field->name, "CharSet")) {
-					charset = *(gint32*)named_args [i];
+					charset = *(gint32*)attr_value->value.primitive;
 				} else if (!strcmp (narg->field->name, "SetLastError")) {
-					set_last_error = *(MonoBoolean*)named_args [i];
+					set_last_error = *(MonoBoolean*)attr_value->value.primitive;
 				} else if (!strcmp (narg->field->name, "BestFitMapping")) {
 					// best_fit_mapping = *(MonoBoolean*)mono_object_unbox_internal (o);
 				} else if (!strcmp (narg->field->name, "ThrowOnUnmappableChar")) {

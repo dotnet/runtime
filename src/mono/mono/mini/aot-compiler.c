@@ -51,6 +51,7 @@
 #include <mono/metadata/mono-endian.h>
 #include <mono/metadata/threads-types.h>
 #include <mono/metadata/custom-attrs-internals.h>
+#include <mono/metadata/custom-attrs-types.h>
 #include <mono/utils/mono-logger-internals.h>
 #include <mono/utils/mono-compiler.h>
 #include <mono/utils/mono-time.h>
@@ -5192,11 +5193,13 @@ MONO_RESTORE_WARNING
 				gpointer *named_args = NULL;
 				CattrNamedArg *named_arg_info = NULL;
 				int num_named_args = 0;
+				MonoCustomAttrValue *attr_value = NULL;
 				mono_reflection_create_custom_attr_data_args_noalloc (acfg->image, e->ctor, e->data, e->data_size, &typed_args, &named_args, &num_named_args, &named_arg_info, error);
 				mono_error_assert_ok (error);
 				for (j = 0; j < num_named_args; ++j) {
 					if (named_arg_info [j].field && !strcmp (named_arg_info [j].field->name, "EntryPoint")) {
-						named = named_args [j];
+						attr_value = (MonoCustomAttrValue *)named_args [j];
+						named = (const char *)attr_value->value.primitive;
 						slen = mono_metadata_decode_value (named, &named);
 						export_name = (char *)g_malloc (slen + 1);
 						memcpy (export_name, named, slen);

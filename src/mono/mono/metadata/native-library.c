@@ -12,6 +12,7 @@
 #include "mono/utils/mono-path.h"
 #include "mono/metadata/native-library.h"
 #include "mono/metadata/custom-attrs-internals.h"
+#include "mono/metadata/custom-attrs-types.h"
 
 static int pinvoke_search_directories_count;
 static char **pinvoke_search_directories;
@@ -947,6 +948,7 @@ get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 	gpointer *typed_args, *named_args;
 	CattrNamedArg *arginfo;
 	int num_named_args;
+	MonoCustomAttrValue *flags_attr_value;
 
 	mono_reflection_create_custom_attr_data_args_noalloc (m_class_get_image (attr->ctor->klass), attr->ctor, attr->data, attr->data_size,
 															&typed_args, &named_args, &num_named_args, &arginfo, error);
@@ -955,7 +957,8 @@ get_dllimportsearchpath_flags (MonoCustomAttrInfo *cinfo)
 		return -4;
 	}
 
-	flags = *(gint32*)typed_args [0];
+	flags_attr_value = (MonoCustomAttrValue*)typed_args [0];
+	flags = *(gint32*)flags_attr_value->value.primitive;
 	g_free (typed_args [0]);
 	g_free (typed_args);
 	g_free (named_args);

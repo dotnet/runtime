@@ -8,6 +8,7 @@
 #include "metadata/marshal-shared.h"
 #include "metadata/method-builder-ilgen.h"
 #include "metadata/custom-attrs-internals.h"
+#include "metadata/custom-attrs-types.h"
 #include "metadata/class-init.h"
 #include "mono/metadata/class-internals.h"
 #include "metadata/reflection-internals.h"
@@ -221,13 +222,19 @@ mono_marshal_shared_get_fixed_buffer_attr (MonoClassField *field, MonoType **out
 		gpointer *typed_args, *named_args;
 		CattrNamedArg *arginfo;
 		int num_named_args;
+		MonoCustomAttrValue *etype_attr_value, *len_attr_value;
 
 		mono_reflection_create_custom_attr_data_args_noalloc (mono_defaults.corlib, attr->ctor, attr->data, attr->data_size,
 															  &typed_args, &named_args, &num_named_args, &arginfo, error);
 		if (!is_ok (error))
 			return FALSE;
-		*out_etype = (MonoType*)typed_args [0];
-		*out_len = *(gint32*)typed_args [1];
+
+		etype_attr_value = (MonoCustomAttrValue*)typed_args[0];
+		*out_etype = (MonoType*)etype_attr_value->value.primitive;
+
+		len_attr_value = (MonoCustomAttrValue*)typed_args[1];
+		*out_len = *(gint32*)len_attr_value->value.primitive;
+		
 		g_free (typed_args [1]);
 		g_free (typed_args);
 		g_free (named_args);
