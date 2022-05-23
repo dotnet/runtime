@@ -2186,7 +2186,7 @@ namespace System.Xml.Serialization
                     }
                     else
                     {
-                        if (member.Source[member.Source.Length - 1] == '(' || member.Source[member.Source.Length - 1] == '{')
+                        if (member.Source.EndsWith('(') || member.Source.EndsWith('{'))
                         {
                             WriteCreateInstance(a, typeDesc.CannotNew, typeDesc.Type!);
                             WriteSourceBegin(member.Source);

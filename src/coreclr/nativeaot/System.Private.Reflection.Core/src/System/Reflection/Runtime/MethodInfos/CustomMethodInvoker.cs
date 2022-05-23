@@ -42,7 +42,7 @@ namespace System.Reflection.Runtime.MethodInfos
             {
                 result = _action(thisObject, convertedArguments, _thisType);
             }
-            catch (Exception e) when (wrapInTargetInvocationException && ((_options & InvokerOptions.DontWrapException) == 0))
+            catch (Exception e) when (wrapInTargetInvocationException)
             {
                 throw new TargetInvocationException(e);
             }

@@ -4977,9 +4977,6 @@ void Compiler::compCompile(void** methodCodePtr, uint32_t* methodCodeSize, JitFl
     fgDebugCheckLinks(compStressCompile(STRESS_REMORPH_TREES, 50));
 #endif
 
-    // Remove dead blocks
-    DoPhase(this, PHASE_REMOVE_DEAD_BLOCKS, &Compiler::fgRemoveDeadBlocks);
-
     // Dominator and reachability sets are no longer valid.
     fgDomsComputed = false;
 

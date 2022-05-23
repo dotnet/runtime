@@ -185,6 +185,59 @@ jobs:
         crossrootfsDir: '/crossrootfs/arm64'
         ${{ insert }}: ${{ parameters.jobParameters }}
 
+# Linux Bionic arm64
+
+- ${{ if containsValue(parameters.platforms, 'Linux_bionic_arm64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      osSubgroup: _bionic
+      archType: arm64
+      targetRid: linux-bionic-arm64
+      platform: Linux_bionic_arm64
+      container:
+        image: ubuntu-18.04-android-20220131172314-3983b4e
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: mono
+        # We build on Linux, but the test queue runs Windows, so
+        # we need to override the test script generation
+        runScriptWindowsCmd: true
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
+# Linux Bionic x64
+
+- ${{ if containsValue(parameters.platforms, 'Linux_bionic_x64') }}:
+  - template: xplat-setup.yml
+    parameters:
+      jobTemplate: ${{ parameters.jobTemplate }}
+      helixQueuesTemplate: ${{ parameters.helixQueuesTemplate }}
+      variables: ${{ parameters.variables }}
+      osGroup: Linux
+      osSubgroup: _bionic
+      archType: x64
+      targetRid: linux-bionic-x64
+      platform: Linux_bionic_x64
+      container:
+        image: ubuntu-18.04-android-20220131172314-3983b4e
+        registry: mcr
+      jobParameters:
+        runtimeFlavor: mono
+        stagedBuild: ${{ parameters.stagedBuild }}
+        buildConfig: ${{ parameters.buildConfig }}
+        ${{ if eq(parameters.passPlatforms, true) }}:
+          platforms: ${{ parameters.platforms }}
+        helixQueueGroup: ${{ parameters.helixQueueGroup }}
+        ${{ insert }}: ${{ parameters.jobParameters }}
+
 # Linux x64
 
 - ${{ if or(containsValue(parameters.platforms, 'Linux_x64'), containsValue(parameters.platforms, 'CoreClrTestBuildHost'), in(parameters.platformGroup, 'all', 'gcstress')) }}:

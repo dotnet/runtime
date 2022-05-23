@@ -278,31 +278,31 @@
     },
     "android": {
       "#import": [
-        "linux"
+        "linux-bionic"
       ]
     },
     "android-arm": {
       "#import": [
         "android",
-        "linux-arm"
+        "linux-bionic-arm"
       ]
     },
     "android-arm64": {
       "#import": [
         "android",
-        "linux-arm64"
+        "linux-bionic-arm64"
       ]
     },
     "android-x64": {
       "#import": [
         "android",
-        "linux-x64"
+        "linux-bionic-x64"
       ]
     },
     "android-x86": {
       "#import": [
         "android",
-        "linux-x86"
+        "linux-bionic-x86"
       ]
     },
     "android.21": {
@@ -1571,6 +1571,35 @@
       "#import": [
         "linux",
         "unix-armv6"
+      ]
+    },
+    "linux-bionic": {
+      "#import": [
+        "linux"
+      ]
+    },
+    "linux-bionic-arm": {
+      "#import": [
+        "linux-bionic",
+        "linux-arm"
+      ]
+    },
+    "linux-bionic-arm64": {
+      "#import": [
+        "linux-bionic",
+        "linux-arm64"
+      ]
+    },
+    "linux-bionic-x64": {
+      "#import": [
+        "linux-bionic",
+        "linux-x64"
+      ]
+    },
+    "linux-bionic-x86": {
+      "#import": [
+        "linux-bionic",
+        "linux-x86"
       ]
     },
     "linux-loongarch64": {

@@ -1272,26 +1272,16 @@ namespace System.Runtime.Serialization
             return type;
         }
 
-        private static bool IsAlpha(char ch)
-        {
-            return (ch >= 'A' && ch <= 'Z' || ch >= 'a' && ch <= 'z');
-        }
-
-        private static bool IsDigit(char ch)
-        {
-            return (ch >= '0' && ch <= '9');
-        }
-
         private static bool IsAsciiLocalName(string localName)
         {
             if (localName.Length == 0)
                 return false;
-            if (!IsAlpha(localName[0]))
+            if (!char.IsAsciiLetter(localName[0]))
                 return false;
             for (int i = 1; i < localName.Length; i++)
             {
                 char ch = localName[i];
-                if (!IsAlpha(ch) && !IsDigit(ch))
+                if (!char.IsAsciiLetterOrDigit(ch))
                     return false;
             }
             return true;

@@ -10,7 +10,7 @@ import { _unbox_mono_obj_root_with_known_nonprimitive_type } from "./cs-to-js";
 import {
     _create_temp_frame,
     getI32, getU32, getF32, getF64,
-    setI32, setU32, setF32, setF64, setI64,
+    setI32, setU32, setF32, setF64, setI52, setU52, setB32, getB32
 } from "./memory";
 import {
     _get_args_root_buffer_for_method_call, _get_buffer_for_method_call,
@@ -130,8 +130,11 @@ export function _create_primitive_converters(): void {
     // result.set ('k', { steps: [{ convert: js_to_mono_enum.bind (this), indirect: 'i64'}], size: 8});
     result.set("j", { steps: [{ convert: js_to_mono_enum.bind(BINDING), indirect: "i32" }], size: 8 });
 
+    result.set("b", { steps: [{ indirect: "bool" }], size: 8 });
     result.set("i", { steps: [{ indirect: "i32" }], size: 8 });
-    result.set("l", { steps: [{ indirect: "i64" }], size: 8 });
+    result.set("I", { steps: [{ indirect: "u32" }], size: 8 });
+    result.set("l", { steps: [{ indirect: "i52" }], size: 8 });
+    result.set("L", { steps: [{ indirect: "u52" }], size: 8 });
     result.set("f", { steps: [{ indirect: "float" }], size: 8 });
     result.set("d", { steps: [{ indirect: "double" }], size: 8 });
 }
@@ -218,7 +221,9 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
         setU32,
         setF32,
         setF64,
-        setI64,
+        setU52,
+        setI52,
+        setB32,
         scratchValueRoot: converter.scratchValueRoot
     };
     let indirectLocalOffset = 0;
@@ -276,6 +281,9 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
             const offsetText = `(indirectStart + ${indirectLocalOffset})`;
 
             switch (step.indirect) {
+                case "bool":
+                    body.push(`setB32(${offsetText}, ${valueKey});`);
+                    break;
                 case "u32":
                     body.push(`setU32(${offsetText}, ${valueKey});`);
                     break;
@@ -288,8 +296,11 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
                 case "double":
                     body.push(`setF64(${offsetText}, ${valueKey});`);
                     break;
-                case "i64":
-                    body.push(`setI64(${offsetText}, ${valueKey});`);
+                case "i52":
+                    body.push(`setI52(${offsetText}, ${valueKey});`);
+                    break;
+                case "u52":
+                    body.push(`setU52(${offsetText}, ${valueKey});`);
                     break;
                 default:
                     throw new Error("Unimplemented indirect type: " + step.indirect);
@@ -421,6 +432,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: null, args_marsha
         token,
         unbox_buffer,
         unbox_buffer_size,
+        getB32,
         getI32,
         getU32,
         getF32,
@@ -522,7 +534,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: null, args_marsha
                 `    case ${MarshalType.FP64}:`,
                 "        result = getF64(unbox_buffer); break;",
                 `    case ${MarshalType.BOOL}:`,
-                "        result = getI32(unbox_buffer) !== 0; break;",
+                "        result = getB32(unbox_buffer); break;",
                 `    case ${MarshalType.CHAR}:`,
                 "        result = String.fromCharCode(getI32(unbox_buffer)); break;",
                 `    case ${MarshalType.NULL}:`,
@@ -584,7 +596,7 @@ export type ArgsMarshalString = ""
     | `${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${ArgsMarshal}${_ExtraArgsMarshalOperators}`;
 */
 
-type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "i64" | "reference"
+type ConverterStepIndirects = "u32" | "i32" | "float" | "double" | "u52" | "i52" | "reference" | "bool"
 
 export type Converter = {
     steps: {

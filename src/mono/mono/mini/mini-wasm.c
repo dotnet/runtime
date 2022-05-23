@@ -548,6 +548,7 @@ mono_thread_state_init_from_handle (MonoThreadUnwindState *tctx, MonoThreadInfo 
 EMSCRIPTEN_KEEPALIVE void
 mono_set_timeout_exec (void)
 {
+	MONO_ENTER_GC_UNSAFE;
 	ERROR_DECL (error);
 
 	static MonoMethod *method = NULL;
@@ -576,6 +577,7 @@ mono_set_timeout_exec (void)
 		g_printerr ("timeout callback threw a %s\n", type_name);
 		g_free (type_name);
 	}
+	MONO_EXIT_GC_UNSAFE;
 }
 
 #endif

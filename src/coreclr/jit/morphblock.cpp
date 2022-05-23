@@ -470,6 +470,9 @@ GenTree* MorphInitBlockHelper::MorphCommaBlock(Compiler* comp, GenTreeOp* firstC
     {
         GenTree* comma = commas.Pop();
         comma->gtType  = TYP_BYREF;
+
+        // The "IND(COMMA)" => "COMMA(IND)" transform may have set NO_CSEs on these COMMAs, clear them.
+        comma->ClearDoNotCSE();
         comp->gtUpdateNodeSideEffects(comma);
     }
 

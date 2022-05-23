@@ -134,6 +134,7 @@ public:
     static FORCEINLINE UINT64 InterlockedAdd(UINT64 *pAugend, UINT64 addend);
     static FORCEINLINE UINT64 InterlockedSub(UINT64 *pMinuend, UINT64 subtrahend);
 
+    static FCDECL0(INT64,   GetTotalPauseDuration);
     static FCDECL2(void,    GetMemoryInfo, Object* objUNSAFE, int kind);
     static FCDECL0(UINT32,  GetMemoryLoad);
     static FCDECL0(int,     GetGcLatencyMode);

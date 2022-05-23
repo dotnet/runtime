@@ -33,7 +33,7 @@ namespace System.Text.Json.Reflection
 
                 sb.Append(baseName);
 
-                sb.Append("<");
+                sb.Append('<');
 
                 Type[] genericArgs = type.GetGenericArguments();
                 int genericArgCount = genericArgs.Length;
@@ -46,7 +46,7 @@ namespace System.Text.Json.Reflection
 
                 sb.Append(string.Join(", ", genericArgNames));
 
-                sb.Append(">");
+                sb.Append('>');
 
                 compilableName = sb.ToString();
             }
