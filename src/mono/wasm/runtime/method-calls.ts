@@ -44,14 +44,7 @@ export function _get_buffer_for_method_call(converter: Converter, token: BoundMe
     if (!converter)
         return VoidPtrNull;
 
-    let result = VoidPtrNull;
-    if (token !== null) {
-        result = token.scratchBuffer || VoidPtrNull;
-        token.scratchBuffer = VoidPtrNull;
-    } else {
-        result = converter.scratchBuffer || VoidPtrNull;
-        converter.scratchBuffer = VoidPtrNull;
-    }
+    const result = Module.stackAlloc(converter.size + 64);
     return result;
 }
 
@@ -107,13 +100,6 @@ function _release_buffer_from_method_call(
 ) {
     if (!converter || !buffer)
         return;
-
-    if (token && !token.scratchBuffer)
-        token.scratchBuffer = buffer;
-    else if (!converter.scratchBuffer)
-        converter.scratchBuffer = coerceNull(buffer);
-    else if (buffer)
-        Module._free(buffer);
 }
 
 function _convert_exception_for_method_call(result: WasmRoot<MonoString>, exception: WasmRoot<MonoObject>) {

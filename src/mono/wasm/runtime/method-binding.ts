@@ -216,7 +216,6 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
 
     const closure: any = {
         Module,
-        _malloc: Module._malloc,
         setI32,
         setU32,
         setF32,
@@ -230,7 +229,7 @@ export function _compile_converter_for_marshal_string(args_marshal: string/*Args
 
     body.push(
         "if (!method) throw new Error('no method provided');",
-        `if (!buffer) buffer = _malloc (${bufferSizeBytes});`,
+        "if (!buffer) throw new Error('no buffer provided');",
         `let indirectStart = buffer + ${indirectBaseOffset};`,
         ""
     );
@@ -405,7 +404,7 @@ export function mono_bind_method(method: MonoMethod, this_arg: null, args_marsha
     }
 
     // FIXME
-    const unbox_buffer_size = 8192;
+    const unbox_buffer_size = 128;
     const unbox_buffer = Module._malloc(unbox_buffer_size);
 
     const token: BoundMethodToken = {
