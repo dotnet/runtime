@@ -22605,13 +22605,20 @@ void Compiler::considerGuardedDevirtualization(GenTreeCall*            call,
         likelyMethod = dvInfo.devirtualizedMethod;
     }
 
+    uint32_t likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
+    if ((likelyMethodAttribs & CORINFO_FLG_STATIC) != 0)
+    {
+        assert(call->IsDelegateInvoke());
+        JITDUMP("Cannot currently handle devirtualizing static delegate calls, sorry\n");
+        return;
+    }
+
     JITDUMP("%s call would invoke method %s\n",
             isInterface ? "interface" : call->IsDelegateInvoke() ? "delegate" : "virtual",
             eeGetMethodName(likelyMethod, nullptr));
 
     // Add this as a potential candidate.
     //
-    uint32_t const likelyMethodAttribs = info.compCompHnd->getMethodAttribs(likelyMethod);
     addGuardedDevirtualizationCandidate(call, likelyMethod, likelyClass, likelyMethodAttribs, likelyClassAttribs,
                                         likelihood);
 }
