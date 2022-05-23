@@ -4403,6 +4403,34 @@ void CodeGen::genCodeForShift(GenTree* tree)
             inst_RV_SH(ins, size, tree->GetRegNum(), shiftByValue);
         }
     }
+#if defined(TARGET_64BIT)
+    else if (tree->OperIsShift() && compiler->compOpportunisticallyDependsOn(InstructionSet_BMI2))
+    {
+        // Try to emit shlx, sarx, shrx if BMI2 is available instead of mov+shl, mov+sar, mov+shr.
+        switch (tree->OperGet())
+        {
+            case GT_LSH:
+                ins = INS_shlx;
+                break;
+
+            case GT_RSH:
+                ins = INS_sarx;
+                break;
+
+            case GT_RSZ:
+                ins = INS_shrx;
+                break;
+
+            default:
+                unreached();
+        }
+
+        regNumber shiftByReg = shiftBy->GetRegNum();
+        emitAttr  size       = emitTypeSize(tree);
+        // The order of operandReg and shiftByReg are swapped to follow shlx, sarx and shrx encoding spec.
+        GetEmitter()->emitIns_R_R_R(ins, size, tree->GetRegNum(), shiftByReg, operandReg);
+    }
+#endif
     else
     {
         // We must have the number of bits to shift stored in ECX, since we constrained this node to
@@ -4893,7 +4921,7 @@ void CodeGen::genCodeForIndexAddr(GenTreeIndexAddr* node)
 #endif
 
     // Generate the bounds check if necessary.
-    if ((node->gtFlags & GTF_INX_RNGCHK) != 0)
+    if (node->IsBoundsChecked())
     {
 #ifdef TARGET_64BIT
         // The CLI Spec allows an array to be indexed by either an int32 or a native int.  In the case that the index
@@ -4979,7 +5007,7 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     emitter*  emit       = GetEmitter();
 
     GenTree* addr = tree->Addr();
-    if (addr->IsCnsIntOrI() && addr->IsIconHandle(GTF_ICON_TLS_HDL))
+    if (addr->IsIconHandle(GTF_ICON_TLS_HDL))
     {
         noway_assert(EA_ATTR(genTypeSize(targetType)) == EA_PTRSIZE);
         emit->emitIns_R_C(ins_Load(TYP_I_IMPL), EA_PTRSIZE, tree->GetRegNum(), FLD_GLOBAL_FS,
@@ -4988,7 +5016,17 @@ void CodeGen::genCodeForIndir(GenTreeIndir* tree)
     else
     {
         genConsumeAddress(addr);
-        emit->emitInsLoadInd(ins_Load(targetType), emitTypeSize(tree), tree->GetRegNum(), tree);
+        instruction loadIns = ins_Load(targetType);
+        if (tree->DontExtend())
+        {
+            assert(varTypeIsSmall(tree));
+            // The user of this IND does not need
+            // the upper bits to be set, so we don't need to use longer
+            // INS_movzx/INS_movsx and can use INS_mov instead.
+            // It usually happens when the real type is a small struct.
+            loadIns = INS_mov;
+        }
+        emit->emitInsLoadInd(loadIns, emitTypeSize(tree), tree->GetRegNum(), tree);
     }
 
     genProduceReg(tree);

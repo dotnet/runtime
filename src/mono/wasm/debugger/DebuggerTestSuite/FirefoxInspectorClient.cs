@@ -43,7 +43,7 @@ class FirefoxInspectorClient : InspectorClient
                             // Webserver connection is closed
                             // So, stop the loop here too
                             // _clientInitiatedClose.TrySetResult();
-                            await Shutdown(token);
+                            await ShutdownAsync(token);
                         }, TaskContinuationOptions.NotOnRanToCompletion | TaskContinuationOptions.RunContinuationsAsynchronously)
                         .ConfigureAwait(false);
 

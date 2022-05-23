@@ -334,14 +334,11 @@ namespace System.Net.Http
             {
                 Debug.Assert(Kind == HttpConnectionKind.Proxy);
 
-                // TODO https://github.com/dotnet/runtime/issues/25782:
-                // Uri.IdnHost is missing '[', ']' characters around IPv6 address.
-                // So, we need to add them manually for now.
+                // Uri.IdnHost is missing '[', ']' characters around IPv6 address
+                // and it also contains ScopeID for Link-Local addresses
                 if (uri.HostNameType == UriHostNameType.IPv6)
                 {
-                    await WriteByteAsync((byte)'[', async).ConfigureAwait(false);
-                    await WriteAsciiStringAsync(uri.IdnHost, async).ConfigureAwait(false);
-                    await WriteByteAsync((byte)']', async).ConfigureAwait(false);
+                    await WriteAsciiStringAsync(uri.Host, async).ConfigureAwait(false);
                 }
                 else
                 {

@@ -1476,7 +1476,7 @@ namespace System
         }
 
         [DoesNotReturn]
-        private static void ThrowMinMaxException<T>(T min, T max)
+        internal static void ThrowMinMaxException<T>(T min, T max)
         {
             throw new ArgumentException(SR.Format(SR.Argument_MinMaxValue, min, max));
         }

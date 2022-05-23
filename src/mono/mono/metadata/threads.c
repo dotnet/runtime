@@ -4815,7 +4815,7 @@ ves_icall_System_Threading_Thread_StartInternal (MonoThreadObjectHandle thread_h
 	MonoThread *internal = MONO_HANDLE_RAW (thread_handle);
 	gboolean res;
 
-#ifdef DISABLE_THREADS
+#if defined (DISABLE_THREADS) || defined (DISABLE_WASM_USER_THREADS)
 	mono_error_set_platform_not_supported (error, "Cannot start threads on this runtime.");
 	return;
 #endif

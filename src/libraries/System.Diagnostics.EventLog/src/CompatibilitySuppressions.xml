@@ -1,0 +1,9 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Suppressions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <Suppression>
+    <DiagnosticId>CP0002</DiagnosticId>
+    <Target>M:System.Diagnostics.EntryWrittenEventHandler.#ctor(System.Object,System.IntPtr)</Target>
+    <Left>lib/net6.0/System.Diagnostics.EventLog.dll</Left>
+    <Right>lib/net7.0/System.Diagnostics.EventLog.dll</Right>
+  </Suppression>
+</Suppressions>

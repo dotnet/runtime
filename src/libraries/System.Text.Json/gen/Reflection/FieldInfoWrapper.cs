@@ -8,7 +8,7 @@ using System.Globalization;
 
 namespace System.Text.Json.Reflection
 {
-    internal class FieldInfoWrapper : FieldInfo
+    internal sealed class FieldInfoWrapper : FieldInfo
     {
         private readonly IFieldSymbol _field;
         private readonly MetadataLoadContextInternal _metadataLoadContext;

@@ -321,7 +321,7 @@ HRESULT EditAndContinueModule::UpdateMethod(MethodDesc *pMethod)
 
     // Reset any flags relevant to the old code
     //
-    // Note that this only works since we've very carefullly made sure that _all_ references
+    // Note that this only works since we've very carefully made sure that _all_ references
     // to the Method's code must be to the call/jmp blob immediately in front of the
     // MethodDesc itself.  See MethodDesc::IsEnCMethod()
     //

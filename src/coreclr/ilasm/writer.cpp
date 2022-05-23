@@ -82,7 +82,7 @@ HRESULT Assembler::CreateTLSDirectory() {
         DWORD offsetofAddressOfIndex         = (DWORD)offsetof(IMAGE_TLS_DIRECTORY32, AddressOfIndex);
         DWORD offsetofAddressOfCallBacks     = (DWORD)offsetof(IMAGE_TLS_DIRECTORY32, AddressOfCallBacks);
 
-            // Get memory for for the TLS directory block,as well as a spot for callback chain
+            // Get memory for the TLS directory block,as well as a spot for callback chain
         IMAGE_TLS_DIRECTORY32* tlsDir;
         if(FAILED(hr=m_pCeeFileGen->GetSectionBlock(tlsDirSec, sizeofdir + sizeofptr, sizeofptr, (void**) &tlsDir))) return(hr);
         DWORD* callBackChain = (DWORD*) &tlsDir[1];
@@ -138,7 +138,7 @@ HRESULT Assembler::CreateTLSDirectory() {
         DWORD offsetofAddressOfIndex         = (DWORD)offsetof(IMAGE_TLS_DIRECTORY64, AddressOfIndex);
         DWORD offsetofAddressOfCallBacks     = (DWORD)offsetof(IMAGE_TLS_DIRECTORY64, AddressOfCallBacks);
 
-            // Get memory for for the TLS directory block,as well as a spot for callback chain
+            // Get memory for the TLS directory block,as well as a spot for callback chain
         IMAGE_TLS_DIRECTORY64* tlsDir;
         if(FAILED(hr=m_pCeeFileGen->GetSectionBlock(tlsDirSec, sizeofdir + sizeofptr, sizeofptr, (void**) &tlsDir))) return(hr);
         __int64* callBackChain = (__int64*) &tlsDir[1];

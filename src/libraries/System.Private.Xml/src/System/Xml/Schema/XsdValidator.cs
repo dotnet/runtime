@@ -638,7 +638,7 @@ namespace System.Xml.Schema
             {
                 if (schemaInfo.SchemaType != SchemaType.XSD)
                 {
-                    throw new XmlException(SR.Xml_MultipleValidaitonTypes, string.Empty, this.PositionInfo.LineNumber, this.PositionInfo.LinePosition);
+                    throw new XmlException(SR.Xml_MultipleValidationTypes, string.Empty, this.PositionInfo.LineNumber, this.PositionInfo.LinePosition);
                 }
                 SchemaInfo.Add(schemaInfo, EventHandler);
                 return;
@@ -864,7 +864,7 @@ namespace System.Xml.Schema
             } // foreach constraint /constraintstruct
 
             // added on June 19, make connections between new keyref tables with key/unique tables in stack
-            // i can't put it in the above loop, coz there will be key on the same level
+            // i can't put it in the above loop, because there will be key on the same level
             for (int i = 0; i < context.Constr.Length; ++i)
             {
                 if (context.Constr[i].constraint.Role == CompiledIdentityConstraint.ConstraintRole.Keyref)

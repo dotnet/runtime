@@ -358,7 +358,7 @@ namespace System.Net.Http.Headers
             }
 
             // Trailing/leading space are not allowed
-            if (value[0] == ' ' || value[0] == '\t' || value[^1] == ' ' || value[^1] == '\t')
+            if (value.StartsWith(' ') || value.StartsWith('\t') || value.EndsWith(' ') || value.EndsWith('\t'))
             {
                 ThrowFormatException(value);
             }

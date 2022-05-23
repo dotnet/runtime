@@ -2741,7 +2741,7 @@ void CEEInfo::ScanToken(Module * pModule, CORINFO_RESOLVED_TOKEN * pResolvedToke
     //
     // Scan chain of parent types
     //
-    for (;;)
+    while (true)
     {
         Module * pDefModule = pMT->GetModule();
         if (pDefModule->IsSystem())
@@ -3569,7 +3569,7 @@ uint32_t CEEInfo::getClassAttribs (CORINFO_CLASS_HANDLE clsHnd)
         MODE_PREEMPTIVE;
     } CONTRACTL_END;
 
-    // <REVISIT_TODO>@todo FIX need to really fetch the class atributes.  at present
+    // <REVISIT_TODO>@todo FIX need to really fetch the class attributes.  at present
     // we don't need to because the JIT only cares in the case of COM classes</REVISIT_TODO>
     uint32_t ret = 0;
 
@@ -4375,9 +4375,8 @@ CORINFO_CLASS_HANDLE CEEInfo::mergeClasses(
             _ASSERTE(merged == reflexive);
         }
 
-        //If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
-        //actually true about the element type for references types, but I think that that is a little
-        //excessive for sanity.
+        // If both sides are arrays, then the result is either an array or g_pArrayClass.  The above is
+        // actually true for reference types as well, but it is a little excessive to deal with.
         if (hnd1.IsArray() && hnd2.IsArray())
         {
             _ASSERTE((merged.IsArray() && reflexive.IsArray())
@@ -4913,7 +4912,7 @@ void CEEInfo::getCallInfo(
             // Either
             //    1. no constraint resolution at compile time (!directMethod)
             // OR 2. no code sharing lookup in call
-            // OR 3. we have have resolved to an instantiating stub
+            // OR 3. we have resolved to an instantiating stub
 
             pMDAfterConstraintResolution = directMethod;
             _ASSERTE(!pMDAfterConstraintResolution->IsInterface());
@@ -5594,7 +5593,7 @@ bool __stdcall TrackAllocationsEnabled()
     CONTRACTL_END;
 
     return (
-        (g_IBCLogger.InstrEnabled() != FALSE)
+        FALSE
 #ifdef PROFILING_SUPPORTED
         || CORProfilerTrackAllocationsEnabled()
 #endif // PROFILING_SUPPORTED
@@ -12815,7 +12814,7 @@ PCODE UnsafeJitFunction(PrepareCodeConfig* config,
 
 #endif // defined(TARGET_AMD64) || defined(TARGET_ARM64)
 
-    for (;;)
+    while (true)
     {
         CEEJitInfo jitInfo(ftn, ILHeader, jitMgr, !flags.IsSet(CORJIT_FLAGS::CORJIT_FLAG_NO_INLINING));
 
@@ -13137,9 +13136,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
         {
             result = FALSE;
 
-            DefineFullyQualifiedNameForClassW();
-            wprintf(W("Type %s: expected size 0x%08x, actual size 0x%08x\n"),
-                GetFullyQualifiedNameForClassW(pMT), dwExpectedSize, dwActualSize);
+            DefineFullyQualifiedNameForClass();
+            printf("Type %s: expected size 0x%08x, actual size 0x%08x\n",
+                GetFullyQualifiedNameForClass(pMT), dwExpectedSize, dwActualSize);
         }
         else
         {
@@ -13160,9 +13159,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             {
                 result = FALSE;
 
-                DefineFullyQualifiedNameForClassW();
-                wprintf(W("Type %s: expected HFA type %08x, actual %08x\n"),
-                    GetFullyQualifiedNameForClassW(pMT), dwExpectedHFAType, dwActualHFAType);
+                DefineFullyQualifiedNameForClass();
+                printf("Type %s: expected HFA type %08x, actual %08x\n",
+                    GetFullyQualifiedNameForClass(pMT), dwExpectedHFAType, dwActualHFAType);
             }
             else
             {
@@ -13178,9 +13177,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             {
                 result = FALSE;
 
-                DefineFullyQualifiedNameForClassW();
-                wprintf(W("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n"),
-                    GetFullyQualifiedNameForClassW(pMT));
+                DefineFullyQualifiedNameForClass();
+                printf("Type %s: type is HFA but READYTORUN_LAYOUT_HFA flag is not set\n",
+                    GetFullyQualifiedNameForClass(pMT));
             }
             else
             {
@@ -13207,9 +13206,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
             {
                 result = FALSE;
 
-                DefineFullyQualifiedNameForClassW();
-                wprintf(W("Type %s: expected alignment 0x%08x, actual 0x%08x\n"),
-                    GetFullyQualifiedNameForClassW(pMT), dwExpectedAlignment, dwActualAlignment);
+                DefineFullyQualifiedNameForClass();
+                printf("Type %s: expected alignment 0x%08x, actual 0x%08x\n",
+                    GetFullyQualifiedNameForClass(pMT), dwExpectedAlignment, dwActualAlignment);
             }
             else
             {
@@ -13229,9 +13228,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 {
                     result = FALSE;
 
-                    DefineFullyQualifiedNameForClassW();
-                    wprintf(W("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n"),
-                        GetFullyQualifiedNameForClassW(pMT));
+                    DefineFullyQualifiedNameForClass();
+                    printf("Type %s contains pointers but READYTORUN_LAYOUT_GCLayout_Empty is set\n",
+                        GetFullyQualifiedNameForClass(pMT));
                 }
                 else
                 {
@@ -13254,9 +13253,9 @@ BOOL TypeLayoutCheck(MethodTable * pMT, PCCOR_SIGNATURE pBlob, BOOL printDiff)
                 {
                     result = FALSE;
 
-                    DefineFullyQualifiedNameForClassW();
-                    wprintf(W("Type %s: GC refmap content doesn't match\n"),
-                        GetFullyQualifiedNameForClassW(pMT));
+                    DefineFullyQualifiedNameForClass();
+                    printf("Type %s: GC refmap content doesn't match\n",
+                        GetFullyQualifiedNameForClass(pMT));
                 }
                 else
                 {

@@ -2918,7 +2918,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void IndexOf_TurkishI_TurkishCulture()
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -3002,7 +3002,7 @@ namespace System.Tests
         }
 
         [ConditionalFact(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void IndexOf_HungarianDoubleCompression_HungarianCulture()
         {
             using (new ThreadCultureChange("hu-HU"))
@@ -5129,7 +5129,7 @@ namespace System.Tests
 
             // Android has different results w/ tr-TR
             // See https://github.com/dotnet/runtime/issues/60568
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 tuples.Add(Tuple.Create('\u0049', '\u0131', new CultureInfo("tr-TR")));
                 tuples.Add(Tuple.Create('\u0130', '\u0069', new CultureInfo("tr-TR")));
@@ -5618,7 +5618,7 @@ namespace System.Tests
         {
             // Android has different results w/ tr-TR
             // See https://github.com/dotnet/runtime/issues/60568
-            if (!PlatformDetection.IsAndroid)
+            if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "h\u0069 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
                 yield return new object[] { "h\u0130 world", "H\u0130 WORLD", new CultureInfo("tr-TR") };
@@ -5694,7 +5694,7 @@ namespace System.Tests
 
         [ConditionalTheory(typeof(PlatformDetection), nameof(PlatformDetection.IsNotInvariantGlobalization))]
         [MemberData(nameof(ToUpper_TurkishI_TurkishCulture_MemberData))]
-        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android)]
+        [ActiveIssue("https://github.com/dotnet/runtime/issues/60568", TestPlatforms.Android | TestPlatforms.LinuxBionic)]
         public static void ToUpper_TurkishI_TurkishCulture(string s, string expected)
         {
             using (new ThreadCultureChange("tr-TR"))
@@ -6788,7 +6788,7 @@ namespace System.Tests
 
             // Android has different results w/ tr-TR
             // See https://github.com/dotnet/runtime/issues/60568
-            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid)
+            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "latin i",         "Latin I",     "tr-TR",    false,        1  };
                 yield return new object[] { "latin i",         "Latin I",     "tr-TR",    true,         1  };
@@ -6810,7 +6810,7 @@ namespace System.Tests
             {
                 // Android has different results w/ tr-TR
                 // See https://github.com/dotnet/runtime/issues/60568
-                if (!PlatformDetection.IsAndroid)
+                if (!PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
                 {
                     yield return new object[] { "turky \u0131",     "TURKY I",      "tr-TR" };
                     yield return new object[] { "turky i",          "TURKY \u0130", "tr-TR" };
@@ -6831,7 +6831,7 @@ namespace System.Tests
 
             // Android has different results w/ tr-TR
             // See https://github.com/dotnet/runtime/issues/60568
-            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid)
+            if (PlatformDetection.IsNotInvariantGlobalization && !PlatformDetection.IsAndroid && !PlatformDetection.IsLinuxBionic)
             {
                 yield return new object[] { "i latin i",             "I Latin", "I",    "tr-TR",    false,       false  };
                 yield return new object[] { "i latin i",             "I Latin", "I",    "tr-TR",    true,        false  };
