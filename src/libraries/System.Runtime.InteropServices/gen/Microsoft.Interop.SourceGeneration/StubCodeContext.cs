@@ -103,7 +103,7 @@ namespace Microsoft.Interop
         /// <summary>
         /// Suffix for all generated native identifiers.
         /// </summary>
-        public const string GeneratedNativeIdentifierSuffix = "_gen_native";
+        public const string GeneratedNativeIdentifierSuffix = "_native";
 
         /// <summary>
         /// Get managed and native instance identifiers for the <paramref name="info"/>

@@ -3469,14 +3469,14 @@ namespace System
     }
     public readonly partial struct IntPtr : System.IComparable, System.IComparable<nint>, System.IEquatable<nint>, System.IFormattable, System.IParsable<nint>, System.ISpanFormattable, System.ISpanParsable<nint>, System.Numerics.IAdditionOperators<nint, nint, nint>, System.Numerics.IAdditiveIdentity<nint, nint>, System.Numerics.IBinaryInteger<nint>, System.Numerics.IBinaryNumber<nint>, System.Numerics.IBitwiseOperators<nint, nint, nint>, System.Numerics.IComparisonOperators<nint, nint>, System.Numerics.IDecrementOperators<nint>, System.Numerics.IDivisionOperators<nint, nint, nint>, System.Numerics.IEqualityOperators<nint, nint>, System.Numerics.IIncrementOperators<nint>, System.Numerics.IMinMaxValue<nint>, System.Numerics.IModulusOperators<nint, nint, nint>, System.Numerics.IMultiplicativeIdentity<nint, nint>, System.Numerics.IMultiplyOperators<nint, nint, nint>, System.Numerics.INumber<nint>, System.Numerics.INumberBase<nint>, System.Numerics.IShiftOperators<nint, nint>, System.Numerics.ISignedNumber<nint>, System.Numerics.ISubtractionOperators<nint, nint, nint>, System.Numerics.IUnaryNegationOperators<nint, nint>, System.Numerics.IUnaryPlusOperators<nint, nint>, System.Runtime.Serialization.ISerializable
     {
-        private readonly int _dummyPrimitive;
-        public static readonly System.IntPtr Zero;
+        private readonly nint _dummyPrimitive;
+        public static readonly nint Zero;
         public IntPtr(int value) { throw null; }
         public IntPtr(long value) { throw null; }
         [System.CLSCompliantAttribute(false)]
         public unsafe IntPtr(void* value) { throw null; }
-        public static System.IntPtr MaxValue { get { throw null; } }
-        public static System.IntPtr MinValue { get { throw null; } }
+        public static nint MaxValue { get { throw null; } }
+        public static nint MinValue { get { throw null; } }
         public static int Size { get { throw null; } }
         static nint System.Numerics.IAdditiveIdentity<nint,nint>.AdditiveIdentity { get { throw null; } }
         static nint System.Numerics.IMinMaxValue<nint>.MaxValue { get { throw null; } }
@@ -3486,16 +3486,16 @@ namespace System
         static nint System.Numerics.INumberBase<nint>.Zero { get { throw null; } }
         static nint System.Numerics.ISignedNumber<nint>.NegativeOne { get { throw null; } }
         public static nint Abs(nint value) { throw null; }
-        public static System.IntPtr Add(System.IntPtr pointer, int offset) { throw null; }
+        public static nint Add(nint pointer, int offset) { throw null; }
         public static nint Clamp(nint value, nint min, nint max) { throw null; }
-        public int CompareTo(System.IntPtr value) { throw null; }
+        public int CompareTo(nint value) { throw null; }
         public int CompareTo(object? value) { throw null; }
         public static nint CopySign(nint value, nint sign) { throw null; }
         public static nint CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static nint CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static nint CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static (nint Quotient, nint Remainder) DivRem(nint left, nint right) { throw null; }
-        public bool Equals(System.IntPtr other) { throw null; }
+        public bool Equals(nint other) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool IsNegative(nint value) { throw null; }
@@ -3506,29 +3506,29 @@ namespace System
         public static nint MaxMagnitude(nint x, nint y) { throw null; }
         public static nint Min(nint x, nint y) { throw null; }
         public static nint MinMagnitude(nint x, nint y) { throw null; }
-        public static System.IntPtr operator +(System.IntPtr pointer, int offset) { throw null; }
-        public static bool operator ==(System.IntPtr value1, System.IntPtr value2) { throw null; }
-        public static explicit operator System.IntPtr (int value) { throw null; }
-        public static explicit operator System.IntPtr (long value) { throw null; }
-        public static explicit operator int (System.IntPtr value) { throw null; }
-        public static explicit operator long (System.IntPtr value) { throw null; }
+        public static nint operator +(nint pointer, int offset) { throw null; }
+        public static bool operator ==(nint value1, nint value2) { throw null; }
+        public static explicit operator nint (int value) { throw null; }
+        public static explicit operator nint (long value) { throw null; }
+        public static explicit operator int (nint value) { throw null; }
+        public static explicit operator long (nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static explicit operator void* (System.IntPtr value) { throw null; }
+        public unsafe static explicit operator void* (nint value) { throw null; }
         [System.CLSCompliantAttribute(false)]
-        public unsafe static explicit operator System.IntPtr (void* value) { throw null; }
-        public static bool operator !=(System.IntPtr value1, System.IntPtr value2) { throw null; }
-        public static System.IntPtr operator -(System.IntPtr pointer, int offset) { throw null; }
-        public static System.IntPtr Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
-        public static System.IntPtr Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        public static System.IntPtr Parse(string s) { throw null; }
-        public static System.IntPtr Parse(string s, System.Globalization.NumberStyles style) { throw null; }
-        public static System.IntPtr Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        public static System.IntPtr Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public unsafe static explicit operator nint (void* value) { throw null; }
+        public static bool operator !=(nint value1, nint value2) { throw null; }
+        public static nint operator -(nint pointer, int offset) { throw null; }
+        public static nint Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
+        public static nint Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        public static nint Parse(string s) { throw null; }
+        public static nint Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static nint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static nint Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static nint PopCount(nint value) { throw null; }
         public static nint RotateLeft(nint value, int rotateAmount) { throw null; }
         public static nint RotateRight(nint value, int rotateAmount) { throw null; }
         public static int Sign(nint value) { throw null; }
-        public static System.IntPtr Subtract(System.IntPtr pointer, int offset) { throw null; }
+        public static nint Subtract(nint pointer, int offset) { throw null; }
         static nint System.Numerics.IAdditionOperators<nint, nint, nint>.operator +(nint left, nint right) { throw null; }
         static nint System.Numerics.IAdditionOperators<nint, nint, nint>.operator checked +(nint left, nint right) { throw null; }
         int System.Numerics.IBinaryInteger<nint>.GetByteCount() { throw null; }
@@ -3583,12 +3583,12 @@ namespace System
         public static nint TrailingZeroCount(nint value) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out nint result) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.IntPtr result) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.IntPtr result) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, out System.IntPtr result) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.IntPtr result) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.IntPtr result) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.IntPtr result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nint result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out nint result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out nint result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nint result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out nint result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out nint result) { throw null; }
     }
     public partial class InvalidCastException : System.SystemException
     {
@@ -6374,13 +6374,13 @@ namespace System
     [System.CLSCompliantAttribute(false)]
     public readonly partial struct UIntPtr : System.IComparable, System.IComparable<nuint>, System.IEquatable<nuint>, System.IFormattable, System.IParsable<nuint>, System.ISpanFormattable, System.ISpanParsable<nuint>, System.Numerics.IAdditionOperators<nuint, nuint, nuint>, System.Numerics.IAdditiveIdentity<nuint, nuint>, System.Numerics.IBinaryInteger<nuint>, System.Numerics.IBinaryNumber<nuint>, System.Numerics.IBitwiseOperators<nuint, nuint, nuint>, System.Numerics.IComparisonOperators<nuint, nuint>, System.Numerics.IDecrementOperators<nuint>, System.Numerics.IDivisionOperators<nuint, nuint, nuint>, System.Numerics.IEqualityOperators<nuint, nuint>, System.Numerics.IIncrementOperators<nuint>, System.Numerics.IMinMaxValue<nuint>, System.Numerics.IModulusOperators<nuint, nuint, nuint>, System.Numerics.IMultiplicativeIdentity<nuint, nuint>, System.Numerics.IMultiplyOperators<nuint, nuint, nuint>, System.Numerics.INumber<nuint>, System.Numerics.INumberBase<nuint>, System.Numerics.IShiftOperators<nuint, nuint>, System.Numerics.ISubtractionOperators<nuint, nuint, nuint>, System.Numerics.IUnaryNegationOperators<nuint, nuint>, System.Numerics.IUnaryPlusOperators<nuint, nuint>, System.Numerics.IUnsignedNumber<nuint>, System.Runtime.Serialization.ISerializable
     {
-        private readonly int _dummyPrimitive;
-        public static readonly System.UIntPtr Zero;
+        private readonly nuint _dummyPrimitive;
+        public static readonly nuint Zero;
         public UIntPtr(uint value) { throw null; }
         public UIntPtr(ulong value) { throw null; }
         public unsafe UIntPtr(void* value) { throw null; }
-        public static System.UIntPtr MaxValue { get { throw null; } }
-        public static System.UIntPtr MinValue { get { throw null; } }
+        public static nuint MaxValue { get { throw null; } }
+        public static nuint MinValue { get { throw null; } }
         public static int Size { get { throw null; } }
         static nuint System.Numerics.IAdditiveIdentity<nuint,nuint>.AdditiveIdentity { get { throw null; } }
         static nuint System.Numerics.IMinMaxValue<nuint>.MaxValue { get { throw null; } }
@@ -6388,43 +6388,43 @@ namespace System
         static nuint System.Numerics.IMultiplicativeIdentity<nuint,nuint>.MultiplicativeIdentity { get { throw null; } }
         static nuint System.Numerics.INumberBase<nuint>.One { get { throw null; } }
         static nuint System.Numerics.INumberBase<nuint>.Zero { get { throw null; } }
-        public static System.UIntPtr Add(System.UIntPtr pointer, int offset) { throw null; }
+        public static nuint Add(nuint pointer, int offset) { throw null; }
         public static nuint Clamp(nuint value, nuint min, nuint max) { throw null; }
         public int CompareTo(object? value) { throw null; }
-        public int CompareTo(System.UIntPtr value) { throw null; }
+        public int CompareTo(nuint value) { throw null; }
         public static nuint CreateChecked<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static nuint CreateSaturating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static nuint CreateTruncating<TOther>(TOther value) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public static (nuint Quotient, nuint Remainder) DivRem(nuint left, nuint right) { throw null; }
         public override bool Equals([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] object? obj) { throw null; }
-        public bool Equals(System.UIntPtr other) { throw null; }
+        public bool Equals(nuint other) { throw null; }
         public override int GetHashCode() { throw null; }
         public static bool IsPow2(nuint value) { throw null; }
         public static nuint LeadingZeroCount(nuint value) { throw null; }
         public static nuint Log2(nuint value) { throw null; }
         public static nuint Max(nuint x, nuint y) { throw null; }
         public static nuint Min(nuint x, nuint y) { throw null; }
-        public static System.UIntPtr operator +(System.UIntPtr pointer, int offset) { throw null; }
-        public static bool operator ==(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
-        public static explicit operator System.UIntPtr (uint value) { throw null; }
-        public static explicit operator System.UIntPtr (ulong value) { throw null; }
-        public static explicit operator uint (System.UIntPtr value) { throw null; }
-        public static explicit operator ulong (System.UIntPtr value) { throw null; }
-        public unsafe static explicit operator void* (System.UIntPtr value) { throw null; }
-        public unsafe static explicit operator System.UIntPtr (void* value) { throw null; }
-        public static bool operator !=(System.UIntPtr value1, System.UIntPtr value2) { throw null; }
-        public static System.UIntPtr operator -(System.UIntPtr pointer, int offset) { throw null; }
-        public static System.UIntPtr Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
-        public static System.UIntPtr Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
-        public static System.UIntPtr Parse(string s) { throw null; }
-        public static System.UIntPtr Parse(string s, System.Globalization.NumberStyles style) { throw null; }
-        public static System.UIntPtr Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
-        public static System.UIntPtr Parse(string s, System.IFormatProvider? provider) { throw null; }
+        public static nuint operator +(nuint pointer, int offset) { throw null; }
+        public static bool operator ==(nuint value1, nuint value2) { throw null; }
+        public static explicit operator nuint (uint value) { throw null; }
+        public static explicit operator nuint (ulong value) { throw null; }
+        public static explicit operator uint (nuint value) { throw null; }
+        public static explicit operator ulong (nuint value) { throw null; }
+        public unsafe static explicit operator void* (nuint value) { throw null; }
+        public unsafe static explicit operator nuint (void* value) { throw null; }
+        public static bool operator !=(nuint value1, nuint value2) { throw null; }
+        public static nuint operator -(nuint pointer, int offset) { throw null; }
+        public static nuint Parse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style = System.Globalization.NumberStyles.Integer, System.IFormatProvider? provider = null) { throw null; }
+        public static nuint Parse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider) { throw null; }
+        public static nuint Parse(string s) { throw null; }
+        public static nuint Parse(string s, System.Globalization.NumberStyles style) { throw null; }
+        public static nuint Parse(string s, System.Globalization.NumberStyles style, System.IFormatProvider? provider) { throw null; }
+        public static nuint Parse(string s, System.IFormatProvider? provider) { throw null; }
         public static nuint PopCount(nuint value) { throw null; }
         public static nuint RotateLeft(nuint value, int rotateAmount) { throw null; }
         public static nuint RotateRight(nuint value, int rotateAmount) { throw null; }
         public static int Sign(nuint value) { throw null; }
-        public static System.UIntPtr Subtract(System.UIntPtr pointer, int offset) { throw null; }
+        public static nuint Subtract(nuint pointer, int offset) { throw null; }
         static nuint System.Numerics.IAdditionOperators<nuint, nuint, nuint>.operator +(nuint left, nuint right) { throw null; }
         static nuint System.Numerics.IAdditionOperators<nuint, nuint, nuint>.operator checked +(nuint left, nuint right) { throw null; }
         int System.Numerics.IBinaryInteger<nuint>.GetByteCount() { throw null; }
@@ -6483,12 +6483,12 @@ namespace System
         public static nuint TrailingZeroCount(nuint value) { throw null; }
         public static bool TryCreate<TOther>(TOther value, out nuint result) where TOther : System.Numerics.INumberBase<TOther> { throw null; }
         public bool TryFormat(System.Span<char> destination, out int charsWritten, [System.Diagnostics.CodeAnalysis.StringSyntaxAttribute("NumericFormat")] System.ReadOnlySpan<char> format = default(System.ReadOnlySpan<char>), System.IFormatProvider? provider = null) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UIntPtr result) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out System.UIntPtr result) { throw null; }
-        public static bool TryParse(System.ReadOnlySpan<char> s, out System.UIntPtr result) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out System.UIntPtr result) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out System.UIntPtr result) { throw null; }
-        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out System.UIntPtr result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nuint result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, System.IFormatProvider? provider, out nuint result) { throw null; }
+        public static bool TryParse(System.ReadOnlySpan<char> s, out nuint result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.Globalization.NumberStyles style, System.IFormatProvider? provider, out nuint result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, System.IFormatProvider? provider, out nuint result) { throw null; }
+        public static bool TryParse([System.Diagnostics.CodeAnalysis.NotNullWhenAttribute(true)] string? s, out nuint result) { throw null; }
     }
     public partial class UnauthorizedAccessException : System.SystemException
     {

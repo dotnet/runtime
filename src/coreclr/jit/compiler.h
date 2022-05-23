@@ -4967,7 +4967,7 @@ protected:
 
     void fgComputeReachability(); // Perform flow graph node reachability analysis.
 
-    void fgRemoveDeadBlocks(); // Identify and remove dead blocks.
+    bool fgRemoveDeadBlocks(); // Identify and remove dead blocks.
 
     BasicBlock* fgIntersectDom(BasicBlock* a, BasicBlock* b); // Intersect two immediate dominator sets.
 
