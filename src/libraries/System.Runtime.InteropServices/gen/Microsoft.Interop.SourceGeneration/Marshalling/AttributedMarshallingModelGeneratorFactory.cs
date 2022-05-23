@@ -346,7 +346,7 @@ namespace Microsoft.Interop
 
             IMarshallingGenerator marshallingGenerator = new CustomNativeTypeMarshallingGenerator(marshallingStrategy, enableByValueContentsMarshalling: false);
 
-            if (collectionInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.ManagedType))
+            if (collectionInfo.PinningFeatures.HasFlag(CustomTypeMarshallerPinning.ManagedType) && isBlittable)
             {
                 return new PinnableManagedValueMarshaller(marshallingGenerator);
             }
